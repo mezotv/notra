@@ -3,11 +3,11 @@
 import {
   Logout01Icon,
   MoreVerticalCircle01Icon,
-  Notification02Icon,
   User02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { redirect, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +27,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUserContext } from "@/hooks/use-user";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
@@ -35,8 +34,10 @@ export function NavUser() {
   const router = useRouter();
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { user, isLoading } = useUserContext();
   const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const { data: session, isPending } = authClient.useSession();
+  const user = session?.user;
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -52,7 +53,7 @@ export function NavUser() {
     }
   }
 
-  if (!user && isLoading) {
+  if (!user && isPending) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -74,12 +75,8 @@ export function NavUser() {
   }
 
   if (!user) {
-    return null;
+    return redirect("/login");
   }
-
-  const userName = user.name || "User";
-  const userEmail = user.email || "";
-  const userImage = user.image || undefined;
 
   return (
     <SidebarMenu>
@@ -103,17 +100,21 @@ export function NavUser() {
                     isCollapsed ? "size-6.5" : ""
                   )}
                 >
-                  <AvatarImage alt={userName} src={userImage} />
+                  <AvatarImage
+                    alt={user.name}
+                    className="rounded-lg"
+                    src={user.image ?? undefined}
+                  />
                   <AvatarFallback className="rounded-lg">
-                    {userName.charAt(0).toUpperCase()}
+                    {user.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {!isCollapsed && (
                   <>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{userName}</span>
+                      <span className="truncate font-medium">{user.name}</span>
                       <span className="truncate text-muted-background text-xs">
-                        {userEmail}
+                        {user.email}
                       </span>
                     </div>
                     <HugeiconsIcon
@@ -135,17 +136,21 @@ export function NavUser() {
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="size-8 rounded-lg">
-                    <AvatarImage alt={userName} src={userImage} />
+                    <AvatarImage
+                      alt={user.name}
+                      className="rounded-lg"
+                      src={user.image ?? undefined}
+                    />
                     <AvatarFallback className="rounded-lg">
-                      {userName.charAt(0).toUpperCase()}
+                      {user.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium text-foreground">
-                      {userName}
+                      {user.name}
                     </span>
                     <span className="truncate text-muted-foreground text-xs">
-                      {userEmail}
+                      {user.email}
                     </span>
                   </div>
                 </div>
@@ -153,14 +158,12 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={User02Icon} />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <HugeiconsIcon icon={Notification02Icon} />
-                Notifications
-              </DropdownMenuItem>
+              <Link href="/account">
+                <DropdownMenuItem>
+                  <HugeiconsIcon icon={User02Icon} />
+                  Account
+                </DropdownMenuItem>
+              </Link>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
