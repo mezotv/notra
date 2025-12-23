@@ -19,12 +19,10 @@ export async function POST(request: Request) {
 
     const { prompt } = validationResult.data;
 
-    const result = githubChangelogAgent.stream({
+    const result = await githubChangelogAgent.stream({
       prompt,
     });
 
-    // toUIMessageStream() returns an AsyncIterableStream which can be used as ReadableStream
-    // Pass it directly to avoid locking issues
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Error generating changelog:", error);
