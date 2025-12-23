@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { IntegrationCardProps } from "@/types/integrations";
+import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function IntegrationCard({
   integration,
