@@ -3,3 +3,4 @@ export const GITHUB_URL_PATTERNS = [
   /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i,
   /^([^/]+)\/([^/]+)$/,
 ] as const;
+
