@@ -122,6 +122,7 @@ Biome's linter will catch most issues automatically. Focus your attention on:
 4. **Edge cases** - Handle boundary conditions and error states
 5. **User experience** - Accessibility, performance, and usability considerations
 6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
+7. **Context7 MCP** - Use context7 for up to date documentation whenever library names are mentioned
 
 ---
 
