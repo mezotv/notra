@@ -79,12 +79,19 @@ export default function PageClient({ organizationId }: PageClientProps) {
         const lines = chunk.split("\n");
 
         for (const line of lines) {
-          if (line.startsWith("0:")) {
-            const textContent = line.substring(2).trim();
-            if (textContent.startsWith('"') && textContent.endsWith('"')) {
-              const parsed = textContent.slice(1, -1);
-              accumulatedText += parsed;
-              setResponse(accumulatedText);
+          if (line.startsWith("data: ")) {
+            const jsonStr = line.substring(6).trim();
+            if (jsonStr === "[DONE]") continue;
+
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const data: any = JSON.parse(jsonStr);
+              if (data.type === "text-delta" && data.textDelta) {
+                accumulatedText += data.textDelta;
+                setResponse(accumulatedText);
+              }
+            } catch {
+              // Skip lines that aren't valid JSON
             }
           }
         }
