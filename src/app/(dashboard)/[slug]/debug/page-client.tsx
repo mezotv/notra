@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,40 +13,38 @@ import {
 import { Input } from "@/components/ui/input";
 import { isValidGitHubUrl } from "@/utils/schemas/integrations";
 
-type UIMessageChunk = {
-  type: string;
-  textDelta?: string;
-};
+type StreamStatus = "idle" | "streaming" | "complete" | "error";
 
 function parseSSELine(line: string): string | null {
-  if (!line.startsWith("data: ")) {
+  const trimmedLine = line.trim();
+  if (!trimmedLine?.startsWith("data:")) {
     return null;
   }
 
-  const jsonStr = line.substring(6).trim();
+  const jsonStr = trimmedLine.slice(5).trim();
   if (jsonStr === "[DONE]") {
     return null;
   }
 
   try {
-    const data = JSON.parse(jsonStr) as UIMessageChunk;
+    const data = JSON.parse(jsonStr);
     if (data.type === "text-delta" && data.textDelta) {
       return data.textDelta;
     }
   } catch {
-    // Skip invalid JSON lines
+    // Skip invalid JSON
   }
 
   return null;
 }
 
-async function processStreamResponse(
+async function processStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   onUpdate: (text: string) => void
 ): Promise<void> {
   const decoder = new TextDecoder();
-  let accumulatedText = "";
   let buffer = "";
+  let accumulatedText = "";
 
   while (true) {
     const { done, value } = await reader.read();
@@ -68,72 +66,59 @@ async function processStreamResponse(
   }
 }
 
-async function fetchChangelog(prompt: string): Promise<Response> {
-  const res = await fetch("/api/workflows/ai/changelog", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ prompt }),
-  });
-
-  if (!res.ok) {
-    let message = "Failed to generate changelog";
-    try {
-      const errorData = await res.json();
-      message = errorData.error || message;
-    } catch {
-      const text = await res.text();
-      if (text) {
-        message = text;
-      }
-    }
-    throw new Error(message);
-  }
-
-  return res;
-}
-
 export default function PageClient() {
   const [repoUrl, setRepoUrl] = useState("");
   const [releaseTag, setReleaseTag] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [response, setResponse] = useState("");
+  const [status, setStatus] = useState<StreamStatus>("idle");
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setResponse("");
+  const isLoading = status === "streaming";
 
-    if (!isValidGitHubUrl(repoUrl)) {
-      setError(
-        "Invalid GitHub repository URL. Use: https://github.com/owner/repo, git@github.com:owner/repo, or owner/repo"
-      );
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError("");
+      setResponse("");
 
-    setIsLoading(true);
-
-    try {
-      const prompt = releaseTag
-        ? `Generate a changelog for ${repoUrl} with release tag ${releaseTag}`
-        : `Generate a changelog for ${repoUrl}`;
-
-      const res = await fetchChangelog(prompt);
-
-      if (!res.body) {
-        throw new Error("No response body");
+      if (!isValidGitHubUrl(repoUrl)) {
+        setError(
+          "Invalid GitHub repository URL. Use: https://github.com/owner/repo, git@github.com:owner/repo, or owner/repo"
+        );
+        return;
       }
 
-      const reader = res.body.getReader();
-      await processStreamResponse(reader, setResponse);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setStatus("streaming");
+
+      try {
+        const prompt = releaseTag
+          ? `Generate a changelog for ${repoUrl} with release tag ${releaseTag}`
+          : `Generate a changelog for ${repoUrl}`;
+
+        const res = await fetch("/api/workflows/ai/changelog", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Failed to generate changelog");
+        }
+
+        if (!res.body) {
+          throw new Error("No response body");
+        }
+
+        await processStream(res.body.getReader(), setResponse);
+        setStatus("complete");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        setStatus("error");
+      }
+    },
+    [repoUrl, releaseTag]
+  );
 
   return (
     <div className="container mx-auto space-y-6 p-6">
@@ -186,13 +171,13 @@ export default function PageClient() {
               />
             </div>
 
-            {error.length > 0 && (
+            {error.length > 0 ? (
               <div className="rounded-md bg-destructive/10 p-3 text-destructive text-sm">
                 {error}
               </div>
-            )}
+            ) : null}
 
-            <Button disabled={isLoading || !repoUrl} type="submit">
+            <Button disabled={isLoading || repoUrl.length === 0} type="submit">
               {isLoading ? "Generating..." : "Generate Changelog"}
             </Button>
           </form>
