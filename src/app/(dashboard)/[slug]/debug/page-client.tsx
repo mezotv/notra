@@ -171,17 +171,31 @@ export default function PageClient({ organizationId }: PageClientProps) {
         </CardContent>
       </Card>
 
-      {response && (
+      {(response || isLoading) && (
         <Card>
           <CardHeader>
-            <CardTitle>Response</CardTitle>
+            <CardTitle>Generated Changelog</CardTitle>
+            <CardDescription>
+              {isLoading
+                ? "Generating changelog from repository data..."
+                : "Changelog generated successfully"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <Streamdown isAnimating={isLoading} mode="streaming">
-                {response}
-              </Streamdown>
-            </div>
+            {isLoading && !response ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                <p className="text-sm">
+                  Analyzing repository and generating changelog...
+                </p>
+              </div>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <Streamdown isAnimating={isLoading} mode="streaming">
+                  {response}
+                </Streamdown>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
