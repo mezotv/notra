@@ -17,7 +17,7 @@ interface PageClientProps {
   organizationId: string;
 }
 
-export default function PageClient({ organizationId }: PageClientProps) {
+export default function PageClient() {
   const [repoUrl, setRepoUrl] = useState("");
   const [releaseTag, setReleaseTag] = useState("");
   const [isLoading, setIsLoading] = useState(false);
