@@ -24,14 +24,6 @@ export default function PageClient({ organizationId }: PageClientProps) {
   const [response, setResponse] = useState("");
   const [error, setError] = useState("");
 
-  // Debug logging
-  console.log(
-    "Current state - response length:",
-    response.length,
-    "isLoading:",
-    isLoading
-  );
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -51,7 +43,6 @@ export default function PageClient({ organizationId }: PageClientProps) {
         ? `Generate a changelog for ${repoUrl} with release tag ${releaseTag}`
         : `Generate a changelog for ${repoUrl}`;
 
-      console.log("Sending prompt:", prompt);
       const res = await fetch("/api/workflows/ai/changelog", {
         method: "POST",
         headers: {
@@ -59,9 +50,6 @@ export default function PageClient({ organizationId }: PageClientProps) {
         },
         body: JSON.stringify({ prompt }),
       });
-
-      console.log("Response status:", res.status, res.statusText);
-      console.log("Response headers:", res.headers.get("content-type"));
 
       if (!res.ok) {
         let message = "Failed to generate changelog";
@@ -79,41 +67,35 @@ export default function PageClient({ organizationId }: PageClientProps) {
         throw new Error("No response body");
       }
 
-      console.log("Starting to read stream...");
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulatedText = "";
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        console.log("Raw chunk:", chunk);
-        const lines = chunk.split("\n");
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || "";
 
         for (const line of lines) {
-          console.log("Processing line:", line);
           if (line.startsWith("data: ")) {
             const jsonStr = line.substring(6).trim();
-            console.log("JSON string:", jsonStr);
             if (jsonStr === "[DONE]") continue;
 
             try {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const data: any = JSON.parse(jsonStr);
-              console.log("Parsed data:", data);
               if (data.type === "text-delta" && data.textDelta) {
                 accumulatedText += data.textDelta;
-                console.log(
-                  "Setting response, accumulated text length:",
-                  accumulatedText.length
-                );
                 setResponse(accumulatedText);
               }
-            } catch (e) {
-              console.log("JSON parse error:", e);
+            } catch {
+              // Skip invalid JSON lines
             }
           }
         }
@@ -193,21 +175,6 @@ export default function PageClient({ organizationId }: PageClientProps) {
         <Card>
           <CardHeader>
             <CardTitle>Response</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <pre className="whitespace-pre-wrap break-words text-sm">
-                {response}
-              </pre>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {response && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Response (Streamdown)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm dark:prose-invert max-w-none">
