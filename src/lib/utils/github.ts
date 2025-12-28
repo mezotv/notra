@@ -1,4 +1,4 @@
-import { GITHUB_URL_PATTERNS } from "@/constants/regex";
+import { GITHUB_URL_PATTERNS } from "@/constants";
 import type { GitHubRepoInfo } from "@/types/integrations";
 
 export function parseGitHubUrl(url: string): GitHubRepoInfo | null {

@@ -1,6 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-import { GITHUB_URL_PATTERNS } from "@/constants/regex";
+import { GITHUB_URL_PATTERNS } from "@/constants";
 
 export const INTEGRATION_CATEGORIES = ["input", "output"] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
