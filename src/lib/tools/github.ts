@@ -2,6 +2,7 @@ import { tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import { createOctokit } from "@/lib/octokit";
+import { getTokenForRepository } from "@/lib/services/github-integration";
 
 export const getPullRequestsTool = tool({
   description: "Get the details of a pull request for a repository",
@@ -15,7 +16,8 @@ export const getPullRequestsTool = tool({
       .describe("The number of the pull request to get the details for"),
   }),
   execute: async ({ repo, owner, pull_number }) => {
-    const octokit = createOctokit();
+    const token = await getTokenForRepository(owner, repo);
+    const octokit = createOctokit(token);
     const pullRequest = await octokit.request(
       "GET /repos/{owner}/{repo}/pulls/{pull_number}",
       {
@@ -47,7 +49,8 @@ export const getReleaseByTagTool = tool({
       ),
   }),
   execute: async ({ repo, owner, tag }) => {
-    const octokit = createOctokit();
+    const token = await getTokenForRepository(owner, repo);
+    const octokit = createOctokit(token);
     console.log("Getting release by tag", { repo, owner, tag });
     const releases = await octokit.request(
       "GET /repos/{owner}/{repo}/releases/tags/{tag}",
@@ -82,7 +85,8 @@ export const getCommitsByTimeframeTool = tool({
       .describe("How many days of commit history to retrieve"),
   }),
   execute: async ({ owner, repo, days }) => {
-    const octokit = createOctokit();
+    const token = await getTokenForRepository(owner, repo);
+    const octokit = createOctokit(token);
     const since = getISODateFromDaysAgo(days);
 
     console.log(`Fetching ${owner}/${repo} commits since ${since}`);
