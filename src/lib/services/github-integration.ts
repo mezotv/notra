@@ -412,7 +412,7 @@ export async function listAvailableRepositories(
 export async function getTokenForRepository(
   owner: string,
   repo: string
-): Promise<string | null> {
+): Promise<string | undefined> {
   const repository = await db.query.githubRepositories.findFirst({
     where: and(
       eq(githubRepositories.owner, owner),
@@ -424,7 +424,7 @@ export async function getTokenForRepository(
   });
 
   if (!repository?.integration?.encryptedToken || !repository.integration.enabled) {
-    return null;
+    return undefined;
   }
 
   return decryptToken(repository.integration.encryptedToken);

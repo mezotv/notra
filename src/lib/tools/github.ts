@@ -17,7 +17,7 @@ export const getPullRequestsTool = tool({
   }),
   execute: async ({ repo, owner, pull_number }) => {
     const token = await getTokenForRepository(owner, repo);
-    const octokit = createOctokit(token ?? undefined);
+    const octokit = createOctokit(token);
     const pullRequest = await octokit.request(
       "GET /repos/{owner}/{repo}/pulls/{pull_number}",
       {
@@ -50,7 +50,7 @@ export const getReleaseByTagTool = tool({
   }),
   execute: async ({ repo, owner, tag }) => {
     const token = await getTokenForRepository(owner, repo);
-    const octokit = createOctokit(token ?? undefined);
+    const octokit = createOctokit(token);
     console.log("Getting release by tag", { repo, owner, tag });
     const releases = await octokit.request(
       "GET /repos/{owner}/{repo}/releases/tags/{tag}",
@@ -86,7 +86,7 @@ export const getCommitsByTimeframeTool = tool({
   }),
   execute: async ({ owner, repo, days }) => {
     const token = await getTokenForRepository(owner, repo);
-    const octokit = createOctokit(token ?? undefined);
+    const octokit = createOctokit(token);
     const since = getISODateFromDaysAgo(days);
 
     console.log(`Fetching ${owner}/${repo} commits since ${since}`);
