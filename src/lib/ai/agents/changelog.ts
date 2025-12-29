@@ -1,11 +1,11 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { stepCountIs, ToolLoopAgent } from "ai";
-import { openrouter } from "../openrouter";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
-} from "../tools/github";
+} from "@/lib/ai/tools/github";
+import { openrouter } from "@/lib/openrouter";
 
 export function createGithubChangelogAgent(organizationId: string) {
   const modelWithMemory = withSupermemory(

@@ -21,6 +21,7 @@
     "@fallom/trace": "^0.2.26",
     "@hugeicons/core-free-icons": "^2.0.0",
     "@hugeicons/react": "^1.1.4",
+    "@mendable/firecrawl-js": "^4.10.0",
     "@neondatabase/serverless": "^1.0.2",
     "@octokit/core": "^7.0.6",
     "@openrouter/ai-sdk-provider": "^1.5.4",
