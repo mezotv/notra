@@ -1,29 +1,29 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/session";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteRepository,
   getRepositoryById,
   toggleRepository,
-  validateUserOrgAccess,
 } from "@/lib/services/github-integration";
 import {
   repositoryIdParamSchema,
   updateRepositoryBodySchema,
 } from "@/utils/schemas/integrations";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ repositoryId: string }> }
-) {
-  try {
-    const session = await getServerSession({ headers: request.headers });
+interface RouteContext {
+  params: Promise<{ organizationId: string; repositoryId: string }>;
+}
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId, repositoryId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = repositoryIdParamSchema.safeParse(paramsData);
+    const paramValidation = repositoryIdParamSchema.safeParse({ repositoryId });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -35,7 +35,6 @@ export async function GET(
       );
     }
 
-    const { repositoryId } = paramValidation.data;
     const repository = await getRepositoryById(repositoryId);
 
     if (!repository) {
@@ -45,13 +44,11 @@ export async function GET(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      session.user.id,
-      repository.integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (repository.integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(repository);
@@ -64,19 +61,16 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ repositoryId: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
-    const session = await getServerSession({ headers: request.headers });
+    const { organizationId, repositoryId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = repositoryIdParamSchema.safeParse(paramsData);
+    const paramValidation = repositoryIdParamSchema.safeParse({ repositoryId });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -88,7 +82,6 @@ export async function PATCH(
       );
     }
 
-    const { repositoryId } = paramValidation.data;
     const repository = await getRepositoryById(repositoryId);
 
     if (!repository) {
@@ -98,13 +91,11 @@ export async function PATCH(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      session.user.id,
-      repository.integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (repository.integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -133,19 +124,16 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ repositoryId: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
-    const session = await getServerSession({ headers: request.headers });
+    const { organizationId, repositoryId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = repositoryIdParamSchema.safeParse(paramsData);
+    const paramValidation = repositoryIdParamSchema.safeParse({ repositoryId });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -157,7 +145,6 @@ export async function DELETE(
       );
     }
 
-    const { repositoryId } = paramValidation.data;
     const repository = await getRepositoryById(repositoryId);
 
     if (!repository) {
@@ -167,13 +154,11 @@ export async function DELETE(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      session.user.id,
-      repository.integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (repository.integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 }
+      );
     }
 
     await deleteRepository(repositoryId);

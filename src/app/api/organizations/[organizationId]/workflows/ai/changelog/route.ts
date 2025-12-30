@@ -1,16 +1,19 @@
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createGithubChangelogAgent } from "@/lib/agents/changelog";
-import { getServerSession } from "@/lib/auth/session";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 import { generateChangelogBodySchema } from "@/utils/schemas/workflows";
 
-export async function POST(request: Request) {
-  try {
-    const { session, user } = await getServerSession({
-      headers: request.headers,
-    });
+interface RouteContext {
+  params: Promise<{ organizationId: string }>;
+}
 
-    if (!(user && session?.activeOrganizationId)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
     }
 
     const body = await request.json();
@@ -28,7 +31,7 @@ export async function POST(request: Request) {
 
     const { prompt } = validationResult.data;
 
-    const agent = createGithubChangelogAgent(session.activeOrganizationId);
+    const agent = createGithubChangelogAgent(organizationId);
 
     const result = await agent.stream({
       prompt,

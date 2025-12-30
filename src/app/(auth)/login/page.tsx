@@ -75,7 +75,7 @@ export default function Login() {
           <div className="relative">
             {lastMethod === "google" && (
               <Badge
-                className="-right-2 -top-4 absolute z-10"
+                className="absolute -top-4 -right-2 z-10"
                 variant="default"
               >
                 Last Used
@@ -95,7 +95,7 @@ export default function Login() {
           <div className="relative">
             {lastMethod === "github" && (
               <Badge
-                className="-right-2 -top-4 absolute z-10"
+                className="absolute -top-4 -right-2 z-10"
                 variant="default"
               >
                 Last Used
@@ -150,7 +150,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                 />
                 <button
-                  className="-translate-y-1/2 absolute top-1/2 right-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
                   disabled={isAuthLoading}
                   onClick={() => setShowPassword(!showPassword)}
                   type="button"
@@ -167,7 +167,7 @@ export default function Login() {
           <div className="relative">
             {lastMethod === "email" && (
               <Badge
-                className="-right-2 -top-4 absolute z-10"
+                className="absolute -top-4 -right-2 z-10"
                 variant="default"
               >
                 Last Used

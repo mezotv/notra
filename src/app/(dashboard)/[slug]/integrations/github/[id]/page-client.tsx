@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { RepositoryList } from "@/components/integrations/repository-list";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,11 +25,18 @@ type PageClientProps = {
 
 export default function PageClient({ integrationId }: PageClientProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { activeOrganization } = useOrganizationsContext();
+  const organizationId = activeOrganization?.id;
 
   const { data: integration, isLoading } = useQuery({
     queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
     queryFn: async () => {
-      const response = await fetch(`/api/integrations/${integrationId}`);
+      if (!organizationId) {
+        throw new Error("Organization ID is required");
+      }
+      const response = await fetch(
+        `/api/organizations/${organizationId}/integrations/${integrationId}`
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch integration");
@@ -36,6 +44,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
 
       return response.json() as Promise<GitHubIntegration>;
     },
+    enabled: !!organizationId,
   });
 
   if (isLoading) {
@@ -104,6 +113,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
           integration={integration}
           onOpenChange={setEditDialogOpen}
           open={editDialogOpen}
+          organizationId={organizationId ?? ""}
         />
 
         <div className="space-y-6">
@@ -133,7 +143,10 @@ export default function PageClient({ integrationId }: PageClientProps) {
 
           <div className="space-y-4">
             <h2 className="font-semibold text-lg">Content Outputs</h2>
-            <RepositoryList integrationId={integrationId} />
+            <RepositoryList
+              integrationId={integrationId}
+              organizationId={organizationId ?? ""}
+            />
           </div>
         </div>
       </div>

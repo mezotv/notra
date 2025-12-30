@@ -29,6 +29,7 @@ import {
 
 type EditIntegrationDialogProps = {
   integration: GitHubIntegration;
+  organizationId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
@@ -36,6 +37,7 @@ type EditIntegrationDialogProps = {
 
 export function EditIntegrationDialog({
   integration,
+  organizationId,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   trigger,
@@ -47,11 +49,14 @@ export function EditIntegrationDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: EditGitHubIntegrationFormValues) => {
-      const response = await fetch(`/api/integrations/${integration.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/integrations/${integration.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        }
+      );
 
       const data = await response.json();
 

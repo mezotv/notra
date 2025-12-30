@@ -17,7 +17,7 @@ async function Page({
 
   return (
     <Suspense>
-      <PageClient organizationId={slug} />
+      <PageClient organizationSlug={slug} />
     </Suspense>
   );
 }

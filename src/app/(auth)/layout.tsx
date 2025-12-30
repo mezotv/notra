@@ -1,11 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getLastActiveOrganization, getSession } from "@/actions/auth";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+
+  if (session?.user) {
+    const organization = await getLastActiveOrganization(session.user.id);
+
+    if (organization) {
+      redirect(`/${organization.slug}`);
+    } else {
+      redirect("/onboarding");
+    }
+  }
   return (
     <div className="flex h-screen w-full lg:grid lg:grid-cols-2">
       <div className="relative hidden lg:flex">

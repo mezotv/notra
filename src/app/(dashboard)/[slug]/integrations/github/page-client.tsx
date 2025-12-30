@@ -8,16 +8,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { GitHubIntegration } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
+interface IntegrationsResponse {
+  integrations: Array<GitHubIntegration & { type: string }>;
+  count: number;
+}
+
 type PageClientProps = {
-  organizationId: string;
+  organizationSlug: string;
 };
 
-export default function PageClient({ organizationId: slug }: PageClientProps) {
+export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
-  const organization = getOrganization(slug);
+  const organization = getOrganization(organizationSlug);
 
   const {
-    data: integrations,
+    data: response,
     isLoading,
     refetch,
   } = useQuery({
@@ -27,20 +32,24 @@ export default function PageClient({ organizationId: slug }: PageClientProps) {
         throw new Error("Organization not found");
       }
 
-      const response = await fetch(
-        `/api/integrations?organizationId=${organization.id}`
+      const res = await fetch(
+        `/api/organizations/${organization.id}/integrations`
       );
 
-      if (!response.ok) {
+      if (!res.ok) {
         throw new Error("Failed to fetch integrations");
       }
 
-      return response.json() as Promise<GitHubIntegration[]>;
+      return res.json() as Promise<IntegrationsResponse>;
     },
     enabled: !!organization?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
   });
+
+  const integrations = response?.integrations.filter(
+    (i) => i.type === "github"
+  );
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -57,7 +66,7 @@ export default function PageClient({ organizationId: slug }: PageClientProps) {
           <AddIntegrationDialog
             onSuccess={() => refetch()}
             organizationId={organization?.id ?? ""}
-            organizationSlug={slug}
+            organizationSlug={organizationSlug}
           />
         </div>
 
@@ -85,7 +94,8 @@ export default function PageClient({ organizationId: slug }: PageClientProps) {
                   integration={integration}
                   key={integration.id}
                   onUpdate={() => refetch()}
-                  organizationSlug={slug}
+                  organizationId={organization?.id ?? ""}
+                  organizationSlug={organizationSlug}
                 />
               ))}
             </div>

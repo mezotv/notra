@@ -19,6 +19,7 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 ### Type Safety & Explicitness
 
 - Use explicit types for function parameters and return values when they enhance clarity
+- Prefer `interface` over `type`
 - Prefer `unknown` over `any` when the type is genuinely unknown
 - Use const assertions (`as const`) for immutable values and literal types
 - Leverage TypeScript's type narrowing instead of type assertions
@@ -123,6 +124,12 @@ Biome's linter will catch most issues automatically. Focus your attention on:
 5. **User experience** - Accessibility, performance, and usability considerations
 6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
 7. **Context7 MCP** - Use context7 for up to date documentation whenever library names are mentioned
+
+---
+
+## Protected Files
+
+**NEVER modify files in `src/components/ui/*`**. These are auto-generated UI components from shadcn/ui. If a UI component needs to be added or regenerated, use the shadcn CLI (`bunx --bun shadcn@latest add <component>`) instead of manually editing these files.
 
 ---
 

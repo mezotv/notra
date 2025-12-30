@@ -60,17 +60,19 @@ export function AddIntegrationDialog({
         throw new Error("Invalid GitHub repository URL");
       }
 
-      const response = await fetch("/api/integrations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          organizationId,
-          owner: parsed.owner,
-          repo: parsed.repo,
-          token: values.token?.trim() || null,
-          type: "github" as const,
-        }),
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/integrations`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            owner: parsed.owner,
+            repo: parsed.repo,
+            token: values.token?.trim() || null,
+            type: "github" as const,
+          }),
+        }
+      );
 
       const data = await response.json();
 

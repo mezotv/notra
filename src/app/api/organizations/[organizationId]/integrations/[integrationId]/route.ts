@@ -1,31 +1,31 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/session";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteGitHubIntegration,
   getGitHubIntegrationById,
   updateGitHubIntegration,
-  validateUserOrgAccess,
 } from "@/lib/services/github-integration";
 import {
   integrationIdParamSchema,
   updateIntegrationBodySchema,
 } from "@/utils/schemas/integrations";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ integrationId: string }> }
-) {
-  try {
-    const { session, user } = await getServerSession({
-      headers: request.headers,
-    });
+interface RouteContext {
+  params: Promise<{ organizationId: string; integrationId: string }>;
+}
 
-    if (!(user && session?.activeOrganizationId)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId, integrationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = integrationIdParamSchema.safeParse(paramsData);
+    const paramValidation = integrationIdParamSchema.safeParse({
+      integrationId,
+    });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -37,7 +37,6 @@ export async function GET(
       );
     }
 
-    const { integrationId } = paramValidation.data;
     const integration = await getGitHubIntegrationById(integrationId);
 
     if (!integration) {
@@ -47,13 +46,11 @@ export async function GET(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      user.id,
-      integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(integration);
@@ -66,21 +63,18 @@ export async function GET(
   }
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ integrationId: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
   try {
-    const { session, user } = await getServerSession({
-      headers: request.headers,
-    });
+    const { organizationId, integrationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
 
-    if (!(user && session?.activeOrganizationId)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = integrationIdParamSchema.safeParse(paramsData);
+    const paramValidation = integrationIdParamSchema.safeParse({
+      integrationId,
+    });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -92,7 +86,6 @@ export async function PATCH(
       );
     }
 
-    const { integrationId } = paramValidation.data;
     const integration = await getGitHubIntegrationById(integrationId);
 
     if (!integration) {
@@ -102,13 +95,11 @@ export async function PATCH(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      user.id,
-      integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();
@@ -140,21 +131,18 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ integrationId: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
-    const { session, user } = await getServerSession({
-      headers: request.headers,
-    });
+    const { organizationId, integrationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
 
-    if (!(user && session?.activeOrganizationId)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = integrationIdParamSchema.safeParse(paramsData);
+    const paramValidation = integrationIdParamSchema.safeParse({
+      integrationId,
+    });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -166,7 +154,6 @@ export async function DELETE(
       );
     }
 
-    const { integrationId } = paramValidation.data;
     const integration = await getGitHubIntegrationById(integrationId);
 
     if (!integration) {
@@ -176,13 +163,11 @@ export async function DELETE(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      user.id,
-      integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
     }
 
     await deleteGitHubIntegration(integrationId);

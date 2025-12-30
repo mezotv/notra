@@ -19,22 +19,29 @@ export function SiteHeader() {
 
   const breadcrumbSegments = segments.slice(1);
 
-  const breadcrumbs = breadcrumbSegments.map((segment, index) => {
+  const breadcrumbs = breadcrumbSegments.flatMap((segment, index) => {
     const href = `/${segments.slice(0, index + 2).join("/")}`;
+    const isLast = index === breadcrumbSegments.length - 1;
 
-    return (
+    const item = (
       <BreadcrumbItem className="hover:underline" key={`${id}-${index}`}>
         <Link href={href}>
           {segment.charAt(0).toUpperCase() +
             segment.slice(1).replace(/-/g, " ")}
         </Link>
-        {index < breadcrumbSegments.length - 1 && (
-          <BreadcrumbSeparator key={`${id}-separator-${index}`}>
-            <HugeiconsIcon icon={ArrowRight01Icon} />
-          </BreadcrumbSeparator>
-        )}
       </BreadcrumbItem>
     );
+
+    if (isLast) {
+      return [item];
+    }
+
+    return [
+      item,
+      <BreadcrumbSeparator key={`${id}-separator-${index}`}>
+        <HugeiconsIcon icon={ArrowRight01Icon} />
+      </BreadcrumbSeparator>,
+    ];
   });
 
   return (

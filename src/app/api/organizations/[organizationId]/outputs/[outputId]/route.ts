@@ -1,30 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/session";
-import {
-  getOutputById,
-  toggleOutput,
-  validateUserOrgAccess,
-} from "@/lib/services/github-integration";
+import { withOrganizationAuth } from "@/lib/auth/organization";
+import { getOutputById, toggleOutput } from "@/lib/services/github-integration";
 import {
   outputIdParamSchema,
   updateOutputBodySchema,
 } from "@/utils/schemas/integrations";
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ outputId: string }> }
-) {
-  try {
-    const { session, user } = await getServerSession({
-      headers: request.headers,
-    });
+interface RouteContext {
+  params: Promise<{ organizationId: string; outputId: string }>;
+}
 
-    if (!(user && session?.activeOrganizationId)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId, outputId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = outputIdParamSchema.safeParse(paramsData);
+    const paramValidation = outputIdParamSchema.safeParse({ outputId });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -36,20 +31,14 @@ export async function PATCH(
       );
     }
 
-    const { outputId } = paramValidation.data;
     const output = await getOutputById(outputId);
 
     if (!output) {
       return NextResponse.json({ error: "Output not found" }, { status: 404 });
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      user.id,
-      output.repository.integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (output.repository.integration.organizationId !== organizationId) {
+      return NextResponse.json({ error: "Output not found" }, { status: 404 });
     }
 
     const body = await request.json();

@@ -408,3 +408,38 @@ export async function listAvailableRepositories(
     url: repo.html_url,
   }));
 }
+
+export async function getTokenForRepository(
+  owner: string,
+  repo: string
+): Promise<string | undefined> {
+  const repository = await db.query.githubRepositories.findFirst({
+    where: and(
+      eq(githubRepositories.owner, owner),
+      eq(githubRepositories.repo, repo)
+    ),
+    with: {
+      integration: true,
+    },
+  });
+
+  if (!repository?.integration?.encryptedToken || !repository.integration.enabled) {
+    return undefined;
+  }
+
+  return decryptToken(repository.integration.encryptedToken);
+}
+
+export async function getTokenForIntegrationId(
+  integrationId: string
+): Promise<string | null> {
+  const integration = await db.query.githubIntegrations.findFirst({
+    where: eq(githubIntegrations.id, integrationId),
+  });
+
+  if (!integration?.encryptedToken) {
+    return null;
+  }
+
+  return decryptToken(integration.encryptedToken);
+}
