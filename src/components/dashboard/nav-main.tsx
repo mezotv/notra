@@ -1,6 +1,6 @@
 "use client";
 
-import { PlugIcon } from "@hugeicons/core-free-icons";
+import { PlugIcon, Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -27,6 +27,16 @@ export function NavMain() {
               <Link href={`/${activeOrganization.slug}/integrations`}>
                 <HugeiconsIcon icon={PlugIcon} />
                 <span>Integrations</span>
+              </Link>
+            }
+          />
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            render={
+              <Link href={`/${activeOrganization.slug}/settings`}>
+                <HugeiconsIcon icon={Settings01Icon} />
+                <span>Settings</span>
               </Link>
             }
           />

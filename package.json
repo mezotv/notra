@@ -29,6 +29,7 @@
     "@tanstack/zod-form-adapter": "^0.42.1",
     "@toolwind/corner-shape": "^0.0.8-3",
     "@upstash/redis": "^1.35.8",
+    "@upstash/workflow": "^0.2.23",
     "ai": "^6.0.3",
     "better-auth": "^1.4.9",
     "class-variance-authority": "^0.7.1",

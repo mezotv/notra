@@ -13,4 +13,10 @@ export const QUERY_KEYS = {
     availableRepos: (integrationId: string) =>
       ["integrations", integrationId, "available-repos"] as const,
   },
+  BRAND_SETTINGS: {
+    detail: (organizationId: string) =>
+      ["brand-settings", organizationId] as const,
+    crawlerStatus: (organizationId: string) =>
+      ["brand-settings", organizationId, "crawler-status"] as const,
+  },
 } as const;

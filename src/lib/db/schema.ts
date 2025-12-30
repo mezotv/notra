@@ -204,6 +204,34 @@ export const repositoryOutputs = pgTable(
   ]
 );
 
+export const brandSettings = pgTable(
+  "brand_settings",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    websiteUrl: text("website_url"),
+    companyName: text("company_name"),
+    companyDescription: text("company_description"),
+    toneProfile: text("tone_profile"),
+    customTone: text("custom_tone"),
+    audience: text("audience"),
+    crawlerStatus: text("crawler_status").default("idle"),
+    crawlerLastRun: timestamp("crawler_last_run"),
+    crawlerError: text("crawler_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandSettings_organizationId_idx").on(table.organizationId),
+    uniqueIndex("brandSettings_organization_uidx").on(table.organizationId),
+  ]
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
@@ -226,11 +254,15 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   }),
 }));
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
-  members: many(members),
-  invitations: many(invitations),
-  githubIntegrations: many(githubIntegrations),
-}));
+export const organizationsRelations = relations(
+  organizations,
+  ({ many, one }) => ({
+    members: many(members),
+    invitations: many(invitations),
+    githubIntegrations: many(githubIntegrations),
+    brandSettings: one(brandSettings),
+  })
+);
 
 export const membersRelations = relations(members, ({ one }) => ({
   organizations: one(organizations, {
@@ -289,3 +321,10 @@ export const repositoryOutputsRelations = relations(
     }),
   })
 );
+
+export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [brandSettings.organizationId],
+    references: [organizations.id],
+  }),
+}));
