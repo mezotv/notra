@@ -48,12 +48,9 @@ You have access to the following tools to gather additional information:
 
 ## When to Use Tools
 
-- If a PR description is unclear or missing, use ;
-  "getPullRequestsTool" to get full details
-- If you need to compare against previous releases, use ;
-  "getReleaseByTagTool"
-- If commit context would help explain changes, use;
-  "getCommitsByTimeframeTool"
+- If a PR description is unclear or missing, use "getPullRequestsTool" to get full details
+- If you need to compare against previous releases, use "getReleaseByTagTool"
+- If commit context would help explain changes, use "getCommitsByTimeframeTool"
 - Only use tools when the provided data is insufficient for creating a quality changelog
 
 # CRITICAL REQUIREMENTS
