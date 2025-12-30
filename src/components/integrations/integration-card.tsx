@@ -24,6 +24,7 @@ import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function IntegrationCard({
   integration,
+  organizationId,
   organizationSlug,
   onUpdate,
 }: IntegrationCardProps) {
@@ -32,11 +33,14 @@ export function IntegrationCard({
 
   const toggleMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await fetch(`/api/integrations/${integration.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled }),
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/integrations/${integration.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to update integration");
@@ -58,9 +62,12 @@ export function IntegrationCard({
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/integrations/${integration.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/integrations/${integration.id}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete integration");

@@ -139,6 +139,7 @@ function RepositorySelector({
 
 export function AddRepositoryDialog({
   integrationId,
+  organizationId,
   onSuccess,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -153,14 +154,14 @@ export function AddRepositoryDialog({
     queryKey: QUERY_KEYS.INTEGRATIONS.availableRepos(integrationId),
     queryFn: async () => {
       const response = await fetch(
-        `/api/integrations/${integrationId}/repositories`
+        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
       }
       return response.json() as Promise<AvailableRepo[]>;
     },
-    enabled: open,
+    enabled: open && !!organizationId,
   });
 
   const mutation = useMutation({
@@ -171,7 +172,7 @@ export function AddRepositoryDialog({
       }
 
       const response = await fetch(
-        `/api/integrations/${integrationId}/repositories`,
+        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

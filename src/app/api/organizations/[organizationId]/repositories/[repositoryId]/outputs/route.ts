@@ -1,28 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/session";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   configureOutput,
   getRepositoryById,
-  validateUserOrgAccess,
 } from "@/lib/services/github-integration";
 import {
   configureOutputBodySchema,
   repositoryIdParamSchema,
 } from "@/utils/schemas/integrations";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ repositoryId: string }> }
-) {
-  try {
-    const session = await getServerSession({ headers: request.headers });
+interface RouteContext {
+  params: Promise<{ organizationId: string; repositoryId: string }>;
+}
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId, repositoryId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
     }
 
-    const paramsData = await params;
-    const paramValidation = repositoryIdParamSchema.safeParse(paramsData);
+    const paramValidation = repositoryIdParamSchema.safeParse({ repositoryId });
 
     if (!paramValidation.success) {
       return NextResponse.json(
@@ -34,7 +34,6 @@ export async function POST(
       );
     }
 
-    const { repositoryId } = paramValidation.data;
     const repository = await getRepositoryById(repositoryId);
 
     if (!repository) {
@@ -44,13 +43,11 @@ export async function POST(
       );
     }
 
-    const hasAccess = await validateUserOrgAccess(
-      session.user.id,
-      repository.integration.organizationId
-    );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (repository.integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Repository not found" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();

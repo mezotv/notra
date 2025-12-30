@@ -9,14 +9,17 @@ import type { Repository, RepositoryListProps } from "@/types/integrations";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
-export function RepositoryList({ integrationId }: RepositoryListProps) {
+export function RepositoryList({
+  integrationId,
+  organizationId,
+}: RepositoryListProps) {
   const queryClient = useQueryClient();
 
   const { data: integration, isLoading } = useQuery({
     queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
     queryFn: async () => {
       const response = await fetch(
-        `/api/integrations/${integrationId}?includeRepositories=true`
+        `/api/organizations/${organizationId}/integrations/${integrationId}`
       );
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
@@ -25,6 +28,7 @@ export function RepositoryList({ integrationId }: RepositoryListProps) {
         repositories: Repository[];
       }>;
     },
+    enabled: !!organizationId,
   });
 
   const toggleOutputMutation = useMutation({
@@ -35,11 +39,14 @@ export function RepositoryList({ integrationId }: RepositoryListProps) {
       outputId: string;
       enabled: boolean;
     }) => {
-      const response = await fetch(`/api/outputs/${outputId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled }),
-      });
+      const response = await fetch(
+        `/api/organizations/${organizationId}/outputs/${outputId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to update output");
