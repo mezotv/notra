@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
 import { requireAuth } from "@/actions/auth";
+import { dashboardMetadata } from "@/utils/metadata";
 import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Manage your dashboard and projects efficiently",
-};
+export const metadata = dashboardMetadata;
 
 export default async function DashboardLayout({
   children,

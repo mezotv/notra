@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import "./globals.css";
 
+import { dashboardMetadata } from "@/utils/metadata";
 import { Providers } from "@/utils/providers";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
@@ -16,13 +16,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Manage your dashboard and projects efficiently",
-  icons: {
-    icon: "/favicon.svg",
-  },
-};
+export const metadata = dashboardMetadata;
 
 export default function RootLayout({
   children,
