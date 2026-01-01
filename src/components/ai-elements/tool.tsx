@@ -9,13 +9,14 @@ import {
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
 import {
-  CheckCircleIcon,
-  ChevronDownIcon,
-  CircleIcon,
-  ClockIcon,
+  CheckmarkCircle01Icon,
+  ArrowDown01Icon,
+  Circle01Icon,
+  Clock01Icon,
   WrenchIcon,
-  XCircleIcon,
-} from "lucide-react";
+  CancelCircle01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
@@ -49,14 +50,14 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
   };
 
   const icons: Record<ToolUIPart["state"], ReactNode> = {
-    "input-streaming": <CircleIcon className="size-4" />,
-    "input-available": <ClockIcon className="size-4 animate-pulse" />,
+    "input-streaming": <HugeiconsIcon icon={Circle01Icon} className="size-4" />,
+    "input-available": <HugeiconsIcon icon={Clock01Icon} className="size-4 animate-pulse" />,
     // @ts-expect-error state only available in AI SDK v6
-    "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
-    "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
-    "output-error": <XCircleIcon className="size-4 text-red-600" />,
-    "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
+    "approval-requested": <HugeiconsIcon icon={Clock01Icon} className="size-4 text-yellow-600" />,
+    "approval-responded": <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 text-blue-600" />,
+    "output-available": <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 text-green-600" />,
+    "output-error": <HugeiconsIcon icon={CancelCircle01Icon} className="size-4 text-red-600" />,
+    "output-denied": <HugeiconsIcon icon={CancelCircle01Icon} className="size-4 text-orange-600" />,
   };
 
   return (
@@ -82,13 +83,13 @@ export const ToolHeader = ({
     {...props}
   >
     <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
+      <HugeiconsIcon icon={WrenchIcon} className="size-4 text-muted-foreground" />
       <span className="font-medium text-sm">
         {title ?? type.split("-").slice(1).join("-")}
       </span>
       {getStatusBadge(state)}
     </div>
-    <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+    <HugeiconsIcon icon={ArrowDown01Icon} className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
   </CollapsibleTrigger>
 );
 

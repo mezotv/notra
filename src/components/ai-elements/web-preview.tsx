@@ -14,7 +14,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { ChevronDownIcon } from "lucide-react";
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -204,7 +205,8 @@ export const WebPreviewConsole = ({
       {...props}
     >
       <CollapsibleTrigger render={<Button className="flex w-full items-center justify-between p-4 text-left font-medium hover:bg-muted/50" variant="ghost" />}>Console
-                    <ChevronDownIcon
+                    <HugeiconsIcon
+                      icon={ArrowDown01Icon}
                       className={cn(
                         "h-4 w-4 transition-transform duration-200",
                         consoleOpen && "rotate-180"
