@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import PageClient from "./page-client";
 
 export const metadata: Metadata = {
-  title: "Content",
+  title: "Content Detail",
 };
 
 async function Page({
@@ -11,13 +11,14 @@ async function Page({
 }: {
   params: Promise<{
     slug: string;
+    id: string;
   }>;
 }) {
-  const { slug } = await params;
+  const { slug, id } = await params;
 
   return (
     <Suspense>
-      <PageClient organizationSlug={slug} />
+      <PageClient contentId={id} organizationSlug={slug} />
     </Suspense>
   );
 }
