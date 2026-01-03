@@ -6,16 +6,16 @@ import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogAction,
-  DialogCancel,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,20 +97,22 @@ export function EditIntegrationDialog({
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (
-      <DialogTrigger render={trigger as React.ReactElement} />
+      <AlertDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
 
   return (
     <>
       {triggerElement}
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Edit Integration</DialogTitle>
-            <DialogDescription>
+      <AlertDialog onOpenChange={setOpen} open={open}>
+        <AlertDialogContent className="sm:max-w-[500px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl">
+              Edit Integration
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               Update your GitHub integration settings
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -164,11 +166,13 @@ export function EditIntegrationDialog({
                 )}
               </form.Field>
             </div>
-            <DialogFooter>
-              <DialogCancel disabled={mutation.isPending}>Cancel</DialogCancel>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={mutation.isPending}>
+                Cancel
+              </AlertDialogCancel>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <DialogAction
+                  <AlertDialogAction
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -177,13 +181,13 @@ export function EditIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Saving..." : "Save Changes"}
-                  </DialogAction>
+                  </AlertDialogAction>
                 )}
               </form.Subscribe>
-            </DialogFooter>
+            </AlertDialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

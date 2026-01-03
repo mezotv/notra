@@ -127,7 +127,7 @@ export function IntegrationCard({
         <CardAction>
           <div
             className="flex items-center gap-2"
-            onClick={(e) => e.stopPropagation()}
+            onClickCapture={(e) => e.stopPropagation()}
           >
             <Badge variant={integration.enabled ? "default" : "secondary"}>
               {integration.enabled ? "Enabled" : "Disabled"}

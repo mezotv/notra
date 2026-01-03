@@ -6,18 +6,18 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type React from "react";
 import { isValidElement, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogAction,
-  DialogCancel,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -228,25 +228,25 @@ export function AddRepositoryDialog({
   });
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <AlertDialog onOpenChange={setOpen} open={open}>
       {trigger !== undefined && isValidElement(trigger) ? (
-        <DialogTrigger render={trigger as React.ReactElement} />
+        <AlertDialogTrigger render={trigger as React.ReactElement} />
       ) : (
-        <DialogTrigger>
+        <AlertDialogTrigger>
           <Button size="sm" variant="outline">
             Add Repository
           </Button>
-        </DialogTrigger>
+        </AlertDialogTrigger>
       )}
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add Repository</DialogTitle>
-          <DialogDescription>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Add Repository</AlertDialogTitle>
+          <AlertDialogDescription>
             {availableRepos.length > 0
               ? "Select a repository from your GitHub account to enable integrations."
               : "Enter a repository in the format owner/repo (e.g., facebook/react) or paste a GitHub URL. For private repositories, ensure your integration has a valid access token."}
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -310,11 +310,13 @@ export function AddRepositoryDialog({
               }}
             </form.Field>
           </div>
-          <DialogFooter>
-            <DialogCancel disabled={mutation.isPending}>Cancel</DialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={mutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
             <form.Subscribe selector={(state) => [state.canSubmit]}>
               {([canSubmit]) => (
-                <DialogAction
+                <AlertDialogAction
                   disabled={!canSubmit || mutation.isPending || loadingRepos}
                   onClick={(e) => {
                     e.preventDefault();
@@ -323,12 +325,12 @@ export function AddRepositoryDialog({
                   type="button"
                 >
                   {mutation.isPending ? "Adding..." : "Add Repository"}
-                </DialogAction>
+                </AlertDialogAction>
               )}
             </form.Subscribe>
-          </DialogFooter>
+          </AlertDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

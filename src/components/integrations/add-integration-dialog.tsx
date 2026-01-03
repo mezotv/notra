@@ -134,7 +134,7 @@ export function AddIntegrationDialog({
     <>
       {triggerElement}
       <AlertDialog onOpenChange={setOpen} open={open}>
-        <AlertDialogContent className="sm:max-w-[600px]" size="lg">
+        <AlertDialogContent className="sm:max-w-[600px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl">
               Add GitHub Integration
