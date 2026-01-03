@@ -7,18 +7,18 @@ import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogAction,
-  DialogCancel,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -127,23 +127,23 @@ export function AddIntegrationDialog({
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (
-      <DialogTrigger render={trigger as React.ReactElement} />
+      <AlertDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
 
   return (
     <>
       {triggerElement}
-      <Dialog onOpenChange={setOpen} open={open}>
-        <DialogContent className="sm:max-w-[600px]" size="lg">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+      <AlertDialog onOpenChange={setOpen} open={open}>
+        <AlertDialogContent className="sm:max-w-[600px]" size="lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl">
               Add GitHub Integration
-            </DialogTitle>
-            <DialogDescription>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
               Connect a GitHub repository to enable AI-powered outputs like
               changelogs, blog posts, and tweets.
-            </DialogDescription>
-          </DialogHeader>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -246,11 +246,13 @@ export function AddIntegrationDialog({
                 )}
               </form.Field>
             </div>
-            <DialogFooter>
-              <DialogCancel disabled={mutation.isPending}>Cancel</DialogCancel>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={mutation.isPending}>
+                Cancel
+              </AlertDialogCancel>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <DialogAction
+                  <AlertDialogAction
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -259,13 +261,13 @@ export function AddIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </DialogAction>
+                  </AlertDialogAction>
                 )}
               </form.Subscribe>
-            </DialogFooter>
+            </AlertDialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
