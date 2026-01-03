@@ -1,6 +1,5 @@
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId } from "react";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
@@ -25,10 +25,10 @@ export function SiteHeader() {
 
     const item = (
       <BreadcrumbItem className="hover:underline" key={`${id}-item`}>
-        <Link href={href}>
+        <BreadcrumbLink href={href}>
           {segment.charAt(0).toUpperCase() +
             segment.slice(1).replace(/-/g, " ")}
-        </Link>
+        </BreadcrumbLink>
       </BreadcrumbItem>
     );
 
