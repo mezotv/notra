@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createGithubChangelogAgent } from "@/lib/agents/changelog";
+import { createGithubChangelogAgent } from "@/lib/ai/agents/changelog";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { generateChangelogBodySchema } from "@/utils/schemas/workflows";
 

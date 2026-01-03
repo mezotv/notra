@@ -32,6 +32,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { IntegrationsResponse } from "@/lib/services/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import type { IntegrationType } from "@/utils/schemas/integrations";
 
@@ -50,18 +51,13 @@ interface Integration {
   displayName: string;
   type: IntegrationType;
   enabled: boolean;
-  createdAt: string;
+  createdAt: Date;
   repositories: Array<{
     id: string;
     owner: string;
     repo: string;
     enabled: boolean;
   }>;
-}
-
-interface IntegrationsResponse {
-  integrations: Integration[];
-  count: number;
 }
 
 interface PageClientProps {
