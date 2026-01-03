@@ -27,7 +27,7 @@ export interface InstalledIntegration {
   displayName: string;
   type: string;
   enabled: boolean;
-  createdAt: string;
+  createdAt: Date;
   createdByUser?: {
     id: string;
     name: string;

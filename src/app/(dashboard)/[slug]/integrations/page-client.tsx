@@ -51,7 +51,7 @@ interface Integration {
   displayName: string;
   type: IntegrationType;
   enabled: boolean;
-  createdAt: string;
+  createdAt: Date;
   repositories: Array<{
     id: string;
     owner: string;
