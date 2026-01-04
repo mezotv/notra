@@ -6,6 +6,7 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { NavMain } from "./nav-main";
+import { NavSecondary } from "./nav-secondary";
 import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
 import { ThemeToggle } from "./theme-toggle";
@@ -20,6 +21,7 @@ export function DashboardSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain />
+        <NavSecondary className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <ThemeToggle />

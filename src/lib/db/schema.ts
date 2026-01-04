@@ -89,6 +89,7 @@ export const organizations = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
+    websiteUrl: text("website_url"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
   },
@@ -204,6 +205,30 @@ export const repositoryOutputs = pgTable(
   ]
 );
 
+export const brandSettings = pgTable(
+  "brand_settings",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    companyName: text("company_name"),
+    companyDescription: text("company_description"),
+    toneProfile: text("tone_profile"),
+    customTone: text("custom_tone"),
+    audience: text("audience"),
+    sourceUrl: text("source_url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("brandSettings_organizationId_uidx").on(table.organizationId),
+  ]
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
@@ -226,11 +251,15 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   }),
 }));
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
-  members: many(members),
-  invitations: many(invitations),
-  githubIntegrations: many(githubIntegrations),
-}));
+export const organizationsRelations = relations(
+  organizations,
+  ({ many, one }) => ({
+    members: many(members),
+    invitations: many(invitations),
+    githubIntegrations: many(githubIntegrations),
+    brandSettings: one(brandSettings),
+  })
+);
 
 export const membersRelations = relations(members, ({ one }) => ({
   organizations: one(organizations, {
@@ -289,3 +318,10 @@ export const repositoryOutputsRelations = relations(
     }),
   })
 );
+
+export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [brandSettings.organizationId],
+    references: [organizations.id],
+  }),
+}));

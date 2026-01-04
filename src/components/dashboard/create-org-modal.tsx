@@ -46,7 +46,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           name: value.name,
           slug: value.slug,
           logo: generateOrganizationAvatar(value.slug),
-          website: value.website || undefined,
+          websiteUrl: value.website || undefined,
         });
 
         if (error) {

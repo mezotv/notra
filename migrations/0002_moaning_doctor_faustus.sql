@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "website_url" text;

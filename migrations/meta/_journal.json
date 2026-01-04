@@ -8,6 +8,20 @@
       "when": 1766407501078,
       "tag": "0000_tiny_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1767481298441,
+      "tag": "0001_slimy_snowbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767485251130,
+      "tag": "0002_moaning_doctor_faustus",
+      "breakpoints": true
     }
   ]
 }

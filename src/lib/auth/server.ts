@@ -93,10 +93,11 @@ export const auth = betterAuth({
       schema: {
         organization: {
           additionalFields: {
-            website: {
+            websiteUrl: {
               type: "string",
               required: false,
               input: true,
+              fieldName: "website_url",
             },
           },
         },
