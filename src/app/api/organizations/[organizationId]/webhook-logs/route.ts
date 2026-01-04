@@ -1,38 +1,47 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import type {
-  WebhookLog,
+  Log,
+  LogDirection,
+  IntegrationType,
   WebhookLogStatus,
-  WebhookLogsResponse,
+  LogsResponse,
 } from "@/types/webhook-logs";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
 }
 
-const EVENT_TYPES = [
-  "push",
-  "pull_request",
-  "issue.created",
-  "issue.updated",
-  "release.published",
-  "workflow_run.completed",
-  "deployment.created",
-  "commit.pushed",
+const EVENT_TITLES = [
+  "Push to main branch",
+  "Pull request opened",
+  "Issue created",
+  "Issue updated",
+  "Release published",
+  "Workflow completed",
+  "Deployment created",
+  "Commit pushed",
+  "Message received",
+  "Channel notification",
+  "Task created",
+  "Task completed",
 ] as const;
 
-const SOURCES = ["github", "linear", "slack"] as const;
+const INTEGRATION_TYPES: IntegrationType[] = ["github", "linear", "slack", "webhook"];
+
+const DIRECTIONS: LogDirection[] = ["incoming", "outgoing"];
 
 const STATUSES: WebhookLogStatus[] = ["success", "failed", "pending"];
 
-function generateExampleLogs(count: number): WebhookLog[] {
-  const logs: WebhookLog[] = [];
+function generateExampleLogs(count: number): Log[] {
+  const logs: Log[] = [];
 
   for (let i = 0; i < count; i++) {
     const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
-    const eventType =
-      EVENT_TYPES[Math.floor(Math.random() * EVENT_TYPES.length)];
-    const source = SOURCES[Math.floor(Math.random() * SOURCES.length)];
+    const title = EVENT_TITLES[Math.floor(Math.random() * EVENT_TITLES.length)];
+    const integrationType =
+      INTEGRATION_TYPES[Math.floor(Math.random() * INTEGRATION_TYPES.length)];
+    const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
 
     const createdAt = new Date(
       Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
@@ -40,12 +49,11 @@ function generateExampleLogs(count: number): WebhookLog[] {
 
     logs.push({
       id: `log_${crypto.randomUUID().slice(0, 8)}`,
-      eventType,
-      source,
+      title,
+      integrationType,
+      direction,
       status,
       statusCode: status === "pending" ? null : status === "success" ? 200 : 500,
-      requestUrl: `https://api.example.com/webhooks/${source}`,
-      requestMethod: "POST",
       responseTime:
         status === "pending" ? null : Math.floor(Math.random() * 500) + 50,
       errorMessage:
@@ -84,7 +92,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const endIndex = startIndex + pageSize;
     const paginatedLogs = ALL_LOGS.slice(startIndex, endIndex);
 
-    const response: WebhookLogsResponse = {
+    const response: LogsResponse = {
       logs: paginatedLogs,
       pagination: {
         page,

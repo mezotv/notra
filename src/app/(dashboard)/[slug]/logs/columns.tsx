@@ -1,8 +1,18 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  ArrowUpDownIcon,
+  Github01Icon,
+  Link04Icon,
+  Notification01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@/components/ui/badge";
-import type { WebhookLog } from "@/types/webhook-logs";
+import { Button } from "@/components/ui/button";
+import type { Log, IntegrationType, LogDirection } from "@/types/webhook-logs";
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -14,9 +24,9 @@ function formatDate(dateString: string): string {
   }).format(date);
 }
 
-function StatusBadge({ status }: { status: WebhookLog["status"] }) {
+function StatusBadge({ status }: { status: Log["status"] }) {
   const variants: Record<
-    WebhookLog["status"],
+    Log["status"],
     "default" | "destructive" | "secondary"
   > = {
     success: "default",
@@ -27,19 +37,56 @@ function StatusBadge({ status }: { status: WebhookLog["status"] }) {
   return <Badge variant={variants[status]}>{status}</Badge>;
 }
 
-export const columns: ColumnDef<WebhookLog>[] = [
+function DirectionBadge({ direction }: { direction: LogDirection }) {
+  return (
+    <Badge variant="outline" className="capitalize">
+      {direction}
+    </Badge>
+  );
+}
+
+function IntegrationIcon({ type }: { type: IntegrationType }) {
+  const icons: Record<IntegrationType, typeof Github01Icon> = {
+    github: Github01Icon,
+    linear: Link04Icon,
+    slack: Notification01Icon,
+    webhook: Link04Icon,
+  };
+
+  return (
+    <HugeiconsIcon
+      icon={icons[type]}
+      className="size-4 text-muted-foreground"
+    />
+  );
+}
+
+export const columns: ColumnDef<Log>[] = [
   {
-    accessorKey: "eventType",
-    header: "Event",
+    accessorKey: "title",
+    header: "Title",
     cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("eventType")}</span>
+      <span className="font-medium">{row.getValue("title")}</span>
     ),
   },
   {
-    accessorKey: "source",
-    header: "Source",
+    accessorKey: "integrationType",
+    header: "Integration",
+    cell: ({ row }) => {
+      const type = row.getValue("integrationType") as IntegrationType;
+      return (
+        <div className="flex items-center gap-2">
+          <IntegrationIcon type={type} />
+          <span className="capitalize">{type}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "direction",
+    header: "Direction",
     cell: ({ row }) => (
-      <span className="capitalize">{row.getValue("source")}</span>
+      <DirectionBadge direction={row.getValue("direction")} />
     ),
   },
   {
@@ -69,7 +116,28 @@ export const columns: ColumnDef<WebhookLog>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: "Time",
+    header: ({ column }) => {
+      const isSorted = column.getIsSorted();
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="-ml-4"
+        >
+          Created At
+          <HugeiconsIcon
+            icon={
+              isSorted === "asc"
+                ? ArrowUp01Icon
+                : isSorted === "desc"
+                  ? ArrowDown01Icon
+                  : ArrowUpDownIcon
+            }
+            className="ml-2 size-4"
+          />
+        </Button>
+      );
+    },
     cell: ({ row }) => (
       <span className="text-muted-foreground">
         {formatDate(row.getValue("createdAt"))}
