@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useCallback } from "react";
 
 type PossibleRef<T> = React.Ref<T> | undefined;
 
@@ -56,7 +56,7 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
  */
 function useComposedRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
   // biome-ignore lint/correctness/useExhaustiveDependencies: we want to memoize by all values
-  return React.useCallback(composeRefs(...refs), refs);
+  return useCallback(composeRefs(...refs), refs);
 }
 
 export { composeRefs, useComposedRefs };
