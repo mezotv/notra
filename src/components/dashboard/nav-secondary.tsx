@@ -1,6 +1,5 @@
 "use client";
 
-import { HelpCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
@@ -19,13 +18,7 @@ interface NavSecondaryItem {
   icon: IconSvgElement;
 }
 
-const items: readonly NavSecondaryItem[] = [
-  {
-    title: "Get Help",
-    url: "#",
-    icon: HelpCircleIcon,
-  },
-];
+const items: readonly NavSecondaryItem[] = [];
 
 export function NavSecondary({
   ...props
