@@ -49,7 +49,7 @@ export function NavUser() {
           },
         },
       });
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to sign out");
       setIsSigningOut(false);
     }
