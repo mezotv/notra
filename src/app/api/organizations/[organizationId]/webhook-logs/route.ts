@@ -33,6 +33,20 @@ const DIRECTIONS: LogDirection[] = ["incoming", "outgoing"];
 
 const STATUSES: WebhookLogStatus[] = ["success", "failed", "pending"];
 
+function generateReferenceId(integrationType: IntegrationType): string | null {
+  const random = Math.floor(Math.random() * 10000);
+  switch (integrationType) {
+    case "github":
+      return `PR-${random}`;
+    case "linear":
+      return `LIN-${random}`;
+    case "slack":
+      return `MSG-${random}`;
+    case "webhook":
+      return null;
+  }
+}
+
 function generateExampleLogs(count: number): Log[] {
   const logs: Log[] = [];
 
@@ -49,13 +63,12 @@ function generateExampleLogs(count: number): Log[] {
 
     logs.push({
       id: `log_${crypto.randomUUID().slice(0, 8)}`,
+      referenceId: generateReferenceId(integrationType),
       title,
       integrationType,
       direction,
       status,
       statusCode: status === "pending" ? null : status === "success" ? 200 : 500,
-      responseTime:
-        status === "pending" ? null : Math.floor(Math.random() * 500) + 50,
       errorMessage:
         status === "failed"
           ? "Connection timeout: Failed to establish connection"

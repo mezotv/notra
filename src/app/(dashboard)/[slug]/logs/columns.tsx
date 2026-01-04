@@ -103,13 +103,13 @@ export const columns: ColumnDef<Log>[] = [
     },
   },
   {
-    accessorKey: "responseTime",
-    header: "Response Time",
+    accessorKey: "referenceId",
+    header: "Reference ID",
     cell: ({ row }) => {
-      const time = row.getValue("responseTime") as number | null;
+      const refId = row.getValue("referenceId") as string | null;
       return (
-        <span className="text-muted-foreground">
-          {time ? `${time}ms` : "-"}
+        <span className="text-muted-foreground font-mono text-sm">
+          {refId ?? "-"}
         </span>
       );
     },
