@@ -1,6 +1,11 @@
 "use client";
 
-import { Refresh01Icon } from "@hugeicons/core-free-icons";
+import {
+  Loading02Icon,
+  MinusSignIcon,
+  Refresh01Icon,
+  Tick01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
@@ -122,6 +127,17 @@ interface ModalContentProps {
   isPending: boolean;
 }
 
+function GetStepperIcon(currentStep: number, index: number) {
+  if (currentStep < index) {
+    return MinusSignIcon;
+  }
+  if (currentStep > index) {
+    return Tick01Icon;
+  }
+
+  return Loading02Icon;
+}
+
 function ModalContent({
   isLoadingSettings,
   isAnalyzing,
@@ -152,8 +168,15 @@ function ModalContent({
               key={step.value}
               value={step.value}
             >
-              <StepperTrigger>
-                <StepperIndicator />
+              <StepperTrigger className="px-2">
+                <StepperIndicator>
+                  <HugeiconsIcon
+                    className={
+                      progress.currentStep === index + 1 ? "animate-spin" : ""
+                    }
+                    icon={GetStepperIcon(progress.currentStep, index + 1)}
+                  />
+                </StepperIndicator>
                 <StepperTitle>{step.label}</StepperTitle>
               </StepperTrigger>
               <StepperSeparator />
@@ -168,10 +191,10 @@ function ModalContent({
     <>
       <div className="flex gap-3">
         <div
-          className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-primary ${progress.status === "failed" ? "border-destructive" : "border-muted-foreground/30"} focus-within:border-ring focus-within:ring-ring/50`}
+          className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-primary ${progress.status === "failed" ? "border-destructive" : "border-border"} focus-within:border-ring focus-within:ring-ring/50`}
         >
           <label
-            className="border-muted-foreground/30 border-r px-2.5 py-1 text-base text-muted-foreground transition-colors"
+            className="border-border border-r px-2.5 py-1 text-base text-muted-foreground transition-colors"
             htmlFor="brand-url-input"
           >
             https://
