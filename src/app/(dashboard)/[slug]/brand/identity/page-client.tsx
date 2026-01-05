@@ -167,6 +167,7 @@ function ModalContent({
     <>
       <div className="flex gap-3">
         <Input
+          className={`${progress.status === "failed" ? "border border-destructive" : ""}`}
           disabled={isPending}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => {
