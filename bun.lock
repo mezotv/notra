@@ -29,7 +29,7 @@
         "@upstash/redis": "^1.35.8",
         "@xyflow/react": "^12.10.0",
         "ai": "^6.0.6",
-        "better-auth": "^1.4.9",
+        "better-auth": "^1.4.10",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
