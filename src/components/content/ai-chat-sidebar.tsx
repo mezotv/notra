@@ -3,8 +3,8 @@
 import { PaintBoardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
+import { TitleCard } from "@/components/title-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
 interface AiChatSidebarProps {
@@ -81,14 +81,17 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
   };
 
   return (
-    <Card className="flex h-full flex-col">
-      <CardHeader className="border-b">
-        <CardTitle className="flex items-center gap-2">
+    <TitleCard
+      className="flex h-full flex-col"
+      contentClassName="flex-1 overflow-hidden"
+      title={
+        <span className="flex items-center gap-2">
           <HugeiconsIcon icon={PaintBoardIcon} />
           AI Assistant
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden p-4">
+        </span>
+      }
+    >
+      <div className="flex flex-1 flex-col gap-4 overflow-hidden">
         <div className="flex-1 space-y-4 overflow-y-auto">
           {messages.map((message) => (
             <div
@@ -99,7 +102,7 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
                 className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                    : "bg-muted/50 text-foreground"
                 }`}
               >
                 {message.content}
@@ -108,7 +111,7 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[85%] rounded-lg bg-muted px-3 py-2 text-sm">
+              <div className="max-w-[85%] rounded-lg bg-muted/50 px-3 py-2 text-sm">
                 <span className="animate-pulse">Thinking...</span>
               </div>
             </div>
@@ -116,7 +119,7 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
         </div>
         <form className="flex flex-col gap-2" onSubmit={handleSubmit}>
           <Textarea
-            className="min-h-[80px] resize-none"
+            className="min-h-[60px] resize-none"
             disabled={isLoading}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about this content..."
@@ -130,7 +133,7 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
             {isLoading ? "Sending..." : "Send"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </TitleCard>
   );
 }

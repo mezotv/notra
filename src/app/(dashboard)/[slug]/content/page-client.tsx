@@ -86,8 +86,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </p>
         </div>
 
-        <section>
-          <h2 className="mb-4 font-semibold text-lg">{formatDateHeading()}</h2>
+        <section className="space-y-4">
+          <h2 className="font-semibold text-lg">{formatDateHeading()}</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {EXAMPLE_CONTENT.map((content) => (
               <ContentCard

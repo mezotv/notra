@@ -5,20 +5,11 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useState } from "react";
-import {
-  InstalledIntegrationCard,
-  InstalledIntegrationCardSkeleton,
-} from "@/components/integrations-card";
+import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { TitleCard } from "@/components/title-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Framer } from "@/components/ui/svgs/framer";
 import { Github } from "@/components/ui/svgs/github";
@@ -149,9 +140,11 @@ const INTEGRATION_CATEGORY_MAP: Record<string, "input" | "output"> = {
 function IntegrationCard({
   integration,
   activeCount,
+  isLoading,
 }: {
   integration: IntegrationConfig;
   activeCount: number;
+  isLoading?: boolean;
 }) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
@@ -167,78 +160,73 @@ function IntegrationCard({
   }
 
   const cardContent = (
-    <Card
+    <TitleCard
+      action={
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {isLoading && <Skeleton className="h-5 w-8 rounded-full" />}
+          {!isLoading && isActive && (
+            <Badge className="text-xs" variant="default">
+              {activeCount}
+            </Badge>
+          )}
+          {showConnectButton ? (
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDialogOpen(true);
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Connect
+            </Button>
+          ) : null}
+          {showComingSoon ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    disabled
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Soon
+                  </Button>
+                }
+              />
+              <TooltipContent>Coming soon</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+      }
       className={
         integration.available
-          ? "cursor-pointer transition-colors hover:bg-accent/50"
+          ? "cursor-pointer transition-colors hover:bg-muted/80"
           : ""
       }
+      title={integration.name}
     >
-      <CardHeader className="gap-3">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <div className="flex size-9 shrink-0 items-center justify-center text-muted-foreground sm:size-10 [&_svg]:size-7 sm:[&_svg]:size-8">
-            {integration.icon}
-          </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <CardTitle className="text-sm sm:text-base">
-              {integration.name}
-            </CardTitle>
-            <CardDescription className="line-clamp-2 text-xs sm:text-sm">
-              {integration.description}
-            </CardDescription>
-          </div>
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="flex size-9 shrink-0 items-center justify-center text-muted-foreground sm:size-10 [&_svg]:size-7 sm:[&_svg]:size-8">
+          {integration.icon}
         </div>
-        <CardAction className="row-span-1 self-center sm:row-span-2 sm:self-start">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {isActive ? (
-              <Badge className="text-xs" variant="default">
-                {activeCount}
-              </Badge>
-            ) : null}
-            {showConnectButton ? (
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDialogOpen(true);
-                }}
-                size="sm"
-                variant="outline"
-              >
-                Connect
-              </Button>
-            ) : null}
-            {showComingSoon ? (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      disabled
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      size="sm"
-                      variant="outline"
-                    >
-                      Soon
-                    </Button>
-                  }
-                />
-                <TooltipContent>Coming soon</TooltipContent>
-              </Tooltip>
-            ) : null}
-          </div>
-        </CardAction>
-      </CardHeader>
-    </Card>
+        <p className="line-clamp-2 text-muted-foreground text-xs sm:text-sm">
+          {integration.description}
+        </p>
+      </div>
+    </TitleCard>
   );
 
   return (
     <>
       {integration.available ? (
         <Link
-          className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={`/${organizationSlug}/integrations/${integration.href}`}
         >
           {cardContent}
@@ -339,140 +327,54 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
           <TabsContent value="all">
             <div className="space-y-8 pt-4">
-              {isLoading ? (
-                <>
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Input Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connect services to pull data and updates from
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {[1, 2, 3].map((i) => (
-                        <Card key={i}>
-                          <CardHeader className="gap-3">
-                            <div className="flex items-start gap-3 sm:gap-4">
-                              <Skeleton className="size-9 shrink-0 rounded-md sm:size-10" />
-                              <div className="min-w-0 flex-1 space-y-2">
-                                <Skeleton className="h-4 w-20 sm:h-5 sm:w-24" />
-                                <Skeleton className="h-3 w-full sm:h-4" />
-                              </div>
-                            </div>
-                            <CardAction className="row-span-1 self-center sm:row-span-2 sm:self-start">
-                              <Skeleton className="h-8 w-20 rounded-md sm:h-9 sm:w-24" />
-                            </CardAction>
-                          </CardHeader>
-                        </Card>
-                      ))}
-                    </div>
-                  </section>
+              <section>
+                <h2 className="mb-4 font-semibold text-lg">Input Sources</h2>
+                <p className="mb-4 text-muted-foreground text-sm">
+                  Connect services to pull data and updates from
+                </p>
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {INPUT_SOURCES.map((integration) => (
+                    <IntegrationCard
+                      activeCount={
+                        integrationsByType?.[integration.id]?.length || 0
+                      }
+                      integration={integration}
+                      isLoading={isLoading}
+                      key={integration.id}
+                    />
+                  ))}
+                </div>
+              </section>
 
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Output Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connect services to publish and sync content to
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {[1, 2, 3].map((i) => (
-                        <Card key={i}>
-                          <CardHeader className="gap-3">
-                            <div className="flex items-start gap-3 sm:gap-4">
-                              <Skeleton className="size-9 shrink-0 rounded-md sm:size-10" />
-                              <div className="min-w-0 flex-1 space-y-2">
-                                <Skeleton className="h-4 w-20 sm:h-5 sm:w-24" />
-                                <Skeleton className="h-3 w-full sm:h-4" />
-                              </div>
-                            </div>
-                            <CardAction className="row-span-1 self-center sm:row-span-2 sm:self-start">
-                              <Skeleton className="h-8 w-20 rounded-md sm:h-9 sm:w-24" />
-                            </CardAction>
-                          </CardHeader>
-                        </Card>
-                      ))}
-                    </div>
-                  </section>
-                </>
-              ) : (
-                <>
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Input Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connect services to pull data and updates from
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {INPUT_SOURCES.map((integration) => (
-                        <IntegrationCard
-                          activeCount={
-                            integrationsByType?.[integration.id]?.length || 0
-                          }
-                          integration={integration}
-                          key={integration.id}
-                        />
-                      ))}
-                    </div>
-                  </section>
-
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Output Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connect services to publish and sync content to
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {OUTPUT_SOURCES.map((integration) => (
-                        <IntegrationCard
-                          activeCount={
-                            integrationsByType?.[integration.id]?.length || 0
-                          }
-                          integration={integration}
-                          key={integration.id}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                </>
-              )}
+              <section>
+                <h2 className="mb-4 font-semibold text-lg">Output Sources</h2>
+                <p className="mb-4 text-muted-foreground text-sm">
+                  Connect services to publish and sync content to
+                </p>
+                <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {OUTPUT_SOURCES.map((integration) => (
+                    <IntegrationCard
+                      activeCount={
+                        integrationsByType?.[integration.id]?.length || 0
+                      }
+                      integration={integration}
+                      isLoading={isLoading}
+                      key={integration.id}
+                    />
+                  ))}
+                </div>
+              </section>
             </div>
           </TabsContent>
 
           <TabsContent value="installed">
             <div className="space-y-8 pt-4">
               {isLoading ? (
-                <>
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Input Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connected services pulling data and updates
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {[1, 2].map((i) => (
-                        <InstalledIntegrationCardSkeleton key={i} />
-                      ))}
-                    </div>
-                  </section>
-
-                  <section>
-                    <h2 className="mb-4 font-semibold text-lg">
-                      Output Sources
-                    </h2>
-                    <p className="mb-4 text-muted-foreground text-sm">
-                      Connected services publishing and syncing content
-                    </p>
-                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {[1].map((i) => (
-                        <InstalledIntegrationCardSkeleton key={i} />
-                      ))}
-                    </div>
-                  </section>
-                </>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <p className="text-muted-foreground">
+                    Loading installed integrations...
+                  </p>
+                </div>
               ) : (
                 (() => {
                   const inputIntegrations =
