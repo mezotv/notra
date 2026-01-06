@@ -9,7 +9,16 @@
     "includes": [
       "**",
       "!src/components/ui/**",
-      "!src/components/ai-elements/**"
+      "!src/components/ai-elements/**",
+      "!migrations/**"
+    ]
+  },
+  "formatter": {
+    "includes": [
+      "**",
+      "!src/components/ui/**",
+      "!src/components/ai-elements/**",
+      "!migrations/**"
     ]
   }
 }

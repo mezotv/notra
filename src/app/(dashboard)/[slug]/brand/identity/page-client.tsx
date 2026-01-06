@@ -241,6 +241,7 @@ interface BrandFormProps {
     companyDescription: string;
     toneProfile: ToneProfile;
     customTone: string;
+    useCustomTone: boolean;
     audience: string;
   };
   websiteUrl: string | null | undefined;
@@ -260,7 +261,8 @@ function BrandForm({
 
   const debouncedSave = useAsyncDebouncedCallback(
     async (values: typeof initialData) => {
-      await updateMutation.mutateAsync(values);
+      const { useCustomTone: _, ...valuesToSave } = values;
+      await updateMutation.mutateAsync(valuesToSave);
       lastSavedData.current = JSON.stringify(values);
       toast.success("Changes saved");
     },
@@ -278,6 +280,10 @@ function BrandForm({
         const currentData = JSON.stringify(currentValues);
 
         if (currentData === lastSavedData.current) {
+          return;
+        }
+
+        if (currentValues.useCustomTone && !currentValues.customTone.trim()) {
           return;
         }
 
@@ -375,8 +381,8 @@ function BrandForm({
             )}
           </form.Field>
 
-          <form.Field name="toneProfile">
-            {(field) => (
+          <form.Field name="useCustomTone">
+            {(useCustomToneField) => (
               <div className="space-y-3 border-b pb-8">
                 <div>
                   <Label className="font-medium text-base">
@@ -387,66 +393,133 @@ function BrandForm({
                   </p>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <svg
-                        aria-hidden="true"
-                        className="size-3"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={3}
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M5 13l4 4L19 7"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm">Tone Profile</span>
-                  </div>
-                  <Select
-                    onValueChange={(value) => {
-                      if (value) {
-                        field.handleChange(value as ToneProfile);
-                      }
-                    }}
-                    value={field.state.value}
-                  >
-                    <SelectTrigger className="max-w-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TONE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <form.Field name="toneProfile">
+                    {(toneProfileField) => (
+                      <>
+                        <button
+                          className="flex items-center gap-2"
+                          onClick={() => {
+                            useCustomToneField.handleChange(false);
+                            form.setFieldValue("customTone", "");
+                          }}
+                          type="button"
+                        >
+                          <div
+                            className={`flex size-5 items-center justify-center rounded-full ${
+                              useCustomToneField.state.value
+                                ? "border-2 border-muted-foreground/30"
+                                : "bg-primary text-primary-foreground"
+                            }`}
+                          >
+                            {!useCustomToneField.state.value && (
+                              <svg
+                                aria-hidden="true"
+                                className="size-3"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M5 13l4 4L19 7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <span
+                            className={
+                              useCustomToneField.state.value
+                                ? "text-muted-foreground text-sm"
+                                : "text-sm"
+                            }
+                          >
+                            Tone Profile
+                          </span>
+                        </button>
+                        <Select
+                          disabled={useCustomToneField.state.value}
+                          onValueChange={(value) => {
+                            if (value) {
+                              toneProfileField.handleChange(
+                                value as ToneProfile
+                              );
+                            }
+                          }}
+                          value={toneProfileField.state.value}
+                        >
+                          <SelectTrigger className="max-w-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TONE_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                  </form.Field>
 
                   <form.Field name="customTone">
                     {(customToneField) => (
                       <>
-                        <div className="flex items-center gap-2">
-                          <div className="flex size-5 items-center justify-center rounded-full border-2 border-muted-foreground/30" />
-                          <span className="text-muted-foreground text-sm">
+                        <button
+                          className="flex items-center gap-2"
+                          onClick={() => useCustomToneField.handleChange(true)}
+                          type="button"
+                        >
+                          <div
+                            className={`flex size-5 items-center justify-center rounded-full ${
+                              useCustomToneField.state.value
+                                ? "bg-primary text-primary-foreground"
+                                : "border-2 border-muted-foreground/30"
+                            }`}
+                          >
+                            {useCustomToneField.state.value && (
+                              <svg
+                                aria-hidden="true"
+                                className="size-3"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={3}
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  d="M5 13l4 4L19 7"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <span
+                            className={
+                              useCustomToneField.state.value
+                                ? "text-sm"
+                                : "text-muted-foreground text-sm"
+                            }
+                          >
                             Custom Tone
                           </span>
-                        </div>
-                        {customToneField.state.value && (
-                          <Input
-                            className="max-w-sm"
-                            id={customToneField.name}
-                            onBlur={customToneField.handleBlur}
-                            onChange={(e) =>
-                              customToneField.handleChange(e.target.value)
-                            }
-                            placeholder="Add custom tone notes"
-                            value={customToneField.state.value}
-                          />
-                        )}
+                        </button>
+                        <Input
+                          className="max-w-sm"
+                          disabled={!useCustomToneField.state.value}
+                          id={customToneField.name}
+                          onBlur={customToneField.handleBlur}
+                          onChange={(e) =>
+                            customToneField.handleChange(e.target.value)
+                          }
+                          placeholder="Add custom tone notes"
+                          value={customToneField.state.value}
+                        />
                       </>
                     )}
                   </form.Field>
@@ -647,6 +720,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     companyDescription: settings.companyDescription ?? "",
     toneProfile: (settings.toneProfile as ToneProfile) ?? "Professional",
     customTone: settings.customTone ?? "",
+    useCustomTone: Boolean(settings.customTone),
     audience: settings.audience ?? "",
   };
 
