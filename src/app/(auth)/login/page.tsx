@@ -2,7 +2,6 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useAtom } from "jotai";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,12 +14,11 @@ import { Separator } from "@/components/ui/separator";
 import { Github } from "@/components/ui/svgs/github";
 import { Google } from "@/components/ui/svgs/google";
 import { authClient } from "@/lib/auth/client";
-import { isAuthLoadingAtom } from "@/utils/atoms/auth";
 
 export default function Login() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useAtom(isAuthLoadingAtom);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const lastMethod = authClient.getLastUsedLoginMethod();
 
   async function handleSocialLogin(provider: "google" | "github") {

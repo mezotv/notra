@@ -1,27 +1,37 @@
 "use client";
 
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { type ReactNode, useEffect, useRef } from "react";
-import { authClient } from "@/lib/auth/client";
 import {
-  activeOrganizationAtom,
-  getOrganizationBySlugAtom,
-  isLoadingOrganizationsAtom,
-  organizationsAtom,
-} from "@/utils/atoms/organizations";
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { authClient } from "@/lib/auth/client";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export type Organization = NonNullable<
   ReturnType<typeof authClient.useListOrganizations>["data"]
 >[number];
 
+interface OrganizationsContextValue {
+  organizations: Organization[];
+  activeOrganization: Organization | null;
+  isLoading: boolean;
+  getOrganization: (slug: string) => Organization | undefined;
+}
+
+const OrganizationsContext = createContext<OrganizationsContextValue | null>(
+  null
+);
+
 export function OrganizationsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const setOrganizations = useSetAtom(organizationsAtom);
-  const setActiveOrganization = useSetAtom(activeOrganizationAtom);
-  const setIsLoading = useSetAtom(isLoadingOrganizationsAtom);
   const hasAutoSelectedRef = useRef(false);
+  const [optimisticActiveOrg, setOptimisticActiveOrg] =
+    useState<Organization | null>(null);
 
   const [
     { data: organizationsData, isPending: isLoadingOrgs },
@@ -34,8 +44,8 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
           const result = await authClient.organization.list();
           return result.data ?? [];
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes - org list changes rarely
-        gcTime: 10 * 60 * 1000, // 10 minutes
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
       },
       {
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
@@ -43,26 +53,24 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
           const result = await authClient.organization.getFullOrganization();
           return result.data ?? null;
         },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
       },
     ],
   });
 
-  useEffect(() => {
-    if (organizationsData) {
-      setOrganizations(organizationsData);
-    }
-  }, [organizationsData, setOrganizations]);
+  const organizations = organizationsData ?? [];
+  const isLoading = isLoadingOrgs || isLoadingActive;
 
+  // Clear optimistic state when real data arrives
   useEffect(() => {
-    setActiveOrganization(activeOrganization ?? null);
-  }, [activeOrganization, setActiveOrganization]);
+    if (activeOrganization) {
+      setOptimisticActiveOrg(null);
+    }
+  }, [activeOrganization]);
 
   // Auto-select first organization if no active organization is set
   useEffect(() => {
-    // Only run when both queries are done (not loading) and we have organizations
-    // Use ref to prevent running multiple times
     if (
       !(isLoadingOrgs || isLoadingActive) &&
       organizationsData &&
@@ -70,13 +78,10 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
       !activeOrganization &&
       !hasAutoSelectedRef.current
     ) {
-      // Automatically set the first organization as active
       const firstOrg = organizationsData[0];
       if (firstOrg) {
         hasAutoSelectedRef.current = true;
-        // Set it in the atom immediately for UI
-        setActiveOrganization(firstOrg);
-        // Also set it on the server
+        setOptimisticActiveOrg(firstOrg);
         authClient.organization
           .setActive({ organizationId: firstOrg.id })
           .then((result) => {
@@ -85,11 +90,9 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
                 "Failed to auto-set active organization:",
                 result.error
               );
-              // Revert the atom if server call failed
-              setActiveOrganization(null);
+              setOptimisticActiveOrg(null);
               hasAutoSelectedRef.current = false;
             } else {
-              // Invalidate queries to sync with server
               queryClient.invalidateQueries({
                 queryKey: QUERY_KEYS.AUTH.activeOrganization,
               });
@@ -97,12 +100,11 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
           })
           .catch((error) => {
             console.error("Error auto-setting active organization:", error);
-            setActiveOrganization(null);
+            setOptimisticActiveOrg(null);
             hasAutoSelectedRef.current = false;
           });
       }
     }
-    // Reset ref if activeOrganization becomes null (user cleared it)
     if (activeOrganization === null && hasAutoSelectedRef.current) {
       hasAutoSelectedRef.current = false;
     }
@@ -111,27 +113,33 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
     isLoadingActive,
     organizationsData,
     activeOrganization,
-    setActiveOrganization,
     queryClient,
   ]);
 
-  useEffect(() => {
-    setIsLoading(isLoadingOrgs || isLoadingActive);
-  }, [isLoadingOrgs, isLoadingActive, setIsLoading]);
+  const getOrganization = (slug: string) => {
+    return organizations.find((org) => org.slug === slug);
+  };
 
-  return <>{children}</>;
+  const contextValue: OrganizationsContextValue = {
+    organizations,
+    activeOrganization: activeOrganization ?? optimisticActiveOrg,
+    isLoading,
+    getOrganization,
+  };
+
+  return (
+    <OrganizationsContext.Provider value={contextValue}>
+      {children}
+    </OrganizationsContext.Provider>
+  );
 }
 
 export function useOrganizationsContext() {
-  const organizations = useAtomValue(organizationsAtom);
-  const activeOrganization = useAtomValue(activeOrganizationAtom);
-  const isLoading = useAtomValue(isLoadingOrganizationsAtom);
-  const [getOrganizationBySlug] = useAtom(getOrganizationBySlugAtom);
-
-  return {
-    organizations,
-    activeOrganization,
-    isLoading,
-    getOrganization: getOrganizationBySlug,
-  };
+  const context = useContext(OrganizationsContext);
+  if (!context) {
+    throw new Error(
+      "useOrganizationsContext must be used within OrganizationsProvider"
+    );
+  }
+  return context;
 }

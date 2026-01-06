@@ -47,7 +47,6 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "embla-carousel-react": "^8.6.0",
-    "jotai": "^2.16.0",
     "motion": "^12.23.26",
     "nanoid": "^5.1.6",
     "next": "^16.1.1",
