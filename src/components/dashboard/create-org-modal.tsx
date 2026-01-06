@@ -42,11 +42,14 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
       setIsCreating(true);
 
       try {
+        const websiteUrl = value.website
+          ? `https://${value.website}`
+          : undefined;
         const { data, error } = await authClient.organization.create({
           name: value.name,
           slug: value.slug,
           logo: generateOrganizationAvatar(value.slug),
-          websiteUrl: value.website || undefined,
+          websiteUrl,
         });
 
         if (error) {
@@ -123,6 +126,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                   </Label>
                   <Input
                     aria-invalid={field.state.meta.errors.length > 0}
+                    className="focus-within:border-ring focus-within:ring-ring/50"
                     disabled={isCreating}
                     id="name"
                     onBlur={field.handleBlur}
@@ -165,6 +169,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                   </Label>
                   <Input
                     aria-invalid={field.state.meta.errors.length > 0}
+                    className="focus-within:border-ring focus-within:ring-ring/50"
                     disabled={isCreating}
                     id="slug"
                     onBlur={field.handleBlur}
@@ -193,24 +198,36 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                   if (!value || value.trim() === "") {
                     return;
                   }
-                  return createOrganizationSchema.shape.website.safeParse(value)
-                    .error?.issues[0]?.message;
+                  const fullUrl = `https://${value}`;
+                  return createOrganizationSchema.shape.website.safeParse(
+                    fullUrl
+                  ).error?.issues[0]?.message;
                 },
               }}
             >
               {(field) => (
                 <div className="grid gap-2">
                   <Label htmlFor="website">Website (optional)</Label>
-                  <Input
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    disabled={isCreating}
-                    id="website"
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="https://usenotra.com"
-                    type="url"
-                    value={field.state.value}
-                  />
+                  <div
+                    className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
+                  >
+                    <label
+                      className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
+                      htmlFor="website"
+                    >
+                      https://
+                    </label>
+                    <input
+                      className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isCreating}
+                      id="website"
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="example.com"
+                      type="text"
+                      value={field.state.value}
+                    />
+                  </div>
                   {field.state.meta.errors.length > 0 ? (
                     <p className="text-destructive text-sm">
                       {field.state.meta.errors[0]}
