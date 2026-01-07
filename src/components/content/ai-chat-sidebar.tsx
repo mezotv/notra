@@ -91,8 +91,8 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
         </span>
       }
     >
-      <div className="flex flex-1 flex-col gap-4 overflow-hidden">
-        <div className="flex-1 space-y-4 overflow-y-auto">
+      <div className="grid h-full grid-rows-[1fr_auto] gap-4 overflow-hidden p-1">
+        <div className="-m-1 space-y-4 overflow-y-auto p-1">
           {messages.map((message) => (
             <div
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
