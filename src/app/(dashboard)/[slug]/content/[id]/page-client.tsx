@@ -99,7 +99,7 @@ export default function PageClient({
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_350px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_21.875rem]">
           <Tabs
             className="w-full"
             onValueChange={(value) => setView(value as ViewOption)}
@@ -133,6 +133,10 @@ export default function PageClient({
               <AiChatSidebar contentTitle={content.title} />
             </div>
           </aside>
+        </div>
+
+        <div className="h-[31.25rem] lg:hidden">
+          <AiChatSidebar contentTitle={content.title} />
         </div>
       </div>
     </div>
