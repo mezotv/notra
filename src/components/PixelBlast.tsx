@@ -354,7 +354,15 @@ void main(){
   }
 
   vec3 color = uColor;
-  fragColor = vec4(color, M);
+
+  // sRGB gamma correction - convert linear to sRGB for accurate color output
+  vec3 srgbColor = mix(
+    color * 12.92,
+    1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055,
+    step(0.0031308, color)
+  );
+
+  fragColor = vec4(srgbColor, M);
 }
 `;
 
