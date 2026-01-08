@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       },
     });
 
-    await agent.run(instruction);
+    await agent.generate({ prompt: instruction });
 
     return NextResponse.json({
       markdown: updatedMarkdown,
