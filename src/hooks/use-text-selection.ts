@@ -12,8 +12,8 @@ export function useTextSelection(
   const [selection, setSelection] = useState<TextSelection | null>(null);
   const lastValidSelection = useRef<TextSelection | null>(null);
 
-  const handleMouseUp = useCallback(
-    (event: MouseEvent) => {
+  useEffect(() => {
+    const handleMouseUp = (event: MouseEvent) => {
       const container = containerRef.current;
       if (!container) {
         return;
@@ -60,17 +60,13 @@ export function useTextSelection(
       const newSelection = { text };
       lastValidSelection.current = newSelection;
       setSelection(newSelection);
-    },
-    [containerRef]
-  );
+    };
 
-  useEffect(() => {
-    // Listen on document to catch all mouseup events
     document.addEventListener("mouseup", handleMouseUp);
     return () => {
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [handleMouseUp]);
+  }, [containerRef]);
 
   const clearSelection = useCallback(() => {
     setSelection(null);
