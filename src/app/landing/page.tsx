@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { type ComponentType, useEffect, useRef, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -189,25 +189,25 @@ function HeroSection() {
           style={{ animationDelay: "0.3s" }}
         >
           <p className="mb-4 text-muted-foreground text-sm">
-            Trusted by developers at
+            Built for modern development teams
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 opacity-50 grayscale">
-            {["Vercel", "Supabase", "Railway", "Planetscale", "Neon"].map(
-              (company) => (
-                <span
-                  className="font-medium text-foreground text-lg"
-                  key={company}
-                >
-                  {company}
-                </span>
-              )
-            )}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-muted-foreground text-sm">
+            <span>Next.js</span>
+            <span className="text-muted-foreground/30">•</span>
+            <span>React</span>
+            <span className="text-muted-foreground/30">•</span>
+            <span>TypeScript</span>
+            <span className="text-muted-foreground/30">•</span>
+            <span>Tailwind CSS</span>
           </div>
         </div>
       </div>
 
-      {/* Floating elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* Floating elements - decorative */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
         <div
           className="absolute top-[30%] left-[10%] animate-float rounded-2xl border border-primary/20 bg-card/80 p-4 shadow-xl backdrop-blur-sm"
           style={{ animationDelay: "0s" }}
@@ -307,7 +307,7 @@ function FeatureCard({
   index,
 }: {
   feature: {
-    icon: React.ComponentType<{ className?: string }>;
+    icon: ComponentType<{ className?: string }>;
     title: string;
     description: string;
   };
@@ -423,8 +423,11 @@ function ShowcaseSection() {
           {/* Visual */}
           <div className="relative">
             <div className="relative rounded-2xl border border-border/50 bg-card/80 p-2 shadow-2xl backdrop-blur-sm">
-              {/* Mock browser chrome */}
-              <div className="mb-2 flex items-center gap-2 px-2">
+              {/* Mock browser chrome - decorative */}
+              <div
+                aria-hidden="true"
+                className="mb-2 flex items-center gap-2 px-2"
+              >
                 <div className="h-3 w-3 rounded-full bg-red-400/50" />
                 <div className="h-3 w-3 rounded-full bg-yellow-400/50" />
                 <div className="h-3 w-3 rounded-full bg-green-400/50" />
@@ -599,25 +602,10 @@ function Footer() {
             </span>
           </div>
 
-          <div className="flex items-center gap-8">
-            <Link
-              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-              href="#"
-            >
-              Privacy
-            </Link>
-            <Link
-              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-              href="#"
-            >
-              Terms
-            </Link>
-            <Link
-              className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-              href="#"
-            >
-              Contact
-            </Link>
+          <div className="flex items-center gap-6 text-muted-foreground text-sm">
+            <span>Privacy</span>
+            <span>Terms</span>
+            <span>Contact</span>
           </div>
 
           <p className="text-muted-foreground text-sm">
