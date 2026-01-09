@@ -318,23 +318,23 @@ function FeatureCard({
 
   useEffect(() => {
     const currentRef = ref.current;
+    if (!currentRef) {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+          observer.disconnect();
         }
       },
       { threshold: 0.1 }
     );
 
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
+    observer.observe(currentRef);
 
     return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
       observer.disconnect();
     };
   }, []);
@@ -364,6 +364,8 @@ function FeatureCard({
 }
 
 function ShowcaseSection() {
+  const [imageError, setImageError] = useState(false);
+
   return (
     <section className="relative overflow-hidden px-6 py-32" id="how-it-works">
       {/* Background */}
@@ -434,12 +436,17 @@ function ShowcaseSection() {
               </div>
               {/* Placeholder for dashboard image */}
               <div className="relative aspect-[4/3] overflow-hidden rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-transparent">
-                <Image
-                  alt="Code visualization"
-                  className="h-full w-full object-cover opacity-80"
-                  fill
-                  src="https://cdn.pixabay.com/photo/2016/11/19/14/00/code-1839406_1280.jpg"
-                />
+                {!imageError && (
+                  <Image
+                    alt="Code visualization"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAQMDBAMBAAAAAAAAAAAAAQIDBAAFEQYSITEHE0FR/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAZEQACAwEAAAAAAAAAAAAAAAABAgADBBH/2gAMAwEAAhEDEEAAuKN1MuF5kKjlDbKgEAggfP1QFNSqxk5J//Z"
+                    className="h-full w-full object-cover opacity-80"
+                    fill
+                    onError={() => setImageError(true)}
+                    placeholder="blur"
+                    src="https://cdn.pixabay.com/photo/2016/11/19/14/00/code-1839406_1280.jpg"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/50 to-transparent" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="space-y-3 text-center">
@@ -589,6 +596,12 @@ function CTASection() {
 }
 
 function Footer() {
+  const [year, setYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer className="border-border/50 border-t px-6 py-12">
       <div className="mx-auto max-w-6xl">
@@ -603,13 +616,28 @@ function Footer() {
           </div>
 
           <div className="flex items-center gap-6 text-muted-foreground text-sm">
-            <span>Privacy</span>
-            <span>Terms</span>
-            <span>Contact</span>
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/privacy"
+            >
+              Privacy
+            </Link>
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/terms"
+            >
+              Terms
+            </Link>
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/contact"
+            >
+              Contact
+            </Link>
           </div>
 
           <p className="text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()} Notra. All rights reserved.
+            &copy; {year ?? ""} Notra. All rights reserved.
           </p>
         </div>
       </div>
