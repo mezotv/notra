@@ -84,11 +84,15 @@ function FloatingToolbar({
     const handleScroll = () => updatePosition();
     const handleResize = () => updatePosition();
 
-    // Listen to scroll on anchorElem to capture scrolling within the editor container
+    // Listen to both window and anchorElem scroll events
+    // Window scroll is needed because getBoundingClientRect() returns viewport-relative coords
+    // AnchorElem scroll captures scrolling within the editor container
+    window.addEventListener("scroll", handleScroll);
     anchorElem.addEventListener("scroll", handleScroll);
     window.addEventListener("resize", handleResize);
 
     return () => {
+      window.removeEventListener("scroll", handleScroll);
       anchorElem.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };

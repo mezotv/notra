@@ -18,6 +18,7 @@ import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
 import { EditorAutoLinkPlugin } from "./plugins/auto-link-plugin";
+import { DraggableBlockPlugin } from "./plugins/draggable-block-plugin";
 import {
   type EditorRefHandle,
   EditorRefPlugin,
@@ -26,6 +27,7 @@ import { FloatingToolbarPlugin } from "./plugins/floating-toolbar-plugin";
 import { HorizontalRulePlugin } from "./plugins/horizontal-rule-plugin";
 import { MarkdownSyncPlugin } from "./plugins/markdown-sync-plugin";
 import { SelectionPlugin } from "./plugins/selection-plugin";
+import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
 
 interface LexicalEditorProps {
   initialMarkdown: string;
@@ -46,7 +48,7 @@ export function LexicalEditor({
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
-  const onRef = useCallback((node: HTMLDivElement | null) => {
+  const onRef = useCallback((node: HTMLDivElement | null): void => {
     if (node !== null) {
       setFloatingAnchorElem(node);
     }
@@ -109,6 +111,7 @@ export function LexicalEditor({
         )}
         {editable && <EditorAutoLinkPlugin />}
         <ClickableLinkPlugin newTab />
+        <TabFocusPlugin />
         <MarkdownSyncPlugin
           onChange={handleChange}
           transformers={EDITOR_TRANSFORMERS}
@@ -121,7 +124,10 @@ export function LexicalEditor({
           />
         )}
         {editable && floatingAnchorElem && (
-          <FloatingToolbarPlugin anchorElem={floatingAnchorElem} />
+          <>
+            <FloatingToolbarPlugin anchorElem={floatingAnchorElem} />
+            <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+          </>
         )}
       </div>
     </LexicalComposer>
