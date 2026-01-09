@@ -12,15 +12,9 @@ function isOnMenu(element: HTMLElement): boolean {
 
 function DraggableBlockMenu({
   menuRef,
-  isEditable,
 }: {
   menuRef: React.RefObject<HTMLDivElement | null>;
-  isEditable: boolean;
 }) {
-  if (!isEditable) {
-    return null;
-  }
-
   return (
     <div
       className={`${DRAGGABLE_BLOCK_MENU_CLASSNAME} absolute top-0 left-0 cursor-grab rounded p-0.5 opacity-0 transition-opacity will-change-transform hover:bg-muted active:cursor-grabbing`}
@@ -45,28 +39,20 @@ function TargetLine({
 }
 
 interface DraggableBlockPluginProps {
-  anchorElem?: HTMLElement;
-  isEditable?: boolean;
+  anchorElem: HTMLElement;
 }
 
 export function DraggableBlockPlugin({
   anchorElem,
-  isEditable = true,
 }: DraggableBlockPluginProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const targetLineRef = useRef<HTMLDivElement>(null);
-
-  if (!isEditable) {
-    return null;
-  }
 
   return (
     <DraggableBlockPlugin_EXPERIMENTAL
       anchorElem={anchorElem}
       isOnMenu={isOnMenu}
-      menuComponent={
-        <DraggableBlockMenu isEditable={isEditable} menuRef={menuRef} />
-      }
+      menuComponent={<DraggableBlockMenu menuRef={menuRef} />}
       menuRef={menuRef}
       targetLineComponent={<TargetLine targetLineRef={targetLineRef} />}
       targetLineRef={targetLineRef}

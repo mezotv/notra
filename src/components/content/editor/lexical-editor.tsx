@@ -105,11 +105,8 @@ export function LexicalEditor({
             isProgrammaticUpdateRef={isProgrammaticUpdateRef}
           />
         )}
-        {floatingAnchorElem && (
-          <DraggableBlockPlugin
-            anchorElem={floatingAnchorElem}
-            isEditable={editable}
-          />
+        {editable && floatingAnchorElem && (
+          <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
         )}
       </div>
     </LexicalComposer>
