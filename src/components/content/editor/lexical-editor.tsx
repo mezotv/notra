@@ -20,6 +20,7 @@ import {
 } from "./plugins/editor-ref-plugin";
 import { MarkdownSyncPlugin } from "./plugins/markdown-sync-plugin";
 import { SelectionPlugin } from "./plugins/selection-plugin";
+import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
 
 interface LexicalEditorProps {
   initialMarkdown: string;
@@ -63,7 +64,6 @@ export function LexicalEditor({
     [initialMarkdown, editable, onError]
   );
 
-  // Wrap onChange to skip programmatic updates
   const handleChange = useCallback(
     (markdown: string) => {
       if (!isProgrammaticUpdateRef.current) {
@@ -89,6 +89,7 @@ export function LexicalEditor({
         <HistoryPlugin />
         <ListPlugin />
         {editable && <MarkdownShortcutPlugin transformers={TRANSFORMERS} />}
+        <TabFocusPlugin />
         <MarkdownSyncPlugin onChange={handleChange} />
         <SelectionPlugin onSelectionChange={onSelectionChange} />
         {editorRef && (
