@@ -452,7 +452,7 @@ function BrandForm({
                     )}
                   </form.Field>
 
-                  <div className="border-t pt-4">
+                  <div className="pt-4">
                     <form.Field name="customTone">
                       {(customToneField) => (
                         <div className="space-y-3">
@@ -515,7 +515,7 @@ function BrandForm({
               )}
             </form.Field>
 
-            <div className="border-t pt-4">
+            <div className="pt-4">
               <form.Field name="customInstructions">
                 {(field) => (
                   <div className="space-y-2">
