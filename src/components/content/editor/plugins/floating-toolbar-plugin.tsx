@@ -6,7 +6,6 @@ import { mergeRegister } from "@lexical/utils";
 import {
   $getSelection,
   $isRangeSelection,
-  $isTextNode,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
@@ -120,7 +119,10 @@ function FloatingToolbar({
     if (isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     } else {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
+      const url = prompt("Enter URL:", "https://");
+      if (url !== null) {
+        editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
+      }
     }
   }, [editor, isLink]);
 
@@ -254,7 +256,8 @@ export function FloatingToolbarPlugin({
       setIsLink($isLinkNode(parent) || $isLinkNode(node));
 
       const textContent = selection.getTextContent().replace(/\n/g, "");
-      setIsText($isTextNode(node) && textContent !== "");
+      // Check textContent instead of node type to support multi-node selections
+      setIsText(textContent !== "");
     });
   }, [editor]);
 

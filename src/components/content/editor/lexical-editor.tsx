@@ -96,7 +96,7 @@ export function LexicalEditor({
         <RichTextPlugin
           contentEditable={
             <ContentEditable
-              className={`min-h-[500px] outline-none ${
+              className={`min-h-[500px] px-8 outline-none ${
                 editable ? "" : "cursor-default"
               }`}
             />
