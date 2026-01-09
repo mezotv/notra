@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
   experimental: {
     useCache: true,
   },
-  images: {
-    remotePatterns: [{ protocol: "https", hostname: "cdn.pixabay.com" }],
-  },
   async redirects() {
     return [
       {
