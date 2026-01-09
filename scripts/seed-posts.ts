@@ -533,6 +533,11 @@ async function seed() {
       };
     });
 
+    // Delete existing posts for this org to prevent duplicates on re-run
+    await db
+      .delete(schema.posts)
+      .where(eq(schema.posts.organizationId, org.id));
+
     await db.insert(schema.posts).values(postsToInsert);
     console.log(`Inserted ${postsToInsert.length} posts for ${org.name}`);
   }
