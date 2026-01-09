@@ -1,13 +1,35 @@
-import { desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, type InferSelectModel, lt, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { db } from "@/lib/db/drizzle";
 import { posts } from "@/lib/db/schema";
 
+type Post = InferSelectModel<typeof posts>;
+
 const DEFAULT_LIMIT = 12;
+const MAX_LIMIT = 100;
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
+}
+
+interface CursorData {
+  createdAt: string;
+  id: string;
+}
+
+function encodeCursor(createdAt: Date, id: string): string {
+  const data: CursorData = { createdAt: createdAt.toISOString(), id };
+  return Buffer.from(JSON.stringify(data)).toString("base64url");
+}
+
+function decodeCursor(cursor: string): CursorData | null {
+  try {
+    const decoded = Buffer.from(cursor, "base64url").toString("utf-8");
+    return JSON.parse(decoded) as CursorData;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
@@ -22,23 +44,48 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get("cursor");
     const limitParam = searchParams.get("limit");
-    const limit = limitParam ? Number.parseInt(limitParam, 10) : DEFAULT_LIMIT;
+    const parsedLimit = limitParam
+      ? Number.parseInt(limitParam, 10)
+      : DEFAULT_LIMIT;
+    const limit = Math.min(Math.max(1, parsedLimit), MAX_LIMIT);
 
-    const conditions = [eq(posts.organizationId, organizationId)];
+    let results: Post[];
 
     if (cursor) {
-      conditions.push(lt(posts.createdAt, new Date(cursor)));
-    }
+      const cursorData = decodeCursor(cursor);
+      if (!cursorData) {
+        return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
+      }
 
-    const results = await db.query.posts.findMany({
-      where: (_posts, { and }) => and(...conditions),
-      orderBy: [desc(posts.createdAt)],
-      limit: limit + 1,
-    });
+      const cursorDate = new Date(cursorData.createdAt);
+
+      // Use compound cursor: items with earlier timestamp OR same timestamp with lexicographically smaller id
+      results = await db.query.posts.findMany({
+        where: and(
+          eq(posts.organizationId, organizationId),
+          or(
+            lt(posts.createdAt, cursorDate),
+            and(eq(posts.createdAt, cursorDate), lt(posts.id, cursorData.id))
+          )
+        ),
+        orderBy: [desc(posts.createdAt), desc(posts.id)],
+        limit: limit + 1,
+      });
+    } else {
+      results = await db.query.posts.findMany({
+        where: eq(posts.organizationId, organizationId),
+        orderBy: [desc(posts.createdAt), desc(posts.id)],
+        limit: limit + 1,
+      });
+    }
 
     const hasMore = results.length > limit;
     const items = hasMore ? results.slice(0, limit) : results;
-    const nextCursor = hasMore ? items.at(-1)?.createdAt : null;
+    const lastItem = items.at(-1);
+    const nextCursor =
+      hasMore && lastItem
+        ? encodeCursor(lastItem.createdAt, lastItem.id)
+        : null;
 
     return NextResponse.json({
       posts: items.map((post) => ({
@@ -50,7 +97,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
       })),
-      nextCursor: nextCursor?.toISOString() ?? null,
+      nextCursor,
     });
   } catch (error) {
     console.error("Error fetching posts:", error);

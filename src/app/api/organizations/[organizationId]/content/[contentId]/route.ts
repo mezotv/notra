@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { marked } from "marked";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { db } from "@/lib/db/drizzle";
@@ -83,11 +84,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const titleMatch = markdown.match(TITLE_REGEX);
     const newTitle = titleMatch?.[1] ?? existingPost.title;
 
+    // Convert markdown to HTML content
+    const newContent = await marked.parse(markdown);
+
     const [updatedPost] = await db
       .update(posts)
       .set({
         markdown,
         title: newTitle,
+        content: newContent,
       })
       .where(
         and(eq(posts.id, contentId), eq(posts.organizationId, organizationId))
