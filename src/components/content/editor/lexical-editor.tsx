@@ -1,7 +1,7 @@
 "use client";
 
 import { CodeNode } from "@lexical/code";
-import { LinkNode } from "@lexical/link";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { $convertFromMarkdownString, TRANSFORMERS } from "@lexical/markdown";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -14,6 +14,7 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { type RefObject, useCallback, useMemo, useRef } from "react";
 import { editorTheme } from "./editor-theme";
+import { EditorAutoLinkPlugin } from "./plugins/auto-link-plugin";
 import {
   type EditorRefHandle,
   EditorRefPlugin,
@@ -52,6 +53,7 @@ export function LexicalEditor({
         ListItemNode,
         CodeNode,
         LinkNode,
+        AutoLinkNode,
       ],
       theme: editorTheme,
       editable,
@@ -63,7 +65,6 @@ export function LexicalEditor({
     [initialMarkdown, editable, onError]
   );
 
-  // Wrap onChange to skip programmatic updates
   const handleChange = useCallback(
     (markdown: string) => {
       if (!isProgrammaticUpdateRef.current) {
@@ -89,6 +90,7 @@ export function LexicalEditor({
         <HistoryPlugin />
         <ListPlugin />
         {editable && <MarkdownShortcutPlugin transformers={TRANSFORMERS} />}
+        <EditorAutoLinkPlugin />
         <MarkdownSyncPlugin onChange={handleChange} />
         <SelectionPlugin onSelectionChange={onSelectionChange} />
         {editorRef && (
