@@ -12,9 +12,15 @@ export const HORIZONTAL_RULE: ElementTransformer = {
     return $isHorizontalRuleNode(node) ? "---" : null;
   },
   regExp: /^(---|\*\*\*|___)\s?$/,
-  replace: (parentNode) => {
+  replace: (parentNode, _children, _match, isImport) => {
     const hrNode = $createHorizontalRuleNode();
-    parentNode.replace(hrNode);
+    // When importing from markdown or when there's a next sibling, replace the node.
+    // Otherwise, insert before to ensure proper cursor positioning after the transformation.
+    if (isImport || parentNode.getNextSibling() != null) {
+      parentNode.replace(hrNode);
+    } else {
+      parentNode.insertBefore(hrNode);
+    }
     hrNode.selectNext();
   },
   type: "element",
