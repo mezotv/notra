@@ -3,7 +3,7 @@
 import { CodeNode } from "@lexical/code";
 import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
-import { $convertFromMarkdownString, TRANSFORMERS } from "@lexical/markdown";
+import { $convertFromMarkdownString } from "@lexical/markdown";
 import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -25,6 +25,7 @@ import {
 import { HorizontalRulePlugin } from "./plugins/horizontal-rule-plugin";
 import { MarkdownSyncPlugin } from "./plugins/markdown-sync-plugin";
 import { SelectionPlugin } from "./plugins/selection-plugin";
+import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
 
 interface LexicalEditorProps {
   initialMarkdown: string;
@@ -94,17 +95,13 @@ export function LexicalEditor({
         />
         <HistoryPlugin />
         <ListPlugin />
-        {editable && <MarkdownShortcutPlugin transformers={TRANSFORMERS} />}
-        {editable && <EditorAutoLinkPlugin />}
-        <ClickableLinkPlugin newTab />
-        <MarkdownSyncPlugin
-          onChange={handleChange}
-          transformers={TRANSFORMERS}
-        />
         <HorizontalRulePlugin />
         {editable && (
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         )}
+        {editable && <EditorAutoLinkPlugin />}
+        <ClickableLinkPlugin newTab />
+        <TabFocusPlugin />
         <MarkdownSyncPlugin
           onChange={handleChange}
           transformers={EDITOR_TRANSFORMERS}
