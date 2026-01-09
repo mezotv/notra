@@ -13,7 +13,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function AnimatedGradient() {
@@ -95,28 +95,29 @@ function Navbar() {
           </Link>
           <Link
             className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+            href="#how-it-works"
+          >
+            How it works
+          </Link>
+          <Link
+            className="text-muted-foreground text-sm transition-colors hover:text-foreground"
             href="#integrations"
           >
             Integrations
           </Link>
-          <Link
-            className="text-muted-foreground text-sm transition-colors hover:text-foreground"
-            href="#pricing"
-          >
-            Pricing
-          </Link>
         </div>
 
         <div className="flex items-center gap-3">
-          <Button asChild size="sm" variant="ghost">
-            <Link href="/login">Sign in</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/signup">
-              Get Started
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          <Link
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            href="/login"
+          >
+            Sign in
+          </Link>
+          <Link className={cn(buttonVariants({ size: "sm" }))} href="/signup">
+            Get Started
+            <ArrowRight className="ml-1 h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
     </nav>
@@ -161,20 +162,25 @@ function HeroSection() {
           className="flex animate-fade-in-up flex-col items-center justify-center gap-4 sm:flex-row"
           style={{ animationDelay: "0.2s" }}
         >
-          <Button asChild className="group h-12 px-8 text-base" size="lg">
-            <Link href="/signup">
-              Start for free
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            className="h-12 px-8 text-base"
-            size="lg"
-            variant="outline"
+          <Link
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "group h-12 px-8 text-base"
+            )}
+            href="/signup"
           >
-            <Link href="#demo">Watch demo</Link>
-          </Button>
+            Start for free
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <Link
+            className={cn(
+              buttonVariants({ variant: "outline", size: "lg" }),
+              "h-12 px-8 text-base"
+            )}
+            href="#how-it-works"
+          >
+            See how it works
+          </Link>
         </div>
 
         {/* Social proof */}
@@ -311,6 +317,7 @@ function FeatureCard({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    const currentRef = ref.current;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -320,11 +327,16 @@ function FeatureCard({
       { threshold: 0.1 }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
+    if (currentRef) {
+      observer.observe(currentRef);
     }
 
-    return () => observer.disconnect();
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+      observer.disconnect();
+    };
   }, []);
 
   const Icon = feature.icon;
@@ -353,7 +365,7 @@ function FeatureCard({
 
 function ShowcaseSection() {
   return (
-    <section className="relative overflow-hidden px-6 py-32">
+    <section className="relative overflow-hidden px-6 py-32" id="how-it-works">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent" />
 
@@ -424,7 +436,6 @@ function ShowcaseSection() {
                   className="h-full w-full object-cover opacity-80"
                   fill
                   src="https://cdn.pixabay.com/photo/2016/11/19/14/00/code-1839406_1280.jpg"
-                  unoptimized
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/50 to-transparent" />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -545,20 +556,25 @@ function CTASection() {
             Start generating content today.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button asChild className="group h-12 px-8 text-base" size="lg">
-              <Link href="/signup">
-                Get started for free
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              className="h-12 px-8 text-base"
-              size="lg"
-              variant="outline"
+            <Link
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "group h-12 px-8 text-base"
+              )}
+              href="/signup"
             >
-              <Link href="/login">Sign in</Link>
-            </Button>
+              Get started for free
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+            <Link
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "h-12 px-8 text-base"
+              )}
+              href="/login"
+            >
+              Sign in
+            </Link>
           </div>
           <p className="mt-6 text-muted-foreground text-sm">
             No credit card required. Free forever for small projects.
