@@ -43,6 +43,9 @@ function FloatingToolbar({
   isLink,
 }: FloatingToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("https://");
 
   const updatePosition = useCallback(() => {
     const selection = window.getSelection();
@@ -61,11 +64,20 @@ function FloatingToolbar({
     const rect = range.getBoundingClientRect();
     const anchorRect = anchorElem.getBoundingClientRect();
 
-    // Constrain top to minimum of 8px to prevent toolbar going off-screen
-    const top = Math.max(
-      8,
-      rect.top - anchorRect.top - toolbar.offsetHeight - 8
-    );
+    // Calculate position above selection
+    const spaceAbove = rect.top - anchorRect.top;
+    const toolbarHeight = toolbar.offsetHeight;
+    const minSpaceNeeded = toolbarHeight + 16;
+
+    let top: number;
+    if (spaceAbove < minSpaceNeeded) {
+      // Not enough space above, position below selection
+      top = rect.bottom - anchorRect.top + 8;
+    } else {
+      // Position above selection
+      top = rect.top - anchorRect.top - toolbarHeight - 8;
+    }
+
     let left =
       rect.left - anchorRect.left + rect.width / 2 - toolbar.offsetWidth / 2;
 
@@ -115,17 +127,39 @@ function FloatingToolbar({
     );
   }, [editor, updatePosition]);
 
-  const insertLink = useCallback(() => {
+  const handleLinkClick = useCallback(() => {
     if (isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+      setShowLinkInput(false);
     } else {
-      const url = prompt("Enter URL:", "https://");
-      // Validate URL is not empty or just the placeholder
-      if (url !== null && url.trim() !== "" && url.trim() !== "https://") {
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, url.trim());
-      }
+      setShowLinkInput(true);
+      setLinkUrl("https://");
+      // Focus the input after it renders
+      setTimeout(() => linkInputRef.current?.focus(), 0);
     }
   }, [editor, isLink]);
+
+  const submitLink = useCallback(() => {
+    const trimmedUrl = linkUrl.trim();
+    if (trimmedUrl !== "" && trimmedUrl !== "https://") {
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, trimmedUrl);
+    }
+    setShowLinkInput(false);
+    setLinkUrl("https://");
+  }, [editor, linkUrl]);
+
+  const handleLinkKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitLink();
+      } else if (e.key === "Escape") {
+        setShowLinkInput(false);
+        setLinkUrl("https://");
+      }
+    },
+    [submitLink]
+  );
 
   const buttonClass = (active: boolean) =>
     `p-1.5 rounded hover:bg-muted transition-colors ${active ? "bg-muted text-primary" : "text-muted-foreground"}`;
@@ -188,12 +222,34 @@ function FloatingToolbar({
       <button
         aria-label="Insert link"
         className={buttonClass(isLink)}
-        onClick={insertLink}
+        onClick={handleLinkClick}
         title="Link"
         type="button"
       >
         <Link className="size-4" />
       </button>
+      {showLinkInput && (
+        <div className="ml-1 flex items-center gap-1">
+          <input
+            aria-label="URL"
+            className="h-7 w-40 rounded border bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={handleLinkKeyDown}
+            placeholder="Enter URL"
+            ref={linkInputRef}
+            type="url"
+            value={linkUrl}
+          />
+          <button
+            aria-label="Apply link"
+            className="rounded bg-primary px-2 py-1 text-primary-foreground text-xs hover:bg-primary/90"
+            onClick={submitLink}
+            type="button"
+          >
+            Apply
+          </button>
+        </div>
+      )}
     </div>
   );
 }
