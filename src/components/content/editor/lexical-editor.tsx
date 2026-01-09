@@ -1,9 +1,10 @@
 "use client";
 
 import { CodeNode } from "@lexical/code";
-import { LinkNode } from "@lexical/link";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { $convertFromMarkdownString } from "@lexical/markdown";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
@@ -16,6 +17,7 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
+import { EditorAutoLinkPlugin } from "./plugins/auto-link-plugin";
 import { DraggableBlockPlugin } from "./plugins/draggable-block-plugin";
 import {
   type EditorRefHandle,
@@ -24,6 +26,7 @@ import {
 import { HorizontalRulePlugin } from "./plugins/horizontal-rule-plugin";
 import { MarkdownSyncPlugin } from "./plugins/markdown-sync-plugin";
 import { SelectionPlugin } from "./plugins/selection-plugin";
+import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
 
 interface LexicalEditorProps {
   initialMarkdown: string;
@@ -64,6 +67,7 @@ export function LexicalEditor({
         ListItemNode,
         CodeNode,
         LinkNode,
+        AutoLinkNode,
         HorizontalRuleNode,
       ],
       theme: editorTheme,
@@ -104,6 +108,9 @@ export function LexicalEditor({
         {editable && (
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         )}
+        {editable && <EditorAutoLinkPlugin />}
+        <ClickableLinkPlugin newTab />
+        <TabFocusPlugin />
         <MarkdownSyncPlugin
           onChange={handleChange}
           transformers={EDITOR_TRANSFORMERS}
