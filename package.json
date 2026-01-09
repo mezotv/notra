@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "auth:generate": "bunx @better-auth/cli generate --config src/lib/auth/server.ts --output src/lib/db/schema.ts -y"
+    "auth:generate": "bunx @better-auth/cli generate --config src/lib/auth/server.ts --output src/lib/db/schema.ts -y",
+    "db:seed": "tsx scripts/seed-posts.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^2.0.119",

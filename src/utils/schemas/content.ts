@@ -22,6 +22,25 @@ export const contentSchema = z.object({
 
 export type ContentResponse = z.infer<typeof contentSchema>;
 
+export const postSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  markdown: z.string(),
+  contentType: contentTypeSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type Post = z.infer<typeof postSchema>;
+
+export const postsResponseSchema = z.object({
+  posts: z.array(postSchema),
+  nextCursor: z.string().nullable(),
+});
+
+export type PostsResponse = z.infer<typeof postsResponseSchema>;
+
 export const editContentSchema = z.object({
   instruction: z.string().min(1, "Instruction is required"),
   currentMarkdown: z.string(),

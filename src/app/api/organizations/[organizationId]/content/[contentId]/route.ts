@@ -1,6 +1,8 @@
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import { EXAMPLE_CONTENT } from "@/app/(dashboard)/[slug]/content/[id]/content-data";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { db } from "@/lib/db/drizzle";
+import { posts } from "@/lib/db/schema";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
 
@@ -17,16 +19,25 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return auth.response;
     }
 
-    const content = EXAMPLE_CONTENT.find((c) => c.id === contentId);
+    const post = await db.query.posts.findFirst({
+      where: and(
+        eq(posts.id, contentId),
+        eq(posts.organizationId, organizationId)
+      ),
+    });
 
-    if (!content) {
+    if (!post) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       content: {
-        ...content,
-        date: content.date.toISOString(),
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        markdown: post.markdown,
+        contentType: post.contentType,
+        date: post.createdAt.toISOString(),
       },
     });
   } catch (error) {
@@ -57,26 +68,48 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const contentIndex = EXAMPLE_CONTENT.findIndex((c) => c.id === contentId);
+    const existingPost = await db.query.posts.findFirst({
+      where: and(
+        eq(posts.id, contentId),
+        eq(posts.organizationId, organizationId)
+      ),
+    });
 
-    if (contentIndex === -1) {
+    if (!existingPost) {
       return NextResponse.json({ error: "Content not found" }, { status: 404 });
     }
 
-    // Update the content in memory
-    EXAMPLE_CONTENT[contentIndex].markdown = markdown;
-
     // Extract title from markdown
     const titleMatch = markdown.match(TITLE_REGEX);
-    if (titleMatch) {
-      EXAMPLE_CONTENT[contentIndex].title = titleMatch[1];
+    const newTitle = titleMatch?.[1] ?? existingPost.title;
+
+    const [updatedPost] = await db
+      .update(posts)
+      .set({
+        markdown,
+        title: newTitle,
+      })
+      .where(
+        and(eq(posts.id, contentId), eq(posts.organizationId, organizationId))
+      )
+      .returning();
+
+    if (!updatedPost) {
+      return NextResponse.json(
+        { error: "Failed to update content" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       content: {
-        ...EXAMPLE_CONTENT[contentIndex],
-        date: EXAMPLE_CONTENT[contentIndex].date.toISOString(),
+        id: updatedPost.id,
+        title: updatedPost.title,
+        content: updatedPost.content,
+        markdown: updatedPost.markdown,
+        contentType: updatedPost.contentType,
+        date: updatedPost.createdAt.toISOString(),
       },
     });
   } catch (error) {

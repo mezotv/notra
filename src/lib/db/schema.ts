@@ -229,6 +229,29 @@ export const brandSettings = pgTable(
   ]
 );
 
+export const posts = pgTable(
+  "posts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    content: text("content").notNull(),
+    markdown: text("markdown").notNull(),
+    contentType: text("content_type").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("posts_organizationId_idx").on(table.organizationId),
+    index("posts_createdAt_idx").on(table.createdAt),
+  ]
+);
+
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
@@ -258,6 +281,7 @@ export const organizationsRelations = relations(
     invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
     brandSettings: one(brandSettings),
+    posts: many(posts),
   })
 );
 
@@ -322,6 +346,13 @@ export const repositoryOutputsRelations = relations(
 export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
   organization: one(organizations, {
     fields: [brandSettings.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const postsRelations = relations(posts, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [posts.organizationId],
     references: [organizations.id],
   }),
 }));
