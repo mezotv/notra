@@ -216,11 +216,12 @@ export const brandSettings = pgTable(
     companyDescription: text("company_description"),
     toneProfile: text("tone_profile"),
     customTone: text("custom_tone"),
+    customInstructions: text("custom_instructions"),
     audience: text("audience"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
-      .$onUpdate(() => new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
   (table) => [
