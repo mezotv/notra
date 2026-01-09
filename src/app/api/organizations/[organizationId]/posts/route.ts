@@ -59,6 +59,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
       const cursorDate = new Date(cursorData.createdAt);
 
+      if (isNaN(cursorDate.getTime())) {
+        return NextResponse.json({ error: "Invalid cursor" }, { status: 400 });
+      }
+
       // Use compound cursor: items with earlier timestamp OR same timestamp with lexicographically smaller id
       results = await db.query.posts.findMany({
         where: and(
