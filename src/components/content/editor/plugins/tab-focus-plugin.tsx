@@ -8,41 +8,31 @@ import {
   COMMAND_PRIORITY_LOW,
   FOCUS_COMMAND,
 } from "lexical";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-const TAB_TO_FOCUS_INTERVAL = 100;
-
-let lastTabKeyDownTimestamp = 0;
-let hasRegisteredKeyDownListener = false;
-
-function registerKeyTimeStampTracker() {
-  window.addEventListener(
-    "keydown",
-    (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
-        lastTabKeyDownTimestamp = event.timeStamp;
-      }
-    },
-    true
-  );
-}
+const TAB_TO_FOCUS_INTERVAL = 200;
 
 export function TabFocusPlugin(): null {
   const [editor] = useLexicalComposerContext();
+  const lastTabKeyDownTimestampRef = useRef(0);
 
   useEffect(() => {
-    if (!hasRegisteredKeyDownListener) {
-      registerKeyTimeStampTracker();
-      hasRegisteredKeyDownListener = true;
-    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        lastTabKeyDownTimestampRef.current = event.timeStamp;
+      }
+    };
 
-    return editor.registerCommand(
+    window.addEventListener("keydown", handleKeyDown, true);
+
+    const unregisterCommand = editor.registerCommand(
       FOCUS_COMMAND,
       (event: FocusEvent) => {
         const selection = $getSelection();
         if (
           $isRangeSelection(selection) &&
-          lastTabKeyDownTimestamp + TAB_TO_FOCUS_INTERVAL > event.timeStamp
+          lastTabKeyDownTimestampRef.current + TAB_TO_FOCUS_INTERVAL >
+            event.timeStamp
         ) {
           $setSelection(selection.clone());
         }
@@ -50,6 +40,11 @@ export function TabFocusPlugin(): null {
       },
       COMMAND_PRIORITY_LOW
     );
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+      unregisterCommand();
+    };
   }, [editor]);
 
   return null;
