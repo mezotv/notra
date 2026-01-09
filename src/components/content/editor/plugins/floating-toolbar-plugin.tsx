@@ -58,11 +58,14 @@ function FloatingToolbar({
     const anchorRect = anchorElem.getBoundingClientRect();
 
     const top = rect.top - anchorRect.top - toolbar.offsetHeight - 8;
-    const left =
+    let left =
       rect.left - anchorRect.left + rect.width / 2 - toolbar.offsetWidth / 2;
 
+    const maxLeft = anchorRect.width - toolbar.offsetWidth;
+    left = Math.max(0, Math.min(left, maxLeft));
+
     toolbar.style.top = `${top}px`;
-    toolbar.style.left = `${Math.max(0, left)}px`;
+    toolbar.style.left = `${left}px`;
     toolbar.style.opacity = "1";
   }, [anchorElem]);
 
@@ -72,11 +75,11 @@ function FloatingToolbar({
     const handleScroll = () => updatePosition();
     const handleResize = () => updatePosition();
 
-    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("scroll", handleScroll);
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleResize);
     };
   }, [updatePosition]);
@@ -114,6 +117,7 @@ function FloatingToolbar({
     <div
       className="absolute z-50 flex items-center gap-0.5 rounded-lg border bg-popover p-1 opacity-0 shadow-lg transition-opacity"
       ref={toolbarRef}
+      role="toolbar"
       style={{ pointerEvents: "auto" }}
     >
       <button
