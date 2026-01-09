@@ -1,11 +1,11 @@
 "use client";
 
-import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   $createHorizontalRuleNode,
   HorizontalRuleNode,
   INSERT_HORIZONTAL_RULE_COMMAND,
-} from "@lexical/react/LexicalHorizontalRuleNode";
+} from "@lexical/extension";
+import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import { COMMAND_PRIORITY_EDITOR } from "lexical";
 import { useEffect } from "react";
