@@ -1,9 +1,10 @@
 "use client";
 
 import { CodeNode } from "@lexical/code";
-import { LinkNode } from "@lexical/link";
+import { AutoLinkNode, LinkNode } from "@lexical/link";
 import { ListItemNode, ListNode } from "@lexical/list";
-import { $convertFromMarkdownString } from "@lexical/markdown";
+import { $convertFromMarkdownString, TRANSFORMERS } from "@lexical/markdown";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
@@ -16,6 +17,7 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { type RefObject, useCallback, useMemo, useRef } from "react";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
+import { EditorAutoLinkPlugin } from "./plugins/auto-link-plugin";
 import {
   type EditorRefHandle,
   EditorRefPlugin,
@@ -55,6 +57,7 @@ export function LexicalEditor({
         ListItemNode,
         CodeNode,
         LinkNode,
+        AutoLinkNode,
         HorizontalRuleNode,
       ],
       theme: editorTheme,
@@ -91,6 +94,13 @@ export function LexicalEditor({
         />
         <HistoryPlugin />
         <ListPlugin />
+        {editable && <MarkdownShortcutPlugin transformers={TRANSFORMERS} />}
+        {editable && <EditorAutoLinkPlugin />}
+        <ClickableLinkPlugin newTab />
+        <MarkdownSyncPlugin
+          onChange={handleChange}
+          transformers={TRANSFORMERS}
+        />
         <HorizontalRulePlugin />
         {editable && (
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
