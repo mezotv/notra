@@ -14,10 +14,11 @@ import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
-import { type RefObject, useCallback, useMemo, useRef } from "react";
+import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
 import { EditorAutoLinkPlugin } from "./plugins/auto-link-plugin";
+import { DraggableBlockPlugin } from "./plugins/draggable-block-plugin";
 import {
   type EditorRefHandle,
   EditorRefPlugin,
@@ -43,6 +44,14 @@ export function LexicalEditor({
   editorRef,
 }: LexicalEditorProps) {
   const isProgrammaticUpdateRef = useRef(false);
+  const [floatingAnchorElem, setFloatingAnchorElem] =
+    useState<HTMLDivElement | null>(null);
+
+  const onRef = useCallback((node: HTMLDivElement | null): void => {
+    if (node !== null) {
+      setFloatingAnchorElem(node);
+    }
+  }, []);
 
   const onError = useCallback((error: Error) => {
     console.error("Lexical error:", error);
@@ -82,7 +91,7 @@ export function LexicalEditor({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <div className="lexical-editor relative">
+      <div className="lexical-editor relative" ref={onRef}>
         <RichTextPlugin
           contentEditable={
             <ContentEditable
@@ -112,6 +121,9 @@ export function LexicalEditor({
             editorRef={editorRef}
             isProgrammaticUpdateRef={isProgrammaticUpdateRef}
           />
+        )}
+        {editable && floatingAnchorElem && (
+          <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
         )}
       </div>
     </LexicalComposer>
