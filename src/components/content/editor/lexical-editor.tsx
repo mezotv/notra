@@ -15,8 +15,8 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { editorTheme } from "./editor-theme";
-import { DraggableBlockPlugin } from "./plugins/draggable-block-plugin";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
+import { DraggableBlockPlugin } from "./plugins/draggable-block-plugin";
 import {
   type EditorRefHandle,
   EditorRefPlugin,
@@ -44,7 +44,7 @@ export function LexicalEditor({
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
-  const onRef = useCallback((node: HTMLDivElement | null) => {
+  const onRef = useCallback((node: HTMLDivElement | null): void => {
     if (node !== null) {
       setFloatingAnchorElem(node);
     }
