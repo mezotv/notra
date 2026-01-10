@@ -3,8 +3,17 @@ import {
   $isHorizontalRuleNode,
   HorizontalRuleNode,
 } from "@lexical/extension";
-import type { ElementTransformer } from "@lexical/markdown";
+import type {
+  ElementTransformer,
+  MultilineElementTransformer,
+  Transformer,
+} from "@lexical/markdown";
 import { TRANSFORMERS } from "@lexical/markdown";
+import {
+  $createKiboCodeBlockNode,
+  $isKiboCodeBlockNode,
+  KiboCodeBlockNode,
+} from "./nodes/kibo-code-block-node";
 
 export const HORIZONTAL_RULE: ElementTransformer = {
   dependencies: [HorizontalRuleNode],
@@ -26,4 +35,61 @@ export const HORIZONTAL_RULE: ElementTransformer = {
   type: "element",
 };
 
-export const EDITOR_TRANSFORMERS = [...TRANSFORMERS, HORIZONTAL_RULE];
+export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
+  dependencies: [KiboCodeBlockNode],
+  export: (node) => {
+    if (!$isKiboCodeBlockNode(node)) {
+      return null;
+    }
+    const language = node.getLanguage();
+    const code = node.getCode();
+    return `\`\`\`${language}\n${code}\n\`\`\``;
+  },
+  regExpEnd: {
+    optional: true,
+    regExp: /^[ \t]*```$/,
+  },
+  regExpStart: /^[ \t]*```(\w+)?/,
+  replace: (
+    rootNode,
+    children,
+    startMatch,
+    _endMatch,
+    linesInBetween,
+    _isImport
+  ) => {
+    const language = startMatch[1] || "";
+
+    // During markdown import (linesInBetween has content)
+    if (linesInBetween) {
+      const code = linesInBetween.join("\n");
+      const codeBlockNode = $createKiboCodeBlockNode(code, language);
+      rootNode.append(codeBlockNode);
+      return;
+    }
+
+    // During markdown shortcut (children exist, replace parent)
+    if (children) {
+      const code = children.map((child) => child.getTextContent()).join("\n");
+      const codeBlockNode = $createKiboCodeBlockNode(code, language);
+      children[0].getParentOrThrow().replace(codeBlockNode);
+    }
+  },
+  type: "multiline-element",
+};
+
+// Filter out the default CODE transformer and add our custom one
+const filteredTransformers = TRANSFORMERS.filter((transformer: Transformer) => {
+  if (transformer.type === "multiline-element") {
+    const multiline = transformer as MultilineElementTransformer;
+    // Filter out the default code block transformer
+    return !multiline.regExpStart?.toString().includes("```");
+  }
+  return true;
+});
+
+export const EDITOR_TRANSFORMERS = [
+  ...filteredTransformers,
+  HORIZONTAL_RULE,
+  KIBO_CODE_BLOCK,
+];

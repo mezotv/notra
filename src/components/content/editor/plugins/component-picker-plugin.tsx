@@ -1,6 +1,5 @@
 "use client";
 
-import { $createCodeNode } from "@lexical/code";
 import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/extension";
 import {
   INSERT_ORDERED_LIST_COMMAND,
@@ -17,6 +16,7 @@ import { $setBlocksType } from "@lexical/selection";
 import {
   $createParagraphNode,
   $getSelection,
+  $insertNodes,
   $isRangeSelection,
   type TextNode,
 } from "lexical";
@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { $createKiboCodeBlockNode } from "../nodes/kibo-code-block-node";
 
 class ComponentPickerOption extends MenuOption {
   title: string;
@@ -184,7 +185,8 @@ export function ComponentPickerPlugin() {
           editor.update(() => {
             const selection = $getSelection();
             if ($isRangeSelection(selection)) {
-              $setBlocksType(selection, () => $createCodeNode());
+              const codeBlock = $createKiboCodeBlockNode("", "typescript");
+              $insertNodes([codeBlock]);
             }
           }),
       }),

@@ -9,19 +9,8 @@ import {
   transformerNotationWordHighlight,
 } from "@shikijs/transformers";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import type {
-  ComponentProps,
-  HTMLAttributes,
-  ReactElement,
-  ReactNode,
-} from "react";
-import {
-  cloneElement,
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import {
   SiAstro,
@@ -292,17 +281,17 @@ const highlight = (
     ],
   });
 
-type CodeBlockData = {
+interface CodeBlockData {
   language: string;
   filename: string;
   code: string;
-};
+}
 
-type CodeBlockContextType = {
+interface CodeBlockContextType {
   value: string | undefined;
   onValueChange: ((value: string) => void) | undefined;
   data: CodeBlockData[];
-};
+}
 
 const CodeBlockContext = createContext<CodeBlockContextType>({
   value: undefined,
@@ -421,7 +410,13 @@ export type CodeBlockSelectProps = ComponentProps<typeof Select>;
 export const CodeBlockSelect = (props: CodeBlockSelectProps) => {
   const { value, onValueChange } = useContext(CodeBlockContext);
 
-  return <Select onValueChange={onValueChange} value={value} {...props} />;
+  const handleValueChange = (newValue: unknown) => {
+    if (typeof newValue === "string") {
+      onValueChange?.(newValue);
+    }
+  };
+
+  return <Select onValueChange={handleValueChange} value={value} {...props} />;
 };
 
 export type CodeBlockSelectTriggerProps = ComponentProps<typeof SelectTrigger>;
@@ -470,18 +465,19 @@ export const CodeBlockSelectItem = ({
   <SelectItem className={cn("text-sm", className)} {...props} />
 );
 
-export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
+export type CodeBlockCopyButtonProps = Omit<
+  ComponentProps<typeof Button>,
+  "children"
+> & {
   onCopy?: () => void;
   onError?: (error: Error) => void;
   timeout?: number;
 };
 
 export const CodeBlockCopyButton = ({
-  asChild,
   onCopy,
   onError,
   timeout = 2000,
-  children,
   className,
   ...props
 }: CodeBlockCopyButtonProps) => {
@@ -506,13 +502,6 @@ export const CodeBlockCopyButton = ({
     }, onError);
   };
 
-  if (asChild) {
-    return cloneElement(children as ReactElement, {
-      // @ts-expect-error - we know this is a button
-      onClick: copyToClipboard,
-    });
-  }
-
   const Icon = isCopied ? CheckIcon : CopyIcon;
 
   return (
@@ -523,7 +512,7 @@ export const CodeBlockCopyButton = ({
       variant="ghost"
       {...props}
     >
-      {children ?? <Icon className="text-muted-foreground" size={14} />}
+      <Icon className="text-muted-foreground" size={14} />
     </Button>
   );
 };
@@ -538,6 +527,7 @@ const CodeBlockFallback = ({ children, ...props }: CodeBlockFallbackProps) => (
           ?.toString()
           .split("\n")
           .map((line, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: Lines are static content
             <span className="line" key={i}>
               {line}
             </span>
@@ -620,7 +610,6 @@ export const CodeBlockContent = ({
 
     highlight(children as string, language, themes)
       .then(setHtml)
-      // biome-ignore lint/suspicious/noConsole: "it's fine"
       .catch(console.error);
   }, [children, themes, syntaxHighlighting, language]);
 
