@@ -247,7 +247,7 @@ export default function KiboCodeBlockComponent({
       </div>
       <div className="flex">
         <div
-          className="select-none border-r bg-secondary/50 py-4 pr-2 pl-4 text-right font-mono text-muted-foreground/50 text-sm leading-relaxed"
+          className="min-w-[3ch] select-none border-r bg-secondary/50 py-4 pr-2 pl-4 text-right font-mono text-muted-foreground/50 text-sm tabular-nums leading-relaxed"
           ref={lineNumbersRef}
         >
           {Array.from({ length: lineCount }, (_, i) => (
