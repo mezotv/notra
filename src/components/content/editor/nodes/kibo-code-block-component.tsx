@@ -11,19 +11,9 @@ import {
   COMMAND_PRIORITY_LOW,
   KEY_BACKSPACE_COMMAND,
   KEY_DELETE_COMMAND,
-  KEY_ENTER_COMMAND,
-  KEY_ESCAPE_COMMAND,
 } from "lexical";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type BundledLanguage,
-  CodeBlock,
-  CodeBlockBody,
-  CodeBlockContent,
-  CodeBlockCopyButton,
-  CodeBlockHeader,
-  CodeBlockItem,
-} from "@/components/kibo-ui/code-block";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -75,12 +65,39 @@ export default function KiboCodeBlockComponent({
   const [editor] = useLexicalComposerContext();
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedCode, setEditedCode] = useState(code);
+  const [localCode, setLocalCode] = useState(code);
+  const [isCopied, setIsCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const normalizedLanguage = language || "plain";
+  const lineCount = Math.max(1, localCode.split("\n").length);
+
+  // Sync local code with prop
+  useEffect(() => {
+    setLocalCode(code);
+  }, [code]);
+
+  // Auto-resize textarea when content changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: localCode triggers resize
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, [localCode]);
+
+  // Cleanup copy timeout
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const onDelete = useCallback(
     (event: KeyboardEvent) => {
@@ -97,32 +114,6 @@ export default function KiboCodeBlockComponent({
       return false;
     },
     [editor, isSelected, nodeKey]
-  );
-
-  const onEnter = useCallback(
-    (event: KeyboardEvent) => {
-      if (isSelected && !isEditing) {
-        event.preventDefault();
-        setIsEditing(true);
-        setEditedCode(code);
-        return true;
-      }
-      return false;
-    },
-    [isSelected, isEditing, code]
-  );
-
-  const onEscape = useCallback(
-    (event: KeyboardEvent) => {
-      if (isEditing) {
-        event.preventDefault();
-        setIsEditing(false);
-        setEditedCode(code);
-        return true;
-      }
-      return false;
-    },
-    [isEditing, code]
   );
 
   useEffect(() => {
@@ -151,22 +142,9 @@ export default function KiboCodeBlockComponent({
         KEY_BACKSPACE_COMMAND,
         onDelete,
         COMMAND_PRIORITY_LOW
-      ),
-      editor.registerCommand(KEY_ENTER_COMMAND, onEnter, COMMAND_PRIORITY_LOW),
-      editor.registerCommand(KEY_ESCAPE_COMMAND, onEscape, COMMAND_PRIORITY_LOW)
+      )
     );
-  }, [editor, clearSelection, setSelected, onDelete, onEnter, onEscape]);
-
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
-    }
-  }, [isEditing]);
-
-  useEffect(() => {
-    setEditedCode(code);
-  }, [code]);
+  }, [editor, clearSelection, setSelected, onDelete]);
 
   const handleLanguageChange = useCallback(
     (newLanguage: string | null) => {
@@ -183,130 +161,110 @@ export default function KiboCodeBlockComponent({
     [editor, nodeKey]
   );
 
-  const handleSaveEdit = useCallback(() => {
-    editor.update(() => {
-      const node = $getNodeByKey(nodeKey);
-      if ($isKiboCodeBlockNode(node)) {
-        node.setCode(editedCode);
-      }
-    });
-    setIsEditing(false);
-  }, [editor, nodeKey, editedCode]);
-
-  const handleDoubleClick = useCallback(() => {
-    setIsEditing(true);
-    setEditedCode(code);
-  }, [code]);
-
-  const handleTextareaKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setIsEditing(false);
-        setEditedCode(code);
-      } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        handleSaveEdit();
-      }
-      event.stopPropagation();
+  const handleCodeChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newCode = e.target.value;
+      setLocalCode(newCode);
+      editor.update(() => {
+        const node = $getNodeByKey(nodeKey);
+        if ($isKiboCodeBlockNode(node)) {
+          node.setCode(newCode);
+        }
+      });
     },
-    [code, handleSaveEdit]
+    [editor, nodeKey]
   );
 
-  const data = [
-    {
-      language: normalizedLanguage,
-      filename: `code.${normalizedLanguage}`,
-      code: isEditing ? editedCode : code,
+  const handleCopy = useCallback(() => {
+    if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
+      return;
+    }
+    navigator.clipboard.writeText(localCode).catch(() => {
+      // Ignore clipboard errors
+    });
+    setIsCopied(true);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setIsCopied(false);
+      copyTimeoutRef.current = null;
+    }, 2000);
+  }, [localCode]);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      // Allow all normal typing, just stop propagation to prevent Lexical from handling
+      event.stopPropagation();
     },
-  ];
+    []
+  );
+
+  const CopyButtonIcon = isCopied ? CheckIcon : CopyIcon;
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: Interactive editor element
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Interactive editor element
+    // biome-ignore lint/a11y/useKeyWithClickEvents: Click focuses textarea
     <div
       className={cn(
-        "relative",
-        isSelected && "rounded-lg ring-2 ring-primary ring-offset-2"
+        "relative my-4 overflow-hidden rounded-lg border bg-secondary/50",
+        isSelected && "ring-2 ring-primary ring-offset-2"
       )}
-      onDoubleClick={handleDoubleClick}
+      onClick={() => textareaRef.current?.focus()}
       ref={blockRef}
     >
-      <CodeBlock
-        data={data}
-        defaultValue={normalizedLanguage}
-        value={normalizedLanguage}
-      >
-        <CodeBlockHeader>
-          <Select
-            onValueChange={handleLanguageChange}
-            value={normalizedLanguage}
+      <div className="flex items-center justify-between border-b bg-secondary px-1 py-1">
+        <Select onValueChange={handleLanguageChange} value={normalizedLanguage}>
+          <SelectTrigger
+            aria-label="Select code language"
+            className="h-7 w-fit gap-1 border-none bg-transparent text-muted-foreground text-xs shadow-none"
+            size="sm"
           >
-            <SelectTrigger
-              aria-label="Select code language"
-              className="h-7 w-fit gap-1 border-none bg-transparent text-muted-foreground text-xs shadow-none"
-              size="sm"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(CODE_LANGUAGES).map(([key, label]) => (
-                <SelectItem key={key} value={key}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="ml-auto flex items-center gap-1">
-            {isEditing && (
-              <Button
-                className="h-7 text-xs"
-                onClick={handleSaveEdit}
-                size="sm"
-                variant="ghost"
-              >
-                Save (⌘↵)
-              </Button>
-            )}
-            <CodeBlockCopyButton />
-          </div>
-        </CodeBlockHeader>
-        <CodeBlockBody>
-          {(item) =>
-            isEditing ? (
-              <div className="relative" key={item.language}>
-                <textarea
-                  className="min-h-[100px] w-full resize-none bg-transparent p-4 font-mono text-sm outline-none"
-                  onChange={(e) => setEditedCode(e.target.value)}
-                  onKeyDown={handleTextareaKeyDown}
-                  ref={textareaRef}
-                  spellCheck={false}
-                  value={editedCode}
-                />
-              </div>
-            ) : (
-              <CodeBlockItem
-                key={item.language}
-                lineNumbers
-                value={normalizedLanguage}
-              >
-                <CodeBlockContent
-                  language={normalizedLanguage as BundledLanguage}
-                >
-                  {code || " "}
-                </CodeBlockContent>
-              </CodeBlockItem>
-            )
-          }
-        </CodeBlockBody>
-      </CodeBlock>
-      {!(code || isEditing) && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="text-muted-foreground text-sm">
-            Double-click or press Enter to edit
-          </span>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(CODE_LANGUAGES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          aria-label={isCopied ? "Code copied" : "Copy code"}
+          className="h-7 shrink-0"
+          onClick={handleCopy}
+          size="icon"
+          variant="ghost"
+        >
+          <CopyButtonIcon
+            className={isCopied ? "text-green-500" : "text-muted-foreground"}
+            size={14}
+          />
+        </Button>
+      </div>
+      <div className="flex">
+        <div
+          className="select-none border-r bg-secondary/50 py-4 pr-2 pl-4 text-right font-mono text-muted-foreground/50 text-sm leading-relaxed"
+          ref={lineNumbersRef}
+        >
+          {Array.from({ length: lineCount }, (_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: Line numbers are static
+            <div key={i + 1}>{i + 1}</div>
+          ))}
         </div>
-      )}
+        <textarea
+          className="block flex-1 resize-none bg-transparent py-4 pr-4 pl-3 font-mono text-sm leading-relaxed outline-none"
+          onChange={handleCodeChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter code here..."
+          ref={textareaRef}
+          rows={1}
+          spellCheck={false}
+          value={localCode}
+        />
+      </div>
     </div>
   );
 }
