@@ -1,6 +1,47 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { authComponent } from "./auth";
+
+async function getAuthenticatedUser(ctx: { auth: unknown }) {
+  const user = await authComponent.getAuthUser(
+    ctx as Parameters<typeof authComponent.getAuthUser>[0]
+  );
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  return user;
+}
+
+async function verifyOrgAccess(
+  ctx: { db: unknown },
+  userId: string,
+  organizationId: string
+) {
+  const db = ctx.db as {
+    query: (table: "members") => {
+      withIndex: (
+        index: string,
+        fn: (q: {
+          eq: (
+            field: string,
+            value: string
+          ) => { eq: (field: string, value: string) => unknown };
+        }) => unknown
+      ) => { first: () => Promise<{ _id: string; role: string } | null> };
+    };
+  };
+  const membership = await db
+    .query("members")
+    .withIndex("by_user_org", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId)
+    )
+    .first();
+  if (!membership) {
+    throw new Error("You do not have access to this organization");
+  }
+  return membership;
+}
 
 export const list = query({
   args: {
@@ -8,6 +49,9 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    await verifyOrgAccess(ctx, user._id, args.organizationId);
+
     return await ctx.db
       .query("posts")
       .withIndex("by_organization", (q) =>
@@ -36,7 +80,16 @@ export const get = query({
     })
   ),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.postId);
+    const user = await getAuthenticatedUser(ctx);
+
+    const post = await ctx.db.get(args.postId);
+    if (!post) {
+      return null;
+    }
+
+    await verifyOrgAccess(ctx, user._id, post.organizationId);
+
+    return post;
   },
 });
 
@@ -58,6 +111,9 @@ export const getByOrganization = query({
     })
   ),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    await verifyOrgAccess(ctx, user._id, args.organizationId);
+
     const q = ctx.db
       .query("posts")
       .withIndex("by_organization", (q) =>
@@ -83,6 +139,9 @@ export const create = mutation({
   },
   returns: v.id("posts"),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    await verifyOrgAccess(ctx, user._id, args.organizationId);
+
     return await ctx.db.insert("posts", {
       organizationId: args.organizationId,
       title: args.title,
@@ -104,10 +163,14 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const post = await ctx.db.get(args.postId);
     if (!post) {
       throw new Error("Post not found");
     }
+
+    await verifyOrgAccess(ctx, user._id, post.organizationId);
 
     const updates: Partial<{
       title: string;
@@ -143,10 +206,14 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const post = await ctx.db.get(args.postId);
     if (!post) {
       throw new Error("Post not found");
     }
+
+    await verifyOrgAccess(ctx, user._id, post.organizationId);
 
     await ctx.db.delete(args.postId);
     return null;

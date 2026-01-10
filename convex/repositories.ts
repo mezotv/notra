@@ -12,6 +12,36 @@ async function getAuthenticatedUser(ctx: { auth: unknown }) {
   return user;
 }
 
+async function verifyOrgAccess(
+  ctx: { db: unknown },
+  userId: string,
+  organizationId: string
+) {
+  const db = ctx.db as {
+    query: (table: "members") => {
+      withIndex: (
+        index: string,
+        fn: (q: {
+          eq: (
+            field: string,
+            value: string
+          ) => { eq: (field: string, value: string) => unknown };
+        }) => unknown
+      ) => { first: () => Promise<{ _id: string; role: string } | null> };
+    };
+  };
+  const membership = await db
+    .query("members")
+    .withIndex("by_user_org", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId)
+    )
+    .first();
+  if (!membership) {
+    throw new Error("You do not have access to this organization");
+  }
+  return membership;
+}
+
 export const listByIntegration = query({
   args: {
     integrationId: v.id("githubIntegrations"),
@@ -37,6 +67,15 @@ export const listByIntegration = query({
     })
   ),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const integration = await ctx.db.get(args.integrationId);
+    if (!integration) {
+      return [];
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
     const repositories = await ctx.db
       .query("githubRepositories")
       .withIndex("by_integration", (q) =>
@@ -88,10 +127,19 @@ export const get = query({
     })
   ),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const repo = await ctx.db.get(args.repositoryId);
     if (!repo) {
       return null;
     }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      return null;
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const outputs = await ctx.db
       .query("repositoryOutputs")
@@ -122,12 +170,14 @@ export const add = mutation({
   },
   returns: v.id("githubRepositories"),
   handler: async (ctx, args) => {
-    await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUser(ctx);
 
     const integration = await ctx.db.get(args.integrationId);
     if (!integration) {
       throw new Error("Integration not found");
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const repositoryId = await ctx.db.insert("githubRepositories", {
       integrationId: args.integrationId,
@@ -162,10 +212,19 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const repo = await ctx.db.get(args.repositoryId);
     if (!repo) {
       throw new Error("Repository not found");
     }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      throw new Error("Integration not found");
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     if (args.enabled !== undefined) {
       await ctx.db.patch(args.repositoryId, {
@@ -183,10 +242,19 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const repo = await ctx.db.get(args.repositoryId);
     if (!repo) {
       throw new Error("Repository not found");
     }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      throw new Error("Integration not found");
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const outputs = await ctx.db
       .query("repositoryOutputs")
@@ -204,6 +272,8 @@ export const remove = mutation({
   },
 });
 
+// Internal query for webhook processing - no auth check needed as this is called
+// from server-side webhook handlers that don't have user context
 export const getByOwnerRepo = query({
   args: {
     owner: v.string(),
@@ -221,11 +291,12 @@ export const getByOwnerRepo = query({
     })
   ),
   handler: async (ctx, args) => {
-    const repositories = await ctx.db.query("githubRepositories").collect();
-
-    const repository = repositories.find(
-      (r) => r.owner === args.owner && r.repo === args.repo
-    );
+    const repository = await ctx.db
+      .query("githubRepositories")
+      .withIndex("by_owner_repo", (q) =>
+        q.eq("owner", args.owner).eq("repo", args.repo)
+      )
+      .first();
 
     if (!repository) {
       return null;

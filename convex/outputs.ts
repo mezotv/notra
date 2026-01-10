@@ -1,5 +1,46 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { authComponent } from "./auth";
+
+async function getAuthenticatedUser(ctx: { auth: unknown }) {
+  const user = await authComponent.getAuthUser(
+    ctx as Parameters<typeof authComponent.getAuthUser>[0]
+  );
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+  return user;
+}
+
+async function verifyOrgAccess(
+  ctx: { db: unknown },
+  userId: string,
+  organizationId: string
+) {
+  const db = ctx.db as {
+    query: (table: "members") => {
+      withIndex: (
+        index: string,
+        fn: (q: {
+          eq: (
+            field: string,
+            value: string
+          ) => { eq: (field: string, value: string) => unknown };
+        }) => unknown
+      ) => { first: () => Promise<{ _id: string; role: string } | null> };
+    };
+  };
+  const membership = await db
+    .query("members")
+    .withIndex("by_user_org", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId)
+    )
+    .first();
+  if (!membership) {
+    throw new Error("You do not have access to this organization");
+  }
+  return membership;
+}
 
 export const listByRepository = query({
   args: {
@@ -16,6 +57,20 @@ export const listByRepository = query({
     })
   ),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const repo = await ctx.db.get(args.repositoryId);
+    if (!repo) {
+      return [];
+    }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      return [];
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
     return await ctx.db
       .query("repositoryOutputs")
       .withIndex("by_repository", (q) =>
@@ -41,7 +96,26 @@ export const get = query({
     })
   ),
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.outputId);
+    const user = await getAuthenticatedUser(ctx);
+
+    const output = await ctx.db.get(args.outputId);
+    if (!output) {
+      return null;
+    }
+
+    const repo = await ctx.db.get(output.repositoryId);
+    if (!repo) {
+      return null;
+    }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      return null;
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
+    return output;
   },
 });
 
@@ -53,10 +127,24 @@ export const update = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const output = await ctx.db.get(args.outputId);
     if (!output) {
       throw new Error("Output not found");
     }
+
+    const repo = await ctx.db.get(output.repositoryId);
+    if (!repo) {
+      throw new Error("Repository not found");
+    }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      throw new Error("Integration not found");
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const updates: Partial<{
       enabled: boolean;
@@ -82,10 +170,24 @@ export const toggle = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const output = await ctx.db.get(args.outputId);
     if (!output) {
       throw new Error("Output not found");
     }
+
+    const repo = await ctx.db.get(output.repositoryId);
+    if (!repo) {
+      throw new Error("Repository not found");
+    }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      throw new Error("Integration not found");
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     await ctx.db.patch(args.outputId, {
       enabled: args.enabled,
@@ -103,6 +205,20 @@ export const upsert = mutation({
   },
   returns: v.id("repositoryOutputs"),
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const repo = await ctx.db.get(args.repositoryId);
+    if (!repo) {
+      throw new Error("Repository not found");
+    }
+
+    const integration = await ctx.db.get(repo.integrationId);
+    if (!integration) {
+      throw new Error("Integration not found");
+    }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
     const existing = await ctx.db
       .query("repositoryOutputs")
       .withIndex("by_repository_type", (q) =>

@@ -12,19 +12,50 @@ async function getAuthenticatedUser(ctx: { auth: unknown }) {
   return user;
 }
 
+async function verifyOrgAccess(
+  ctx: { db: unknown },
+  userId: string,
+  organizationId: string
+) {
+  const db = ctx.db as {
+    query: (table: "members") => {
+      withIndex: (
+        index: string,
+        fn: (q: {
+          eq: (
+            field: string,
+            value: string
+          ) => { eq: (field: string, value: string) => unknown };
+        }) => unknown
+      ) => { first: () => Promise<{ _id: string; role: string } | null> };
+    };
+  };
+  const membership = await db
+    .query("members")
+    .withIndex("by_user_org", (q) =>
+      q.eq("userId", userId).eq("organizationId", organizationId)
+    )
+    .first();
+  if (!membership) {
+    throw new Error("You do not have access to this organization");
+  }
+  return membership;
+}
+
 export const list = query({
   args: {
     organizationId: v.string(),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    await verifyOrgAccess(ctx, user._id, args.organizationId);
+
     const integrations = await ctx.db
       .query("githubIntegrations")
       .withIndex("by_organization", (q) =>
         q.eq("organizationId", args.organizationId)
       )
       .collect();
-
-    const users = await ctx.db.query("users").collect();
 
     const integrationsWithRepos = await Promise.all(
       integrations.map(async (integration) => {
@@ -49,9 +80,12 @@ export const list = query({
           })
         );
 
-        const createdByUser = users.find(
-          (u) => u._id === integration.createdByUserId
-        );
+        const createdByUser = integration.createdByUserId
+          ? await ctx.db
+              .query("users")
+              .filter((q) => q.eq(q.field("_id"), integration.createdByUserId))
+              .first()
+          : null;
 
         return {
           ...integration,
@@ -81,10 +115,14 @@ export const get = query({
     integrationId: v.id("githubIntegrations"),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const integration = await ctx.db.get(args.integrationId);
     if (!integration) {
       return null;
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const repositories = await ctx.db
       .query("githubRepositories")
@@ -107,20 +145,22 @@ export const get = query({
       })
     );
 
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("_id"), integration.createdByUserId))
-      .first();
+    const createdByUser = integration.createdByUserId
+      ? await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("_id"), integration.createdByUserId))
+          .first()
+      : null;
 
     return {
       ...integration,
       createdAt: new Date(integration._creationTime).toISOString(),
-      createdByUser: user
+      createdByUser: createdByUser
         ? {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            image: user.image ?? null,
+            id: createdByUser._id,
+            name: createdByUser.name,
+            email: createdByUser.email,
+            image: createdByUser.image ?? null,
           }
         : undefined,
       repositories: reposWithOutputs,
@@ -137,6 +177,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
+    await verifyOrgAccess(ctx, user._id, args.organizationId);
 
     const displayName = `${args.owner}/${args.repo}`;
 
@@ -188,10 +229,14 @@ export const update = mutation({
     displayName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const integration = await ctx.db.get(args.integrationId);
     if (!integration) {
       throw new Error("Integration not found");
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const updates: Partial<{
       enabled: boolean;
@@ -218,10 +263,14 @@ export const remove = mutation({
     integrationId: v.id("githubIntegrations"),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const integration = await ctx.db.get(args.integrationId);
     if (!integration) {
       throw new Error("Integration not found");
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
 
     const repositories = await ctx.db
       .query("githubRepositories")
@@ -253,10 +302,15 @@ export const getIntegrationToken = query({
     integrationId: v.id("githubIntegrations"),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const integration = await ctx.db.get(args.integrationId);
     if (!integration) {
       return null;
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
     return integration.encryptedToken ?? null;
   },
 });
@@ -266,10 +320,15 @@ export const listAvailableRepos = query({
     integrationId: v.id("githubIntegrations"),
   },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const integration = await ctx.db.get(args.integrationId);
     if (!integration?.encryptedToken) {
       return [];
     }
+
+    await verifyOrgAccess(ctx, user._id, integration.organizationId);
+
     return [];
   },
 });

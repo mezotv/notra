@@ -66,7 +66,8 @@ export default defineSchema({
     enabled: v.boolean(),
   })
     .index("by_integration", ["integrationId"])
-    .index("by_integration_owner_repo", ["integrationId", "owner", "repo"]),
+    .index("by_integration_owner_repo", ["integrationId", "owner", "repo"])
+    .index("by_owner_repo", ["owner", "repo"]),
 
   // Repository Outputs
   repositoryOutputs: defineTable({
