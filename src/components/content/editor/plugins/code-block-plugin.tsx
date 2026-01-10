@@ -10,9 +10,17 @@ import {
   COMMAND_PRIORITY_LOW,
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
-import { Check, ChevronDown, Copy } from "lucide-react";
+import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const CODE_LANGUAGES: Record<string, string> = {
   "": "Plain Text",
@@ -56,9 +64,7 @@ function CodeBlockToolbar({
   codeElement,
 }: CodeBlockToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const updatePosition = useCallback(() => {
@@ -74,6 +80,7 @@ function CodeBlockToolbar({
     toolbar.style.right = `${anchorRect.right - codeRect.right + 8}px`;
   }, [anchorElem, codeElement]);
 
+  // Sync position with scroll/resize - legitimate external subscription
   useEffect(() => {
     updatePosition();
     window.addEventListener("scroll", updatePosition);
@@ -84,7 +91,7 @@ function CodeBlockToolbar({
     };
   }, [updatePosition]);
 
-  // Cleanup copy timeout on unmount
+  // Cleanup timeout ref on unmount
   useEffect(() => {
     return () => {
       if (copyTimeoutRef.current) {
@@ -93,38 +100,20 @@ function CodeBlockToolbar({
     };
   }, []);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    if (!showDropdown) {
-      return;
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDropdown]);
-
   const handleLanguageChange = useCallback(
-    (newLanguage: string) => {
+    (newLanguage: string | null) => {
+      if (newLanguage === null) return;
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if ($isCodeNode(node)) {
-          node.setLanguage(newLanguage);
+          node.setLanguage(newLanguage === "plain" ? "" : newLanguage);
         }
       });
-      setShowDropdown(false);
     },
     [editor, nodeKey]
   );
 
   const handleCopy = useCallback(() => {
-    // Check for clipboard API availability
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
       return;
     }
@@ -138,7 +127,6 @@ function CodeBlockToolbar({
         });
         setCopied(true);
 
-        // Clear any existing timeout
         if (copyTimeoutRef.current) {
           clearTimeout(copyTimeoutRef.current);
         }
@@ -150,7 +138,7 @@ function CodeBlockToolbar({
     });
   }, [editor, nodeKey]);
 
-  const languageLabel = CODE_LANGUAGES[language] || "Plain Text";
+  const Icon = copied ? CheckIcon : CopyIcon;
 
   return createPortal(
     <div
@@ -158,53 +146,33 @@ function CodeBlockToolbar({
       ref={toolbarRef}
       style={{ pointerEvents: "auto" }}
     >
-      <div className="relative" ref={dropdownRef}>
-        <button
-          aria-expanded={showDropdown}
-          aria-haspopup="listbox"
-          aria-label={`Select code language (current: ${languageLabel})`}
-          className="flex h-7 items-center gap-1 rounded border bg-popover px-2 text-muted-foreground text-xs hover:bg-muted"
-          onClick={() => setShowDropdown(!showDropdown)}
-          type="button"
+      <Select onValueChange={handleLanguageChange} value={language || "plain"}>
+        <SelectTrigger
+          aria-label="Select code language"
+          className="h-7 w-fit gap-1 border bg-popover text-muted-foreground text-xs shadow-none"
         >
-          <span>{languageLabel}</span>
-          <ChevronDown className="size-3" />
-        </button>
-        {showDropdown && (
-          <div
-            className="absolute top-full right-0 z-50 mt-1 max-h-60 w-40 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg"
-            role="listbox"
-          >
-            {Object.entries(CODE_LANGUAGES).map(([key, label]) => (
-              <button
-                aria-selected={key === language}
-                className={`w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted ${
-                  key === language ? "bg-muted font-medium" : ""
-                }`}
-                key={key}
-                onClick={() => handleLanguageChange(key)}
-                role="option"
-                type="button"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <button
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(CODE_LANGUAGES).map(([key, label]) => (
+            <SelectItem key={key} value={key || "plain"}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
         aria-label={copied ? "Code copied" : "Copy code to clipboard"}
-        className="flex h-7 items-center rounded border bg-popover px-2 text-muted-foreground text-xs hover:bg-muted"
+        className="h-7 shrink-0 border bg-popover text-muted-foreground hover:bg-muted"
         onClick={handleCopy}
-        title="Copy code"
-        type="button"
+        size="icon"
+        variant="ghost"
       >
-        {copied ? (
-          <Check className="size-3 text-green-500" />
-        ) : (
-          <Copy className="size-3" />
-        )}
-      </button>
+        <Icon
+          className={copied ? "text-green-500" : "text-muted-foreground"}
+          size={14}
+        />
+      </Button>
     </div>,
     anchorElem
   );
