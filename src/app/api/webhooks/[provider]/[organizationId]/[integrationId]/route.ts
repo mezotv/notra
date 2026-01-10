@@ -66,48 +66,69 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const integration = await fetcher(integrationId);
+  try {
+    const integration = await fetcher(integrationId);
 
-  if (!integration) {
+    if (!integration) {
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
+    }
+
+    if (integration.organizationId !== organizationId) {
+      return NextResponse.json(
+        { error: "Integration does not belong to this organization" },
+        { status: 403 }
+      );
+    }
+
+    if (!integration.enabled) {
+      return NextResponse.json(
+        { error: "Integration is disabled" },
+        { status: 403 }
+      );
+    }
+
+    const handler = WEBHOOK_HANDLERS[provider];
+    if (!handler) {
+      return NextResponse.json(
+        { error: `Webhook handler for ${provider} is not yet implemented` },
+        { status: 501 }
+      );
+    }
+
+    const rawBody = await request.text();
+
+    const context: WebhookContext = {
+      provider,
+      organizationId,
+      integrationId,
+      request,
+      rawBody,
+    };
+
+    const result = await handler(context);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.message ?? "Webhook processing failed" },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({
+      received: true,
+      message: result.message,
+      data: result.data,
+    });
+  } catch (error) {
+    console.error("Webhook processing error:", error);
     return NextResponse.json(
-      { error: "Integration not found" },
-      { status: 404 }
+      { error: "Internal server error processing webhook" },
+      { status: 500 }
     );
   }
-
-  if (integration.organizationId !== organizationId) {
-    return NextResponse.json(
-      { error: "Integration does not belong to this organization" },
-      { status: 403 }
-    );
-  }
-
-  if (!integration.enabled) {
-    return NextResponse.json(
-      { error: "Integration is disabled" },
-      { status: 403 }
-    );
-  }
-
-  const handler = WEBHOOK_HANDLERS[provider];
-  if (!handler) {
-    return NextResponse.json(
-      { error: `Webhook handler for ${provider} is not yet implemented` },
-      { status: 501 }
-    );
-  }
-
-  const rawBody = await request.text();
-
-  const context: WebhookContext = {
-    provider,
-    organizationId,
-    integrationId,
-    request,
-    rawBody,
-  };
-
-  const result = await handler(context);
 
   if (!result.success) {
     return NextResponse.json(
