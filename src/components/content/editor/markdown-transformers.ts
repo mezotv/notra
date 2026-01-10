@@ -69,7 +69,7 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
     }
 
     // During markdown shortcut (children exist, replace parent)
-    if (children) {
+    if (children && children.length > 0) {
       const code = children.map((child) => child.getTextContent()).join("\n");
       const codeBlockNode = $createKiboCodeBlockNode(code, language);
       children[0].getParentOrThrow().replace(codeBlockNode);

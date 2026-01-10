@@ -195,8 +195,13 @@ export default function KiboCodeBlockComponent({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Allow all normal typing, just stop propagation to prevent Lexical from handling
-      event.stopPropagation();
+      // Only stop propagation for keys that would trigger Lexical commands
+      // Allow system shortcuts (Cmd/Ctrl+Z, Cmd/Ctrl+A, etc.) to work normally
+      const isModifierKey = event.metaKey || event.ctrlKey;
+      if (!isModifierKey) {
+        // Stop propagation for regular typing to prevent Lexical interference
+        event.stopPropagation();
+      }
     },
     []
   );
