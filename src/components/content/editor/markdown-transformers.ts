@@ -73,6 +73,10 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
       const code = children.map((child) => child.getTextContent()).join("\n");
       const codeBlockNode = $createKiboCodeBlockNode(code, language);
       children[0].getParentOrThrow().replace(codeBlockNode);
+    } else {
+      // Handle empty code block (just ``` with no content)
+      const codeBlockNode = $createKiboCodeBlockNode("", language);
+      rootNode.append(codeBlockNode);
     }
   },
   type: "multiline-element",
@@ -82,8 +86,11 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
 const filteredTransformers = TRANSFORMERS.filter((transformer: Transformer) => {
   if (transformer.type === "multiline-element") {
     const multiline = transformer as MultilineElementTransformer;
-    // Filter out the default code block transformer
-    return !multiline.regExpStart?.toString().includes("```");
+    // Filter out the default code block transformer by checking its dependencies
+    // The default CODE transformer uses CodeNode and CodeHighlightNode
+    if (multiline.dependencies?.some((dep) => dep.getType?.() === "code")) {
+      return false;
+    }
   }
   return true;
 });

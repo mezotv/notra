@@ -30,6 +30,7 @@ interface FloatingToolbarProps {
   isStrikethrough: boolean;
   isCode: boolean;
   isLink: boolean;
+  linkUrl: string;
   isLinkEditMode: boolean;
   setIsLinkEditMode: (value: boolean) => void;
 }
@@ -43,6 +44,7 @@ function FloatingToolbar({
   isStrikethrough,
   isCode,
   isLink,
+  linkUrl: existingLinkUrl,
   isLinkEditMode,
   setIsLinkEditMode,
 }: FloatingToolbarProps) {
@@ -130,7 +132,6 @@ function FloatingToolbar({
   // Focus input when entering link edit mode
   useEffect(() => {
     if (isLinkEditMode) {
-      setLinkUrl("https://");
       const timeoutId = setTimeout(() => linkInputRef.current?.focus(), 0);
       return () => clearTimeout(timeoutId);
     }
@@ -138,15 +139,16 @@ function FloatingToolbar({
 
   const handleLinkClick = useCallback(() => {
     if (isLink) {
-      // Remove the link
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
-      setIsLinkEditMode(false);
+      // Edit existing link - populate with current URL
+      setLinkUrl(existingLinkUrl || "https://");
+      setIsLinkEditMode(true);
     } else {
       // Create link with placeholder URL first, then enter edit mode
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
+      setLinkUrl("https://");
       setIsLinkEditMode(true);
     }
-  }, [editor, isLink, setIsLinkEditMode]);
+  }, [editor, isLink, existingLinkUrl, setIsLinkEditMode]);
 
   const submitLink = useCallback(() => {
     const trimmedUrl = linkUrl.trim();
@@ -323,6 +325,7 @@ export function FloatingToolbarPlugin({
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const [isCode, setIsCode] = useState(false);
   const [isLink, setIsLink] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
   const [isLinkEditMode, setIsLinkEditMode] = useState(false);
 
   const updateToolbar = useCallback(() => {
@@ -350,7 +353,17 @@ export function FloatingToolbarPlugin({
       setIsCode(selection.hasFormat("code"));
 
       const parent = node.getParent();
-      setIsLink($isLinkNode(parent) || $isLinkNode(node));
+      const isParentLink = $isLinkNode(parent);
+      const isNodeLink = $isLinkNode(node);
+      const hasLink = isParentLink || isNodeLink;
+      setIsLink(hasLink);
+      if (isParentLink) {
+        setLinkUrl(parent.getURL());
+      } else if (isNodeLink) {
+        setLinkUrl(node.getURL());
+      } else {
+        setLinkUrl("");
+      }
 
       const textContent = selection.getTextContent().replace(/\n/g, "");
       setIsText(textContent !== "");
@@ -408,6 +421,7 @@ export function FloatingToolbarPlugin({
       isLinkEditMode={isLinkEditMode}
       isStrikethrough={isStrikethrough}
       isUnderline={isUnderline}
+      linkUrl={linkUrl}
       setIsLinkEditMode={setIsLinkEditMode}
     />,
     anchorElem
