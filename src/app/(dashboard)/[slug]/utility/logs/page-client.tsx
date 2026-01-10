@@ -43,21 +43,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     enabled: !!organizationId,
   });
 
-  if (!organizationId) {
-    return (
-      <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="w-full space-y-6 px-4 lg:px-6">
-          <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Logs</h1>
-            <p className="text-muted-foreground">
-              Please select an organization to view logs
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -76,28 +61,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </AlertDescription>
         </Alert>
 
-        {isLoading ? (
-          <div className="space-y-3">
-            <div className="overflow-hidden rounded-md border">
-              <div className="p-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    className="flex items-center space-x-4 py-3"
-                    // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton list
-                    key={`skeleton-${i}`}
-                  >
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-4 w-20" />
-                    <Skeleton className="h-5 w-20" />
-                    <Skeleton className="h-5 w-16" />
-                    <Skeleton className="h-4 w-12" />
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-28" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {organizationId && isLoading ? (
+          <DataSkeleton />
         ) : (
           <DataTable
             columns={columns}
@@ -107,6 +72,34 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             totalPages={data?.pagination.totalPages ?? 1}
           />
         )}
+      </div>
+    </div>
+  );
+}
+
+export function DataSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="overflow-hidden rounded-md border">
+        <div className="p-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div
+              className="flex items-center space-x-4 py-3"
+              key={`skeleton-${
+                // biome-ignore lint/suspicious/noArrayIndexKey: This is static for loading
+                i
+              }`}
+            >
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-4 w-12" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

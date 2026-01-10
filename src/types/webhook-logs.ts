@@ -1,5 +1,10 @@
 export type WebhookLogStatus = "success" | "failed" | "pending";
 
+export type StatusWithCode =
+  | { label: "pending"; code: number | null }
+  | { label: "success"; code: number }
+  | { label: "failed"; code: number };
+
 export type LogDirection = "incoming" | "outgoing";
 
 export type IntegrationType = "github" | "linear" | "slack" | "webhook";

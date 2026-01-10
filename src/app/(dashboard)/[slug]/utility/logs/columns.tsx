@@ -12,7 +12,17 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { IntegrationType, Log, LogDirection } from "@/types/webhook-logs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type {
+  IntegrationType,
+  Log,
+  LogDirection,
+  StatusWithCode,
+} from "@/types/webhook-logs";
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -24,9 +34,9 @@ function formatDate(dateString: string): string {
   }).format(date);
 }
 
-function StatusBadge({ status }: { status: Log["status"] }) {
+function StatusBadge({ status }: { status: StatusWithCode }) {
   const variants: Record<
-    Log["status"],
+    StatusWithCode["label"],
     "default" | "destructive" | "secondary"
   > = {
     success: "default",
@@ -34,7 +44,7 @@ function StatusBadge({ status }: { status: Log["status"] }) {
     pending: "secondary",
   };
 
-  return <Badge variant={variants[status]}>{status}</Badge>;
+  return <Badge variant={variants[status.label]}>{status.label}</Badge>;
 }
 
 function getSortIcon(isSorted: false | "asc" | "desc") {
@@ -100,14 +110,20 @@ export const columns: ColumnDef<Log>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
-  },
-  {
-    accessorKey: "statusCode",
-    header: "Code",
     cell: ({ row }) => {
-      const code = row.getValue("statusCode") as number | null;
-      return <span className="text-muted-foreground">{code ?? "-"}</span>;
+      const label = row.getValue("status") as StatusWithCode["label"];
+      const code = row.original.statusCode;
+      const status = { label, code } as StatusWithCode;
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <StatusBadge status={status} />
+          </TooltipTrigger>
+          <TooltipContent>
+            {status.code !== null ? `Status code: ${status.code}` : "Pending"}
+          </TooltipContent>
+        </Tooltip>
+      );
     },
   },
   {
