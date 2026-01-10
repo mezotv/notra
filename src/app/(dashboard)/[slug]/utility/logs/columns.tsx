@@ -4,14 +4,15 @@ import {
   ArrowDown01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
-  Github01Icon,
   Link04Icon,
-  Notification01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { createColumnHelper } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Github } from "@/components/ui/svgs/github";
+import { Linear } from "@/components/ui/svgs/linear";
+import { Slack } from "@/components/ui/svgs/slack";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,8 @@ import type {
   LogDirection,
   StatusWithCode,
 } from "@/types/webhook-logs";
+
+const columnHelper = createColumnHelper<Log>();
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
@@ -66,34 +69,35 @@ function DirectionBadge({ direction }: { direction: LogDirection }) {
 }
 
 function IntegrationIcon({ type }: { type: IntegrationType }) {
-  const icons: Record<IntegrationType, typeof Github01Icon> = {
-    github: Github01Icon,
-    linear: Link04Icon,
-    slack: Notification01Icon,
-    webhook: Link04Icon,
-  };
-
-  return (
-    <HugeiconsIcon
-      className="size-4 text-muted-foreground"
-      icon={icons[type]}
-    />
-  );
+  switch (type) {
+    case "github":
+      return <Github className="size-4" />;
+    case "linear":
+      return <Linear className="size-4" />;
+    case "slack":
+      return <Slack className="size-4" />;
+    case "webhook":
+      return (
+        <HugeiconsIcon
+          className="size-4 text-muted-foreground"
+          icon={Link04Icon}
+        />
+      );
+    default: {
+      return type;
+    }
+  }
 }
 
-export const columns: ColumnDef<Log>[] = [
-  {
-    accessorKey: "title",
+export const columns = [
+  columnHelper.accessor("title", {
     header: "Title",
-    cell: ({ row }) => (
-      <span className="font-medium">{row.getValue("title")}</span>
-    ),
-  },
-  {
-    accessorKey: "integrationType",
+    cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+  }),
+  columnHelper.accessor("integrationType", {
     header: "Integration",
-    cell: ({ row }) => {
-      const type = row.getValue("integrationType") as IntegrationType;
+    cell: (info) => {
+      const type = info.getValue();
       return (
         <div className="flex items-center gap-2">
           <IntegrationIcon type={type} />
@@ -101,18 +105,16 @@ export const columns: ColumnDef<Log>[] = [
         </div>
       );
     },
-  },
-  {
-    accessorKey: "direction",
+  }),
+  columnHelper.accessor("direction", {
     header: "Direction",
-    cell: ({ row }) => <DirectionBadge direction={row.getValue("direction")} />,
-  },
-  {
-    accessorKey: "status",
+    cell: (info) => <DirectionBadge direction={info.getValue()} />,
+  }),
+  columnHelper.accessor("status", {
     header: "Status",
-    cell: ({ row }) => {
-      const label = row.getValue("status") as StatusWithCode["label"];
-      const code = row.original.statusCode;
+    cell: (info) => {
+      const label = info.getValue();
+      const code = info.row.original.statusCode;
       const status = { label, code } as StatusWithCode;
       return (
         <Tooltip>
@@ -125,21 +127,19 @@ export const columns: ColumnDef<Log>[] = [
         </Tooltip>
       );
     },
-  },
-  {
-    accessorKey: "referenceId",
+  }),
+  columnHelper.accessor("referenceId", {
     header: "Reference ID",
-    cell: ({ row }) => {
-      const refId = row.getValue("referenceId") as string | null;
+    cell: (info) => {
+      const refId = info.getValue();
       return (
         <span className="font-mono text-muted-foreground text-sm">
           {refId ?? "-"}
         </span>
       );
     },
-  },
-  {
-    accessorKey: "createdAt",
+  }),
+  columnHelper.accessor("createdAt", {
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
       return (
@@ -153,10 +153,10 @@ export const columns: ColumnDef<Log>[] = [
         </Button>
       );
     },
-    cell: ({ row }) => (
+    cell: (info) => (
       <span className="text-muted-foreground">
-        {formatDate(row.getValue("createdAt"))}
+        {formatDate(info.getValue())}
       </span>
     ),
-  },
+  }),
 ];

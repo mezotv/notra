@@ -19,8 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
+  // biome-ignore lint/suspicious/noExplicitAny: TanStack Table columns have varying value types
+  columns: ColumnDef<TData, any>[];
   data: TData[];
   page: number;
   totalPages: number;
@@ -28,14 +29,14 @@ interface DataTableProps<TData, TValue> {
   isLoading?: boolean;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData>({
   columns,
   data,
   page,
   totalPages,
   onPageChange,
   isLoading,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
