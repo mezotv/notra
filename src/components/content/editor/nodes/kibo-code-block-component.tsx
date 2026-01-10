@@ -13,7 +13,7 @@ import {
   KEY_DELETE_COMMAND,
 } from "lexical";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -71,6 +71,7 @@ export default function KiboCodeBlockComponent({
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lineIdPrefix = useId();
 
   const normalizedLanguage = language || "plain";
   const lineCount = Math.max(1, localCode.split("\n").length);
@@ -250,8 +251,7 @@ export default function KiboCodeBlockComponent({
           ref={lineNumbersRef}
         >
           {Array.from({ length: lineCount }, (_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: Line numbers are static
-            <div key={i + 1}>{i + 1}</div>
+            <div key={`${lineIdPrefix}-${i + 1}`}>{i + 1}</div>
           ))}
         </div>
         <textarea
