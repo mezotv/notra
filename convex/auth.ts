@@ -1,6 +1,6 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
-import { betterAuth } from "better-auth";
+import { betterAuth } from "better-auth/minimal";
 import {
   haveIBeenPwned,
   lastLoginMethod,
@@ -82,8 +82,8 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   }
 );
 
-export const createAuth = (ctx: GenericCtx<DataModel>) => {
-  const auth = betterAuth({
+export const createAuthOptions = (ctx: GenericCtx<DataModel>) => {
+  return {
     baseURL: process.env.SITE_URL,
     database: authComponent.adapter(ctx),
     emailAndPassword: {
@@ -132,30 +132,15 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         enabled: true,
       },
     },
+  };
+};
+
+export const createAuth = (ctx: GenericCtx<DataModel>) => {
+  const baseOptions = createAuthOptions(ctx);
+
+  const auth = betterAuth({
+    ...baseOptions,
     databaseHooks: {
-      user: {
-        create: {
-          after: async (user) => {
-            const email = user.email || "";
-            const raw = email.split("@")[0] || "";
-            const base = raw
-              .toLowerCase()
-              .replace(/[^a-z0-9]/g, "")
-              .slice(0, 20);
-
-            const slug = `${base || "notra"}-${nanoid()}`;
-
-            await auth.api.createOrganization({
-              body: {
-                name: "Personal",
-                slug,
-                userId: user.id,
-                logo: generateOrganizationAvatar(slug),
-              },
-            });
-          },
-        },
-      },
       organization: {
         create: {
           before: (org: { slug?: unknown; [key: string]: unknown }) => {
@@ -176,6 +161,29 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
                 slug,
               },
             };
+          },
+        },
+      },
+      user: {
+        create: {
+          after: async (user) => {
+            const email = user.email || "";
+            const raw = email.split("@")[0] || "";
+            const base = raw
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "")
+              .slice(0, 20);
+
+            const slug = `${base || "notra"}-${nanoid()}`;
+
+            await auth.api.createOrganization({
+              body: {
+                name: "Personal",
+                slug,
+                userId: user.id,
+                logo: generateOrganizationAvatar(slug),
+              },
+            });
           },
         },
       },
