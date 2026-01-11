@@ -253,10 +253,13 @@ export async function getTokenForRepository(
   owner: string,
   repo: string
 ): Promise<string | undefined> {
-  const repository = await convex.query(api.repositories.getByOwnerRepo, {
-    owner,
-    repo,
-  });
+  const repository = await convex.action(
+    api.webhookActions.getRepositoryByOwnerRepo,
+    {
+      owner,
+      repo,
+    }
+  );
 
   if (!(repository?.encryptedToken && repository.integrationEnabled)) {
     return undefined;

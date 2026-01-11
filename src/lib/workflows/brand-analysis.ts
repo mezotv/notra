@@ -45,7 +45,7 @@ async function setProgress(
   error?: string
 ) {
   "use step";
-  await convex.mutation(api.brand.setProgress, {
+  await convex.action(api.webhookActions.setBrandProgress, {
     organizationId,
     status: mapStatusToConvex(status),
     progress: currentStep,

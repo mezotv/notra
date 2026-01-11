@@ -274,7 +274,7 @@ export const remove = mutation({
 
 import { internalQuery } from "./_generated/server";
 
-// Internal query for webhook processing - only callable from server-side actions/mutations
+// Internal query for webhook processing - only callable from server-side actions
 export const getByOwnerRepo = internalQuery({
   args: {
     owner: v.string(),

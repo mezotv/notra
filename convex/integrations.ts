@@ -89,7 +89,7 @@ export const list = query({
 
         return {
           ...integration,
-          createdAt: new Date(integration._creationTime).toISOString(),
+          createdAt: new Date(integration.createdAt).toISOString(),
           createdByUser: createdByUser
             ? {
                 id: createdByUser._id,
@@ -154,7 +154,7 @@ export const get = query({
 
     return {
       ...integration,
-      createdAt: new Date(integration._creationTime).toISOString(),
+      createdAt: new Date(integration.createdAt).toISOString(),
       createdByUser: createdByUser
         ? {
             id: createdByUser._id,
@@ -181,13 +181,15 @@ export const create = mutation({
 
     const displayName = `${args.owner}/${args.repo}`;
 
+    const now = Date.now();
     const integrationId = await ctx.db.insert("githubIntegrations", {
       organizationId: args.organizationId,
       createdByUserId: user._id,
       displayName,
       encryptedToken: args.token,
       enabled: true,
-      updatedAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     });
 
     const repositoryId = await ctx.db.insert("githubRepositories", {

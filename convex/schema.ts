@@ -53,6 +53,7 @@ export default defineSchema({
     displayName: v.string(),
     encryptedToken: v.optional(v.string()), // Ensure tokens are always encrypted at rest and only decrypted in secure server-side code with strict access controls
     enabled: v.boolean(),
+    createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_organization", ["organizationId"])

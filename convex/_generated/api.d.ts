@@ -15,6 +15,7 @@ import type * as integrations from "../integrations.js";
 import type * as outputs from "../outputs.js";
 import type * as posts from "../posts.js";
 import type * as repositories from "../repositories.js";
+import type * as webhookActions from "../webhookActions.js";
 import type * as webhook_logs from "../webhook_logs.js";
 
 import type {
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   outputs: typeof outputs;
   posts: typeof posts;
   repositories: typeof repositories;
+  webhookActions: typeof webhookActions;
   webhook_logs: typeof webhook_logs;
 }>;
 
