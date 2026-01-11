@@ -113,7 +113,6 @@ export const getByOrganization = query({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
     await verifyOrgAccess(ctx, user._id, args.organizationId);
-  handler: async (ctx, args) => {
     const q = ctx.db
       .query("posts")
       .withIndex("by_organization", (q) =>
@@ -121,7 +120,6 @@ export const getByOrganization = query({
       )
       .order("desc");
 
-    // Always enforce a reasonable maximum limit to prevent unbounded collection
     const MAX_LIMIT = 100;
     const limit = args.limit ?? MAX_LIMIT;
     return await q.take(limit);
