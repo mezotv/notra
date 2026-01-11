@@ -51,7 +51,7 @@ export default defineSchema({
     organizationId: v.string(),
     createdByUserId: v.string(),
     displayName: v.string(),
-    encryptedToken: v.optional(v.string()),
+    encryptedToken: v.optional(v.string()), // Ensure tokens are always encrypted at rest and only decrypted in secure server-side code with strict access controls
     enabled: v.boolean(),
     updatedAt: v.number(),
   })
