@@ -11,6 +11,7 @@ import { components } from "./_generated/api";
 import type { DataModel } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import authConfig from "./auth.config";
+import authSchema from "./betterAuth/schema";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
@@ -72,7 +73,14 @@ function validateSlug(slug: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export const authComponent = createClient<DataModel>(components.betterAuth);
+export const authComponent = createClient<DataModel, typeof authSchema>(
+  components.betterAuth,
+  {
+    local: {
+      schema: authSchema,
+    },
+  }
+);
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   const auth = betterAuth({
@@ -184,7 +192,7 @@ import { v } from "convex/values";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return await authComponent.getAuthUser(ctx);
+    return await authComponent.safeGetAuthUser(ctx);
   },
 });
 
