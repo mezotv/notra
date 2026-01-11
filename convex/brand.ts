@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { authComponent } from "./auth";
 
 async function getAuthenticatedUser(ctx: { auth: unknown }) {
@@ -147,10 +147,7 @@ export const upsert = mutation({
     }
 
     return await ctx.db.insert("brandSettings", data);
-  return await ctx.db.insert("brandSettings", data);
-
   },
-
 });
 
 // Internal mutation for workflow system - no auth check needed as this is called

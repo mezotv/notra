@@ -269,10 +269,7 @@ export const remove = mutation({
 
     await ctx.db.delete(args.repositoryId);
     return null;
-  return null;
-
   },
-
 });
 
 import { internalQuery } from "./_generated/server";
