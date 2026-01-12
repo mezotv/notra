@@ -160,13 +160,17 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push("/account")}>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => router.push("/account")}
+              >
                 <HugeiconsIcon icon={User02Icon} />
                 Account
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              className="cursor-pointer"
               disabled={isSigningOut}
               onClick={handleSignOut}
               variant="destructive"
