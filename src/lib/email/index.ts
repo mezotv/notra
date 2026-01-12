@@ -13,12 +13,14 @@ interface SendEmailOptions {
 
 export async function sendEmail({ to, subject, react }: SendEmailOptions) {
   if (!resend) {
+    const componentName =
+      typeof react.type === "function" ? react.type.name : "Email";
     console.log("========================================");
     console.log("EMAIL (dev mode - no RESEND_API_KEY set)");
     console.log("========================================");
     console.log(`To: ${to}`);
     console.log(`Subject: ${subject}`);
-    console.log(`React Component: ${react.type.name || "Email"}`);
+    console.log(`React Component: ${componentName}`);
     console.log(`Props: ${JSON.stringify(react.props, null, 2)}`);
     console.log("========================================");
     return { success: true, data: { id: "dev-mode" } };
