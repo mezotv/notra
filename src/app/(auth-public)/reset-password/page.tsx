@@ -66,8 +66,9 @@ function ResetPasswordForm() {
           </Link>
         </div>
       </div>
-    );
-  }
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -75,6 +76,49 @@ function ResetPasswordForm() {
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
+    if (!(password && confirmPassword) || isLoading) {
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await authClient.resetPassword({
+        newPassword: password,
+        token,
+      });
+
+      if (result.error) {
+        if (result.error.message?.includes("expired")) {
+          toast.error("This reset link has expired. Please request a new one.");
+        } else if (result.error.message?.includes("invalid")) {
+          toast.error("This reset link is invalid. Please request a new one.");
+        } else {
+          toast.error(
+            result.error.message ?? "Something went wrong. Please try again."
+          );
+        }
+        return;
+      }
+
+      toast.success("Password reset successfully! Please log in.");
+      router.push("/login");
+    } catch (error) {
+      toast.error("Network error. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
     if (!(password && confirmPassword) || isLoading || !token) {
       return;
     }
