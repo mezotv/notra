@@ -41,7 +41,6 @@ export function BaseLayout({ preview, children }: BaseLayoutProps) {
 }
 
 const main = {
-  backgroundColor: "#f6f9fc",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif',
 };

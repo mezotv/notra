@@ -3,22 +3,71 @@
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/client";
 
-export default function ResetPassword() {
-  const params = useParams();
+function ResetPasswordForm() {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const token = params.token as string;
+  const token = searchParams.get("token");
+  const error = searchParams.get("error");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  if (error === "INVALID_TOKEN") {
+    return (
+      <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
+        <div className="text-center">
+          <h1 className="font-semibold text-xl lg:text-2xl">Invalid link</h1>
+          <p className="text-muted-foreground text-sm">
+            This password reset link is invalid or has expired.
+          </p>
+        </div>
+        <Button asChild className="w-full">
+          <Link href="/forgot-password">Request a new link</Link>
+        </Button>
+        <div className="px-8 text-center text-muted-foreground text-xs">
+          <Link
+            className="underline underline-offset-4 hover:text-primary"
+            href="/login"
+          >
+            Back to login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
+        <div className="text-center">
+          <h1 className="font-semibold text-xl lg:text-2xl">Missing token</h1>
+          <p className="text-muted-foreground text-sm">
+            No reset token found. Please use the link from your email.
+          </p>
+        </div>
+        <Button asChild className="w-full">
+          <Link href="/forgot-password">Request a new link</Link>
+        </Button>
+        <div className="px-8 text-center text-muted-foreground text-xs">
+          <Link
+            className="underline underline-offset-4 hover:text-primary"
+            href="/login"
+          >
+            Back to login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +75,7 @@ export default function ResetPassword() {
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
-    if (!(password && confirmPassword) || isLoading) {
+    if (!(password && confirmPassword) || isLoading || !token) {
       return;
     }
 
@@ -153,5 +202,21 @@ export default function ResetPassword() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ResetPassword() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
+          <div className="text-center">
+            <h1 className="font-semibold text-xl lg:text-2xl">Loading...</h1>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
