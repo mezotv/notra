@@ -13,6 +13,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
 import { TitleCard } from "@/components/title-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Github } from "@/components/ui/svgs/github";
 import { Google } from "@/components/ui/svgs/google";
 import { authClient } from "@/lib/auth/client";
+
+const nameSchema = z.string().trim().min(1, "Name cannot be empty");
+
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().trim().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .trim()
+      .min(1, "New password cannot be empty")
+      .min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 interface Account {
   id: string;
@@ -113,26 +132,25 @@ function ProfileSection({ user }: ProfileSectionProps) {
       name: user.name,
     },
     onSubmit: async ({ value }) => {
-      const trimmedName = value.name.trim();
+      const validated = nameSchema.safeParse(value.name);
 
-      if (!trimmedName) {
-        toast.error("Name cannot be empty");
+      if (!validated.success) {
+        toast.error(validated.error.errors[0].message);
         return;
       }
 
-      if (trimmedName === user.name) {
+      if (validated.data === user.name) {
         return;
       }
 
       setIsUpdating(true);
       try {
         const result = await authClient.updateUser({
-          name: trimmedName,
+          name: validated.data,
         });
 
         if (result.error) {
           toast.error(result.error.message ?? "Failed to update profile");
-          setIsUpdating(false);
           return;
         }
 
@@ -226,37 +244,23 @@ function LoginDetailsSection({
       confirmPassword: "",
     },
     onSubmit: async ({ value }) => {
-      if (!value.currentPassword.trim()) {
-        toast.error("Current password is required");
-        return;
-      }
+      const validated = passwordSchema.safeParse(value);
 
-      if (!value.newPassword.trim()) {
-        toast.error("New password cannot be empty");
-        return;
-      }
-
-      if (value.newPassword !== value.confirmPassword) {
-        toast.error("Passwords do not match");
-        return;
-      }
-
-      if (value.newPassword.length < 8) {
-        toast.error("Password must be at least 8 characters");
+      if (!validated.success) {
+        toast.error(validated.error.errors[0].message);
         return;
       }
 
       setIsChangingPassword(true);
       try {
         const result = await authClient.changePassword({
-          currentPassword: value.currentPassword,
-          newPassword: value.newPassword,
+          currentPassword: validated.data.currentPassword,
+          newPassword: validated.data.newPassword,
           revokeOtherSessions: false,
         });
 
         if (result.error) {
           toast.error(result.error.message ?? "Failed to change password");
-          setIsChangingPassword(false);
           return;
         }
 
