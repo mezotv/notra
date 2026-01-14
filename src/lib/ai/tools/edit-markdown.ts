@@ -1,6 +1,7 @@
 import { tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { toolDescription } from "../utils/description";
 
 const editOperationSchema = z.discriminatedUnion("op", [
   z.object({
@@ -90,8 +91,16 @@ export function createEditMarkdownTool(context: EditMarkdownContext) {
   const currentLines = context.currentMarkdown.split("\n");
 
   return tool({
-    description:
-      "Edit the markdown content by applying operations (replace, insert, delete). Always process operations from bottom to top (highest line numbers first) to maintain line number accuracy.",
+    description: toolDescription({
+      toolName: "edit_markdown",
+      intro:
+        "Edits markdown content by applying operations like replace, insert, and delete. Supports single line and range operations.",
+      whenToUse:
+        "When user wants to modify specific parts of a markdown document, add new content, remove sections, or update existing text.",
+      usageNotes: `Always call get_markdown first to see current line numbers before editing.
+Process operations from highest line number to lowest to maintain accuracy.
+Supports: replace (single line or range), insert (after a line), delete (single line or range).`,
+    }),
     inputSchema: z.object({
       operations: z
         .array(editOperationSchema)
@@ -122,8 +131,15 @@ export function createEditMarkdownTool(context: EditMarkdownContext) {
 
 export function createGetMarkdownTool(context: EditMarkdownContext) {
   return tool({
-    description:
-      "Get the current markdown content with line numbers to understand the document structure before making edits.",
+    description: toolDescription({
+      toolName: "get_markdown",
+      intro:
+        "Gets the current markdown content with line numbers. Shows the full document structure with each line numbered.",
+      whenToUse:
+        "Before making any edits to understand the document structure and get accurate line numbers for edit operations.",
+      whenNotToUse:
+        "If you already have the current line numbers from a recent call and no edits were made since.",
+    }),
     inputSchema: z.object({}),
     execute: () => {
       const lines = context.currentMarkdown.split("\n");

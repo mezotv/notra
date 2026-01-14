@@ -19,14 +19,18 @@ export const toolDescription = (input: ToolDescription) => {
 
   const parts: string[] = [];
 
-  if (intro) { parts.push(intro); }
+  if (intro) {
+    parts.push(intro);
+  }
   if (whenToUse) {
     parts.push(`**When to use the ${toolName} tool**\n${whenToUse}`);
   }
   if (whenNotToUse) {
     parts.push(`**When NOT to use the ${toolName} tool**\n${whenNotToUse}`);
   }
-  if (usageNotes) { parts.push(`**Usage notes**\n${usageNotes}`); }
+  if (usageNotes) {
+    parts.push(`**Usage notes**\n${usageNotes}`);
+  }
 
   return parts.join("\n\n");
 };
