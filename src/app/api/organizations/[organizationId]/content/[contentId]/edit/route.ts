@@ -36,22 +36,35 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     let updatedMarkdown = currentMarkdown;
 
+    console.log("Creating chat agent for content edit...");
+    console.log("AI_GATEWAY_API_KEY set:", !!process.env.AI_GATEWAY_API_KEY);
+
     const agent = createChatAgent({
       organizationId,
       currentMarkdown,
-      selectedText,
+      selectedText: selectedText ?? undefined,
       onMarkdownUpdate: (markdown) => {
+        console.log("Markdown updated by agent");
         updatedMarkdown = markdown;
       },
     });
 
+    console.log("Starting agent generation...");
     await agent.generate({ prompt: instruction });
+    console.log("Agent generation complete");
 
     return NextResponse.json({
       markdown: updatedMarkdown,
     });
   } catch (error) {
     console.error("Error editing content:", error);
+    console.error(
+      "Error details:",
+      error instanceof Error ? error.message : String(error)
+    );
+    if (error instanceof Error && error.stack) {
+      console.error("Stack trace:", error.stack);
+    }
     return NextResponse.json(
       { error: "Failed to edit content" },
       { status: 500 }

@@ -1,22 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AiEditInput } from "@/components/content/ai-edit-input";
 import { CONTENT_TYPE_LABELS } from "@/components/content/content-card";
-import { DiffView } from "@/components/content/diff-view";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
-import { TitleCard } from "@/components/title-card";
+import { EditorSidebar } from "@/components/content/editor-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SidebarInset } from "@/components/ui/sidebar";
 import { useContent } from "@/hooks/use-content";
-
-const VIEW_OPTIONS = ["rendered", "markdown", "diff"] as const;
-type ViewOption = (typeof VIEW_OPTIONS)[number];
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
 
@@ -45,11 +40,6 @@ export default function PageClient({
   organizationSlug,
   organizationId,
 }: PageClientProps) {
-  const [view, setView] = useQueryState(
-    "view",
-    parseAsStringLiteral(VIEW_OPTIONS).withDefault("rendered")
-  );
-
   const { data, isLoading, error } = useContent(organizationId, contentId);
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
@@ -57,9 +47,9 @@ export default function PageClient({
   const [isEditing, setIsEditing] = useState(false);
   const [selectedText, setSelectedText] = useState<string | null>(null);
   const [editorKey, setEditorKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<"logs" | "chat">("chat");
 
   const saveToastIdRef = useRef<string | number | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
   // biome-ignore lint/suspicious/noEmptyBlockStatements: Initial empty function for ref
   const handleSaveRef = useRef<() => void>(() => {});
@@ -177,6 +167,14 @@ export default function PageClient({
     setSelectedText(null);
   }, []);
 
+  const handleSidebarInteract = useCallback(() => {
+    clearSelection();
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
+  }, [clearSelection]);
+
   // Handle Lexical editor changes
   const handleEditorChange = useCallback((markdown: string) => {
     setEditedMarkdown(markdown);
@@ -186,23 +184,6 @@ export default function PageClient({
   const handleSelectionChange = useCallback((text: string | null) => {
     if (text && text.length > 0) {
       setSelectedText(text);
-    }
-  }, []);
-
-  // Handle textarea selection
-  const handleTextareaSelect = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    if (start !== end) {
-      const text = textarea.value.substring(start, end).trim();
-      if (text) {
-        setSelectedText(text);
-      }
     }
   }, []);
 
@@ -217,7 +198,7 @@ export default function PageClient({
           body: JSON.stringify({
             instruction,
             currentMarkdown,
-            selectedText,
+            selectedText: selectedText ?? undefined,
           }),
         }
       );
@@ -279,106 +260,84 @@ export default function PageClient({
   const content = data.content;
 
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
-        <div className="flex items-center gap-4">
-          <Link
-            className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            href={`/${organizationSlug}/content`}
-          >
-            <Button size="sm" tabIndex={-1} variant="ghost">
-              <svg
-                className="mr-2 size-4"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <title>Back arrow</title>
-                <path d="M19 12H5" />
-                <path d="m12 19-7-7 7-7" />
-              </svg>
-              Back to Content
-            </Button>
-          </Link>
-          <div className="flex items-center gap-3">
-            <time
-              className="text-muted-foreground text-sm"
-              dateTime={content.date}
+    <>
+      <SidebarInset className="relative">
+        <div className="flex items-center justify-between gap-4 border-b px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Link
+              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              href={`/${organizationSlug}/content`}
             >
-              {formatDate(new Date(content.date))}
-            </time>
-            <Badge variant="secondary">
-              {CONTENT_TYPE_LABELS[content.contentType]}
-            </Badge>
+              <Button size="sm" tabIndex={-1} variant="ghost">
+                <svg
+                  className="mr-2 size-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <title>Back arrow</title>
+                  <path d="M19 12H5" />
+                  <path d="m12 19-7-7 7-7" />
+                </svg>
+                Back to Content
+              </Button>
+            </Link>
+            <div className="flex items-center gap-3">
+              <time
+                className="text-muted-foreground text-sm"
+                dateTime={content.date}
+              >
+                {formatDate(new Date(content.date))}
+              </time>
+              <Badge variant="secondary">
+                {CONTENT_TYPE_LABELS[content.contentType]}
+              </Badge>
+            </div>
+          </div>
+          <div className="text-muted-foreground text-sm">{title}</div>
+        </div>
+
+        <div className="flex h-full flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            {currentMarkdown && (
+              <LexicalEditor
+                editorRef={editorRef}
+                initialMarkdown={currentMarkdown}
+                key={editorKey}
+                onChange={handleEditorChange}
+                onSelectionChange={handleSelectionChange}
+              />
+            )}
           </div>
         </div>
 
-        <Tabs
-          className="w-full"
-          onValueChange={(value) => setView(value as ViewOption)}
-          value={view}
-        >
-          <TitleCard
-            action={
-              <TabsList variant="line">
-                <TabsTrigger value="rendered">Rendered</TabsTrigger>
-                <TabsTrigger value="markdown">Markdown</TabsTrigger>
-                <TabsTrigger value="diff">
-                  Diff
-                  {hasChanges && (
-                    <span className="ml-1.5 size-2 rounded-full bg-primary" />
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            }
-            heading={title}
-          >
-            <TabsContent
-              className="prose prose-neutral dark:prose-invert mt-0 max-w-none"
-              value="rendered"
-            >
-              {currentMarkdown && (
-                <LexicalEditor
-                  editorRef={editorRef}
-                  initialMarkdown={currentMarkdown}
-                  key={editorKey}
-                  onChange={handleEditorChange}
-                  onSelectionChange={handleSelectionChange}
-                />
-              )}
-            </TabsContent>
-            <TabsContent className="mt-0" value="markdown">
-              <textarea
-                className="min-h-[500px] w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
-                onChange={(e) => setEditedMarkdown(e.target.value)}
-                onMouseUp={handleTextareaSelect}
-                onSelect={handleTextareaSelect}
-                ref={textareaRef}
-                value={currentMarkdown}
-              />
-            </TabsContent>
-            <TabsContent className="mt-0" value="diff">
-              <DiffView
-                currentMarkdown={currentMarkdown}
-                originalMarkdown={originalMarkdown}
-              />
-            </TabsContent>
-          </TitleCard>
-        </Tabs>
+        {activeTab === "logs" && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <AiEditInput
+              className="pointer-events-auto w-full max-w-md"
+              isLoading={isEditing}
+              onClearSelection={clearSelection}
+              onSubmit={handleAiEdit}
+              selectedText={selectedText}
+              variant="overlay"
+            />
+          </div>
+        )}
+      </SidebarInset>
 
-        <div className="h-32" />
-      </div>
-
-      <AiEditInput
-        isLoading={isEditing}
-        onClearSelection={clearSelection}
-        onSubmit={handleAiEdit}
-        selectedText={selectedText}
+      <EditorSidebar
+        activeTab={activeTab}
+        contentTitle={title}
+        onSidebarInteract={handleSidebarInteract}
+        onTabChange={(tab) => {
+          handleSidebarInteract();
+          setActiveTab(tab);
+        }}
       />
-    </div>
+    </>
   );
 }

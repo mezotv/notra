@@ -5,12 +5,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface AiEditInputProps {
   selectedText: string | null;
   isLoading: boolean;
   onSubmit: (instruction: string) => void;
   onClearSelection: () => void;
+  className?: string;
+  variant?: "fixed" | "overlay";
 }
 
 export function AiEditInput({
@@ -18,6 +21,8 @@ export function AiEditInput({
   isLoading,
   onSubmit,
   onClearSelection,
+  className,
+  variant = "fixed",
 }: AiEditInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -55,14 +60,22 @@ export function AiEditInput({
     }
   };
 
+  const containerClassName =
+    variant === "fixed" ? "fixed inset-x-0 bottom-6 z-40 md:left-64" : "w-full";
+
   return (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Intentional to preserve selection
     // biome-ignore lint/a11y/noStaticElementInteractions: Intentional to preserve selection
     <div
-      className="fixed inset-x-0 bottom-6 z-40 md:left-64"
+      className={cn(containerClassName, className)}
       onMouseDown={handleMouseDown}
     >
-      <div className="mx-auto max-w-2xl px-4 lg:px-6">
+      <div
+        className={cn(
+          "mx-auto max-w-2xl px-4 lg:px-6",
+          variant === "overlay" && "max-w-none px-0"
+        )}
+      >
         {selectedText && (
           <div className="mb-2 flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-3 py-2 backdrop-blur">
             <span className="font-medium text-primary text-xs">Selected:</span>
@@ -78,7 +91,10 @@ export function AiEditInput({
           </div>
         )}
         <form
-          className="flex items-center gap-2 rounded-2xl border border-border/80 bg-background/95 p-2 shadow-lg backdrop-blur"
+          className={cn(
+            "flex items-center gap-2 rounded-2xl border border-border/80 bg-background/95 p-2 shadow-lg backdrop-blur",
+            variant === "overlay" && "mx-auto max-w-md bg-card/95"
+          )}
           onSubmit={handleSubmit}
         >
           <Textarea

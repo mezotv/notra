@@ -13,4 +13,5 @@ async function Page() {
     </Suspense>
   );
 }
+
 export default Page;

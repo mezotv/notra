@@ -24,21 +24,29 @@ export function SelectionPlugin({ onSelectionChange }: SelectionPluginProps) {
         if ($isRangeSelection(selection) && !selection.isCollapsed()) {
           const text = selection.getTextContent().trim();
           onSelectionChange(text || null);
+        } else {
+          onSelectionChange(null);
         }
         return false;
       },
       COMMAND_PRIORITY_LOW
     );
 
-    // Also listen to native selection changes as backup
+    // Only capture native selections that are inside the editor root
     const handleNativeSelection = () => {
       const nativeSelection = window.getSelection();
-      if (nativeSelection && !nativeSelection.isCollapsed) {
-        const text = nativeSelection.toString().trim();
-        if (text) {
-          onSelectionChange(text);
-        }
+      const rootElement = editor.getRootElement();
+      const anchorNode = nativeSelection?.anchorNode ?? null;
+      const isInsideEditor =
+        rootElement && anchorNode ? rootElement.contains(anchorNode) : false;
+
+      if (!(nativeSelection && isInsideEditor) || nativeSelection.isCollapsed) {
+        onSelectionChange(null);
+        return;
       }
+
+      const text = nativeSelection.toString().trim();
+      onSelectionChange(text || null);
     };
 
     document.addEventListener("selectionchange", handleNativeSelection);

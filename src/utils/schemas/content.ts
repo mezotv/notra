@@ -44,7 +44,7 @@ export type PostsResponse = z.infer<typeof postsResponseSchema>;
 export const editContentSchema = z.object({
   instruction: z.string().min(1, "Instruction is required"),
   currentMarkdown: z.string(),
-  selectedText: z.string().optional(),
+  selectedText: z.string().nullish(),
 });
 
 export type EditContentInput = z.infer<typeof editContentSchema>;
