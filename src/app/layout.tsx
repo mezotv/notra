@@ -38,9 +38,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${notoSans.variable} dark:color-scheme-dark`}
+      className={`${notoSans.variable} dark:scheme-dark`}
       lang="en"
-      style={{ colorScheme: "light dark" }}
       suppressHydrationWarning
     >
       <body
