@@ -99,6 +99,7 @@ export default function ForgotPassword() {
               Email
             </Label>
             <Input
+              autoComplete="email"
               disabled={isLoading}
               id="email"
               name="email"
@@ -109,7 +110,7 @@ export default function ForgotPassword() {
           </div>
         </div>
         <Button className="mt-4 w-full" disabled={isLoading} type="submit">
-          {isLoading ? "..." : "Send reset link"}
+          {isLoading ? "Sending…" : "Send Reset Link"}
         </Button>
       </form>
 

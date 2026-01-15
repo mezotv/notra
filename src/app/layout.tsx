@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     default: "Notra",
   },
   description: "Notra - Content Management",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({
@@ -30,7 +34,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={notoSans.variable} lang="en" suppressHydrationWarning>
+    <html
+      className={`${notoSans.variable} dark:color-scheme-dark`}
+      lang="en"
+      style={{ colorScheme: "light dark" }}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

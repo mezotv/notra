@@ -197,6 +197,7 @@ function ProfileSection({ user }: ProfileSectionProps) {
                 <Label htmlFor={field.name}>Full Name</Label>
                 <div className="flex gap-2">
                   <Input
+                    autoComplete="name"
                     id={field.name}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
@@ -308,6 +309,7 @@ function LoginDetailsSection({
                       <Label htmlFor={field.name}>Current password</Label>
                       <div className="relative">
                         <Input
+                          autoComplete="current-password"
                           className="pr-9"
                           id={field.name}
                           onBlur={field.handleBlur}
@@ -346,6 +348,7 @@ function LoginDetailsSection({
                       <Label htmlFor={field.name}>New password</Label>
                       <div className="relative">
                         <Input
+                          autoComplete="new-password"
                           className="pr-9"
                           id={field.name}
                           onBlur={field.handleBlur}
@@ -379,6 +382,7 @@ function LoginDetailsSection({
                     <div className="space-y-2">
                       <Label htmlFor={field.name}>Confirm new password</Label>
                       <Input
+                        autoComplete="new-password"
                         id={field.name}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}

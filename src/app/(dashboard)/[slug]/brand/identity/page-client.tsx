@@ -387,18 +387,23 @@ function BrandForm({
           <TitleCard heading="Tone & Language">
             <form.Field name="useCustomTone">
               {(useCustomToneField) => (
-                <div className="space-y-4">
+                <fieldset className="space-y-4">
+                  <legend className="sr-only">Tone selection</legend>
                   <form.Field name="toneProfile">
                     {(toneProfileField) => (
                       <div className="space-y-3">
-                        <button
-                          className="flex cursor-pointer items-center gap-2"
-                          onClick={() => {
-                            useCustomToneField.handleChange(false);
-                            form.setFieldValue("customTone", "");
-                          }}
-                          type="button"
-                        >
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <input
+                            checked={!useCustomToneField.state.value}
+                            className="peer sr-only"
+                            name="toneType"
+                            onChange={() => {
+                              useCustomToneField.handleChange(false);
+                              form.setFieldValue("customTone", "");
+                            }}
+                            type="radio"
+                            value="preset"
+                          />
                           <div
                             className={`flex size-5 items-center justify-center rounded-full ${
                               useCustomToneField.state.value
@@ -432,7 +437,7 @@ function BrandForm({
                           >
                             Tone Profile
                           </span>
-                        </button>
+                        </label>
                         <Select
                           disabled={useCustomToneField.state.value}
                           onValueChange={(value) => {
@@ -466,13 +471,17 @@ function BrandForm({
                     <form.Field name="customTone">
                       {(customToneField) => (
                         <div className="space-y-3">
-                          <button
-                            className="flex cursor-pointer items-center gap-2"
-                            onClick={() =>
-                              useCustomToneField.handleChange(true)
-                            }
-                            type="button"
-                          >
+                          <label className="flex cursor-pointer items-center gap-2">
+                            <input
+                              checked={useCustomToneField.state.value}
+                              className="peer sr-only"
+                              name="toneType"
+                              onChange={() =>
+                                useCustomToneField.handleChange(true)
+                              }
+                              type="radio"
+                              value="custom"
+                            />
                             <div
                               className={`flex size-5 items-center justify-center rounded-full ${
                                 useCustomToneField.state.value
@@ -506,22 +515,23 @@ function BrandForm({
                             >
                               Custom Tone
                             </span>
-                          </button>
+                          </label>
                           <Input
+                            autoComplete="off"
                             disabled={!useCustomToneField.state.value}
                             id={customToneField.name}
                             onBlur={customToneField.handleBlur}
                             onChange={(e) =>
                               customToneField.handleChange(e.target.value)
                             }
-                            placeholder="Add custom tone notes"
+                            placeholder="Add custom tone notes…"
                             value={customToneField.state.value}
                           />
                         </div>
                       )}
                     </form.Field>
                   </div>
-                </div>
+                </fieldset>
               )}
             </form.Field>
 

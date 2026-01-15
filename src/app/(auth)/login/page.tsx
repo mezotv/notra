@@ -134,6 +134,7 @@ export default function Login() {
                 Email
               </Label>
               <Input
+                autoComplete="email"
                 disabled={isAuthLoading}
                 id="email"
                 name="email"
@@ -147,6 +148,7 @@ export default function Login() {
               </Label>
               <div className="relative">
                 <Input
+                  autoComplete="current-password"
                   className="pr-9"
                   disabled={isAuthLoading}
                   id="password"
@@ -155,6 +157,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                 />
                 <button
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
                   disabled={isAuthLoading}
                   onClick={() => setShowPassword(!showPassword)}
@@ -179,7 +182,7 @@ export default function Login() {
               </Badge>
             )}
             <Button className="w-full" disabled={isAuthLoading} type="submit">
-              {isAuthLoading ? "..." : "Continue"}
+              {isAuthLoading ? "Loading…" : "Continue"}
             </Button>
           </div>
         </form>

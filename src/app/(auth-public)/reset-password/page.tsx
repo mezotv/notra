@@ -136,6 +136,7 @@ function ResetPasswordForm() {
             </Label>
             <div className="relative">
               <Input
+                autoComplete="new-password"
                 className="pr-9"
                 disabled={isLoading}
                 id="password"
@@ -146,6 +147,7 @@ function ResetPasswordForm() {
                 type={showPassword ? "text" : "password"}
               />
               <button
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
                 disabled={isLoading}
                 onClick={() => setShowPassword(!showPassword)}
@@ -165,6 +167,7 @@ function ResetPasswordForm() {
             </Label>
             <div className="relative">
               <Input
+                autoComplete="new-password"
                 className="pr-9"
                 disabled={isLoading}
                 id="confirmPassword"
@@ -175,6 +178,11 @@ function ResetPasswordForm() {
                 type={showConfirmPassword ? "text" : "password"}
               />
               <button
+                aria-label={
+                  showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+                }
                 className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
                 disabled={isLoading}
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -193,7 +201,7 @@ function ResetPasswordForm() {
           Password must be at least 8 characters long.
         </p>
         <Button className="mt-4 w-full" disabled={isLoading} type="submit">
-          {isLoading ? "..." : "Reset password"}
+          {isLoading ? "Resetting…" : "Reset Password"}
         </Button>
       </form>
 
@@ -215,7 +223,7 @@ export default function ResetPassword() {
       fallback={
         <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
           <div className="text-center">
-            <h1 className="font-semibold text-xl lg:text-2xl">Loading...</h1>
+            <h1 className="font-semibold text-xl lg:text-2xl">Loading…</h1>
           </div>
         </div>
       }

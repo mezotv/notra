@@ -78,7 +78,7 @@ export function DataTable<TData>({
                   className="h-24 text-center"
                   colSpan={columns.length}
                 >
-                  Loading...
+                  Loading…
                 </TableCell>
               </TableRow>
             )}
