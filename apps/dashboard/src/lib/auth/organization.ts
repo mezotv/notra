@@ -29,8 +29,18 @@ export type OrganizationAuth = OrganizationAuthResult | OrganizationAuthError;
 
 export async function withOrganizationAuth(
   request: NextRequest,
-  organizationId: string
+  organizationId: string,
 ): Promise<OrganizationAuth> {
+  if (!process.env.DATABASE_URL) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Database unavailable" },
+        { status: 503 },
+      ),
+    };
+  }
+
   const { user } = await getServerSession({
     headers: request.headers,
   });
@@ -45,7 +55,7 @@ export async function withOrganizationAuth(
   const membership = await db.query.members.findFirst({
     where: and(
       eq(members.userId, user.id),
-      eq(members.organizationId, organizationId)
+      eq(members.organizationId, organizationId),
     ),
     columns: {
       id: true,
@@ -58,7 +68,7 @@ export async function withOrganizationAuth(
       success: false,
       response: NextResponse.json(
         { error: "You do not have access to this organization" },
-        { status: 403 }
+        { status: 403 },
       ),
     };
   }

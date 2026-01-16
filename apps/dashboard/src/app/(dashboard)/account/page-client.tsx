@@ -87,7 +87,7 @@ export default function AccountPageClient() {
   const hasGoogleLinked = accounts?.some((a) => a.providerId === "google");
   const hasGithubLinked = accounts?.some((a) => a.providerId === "github");
   const hasPasswordAccount = accounts?.some(
-    (a) => a.providerId === "credential"
+    (a) => a.providerId === "credential",
   );
 
   return (
@@ -139,7 +139,8 @@ function ProfileSection({ user }: ProfileSectionProps) {
       const validated = nameSchema.safeParse(value.name);
 
       if (!validated.success) {
-        toast.error(validated.error.issues[0].message);
+        const issue = validated.error?.issues[0];
+        toast.error(issue?.message ?? "Invalid name");
         return;
       }
 
@@ -248,7 +249,8 @@ function LoginDetailsSection({
       const validated = passwordSchema.safeParse(value);
 
       if (!validated.success) {
-        toast.error(validated.error.issues[0].message);
+        const issue = validated.error?.issues[0];
+        toast.error(issue?.message ?? "Invalid password details");
         return;
       }
 

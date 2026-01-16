@@ -76,6 +76,9 @@ function RepositorySelector({
           >
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const repo = availableRepos[virtualRow.index];
+              if (!repo) {
+                return null;
+              }
               return (
                 <button
                   className={`w-full px-3 py-2 text-left hover:bg-accent ${
@@ -154,7 +157,7 @@ export function AddRepositoryDialog({
     queryKey: QUERY_KEYS.INTEGRATIONS.availableRepos(integrationId),
     queryFn: async () => {
       const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`
+        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
@@ -187,7 +190,7 @@ export function AddRepositoryDialog({
               { type: "investor_update", enabled: false },
             ],
           }),
-        }
+        },
       );
 
       if (!response.ok) {

@@ -1,7 +1,7 @@
 import { tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-import { firecrawl } from "@/lib/firecrawl";
+import { getFirecrawlClient } from "@/lib/firecrawl";
 import { toolDescription } from "../utils/description";
 
 export const scrapeWebsiteTool = tool({
@@ -21,6 +21,7 @@ Returns markdown-formatted content which preserves structure and is easy to read
       .describe("The URL of the website to scrape"),
   }),
   execute: async ({ url }) => {
+    const firecrawl = getFirecrawlClient();
     const scrape = await firecrawl.scrape(url, {
       formats: ["markdown"],
       onlyMainContent: false,

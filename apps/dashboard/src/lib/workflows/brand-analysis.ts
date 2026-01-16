@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { FatalError } from "workflow";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, organizations } from "@notra/db/schema";
-import { firecrawl } from "@/lib/firecrawl";
+import { getFirecrawlClient } from "@/lib/firecrawl";
 import { openrouter } from "@/lib/openrouter";
 import { redis } from "@/lib/redis";
 import { brandSettingsSchema } from "@/utils/schemas/brand";
@@ -102,6 +102,7 @@ async function scrapeWebsite(url: string) {
   "use step";
 
   try {
+    const firecrawl = getFirecrawlClient();
     const result = await firecrawl.scrape(url, {
       formats: ["markdown"],
       onlyMainContent: true,
@@ -156,7 +157,7 @@ interface BrandInfo {
 async function saveToDatabase(
   organizationId: string,
   url: string,
-  brandInfo: BrandInfo
+  brandInfo: BrandInfo,
 ) {
   "use step";
 

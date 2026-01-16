@@ -36,12 +36,10 @@ const TAB_VALUES = ["all", "installed"] as const;
 
 const AddIntegrationDialog = dynamic(
   () =>
-    import("@/components/integrations/add-integration-dialog").then(
-      (mod) => ({
-        default: mod.AddIntegrationDialog,
-      })
-    ),
-  { ssr: false }
+    import("@/components/integrations/add-integration-dialog").then((mod) => ({
+      default: mod.AddIntegrationDialog,
+    })),
+  { ssr: false },
 );
 
 interface Integration {
@@ -266,25 +264,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(TAB_VALUES).withDefault("all")
+    parseAsStringLiteral(TAB_VALUES).withDefault("all"),
   );
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<IntegrationsResponse>({
     queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId ?? ""),
     queryFn: async () => {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
       const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
+        `/api/organizations/${organizationId}/integrations`,
       );
 
       if (!response.ok) {
         throw new Error("Failed to fetch integrations");
       }
 
-      const result = await response.json();
-      return result as IntegrationsResponse;
+      const result: IntegrationsResponse = await response.json();
+      return result;
     },
     enabled: !!organizationId,
   });
@@ -307,16 +305,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     );
   }
 
-  const integrationsByType = integrations?.reduce(
-    (acc, integration) => {
-      if (!acc[integration.type]) {
-        acc[integration.type] = [];
-      }
-      acc[integration.type].push(integration);
-      return acc;
-    },
-    {} as Record<string, Integration[]>
-  );
+  const integrationsByType = integrations?.reduce<
+    Record<string, Integration[]>
+  >((acc, integration) => {
+    const existing = acc[integration.type];
+    if (existing) {
+      existing.push(integration);
+    } else {
+      acc[integration.type] = [integration];
+    }
+    return acc;
+  }, {});
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -390,11 +389,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 (() => {
                   const inputIntegrations =
                     integrations?.filter(
-                      (i) => INTEGRATION_CATEGORY_MAP[i.type] === "input"
+                      (i) => INTEGRATION_CATEGORY_MAP[i.type] === "input",
                     ) ?? [];
                   const outputIntegrations =
                     integrations?.filter(
-                      (i) => INTEGRATION_CATEGORY_MAP[i.type] === "output"
+                      (i) => INTEGRATION_CATEGORY_MAP[i.type] === "output",
                     ) ?? [];
                   const hasAnyIntegrations =
                     inputIntegrations.length > 0 ||
@@ -427,7 +426,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                           <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
                             {inputIntegrations.map((integration) => {
                               const config = ALL_INTEGRATIONS.find(
-                                (i) => i.id === integration.type
+                                (i) => i.id === integration.type,
                               );
                               return (
                                 <InstalledIntegrationCard
@@ -456,7 +455,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                           <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
                             {outputIntegrations.map((integration) => {
                               const config = ALL_INTEGRATIONS.find(
-                                (i) => i.id === integration.type
+                                (i) => i.id === integration.type,
                               );
                               return (
                                 <InstalledIntegrationCard

@@ -24,6 +24,11 @@ const VIEW_OPTIONS = ["rendered", "markdown", "diff"] as const;
 type ViewOption = (typeof VIEW_OPTIONS)[number];
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
+const VIEW_OPTIONS_SET = new Set<string>(VIEW_OPTIONS);
+
+function isViewOption(value: string): value is ViewOption {
+  return VIEW_OPTIONS_SET.has(value);
+}
 
 interface PageClientProps {
   contentId: string;
@@ -42,7 +47,7 @@ function formatDate(date: Date): string {
 
 function extractTitleFromMarkdown(markdown: string): string {
   const match = markdown.match(TITLE_REGEX);
-  return match ? match[1] : "Untitled";
+  return match?.[1] ?? "Untitled";
 }
 
 export default function PageClient({
@@ -52,7 +57,7 @@ export default function PageClient({
 }: PageClientProps) {
   const [view, setView] = useQueryState(
     "view",
-    parseAsStringLiteral(VIEW_OPTIONS).withDefault("rendered")
+    parseAsStringLiteral(VIEW_OPTIONS).withDefault("rendered"),
   );
 
   const { data, isLoading, error } = useContent(organizationId, contentId);
@@ -102,7 +107,7 @@ export default function PageClient({
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ markdown: editedMarkdown }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -161,7 +166,7 @@ export default function PageClient({
             </Button>
           </div>
         ),
-        { duration: Number.POSITIVE_INFINITY, position: "bottom-right" }
+        { duration: Number.POSITIVE_INFINITY, position: "bottom-right" },
       );
     } else if (!hasChanges && saveToastIdRef.current) {
       toast.dismiss(saveToastIdRef.current);
@@ -224,7 +229,7 @@ export default function PageClient({
             currentMarkdown,
             selectedText,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -324,7 +329,11 @@ export default function PageClient({
 
         <Tabs
           className="w-full"
-          onValueChange={(value) => setView(value as ViewOption)}
+          onValueChange={(value) => {
+            if (isViewOption(value)) {
+              setView(value);
+            }
+          }}
           value={view}
         >
           <TitleCard

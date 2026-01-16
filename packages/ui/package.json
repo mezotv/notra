@@ -9,7 +9,8 @@
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./components/kibo-ui/*": "./src/components/kibo-ui/*/index.tsx",
-    "./hooks/*": "./src/hooks/*.ts"
+    "./hooks/*": "./src/hooks/*.ts",
+    "./hooks/use-mobile": "./src/hooks/use-mobile.tsx"
   },
   "scripts": {
     "lint": "ultracite check",

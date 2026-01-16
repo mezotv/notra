@@ -126,6 +126,9 @@ const createTouchTexture = (): TouchTexture => {
     clear();
     for (let i = trail.length - 1; i >= 0; i--) {
       const point = trail[i];
+      if (!point) {
+        continue;
+      }
       const f = point.force * speed * (1 - point.age / maxAge);
       point.x += point.vx * f;
       point.y += point.vy * f;
@@ -135,7 +138,10 @@ const createTouchTexture = (): TouchTexture => {
       }
     }
     for (let i = 0; i < trail.length; i++) {
-      drawPoint(trail[i]);
+      const point = trail[i];
+      if (point) {
+        drawPoint(point);
+      }
     }
     texture.needsUpdate = true;
   };
@@ -156,7 +162,7 @@ const createTouchTexture = (): TouchTexture => {
 
 const createLiquidEffect = (
   texture: THREE.Texture,
-  opts?: { strength?: number; freq?: number }
+  opts?: { strength?: number; freq?: number },
 ) => {
   const fragment = `
     uniform sampler2D uTexture;
@@ -489,7 +495,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         uClickPos: {
           value: Array.from(
             { length: MAX_CLICKS },
-            () => new THREE.Vector2(-1, -1)
+            () => new THREE.Vector2(-1, -1),
           ),
         },
         uClickTimes: { value: new Float32Array(MAX_CLICKS) },
@@ -525,12 +531,12 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         renderer.setSize(w, h, false);
         uniforms.uResolution.value.set(
           renderer.domElement.width,
-          renderer.domElement.height
+          renderer.domElement.height,
         );
         if (threeRef.current?.composer) {
           threeRef.current.composer.setSize(
             renderer.domElement.width,
-            renderer.domElement.height
+            renderer.domElement.height,
           );
         }
         uniforms.uPixelSize.value = pixelSize * renderer.getPixelRatio();
@@ -542,7 +548,11 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
           const u32 = new Uint32Array(1);
           window.crypto.getRandomValues(u32);
-          return u32[0] / 0xff_ff_ff_ff;
+          const value = u32[0];
+          if (value === undefined) {
+            return Math.random();
+          }
+          return value / 0xff_ff_ff_ff;
         }
         return Math.random();
       };
@@ -577,7 +587,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
               ["uTime", new THREE.Uniform(0)],
               ["uAmount", new THREE.Uniform(noiseAmount)],
             ]),
-          }
+          },
         );
         const noisePass = new EffectPass(camera, noiseEffect);
         noisePass.renderToScreen = true;
@@ -608,8 +618,13 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
       const onPointerDown = (e: PointerEvent) => {
         const { fx, fy } = mapToPixels(e);
         const ix = threeRef.current?.clickIx ?? 0;
-        uniforms.uClickPos.value[ix].set(fx, fy);
-        uniforms.uClickTimes.value[ix] = uniforms.uTime.value;
+        const clickPos = uniforms.uClickPos.value[ix];
+        if (clickPos) {
+          clickPos.set(fx, fy);
+        }
+        if (uniforms.uClickTimes.value[ix] !== undefined) {
+          uniforms.uClickTimes.value[ix] = uniforms.uTime.value;
+        }
         if (threeRef.current) {
           threeRef.current.clickIx = (ix + 1) % MAX_CLICKS;
         }

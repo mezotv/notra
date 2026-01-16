@@ -56,7 +56,7 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
     startMatch,
     _endMatch,
     linesInBetween,
-    _isImport
+    _isImport,
   ) => {
     const language = startMatch[1] || "";
 
@@ -72,7 +72,12 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
     if (children && children.length > 0) {
       const code = children.map((child) => child.getTextContent()).join("\n");
       const codeBlockNode = $createKiboCodeBlockNode(code, language);
-      children[0].getParentOrThrow().replace(codeBlockNode);
+      const firstChild = children[0];
+      if (firstChild) {
+        firstChild.getParentOrThrow().replace(codeBlockNode);
+      } else {
+        rootNode.append(codeBlockNode);
+      }
     } else {
       // Handle empty code block (just ``` with no content)
       const codeBlockNode = $createKiboCodeBlockNode("", language);
@@ -82,13 +87,18 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
   type: "multiline-element",
 };
 
+function isMultilineTransformer(
+  transformer: Transformer,
+): transformer is MultilineElementTransformer {
+  return transformer.type === "multiline-element";
+}
+
 // Filter out the default CODE transformer and add our custom one
 const filteredTransformers = TRANSFORMERS.filter((transformer: Transformer) => {
-  if (transformer.type === "multiline-element") {
-    const multiline = transformer as MultilineElementTransformer;
+  if (isMultilineTransformer(transformer)) {
     // Filter out the default code block transformer by checking its dependencies
     // The default CODE transformer uses CodeNode and CodeHighlightNode
-    if (multiline.dependencies?.some((dep) => dep.getType?.() === "code")) {
+    if (transformer.dependencies?.some((dep) => dep.getType?.() === "code")) {
       return false;
     }
   }

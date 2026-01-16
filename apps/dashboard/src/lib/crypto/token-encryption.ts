@@ -7,13 +7,13 @@ function getEncryptionKey(): Buffer {
   const key = process.env.INTEGRATION_ENCRYPTION_KEY;
   if (!key) {
     throw new Error(
-      "INTEGRATION_ENCRYPTION_KEY environment variable is not set"
+      "INTEGRATION_ENCRYPTION_KEY environment variable is not set",
     );
   }
   const decodedKey = Buffer.from(key, "base64");
   if (decodedKey.length !== 32) {
     throw new Error(
-      `INTEGRATION_ENCRYPTION_KEY must be a base64-encoded 32-byte key, but decoded length is ${decodedKey.length} bytes (expected 32 bytes). Please supply a valid base64-encoded 32-byte key.`
+      `INTEGRATION_ENCRYPTION_KEY must be a base64-encoded 32-byte key, but decoded length is ${decodedKey.length} bytes (expected 32 bytes). Please supply a valid base64-encoded 32-byte key.`,
     );
   }
   return decodedKey;
@@ -41,7 +41,18 @@ export function decryptToken(encryptedToken: string): string {
     throw new Error("Invalid encrypted token format");
   }
 
-  const [ivHex, authTagHex, encrypted] = parts;
+  const ivHex = parts[0];
+  const authTagHex = parts[1];
+  const encrypted = parts[2];
+
+  if (
+    ivHex === undefined ||
+    authTagHex === undefined ||
+    encrypted === undefined
+  ) {
+    throw new Error("Invalid encrypted token format");
+  }
+
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(authTagHex, "hex");
 

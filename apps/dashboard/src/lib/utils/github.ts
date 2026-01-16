@@ -9,6 +9,9 @@ export function parseGitHubUrl(url: string): GitHubRepoInfo | null {
     if (match) {
       const owner = match[1];
       const repo = match[2];
+      if (!owner || !repo) {
+        continue;
+      }
       return {
         owner,
         repo,

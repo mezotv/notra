@@ -63,14 +63,19 @@ function generateExampleLogs(count: number): Log[] {
   const logs: Log[] = [];
 
   for (let i = 0; i < count; i++) {
-    const status = STATUSES[Math.floor(Math.random() * STATUSES.length)];
-    const title = EVENT_TITLES[Math.floor(Math.random() * EVENT_TITLES.length)];
+    const status =
+      STATUSES[Math.floor(Math.random() * STATUSES.length)] ?? "pending";
+    const title =
+      EVENT_TITLES[Math.floor(Math.random() * EVENT_TITLES.length)] ??
+      "Webhook event";
     const integrationType =
-      INTEGRATION_TYPES[Math.floor(Math.random() * INTEGRATION_TYPES.length)];
-    const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+      INTEGRATION_TYPES[Math.floor(Math.random() * INTEGRATION_TYPES.length)] ??
+      "webhook";
+    const direction =
+      DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)] ?? "incoming";
 
     const createdAt = new Date(
-      Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
+      Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000),
     );
 
     logs.push({
@@ -90,7 +95,7 @@ function generateExampleLogs(count: number): Log[] {
   }
 
   return logs.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 }
 
@@ -109,11 +114,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const { searchParams } = new URL(request.url);
     const page = Math.max(
       1,
-      Number.parseInt(searchParams.get("page") || "1", 10)
+      Number.parseInt(searchParams.get("page") || "1", 10),
     );
     const pageSize = Math.min(
       100,
-      Math.max(1, Number.parseInt(searchParams.get("pageSize") || "10", 10))
+      Math.max(1, Number.parseInt(searchParams.get("pageSize") || "10", 10)),
     );
 
     const startIndex = (page - 1) * pageSize;
@@ -135,7 +140,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     console.error("Error fetching webhook logs:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

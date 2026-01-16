@@ -18,9 +18,14 @@ import { organizationSlugSchema } from "@/utils/schemas/organization";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
+const authSecret = process.env.BETTER_AUTH_SECRET;
+if (!authSecret) {
+  console.warn("[ENV]: BETTER_AUTH_SECRET is not defined");
+}
+
 async function getActiveOrganizationId(
   userId: string,
-  cookieHeader?: string | null
+  cookieHeader?: string | null,
 ): Promise<string | undefined> {
   try {
     let lastVisitedSlug: string | undefined;
@@ -28,7 +33,7 @@ async function getActiveOrganizationId(
     try {
       const cookieStore = await cookies();
       lastVisitedSlug = cookieStore.get(
-        LAST_VISITED_ORGANIZATION_COOKIE
+        LAST_VISITED_ORGANIZATION_COOKIE,
       )?.value;
     } catch {
       if (cookieHeader) {
@@ -36,7 +41,7 @@ async function getActiveOrganizationId(
           cookieHeader.split(";").map((c) => {
             const [key, ...v] = c.trim().split("=");
             return [key, v.join("=")];
-          })
+          }),
         );
         lastVisitedSlug = parsedCookies[LAST_VISITED_ORGANIZATION_COOKIE];
       }
@@ -81,6 +86,7 @@ async function getActiveOrganizationId(
 }
 
 export const auth = betterAuth({
+  secret: authSecret ?? "development-secret",
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
@@ -134,9 +140,8 @@ export const auth = betterAuth({
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
       const { sendEmail } = await import("@/lib/email");
-      const { PasswordResetEmail } = await import(
-        "@/lib/email/templates/password-reset"
-      );
+      const { PasswordResetEmail } =
+        await import("@/lib/email/templates/password-reset");
       const result = await sendEmail({
         to: user.email,
         subject: "Reset your Notra password",
@@ -202,7 +207,8 @@ export const auth = betterAuth({
 
           if (!validation.success) {
             throw new Error(
-              validation.error.issues[0]?.message ?? "Invalid organization slug"
+              validation.error.issues[0]?.message ??
+                "Invalid organization slug",
             );
           }
 
@@ -221,7 +227,7 @@ export const auth = betterAuth({
           const cookieHeader = ctx?.headers?.get("cookie");
           const activeOrgId = await getActiveOrganizationId(
             session.userId,
-            cookieHeader
+            cookieHeader,
           );
 
           if (activeOrgId) {
