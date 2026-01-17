@@ -1,0 +1,21 @@
+{
+  "name": "@notra/db",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./drizzle": "./src/drizzle.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "lint": "ultracite check",
+    "format": "ultracite fix"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "*",
+    "@types/node": "^22.15.3",
+    "typescript": "5.9.2"
+  }
+}
