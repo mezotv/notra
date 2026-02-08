@@ -139,7 +139,7 @@ function buildTableNode(
 
   const headerRowNode = $createTableRowNode();
   for (const cellText of headerCells) {
-    const cellNode = $createTableCellNode(TableCellHeaderStates.COL);
+    const cellNode = $createTableCellNode(TableCellHeaderStates.COLUMN);
     const paragraph = $createParagraphNode();
     if (cellText) {
       paragraph.append($createTextNode(cellText));
