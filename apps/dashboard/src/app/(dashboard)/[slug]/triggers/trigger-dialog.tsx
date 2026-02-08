@@ -277,8 +277,8 @@ export function AddTriggerDialog({
           }
         />
       )}
-      <SheetContent className="sm:max-w-lg" side="right">
-        <SheetHeader>
+      <SheetContent className="gap-0 overflow-hidden sm:max-w-lg" side="right">
+        <SheetHeader className="shrink-0 border-b">
           <SheetTitle className="text-2xl">
             {isEditMode
               ? "Edit Schedule"
@@ -296,15 +296,15 @@ export function AddTriggerDialog({
         </SheetHeader>
 
         <form
-          className="flex flex-1 flex-col overflow-hidden"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
         >
-          <ScrollArea className="flex-1 px-4">
-            <div className="space-y-4 py-2">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-4 px-4 py-4 pb-6">
               <form.Field name="sourceType">
                 {(field) => (
                   <div className="space-y-2">
@@ -501,7 +501,7 @@ export function AddTriggerDialog({
             </div>
           </ScrollArea>
 
-          <SheetFooter className="border-t pt-4">
+          <SheetFooter className="shrink-0 border-t bg-background pt-4">
             <SheetClose render={<Button variant="outline">Cancel</Button>} />
             <form.Subscribe
               selector={(state) => ({
