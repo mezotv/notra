@@ -101,6 +101,12 @@ export const organizations = pgTable(
     websiteUrl: text("website_url"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
+    onboardingCompleted: boolean("onboarding_completed")
+      .default(false)
+      .notNull(),
+    onboardingDismissed: boolean("onboarding_dismissed")
+      .default(false)
+      .notNull(),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );

@@ -1,0 +1,2 @@
+ALTER TABLE "organizations" ADD COLUMN "onboarding_completed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "onboarding_dismissed" boolean DEFAULT false NOT NULL;
