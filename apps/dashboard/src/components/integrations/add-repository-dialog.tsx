@@ -214,7 +214,7 @@ export function AddRepositoryDialog({
         queryKey: QUERY_KEYS.INTEGRATIONS.repositories(integrationId),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
+        queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
       });
       toast.success("Repository added successfully");
       setOpen(false);

@@ -161,6 +161,7 @@ function SchedulesSection({
   const repositoryQueryString = normalizedRepositoryIds
     .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
     .join("&");
+  const hasRepositories = normalizedRepositoryIds.length > 0;
 
   const { data, isPending, isError } = useQuery({
     queryKey: [
@@ -179,11 +180,12 @@ function SchedulesSection({
       }
       return response.json() as Promise<{ triggers: Trigger[] }>;
     },
-    enabled: !!organizationId && normalizedRepositoryIds.length > 0,
+    enabled: !!organizationId && hasRepositories,
   });
 
   const schedules = data?.triggers ?? [];
   const displaySchedules = schedules.slice(0, 5);
+  const isLoadingSchedules = isPending && hasRepositories;
 
   return (
     <div className="space-y-4">
@@ -203,7 +205,7 @@ function SchedulesSection({
           </Link>
         )}
       </div>
-      {isPending ? (
+      {isLoadingSchedules ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -263,7 +265,10 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const organizationId = activeOrganization?.id;
 
   const { data: integration, isLoading: isLoadingIntegration } = useQuery({
-    queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
+    queryKey: QUERY_KEYS.INTEGRATIONS.detail(
+      organizationId ?? "",
+      integrationId
+    ),
     queryFn: async () => {
       if (!organizationId) {
         throw new Error("Organization ID is required");

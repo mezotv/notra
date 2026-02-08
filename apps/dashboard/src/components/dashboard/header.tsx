@@ -31,10 +31,14 @@ export function SiteHeader() {
 
     const item = (
       <BreadcrumbItem className="hover:underline" key={`${id}-item-${segment}`}>
-        <BreadcrumbLink render={<Link href={href} />}>
-          {segment.charAt(0).toUpperCase() +
-            segment.slice(1).replace(/-/g, " ")}
-        </BreadcrumbLink>
+        <BreadcrumbLink
+          render={
+            <Link href={href}>
+              {segment.charAt(0).toUpperCase() +
+                segment.slice(1).replace(/-/g, " ")}
+            </Link>
+          }
+        />
       </BreadcrumbItem>
     );
 

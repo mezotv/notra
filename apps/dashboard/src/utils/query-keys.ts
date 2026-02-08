@@ -7,7 +7,8 @@ export const QUERY_KEYS = {
   INTEGRATIONS: {
     base: ["integrations"] as const,
     all: (organizationId: string) => ["integrations", organizationId] as const,
-    detail: (integrationId: string) => ["integrations", integrationId] as const,
+    detail: (organizationId: string, integrationId: string) =>
+      ["integrations", organizationId, "detail", integrationId] as const,
     repositories: (integrationId: string) =>
       ["integrations", integrationId, "repositories"] as const,
     availableRepos: (integrationId: string) =>

@@ -71,7 +71,10 @@ export function EditIntegrationDialog({
         queryKey: QUERY_KEYS.INTEGRATIONS.base,
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(integration.id),
+        queryKey: QUERY_KEYS.INTEGRATIONS.detail(
+          organizationId,
+          integration.id
+        ),
       });
       toast.success("Integration updated successfully");
       setOpen(false);

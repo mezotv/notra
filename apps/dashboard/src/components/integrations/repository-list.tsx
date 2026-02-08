@@ -16,7 +16,7 @@ export function RepositoryList({
   const queryClient = useQueryClient();
 
   const { data: integration, isLoading } = useQuery({
-    queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
+    queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
     queryFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/integrations/${integrationId}`
@@ -56,7 +56,7 @@ export function RepositoryList({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(integrationId),
+        queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
       });
       toast.success("Content output updated");
     },

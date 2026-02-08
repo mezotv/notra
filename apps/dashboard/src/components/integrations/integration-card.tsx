@@ -137,7 +137,7 @@ export function IntegrationCard({
     }
     const destination = `/${organizationSlug}/integrations/github/${integration.id}`;
     queryClient.setQueryData(
-      QUERY_KEYS.INTEGRATIONS.detail(integration.id),
+      QUERY_KEYS.INTEGRATIONS.detail(organizationId, integration.id),
       integration
     );
     router.prefetch(destination);
