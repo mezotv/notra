@@ -15,6 +15,13 @@
       "when": 1770567707862,
       "tag": "0002_add_content_trigger_lookback_windows",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770589700566,
+      "tag": "0002_marvelous_silver_surfer",
+      "breakpoints": true
     }
   ]
 }

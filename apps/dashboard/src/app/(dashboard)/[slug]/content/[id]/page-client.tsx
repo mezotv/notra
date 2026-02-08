@@ -26,6 +26,7 @@ import { DiffView } from "@/components/content/diff-view";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { TitleCard } from "@/components/title-card";
+import type { SourceMetadata } from "@/utils/schemas/content";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -57,6 +58,44 @@ function formatDate(date: Date): string {
 function extractTitleFromMarkdown(markdown: string): string {
   const match = markdown.match(TITLE_REGEX);
   return match?.[1] ?? "Untitled";
+}
+
+const LOOKBACK_LABELS: Record<string, string> = {
+  current_day: "Current day",
+  yesterday: "Yesterday",
+  last_7_days: "Last 7 days",
+  last_14_days: "Last 14 days",
+  last_30_days: "Last 30 days",
+};
+
+const TRIGGER_TYPE_LABELS: Record<string, string> = {
+  cron: "Scheduled",
+  github_webhook: "Webhook",
+  manual: "Manual",
+};
+
+function formatLookbackWindow(window: string): string {
+  return LOOKBACK_LABELS[window] ?? window;
+}
+
+function formatDateRange(start: string, end: string): string {
+  const fmt = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${fmt.format(new Date(start))} – ${fmt.format(new Date(end))}`;
+}
+
+function formatTriggerType(type: string): string {
+  return TRIGGER_TYPE_LABELS[type] ?? type;
+}
+
+function formatRepos(repos: { owner: string; repo: string }[]): string {
+  if (repos.length === 1 && repos[0]) {
+    return `${repos[0].owner}/${repos[0].repo}`;
+  }
+  return `${repos.length} repositories`;
 }
 
 export default function PageClient({
@@ -497,16 +536,36 @@ export default function PageClient({
               Back to Content
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <time
-              className="text-muted-foreground text-sm"
-              dateTime={content.date}
-            >
-              {formatDate(new Date(content.date))}
-            </time>
-            <Badge variant="secondary">
-              {CONTENT_TYPE_LABELS[content.contentType]}
-            </Badge>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <time
+                className="text-muted-foreground text-sm"
+                dateTime={content.date}
+              >
+                {formatDate(new Date(content.date))}
+              </time>
+              <Badge variant="secondary">
+                {CONTENT_TYPE_LABELS[content.contentType]}
+              </Badge>
+            </div>
+            {content.sourceMetadata &&
+              (() => {
+                const meta = content.sourceMetadata as SourceMetadata & object;
+                return (
+                  <p className="text-muted-foreground text-xs">
+                    {formatTriggerType(meta.triggerSourceType)}
+                    {" \u00B7 "}
+                    {formatRepos(meta.repositories)}
+                    {" \u00B7 "}
+                    {formatLookbackWindow(meta.lookbackWindow)} (
+                    {formatDateRange(
+                      meta.lookbackRange.start,
+                      meta.lookbackRange.end
+                    )}
+                    )
+                  </p>
+                );
+              })()}
           </div>
         </div>
 

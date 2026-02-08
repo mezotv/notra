@@ -292,6 +292,7 @@ export const posts = pgTable(
     markdown: text("markdown").notNull(),
     contentType: text("content_type").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    sourceMetadata: jsonb("source_metadata"),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -305,6 +306,14 @@ export const posts = pgTable(
     ),
   ]
 );
+
+export interface PostSourceMetadata {
+  triggerId: string;
+  triggerSourceType: string;
+  repositories: { owner: string; repo: string }[];
+  lookbackWindow: string;
+  lookbackRange: { start: string; end: string };
+}
 
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),

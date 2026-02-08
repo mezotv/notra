@@ -1,4 +1,5 @@
 import { db } from "@notra/db/drizzle";
+import type { PostSourceMetadata } from "@notra/db/schema";
 import {
   brandSettings,
   contentTriggerLookbackWindows,
@@ -285,9 +286,23 @@ export const { POST } = serve<SchedulePayload>(
       }
     );
 
-    // Step 4: Save post to database
     const postId = await context.run<string>("save-post", async () => {
       const id = nanoid();
+      const lookbackRange = resolveLookbackRange(lookbackWindow);
+
+      const sourceMetadata: PostSourceMetadata = {
+        triggerId: trigger.id,
+        triggerSourceType: trigger.sourceType,
+        repositories: repositories.map((r) => ({
+          owner: r.owner,
+          repo: r.repo,
+        })),
+        lookbackWindow,
+        lookbackRange: {
+          start: lookbackRange.start.toISOString(),
+          end: lookbackRange.end.toISOString(),
+        },
+      };
 
       await db.insert(posts).values({
         id,
@@ -296,6 +311,7 @@ export const { POST } = serve<SchedulePayload>(
         content: content.markdown,
         markdown: content.markdown,
         contentType: trigger.outputType,
+        sourceMetadata,
       });
 
       return id;
