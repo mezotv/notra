@@ -33,7 +33,6 @@ type TriggerData = {
   targets: { repositoryIds: string[] };
   outputType: string;
   outputConfig: unknown;
-  lookbackWindow: LookbackWindow;
   enabled: boolean;
 };
 
@@ -155,7 +154,6 @@ export const { POST } = serve<SchedulePayload>(
           targets: result.targets as { repositoryIds: string[] },
           outputType: result.outputType,
           outputConfig: result.outputConfig,
-          lookbackWindow: DEFAULT_LOOKBACK_WINDOW,
           enabled: result.enabled,
         };
       }

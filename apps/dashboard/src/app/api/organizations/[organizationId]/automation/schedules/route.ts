@@ -265,6 +265,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       if (qstashScheduleId) {
         await deleteQstashSchedule(qstashScheduleId).catch(() => {});
       }
+
+      await db
+        .delete(contentTriggers)
+        .where(
+          and(
+            eq(contentTriggers.id, triggerId),
+            eq(contentTriggers.organizationId, organizationId)
+          )
+        )
+        .catch(() => {});
+
       throw dbError;
     }
   } catch (error) {
