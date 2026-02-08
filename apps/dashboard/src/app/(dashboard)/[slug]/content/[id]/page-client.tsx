@@ -10,6 +10,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
@@ -95,7 +100,7 @@ function formatRepos(repos: { owner: string; repo: string }[]): string {
   if (repos.length === 1 && repos[0]) {
     return `${repos[0].owner}/${repos[0].repo}`;
   }
-  return repos.map((r) => `${r.owner}/${r.repo}`).join(", ");
+  return `${repos.length} repositories`;
 }
 
 export default function PageClient({
@@ -551,11 +556,30 @@ export default function PageClient({
             {content.sourceMetadata &&
               (() => {
                 const meta = content.sourceMetadata as SourceMetadata & object;
+                const repoLabel = formatRepos(meta.repositories);
+                const needsTooltip = meta.repositories.length > 1;
                 return (
                   <p className="text-muted-foreground text-xs">
                     {formatTriggerType(meta.triggerSourceType)}
                     {" \u00B7 "}
-                    {formatRepos(meta.repositories)}
+                    {needsTooltip ? (
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-default underline decoration-dotted underline-offset-2">
+                          {repoLabel}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <ul>
+                            {meta.repositories.map((r) => (
+                              <li key={`${r.owner}/${r.repo}`}>
+                                {r.owner}/{r.repo}
+                              </li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      repoLabel
+                    )}
                     {" \u00B7 "}
                     {formatLookbackWindow(meta.lookbackWindow)} (
                     {formatDateRange(
