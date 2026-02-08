@@ -568,11 +568,13 @@ export default function PageClient({
                     {" \u00B7 "}
                     {needsTooltip ? (
                       <Tooltip>
-                        <TooltipTrigger>
-                          <span className="cursor-help underline decoration-dotted underline-offset-2">
-                            {repoLabel}
-                          </span>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                          render={
+                            <span className="cursor-help underline decoration-dotted underline-offset-2">
+                              {repoLabel}
+                            </span>
+                          }
+                        />
                         <TooltipContent>
                           <ul>
                             {meta.repositories.map((r) => (
