@@ -188,13 +188,13 @@ export function buildChangelogPrompt(
 
     - **getCommitsByTimeframeTool**: Retrieve commits from a specific timeframe
       - Use when: You need to verify commit history or fill gaps in PR data
-      - Parameters: owner, repo, days (defaults to 7)
+      - Parameters: owner, repo, days
 
     ## When to Use Tools
 
     - If a PR description is unclear or missing, use "getPullRequestsTool" to get full details
     - If you need to compare against previous releases, use "getReleaseByTagTool"
-    - If commit context would help explain changes, use "getCommitsByTimeframeTool"
+    - If commit context would help explain changes, use "getCommitsByTimeframeTool" with the same lookback window specified in the prompt
     - Only use tools when the provided data is insufficient for creating a quality changelog
 
     # CRITICAL REQUIREMENTS

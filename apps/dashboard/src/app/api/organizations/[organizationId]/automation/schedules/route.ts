@@ -1,7 +1,10 @@
 import { db } from "@notra/db/drizzle";
-import { contentTriggers } from "@notra/db/schema";
+import {
+  contentTriggerLookbackWindows,
+  contentTriggers,
+} from "@notra/db/schema";
 import crypto from "crypto";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -15,10 +18,18 @@ import type { Trigger } from "@/types/triggers";
 import {
   configureScheduleBodySchema,
   getSchedulesQuerySchema,
+  type LookbackWindow,
   triggerTargetsSchema,
 } from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
+
+function toEffectiveLookbackWindow(
+  lookbackWindow?: LookbackWindow | null
+): LookbackWindow {
+  return lookbackWindow ?? DEFAULT_LOOKBACK_WINDOW;
+}
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -53,11 +64,13 @@ function hashTrigger({
   sourceConfig,
   targets,
   outputType,
+  lookbackWindow,
 }: {
   sourceType: string;
   sourceConfig: Trigger["sourceConfig"];
   targets: Trigger["targets"];
   outputType: string;
+  lookbackWindow: LookbackWindow;
 }) {
   const normalized = normalizeTriggerConfig({ sourceConfig, targets });
   const payload = JSON.stringify({
@@ -65,6 +78,7 @@ function hashTrigger({
     sourceConfig: normalized.sourceConfig,
     targets: normalized.targets,
     outputType,
+    lookbackWindow,
   });
   return crypto.createHash("sha256").update(payload).digest("hex");
 }
@@ -101,6 +115,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       orderBy: (items, { desc }) => [desc(items.createdAt)],
     });
 
+    const triggerIds = triggers.map((trigger) => trigger.id);
+    const lookbackWindows =
+      triggerIds.length > 0
+        ? await db.query.contentTriggerLookbackWindows.findMany({
+            where: inArray(contentTriggerLookbackWindows.triggerId, triggerIds),
+          })
+        : [];
+
+    const lookbackWindowByTriggerId = new Map(
+      lookbackWindows.map((item) => [
+        item.triggerId,
+        item.window as LookbackWindow,
+      ])
+    );
+
     const repositoryIds = queryValidation.data.repositoryIds?.filter(Boolean);
     const repositoryIdSet = repositoryIds ? new Set(repositoryIds) : null;
     const filteredTriggers =
@@ -118,7 +147,14 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           })
         : triggers;
 
-    return NextResponse.json({ triggers: filteredTriggers });
+    const triggersWithLookback = filteredTriggers.map((trigger) => ({
+      ...trigger,
+      lookbackWindow: toEffectiveLookbackWindow(
+        lookbackWindowByTriggerId.get(trigger.id)
+      ),
+    }));
+
+    return NextResponse.json({ triggers: triggersWithLookback });
   } catch (error) {
     console.error("Error fetching automation schedules:", error);
     return NextResponse.json(
@@ -157,6 +193,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       outputType,
       outputConfig,
       enabled,
+      lookbackWindow,
     } = bodyValidation.data;
 
     const normalized = normalizeTriggerConfig({ sourceConfig, targets });
@@ -165,6 +202,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       sourceConfig: normalized.sourceConfig,
       targets: normalized.targets,
       outputType,
+      lookbackWindow,
     });
 
     const existing = await db.query.contentTriggers.findFirst({
@@ -184,6 +222,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const triggerId = nanoid();
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
+    const persistedLookbackWindow = lookbackWindow;
 
     if (cronExpression) {
       qstashScheduleId = await createQstashSchedule({
@@ -193,21 +232,33 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     try {
-      const [trigger] = await db
-        .insert(contentTriggers)
-        .values({
-          id: triggerId,
-          organizationId,
-          sourceType,
-          sourceConfig: normalized.sourceConfig,
-          targets: normalized.targets,
-          outputType,
-          outputConfig: outputConfig ?? null,
-          dedupeHash,
-          enabled,
-          qstashScheduleId,
-        })
-        .returning();
+      const trigger = await db.transaction(async (tx) => {
+        const [createdTrigger] = await tx
+          .insert(contentTriggers)
+          .values({
+            id: triggerId,
+            organizationId,
+            sourceType,
+            sourceConfig: normalized.sourceConfig,
+            targets: normalized.targets,
+            outputType,
+            outputConfig: outputConfig ?? null,
+            dedupeHash,
+            enabled,
+            qstashScheduleId,
+          })
+          .returning();
+
+        await tx.insert(contentTriggerLookbackWindows).values({
+          triggerId,
+          window: persistedLookbackWindow,
+        });
+
+        return {
+          ...createdTrigger,
+          lookbackWindow: persistedLookbackWindow,
+        };
+      });
 
       return NextResponse.json({ trigger });
     } catch (dbError) {
@@ -263,6 +314,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       outputType,
       outputConfig,
       enabled,
+      lookbackWindow,
     } = bodyValidation.data;
 
     const normalized = normalizeTriggerConfig({ sourceConfig, targets });
@@ -271,6 +323,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       sourceConfig: normalized.sourceConfig,
       targets: normalized.targets,
       outputType,
+      lookbackWindow,
     });
 
     const duplicate = await db.query.contentTriggers.findFirst({
@@ -305,6 +358,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const existingScheduleId = existing.qstashScheduleId ?? null;
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
+    const persistedLookbackWindow = lookbackWindow;
 
     if (cronExpression) {
       qstashScheduleId = await createQstashSchedule({
@@ -315,26 +369,47 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     try {
-      const [trigger] = await db
-        .update(contentTriggers)
-        .set({
-          sourceType,
-          sourceConfig: normalized.sourceConfig,
-          targets: normalized.targets,
-          outputType,
-          outputConfig: outputConfig ?? null,
-          dedupeHash,
-          enabled,
-          qstashScheduleId,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(contentTriggers.id, triggerId),
-            eq(contentTriggers.organizationId, organizationId)
+      const trigger = await db.transaction(async (tx) => {
+        const [updatedTrigger] = await tx
+          .update(contentTriggers)
+          .set({
+            sourceType,
+            sourceConfig: normalized.sourceConfig,
+            targets: normalized.targets,
+            outputType,
+            outputConfig: outputConfig ?? null,
+            dedupeHash,
+            enabled,
+            qstashScheduleId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(contentTriggers.id, triggerId),
+              eq(contentTriggers.organizationId, organizationId)
+            )
           )
-        )
-        .returning();
+          .returning();
+
+        await tx
+          .insert(contentTriggerLookbackWindows)
+          .values({
+            triggerId,
+            window: persistedLookbackWindow,
+          })
+          .onConflictDoUpdate({
+            target: contentTriggerLookbackWindows.triggerId,
+            set: {
+              window: persistedLookbackWindow,
+              updatedAt: new Date(),
+            },
+          });
+
+        return {
+          ...updatedTrigger,
+          lookbackWindow: persistedLookbackWindow,
+        };
+      });
 
       return NextResponse.json({ trigger });
     } catch (dbError) {

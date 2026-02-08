@@ -8,6 +8,13 @@
       "when": 1768839000000,
       "tag": "0001_add_content_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770567707862,
+      "tag": "0002_add_content_trigger_lookback_windows",
+      "breakpoints": true
     }
   ]
 }

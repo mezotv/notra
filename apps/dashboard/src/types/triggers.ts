@@ -1,4 +1,5 @@
 import type {
+  LookbackWindow,
   OutputContentType,
   WebhookEventType,
 } from "@/utils/schemas/integrations";
@@ -36,6 +37,7 @@ export interface Trigger {
   targets: TriggerTarget;
   outputType: OutputContentType;
   outputConfig?: TriggerOutputConfig | null;
+  lookbackWindow?: LookbackWindow;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;

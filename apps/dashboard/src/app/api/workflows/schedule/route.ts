@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
+  contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
   githubRepositories,
@@ -14,6 +15,7 @@ import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { getValidToneProfile } from "@/lib/ai/prompts/changelog/base";
 import { getBaseUrl } from "@/lib/triggers/qstash";
+import type { LookbackWindow } from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -31,6 +33,7 @@ type TriggerData = {
   targets: { repositoryIds: string[] };
   outputType: string;
   outputConfig: unknown;
+  lookbackWindow: LookbackWindow;
   enabled: boolean;
 };
 
@@ -53,6 +56,74 @@ type BrandSettingsData = {
   audience: string | null;
   customInstructions: string | null;
 } | null;
+
+const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+function resolveLookbackRange(window: LookbackWindow) {
+  const now = new Date();
+
+  if (window === "current_day") {
+    const start = new Date(now);
+    start.setUTCHours(0, 0, 0, 0);
+
+    return {
+      start,
+      end: now,
+      label: "current UTC day",
+    };
+  }
+
+  if (window === "yesterday") {
+    const end = new Date(now);
+    end.setUTCHours(0, 0, 0, 0);
+    const start = new Date(end.getTime() - DAY_IN_MS);
+
+    return {
+      start,
+      end,
+      label: "previous UTC day",
+    };
+  }
+
+  if (window === "last_14_days") {
+    return {
+      start: new Date(now.getTime() - 14 * DAY_IN_MS),
+      end: now,
+      label: "last 14 days (rolling)",
+    };
+  }
+
+  if (window === "last_30_days") {
+    return {
+      start: new Date(now.getTime() - 30 * DAY_IN_MS),
+      end: now,
+      label: "last 30 days (rolling)",
+    };
+  }
+
+  return {
+    start: new Date(now.getTime() - 7 * DAY_IN_MS),
+    end: now,
+    label: "last 7 days (rolling)",
+  };
+}
+
+function formatUtcTodayContext(now: Date) {
+  const weekdays = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ] as const;
+  const weekday = weekdays[now.getUTCDay()];
+  const date = now.toISOString().slice(0, 10);
+
+  return `${weekday}, ${date} (UTC)`;
+}
 
 export const { POST } = serve<SchedulePayload>(
   async (context: WorkflowContext<SchedulePayload>) => {
@@ -84,8 +155,24 @@ export const { POST } = serve<SchedulePayload>(
           targets: result.targets as { repositoryIds: string[] },
           outputType: result.outputType,
           outputConfig: result.outputConfig,
+          lookbackWindow: DEFAULT_LOOKBACK_WINDOW,
           enabled: result.enabled,
         };
+      }
+    );
+
+    const lookbackWindow = await context.run<LookbackWindow>(
+      "fetch-lookback-window",
+      async () => {
+        const lookbackResult =
+          await db.query.contentTriggerLookbackWindows.findFirst({
+            where: eq(contentTriggerLookbackWindows.triggerId, triggerId),
+          });
+
+        return (
+          (lookbackResult?.window as LookbackWindow | undefined) ??
+          DEFAULT_LOOKBACK_WINDOW
+        );
       }
     );
 
@@ -164,6 +251,8 @@ export const { POST } = serve<SchedulePayload>(
       "generate-content",
       async () => {
         if (trigger.outputType === "changelog") {
+          const lookbackRange = resolveLookbackRange(lookbackWindow);
+          const todayUtc = formatUtcTodayContext(lookbackRange.end);
           const repoList = repositories
             .map((r) => `${r.owner}/${r.repo}`)
             .join(", ");
@@ -177,7 +266,7 @@ export const { POST } = serve<SchedulePayload>(
               audience: brand?.audience ?? undefined,
               customInstructions: brand?.customInstructions ?? undefined,
             },
-            `Generate a changelog for the following repositories: ${repoList}. Look at the commits from the last 7 days and create a comprehensive, human-readable changelog.`
+            `Generate a changelog for the following repositories: ${repoList}. Today is ${todayUtc}. Look at commits in the ${lookbackRange.label} window (${lookbackRange.start.toISOString()} to ${lookbackRange.end.toISOString()}, UTC) and create a comprehensive, human-readable changelog.`
           );
 
           return {

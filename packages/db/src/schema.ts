@@ -3,11 +3,20 @@ import {
   boolean,
   index,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+export const lookbackWindowEnum = pgEnum("lookback_window", [
+  "current_day",
+  "yesterday",
+  "last_7_days",
+  "last_14_days",
+  "last_30_days",
+]);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -192,6 +201,17 @@ export const contentTriggers = pgTable(
   ]
 );
 
+export const contentTriggerLookbackWindows = pgTable(
+  "content_trigger_lookback_windows",
+  {
+    triggerId: text("trigger_id")
+      .primaryKey()
+      .references(() => contentTriggers.id, { onDelete: "cascade" }),
+    window: lookbackWindowEnum("window").notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  }
+);
+
 export const githubRepositories = pgTable(
   "github_repositories",
   {
@@ -362,6 +382,20 @@ export const contentTriggersRelations = relations(
     organization: one(organizations, {
       fields: [contentTriggers.organizationId],
       references: [organizations.id],
+    }),
+    lookbackWindow: one(contentTriggerLookbackWindows, {
+      fields: [contentTriggers.id],
+      references: [contentTriggerLookbackWindows.triggerId],
+    }),
+  })
+);
+
+export const contentTriggerLookbackWindowsRelations = relations(
+  contentTriggerLookbackWindows,
+  ({ one }) => ({
+    trigger: one(contentTriggers, {
+      fields: [contentTriggerLookbackWindows.triggerId],
+      references: [contentTriggers.id],
     }),
   })
 );

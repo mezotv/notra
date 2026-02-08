@@ -126,6 +126,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             sourceConfig: trigger.sourceConfig,
             targets: trigger.targets,
             outputType: trigger.outputType,
+            lookbackWindow: trigger.lookbackWindow,
             outputConfig: trigger.outputConfig,
             enabled: !trigger.enabled,
           }),

@@ -151,6 +151,15 @@ export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 export const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
 export type CronFrequency = (typeof CRON_FREQUENCIES)[number];
 
+export const LOOKBACK_WINDOWS = [
+  "current_day",
+  "yesterday",
+  "last_7_days",
+  "last_14_days",
+  "last_30_days",
+] as const;
+export type LookbackWindow = (typeof LOOKBACK_WINDOWS)[number];
+
 export const triggerSourceTypeSchema = z.enum([
   "github_webhook",
   "linear_webhook",
@@ -207,6 +216,7 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
     }),
   }),
   outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
+  lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
 });
 export type ConfigureScheduleBody = z.infer<typeof configureScheduleBodySchema>;
 

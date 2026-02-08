@@ -99,7 +99,7 @@ export function createGetCommitsByTimeframeTool(): Tool {
         "Gets all commits from the default branch within a specified number of days. Returns commit messages, authors, dates, and SHAs.",
       whenToUse:
         "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
-      usageNotes: `Defaults to 7 days if no timeframe specified.
+      usageNotes: `Use the timeframe requested in the prompt or user request.
 Use this for activity summaries, changelog generation, or understanding recent changes.`,
     }),
     inputSchema: z.object({

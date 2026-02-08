@@ -41,9 +41,11 @@ import type { GitHubIntegration } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import type {
+  LookbackWindow,
   OutputContentType,
   WebhookEventType,
 } from "@/utils/schemas/integrations";
+import { LOOKBACK_WINDOWS } from "@/utils/schemas/integrations";
 import { SchedulePicker } from "./trigger-schedule-picker";
 
 const EVENT_OPTIONS: Array<{ value: WebhookEventType; label: string }> = [
@@ -70,7 +72,16 @@ interface TriggerFormValues {
   outputType: OutputContentType;
   repositoryIds: string[];
   schedule: Trigger["sourceConfig"]["cron"];
+  lookbackWindow: LookbackWindow;
 }
+
+const LOOKBACK_WINDOW_LABELS: Record<LookbackWindow, string> = {
+  current_day: "Current day",
+  yesterday: "Yesterday",
+  last_7_days: "Last 7 days",
+  last_14_days: "Last 14 days",
+  last_30_days: "Last 30 days",
+};
 
 interface TriggerDialogProps {
   organizationId: string;
@@ -139,6 +150,7 @@ export function AddTriggerDialog({
           hour: 9,
           minute: 0,
         },
+        lookbackWindow: editTrigger.lookbackWindow ?? "last_7_days",
       };
     }
     return {
@@ -147,6 +159,7 @@ export function AddTriggerDialog({
       outputType: "changelog",
       repositoryIds: [],
       schedule: { frequency: "daily", hour: 9, minute: 0 },
+      lookbackWindow: "last_7_days",
     };
   }, [defaultSourceType, editTrigger]);
 
@@ -210,6 +223,9 @@ export function AddTriggerDialog({
               : { eventTypes: [value.eventType] },
           targets: { repositoryIds: value.repositoryIds },
           outputType: value.outputType,
+          ...(value.sourceType === "cron"
+            ? { lookbackWindow: value.lookbackWindow }
+            : {}),
           outputConfig: {},
           enabled: isEditMode ? editTrigger.enabled : true,
         }),
@@ -345,14 +361,49 @@ export function AddTriggerDialog({
               <form.Subscribe selector={(state) => state.values.sourceType}>
                 {(sourceType) =>
                   sourceType === "cron" ? (
-                    <form.Field name="schedule">
-                      {(field) => (
-                        <SchedulePicker
-                          onChange={field.handleChange}
-                          value={field.state.value}
-                        />
-                      )}
-                    </form.Field>
+                    <>
+                      <form.Field name="schedule">
+                        {(field) => (
+                          <SchedulePicker
+                            onChange={field.handleChange}
+                            value={field.state.value}
+                          />
+                        )}
+                      </form.Field>
+
+                      <form.Field name="lookbackWindow">
+                        {(field) => (
+                          <div className="space-y-2">
+                            <Label htmlFor={field.name}>Lookback window</Label>
+                            <Select
+                              onValueChange={(value) => {
+                                if (value) {
+                                  field.handleChange(value as LookbackWindow);
+                                }
+                              }}
+                              value={field.state.value}
+                            >
+                              <SelectTrigger className="w-full" id={field.name}>
+                                <SelectValue placeholder="Lookback window">
+                                  {LOOKBACK_WINDOW_LABELS[field.state.value]}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {LOOKBACK_WINDOWS.map((window) => (
+                                  <SelectItem key={window} value={window}>
+                                    {LOOKBACK_WINDOW_LABELS[window]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-muted-foreground text-xs">
+                              Choose how far back we look when generating
+                              content.
+                            </p>
+                          </div>
+                        )}
+                      </form.Field>
+                    </>
                   ) : (
                     <form.Field name="eventType">
                       {(field) => (
