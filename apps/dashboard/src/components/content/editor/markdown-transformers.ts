@@ -120,6 +120,9 @@ function parsePipeCells(row: string): string[] {
       current += char;
     }
   }
+  if (escaped) {
+    current += "\\";
+  }
   cells.push(current.trim());
   return cells;
 }

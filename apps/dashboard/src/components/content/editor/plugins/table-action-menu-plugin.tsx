@@ -258,6 +258,10 @@ export function TableActionMenuPlugin({
       }
 
       const cellDOMNode = editor.getElementByKey(cellNode.getKey());
+      if (!cellDOMNode) {
+        setTableCellDOMNode(null);
+        return;
+      }
       setTableCellDOMNode(cellDOMNode);
     });
   }, [editor]);
