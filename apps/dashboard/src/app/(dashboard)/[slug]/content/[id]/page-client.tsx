@@ -84,13 +84,15 @@ export default function PageClient({
   const editorRef = useRef<EditorRefHandle | null>(null);
   const handleSaveRef = useRef<() => void>(() => {});
   const handleDiscardRef = useRef<() => void>(() => {});
+  const needsNormalizationRef = useRef(false);
 
   // Initialize content when data loads
   useEffect(() => {
     if (data?.content && editedMarkdown === null) {
       setEditedMarkdown(data.content.markdown);
       setOriginalMarkdown(data.content.markdown);
-      setEditorKey((k) => k + 1); // Force Lexical to remount with new content
+      needsNormalizationRef.current = true;
+      setEditorKey((k) => k + 1);
     }
   }, [data, editedMarkdown]);
 
@@ -248,6 +250,10 @@ export default function PageClient({
 
   // Handle Lexical editor changes
   const handleEditorChange = useCallback((markdown: string) => {
+    if (needsNormalizationRef.current) {
+      needsNormalizationRef.current = false;
+      setOriginalMarkdown(markdown);
+    }
     setEditedMarkdown(markdown);
   }, []);
 
