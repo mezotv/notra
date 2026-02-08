@@ -100,7 +100,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       name: organization.name,
       slug: organization.slug,
     });
-  }, [form, organization]);
+  }, [organization?.id, organization?.name, organization?.slug]);
 
   if (!organization) {
     return (
