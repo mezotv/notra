@@ -233,6 +233,7 @@ export const TABLE_MARKDOWN: MultilineElementTransformer = {
     regExp: TABLE_ROW_REGEX,
   },
   regExpStart: TABLE_ROW_REGEX,
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: Handled by handleImportAfterStartMatch
   replace: () => {},
   type: "multiline-element",
 };
@@ -243,14 +244,12 @@ function isMultilineTransformer(
   return transformer.type === "multiline-element";
 }
 
-// Filter out the default CODE transformer and add our custom one
 const filteredTransformers = TRANSFORMERS.filter((transformer: Transformer) => {
-  if (isMultilineTransformer(transformer)) {
-    // Filter out the default code block transformer by checking its dependencies
-    // The default CODE transformer uses CodeNode and CodeHighlightNode
-    if (transformer.dependencies?.some((dep) => dep.getType?.() === "code")) {
-      return false;
-    }
+  if (
+    isMultilineTransformer(transformer) &&
+    transformer.dependencies?.some((dep) => dep.getType?.() === "code")
+  ) {
+    return false;
   }
   return true;
 });
