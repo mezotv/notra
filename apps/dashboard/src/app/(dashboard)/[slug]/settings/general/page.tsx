@@ -8,7 +8,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -79,6 +79,15 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       }
     },
   });
+
+  useEffect(() => {
+    if (!organization) return;
+
+    form.reset({
+      name: organization.name,
+      slug: organization.slug,
+    });
+  }, [form, organization]);
 
   if (!organization) {
     return (
