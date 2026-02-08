@@ -564,8 +564,10 @@ export default function PageClient({
                     {" \u00B7 "}
                     {needsTooltip ? (
                       <Tooltip>
-                        <TooltipTrigger className="cursor-default underline decoration-dotted underline-offset-2">
-                          {repoLabel}
+                        <TooltipTrigger>
+                          <span className="cursor-help underline decoration-dotted underline-offset-2">
+                            {repoLabel}
+                          </span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <ul>

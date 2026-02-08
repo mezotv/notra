@@ -61,7 +61,9 @@ type ExtractionResult =
 const STEP_COUNT = 3;
 
 const isFirecrawlUnsupportedMessage = (message?: string | null) => {
-  if (!message) { return false; }
+  if (!message) {
+    return false;
+  }
   const normalized = message.toLowerCase();
   return (
     normalized.includes("do not support this site") ||
@@ -72,7 +74,9 @@ const isFirecrawlUnsupportedMessage = (message?: string | null) => {
 };
 
 async function setProgress(organizationId: string, data: ProgressData) {
-  if (!redis) { return; }
+  if (!redis) {
+    return;
+  }
   await redis.set(`brand:progress:${organizationId}`, data, {
     ex: PROGRESS_TTL,
   });
