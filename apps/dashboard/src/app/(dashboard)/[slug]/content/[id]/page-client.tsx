@@ -85,12 +85,15 @@ export default function PageClient({
   const handleSaveRef = useRef<() => void>(() => {});
   const handleDiscardRef = useRef<() => void>(() => {});
   const needsNormalizationRef = useRef(false);
+  const originalMarkdownRef = useRef("");
+  const editedMarkdownRef = useRef<string | null>(null);
 
-  // Initialize content when data loads
   useEffect(() => {
     if (data?.content && editedMarkdown === null) {
       setEditedMarkdown(data.content.markdown);
       setOriginalMarkdown(data.content.markdown);
+      originalMarkdownRef.current = data.content.markdown;
+      editedMarkdownRef.current = data.content.markdown;
       needsNormalizationRef.current = true;
       setEditorKey((k) => k + 1);
     }
@@ -143,6 +146,7 @@ export default function PageClient({
       }
 
       setOriginalMarkdown(editedMarkdown);
+      originalMarkdownRef.current = editedMarkdown;
       toast.success("Content saved");
     } catch (err) {
       console.error("Error saving content:", err);
@@ -154,7 +158,7 @@ export default function PageClient({
 
   const handleDiscard = useCallback(() => {
     setEditedMarkdown(originalMarkdown);
-    // Update Lexical editor content directly without remounting
+    editedMarkdownRef.current = originalMarkdown;
     editorRef.current?.setMarkdown(originalMarkdown);
   }, [originalMarkdown]);
 
@@ -250,11 +254,17 @@ export default function PageClient({
 
   // Handle Lexical editor changes
   const handleEditorChange = useCallback((markdown: string) => {
-    if (needsNormalizationRef.current) {
+    if (
+      needsNormalizationRef.current &&
+      editedMarkdownRef.current === originalMarkdownRef.current
+    ) {
       needsNormalizationRef.current = false;
       setOriginalMarkdown(markdown);
+      originalMarkdownRef.current = markdown;
     }
+    needsNormalizationRef.current = false;
     setEditedMarkdown(markdown);
+    editedMarkdownRef.current = markdown;
   }, []);
 
   // Handle Lexical selection
@@ -416,6 +426,7 @@ export default function PageClient({
                 `[Tool] editMarkdown result applied, toolCallId=${toolPart.toolCallId}`
               );
               setEditedMarkdown(fixedMarkdown);
+              editedMarkdownRef.current = fixedMarkdown;
               editorRef.current?.setMarkdown(fixedMarkdown);
             }
           }
@@ -541,7 +552,10 @@ export default function PageClient({
               <textarea
                 aria-label="Markdown content editor"
                 className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
-                onChange={(e) => setEditedMarkdown(e.target.value)}
+                onChange={(e) => {
+                  setEditedMarkdown(e.target.value);
+                  editedMarkdownRef.current = e.target.value;
+                }}
                 onMouseUp={handleTextareaSelect}
                 onSelect={handleTextareaSelect}
                 ref={textareaRef}

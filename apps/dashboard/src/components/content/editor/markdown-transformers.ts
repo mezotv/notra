@@ -98,7 +98,7 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
   type: "multiline-element",
 };
 
-const TABLE_ROW_REGEX = /^\|(.+)\|\s*$/;
+const TABLE_ROW_REGEX = /^\|(.*)\|\s*$/;
 const TABLE_SEPARATOR_REGEX = /^\|(\s*:?-+:?\s*\|)+\s*$/;
 
 function parsePipeCells(row: string): string[] {
@@ -125,7 +125,7 @@ function parsePipeCells(row: string): string[] {
 }
 
 function escapePipeContent(text: string): string {
-  return text.replace(/\|/g, "\\|");
+  return text.replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
 }
 
 function buildTableNode(
