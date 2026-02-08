@@ -12,7 +12,11 @@ import {
   deleteQstashSchedule,
 } from "@/lib/triggers/qstash";
 import type { Trigger } from "@/types/triggers";
-import { configureScheduleBodySchema } from "@/utils/schemas/integrations";
+import {
+  configureScheduleBodySchema,
+  getSchedulesQuerySchema,
+  triggerTargetsSchema,
+} from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -74,6 +78,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return auth.response;
     }
 
+    const { searchParams } = new URL(request.url);
+    const queryValidation = getSchedulesQuerySchema.safeParse({
+      repositoryIds: searchParams.getAll("repositoryId"),
+    });
+
+    if (!queryValidation.success) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: queryValidation.error.issues,
+        },
+        { status: 400 }
+      );
+    }
+
     const triggers = await db.query.contentTriggers.findMany({
       where: and(
         eq(contentTriggers.organizationId, organizationId),
@@ -82,7 +101,24 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       orderBy: (items, { desc }) => [desc(items.createdAt)],
     });
 
-    return NextResponse.json({ triggers });
+    const repositoryIds = queryValidation.data.repositoryIds?.filter(Boolean);
+    const repositoryIdSet = repositoryIds ? new Set(repositoryIds) : null;
+    const filteredTriggers =
+      repositoryIdSet && repositoryIdSet.size > 0
+        ? triggers.filter((trigger) => {
+            const parsedTargets = triggerTargetsSchema.safeParse(
+              trigger.targets
+            );
+            if (!parsedTargets.success) {
+              return false;
+            }
+            return parsedTargets.data.repositoryIds.some((repositoryId) =>
+              repositoryIdSet.has(repositoryId)
+            );
+          })
+        : triggers;
+
+    return NextResponse.json({ triggers: filteredTriggers });
   } catch (error) {
     console.error("Error fetching automation schedules:", error);
     return NextResponse.json(

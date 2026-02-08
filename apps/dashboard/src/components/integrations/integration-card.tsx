@@ -135,7 +135,13 @@ export function IntegrationCard({
     if (target?.closest("[data-no-card-click]")) {
       return;
     }
-    router.push(`/${organizationSlug}/integrations/github/${integration.id}`);
+    const destination = `/${organizationSlug}/integrations/github/${integration.id}`;
+    queryClient.setQueryData(
+      QUERY_KEYS.INTEGRATIONS.detail(integration.id),
+      integration
+    );
+    router.prefetch(destination);
+    router.push(destination);
   };
 
   return (

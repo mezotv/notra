@@ -26,7 +26,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const {
     data: response,
-    isPending,
+    isLoading: isLoadingIntegrations,
     refetch,
   } = useQuery({
     queryKey: QUERY_KEYS.INTEGRATIONS.all(organization?.id ?? ""),
@@ -53,6 +53,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const integrations = response?.integrations.filter(
     (i) => i.type === "github"
   );
+  const showLoading = !!organization?.id && isLoadingIntegrations && !response;
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -79,9 +80,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         </div>
 
         <div>
-          {isPending ? <GitHubIntegrationsPageSkeleton /> : null}
+          {showLoading ? <GitHubIntegrationsPageSkeleton /> : null}
 
-          {!isPending && (!integrations || integrations.length === 0) ? (
+          {!showLoading && (!integrations || integrations.length === 0) ? (
             <EmptyState
               action={
                 <AddIntegrationDialog
@@ -100,7 +101,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             />
           ) : null}
 
-          {!isPending && integrations && integrations.length > 0 ? (
+          {!showLoading && integrations && integrations.length > 0 ? (
             <div className="grid gap-4">
               {integrations.map((integration) => (
                 <IntegrationCard

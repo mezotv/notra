@@ -209,3 +209,8 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
   outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
 });
 export type ConfigureScheduleBody = z.infer<typeof configureScheduleBodySchema>;
+
+export const getSchedulesQuerySchema = z.object({
+  repositoryIds: z.array(z.string().min(1)).optional(),
+});
+export type GetSchedulesQuery = z.infer<typeof getSchedulesQuerySchema>;
