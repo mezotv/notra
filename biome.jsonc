@@ -9,7 +9,7 @@
     "experimentalFullSupportEnabled": true
   },
   "files": {
-    "includes": ["!packages/ui/src", "!**/*.astro"]
+    "includes": ["!packages/ui/src", "!packages/db/migrations", "!**/*.astro"]
   },
   "linter": {
     "rules": {
