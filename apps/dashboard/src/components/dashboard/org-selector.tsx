@@ -32,7 +32,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,71 @@ const CreateOrgModal = dynamic(
     })),
   { ssr: false }
 );
+
+function OverflowAwareText({
+  text,
+  className,
+  thresholdMultiplier = 1,
+}: {
+  text?: string;
+  className?: string;
+  thresholdMultiplier?: number;
+}) {
+  const [shouldShowEllipsis, setShouldShowEllipsis] = useState(true);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const ellipsisRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!text) {
+      return;
+    }
+
+    const textElement = textRef.current;
+    const ellipsisElement = ellipsisRef.current;
+
+    if (!textElement || !ellipsisElement) {
+      return;
+    }
+
+    const updateEllipsisState = () => {
+      const overflowWidth = textElement.scrollWidth - textElement.clientWidth;
+      const ellipsisWidth = ellipsisElement.offsetWidth * thresholdMultiplier;
+
+      setShouldShowEllipsis(overflowWidth > ellipsisWidth);
+    };
+
+    updateEllipsisState();
+
+    const resizeObserver = new ResizeObserver(updateEllipsisState);
+    resizeObserver.observe(textElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [text, thresholdMultiplier]);
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <span
+        className={cn(
+          "block min-w-0 overflow-hidden whitespace-nowrap",
+          shouldShowEllipsis ? "text-ellipsis" : "",
+          className
+        )}
+        ref={textRef}
+      >
+        {text}
+      </span>
+      <span
+        aria-hidden
+        className={cn("invisible absolute", className)}
+        ref={ellipsisRef}
+      >
+        ...
+      </span>
+    </div>
+  );
+}
 
 function OrgSelectorTrigger({
   isCollapsed,
@@ -90,16 +155,17 @@ function OrgSelectorTrigger({
           </Avatar>
           {isCollapsed ? null : (
             <>
-              <div className="flex flex-1 items-center gap-2 text-left text-sm leading-tight">
-                <span className="truncate text-ellipsis font-medium text-sm">
-                  {activeOrganization?.name}
-                </span>
+              <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight">
+                <OverflowAwareText
+                  className="font-medium text-sm"
+                  text={activeOrganization?.name}
+                />
                 {isPro ? (
-                  <Badge className="bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
+                  <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
                     PRO
                   </Badge>
                 ) : (
-                  <Badge className="bg-emerald-500/15 px-1.5 py-0 font-semibold text-[10px] text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400">
+                  <Badge className="shrink-0 bg-emerald-500/15 px-1.5 py-0 font-semibold text-[10px] text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400">
                     FREE
                   </Badge>
                 )}
@@ -216,7 +282,7 @@ export function OrgSelector() {
           )}
           <DropdownMenuContent
             align="start"
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
@@ -227,7 +293,7 @@ export function OrgSelector() {
                 </DropdownMenuLabel>
                 {organizations.map((org) => (
                   <DropdownMenuItem
-                    className="flex items-center gap-4"
+                    className="flex items-center gap-4 pr-8"
                     disabled={isNavigating}
                     key={org.id}
                     onClick={() => switchOrganization(org)}
@@ -236,7 +302,11 @@ export function OrgSelector() {
                       <AvatarImage src={org.logo || undefined} />
                       <AvatarFallback>{org.name.slice(0, 2)}</AvatarFallback>
                     </Avatar>
-                    {org.name}
+                    <OverflowAwareText
+                      className="text-sm"
+                      text={org.name}
+                      thresholdMultiplier={1.75}
+                    />
                     {activeOrganization?.id === org.id ? (
                       <HugeiconsIcon
                         className="absolute right-0 size-4 text-muted-foreground"
