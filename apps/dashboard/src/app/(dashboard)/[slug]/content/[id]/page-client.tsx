@@ -31,7 +31,7 @@ import { DiffView } from "@/components/content/diff-view";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { TitleCard } from "@/components/title-card";
-import type { SourceMetadata } from "@/utils/schemas/content";
+import { sourceMetadataSchema } from "@/utils/schemas/content";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -555,7 +555,11 @@ export default function PageClient({
             </div>
             {content.sourceMetadata &&
               (() => {
-                const meta = content.sourceMetadata as SourceMetadata & object;
+                const parsed = sourceMetadataSchema.safeParse(
+                  content.sourceMetadata
+                );
+                if (!parsed.success || !parsed.data) return null;
+                const meta = parsed.data;
                 const repoLabel = formatRepos(meta.repositories);
                 const needsTooltip = meta.repositories.length > 1;
                 return (
