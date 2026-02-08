@@ -95,7 +95,7 @@ function formatRepos(repos: { owner: string; repo: string }[]): string {
   if (repos.length === 1 && repos[0]) {
     return `${repos[0].owner}/${repos[0].repo}`;
   }
-  return `${repos.length} repositories`;
+  return repos.map((r) => `${r.owner}/${r.repo}`).join(", ");
 }
 
 export default function PageClient({

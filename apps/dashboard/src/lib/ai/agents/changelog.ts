@@ -109,6 +109,7 @@ You are a helpful devrel with a passion for turning technical information into e
 - Do not use emojis in section headings
 - Keep PR descriptions concise but informative
 - Output ONLY the final markdown changelog, no reasoning or commentary
+- Do NOT include YAML frontmatter, metadata blocks, or key-value pairs like "summary:", "date:", "author:", etc. Start directly with the title heading
 
 # AVAILABLE TOOLS
 

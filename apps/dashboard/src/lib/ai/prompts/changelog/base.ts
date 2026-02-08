@@ -296,6 +296,7 @@ export function buildChangelogPrompt(
     - Adhere strictly to the tone and style guidelines above
     ${customContext}
 
+    Do NOT include YAML frontmatter, metadata blocks, or key-value pairs like "summary:", "date:", "author:", etc. Start directly with the title heading.
     Output ONLY the MDX content for the changelog.
   `;
 }
