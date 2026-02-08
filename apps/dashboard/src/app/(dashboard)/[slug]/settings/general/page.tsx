@@ -56,12 +56,25 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           return;
         }
 
-        await queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.organizations,
-        });
-        await queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.activeOrganization,
-        });
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.organizations,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.activeOrganization,
+          }),
+        ]);
+
+        await Promise.all([
+          queryClient.refetchQueries({
+            queryKey: QUERY_KEYS.AUTH.organizations,
+            type: "active",
+          }),
+          queryClient.refetchQueries({
+            queryKey: QUERY_KEYS.AUTH.activeOrganization,
+            type: "active",
+          }),
+        ]);
 
         const updatedSlug = result.data?.slug ?? value.slug;
 
