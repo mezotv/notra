@@ -11,6 +11,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
 import type { OutputContentType } from "@/utils/schemas/integrations";
+import { getConfiguredAppUrl } from "@/utils/url";
 import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -642,10 +643,6 @@ function buildWebhookUrl(
   organizationId: string,
   repositoryId: string
 ): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000");
+  const baseUrl = getConfiguredAppUrl() ?? "http://localhost:3000";
   return `${baseUrl}/api/webhooks/github/${organizationId}/${integrationId}/${repositoryId}`;
 }

@@ -1,6 +1,7 @@
 import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
 import type { TriggerSourceConfig } from "@/types/triggers";
+import { getConfiguredAppUrl, requireConfiguredAppUrl } from "@/utils/url";
 
 function getQstashToken() {
   const token = process.env.QSTASH_TOKEN;
@@ -11,29 +12,11 @@ function getQstashToken() {
 }
 
 export function getAppUrl() {
-  const url =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-  if (!url) {
-    throw new Error(
-      "App URL not configured. Set NEXT_PUBLIC_APP_URL, APP_URL, or VERCEL_URL."
-    );
-  }
-  return url;
+  return requireConfiguredAppUrl();
 }
 
 export function getBaseUrl() {
-  const url =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
-
-  if (!url) {
-    return undefined;
-  }
-
-  return url.replace(/\/+$/, "");
+  return getConfiguredAppUrl();
 }
 
 function getQStashClient() {

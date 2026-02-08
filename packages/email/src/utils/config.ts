@@ -1,10 +1,16 @@
+function normalizeUrl(url: string): string {
+  return url.replace(/\/+$/, "");
+}
+
 export const EMAIL_CONFIG = {
   /**
    * Site URL for marketing site (logo, assets, etc.)
    * Falls back to production URL if not set
    */
   getSiteUrl(): string {
-    return process.env.NEXT_PUBLIC_SITE_URL || "https://usenotra.com";
+    return normalizeUrl(
+      process.env.NEXT_PUBLIC_SITE_URL || "https://usenotra.com"
+    );
   },
 
   /**
@@ -12,7 +18,9 @@ export const EMAIL_CONFIG = {
    * Falls back to production URL if not set
    */
   getAppUrl(): string {
-    return process.env.NEXT_PUBLIC_APP_URL || "https://app.usenotra.com";
+    return normalizeUrl(
+      process.env.NEXT_PUBLIC_APP_URL || "https://app.usenotra.com"
+    );
   },
 
   /**

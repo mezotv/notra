@@ -24,6 +24,7 @@ import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
+import { getConfiguredAppUrl, normalizeUrl } from "@/utils/url";
 import { GitHubIntegrationDetailSkeleton } from "./skeleton";
 
 const EditIntegrationDialog = dynamic(
@@ -54,8 +55,8 @@ function buildWebhookUrl(
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return `${baseUrl}/api/webhooks/github/${organizationId}/${integrationId}/${repositoryId}`;
+      : (getConfiguredAppUrl() ?? "http://localhost:3000");
+  return `${normalizeUrl(baseUrl)}/api/webhooks/github/${organizationId}/${integrationId}/${repositoryId}`;
 }
 
 function CopyableWebhookUrl({ url }: { url: string }) {
