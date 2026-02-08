@@ -26,6 +26,31 @@ import { organizationSlugSchema } from "@/utils/schemas/organization";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
+function validateAndNormalizeOrganizationSlug(org: {
+  slug?: unknown;
+  [key: string]: unknown;
+}) {
+  if (!org.slug || typeof org.slug !== "string") {
+    throw new Error("Organization slug is required");
+  }
+
+  const slug = org.slug.trim();
+  const validation = organizationSlugSchema.safeParse(slug);
+
+  if (!validation.success) {
+    throw new Error(
+      validation.error.issues[0]?.message ?? "Invalid organization slug"
+    );
+  }
+
+  return {
+    data: {
+      ...org,
+      slug,
+    },
+  };
+}
+
 function buildSocialProviders() {
   const providers: Record<string, { clientId: string; clientSecret: string }> =
     {};
@@ -167,6 +192,18 @@ export const auth = betterAuth({
           inviteLink,
         });
       },
+      organizationHooks: {
+        beforeCreateOrganization: async ({ organization }) => {
+          return validateAndNormalizeOrganizationSlug(organization);
+        },
+        beforeUpdateOrganization: async ({ organization }) => {
+          if (!organization.slug) {
+            return;
+          }
+
+          return validateAndNormalizeOrganizationSlug(organization);
+        },
+      },
     }),
     lastLoginMethod(),
     haveIBeenPwned(),
@@ -245,27 +282,6 @@ export const auth = betterAuth({
     },
     organization: {
       create: {
-        before: (org: { slug?: unknown; [key: string]: unknown }) => {
-          if (!org.slug || typeof org.slug !== "string") {
-            throw new Error("Organization slug is required");
-          }
-
-          const slug = org.slug.trim();
-          const validation = organizationSlugSchema.safeParse(slug);
-
-          if (!validation.success) {
-            throw new Error(
-              validation.error.issues[0]?.message ?? "Invalid organization slug"
-            );
-          }
-
-          return {
-            data: {
-              ...org,
-              slug,
-            },
-          };
-        },
         after: async (org: { id: string; name: string }) => {
           if (!autumn) {
             console.warn(

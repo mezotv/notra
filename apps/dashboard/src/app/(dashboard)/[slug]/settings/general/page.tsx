@@ -7,13 +7,16 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { TitleCard } from "@/components/title-card";
 import { authClient } from "@/lib/auth/client";
+import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
+import { organizationSlugSchema } from "@/utils/schemas/organization";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -21,6 +24,7 @@ interface PageProps {
 
 export default function GeneralSettingsPage({ params }: PageProps) {
   const { slug } = use(params);
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const organization =
@@ -32,6 +36,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
   const form = useForm({
     defaultValues: {
       name: organization?.name ?? "",
+      slug: organization?.slug ?? "",
     },
     onSubmit: async ({ value }) => {
       if (!organization?.id) return;
@@ -42,6 +47,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           organizationId: organization.id,
           data: {
             name: value.name,
+            slug: value.slug,
           },
         });
 
@@ -56,6 +62,14 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         await queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.AUTH.activeOrganization,
         });
+
+        const updatedSlug = result.data?.slug ?? value.slug;
+
+        await setLastVisitedOrganization(updatedSlug);
+
+        if (updatedSlug !== slug) {
+          router.replace(`/${updatedSlug}/settings/general`);
+        }
 
         toast.success("Organization updated successfully");
       } catch {
@@ -117,17 +131,37 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               )}
             </form.Field>
 
-            <div className="space-y-2">
-              <Label>Organization URL</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 truncate rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                  https://app.usenotra.com/{organization.slug}
+            <form.Field
+              name="slug"
+              validators={{
+                onChange: ({ value }) =>
+                  organizationSlugSchema.safeParse(value).error?.issues[0]
+                    ?.message,
+              }}
+            >
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor={field.name}>Organization Slug</Label>
+                  <Input
+                    aria-invalid={field.state.meta.errors.length > 0}
+                    id={field.name}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="my-organization"
+                    value={field.state.value}
+                  />
+                  {field.state.meta.errors.length > 0 ? (
+                    <p className="text-destructive text-xs">
+                      {field.state.meta.errors[0]}
+                    </p>
+                  ) : null}
+                  <p className="text-muted-foreground text-xs">
+                    Used in URLs: https://app.usenotra.com/
+                    {field.state.value || "your-slug"}
+                  </p>
                 </div>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Your organization URL cannot be changed
-              </p>
-            </div>
+              )}
+            </form.Field>
 
             <Button disabled={isUpdating} type="submit">
               {isUpdating ? (
