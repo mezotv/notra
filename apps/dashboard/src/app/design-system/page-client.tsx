@@ -209,6 +209,7 @@ import { toast } from "sonner";
 import ChatInput from "@/components/chat-input";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { IntegrationCard } from "@/components/integrations/integration-card";
+import { LinkedInPost } from "@/components/linkedin-post";
 import { TitleCard } from "@/components/title-card";
 
 const colorGroups = [
@@ -1406,6 +1407,43 @@ export default function DesignSystemClientPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      <Separator />
+
+      <section className="space-y-6">
+        <SectionHeader
+          description="LinkedIn post preview cards for content planning."
+          title="Social Media Previews"
+        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <LinkedInPost
+            author={{
+              name: "Avery Lane",
+              avatar: "https://i.pravatar.cc/80?img=32",
+              headline: "77,350 followers",
+            }}
+            comments={42}
+            content={
+              "We just shipped our biggest update yet — and it changes everything about how teams run automations.\n\nAfter months of working closely with power users, we rebuilt the scheduling engine from the ground up. The result? 3x faster execution, smarter retry logic, and a brand-new visual timeline.\n\nHere's what's new:\n• Enum-based lookback windows for precise control\n• Real-time status indicators across all workflows\n• One-click duplication for complex automations\n\nThis is just the beginning. We're building the future of workflow automation, and your feedback is what drives us forward."
+            }
+            reactions={{ count: 128, types: ["like", "love", "celebrate"] }}
+            reposts={12}
+            timestamp="2d"
+          />
+          <LinkedInPost
+            author={{
+              name: "Jordan Kim",
+              fallback: "JK",
+              headline: "Product Designer at Notra",
+            }}
+            comments={8}
+            content="Excited to share our new dashboard design system — built for consistency, speed, and dark mode from day one."
+            reactions={{ count: 56, types: ["like", "celebrate"] }}
+            reposts={3}
+            timestamp="5h"
+          />
         </div>
       </section>
 
