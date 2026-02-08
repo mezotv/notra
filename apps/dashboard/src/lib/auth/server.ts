@@ -46,7 +46,7 @@ function validateAndNormalizeOrganizationSlug(org: {
   return {
     data: {
       ...org,
-      slug,
+      slug: validation.data,
     },
   };
 }
