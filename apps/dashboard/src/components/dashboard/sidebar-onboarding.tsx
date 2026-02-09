@@ -25,7 +25,6 @@ export function SidebarOnboarding() {
   const { data } = useOnboardingStatus(orgId);
   const [collapsed, setCollapsed] = useState(false);
 
-  // Initialize collapsed state from localStorage after hydration to avoid hydration mismatch
   useEffect(() => {
     setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
   }, []);
