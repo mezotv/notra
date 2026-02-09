@@ -4,7 +4,6 @@ import {
   contentTriggers,
   githubIntegrations,
   organizations,
-  posts,
 } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return auth.response;
     }
 
-    const [org, brand, integration, schedule, content] = await Promise.all([
+    const [org, brand, integration, schedule] = await Promise.all([
       db.query.organizations.findFirst({
         where: eq(organizations.id, organizationId),
         columns: { onboardingCompleted: true, onboardingDismissed: true },
@@ -43,16 +42,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         ),
         columns: { id: true },
       }),
-      db.query.posts.findFirst({
-        where: eq(posts.organizationId, organizationId),
-        columns: { id: true },
-      }),
     ]);
 
     const hasBrandIdentity = !!brand;
     const hasIntegration = !!integration;
     const hasSchedule = !!schedule;
-    const hasContent = !!content;
     const onboardingCompleted = org?.onboardingCompleted ?? false;
     const onboardingDismissed = org?.onboardingDismissed ?? false;
 
@@ -60,7 +54,6 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       hasBrandIdentity &&
       hasIntegration &&
       hasSchedule &&
-      hasContent &&
       !onboardingCompleted
     ) {
       await db
@@ -73,9 +66,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       hasBrandIdentity,
       hasIntegration,
       hasSchedule,
-      hasContent,
       onboardingCompleted:
-        hasBrandIdentity && hasIntegration && hasSchedule && hasContent
+        hasBrandIdentity && hasIntegration && hasSchedule
           ? true
           : onboardingCompleted,
       onboardingDismissed,
@@ -83,33 +75,6 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch onboarding status" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(request: NextRequest, { params }: RouteContext) {
-  try {
-    const { organizationId } = await params;
-    const auth = await withOrganizationAuth(request, organizationId);
-
-    if (!auth.success) {
-      return auth.response;
-    }
-
-    const body = await request.json();
-
-    if (body.dismissed === true) {
-      await db
-        .update(organizations)
-        .set({ onboardingDismissed: true })
-        .where(eq(organizations.id, organizationId));
-    }
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to update onboarding status" },
       { status: 500 }
     );
   }

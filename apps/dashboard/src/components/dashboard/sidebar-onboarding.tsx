@@ -40,7 +40,7 @@ export function SidebarOnboarding() {
     });
   }, []);
 
-  if (!data || data.onboardingCompleted) {
+  if (!data || data.onboardingCompleted || data.onboardingDismissed) {
     return null;
   }
 
