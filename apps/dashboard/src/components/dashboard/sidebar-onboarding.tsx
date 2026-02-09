@@ -11,18 +11,11 @@ import {
 } from "@notra/ui/components/ui/onboarding-checklist";
 import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 
 const STORAGE_KEY = "onboarding-collapsed";
-
-function getInitialCollapsed() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return localStorage.getItem(STORAGE_KEY) === "true";
-}
 
 export function SidebarOnboarding() {
   const { activeOrganization } = useOrganizationsContext();
@@ -30,7 +23,12 @@ export function SidebarOnboarding() {
   const slug = activeOrganization?.slug ?? "";
 
   const { data } = useOnboardingStatus(orgId);
-  const [collapsed, setCollapsed] = useState(getInitialCollapsed);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Initialize collapsed state from localStorage after hydration to avoid hydration mismatch
+  useEffect(() => {
+    setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
+  }, []);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
