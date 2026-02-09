@@ -91,6 +91,9 @@ export function AddIntegrationDialog({
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
         });
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+        });
       }
       toast.success("GitHub integration added successfully");
       setOpen(false);

@@ -175,6 +175,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
       });
+      if (organizationId) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+        });
+      }
     },
   });
 
@@ -232,6 +237,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
       });
+      if (organizationId) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+        });
+      }
     },
   });
 
@@ -335,11 +345,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 : undefined
             }
             initialSourceType="cron"
-            onSuccess={() =>
+            onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-              })
-            }
+              });
+              if (organizationId) {
+                queryClient.invalidateQueries({
+                  queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+                });
+              }
+            }}
             organizationId={organizationId ?? ""}
             trigger={
               <Button size="sm" variant="default">
@@ -363,13 +378,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                     : undefined
                 }
                 initialSourceType="cron"
-                onSuccess={() =>
+                onSuccess={() => {
                   queryClient.invalidateQueries({
                     queryKey: QUERY_KEYS.AUTOMATION.schedules(
                       organizationId ?? ""
                     ),
-                  })
-                }
+                  });
+                  if (organizationId) {
+                    queryClient.invalidateQueries({
+                      queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+                    });
+                  }
+                }}
                 organizationId={organizationId ?? ""}
                 trigger={
                   <Button size="sm" variant="outline">
@@ -502,6 +522,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             queryClient.invalidateQueries({
               queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
             });
+            if (organizationId) {
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+              });
+            }
           }}
           open={!!editTrigger}
           organizationId={organizationId ?? ""}

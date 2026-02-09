@@ -160,6 +160,9 @@ export function useBrandAnalysisProgress(
     queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.AUTH.activeOrganization,
     });
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+    });
   };
 
   if (progress.status === "completed" && !hasReset.current) {
@@ -233,6 +236,9 @@ export function useUpdateBrandSettings(organizationId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
       });
     },
   });
