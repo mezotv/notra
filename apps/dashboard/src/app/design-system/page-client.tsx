@@ -126,6 +126,15 @@ import {
 } from "@notra/ui/components/ui/input-group";
 import { Label } from "@notra/ui/components/ui/label";
 import {
+  OnboardingChecklist,
+  OnboardingChecklistContent,
+  OnboardingChecklistHeader,
+  OnboardingChecklistItem,
+  OnboardingChecklistItems,
+  OnboardingChecklistProgress,
+  OnboardingChecklistTitle,
+} from "@notra/ui/components/ui/onboarding-checklist";
+import {
   Progress,
   ProgressLabel,
   ProgressTrack,
@@ -367,14 +376,11 @@ export default function DesignSystemClientPage() {
         <p className="max-w-2xl text-muted-foreground text-sm">
           Component and token showcase for the dashboard UI kit.
         </p>
-        <div className="flex w-full items-center justify-between gap-3">
-          <div />
-          <SidebarProvider defaultOpen={false}>
-            <div className="w-fit">
-              <ThemeToggle />
-            </div>
-          </SidebarProvider>
-        </div>
+        <SidebarProvider defaultOpen={false}>
+          <div className="w-fit">
+            <ThemeToggle />
+          </div>
+        </SidebarProvider>
       </header>
 
       <section className="space-y-6">
@@ -1406,6 +1412,62 @@ export default function DesignSystemClientPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      <Separator />
+
+      <section className="space-y-6">
+        <SectionHeader
+          description="Guided setup checklist for onboarding flows."
+          title="Onboarding Checklist"
+        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <OnboardingChecklist onClose={() => toast("Checklist dismissed")}>
+            <OnboardingChecklistHeader>
+              <OnboardingChecklistTitle>Get started</OnboardingChecklistTitle>
+            </OnboardingChecklistHeader>
+            <OnboardingChecklistContent
+              description="Complete these steps to get the most out of Notra."
+              title="Setup your workspace"
+            >
+              <OnboardingChecklistProgress value={33} />
+              <OnboardingChecklistItems>
+                <OnboardingChecklistItem completed href="#">
+                  Create your first project
+                </OnboardingChecklistItem>
+                <OnboardingChecklistItem href="#">
+                  Invite team members
+                </OnboardingChecklistItem>
+                <OnboardingChecklistItem href="#">
+                  Configure integrations
+                </OnboardingChecklistItem>
+              </OnboardingChecklistItems>
+            </OnboardingChecklistContent>
+          </OnboardingChecklist>
+
+          <OnboardingChecklist onClose={() => toast("Checklist dismissed")}>
+            <OnboardingChecklistHeader>
+              <OnboardingChecklistTitle>Almost there</OnboardingChecklistTitle>
+            </OnboardingChecklistHeader>
+            <OnboardingChecklistContent
+              description="Just one more step to finish setup."
+              title="Finalize configuration"
+            >
+              <OnboardingChecklistProgress value={67} />
+              <OnboardingChecklistItems>
+                <OnboardingChecklistItem completed href="#">
+                  Connect your repository
+                </OnboardingChecklistItem>
+                <OnboardingChecklistItem completed href="#">
+                  Set up notifications
+                </OnboardingChecklistItem>
+                <OnboardingChecklistItem href="#">
+                  Review billing settings
+                </OnboardingChecklistItem>
+              </OnboardingChecklistItems>
+            </OnboardingChecklistContent>
+          </OnboardingChecklist>
         </div>
       </section>
 
