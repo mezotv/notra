@@ -57,7 +57,8 @@ export function useBrandSettings(organizationId: string) {
 
 export function useBrandAnalysisProgress(
   organizationId: string,
-  onFailure?: (error: string) => void
+  onFailure?: (error: string) => void,
+  onAnalysisComplete?: () => void
 ) {
   const queryClient = useQueryClient();
   const hasReset = useRef(false);
@@ -163,6 +164,7 @@ export function useBrandAnalysisProgress(
     queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
     });
+    onAnalysisComplete?.();
   };
 
   if (progress.status === "completed" && !hasReset.current) {

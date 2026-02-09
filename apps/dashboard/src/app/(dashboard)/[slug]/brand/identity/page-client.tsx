@@ -606,6 +606,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
       lastToastError.current = message;
       toast.error(message);
+    },
+    () => {
+      toast.success("Brand identity saved");
     }
   );
   const analyzeMutation = useAnalyzeBrand(organizationId, startPolling);
