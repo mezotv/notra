@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import type { UpdateBrandSettingsInput } from "@/utils/schemas/brand";
 
@@ -167,9 +167,11 @@ export function useBrandAnalysisProgress(
     onAnalysisComplete?.();
   };
 
-  if (progress.status === "completed" && !hasReset.current) {
-    onComplete();
-  }
+  useEffect(() => {
+    if (progress.status === "completed" && !hasReset.current) {
+      onComplete();
+    }
+  }, [onComplete, progress.status]);
 
   return { progress, startPolling };
 }
