@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/neon-http";
 import { nanoid } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Required for drizzle schema
 import * as schema from "../src/schema";
