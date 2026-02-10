@@ -1,10 +1,11 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { generateText, Output, stepCountIs, ToolLoopAgent } from "ai";
 import { z } from "zod";
-import {
-  getValidToneProfile,
-  toneConfigs,
-} from "@/lib/ai/prompts/changelog/base";
+import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
+import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
+import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
+import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
+import type { ChangelogTonePromptInput } from "@/lib/ai/prompts/changelog/types";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
@@ -32,95 +33,35 @@ export interface ChangelogAgentResult {
 export interface ChangelogAgentOptions {
   organizationId: string;
   tone?: ToneProfile;
-  companyName?: string;
-  companyDescription?: string;
-  audience?: string;
-  customInstructions?: string | null;
+  promptInput: ChangelogTonePromptInput;
 }
 
+const changelogPromptByTone: Record<
+  ToneProfile,
+  (params: ChangelogTonePromptInput) => string
+> = {
+  Conversational: getConversationalChangelogPrompt,
+  Professional: getProfessionalChangelogPrompt,
+  Casual: getCasualChangelogPrompt,
+  Formal: getFormalChangelogPrompt,
+};
+
 export async function generateChangelog(
-  options: ChangelogAgentOptions,
-  prompt: string
+  options: ChangelogAgentOptions
 ): Promise<ChangelogAgentResult> {
-  const {
-    organizationId,
-    tone = "Conversational",
-    companyName,
-    companyDescription,
-    audience,
-    customInstructions,
-  } = options;
+  const { organizationId, tone = "Conversational", promptInput } = options;
 
   const modelWithMemory = withSupermemory(
-    openrouter("moonshotai/kimi-k2.5"),
+    openrouter("moonshotai/kimi-k2.5", {
+      reasoning: {
+        max_tokens: 4096,
+      },
+    }),
     organizationId
   );
 
-  const validTone = getValidToneProfile(tone, "Conversational");
-  const toneConfig = toneConfigs[validTone];
-
-  const companyContext = companyName
-    ? `\nCompany: ${companyName}${companyDescription ? ` - ${companyDescription}` : ""}`
-    : "";
-
-  const audienceContext = audience ? `\nTarget Audience: ${audience}` : "";
-
-  const customContext = customInstructions
-    ? `\n\nAdditional Instructions:\n${customInstructions}`
-    : "";
-
-  const instructions = `
-# ROLE AND IDENTITY
-
-${toneConfig.roleIdentity}
-
-# AUDIENCE
-
-${toneConfig.audienceGuidance}${companyContext}${audienceContext}
-
-# TONE AND STYLE GUIDELINES
-
-Summary Style: ${toneConfig.summaryStyle}
-
-PR Description Style: ${toneConfig.prDescriptionStyle}
-
-Language Guidelines:
-${toneConfig.languageGuidelines.map((g) => `- ${g}`).join("\n")}
-
-# TASK OBJECTIVE
-
-You are a helpful devrel with a passion for turning technical information into easy to follow changelogs. Your job is to take information from GitHub repositories and turn that information into a changelog designed for humans to read.${companyContext}
-
-# TIMEFRAME RULES
-
-- The user prompt includes the current UTC day and an explicit lookback window.
-- Treat that provided window as the source of truth.
-- Do not assume or invent a default 7-day window when a window is provided.
-- If you call commit tools, align retrieval to the same window from the prompt.
-
-# OUTPUT REQUIREMENTS
-
-- Generate a comprehensive, well-organized changelog
-- Process ALL pull requests from the provided data
-- Categorize them logically into: Features, Bug Fixes, Performance, Documentation, Internal, Testing, Infrastructure, Security
-- Present them in a developer-friendly format using MDX
-- Title must be 120 characters or less
-- Summary must be 600-800 words
-- Do not use emojis in section headings
-- Keep PR descriptions concise but informative
-- Output ONLY the final markdown changelog, no reasoning or commentary
-- Do NOT include YAML frontmatter, metadata blocks, or key-value pairs like "summary:", "date:", "author:", etc. Start directly with the title heading
-
-# AVAILABLE TOOLS
-
-You have access to skills that can help improve your work. Use listAvailableSkills to see available skills, and getSkillByName to use a specific skill when needed. Always consider using the humanizer skill if the draft changelog reads overly robotic, stiff, or generic, and use it to humanize the final text while preserving technical accuracy and the selected tone.
-
-  You also have access to GitHub tools:
-- getPullRequests: Fetch detailed PR information
-- getReleaseByTag: Get release details
-- getCommitsByTimeframe: Retrieve commits from a timeframe
-${customContext}
-`;
+  const promptFactory = changelogPromptByTone[tone];
+  const prompt = promptFactory(promptInput);
 
   const agent = new ToolLoopAgent({
     model: modelWithMemory,
@@ -131,14 +72,15 @@ ${customContext}
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
     },
-    instructions,
+    instructions:
+      "You write changelogs from GitHub activity. Follow the user prompt exactly and use tools only when needed.",
     stopWhen: stepCountIs(31),
   });
 
   const agentResult = await agent.generate({ prompt });
 
   const { output } = await generateText({
-    model: openrouter("google/gemini-2.0-flash-001"),
+    model: openrouter("moonshotai/kimi-k2.5"),
     output: Output.object({
       schema: changelogOutputSchema,
     }),

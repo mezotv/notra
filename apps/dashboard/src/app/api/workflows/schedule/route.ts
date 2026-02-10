@@ -14,8 +14,8 @@ import { eq, inArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { getValidToneProfile } from "@/lib/ai/prompts/changelog/base";
 import { getBaseUrl } from "@/lib/triggers/qstash";
+import { type ToneProfile, toneProfileSchema } from "@/utils/schemas/brand";
 import type { LookbackWindow } from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -123,6 +123,14 @@ function formatUtcTodayContext(now: Date) {
   const date = now.toISOString().slice(0, 10);
 
   return `${weekday}, ${date} (UTC)`;
+}
+
+function resolveToneProfile(
+  value: string | null | undefined,
+  fallback: ToneProfile = "Conversational"
+): ToneProfile {
+  const parsed = toneProfileSchema.safeParse(value);
+  return parsed.success ? parsed.data : fallback;
 }
 
 export const { POST } = serve<SchedulePayload>(
@@ -256,17 +264,21 @@ export const { POST } = serve<SchedulePayload>(
             .map((r) => `${r.owner}/${r.repo}`)
             .join(", ");
 
-          const { output } = await generateChangelog(
-            {
-              organizationId: trigger.organizationId,
-              tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
+          const { output } = await generateChangelog({
+            organizationId: trigger.organizationId,
+            tone: resolveToneProfile(brand?.toneProfile, "Conversational"),
+            promptInput: {
+              sourceTargets: repoList,
+              todayUtc,
+              lookbackLabel: lookbackRange.label,
+              lookbackStartIso: lookbackRange.start.toISOString(),
+              lookbackEndIso: lookbackRange.end.toISOString(),
               companyName: brand?.companyName ?? undefined,
               companyDescription: brand?.companyDescription ?? undefined,
               audience: brand?.audience ?? undefined,
               customInstructions: brand?.customInstructions ?? undefined,
             },
-            `Generate a changelog for the following repositories: ${repoList}. Today is ${todayUtc}. Look at commits in the ${lookbackRange.label} window (${lookbackRange.start.toISOString()} to ${lookbackRange.end.toISOString()}, UTC) and create a comprehensive, human-readable changelog.`
-          );
+          });
 
           return {
             title: output.title,
