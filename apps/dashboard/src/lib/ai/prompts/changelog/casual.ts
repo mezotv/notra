@@ -50,9 +50,9 @@ export function getCasualChangelogPrompt(
     - Do not number highlight items.
     - Do not name the section "Top 5".
     - Keep each highlight item clean: title + short description only.
-    - Keep every PR listed exactly once in either Highlights or All Other Changes (Categorized).
+    - Keep every PR listed exactly once in either Highlights or More Updates.
     - Keep the Summary strictly between 120 and 180 words.
-    - The All Other Changes (Categorized) section must contain bullet lists only under each category, with no paragraph prose.
+    - The More Updates section must contain bullet lists only under each category, with no paragraph prose.
     - The summary must be a single paragraph immediately after the title line.
     - Do not include a "## Summary" heading.
     - Do not include a "TL;DR", "Overview", or any preface text before the summary paragraph.
@@ -102,7 +102,7 @@ export function getCasualChangelogPrompt(
     ### Cross-browser polished scrollbar styling
     UI scrollbar behavior and visual treatment are now consistent across major browsers with slimmer rails and theme-aware states.
 
-    ## All Other Changes (Categorized)
+    ## More Updates
 
     ### Security
     - **Rotated webhook signing secret handling** [#131](https://github.com/org/repo/pull/131) - Improves secret lifecycle controls. (Author: @lee)
@@ -131,9 +131,9 @@ export function getCasualChangelogPrompt(
     - For each highlight item, use this exact clean format:
       ### [Short change title]
       [Short description of what happened and why it matters]
-    - An All Other Changes (Categorized) section
+    - A More Updates section
     - Categorize remaining items under: Security, Features & Enhancements, Bug Fixes, Performance Improvements, Infrastructure, Internal Changes, Testing, Documentation
-    - Under each category in All Other Changes (Categorized), use bullet points only (no paragraphs)
+    - Under each category in More Updates, use bullet points only (no paragraphs)
     - PR entries in this exact format:
       - **[Descriptive Title]** [#\${number}](https://github.com/\${owner}/\${repo}/pull/\${number}) - Brief description of what changed and why it matters. (Author: @\${author})
 
