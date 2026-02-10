@@ -46,10 +46,12 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
 
   if (hasGitHub) {
     const allowedRepositories = validatedIntegrations.flatMap((integration) =>
-      integration.repositories.map((repository) => ({
-        owner: repository.owner,
-        repo: repository.repo,
-      }))
+      integration.type === "github"
+        ? integration.repositories.map((repository) => ({
+            owner: repository.owner,
+            repo: repository.repo,
+          }))
+        : []
     );
 
     tools.getPullRequests = createGetPullRequestsTool({

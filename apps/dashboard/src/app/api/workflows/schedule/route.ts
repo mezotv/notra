@@ -287,7 +287,7 @@ export const { POST } = serve<SchedulePayload>(
                 companyName: brand?.companyName ?? undefined,
                 companyDescription: brand?.companyDescription ?? undefined,
                 audience: brand?.audience ?? undefined,
-                customInstructions: brand?.customInstructions ?? undefined,
+                customInstructions: brand?.customInstructions ?? null,
               },
             });
 

@@ -7,5 +7,5 @@ export interface ChangelogTonePromptInput {
   companyName?: string;
   companyDescription?: string;
   audience?: string;
-  customInstructions?: string | null | undefined;
+  customInstructions?: string | null;
 }
