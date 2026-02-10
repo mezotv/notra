@@ -36,6 +36,10 @@ export function getFormalChangelogPrompt(
 
     <rules>
     - Before drafting, gather all available information first. If needed, call tools to fill gaps, then write.
+    - Do not make up facts. Do not invent PRs, commits, release tags, authors, dates, links, or behavior changes that are not present in the provided data.
+    - Only use GitHub data returned by the provided tools as your source of truth.
+    - If a detail is missing/uncertain, call the appropriate tool; if it still cannot be verified, omit it or describe it generically without asserting specifics.
+    - Never guess PR numbers or URLs. Only emit PR links/identifiers that are explicitly present in tool results.
     - Treat the provided lookback window as the source of truth.
     - Do not invent an alternative default window.
     - If you call commit tools, align retrieval to this exact window.
@@ -49,6 +53,9 @@ export function getFormalChangelogPrompt(
     - Keep every PR listed exactly once in either Highlights or All Other Changes (Categorized).
     - Keep the Summary strictly between 120 and 180 words.
     - The All Other Changes (Categorized) section must contain bullet lists only under each category, with no paragraph prose.
+    - The summary must be a single paragraph immediately after the title line.
+    - Do not include a "## Summary" heading.
+    - Do not include a "TL;DR", "Overview", or any preface text before the summary paragraph.
     - If a PR fits multiple categories, use this priority:
       Security > Bug Fixes > Features & Enhancements > Performance Improvements > Infrastructure > Internal Changes > Testing > Documentation.
     - Avoid unnecessary product/vendor namedropping in highlight copy unless required for technical clarity.
@@ -76,9 +83,7 @@ export function getFormalChangelogPrompt(
 
     <examples>
     <example>
-    # Platform Reliability and Developer Experience Improvements
-
-    [A concise summary of release themes and impact.]
+    [Summary paragraph, 120-180 words.]
 
     ## Highlights
 
@@ -112,9 +117,14 @@ export function getFormalChangelogPrompt(
 
     <the-ask>
     Generate the changelog now.
-    Use markdown/MDX and include:
-    - A title (max 120 characters)
-    - A concise Summary section (strictly 120-180 words)
+    Return structured output that matches the schema with two fields:
+    - title: plain text, max 120 characters, no markdown
+    - markdown: markdown/MDX body only (do not include the title as a heading)
+
+    The markdown field must:
+    - Start with the Summary paragraph (strictly 120-180 words)
+    - Not include a "## Summary" heading
+    - Next heading must be: ## Highlights
     - A Highlights section with exactly five items
     - Do not number highlight items
     - Do not use a "Top 5" heading
@@ -126,11 +136,14 @@ export function getFormalChangelogPrompt(
     - Under each category in All Other Changes (Categorized), use bullet points only (no paragraphs)
     - PR entries in this exact format:
       - **[Descriptive Title]** [#\${number}](https://github.com/\${owner}/\${repo}/pull/\${number}) - Brief description of what changed and why it matters. (Author: @\${author})
-    - Final response must mirror this schema in XML form:
-      <output>
-        <title>[plain text title, max 120 chars, no markdown]</title>
-        <markdown>[full markdown body only]</markdown>
-      </output>
+
+    CRITICAL OUTPUT FORMAT (repeat):
+    - Your entire response must be a single JSON object matching this schema exactly: {"title": string, "markdown": string}
+    - Output ONLY the JSON object. No prose, no markdown, no code fences.
+    - Use exactly these two keys: "title" and "markdown". Do not include any other keys.
+    - Both values must be strings (not null, not arrays).
+    - JSON must be valid: double quotes, no trailing commas.
+    - IMPORTANT: JSON strings cannot contain raw newlines. Encode line breaks in "markdown" using \\n.
     ${customContext}
     </the-ask>
 

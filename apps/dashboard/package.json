@@ -15,6 +15,7 @@
     "db:seed": "tsx scripts/seed-posts.ts"
   },
   "dependencies": {
+    "@ai-sdk-tools/cache": "^1.2.0",
     "@ai-sdk/react": "^3.0.51",
     "@databuddy/sdk": "^2.3.24",
     "@hugeicons/core-free-icons": "^3.1.1",

@@ -1,5 +1,5 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
-import { generateText, Output, stepCountIs, ToolLoopAgent } from "ai";
+import { gateway, Output, stepCountIs, ToolLoopAgent } from "ai";
 import { z } from "zod";
 import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
@@ -37,36 +37,6 @@ export interface ChangelogAgentOptions {
   promptInput: ChangelogTonePromptInput;
 }
 
-function shouldLogOpenRouterPayloads(): boolean {
-  const flag = process.env.OPENROUTER_LOG_PAYLOADS;
-  return flag === "1" || flag === "true";
-}
-
-function logOpenRouterPayload(event: {
-  organizationId: string;
-  model: string;
-  kind: "agent" | "extract";
-  prompt: string;
-  tone?: ToneProfile;
-  repositories?: Array<{ owner: string; repo: string }>;
-  instructions?: string;
-}) {
-  if (!shouldLogOpenRouterPayloads()) {
-    return;
-  }
-
-  // Intentionally logs full prompt for debugging. Keep it behind env flag.
-  console.log("[OpenRouter Payload]", {
-    organizationId: event.organizationId,
-    model: event.model,
-    kind: event.kind,
-    tone: event.tone,
-    repositories: event.repositories,
-    instructions: event.instructions,
-    prompt: event.prompt,
-  });
-}
-
 const changelogPromptByTone: Record<
   ToneProfile,
   (params: ChangelogTonePromptInput) => string
@@ -88,7 +58,7 @@ export async function generateChangelog(
   } = options;
 
   const modelWithMemory = withSupermemory(
-    openrouter("moonshotai/kimi-k2.5"),
+    gateway("anthropic/claude-sonnet-4.5"),
     organizationId
   );
 
@@ -96,20 +66,16 @@ export async function generateChangelog(
   const prompt = promptFactory(promptInput);
 
   const agentInstructions =
-    "You write changelogs from GitHub activity. Follow the user prompt exactly and use tools only when needed.";
-
-  logOpenRouterPayload({
-    organizationId,
-    model: "moonshotai/kimi-k2.5",
-    kind: "agent",
-    tone,
-    repositories,
-    instructions: agentInstructions,
-    prompt,
-  });
+    "You write changelogs from GitHub activity. Follow the user prompt exactly and use tools only when needed. " +
+    "CRITICAL: Return only a single JSON object matching the output schema with exactly two string fields: title and markdown. " +
+    "Do not output markdown, commentary, or code fences. Ensure the JSON is valid (double quotes, no trailing commas). " +
+    "If the markdown field spans multiple lines, encode line breaks as \\n within the JSON string.";
 
   const agent = new ToolLoopAgent({
     model: modelWithMemory,
+    output: Output.object({
+      schema: changelogOutputSchema,
+    }),
     tools: {
       getPullRequests: createGetPullRequestsTool({
         organizationId,
@@ -127,31 +93,10 @@ export async function generateChangelog(
       getSkillByName: getSkillByName(),
     },
     instructions: agentInstructions,
-    stopWhen: stepCountIs(31),
+    stopWhen: stepCountIs(35),
   });
 
   const agentResult = await agent.generate({ prompt });
 
-  const extractionPrompt = `Extract the title and markdown body from the following changelog text. The title should be plain text (no markdown formatting, max 120 characters). The markdown should be the full changelog body without the title heading.\n\n${agentResult.text}`;
-
-  logOpenRouterPayload({
-    organizationId,
-    model: "moonshotai/kimi-k2.5",
-    kind: "extract",
-    prompt: extractionPrompt,
-  });
-
-  const { output } = await generateText({
-    model: openrouter("moonshotai/kimi-k2.5"),
-    output: Output.object({
-      schema: changelogOutputSchema,
-    }),
-    prompt: extractionPrompt,
-  });
-
-  if (!output) {
-    throw new Error("Failed to extract structured output from changelog");
-  }
-
-  return { output };
+  return { output: agentResult.output };
 }
