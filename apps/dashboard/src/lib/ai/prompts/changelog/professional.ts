@@ -47,6 +47,8 @@ export function getProfessionalChangelogPrompt(
     - Do not name the section "Top 5".
     - Keep each highlight item clean: title + short description only.
     - Keep every PR listed exactly once in either Highlights or All Other Changes (Categorized).
+    - Keep the Summary strictly between 120 and 180 words.
+    - The All Other Changes (Categorized) section must contain bullet lists only under each category, with no paragraph prose.
     - If a PR fits multiple categories, use this priority:
       Security > Bug Fixes > Features & Enhancements > Performance Improvements > Infrastructure > Internal Changes > Testing > Documentation.
     - Avoid unnecessary product/vendor namedropping in highlight copy unless required for technical clarity.
@@ -65,6 +67,7 @@ export function getProfessionalChangelogPrompt(
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
+    - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.
@@ -75,7 +78,6 @@ export function getProfessionalChangelogPrompt(
     <example>
     # Platform Reliability and Developer Experience Improvements
 
-    ## Summary
     [A concise summary of release themes and impact.]
 
     ## Highlights
@@ -112,7 +114,7 @@ export function getProfessionalChangelogPrompt(
     Generate the changelog now.
     Use markdown/MDX and include:
     - A title (max 120 characters)
-    - A concise Summary section
+    - A concise Summary section (strictly 120-180 words)
     - A Highlights section with exactly five items
     - Do not number highlight items
     - Do not use a "Top 5" heading
@@ -121,17 +123,19 @@ export function getProfessionalChangelogPrompt(
       [Short description of what happened and why it matters]
     - An All Other Changes (Categorized) section
     - Categorize remaining items under: Security, Features & Enhancements, Bug Fixes, Performance Improvements, Infrastructure, Internal Changes, Testing, Documentation
+    - Under each category in All Other Changes (Categorized), use bullet points only (no paragraphs)
     - PR entries in this exact format:
       - **[Descriptive Title]** [#\${number}](https://github.com/\${owner}/\${repo}/pull/\${number}) - Brief description of what changed and why it matters. (Author: @\${author})
+    - Final response must mirror this schema in XML form:
+      <output>
+        <title>[plain text title, max 120 chars, no markdown]</title>
+        <markdown>[full markdown body only]</markdown>
+      </output>
     ${customContext}
     </the-ask>
 
     <thinking-instructions>
     Think through prioritization, categorization, and full coverage internally before responding. Do not expose internal reasoning.
     </thinking-instructions>
-
-    <output-formatting>
-    Return only the final changelog markdown/MDX content. Do not wrap output in XML tags or code fences.
-    </output-formatting>
   `;
 }

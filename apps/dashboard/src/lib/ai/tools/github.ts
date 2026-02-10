@@ -4,7 +4,182 @@ import { createOctokit } from "@/lib/octokit";
 import { getTokenForRepository } from "@/lib/services/github-integration";
 import { toolDescription } from "../utils/description";
 
-export function createGetPullRequestsTool(): Tool {
+interface GitHubToolsAccessConfig {
+  organizationId?: string;
+  allowedRepositories?: Array<{ owner: string; repo: string }>;
+}
+
+const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
+  "GitHub API rate limit reached. Please retry later.";
+
+interface ErrorWithStatus {
+  status?: number;
+  message?: string;
+  response?: {
+    headers?: Record<string, string | number | undefined>;
+    data?: unknown;
+  };
+}
+
+function parseRetryAfterSeconds(value?: string | number) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function getHeaderCaseInsensitive(
+  headers: Record<string, string | number | undefined> | undefined,
+  name: string
+) {
+  if (!headers) {
+    return undefined;
+  }
+
+  const key = Object.keys(headers).find(
+    (headerName) => headerName.toLowerCase() === name.toLowerCase()
+  );
+
+  if (!key) {
+    return undefined;
+  }
+
+  return headers[key];
+}
+
+export class GitHubRateLimitError extends Error {
+  readonly retryAfterSeconds?: number;
+
+  constructor(retryAfterSeconds?: number) {
+    super(GITHUB_PRIMARY_RATE_LIMIT_MESSAGE);
+    this.name = "GitHubRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+export function isGitHubRateLimitError(
+  error: unknown
+): error is GitHubRateLimitError {
+  if (error instanceof GitHubRateLimitError) {
+    return true;
+  }
+
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as {
+    name?: string;
+    message?: string;
+    cause?: unknown;
+  };
+
+  if (candidate.name === "GitHubRateLimitError") {
+    return true;
+  }
+
+  if (candidate.message?.includes(GITHUB_PRIMARY_RATE_LIMIT_MESSAGE)) {
+    return true;
+  }
+
+  if (candidate.cause) {
+    return isGitHubRateLimitError(candidate.cause);
+  }
+
+  return false;
+}
+
+function toGitHubRateLimitError(error: unknown) {
+  const maybeError = error as ErrorWithStatus;
+  const status = maybeError?.status;
+  const headers = maybeError?.response?.headers;
+
+  const remaining = getHeaderCaseInsensitive(headers, "x-ratelimit-remaining");
+  const retryAfter = getHeaderCaseInsensitive(headers, "retry-after");
+  const resetAt = getHeaderCaseInsensitive(headers, "x-ratelimit-reset");
+  const retryAfterSecondsFromHeader = parseRetryAfterSeconds(retryAfter);
+
+  let retryAfterSeconds = retryAfterSecondsFromHeader;
+  if (!retryAfterSeconds) {
+    const resetEpochSeconds = parseRetryAfterSeconds(resetAt);
+    if (resetEpochSeconds) {
+      const nowEpochSeconds = Math.floor(Date.now() / 1000);
+      const diff = resetEpochSeconds - nowEpochSeconds;
+      retryAfterSeconds = diff > 0 ? diff : undefined;
+    }
+  }
+
+  const isRateLimitedByStatus = status === 429;
+  const isRateLimitedByForbidden =
+    status === 403 && String(remaining ?? "") === "0";
+  const isSecondaryRateLimit =
+    status === 403 &&
+    maybeError?.message?.toLowerCase().includes("secondary rate limit") ===
+      true;
+
+  if (
+    isRateLimitedByStatus ||
+    isRateLimitedByForbidden ||
+    isSecondaryRateLimit
+  ) {
+    return new GitHubRateLimitError(retryAfterSeconds);
+  }
+
+  return null;
+}
+
+async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
+  try {
+    return await operation();
+  } catch (error) {
+    const rateLimitError = toGitHubRateLimitError(error);
+    if (rateLimitError) {
+      throw rateLimitError;
+    }
+    throw error;
+  }
+}
+
+function isRepositoryAllowed(
+  owner: string,
+  repo: string,
+  allowedRepositories?: Array<{ owner: string; repo: string }>
+) {
+  if (!allowedRepositories?.length) {
+    return true;
+  }
+
+  const normalizedOwner = owner.toLowerCase();
+  const normalizedRepo = repo.toLowerCase();
+
+  return allowedRepositories.some(
+    (allowedRepo) =>
+      allowedRepo.owner.toLowerCase() === normalizedOwner &&
+      allowedRepo.repo.toLowerCase() === normalizedRepo
+  );
+}
+
+function assertRepositoryAccess(
+  owner: string,
+  repo: string,
+  config?: GitHubToolsAccessConfig
+) {
+  if (!isRepositoryAllowed(owner, repo, config?.allowedRepositories)) {
+    throw new Error(
+      `Repository access denied for ${owner}/${repo}. This repository is not available in your current integration context.`
+    );
+  }
+}
+
+export function createGetPullRequestsTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
   return tool({
     description: toolDescription({
       toolName: "get_pull_requests",
@@ -25,25 +200,30 @@ Returns comprehensive PR data including diff stats, labels, and review state.`,
         .describe("The number of the pull request to get the details for"),
     }),
     execute: async ({ repo, owner, pull_number }) => {
-      const token = await getTokenForRepository(owner, repo);
+      assertRepositoryAccess(owner, repo, config);
+
+      const token = await getTokenForRepository(owner, repo, {
+        organizationId: config?.organizationId,
+      });
       const octokit = createOctokit(token);
-      const pullRequest = await octokit.request(
-        "GET /repos/{owner}/{repo}/pulls/{pull_number}",
-        {
+      const pullRequest = await withGitHubRateLimitHandling(() =>
+        octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
           owner,
           repo,
           pull_number,
           headers: {
             "X-GitHub-Api-Version": "2022-11-28",
           },
-        }
+        })
       );
       return pullRequest.data;
     },
   });
 }
 
-export function createGetReleaseByTagTool(): Tool {
+export function createGetReleaseByTagTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
   return tool({
     description: toolDescription({
       toolName: "get_release_by_tag",
@@ -67,18 +247,21 @@ Returns release body (changelog), assets list, author, and timestamps.`,
         ),
     }),
     execute: async ({ repo, owner, tag }) => {
-      const token = await getTokenForRepository(owner, repo);
+      assertRepositoryAccess(owner, repo, config);
+
+      const token = await getTokenForRepository(owner, repo, {
+        organizationId: config?.organizationId,
+      });
       const octokit = createOctokit(token);
-      const releases = await octokit.request(
-        "GET /repos/{owner}/{repo}/releases/tags/{tag}",
-        {
+      const releases = await withGitHubRateLimitHandling(() =>
+        octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
           owner,
           repo,
           tag,
           headers: {
             "X-GitHub-Api-Version": "2022-11-28",
           },
-        }
+        })
       );
       return releases.data;
     },
@@ -91,7 +274,9 @@ export const getISODateFromDaysAgo = (days: number): string => {
   return date.toISOString();
 };
 
-export function createGetCommitsByTimeframeTool(): Tool {
+export function createGetCommitsByTimeframeTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
   return tool({
     description: toolDescription({
       toolName: "get_commits_by_timeframe",
@@ -111,20 +296,22 @@ Use this for activity summaries, changelog generation, or understanding recent c
         .describe("How many days of commit history to retrieve"),
     }),
     execute: async ({ owner, repo, days }) => {
-      const token = await getTokenForRepository(owner, repo);
+      assertRepositoryAccess(owner, repo, config);
+
+      const token = await getTokenForRepository(owner, repo, {
+        organizationId: config?.organizationId,
+      });
       const octokit = createOctokit(token);
       const since = getISODateFromDaysAgo(days);
-
-      const response = await octokit.request(
-        "GET /repos/{owner}/{repo}/commits",
-        {
+      const response = await withGitHubRateLimitHandling(() =>
+        octokit.request("GET /repos/{owner}/{repo}/commits", {
           owner,
           repo,
           since,
           headers: {
             "X-GitHub-Api-Version": "2022-11-28",
           },
-        }
+        })
       );
 
       return response.data;

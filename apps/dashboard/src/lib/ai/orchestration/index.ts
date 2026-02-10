@@ -65,6 +65,7 @@ export async function orchestrateChat(
   );
 
   const { tools, descriptions } = buildToolSet({
+    organizationId,
     currentMarkdown,
     validatedIntegrations,
   });

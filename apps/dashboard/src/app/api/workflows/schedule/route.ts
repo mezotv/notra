@@ -14,7 +14,8 @@ import { eq, inArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { getBaseUrl } from "@/lib/triggers/qstash";
+import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { type ToneProfile, toneProfileSchema } from "@/utils/schemas/brand";
 import type { LookbackWindow } from "@/utils/schemas/integrations";
 
@@ -49,6 +50,10 @@ interface GeneratedContent {
   markdown: string;
 }
 
+type ContentGenerationResult =
+  | { status: "ok"; content: GeneratedContent }
+  | { status: "rate_limited"; retryAfterSeconds?: number };
+
 type BrandSettingsData = {
   toneProfile: string | null;
   companyName: string | null;
@@ -59,6 +64,7 @@ type BrandSettingsData = {
 
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const GITHUB_RATE_LIMIT_RETRY_DELAY = "30m" as const;
 
 function resolveLookbackRange(window: LookbackWindow) {
   const now = new Date();
@@ -254,7 +260,7 @@ export const { POST } = serve<SchedulePayload>(
     );
 
     // Step 3: Generate content based on output type
-    const content = await context.run<GeneratedContent>(
+    const contentResult = await context.run<ContentGenerationResult>(
       "generate-content",
       async () => {
         if (trigger.outputType === "changelog") {
@@ -264,26 +270,44 @@ export const { POST } = serve<SchedulePayload>(
             .map((r) => `${r.owner}/${r.repo}`)
             .join(", ");
 
-          const { output } = await generateChangelog({
-            organizationId: trigger.organizationId,
-            tone: resolveToneProfile(brand?.toneProfile, "Conversational"),
-            promptInput: {
-              sourceTargets: repoList,
-              todayUtc,
-              lookbackLabel: lookbackRange.label,
-              lookbackStartIso: lookbackRange.start.toISOString(),
-              lookbackEndIso: lookbackRange.end.toISOString(),
-              companyName: brand?.companyName ?? undefined,
-              companyDescription: brand?.companyDescription ?? undefined,
-              audience: brand?.audience ?? undefined,
-              customInstructions: brand?.customInstructions ?? undefined,
-            },
-          });
+          try {
+            const { output } = await generateChangelog({
+              organizationId: trigger.organizationId,
+              repositories: repositories.map((repository) => ({
+                owner: repository.owner,
+                repo: repository.repo,
+              })),
+              tone: resolveToneProfile(brand?.toneProfile, "Conversational"),
+              promptInput: {
+                sourceTargets: repoList,
+                todayUtc,
+                lookbackLabel: lookbackRange.label,
+                lookbackStartIso: lookbackRange.start.toISOString(),
+                lookbackEndIso: lookbackRange.end.toISOString(),
+                companyName: brand?.companyName ?? undefined,
+                companyDescription: brand?.companyDescription ?? undefined,
+                audience: brand?.audience ?? undefined,
+                customInstructions: brand?.customInstructions ?? undefined,
+              },
+            });
 
-          return {
-            title: output.title,
-            markdown: output.markdown,
-          };
+            return {
+              status: "ok",
+              content: {
+                title: output.title,
+                markdown: output.markdown,
+              },
+            };
+          } catch (error) {
+            if (isGitHubRateLimitError(error)) {
+              return {
+                status: "rate_limited",
+                retryAfterSeconds: error.retryAfterSeconds,
+              };
+            }
+
+            throw error;
+          }
         }
 
         // For other output types, log and return placeholder
@@ -292,11 +316,36 @@ export const { POST } = serve<SchedulePayload>(
         );
 
         return {
-          title: `${trigger.outputType} - ${new Date().toLocaleDateString()}`,
-          markdown: `*Automated ${trigger.outputType} generation is coming soon.*\n\nRepositories: ${repositories.map((r) => `${r.owner}/${r.repo}`).join(", ")}`,
+          status: "ok",
+          content: {
+            title: `${trigger.outputType} - ${new Date().toLocaleDateString()}`,
+            markdown: `*Automated ${trigger.outputType} generation is coming soon.*\n\nRepositories: ${repositories.map((r) => `${r.owner}/${r.repo}`).join(", ")}`,
+          },
         };
       }
     );
+
+    if (contentResult.status === "rate_limited") {
+      const delayedWorkflowRunId = await context.run<string>(
+        "reschedule-after-github-rate-limit",
+        async () =>
+          triggerScheduleNow(triggerId, {
+            delay: GITHUB_RATE_LIMIT_RETRY_DELAY,
+          })
+      );
+
+      console.warn(
+        `[Schedule] GitHub API rate limit hit for trigger ${triggerId}. Delayed workflow ${delayedWorkflowRunId} by ${GITHUB_RATE_LIMIT_RETRY_DELAY}.`,
+        {
+          retryAfterSeconds: contentResult.retryAfterSeconds,
+        }
+      );
+
+      await context.cancel();
+      return;
+    }
+
+    const content = contentResult.content;
 
     const postId = await context.run<string>("save-post", async () => {
       const id = nanoid();

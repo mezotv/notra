@@ -3,6 +3,13 @@ import { Client as WorkflowClient } from "@upstash/workflow";
 import type { TriggerSourceConfig } from "@/types/triggers";
 import { getConfiguredAppUrl, requireConfiguredAppUrl } from "@/utils/url";
 
+type WorkflowDelay =
+  | number
+  | `${bigint}s`
+  | `${bigint}m`
+  | `${bigint}h`
+  | `${bigint}d`;
+
 function getQstashToken() {
   const token = process.env.QSTASH_TOKEN;
   if (!token) {
@@ -80,7 +87,10 @@ export async function deleteQstashSchedule(scheduleId: string) {
   await client.schedules.delete(scheduleId);
 }
 
-export async function triggerScheduleNow(triggerId: string) {
+export async function triggerScheduleNow(
+  triggerId: string,
+  options?: { delay?: WorkflowDelay }
+) {
   const client = getWorkflowClient();
   const appUrl = getAppUrl();
 
@@ -89,6 +99,7 @@ export async function triggerScheduleNow(triggerId: string) {
   const result = await client.trigger({
     url: destination,
     body: { triggerId },
+    ...(options?.delay && { delay: options.delay }),
   });
 
   return result.workflowRunId;
