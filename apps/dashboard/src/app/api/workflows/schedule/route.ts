@@ -16,7 +16,7 @@ import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
-import { type ToneProfile, toneProfileSchema } from "@/utils/schemas/brand";
+import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
 import type { LookbackWindow } from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -129,14 +129,6 @@ function formatUtcTodayContext(now: Date) {
   const date = now.toISOString().slice(0, 10);
 
   return `${weekday}, ${date} (UTC)`;
-}
-
-function resolveToneProfile(
-  value: string | null | undefined,
-  fallback: ToneProfile = "Conversational"
-): ToneProfile {
-  const parsed = toneProfileSchema.safeParse(value);
-  return parsed.success ? parsed.data : fallback;
 }
 
 export const { POST } = serve<SchedulePayload>(
@@ -277,7 +269,7 @@ export const { POST } = serve<SchedulePayload>(
                 owner: repository.owner,
                 repo: repository.repo,
               })),
-              tone: resolveToneProfile(brand?.toneProfile, "Conversational"),
+              tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
               promptInput: {
                 sourceTargets: repoList,
                 todayUtc,

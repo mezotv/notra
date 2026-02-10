@@ -13,7 +13,7 @@ import {
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
 import { openrouter } from "@/lib/openrouter";
-import { type ToneProfile, toneProfileSchema } from "@/utils/schemas/brand";
+import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
 
 export const changelogOutputSchema = z.object({
   title: z.string().max(120).describe("The changelog title, no markdown"),
@@ -62,10 +62,7 @@ export async function generateChangelog(
     organizationId
   );
 
-  const parsedTone = toneProfileSchema.safeParse(tone);
-  const resolvedTone: ToneProfile = parsedTone.success
-    ? parsedTone.data
-    : "Conversational";
+  const resolvedTone: ToneProfile = getValidToneProfile(tone, "Conversational");
 
   const promptFactory =
     changelogPromptByTone[resolvedTone] ?? changelogPromptByTone.Conversational;
