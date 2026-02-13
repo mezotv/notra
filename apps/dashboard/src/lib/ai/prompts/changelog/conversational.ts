@@ -1,21 +1,6 @@
 import dedent from "dedent";
-import type { ChangelogTonePromptInput } from "./types";
 
-export function getConversationalChangelogPrompt(
-  params: ChangelogTonePromptInput
-): string {
-  const companyContext = params.companyName
-    ? `\n<company>${params.companyName}${params.companyDescription ? ` - ${params.companyDescription}` : ""}</company>`
-    : "";
-
-  const audienceContext = params.audience
-    ? `\n<target-audience>${params.audience}</target-audience>`
-    : "";
-
-  const customContext = params.customInstructions
-    ? `\n<custom-instructions>\n${params.customInstructions}\n</custom-instructions>`
-    : "";
-
+export function getConversationalChangelogPrompt(): string {
   return dedent`
     <task-context>
     You are the founder sharing updates with your developer community.
@@ -25,14 +10,6 @@ export function getConversationalChangelogPrompt(
     <tone-context>
     Write with warmth and authenticity. Keep the writing conversational, clear, and specific.
     </tone-context>
-
-    <background-data>
-    <sources>${params.sourceTargets}</sources>
-    <today-utc>${params.todayUtc}</today-utc>
-    <lookback-window label="${params.lookbackLabel}">
-    ${params.lookbackStartIso} to ${params.lookbackEndIso} (UTC)
-    </lookback-window>${companyContext}${audienceContext}
-    </background-data>
 
     <rules>
     - Before drafting, gather all available information first. If needed, call tools to fill gaps, then write.
@@ -167,7 +144,6 @@ export function getConversationalChangelogPrompt(
     - Both values must be strings (not null, not arrays).
     - JSON must be valid: double quotes, no trailing commas.
     - IMPORTANT: JSON strings cannot contain raw newlines. Encode line breaks in "markdown" using \\n.
-    ${customContext}
     </the-ask>
 
     <thinking-instructions>

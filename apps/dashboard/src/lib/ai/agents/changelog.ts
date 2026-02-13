@@ -15,6 +15,7 @@ import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/con
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
 import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
 import type { ChangelogTonePromptInput } from "@/lib/ai/prompts/changelog/types";
+import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
@@ -45,10 +46,7 @@ export interface ChangelogAgentOptions {
   promptInput: ChangelogTonePromptInput;
 }
 
-const changelogPromptByTone: Record<
-  ToneProfile,
-  (params: ChangelogTonePromptInput) => string
-> = {
+const changelogPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalChangelogPrompt,
   Professional: getProfessionalChangelogPrompt,
   Casual: getCasualChangelogPrompt,
@@ -74,7 +72,8 @@ export async function generateChangelog(
 
   const promptFactory =
     changelogPromptByTone[resolvedTone] ?? changelogPromptByTone.Conversational;
-  const prompt = promptFactory(promptInput);
+  const instructions = promptFactory();
+  const prompt = getChangelogUserPrompt(promptInput);
 
   const agent = new ToolLoopAgent({
     model,
@@ -97,7 +96,7 @@ export async function generateChangelog(
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
     },
-    instructions: prompt,
+    instructions,
     stopWhen: stepCountIs(35),
   });
 
