@@ -83,6 +83,12 @@ export default function FooterSection() {
               >
                 Pricing
               </Link>
+              <Link
+                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
+                href="/changelog"
+              >
+                Showcase
+              </Link>
             </div>
           </div>
 

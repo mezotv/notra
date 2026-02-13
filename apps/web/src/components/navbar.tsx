@@ -68,6 +68,14 @@ export function Navbar() {
                     Pricing
                   </div>
                 </Link>
+                <Link
+                  className="flex items-center justify-start"
+                  href="/changelog"
+                >
+                  <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
+                    Showcase
+                  </div>
+                </Link>
               </div>
             </div>
             <div className="hidden h-6 items-start justify-start gap-2 sm:flex sm:h-7 sm:gap-3 md:h-8">
@@ -144,6 +152,13 @@ export function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               Pricing
+            </Link>
+            <Link
+              className="font-medium font-sans text-foreground text-lg"
+              href="/changelog"
+              onClick={() => setIsOpen(false)}
+            >
+              Showcase
             </Link>
           </nav>
           <div className="flex flex-col items-center gap-3">
