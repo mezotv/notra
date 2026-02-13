@@ -55,8 +55,6 @@ export async function trackScheduledContentCreated(
         error: result.error,
       });
     }
-
-    await databuddy.flush();
   } catch (error) {
     if (isDevelopment) {
       console.warn("[Databuddy] scheduled_content_created error", {
