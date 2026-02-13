@@ -25,9 +25,26 @@ export async function generateMetadata({
     return {};
   }
 
+  const title = `${company.name} Changelog | Notra`;
+  const description = `${company.description} See AI-generated changelogs powered by Notra.`;
+  const url = `https://usenotra.com/changelog/${name}`;
+
   return {
-    title: `${company.name} Changelog`,
-    description: `AI-generated changelog for ${company.name}, powered by Notra.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "website",
+      siteName: "Notra",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
   };
 }
 
@@ -77,6 +94,9 @@ export default async function CompanyChangelogPage({ params }: PageProps) {
               <h2 className="font-sans font-semibold text-foreground text-lg tracking-tight transition-colors group-hover:text-primary sm:text-xl">
                 {entry.title}
               </h2>
+              <p className="mt-1 line-clamp-2 font-sans text-muted-foreground text-sm leading-6">
+                {entry.description}
+              </p>
               <time className="mt-2 block font-sans text-foreground/40 text-sm">
                 {new Date(entry.date).toLocaleDateString("en-US", {
                   year: "numeric",

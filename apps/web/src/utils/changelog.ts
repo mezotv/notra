@@ -12,7 +12,8 @@ export const CHANGELOG_COMPANIES = [
     slug: "cal-com",
     name: "Cal.com",
     domain: "cal.com",
-    description: "The open-source scheduling infrastructure for everyone.",
+    description:
+      "A fully customizable scheduling software for individuals, businesses taking calls and developers building scheduling platforms where users meet users.",
     url: "https://cal.com",
     accentColor: "#292929",
   },
@@ -21,8 +22,8 @@ export const CHANGELOG_COMPANIES = [
     name: "Databuddy",
     domain: "databuddy.me",
     description:
-      "The analytics platform that tracks what matters for your product.",
-    url: "https://databuddy.me",
+      "Experience powerful, privacy-first analytics that matches Google Analytics feature-for-feature without compromising user data. Zero cookies required, 100% data ownership, and AI-powered insights to help your business grow while staying compliant.",
+    url: "https://databuddy.cc",
     accentColor: "#000000",
   },
   {
@@ -30,7 +31,7 @@ export const CHANGELOG_COMPANIES = [
     name: "Langfuse",
     domain: "langfuse.com",
     description:
-      "Open-source LLM engineering platform for traces, evals, and prompt management.",
+      "Traces, evals, prompt management and metrics to debug and improve your LLM application. Integrates with Langchain, OpenAI, LlamaIndex, LiteLLM, and more.",
     url: "https://langfuse.com",
     accentColor: "#E11312",
   },

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { changelog } from "@/../.source/server";
+import { NotraMark } from "../../../../../components/notra-mark";
 import {
   CHANGELOG_COMPANIES,
   getCompany,
@@ -33,9 +34,25 @@ export async function generateMetadata({
     return {};
   }
 
+  const title = `${entry.title} | ${company.name} Changelog`;
+  const url = `https://usenotra.com/changelog/${name}/${slug}`;
+
   return {
-    title: `${entry.title} - ${company.name} Changelog`,
-    description: `AI-generated changelog entry for ${company.name}: ${entry.title}.`,
+    title,
+    description: entry.description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description: entry.description,
+      url,
+      type: "article",
+      publishedTime: entry.date,
+      siteName: "Notra",
+    },
+    twitter: {
+      title,
+      description: entry.description,
+    },
   };
 }
 
@@ -77,6 +94,20 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
       <article className="prose prose-neutral mt-8 max-w-none prose-headings:font-sans prose-headings:font-semibold prose-p:font-sans prose-a:text-primary prose-li:text-foreground/80 prose-p:text-foreground/80 prose-strong:text-foreground prose-p:leading-7 prose-headings:tracking-tight prose-a:no-underline hover:prose-a:underline">
         <MDX />
       </article>
+
+      <div className="mt-12 flex items-center gap-2">
+        <Link
+          className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+          href={`/?utm_source=changelog&utm_medium=referral&utm_campaign=${name}`}
+        >
+          <span className="text-[#8E51FF]">
+            <NotraMark className="size-4 shrink-0" strokeWidth={40} />
+          </span>
+          <span className="font-medium font-sans text-xs">
+            Powered by Notra
+          </span>
+        </Link>
+      </div>
     </>
   );
 }

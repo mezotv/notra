@@ -16,10 +16,26 @@ const COMPANY_ICONS: Record<string, ReactNode> = {
   langfuse: <Langfuse className="size-5" />,
 };
 
+const title = "Example Changelogs | Notra";
+const description =
+  "See what AI-generated changelogs look like for popular open source projects, powered by Notra.";
+
 export const metadata: Metadata = {
-  title: "Changelog Showcase",
-  description:
-    "See what AI-generated changelogs look like for popular open source projects, powered by Notra.",
+  title,
+  description,
+  alternates: { canonical: "https://usenotra.com/changelog" },
+  openGraph: {
+    title,
+    description,
+    url: "https://usenotra.com/changelog",
+    type: "website",
+    siteName: "Notra",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function ChangelogOverviewPage() {
@@ -68,7 +84,7 @@ export default function ChangelogOverviewPage() {
         })}
       </div>
 
-      <p className="mt-8 text-center font-sans text-foreground/40 text-xs">
+      <p className="mt-8 text-center font-sans text-muted-foreground text-xs">
         Notra is not affiliated with any of the companies listed above. These
         changelogs are generated for demonstration purposes only.
       </p>
