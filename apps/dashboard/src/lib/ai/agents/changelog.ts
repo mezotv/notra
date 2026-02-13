@@ -64,7 +64,7 @@ export async function generateChangelog(
   } = options;
 
   const model = wrapLanguageModel({
-    model: withSupermemory(gateway("moonshotai/kimi-k2.5"), organizationId),
+    model: withSupermemory(gateway("anthropic/claude-haiku-4.5"), organizationId),
     middleware: extractJsonMiddleware(),
   });
 
