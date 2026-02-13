@@ -15,6 +15,7 @@ import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { trackScheduledContentCreated } from "@/lib/databuddy";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
 import type { LookbackWindow } from "@/utils/schemas/integrations";
@@ -370,7 +371,20 @@ export const { POST } = serve<SchedulePayload>(
       return id;
     });
 
-    console.log(`[Schedule] Created post ${postId} for trigger ${triggerId}`);
+    await context.run("track-content-created", async () => {
+      await trackScheduledContentCreated({
+        triggerId: trigger.id,
+        organizationId: trigger.organizationId,
+        postId,
+        outputType: trigger.outputType,
+        lookbackWindow,
+        repositoryCount: repositories.length,
+      });
+    });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Schedule] Created post ${postId} for trigger ${triggerId}`);
+    }
 
     return { success: true, triggerId, postId };
   },
