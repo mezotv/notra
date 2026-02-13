@@ -1,11 +1,11 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import {
   convertToModelMessages,
-  gateway,
   stepCountIs,
   streamText,
   type UIMessage,
 } from "ai";
+import { gateway } from "@/lib/ai/gateway";
 import { getContentEditorChatPrompt } from "@/lib/ai/prompts/content-editor";
 import {
   hasEnabledGitHubIntegration,

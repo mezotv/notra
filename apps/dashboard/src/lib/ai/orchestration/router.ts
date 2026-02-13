@@ -1,4 +1,5 @@
-import { gateway, generateText, Output } from "ai";
+import { generateText, Output } from "ai";
+import { gateway } from "@/lib/ai/gateway";
 import { ROUTING_PROMPT } from "@/lib/ai/prompts/router";
 import { routingDecisionSchema } from "./schemas";
 import type { RoutingDecision, RoutingResult } from "./types";

@@ -1,7 +1,6 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import {
   extractJsonMiddleware,
-  gateway,
   NoObjectGeneratedError,
   Output,
   parsePartialJson,
@@ -10,6 +9,7 @@ import {
   wrapLanguageModel,
 } from "ai";
 import { z } from "zod";
+import { gateway } from "@/lib/ai/gateway";
 import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";

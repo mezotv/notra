@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { gateway, generateText } from "ai";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { redis } from "@/lib/redis";
 import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
