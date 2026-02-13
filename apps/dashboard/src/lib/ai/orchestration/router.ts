@@ -7,7 +7,7 @@ import type { RoutingDecision, RoutingResult } from "./types";
 export const MODELS = {
   router: "openai/gpt-oss-120b", // Only for routing decisions, no supermemory
   simple: "openai/gpt-5.1",
-  complex: "manthropic/claude-haiku-4.5",
+  complex: "anthropic/claude-haiku-4.5",
 } as const;
 
 export async function routeMessage(
