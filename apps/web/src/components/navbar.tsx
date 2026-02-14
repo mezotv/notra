@@ -71,7 +71,7 @@ export function Navbar() {
                   className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    setLogoMenuOpen(true);
+                    setLogoMenuOpen((prev) => !prev);
                   }}
                   render={<Link href="/" />}
                 >
