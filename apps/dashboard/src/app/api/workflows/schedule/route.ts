@@ -15,6 +15,8 @@ import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { autumn } from "@/lib/billing/autumn";
+import { FEATURES } from "@/lib/billing/constants";
 import { trackScheduledContentCreated } from "@/lib/databuddy";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
@@ -191,6 +193,38 @@ export const { POST } = serve<SchedulePayload>(
     if (!trigger.enabled) {
       console.log(`[Schedule] Trigger ${triggerId} is disabled, canceling`);
       await context.cancel();
+      return;
+    }
+
+    let isCanceledForCreditLimit = false;
+
+    await context.run("check-ai-credit-access", async () => {
+      if (!autumn) {
+        return;
+      }
+
+      const { data, error } = await autumn.check({
+        customer_id: trigger.organizationId,
+        feature_id: FEATURES.AI_CREDITS,
+      });
+
+      if (error) {
+        throw new Error(`Autumn check failed: ${String(error)}`);
+      }
+
+      if (!data?.allowed) {
+        console.warn(
+          `[Schedule] AI credit limit reached for org ${trigger.organizationId}, canceling trigger ${triggerId}`,
+          {
+            balance: data?.balance ?? 0,
+          }
+        );
+        isCanceledForCreditLimit = true;
+        await context.cancel();
+      }
+    });
+
+    if (isCanceledForCreditLimit) {
       return;
     }
 
@@ -380,6 +414,26 @@ export const { POST } = serve<SchedulePayload>(
         lookbackWindow,
         repositoryCount: repositories.length,
       });
+    });
+
+    await context.run("track-ai-credit-usage", async () => {
+      if (!autumn) {
+        return;
+      }
+
+      const { error } = await autumn.track({
+        customer_id: trigger.organizationId,
+        feature_id: FEATURES.AI_CREDITS,
+        value: 1,
+      });
+
+      if (error) {
+        console.error("[Schedule] Failed to deduct AI credit", {
+          triggerId,
+          organizationId: trigger.organizationId,
+          error,
+        });
+      }
     });
 
     if (process.env.NODE_ENV === "development") {
