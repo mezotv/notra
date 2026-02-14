@@ -69,6 +69,7 @@ export function Navbar() {
               >
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+                  nativeButton={false}
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setLogoMenuOpen((prev) => !prev);
