@@ -20,9 +20,13 @@ export function Navbar() {
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
 
   const handleCopySvg = useCallback(async () => {
-    await navigator.clipboard.writeText(notraMarkSvgString);
-    setLogoMenuOpen(false);
-    toast.success("Copied logo SVG to clipboard");
+    try {
+      await navigator.clipboard.writeText(notraMarkSvgString);
+      setLogoMenuOpen(false);
+      toast.success("Copied logo SVG to clipboard");
+    } catch {
+      toast.error("Failed to copy to clipboard");
+    }
   }, []);
 
   useEffect(() => {
