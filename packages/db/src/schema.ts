@@ -184,6 +184,7 @@ export const contentTriggers = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull().default("Untitled Schedule"),
     sourceType: text("source_type").notNull(),
     sourceConfig: jsonb("source_config").notNull(),
     targets: jsonb("targets").notNull(),

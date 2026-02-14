@@ -160,6 +160,8 @@ export const LOOKBACK_WINDOWS = [
 ] as const;
 export type LookbackWindow = (typeof LOOKBACK_WINDOWS)[number];
 
+export const MAX_SCHEDULE_NAME_LENGTH = 120;
+
 export const triggerSourceTypeSchema = z.enum([
   "github_webhook",
   "linear_webhook",
@@ -205,6 +207,7 @@ export type ScheduleOutputType =
   (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
 
 export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
+  name: z.string().trim().min(1).max(MAX_SCHEDULE_NAME_LENGTH),
   sourceType: z.literal("cron"),
   sourceConfig: z.object({
     cron: z.object({

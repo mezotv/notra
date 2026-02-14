@@ -32,6 +32,7 @@ export interface TriggerOutputConfig {
 export interface Trigger {
   id: string;
   organizationId: string;
+  name?: string;
   sourceType: TriggerSourceType;
   sourceConfig: TriggerSourceConfig;
   targets: TriggerTarget;

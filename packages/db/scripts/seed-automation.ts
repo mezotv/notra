@@ -38,6 +38,7 @@ async function seed() {
       {
         id: nanoid(),
         organizationId: org.id,
+        name: "Release changelog",
         sourceType: "github_webhook",
         sourceConfig: { eventTypes: ["release"] },
         targets: { repositoryIds: ["seed-repo-1", "seed-repo-2"] },
@@ -51,6 +52,7 @@ async function seed() {
       {
         id: nanoid(),
         organizationId: org.id,
+        name: "Weekly investor update",
         sourceType: "cron",
         sourceConfig: {
           cron: {
@@ -71,6 +73,7 @@ async function seed() {
       {
         id: nanoid(),
         organizationId: org.id,
+        name: "Social pulse",
         sourceType: "github_webhook",
         sourceConfig: { eventTypes: ["push", "star"] },
         targets: { repositoryIds: ["seed-repo-4"] },
@@ -84,6 +87,7 @@ async function seed() {
       {
         id: nanoid(),
         organizationId: org.id,
+        name: "Daily blog ideas",
         sourceType: "cron",
         sourceConfig: {
           cron: {

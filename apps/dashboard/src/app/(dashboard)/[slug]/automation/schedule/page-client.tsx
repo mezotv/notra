@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Calendar03Icon,
   Delete02Icon,
   Edit02Icon,
   MoreVerticalIcon,
@@ -134,6 +133,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: trigger.name,
             sourceType: trigger.sourceType,
             sourceConfig: trigger.sourceConfig,
             targets: trigger.targets,
@@ -596,8 +596,8 @@ function ScheduleTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Frequency</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Schedule</TableHead>
             <TableHead>Output</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
@@ -614,14 +614,10 @@ function ScheduleTable({
             return (
               <TableRow key={trigger.id}>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
-                      <HugeiconsIcon
-                        className="size-4 text-muted-foreground"
-                        icon={Calendar03Icon}
-                      />
-                    </span>
-                    <span className="text-sm">Scheduled run</span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-sm">
+                      {trigger.name ?? "Untitled Schedule"}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

@@ -25,6 +25,7 @@ import {
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
+const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
 
 function toEffectiveLookbackWindow(
   lookbackWindow?: LookbackWindow | null
@@ -216,6 +217,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const {
+      name,
       sourceType,
       sourceConfig,
       targets,
@@ -252,6 +254,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
     const persistedLookbackWindow = lookbackWindow;
+    const persistedName = name?.trim() || DEFAULT_SCHEDULE_NAME;
 
     if (cronExpression) {
       qstashScheduleId = await createQstashSchedule({
@@ -267,6 +270,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           .values({
             id: triggerId,
             organizationId,
+            name: persistedName,
             sourceType,
             sourceConfig: normalized.sourceConfig,
             targets: normalized.targets,
@@ -352,6 +356,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const {
+      name,
       sourceType,
       sourceConfig,
       targets,
@@ -403,6 +408,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
     const persistedLookbackWindow = lookbackWindow;
+    const persistedName =
+      name?.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
 
     if (cronExpression) {
       qstashScheduleId = await createQstashSchedule({
@@ -417,6 +424,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         const [updatedTrigger] = await tx
           .update(contentTriggers)
           .set({
+            name: persistedName,
             sourceType,
             sourceConfig: normalized.sourceConfig,
             targets: normalized.targets,
