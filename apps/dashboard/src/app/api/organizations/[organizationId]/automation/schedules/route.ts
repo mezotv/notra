@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
   contentTriggers,
+  githubRepositories,
 } from "@notra/db/schema";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -154,7 +155,35 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       ),
     }));
 
-    return NextResponse.json({ triggers: triggersWithLookback });
+    const allRepositoryIds = [
+      ...new Set(
+        triggersWithLookback.flatMap((trigger) => {
+          const parsed = triggerTargetsSchema.safeParse(trigger.targets);
+          return parsed.success ? parsed.data.repositoryIds : [];
+        })
+      ),
+    ];
+
+    const repositories =
+      allRepositoryIds.length > 0
+        ? await db
+            .select({
+              id: githubRepositories.id,
+              owner: githubRepositories.owner,
+              repo: githubRepositories.repo,
+            })
+            .from(githubRepositories)
+            .where(inArray(githubRepositories.id, allRepositoryIds))
+        : [];
+
+    const repositoryMap = Object.fromEntries(
+      repositories.map((r) => [r.id, `${r.owner}/${r.repo}`])
+    );
+
+    return NextResponse.json({
+      triggers: triggersWithLookback,
+      repositoryMap,
+    });
   } catch (error) {
     console.error("Error fetching automation schedules:", error);
     return NextResponse.json(

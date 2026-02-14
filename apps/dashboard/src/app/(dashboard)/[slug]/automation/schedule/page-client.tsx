@@ -42,6 +42,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -108,10 +113,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Failed to fetch triggers");
       }
 
-      return response.json() as Promise<{ triggers: Trigger[] }>;
+      return response.json() as Promise<{
+        triggers: Trigger[];
+        repositoryMap: Record<string, string>;
+      }>;
     },
     enabled: !!organizationId,
   });
+
+  const repositoryMap = data?.repositoryMap ?? {};
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
@@ -146,23 +156,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
       });
 
-      const previousData = queryClient.getQueryData<{ triggers: Trigger[] }>(
-        QUERY_KEYS.AUTOMATION.schedules(organizationId ?? "")
-      );
+      const previousData = queryClient.getQueryData<{
+        triggers: Trigger[];
+        repositoryMap: Record<string, string>;
+      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""));
 
-      queryClient.setQueryData<{ triggers: Trigger[] }>(
-        QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            triggers: old.triggers.map((t) =>
-              t.id === trigger.id ? { ...t, enabled: !t.enabled } : t
-            ),
-          };
+      queryClient.setQueryData<{
+        triggers: Trigger[];
+        repositoryMap: Record<string, string>;
+      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""), (old) => {
+        if (!old) {
+          return old;
         }
-      );
+        return {
+          triggers: old.triggers.map((t) =>
+            t.id === trigger.id ? { ...t, enabled: !t.enabled } : t
+          ),
+          repositoryMap: old.repositoryMap,
+        };
+      });
 
       return { previousData };
     },
@@ -208,21 +220,23 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
       });
 
-      const previousData = queryClient.getQueryData<{ triggers: Trigger[] }>(
-        QUERY_KEYS.AUTOMATION.schedules(organizationId ?? "")
-      );
+      const previousData = queryClient.getQueryData<{
+        triggers: Trigger[];
+        repositoryMap: Record<string, string>;
+      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""));
 
-      queryClient.setQueryData<{ triggers: Trigger[] }>(
-        QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            triggers: old.triggers.filter((t) => t.id !== triggerId),
-          };
+      queryClient.setQueryData<{
+        triggers: Trigger[];
+        repositoryMap: Record<string, string>;
+      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""), (old) => {
+        if (!old) {
+          return old;
         }
-      );
+        return {
+          triggers: old.triggers.filter((t) => t.id !== triggerId),
+          repositoryMap: old.repositoryMap,
+        };
+      });
 
       return { previousData };
     },
@@ -433,6 +447,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
                 onToggle={handleToggle}
+                repositoryMap={repositoryMap}
                 runningTriggerId={
                   runNowMutation.isPending
                     ? runNowMutation.variables
@@ -456,6 +471,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
                 onToggle={handleToggle}
+                repositoryMap={repositoryMap}
                 runningTriggerId={
                   runNowMutation.isPending
                     ? runNowMutation.variables
@@ -544,6 +560,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
 function ScheduleTable({
   triggers,
+  repositoryMap,
   onToggle,
   onDelete,
   onEdit,
@@ -555,6 +572,7 @@ function ScheduleTable({
   runningTriggerId,
 }: {
   triggers: Trigger[];
+  repositoryMap: Record<string, string>;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
   onEdit: (trigger: Trigger) => void;
@@ -613,7 +631,18 @@ function ScheduleTable({
                   {getOutputTypeLabel(trigger.outputType)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {trigger.targets.repositoryIds.length} repositories
+                  <Tooltip>
+                    <TooltipTrigger className="cursor-help">
+                      {trigger.targets.repositoryIds.length} repositories
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs" side="top">
+                      <ul className="space-y-0.5">
+                        {trigger.targets.repositoryIds.map((id) => (
+                          <li key={id}>{repositoryMap[id] ?? id}</li>
+                        ))}
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
                 <TableCell>
                   <TriggerStatusBadge enabled={trigger.enabled} />
