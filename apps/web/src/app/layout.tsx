@@ -1,6 +1,7 @@
 import { Databuddy } from "@databuddy/sdk/react";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import FooterSection from "../components/footer-section";
 import { Navbar } from "../components/navbar";
 
@@ -83,6 +84,7 @@ export default function RootLayout({
             </div>
           </div>
         </div>
+        <Toaster position="bottom-right" />
         <Databuddy
           clientId={process.env.NEXT_PUBLIC_DATABUDDY_ID!}
           trackAttributes={true}

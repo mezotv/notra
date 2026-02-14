@@ -3,13 +3,27 @@
 import { Cancel01Icon, Menu02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { NotraMark } from "./notra-mark";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { NotraMark, notraMarkSvgString } from "./notra-mark";
 
 export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [logoMenuOpen, setLogoMenuOpen] = useState(false);
+
+  const handleCopySvg = useCallback(async () => {
+    await navigator.clipboard.writeText(notraMarkSvgString);
+    setLogoMenuOpen(false);
+    toast.success("Copied logo SVG to clipboard");
+  }, []);
 
   useEffect(() => {
     setIsLoggedIn(document.cookie.includes("better-auth.session_token"));
@@ -43,14 +57,36 @@ export function Navbar() {
 
           <div className="flex min-w-0 flex-1 items-center justify-between border-border border-r border-l bg-background/80 px-3 backdrop-blur-sm sm:px-4 md:px-5">
             <div className="flex min-w-0 items-center justify-center">
-              <Link className="flex items-center justify-start gap-2" href="/">
-                <div className="flex items-center justify-center text-[#8E51FF]">
-                  <NotraMark className="h-7 w-7 shrink-0" strokeWidth={40} />
-                </div>
-                <div className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-lg lg:text-xl">
-                  Notra
-                </div>
-              </Link>
+              <DropdownMenu onOpenChange={setLogoMenuOpen} open={logoMenuOpen}>
+                <DropdownMenuTrigger
+                  className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setLogoMenuOpen(true);
+                  }}
+                >
+                  <div className="flex items-center justify-center text-[#8E51FF]">
+                    <NotraMark className="h-7 w-7 shrink-0" strokeWidth={40} />
+                  </div>
+                  <div className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-lg lg:text-xl">
+                    Notra
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="min-w-48"
+                  side="bottom"
+                  sideOffset={8}
+                >
+                  <DropdownMenuItem onClick={handleCopySvg}>
+                    <NotraMark
+                      className="size-4 text-[#8E51FF]"
+                      strokeWidth={40}
+                    />
+                    Copy Logo as SVG
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="hidden items-start justify-start gap-2 pl-3 sm:flex sm:gap-3 sm:pl-4 md:gap-4 md:pl-5 lg:gap-4 lg:pl-5">
                 <Link
                   className="flex items-center justify-start"
