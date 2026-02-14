@@ -68,6 +68,7 @@ export function Navbar() {
                     e.preventDefault();
                     setLogoMenuOpen(true);
                   }}
+                  render={<Link href="/" />}
                 >
                   <div className="flex items-center justify-center text-[#8E51FF]">
                     <NotraMark className="h-7 w-7 shrink-0" strokeWidth={40} />
