@@ -87,6 +87,17 @@ const LOOKBACK_WINDOW_LABELS: Record<LookbackWindow, string> = {
   last_30_days: "Last 30 days",
 };
 
+function RequiredLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span>
+      {children}
+      <span aria-hidden="true" className="ml-0.5 text-destructive">
+        *
+      </span>
+    </span>
+  );
+}
+
 interface TriggerDialogProps {
   organizationId: string;
   onSuccess?: (trigger: Trigger) => void;
@@ -332,7 +343,9 @@ export function AddTriggerDialog({
                 {(field) =>
                   isScheduleContext ? null : (
                     <div className="space-y-2">
-                      <Label htmlFor={field.name}>Source</Label>
+                      <Label htmlFor={field.name}>
+                        <RequiredLabel>Source</RequiredLabel>
+                      </Label>
                       {isSourceLocked ? (
                         <Input
                           disabled
@@ -379,7 +392,9 @@ export function AddTriggerDialog({
                       <form.Field name="name">
                         {(field) => (
                           <div className="space-y-2">
-                            <Label htmlFor={field.name}>Name</Label>
+                            <Label htmlFor={field.name}>
+                              <RequiredLabel>Name</RequiredLabel>
+                            </Label>
                             <Input
                               id={field.name}
                               maxLength={MAX_SCHEDULE_NAME_LENGTH}
@@ -440,7 +455,9 @@ export function AddTriggerDialog({
                     <form.Field name="eventType">
                       {(field) => (
                         <div className="space-y-2">
-                          <Label htmlFor={field.name}>Event</Label>
+                          <Label htmlFor={field.name}>
+                            <RequiredLabel>Event</RequiredLabel>
+                          </Label>
                           <Select
                             onValueChange={(value) => {
                               if (value) {
@@ -479,7 +496,9 @@ export function AddTriggerDialog({
               <form.Field name="repositoryIds">
                 {(field) => (
                   <div className="space-y-2">
-                    <Label htmlFor={field.name}>Targets</Label>
+                    <Label htmlFor={field.name}>
+                      <RequiredLabel>Targets</RequiredLabel>
+                    </Label>
                     {isLoadingRepos ? (
                       <Skeleton className="h-10 w-full" />
                     ) : repositories.length === 0 ? (
@@ -542,7 +561,9 @@ export function AddTriggerDialog({
               <form.Field name="outputType">
                 {(field) => (
                   <div className="space-y-2">
-                    <Label htmlFor={field.name}>Output</Label>
+                    <Label htmlFor={field.name}>
+                      <RequiredLabel>Output</RequiredLabel>
+                    </Label>
                     <Select
                       onValueChange={(value) => {
                         if (value) {

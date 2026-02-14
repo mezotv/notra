@@ -56,7 +56,12 @@ export function SchedulePicker({ value, onChange }: SchedulePickerProps) {
   return (
     <div className="space-y-3">
       <div className="space-y-2">
-        <p className="font-medium text-sm">Schedule</p>
+        <p className="font-medium text-sm">
+          Schedule
+          <span aria-hidden="true" className="ml-0.5 text-destructive">
+            *
+          </span>
+        </p>
         <Select
           onValueChange={(val) => {
             if (val) {
