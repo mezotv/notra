@@ -43,7 +43,9 @@ export async function validateIntegrations(
 
       const enabledRepos = integration.repositories
         .filter((r) => {
-          if (!r.enabled) return false;
+          if (!r.enabled) {
+            return false;
+          }
           return contextRepos.some(
             (cr) => cr.owner === r.owner && cr.repo === r.repo
           );

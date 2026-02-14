@@ -211,23 +211,23 @@ export const auth = betterAuth({
   ],
   secondaryStorage: redis
     ? {
-        get: async (key) => await redis!.get(key),
+        get: async (key) => await redis?.get(key),
         set: async (key, value, ttl) => {
           if (ttl) {
-            await redis!.set(key, value, { ex: ttl });
+            await redis?.set(key, value, { ex: ttl });
           } else {
-            await redis!.set(key, value);
+            await redis?.set(key, value);
           }
         },
         delete: async (key) => {
-          await redis!.del(key);
+          await redis?.del(key);
         },
       }
     : undefined,
   trustedOrigins: [
     "http://localhost:3000",
     "https://app.usenotra.com",
-    "https://app.trynotra.com",
+    "https://www.usenotra.com",
   ],
   session: {
     storeSessionInDatabase: true,

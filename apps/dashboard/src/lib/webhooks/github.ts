@@ -1,8 +1,5 @@
-import { generateText } from "ai";
-import crypto from "crypto";
-import { getGithubWebhookMemoryPrompt } from "@/lib/ai/prompts/github-webhook-memory";
+import crypto from "node:crypto";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
-import { openrouter } from "@/lib/openrouter";
 import { redis } from "@/lib/redis";
 import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
@@ -17,14 +14,18 @@ import {
 const DELIVERY_TTL_SECONDS = 60 * 60 * 24;
 
 async function isDeliveryProcessed(deliveryId: string): Promise<boolean> {
-  if (!(redis && deliveryId)) return false;
+  if (!(redis && deliveryId)) {
+    return false;
+  }
   const key = `webhook:delivery:${deliveryId}`;
   const exists = await redis.exists(key);
   return exists === 1;
 }
 
 async function markDeliveryProcessed(deliveryId: string): Promise<void> {
-  if (!(redis && deliveryId)) return;
+  if (!(redis && deliveryId)) {
+    return;
+  }
   const key = `webhook:delivery:${deliveryId}`;
   await redis.set(key, "1", { ex: DELIVERY_TTL_SECONDS });
 }

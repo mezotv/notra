@@ -1,18 +1,28 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
-import { generateText, Output, stepCountIs, ToolLoopAgent } from "ai";
-import { z } from "zod";
 import {
-  getValidToneProfile,
-  toneConfigs,
-} from "@/lib/ai/prompts/changelog/base";
+  extractJsonMiddleware,
+  NoObjectGeneratedError,
+  Output,
+  parsePartialJson,
+  stepCountIs,
+  ToolLoopAgent,
+  wrapLanguageModel,
+} from "ai";
+import { z } from "zod";
+import { gateway } from "@/lib/ai/gateway";
+import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
+import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
+import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
+import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
+import type { ChangelogTonePromptInput } from "@/lib/ai/prompts/changelog/types";
+import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import { openrouter } from "@/lib/openrouter";
-import type { ToneProfile } from "@/utils/schemas/brand";
+import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
 
 export const changelogOutputSchema = z.object({
   title: z.string().max(120).describe("The changelog title, no markdown"),
@@ -31,122 +41,85 @@ export interface ChangelogAgentResult {
 
 export interface ChangelogAgentOptions {
   organizationId: string;
+  repositories: Array<{ owner: string; repo: string }>;
   tone?: ToneProfile;
-  companyName?: string;
-  companyDescription?: string;
-  audience?: string;
-  customInstructions?: string | null;
+  promptInput: ChangelogTonePromptInput;
 }
 
+const changelogPromptByTone: Record<ToneProfile, () => string> = {
+  Conversational: getConversationalChangelogPrompt,
+  Professional: getProfessionalChangelogPrompt,
+  Casual: getCasualChangelogPrompt,
+  Formal: getFormalChangelogPrompt,
+};
+
 export async function generateChangelog(
-  options: ChangelogAgentOptions,
-  prompt: string
+  options: ChangelogAgentOptions
 ): Promise<ChangelogAgentResult> {
   const {
     organizationId,
+    repositories,
     tone = "Conversational",
-    companyName,
-    companyDescription,
-    audience,
-    customInstructions,
+    promptInput,
   } = options;
 
-  const modelWithMemory = withSupermemory(
-    openrouter("moonshotai/kimi-k2.5"),
-    organizationId
-  );
+  const model = wrapLanguageModel({
+    model: withSupermemory(
+      gateway("anthropic/claude-haiku-4.5"),
+      organizationId
+    ),
+    middleware: extractJsonMiddleware(),
+  });
 
-  const validTone = getValidToneProfile(tone, "Conversational");
-  const toneConfig = toneConfigs[validTone];
+  const resolvedTone: ToneProfile = getValidToneProfile(tone, "Conversational");
 
-  const companyContext = companyName
-    ? `\nCompany: ${companyName}${companyDescription ? ` - ${companyDescription}` : ""}`
-    : "";
-
-  const audienceContext = audience ? `\nTarget Audience: ${audience}` : "";
-
-  const customContext = customInstructions
-    ? `\n\nAdditional Instructions:\n${customInstructions}`
-    : "";
-
-  const instructions = `
-# ROLE AND IDENTITY
-
-${toneConfig.roleIdentity}
-
-# AUDIENCE
-
-${toneConfig.audienceGuidance}${companyContext}${audienceContext}
-
-# TONE AND STYLE GUIDELINES
-
-Summary Style: ${toneConfig.summaryStyle}
-
-PR Description Style: ${toneConfig.prDescriptionStyle}
-
-Language Guidelines:
-${toneConfig.languageGuidelines.map((g) => `- ${g}`).join("\n")}
-
-# TASK OBJECTIVE
-
-You are a helpful devrel with a passion for turning technical information into easy to follow changelogs. Your job is to take information from GitHub repositories and turn that information into a changelog designed for humans to read.${companyContext}
-
-# TIMEFRAME RULES
-
-- The user prompt includes the current UTC day and an explicit lookback window.
-- Treat that provided window as the source of truth.
-- Do not assume or invent a default 7-day window when a window is provided.
-- If you call commit tools, align retrieval to the same window from the prompt.
-
-# OUTPUT REQUIREMENTS
-
-- Generate a comprehensive, well-organized changelog
-- Process ALL pull requests from the provided data
-- Categorize them logically into: Features, Bug Fixes, Performance, Documentation, Internal, Testing, Infrastructure, Security
-- Present them in a developer-friendly format using MDX
-- Title must be 120 characters or less
-- Summary must be 600-800 words
-- Do not use emojis in section headings
-- Keep PR descriptions concise but informative
-- Output ONLY the final markdown changelog, no reasoning or commentary
-
-# AVAILABLE TOOLS
-
-You have access to skills that can help improve your work. Use listAvailableSkills to see available skills, and getSkillByName to use a specific skill when needed. Always consider using the humanizer skill if the draft changelog reads overly robotic, stiff, or generic, and use it to humanize the final text while preserving technical accuracy and the selected tone.
-
-  You also have access to GitHub tools:
-- getPullRequests: Fetch detailed PR information
-- getReleaseByTag: Get release details
-- getCommitsByTimeframe: Retrieve commits from a timeframe
-${customContext}
-`;
+  const promptFactory =
+    changelogPromptByTone[resolvedTone] ?? changelogPromptByTone.Conversational;
+  const instructions = promptFactory();
+  const prompt = getChangelogUserPrompt(promptInput);
 
   const agent = new ToolLoopAgent({
-    model: modelWithMemory,
+    model,
+    output: Output.object({
+      schema: changelogOutputSchema,
+    }),
     tools: {
-      getPullRequests: createGetPullRequestsTool(),
-      getReleaseByTag: createGetReleaseByTagTool(),
-      getCommitsByTimeframe: createGetCommitsByTimeframeTool(),
+      getPullRequests: createGetPullRequestsTool({
+        organizationId,
+        allowedRepositories: repositories,
+      }),
+      getReleaseByTag: createGetReleaseByTagTool({
+        organizationId,
+        allowedRepositories: repositories,
+      }),
+      getCommitsByTimeframe: createGetCommitsByTimeframeTool({
+        organizationId,
+        allowedRepositories: repositories,
+      }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
     },
     instructions,
-    stopWhen: stepCountIs(31),
+    stopWhen: stepCountIs(35),
   });
 
-  const agentResult = await agent.generate({ prompt });
-
-  const { output } = await generateText({
-    model: openrouter("google/gemini-2.0-flash-001"),
-    output: Output.object({
-      schema: changelogOutputSchema,
-    }),
-    prompt: `Extract the title and markdown body from the following changelog text. The title should be plain text (no markdown formatting, max 120 characters). The markdown should be the full changelog body without the title heading.\n\n${agentResult.text}`,
-  });
-
-  if (!output) {
-    throw new Error("Failed to extract structured output from changelog");
+  try {
+    const result = await agent.generate({ prompt });
+    return { output: result.output };
+  } catch (error) {
+    if (!NoObjectGeneratedError.isInstance(error) || !error.text) {
+      throw error;
+    }
+    const { state, value } = await parsePartialJson(error.text);
+    if (
+      (state === "repaired-parse" || state === "successful-parse") &&
+      value != null
+    ) {
+      const parsed = changelogOutputSchema.safeParse(value);
+      if (parsed.success) {
+        return { output: parsed.data };
+      }
+    }
+    throw error;
   }
-
-  return { output };
 }

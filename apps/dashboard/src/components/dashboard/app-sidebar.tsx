@@ -23,7 +23,7 @@ import { NavSecondary } from "./nav-secondary";
 import { NavSettings } from "./nav-settings";
 import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
-import { ThemeToggle } from "./theme-toggle";
+import { SidebarOnboarding } from "./sidebar-onboarding";
 
 // Animation variants hoisted outside component to prevent recreation on each render
 const createMainVariants = (shouldReduceMotion: boolean | null) => ({
@@ -130,6 +130,20 @@ export function DashboardSidebar({
         </AnimatePresence>
       </SidebarContent>
       <SidebarFooter className="gap-0">
+        <AnimatePresence initial={false} mode="popLayout">
+          {!isSettingsRoute && (
+            <motion.div
+              animate="animate"
+              exit="exit"
+              initial="initial"
+              key="onboarding"
+              transition={TRANSITION}
+              variants={mainVariants}
+            >
+              <SidebarOnboarding />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <SidebarGroup className={cn(open ? "px-2" : "px-0")}>
           <SidebarMenu>
             <AnimatePresence initial={false} mode="popLayout">
@@ -154,7 +168,6 @@ export function DashboardSidebar({
                 </motion.div>
               )}
             </AnimatePresence>
-            <ThemeToggle />
           </SidebarMenu>
           <NavUser />
         </SidebarGroup>

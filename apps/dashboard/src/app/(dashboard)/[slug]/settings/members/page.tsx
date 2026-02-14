@@ -39,7 +39,9 @@ export default function MembersPage({ params }: PageProps) {
   const { data: membersData, isLoading: membersLoading } = useQuery({
     queryKey: ["members", organization?.id],
     queryFn: async () => {
-      if (!organization?.id) return null;
+      if (!organization?.id) {
+        return null;
+      }
       const { data, error } = await authClient.organization.listMembers({
         query: {
           organizationId: organization.id,
@@ -60,7 +62,9 @@ export default function MembersPage({ params }: PageProps) {
   >({
     queryKey: ["invitations", organization?.id],
     queryFn: async () => {
-      if (!organization?.id) return [];
+      if (!organization?.id) {
+        return [];
+      }
       const { data, error } = await authClient.organization.listInvitations({
         query: {
           organizationId: organization.id,

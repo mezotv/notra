@@ -5,8 +5,8 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
+import { gateway } from "@/lib/ai/gateway";
 import { getContentEditorChatPrompt } from "@/lib/ai/prompts/content-editor";
-import { openrouter } from "@/lib/openrouter";
 import {
   hasEnabledGitHubIntegration,
   validateIntegrations,
@@ -60,11 +60,12 @@ export async function orchestrateChat(
   });
 
   const modelWithMemory = withSupermemory(
-    openrouter(routingDecision.model),
+    gateway(routingDecision.model),
     organizationId
   );
 
   const { tools, descriptions } = buildToolSet({
+    organizationId,
     currentMarkdown,
     validatedIntegrations,
   });
@@ -99,7 +100,9 @@ export async function orchestrateChat(
 function getLastUserMessage(messages: UIMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
-    if (!message) continue;
+    if (!message) {
+      continue;
+    }
     if (message.role === "user") {
       const parts = message.parts;
       if (Array.isArray(parts)) {

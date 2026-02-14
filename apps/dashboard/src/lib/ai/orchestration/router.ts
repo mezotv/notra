@@ -1,13 +1,13 @@
 import { generateText, Output } from "ai";
+import { gateway } from "@/lib/ai/gateway";
 import { ROUTING_PROMPT } from "@/lib/ai/prompts/router";
-import { openrouter } from "@/lib/openrouter";
 import { routingDecisionSchema } from "./schemas";
 import type { RoutingDecision, RoutingResult } from "./types";
 
 export const MODELS = {
   router: "openai/gpt-oss-120b", // Only for routing decisions, no supermemory
-  simple: "openai/gpt-5.1",
-  complex: "moonshotai/kimi-k2.5",
+  simple: "openai/gpt-5.1-instant",
+  complex: "anthropic/claude-haiku-4.5",
 } as const;
 
 export async function routeMessage(
@@ -18,7 +18,7 @@ export async function routeMessage(
     ? "\n\nNote: The user has added GitHub repository context, suggesting they may want to work with GitHub data."
     : "";
 
-  const routerModel = openrouter(MODELS.router);
+  const routerModel = gateway(MODELS.router);
 
   const { output } = await generateText({
     model: routerModel,

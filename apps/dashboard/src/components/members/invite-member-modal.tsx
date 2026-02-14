@@ -40,7 +40,9 @@ export function InviteMemberModal({
 
   const { mutate: inviteMember, isPending } = useMutation({
     mutationFn: async () => {
-      if (!organizationId) return;
+      if (!organizationId) {
+        return;
+      }
       const { error } = await authClient.organization.inviteMember({
         email,
         role,

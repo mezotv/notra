@@ -136,7 +136,9 @@ function WebhookDebugEntry({
 }
 
 function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
-  if (!cron) return "Not set";
+  if (!cron) {
+    return "Not set";
+  }
   const time = `${String(cron.hour).padStart(2, "0")}:${String(cron.minute).padStart(2, "0")} UTC`;
   if (cron.frequency === "weekly") {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

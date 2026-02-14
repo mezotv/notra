@@ -11,6 +11,19 @@ export const contentTypeSchema = z.enum([
 
 export type ContentType = z.infer<typeof contentTypeSchema>;
 
+export const sourceMetadataSchema = z
+  .object({
+    triggerId: z.string(),
+    triggerSourceType: z.string(),
+    repositories: z.array(z.object({ owner: z.string(), repo: z.string() })),
+    lookbackWindow: z.string(),
+    lookbackRange: z.object({ start: z.string(), end: z.string() }),
+  })
+  .nullable()
+  .optional();
+
+export type SourceMetadata = z.infer<typeof sourceMetadataSchema>;
+
 export const contentSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -18,6 +31,7 @@ export const contentSchema = z.object({
   markdown: z.string(),
   contentType: contentTypeSchema,
   date: z.string(),
+  sourceMetadata: sourceMetadataSchema,
 });
 
 export type ContentResponse = z.infer<typeof contentSchema>;

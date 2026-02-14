@@ -1,31 +1,38 @@
 {
   "name": "web",
-  "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "check-types": "astro check",
-    "preview": "astro preview",
-    "astro": "astro"
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.6",
-    "@astrojs/mdx": "^4.3.13",
-    "@astrojs/sitemap": "^3.7.0",
-    "@astrojs/vercel": "^9.0.4",
-    "@tailwindcss/typography": "^0.5.19",
-    "@tailwindcss/vite": "^4.1.18",
-    "@toolwind/corner-shape": "^0.0.8-3",
-    "@upstash/ratelimit": "^2.0.7",
-    "@upstash/redis": "^1.36.0",
-    "astro": "5.17.1",
-    "resend": "^6.6.0",
-    "shadcn": "^3.6.2",
-    "tailwindcss": "4",
-    "tw-animate-css": "^1.4.0",
-    "typescript": "^5.9.3",
-    "zod": "^4.3.5"
+    "@databuddy/sdk": "^2.3.29",
+    "@hugeicons/core-free-icons": "^3.1.1",
+    "@hugeicons/react": "^1.1.5",
+    "@notra/ui": "workspace:*",
+    "fumadocs-mdx": "^14.2.7",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "zod": "^4.3.6"
   },
-  "packageManager": "bun@1.3.6"
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
 }

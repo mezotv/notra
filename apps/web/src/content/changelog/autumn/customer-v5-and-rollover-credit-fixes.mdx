@@ -1,0 +1,43 @@
+---
+title: "Autumn February 2–14, 2026"
+date: "2026-02-14"
+description: "New ApiCustomerV5 with balance API, rollover credit math fixed across deduction paths, cache guard for controlled refreshes, standardized plan parameter schemas, and custom free trial scoping."
+---
+
+This week shipped nine merged PRs focused on billing accuracy, API design cleanup, and platform stability. The most substantial work landed new customer schema structures (ApiCustomerV5), fixed a bug where rollover credit deductions diverged between Redis and Postgres, and refined cache guard logic for safe customer data refreshes. Plan parameters got standardized, and the terminal UI moved to the current design system.
+
+## Highlights
+
+### New ApiCustomerV5 with improved balance API
+
+Introduced ApiBalanceV1 using granted and remaining fields instead of granted\_balance and current\_balance. The balance breakdown now includes pricing data. Full backward compatibility maintained through version transformers for existing API clients. (#739)
+
+### Rollover credit math fixed across all deduction paths
+
+Rollover deductions now apply per-rollover credit costs, fixing a longstanding inconsistency where calculations diverged between Redis (Lua) and Postgres (SQL) systems. For example, a feature using 0.2 credits per unit now calculates correctly even if another feature uses 0.6 credits per unit. Tests cover mixed costs and Postgres skip\_cache scenarios. (#736)
+
+### Cache guard parameter allows controlled refreshes
+
+Added skipGuard option to cache deletion so executePostgresDeduction can refresh customer data after Postgres updates without the stale-write guard blocking fresh writes. Other deletion paths retain guard protection. (#737)
+
+### Plan parameter schemas now standardized
+
+Plan CRUD switched to V1 parameter schemas with field renames: items instead of features, auto\_enable instead of default, included instead of granted\_balance. New mappers handle conversion to ProductV2 and legacy formats. Product cache now refreshes on plan route changes. (#732)
+
+### Custom free trials stay scoped to subscriptions
+
+When a subscription update includes a custom free trial parameter, it now gets marked as custom so it doesn't persist as a product default. The fix ensures trial scope boundaries stay correct in billing. (#738)
+
+## More Updates
+
+### Features and Enhancements
+
+- **Standardized plan parameter schemas** [#732](https://github.com/useautumn/autumn/pull/732) - Migrated plan CRUD to V1 parameter format with mappers to ProductV2. Improved naming conventions align with current API design. (Author: @john-autumn)
+- **Dashboard attach respects organization config** [#613](https://github.com/useautumn/autumn/pull/613) - Attach flow now uses org.success\_url to send users to the configured landing page after attaching a product. (Author: @SirTenzin)
+
+### Bug Fixes
+
+- **Stopped Stripe from recreating products** [#731](https://github.com/useautumn/autumn/pull/731) - Fixed inverted boolean condition in prepaid price v2 check and corrected parameter type so product reuse actually works. (Author: @SirTenzin)
+- **Restored attach for legacy plans** [#734](https://github.com/useautumn/autumn/pull/734) - Added fallback to stripe\_empty\_price\_id for legacy consumable prices so attach works on older plan configurations. (Author: @john-autumn)
+- **Subscription previews now show real changes only** [#730](https://github.com/useautumn/autumn/pull/730) - Item change detection refactored to compare normalized ProductItem data and ignore internal fields like feature\_id and price\_id. Previews only update when user-facing values change. (Author: @john-autumn)
+- **Terminal view migrated to v2 components** [#733](https://github.com/useautumn/autumn/pull/733) - Updated TRMNL integration page from deprecated components to current design system. Added device ID trimming and safer optional chaining. (Author: @SirTenzin)

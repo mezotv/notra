@@ -1,4 +1,5 @@
 import { db } from "@notra/db/drizzle";
+import type { PostSourceMetadata } from "@notra/db/schema";
 import {
   brandSettings,
   contentTriggerLookbackWindows,
@@ -13,8 +14,10 @@ import { eq, inArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { getValidToneProfile } from "@/lib/ai/prompts/changelog/base";
-import { getBaseUrl } from "@/lib/triggers/qstash";
+import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { trackScheduledContentCreated } from "@/lib/databuddy";
+import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
+import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
 import type { LookbackWindow } from "@/utils/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -48,6 +51,10 @@ interface GeneratedContent {
   markdown: string;
 }
 
+type ContentGenerationResult =
+  | { status: "ok"; content: GeneratedContent }
+  | { status: "rate_limited"; retryAfterSeconds?: number };
+
 type BrandSettingsData = {
   toneProfile: string | null;
   companyName: string | null;
@@ -58,6 +65,7 @@ type BrandSettingsData = {
 
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const GITHUB_RATE_LIMIT_RETRY_DELAY = "30m" as const;
 
 function resolveLookbackRange(window: LookbackWindow) {
   const now = new Date();
@@ -245,7 +253,7 @@ export const { POST } = serve<SchedulePayload>(
     );
 
     // Step 3: Generate content based on output type
-    const content = await context.run<GeneratedContent>(
+    const contentResult = await context.run<ContentGenerationResult>(
       "generate-content",
       async () => {
         if (trigger.outputType === "changelog") {
@@ -255,22 +263,44 @@ export const { POST } = serve<SchedulePayload>(
             .map((r) => `${r.owner}/${r.repo}`)
             .join(", ");
 
-          const { output } = await generateChangelog(
-            {
+          try {
+            const { output } = await generateChangelog({
               organizationId: trigger.organizationId,
+              repositories: repositories.map((repository) => ({
+                owner: repository.owner,
+                repo: repository.repo,
+              })),
               tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
-              companyName: brand?.companyName ?? undefined,
-              companyDescription: brand?.companyDescription ?? undefined,
-              audience: brand?.audience ?? undefined,
-              customInstructions: brand?.customInstructions ?? undefined,
-            },
-            `Generate a changelog for the following repositories: ${repoList}. Today is ${todayUtc}. Look at commits in the ${lookbackRange.label} window (${lookbackRange.start.toISOString()} to ${lookbackRange.end.toISOString()}, UTC) and create a comprehensive, human-readable changelog.`
-          );
+              promptInput: {
+                sourceTargets: repoList,
+                todayUtc,
+                lookbackLabel: lookbackRange.label,
+                lookbackStartIso: lookbackRange.start.toISOString(),
+                lookbackEndIso: lookbackRange.end.toISOString(),
+                companyName: brand?.companyName ?? undefined,
+                companyDescription: brand?.companyDescription ?? undefined,
+                audience: brand?.audience ?? undefined,
+                customInstructions: brand?.customInstructions ?? null,
+              },
+            });
 
-          return {
-            title: output.title,
-            markdown: output.markdown,
-          };
+            return {
+              status: "ok",
+              content: {
+                title: output.title,
+                markdown: output.markdown,
+              },
+            };
+          } catch (error) {
+            if (isGitHubRateLimitError(error)) {
+              return {
+                status: "rate_limited",
+                retryAfterSeconds: error.retryAfterSeconds,
+              };
+            }
+
+            throw error;
+          }
         }
 
         // For other output types, log and return placeholder
@@ -279,15 +309,54 @@ export const { POST } = serve<SchedulePayload>(
         );
 
         return {
-          title: `${trigger.outputType} - ${new Date().toLocaleDateString()}`,
-          markdown: `*Automated ${trigger.outputType} generation is coming soon.*\n\nRepositories: ${repositories.map((r) => `${r.owner}/${r.repo}`).join(", ")}`,
+          status: "ok",
+          content: {
+            title: `${trigger.outputType} - ${new Date().toLocaleDateString()}`,
+            markdown: `*Automated ${trigger.outputType} generation is coming soon.*\n\nRepositories: ${repositories.map((r) => `${r.owner}/${r.repo}`).join(", ")}`,
+          },
         };
       }
     );
 
-    // Step 4: Save post to database
+    if (contentResult.status === "rate_limited") {
+      const delayedWorkflowRunId = await context.run<string>(
+        "reschedule-after-github-rate-limit",
+        async () =>
+          triggerScheduleNow(triggerId, {
+            delay: GITHUB_RATE_LIMIT_RETRY_DELAY,
+          })
+      );
+
+      console.warn(
+        `[Schedule] GitHub API rate limit hit for trigger ${triggerId}. Delayed workflow ${delayedWorkflowRunId} by ${GITHUB_RATE_LIMIT_RETRY_DELAY}.`,
+        {
+          retryAfterSeconds: contentResult.retryAfterSeconds,
+        }
+      );
+
+      await context.cancel();
+      return;
+    }
+
+    const content = contentResult.content;
+
     const postId = await context.run<string>("save-post", async () => {
       const id = nanoid();
+      const lookbackRange = resolveLookbackRange(lookbackWindow);
+
+      const sourceMetadata: PostSourceMetadata = {
+        triggerId: trigger.id,
+        triggerSourceType: trigger.sourceType,
+        repositories: repositories.map((r) => ({
+          owner: r.owner,
+          repo: r.repo,
+        })),
+        lookbackWindow,
+        lookbackRange: {
+          start: lookbackRange.start.toISOString(),
+          end: lookbackRange.end.toISOString(),
+        },
+      };
 
       await db.insert(posts).values({
         id,
@@ -296,12 +365,26 @@ export const { POST } = serve<SchedulePayload>(
         content: content.markdown,
         markdown: content.markdown,
         contentType: trigger.outputType,
+        sourceMetadata,
       });
 
       return id;
     });
 
-    console.log(`[Schedule] Created post ${postId} for trigger ${triggerId}`);
+    await context.run("track-content-created", async () => {
+      await trackScheduledContentCreated({
+        triggerId: trigger.id,
+        organizationId: trigger.organizationId,
+        postId,
+        outputType: trigger.outputType,
+        lookbackWindow,
+        repositoryCount: repositories.length,
+      });
+    });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[Schedule] Created post ${postId} for trigger ${triggerId}`);
+    }
 
     return { success: true, triggerId, postId };
   },

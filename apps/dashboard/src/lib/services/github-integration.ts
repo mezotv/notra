@@ -484,25 +484,38 @@ export async function listAvailableRepositories(
 
 export async function getTokenForRepository(
   owner: string,
-  repo: string
+  repo: string,
+  options?: { organizationId?: string }
 ): Promise<string | undefined> {
-  const repository = await db.query.githubRepositories.findFirst({
-    where: and(
-      eq(githubRepositories.owner, owner),
-      eq(githubRepositories.repo, repo)
-    ),
-    with: {
-      integration: true,
-    },
-  });
+  const whereClauses = [
+    sql`lower(${githubRepositories.owner}) = ${owner.toLowerCase()}`,
+    sql`lower(${githubRepositories.repo}) = ${repo.toLowerCase()}`,
+  ];
 
-  if (
-    !(repository?.integration?.encryptedToken && repository.integration.enabled)
-  ) {
+  if (options?.organizationId) {
+    whereClauses.push(
+      eq(githubIntegrations.organizationId, options.organizationId)
+    );
+  }
+
+  const [repository] = await db
+    .select({
+      encryptedToken: githubIntegrations.encryptedToken,
+      integrationEnabled: githubIntegrations.enabled,
+    })
+    .from(githubRepositories)
+    .innerJoin(
+      githubIntegrations,
+      eq(githubRepositories.integrationId, githubIntegrations.id)
+    )
+    .where(and(...whereClauses))
+    .limit(1);
+
+  if (!(repository?.encryptedToken && repository.integrationEnabled)) {
     return undefined;
   }
 
-  return decryptToken(repository.integration.encryptedToken);
+  return decryptToken(repository.encryptedToken);
 }
 
 export async function getTokenForIntegrationId(

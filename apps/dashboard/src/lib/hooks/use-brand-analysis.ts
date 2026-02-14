@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import type { UpdateBrandSettingsInput } from "@/utils/schemas/brand";
 
@@ -57,7 +57,8 @@ export function useBrandSettings(organizationId: string) {
 
 export function useBrandAnalysisProgress(
   organizationId: string,
-  onFailure?: (error: string) => void
+  onFailure?: (error: string) => void,
+  onAnalysisComplete?: () => void
 ) {
   const queryClient = useQueryClient();
   const hasReset = useRef(false);
@@ -160,11 +161,17 @@ export function useBrandAnalysisProgress(
     queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.AUTH.activeOrganization,
     });
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+    });
+    onAnalysisComplete?.();
   };
 
-  if (progress.status === "completed" && !hasReset.current) {
-    onComplete();
-  }
+  useEffect(() => {
+    if (progress.status === "completed" && !hasReset.current) {
+      onComplete();
+    }
+  }, [onComplete, progress.status]);
 
   return { progress, startPolling };
 }
@@ -233,6 +240,9 @@ export function useUpdateBrandSettings(organizationId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
       });
     },
   });

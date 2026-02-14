@@ -4,6 +4,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
@@ -12,7 +13,6 @@ import { use, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { TitleCard } from "@/components/title-card";
 import { authClient } from "@/lib/auth/client";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -39,7 +39,9 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       slug: organization?.slug ?? "",
     },
     onSubmit: async ({ value }) => {
-      if (!organization?.id) return;
+      if (!organization?.id) {
+        return;
+      }
 
       setIsUpdating(true);
       try {
@@ -94,13 +96,21 @@ export default function GeneralSettingsPage({ params }: PageProps) {
   });
 
   useEffect(() => {
-    if (!organization) return;
+    if (!organization) {
+      return;
+    }
 
     form.reset({
       name: organization.name,
       slug: organization.slug,
     });
-  }, [organization?.id, organization?.name, organization?.slug]);
+  }, [
+    organization?.id,
+    organization?.name,
+    organization?.slug,
+    form.reset,
+    organization,
+  ]);
 
   if (!organization) {
     return (

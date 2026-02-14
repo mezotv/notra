@@ -25,12 +25,12 @@ import {
   RadioGroupItem,
 } from "@notra/ui/components/ui/radio-group";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { TitleCard } from "@/components/title-card";
 import { authClient } from "@/lib/auth/client";
 
 interface OwnedOrganization {

@@ -57,7 +57,9 @@ async function sendWithRetry(
         idempotencyKey,
       });
 
-      if (data) return { data, error: null };
+      if (data) {
+        return { data, error: null };
+      }
 
       if (error) {
         lastError = error;

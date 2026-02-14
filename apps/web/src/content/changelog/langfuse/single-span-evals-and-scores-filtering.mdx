@@ -1,0 +1,73 @@
+---
+title: "Langfuse February 2–13, 2026"
+date: "2026-02-13"
+description: "Single-span evaluations in open beta, integration queue deadlock fixes, advanced scores v2 filtering with metadata, dashboard charting rebuilt with Recharts, and project-wide table defaults."
+---
+
+This week brought substantial progress across evaluations, integrations, and infrastructure resilience. Single-span evaluations moved into open beta, critical fixes resolved persistent job queue deadlocks, and new filtering capabilities landed for the scores API. The team also modernized dashboard charting with Recharts and refined UI usability across multiple components.
+
+## Highlights
+
+### Single-span evaluations now in open beta
+
+LLM-as-a-Judge can now target individual observations rather than full traces, making evaluation more granular and efficient at scale.
+
+### Fixed integration queue deadlocks
+
+Reverted a problematic hourly-key approach to job deduplication that caused Mixpanel and PostHog integration jobs to stall permanently. Static jobId handling is back, along with stalling protections to prevent future blocking.
+
+### Advanced filtering for scores v2 API with metadata support
+
+The scores v2 endpoint now supports advanced filters, unlocking metadata-based and observation-level filtering for more targeted score retrieval.
+
+### Dashboard charting rebuilt with Recharts
+
+Migrated home dashboards from Tremor to Recharts, gaining better legends, tooltips, and area time series support alongside improved visual consistency.
+
+### Project-wide table defaults and always-visible playground controls
+
+Table view defaults can now be set at project scope, and playground tool/schema buttons are always visible for better discoverability.
+
+## More Updates
+
+### Features & Enhancements
+
+- **Free-text observation names in evaluations** [#12000](https://github.com/langfuse/langfuse/pull/12000) - Enabled free-text observation and trace name entry ahead of v4 release. (Author: @marliessophie)
+- **Project-wide table defaults** [#11943](https://github.com/langfuse/langfuse/pull/11943) - Set table view defaults across an entire project for consistency. (Author: @nimarb)
+- **Events table in integration exports** [#11968](https://github.com/langfuse/langfuse/pull/11968) - Events table now included in data exports from integrations. (Author: @hassiebp)
+- **MCP listPrompts datetime range filters** [#11832](https://github.com/langfuse/langfuse/pull/11832) - Added fromUpdatedAt and toUpdatedAt filters to the MCP listPrompts endpoint. (Author: @mkowen1)
+- **Advanced filters on scores v2** [#11987](https://github.com/langfuse/langfuse/pull/11987) - Scores v2 endpoint now accepts advanced filters for metadata-based queries. (Author: @sumerman)
+- **Observation\_id filtering on scores v2** [#11974](https://github.com/langfuse/langfuse/pull/11974) - Extended v2 scores filtering to include observation-level parameter. (Author: @sumerman)
+- **Trace reference badge in evaluations** [#11991](https://github.com/langfuse/langfuse/pull/11991) - Added clickable trace reference badge in evaluation traces for navigation. (Author: @marliessophie)
+- **Scores empty state links to FAQ** [#11986](https://github.com/langfuse/langfuse/pull/11986) - Updated scores empty state to point users toward FAQ. (Author: @Lotte-Verheyden)
+
+### Bug Fixes
+
+- **Fixed Mixpanel and PostHog job stalling** [#11988](https://github.com/langfuse/langfuse/pull/11988) - Prevented integration jobs from permanently stalling with proper job deduplication and stalling protection. (Author: @sumerman)
+- **Reverted hourly-key jobId approach** [#11998](https://github.com/langfuse/langfuse/pull/11998) - Restored static jobId and added removeOnFail to clean up failed jobs immediately. (Author: @sumerman)
+- **PostHog error handling** [#11996](https://github.com/langfuse/langfuse/pull/11996) - Added fail-fast error handling for PostHog to prevent queue blocking. (Author: @sumerman)
+- **Dataset item version inference** [#12024](https://github.com/langfuse/langfuse/pull/12024) - Fixed timestamp logic to correctly infer dataset item versions. (Author: @marliessophie)
+- **Observation filter options retrieval** [#12022](https://github.com/langfuse/langfuse/pull/12022) - Fixed observation filter options to fetch all available names. (Author: @marliessophie)
+- **Data table refresh timing** [#11970](https://github.com/langfuse/langfuse/pull/11970) - Reset auto-refresh timer after manual refresh to prevent unexpected updates. (Author: @aditya-mitra)
+- **Playground tool buttons visibility** [#12028](https://github.com/langfuse/langfuse/pull/12028) - Tool and schema edit/delete buttons are now always visible. (Author: @nimarb)
+- **Scores table cell text display** [#11975](https://github.com/langfuse/langfuse/pull/11975) - Improved text truncation and wrapping in scores table cells. (Author: @marliessophie)
+
+### Infrastructure
+
+- **Integration queue cleanup tuning** [#12004](https://github.com/langfuse/langfuse/pull/12004) - Increased cleanup limits for legacy integration queue jobs. (Author: @sumerman)
+
+### Internal Changes
+
+- **LLM-as-a-Judge evaluation instrumentation** [#12027](https://github.com/langfuse/langfuse/pull/12027) - Added observability for evaluation execution. (Author: @hassiebp)
+- **Events table v4 beta cloud-only gate** [#12001](https://github.com/langfuse/langfuse/pull/12001) - Gated events table v4 beta feature to cloud deployments. (Author: @nimarb)
+- **Tremor to Recharts migration** [#11916](https://github.com/langfuse/langfuse/pull/11916) - Replaced Tremor dashboard charts with Recharts for improved legends, tooltips, and new chart types. (Author: @coffee4tw)
+- **Code-mirror height configuration** [#11995](https://github.com/langfuse/langfuse/pull/11995) - Added flexible height settings for code mirror components. (Author: @marliessophie)
+- **Turbo build tool upgrade** [#12026](https://github.com/langfuse/langfuse/pull/12026) - Updated Turbo to 2.8.7. (Author: @nimarb)
+- **Integration queue cleanup removal** [#12008](https://github.com/langfuse/langfuse/pull/12008) - Removed cleanup logic to streamline queue management. (Author: @sumerman)
+
+### Documentation & UX
+
+- **Observation evals marked open beta** [#12018](https://github.com/langfuse/langfuse/pull/12018) - Updated docs to reflect observation evals as open beta. (Author: @marliessophie)
+- **Dataset run webhook clarification** [#11897](https://github.com/langfuse/langfuse/pull/11897) - Clarified webhook configuration in dataset run experiment modal. (Author: @Lotte-Verheyden)
+- **Chart label and tooltip improvements** [#11989](https://github.com/langfuse/langfuse/pull/11989) - Added spacing between Y-axis labels and hover tooltips for full label display. (Author: @coffee4tw)
+- **Cloud pricing page updates** [#12019](https://github.com/langfuse/langfuse/pull/12019) - Updated data access tiers on pricing page. (Author: @marcklingen)

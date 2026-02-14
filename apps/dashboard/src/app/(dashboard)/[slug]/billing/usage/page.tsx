@@ -15,11 +15,11 @@ import {
 } from "@notra/ui/components/ui/chart";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { PageContainer } from "@/components/layout/container";
-import { TitleCard } from "@/components/title-card";
 import { FEATURES } from "@/lib/billing/constants";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
@@ -88,7 +88,9 @@ export default function BillingUsagePage() {
 
   // Extract all features from customer object
   const features = useMemo<FeatureData[]>(() => {
-    if (!customer?.features) return [];
+    if (!customer?.features) {
+      return [];
+    }
 
     return Object.entries(customer.features).map(([id, feature]) => {
       const balance =

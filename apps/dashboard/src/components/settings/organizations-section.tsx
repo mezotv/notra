@@ -21,6 +21,7 @@ import {
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -30,7 +31,6 @@ import {
   type Organization,
   useOrganizationsContext,
 } from "@/components/providers/organization-provider";
-import { TitleCard } from "@/components/title-card";
 import { authClient } from "@/lib/auth/client";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";

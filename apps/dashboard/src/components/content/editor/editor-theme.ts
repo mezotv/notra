@@ -28,4 +28,11 @@ export const editorTheme: EditorThemeClasses = {
   },
   quote: "border-l-4 border-border pl-4 italic my-4 text-muted-foreground",
   link: "text-primary underline hover:no-underline cursor-pointer",
+  table: "w-full my-4 border-collapse",
+  tableCell:
+    "border border-border px-3 py-2 text-sm min-w-[75px] align-top relative",
+  tableCellHeader: "bg-muted font-semibold text-left",
+  tableRow: "",
+  tableCellSelected: "bg-primary/10",
+  tableSelected: "outline outline-2 outline-primary",
 };

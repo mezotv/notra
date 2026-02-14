@@ -13,6 +13,7 @@ import {
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text";
 import { $setBlocksType } from "@lexical/selection";
+import { INSERT_TABLE_COMMAND } from "@lexical/table";
 import {
   $createParagraphNode,
   $getSelection,
@@ -30,6 +31,7 @@ import {
   Minus,
   Pilcrow,
   Quote,
+  Table2,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -188,6 +190,16 @@ export function ComponentPickerPlugin() {
               const codeBlock = $createKiboCodeBlockNode("", "typescript");
               $insertNodes([codeBlock]);
             }
+          }),
+      }),
+      new ComponentPickerOption("Table", {
+        icon: <Table2 className="size-4" />,
+        keywords: ["table", "grid", "spreadsheet", "rows", "columns"],
+        onSelect: () =>
+          editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+            columns: "3",
+            rows: "3",
+            includeHeaders: { rows: true, columns: false },
           }),
       }),
       new ComponentPickerOption("Divider", {

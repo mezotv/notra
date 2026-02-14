@@ -10,13 +10,13 @@ import {
 } from "lexical";
 import { useEffect } from "react";
 
-export type TextSelection = {
+export interface TextSelection {
   text: string;
   startLine: number;
   startChar: number;
   endLine: number;
   endChar: number;
-};
+}
 
 interface SelectionPluginProps {
   onSelectionChange: (selection: TextSelection | null) => void;
@@ -29,7 +29,7 @@ function getLineAndCharFromOffset(
   const lines = text.substring(0, offset).split("\n");
   return {
     line: lines.length,
-    char: (lines[lines.length - 1]?.length ?? 0) + 1,
+    char: (lines.at(-1)?.length ?? 0) + 1,
   };
 }
 

@@ -228,7 +228,7 @@ export function OrgSelector() {
     if (currentSlug && pathname) {
       const segments = pathname.split("/").filter(Boolean);
       if (segments[0] === currentSlug && segments.length > 1) {
-        const subPath = "/" + segments.slice(1).join("/");
+        const subPath = `/${segments.slice(1).join("/")}`;
         targetPath = `/${org.slug}${subPath}`;
       }
     }

@@ -10,6 +10,14 @@ export const toneProfileSchema = z.enum([
 
 export type ToneProfile = z.infer<typeof toneProfileSchema>;
 
+export function getValidToneProfile(
+  value: unknown,
+  fallback: ToneProfile = "Conversational"
+): ToneProfile {
+  const parsed = toneProfileSchema.safeParse(value);
+  return parsed.success ? parsed.data : fallback;
+}
+
 export const brandSettingsSchema = z.object({
   companyName: z.string().min(1, "Company name is required"),
   companyDescription: z.string().min(10, "Please provide a description"),

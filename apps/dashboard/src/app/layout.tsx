@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Notra",
+    template: "%s - Notra",
     default: "Notra",
   },
   description: "Notra - Content Management",

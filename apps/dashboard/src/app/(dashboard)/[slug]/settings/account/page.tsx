@@ -17,6 +17,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Google } from "@notra/ui/components/ui/svgs/google";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
@@ -28,7 +29,6 @@ import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { DeleteAccountSection } from "@/components/settings/delete-account";
 import { OrganizationsSection } from "@/components/settings/organizations-section";
-import { TitleCard } from "@/components/title-card";
 import { authClient } from "@/lib/auth/client";
 import { AccountPageSkeleton } from "./skeleton";
 

@@ -277,7 +277,7 @@ export function AddTriggerDialog({
         form.reset();
       }
     },
-    [form]
+    [form, setOpen]
   );
 
   return (
@@ -559,7 +559,7 @@ export function AddTriggerDialog({
                 canSubmit:
                   state.values.repositoryIds.length > 0 &&
                   (state.values.sourceType !== "cron" ||
-                    (state.values.schedule && state.values.schedule.frequency)),
+                    state.values.schedule?.frequency),
                 isSubmitting: mutation.isPending,
               })}
             >

@@ -28,7 +28,7 @@ export const EMAIL_CONFIG = {
    */
   getLogoUrl(): string {
     const siteUrl = this.getSiteUrl();
-    return `${siteUrl}/favicon-96x96.png`;
+    return `${siteUrl}/icon1.png`;
   },
 
   /**

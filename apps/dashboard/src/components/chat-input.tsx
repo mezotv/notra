@@ -47,22 +47,22 @@ import type { IntegrationsResponse } from "@/lib/services/integrations";
 import type { GitHubRepository } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
-export type TextSelection = {
+export interface TextSelection {
   text: string;
   startLine: number;
   startChar: number;
   endLine: number;
   endChar: number;
-};
+}
 
-export type ContextItem = {
+export interface ContextItem {
   type: "github-repo";
   owner: string;
   repo: string;
   integrationId: string;
-};
+}
 
-type ChatInputProps = {
+interface ChatInputProps {
   onSend?: (value: string) => void;
   isLoading?: boolean;
   statusText?: string;
@@ -77,7 +77,7 @@ type ChatInputProps = {
   onValueChange?: (value: string) => void;
   error?: string | null;
   onClearError?: () => void;
-};
+}
 
 const ChatInput = ({
   onSend,
@@ -102,7 +102,9 @@ const ChatInput = ({
   const { check, customer } = useCustomer();
 
   const checkResult = useMemo(() => {
-    if (!customer) return null;
+    if (!customer) {
+      return null;
+    }
     return check({
       featureId: FEATURES.AI_CREDITS,
       requiredBalance: 1,
@@ -137,7 +139,9 @@ const ChatInput = ({
       const response = await fetch(
         `/api/organizations/${organizationId}/integrations`
       );
-      if (!response.ok) throw new Error("Failed to fetch integrations");
+      if (!response.ok) {
+        throw new Error("Failed to fetch integrations");
+      }
       return response.json();
     },
     enabled: !!organizationId,
@@ -168,7 +172,9 @@ const ChatInput = ({
   );
   const resizeTextarea = useCallback(() => {
     const element = textareaRef.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     element.style.height = "0";
     const maxHeightRem = 12.5;
     const maxHeightPx =
@@ -188,7 +194,9 @@ const ChatInput = ({
 
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading) {
+      return;
+    }
 
     clearError();
 
@@ -229,7 +237,9 @@ const ChatInput = ({
   useHotkeys(
     "enter",
     (event) => {
-      if (event.shiftKey) return;
+      if (event.shiftKey) {
+        return;
+      }
       event.preventDefault();
       handleSend();
     },
@@ -331,7 +341,7 @@ const ChatInput = ({
                       <p className="line-clamp-3 whitespace-pre-wrap break-all text-xs opacity-80">
                         "
                         {selection.text.length > 150
-                          ? selection.text.slice(0, 150) + "..."
+                          ? `${selection.text.slice(0, 150)}...`
                           : selection.text}
                         "
                       </p>

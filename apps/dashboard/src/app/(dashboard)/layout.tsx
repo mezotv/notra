@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/actions";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Notra",
+    template: "%s - Notra",
     default: "Dashboard",
   },
 };

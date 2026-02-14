@@ -40,6 +40,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         markdown: post.markdown,
         contentType: post.contentType,
         date: post.createdAt.toISOString(),
+        sourceMetadata: post.sourceMetadata ?? null,
       },
     });
   } catch {
@@ -124,6 +125,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         markdown: updatedPost.markdown,
         contentType: updatedPost.contentType,
         date: updatedPost.createdAt.toISOString(),
+        sourceMetadata: updatedPost.sourceMetadata ?? null,
       },
     });
   } catch (_e) {

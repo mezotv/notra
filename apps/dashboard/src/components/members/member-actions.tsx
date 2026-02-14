@@ -75,7 +75,9 @@ export function MemberActions({ member }: MemberActionsProps) {
   }
 
   async function handleChangeRole() {
-    if (!activeOrganization) return;
+    if (!activeOrganization) {
+      return;
+    }
 
     // Don't update if role hasn't changed
     if (newRole === member.role) {
@@ -114,7 +116,9 @@ export function MemberActions({ member }: MemberActionsProps) {
   }
 
   async function handleRemoveMember() {
-    if (!activeOrganization) return;
+    if (!activeOrganization) {
+      return;
+    }
 
     setIsRemoving(true);
     try {

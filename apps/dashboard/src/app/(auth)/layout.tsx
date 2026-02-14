@@ -45,7 +45,7 @@ export default async function AuthLayout({
             By continuing, you agree to our{" "}
             <Link
               className="underline underline-offset-4 hover:text-primary"
-              href="/terms"
+              href="https://usenotra.com/terms"
               rel="noopener noreferrer"
               target="_blank"
             >
@@ -54,7 +54,7 @@ export default async function AuthLayout({
             and{" "}
             <Link
               className="underline underline-offset-4 hover:text-primary"
-              href="/privacy"
+              href="https://usenotra.com/privacy"
               rel="noopener noreferrer"
               target="_blank"
             >

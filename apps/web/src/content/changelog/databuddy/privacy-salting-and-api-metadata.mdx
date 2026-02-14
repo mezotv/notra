@@ -1,0 +1,53 @@
+---
+title: "Databuddy February 2–13, 2026"
+date: "2026-02-13"
+description: "Anonymous ID salting for privacy, external ID support for links, metadata on all API endpoints, better MCP tool filtering, and AI-friendly documentation headers."
+---
+
+This week focused on solid infrastructure work and API completeness. Key additions include anonymous ID salting for better privacy, external ID support for links, consistent metadata availability across endpoints, improved MCP filtering, and documentation that actually works with AI crawlers. The rest is typical—bugs fixed, UI tweaks applied, and a few new custom event types for integrations.
+
+## Highlights
+
+### Anonymous ID salting for stronger privacy
+
+Anonymous identifiers now include salting during generation, making it harder to correlate across systems without explicit binding.
+
+### External ID support for links
+
+The links endpoint now accepts externalId parameters, letting you map your own system IDs directly to platform links without additional lookups.
+
+### Metadata now on all API endpoints
+
+Hidden tags with endpoint metadata are now consistently available across the full API surface, making introspection and tool integration actually viable.
+
+### Better MCP tool filtering and rule handling
+
+Agent tool operations are now properly gated by context. This prevents unintended API calls in AI integration workflows.
+
+### Documentation respects Accept headers for AI crawlers
+
+API docs now respond correctly to Accept headers, so automated tools and AI agents can actually parse your specs without hitting dead ends.
+
+## More Updates
+
+### Bug Fixes
+
+- **Fixed date coercion in output validation** - Date values no longer fail validation during response serialization. (Author: @izadoesdev)
+- **Fixed links redirect fail-open logic** - Missing link data no longer causes cascading failures. (Author: @izadoesdev)
+- **Improved API key permission UX** - Dashboard workflows for viewing and updating API key permissions are clearer and less error-prone. (Author: @izadoesdev)
+- **Organization IDs now visible in settings** - Admins can now find their org ID directly in the settings panel instead of digging through logs. (Author: @izadoesdev)
+- **Fixed sidebar feature flag visibility** - Feature flags in the sidebar now respect their actual enabled state instead of showing up when they shouldn't. (Author: @izadoesdev)
+- **API keys work in org-only deployments** - API key creation and management no longer fail when the organization-only flag is enabled. (Author: @izadoesdev)
+- **Fixed link endpoint scoping** - Links are now correctly scoped in multi-tenant setups so users can't access links from other organizations. (Author: @izadoesdev)
+
+### Features & Enhancements
+
+- **Custom event types for the API** - New custom event types are now exposed as endpoints for integration workflows. (Author: @izadoesdev)
+- **OpenAPI specs for links route** - The links endpoint now has proper OpenAPI documentation. (Author: @izadoesdev)
+- **Improved Swagger documentation theme** - The API documentation UI is more readable and easier to navigate. (Author: @izadoesdev)
+- **MCP integration documentation** - Added docs covering how to set up and use Model Context Protocol with the platform. (Author: @izadoesdev)
+- **Design cleanup on links and tables** - Component layouts and styling are more consistent and polished. (Author: @izadoesdev)
+
+### Internal Changes
+
+- **Lint-staged configuration** - Lint and formatting now run automatically on commits, catching style issues early. (Author: @izadoesdev)

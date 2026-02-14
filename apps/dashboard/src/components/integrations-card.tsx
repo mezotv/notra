@@ -19,13 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Input } from "@notra/ui/components/ui/input";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { TitleCard } from "@/components/title-card";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export interface InstalledIntegration {

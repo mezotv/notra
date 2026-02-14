@@ -48,7 +48,9 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
   }
 
   async function handleResendInvitation() {
-    if (!activeOrganization) return;
+    if (!activeOrganization) {
+      return;
+    }
 
     setIsResending(true);
     try {
@@ -80,7 +82,9 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
   }
 
   async function handleCancelInvitation() {
-    if (!activeOrganization) return;
+    if (!activeOrganization) {
+      return;
+    }
 
     setIsCanceling(true);
     try {

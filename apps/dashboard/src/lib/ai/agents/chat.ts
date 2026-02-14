@@ -1,9 +1,9 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { stepCountIs, ToolLoopAgent } from "ai";
+import { gateway } from "@/lib/ai/gateway";
 import { routeMessage, selectModel } from "@/lib/ai/orchestration/router";
 import { createMarkdownTools } from "@/lib/ai/tools/edit-markdown";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import { openrouter } from "@/lib/openrouter";
 
 interface ChatAgentContext {
   organizationId: string;
@@ -21,7 +21,7 @@ export async function createChatAgent(
   const model = selectModel(decision);
 
   const modelWithMemory = withSupermemory(
-    openrouter(model),
+    gateway(model),
     context.organizationId
   );
 

@@ -4,8 +4,8 @@ import { PaintBoardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useState } from "react";
-import { TitleCard } from "@/components/title-card";
 
 interface AiChatSidebarProps {
   contentTitle: string;

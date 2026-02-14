@@ -1,0 +1,74 @@
+---
+title: "Cal.com February 6–13, 2026"
+date: "2026-02-13"
+description: "Onboarding v3 enabled globally, signup watchlist fraud controls, icon migration to @coss/ui, active user billing with annual team plans, and companion app landing page."
+---
+
+This week, Cal.com shipped major feature rollouts and infrastructure improvements. The onboarding v3 flow went live globally with new tests matched to the Plan Selection → Personal Settings → Calendar journey. Signup watchlist review locks new accounts flagged for fraud and automatically unlocks them when entries are deleted. Icon migration from the legacy Icon component to @coss/ui/icons reduced bundle size and improved maintainability. Active user billing and annual team plan options round out the billing toolkit. Reliability fixes addressed booking drawer overlaps, data-table imports, and companion app navigation, while security updates tightened the dependency stack.
+
+## Highlights
+
+### Signup watchlist review mode for fraud control
+
+New feature flag locks and reviews flagged signups, preventing abuse while preserving account recovery on entry removal. Includes secure email verification ordering and prevents PII leakage in error logs.
+
+### Onboarding v3 enabled globally with updated e2e tests
+
+Rewritten onboarding (Plan Selection → Personal Settings → Calendar) is now the default. Updated e2e tests and signup flows accept both old and new paths to support smooth rollout.
+
+### Icon component migration to @coss/ui/icons
+
+Migrated 200+ static icon usages from `<Icon name="xxx" />` to `<XxxIcon />` components, improving bundle size and enabling better prop control. Supports legacy moduleResolution via typesVersions.
+
+### Active user billing with annual team plans
+
+New billing strategy supports both usage-based and seat pricing. Teams can buy annual subscriptions, and personal credits now act as fallback when team credits run out.
+
+### Companion app configurable landing page
+
+Users pick their app home (Bookings or Calendar), and the choice persists via local storage. Preferences clear on logout for a fresh start.
+
+## More Updates
+
+### Features & Enhancements
+
+- **Preserve custom reply-to email** [#27941](https://github.com/calcom/cal.com/pull/27941) - Keep user email customizations in place across sessions. (Author: @anikdhabal)
+- **Add configurable landing page in companion app** [#27267](https://github.com/calcom/cal.com/pull/27267) - Let users set preferred app entry point with persistent storage. (Author: @dhairyashiil)
+- **Add annual plans for teams** [#27896](https://github.com/calcom/cal.com/pull/27896) - Enable yearly billing for team and org subscriptions. (Author: @sean-brydon)
+
+### Bug Fixes
+
+- **Fix signup watchlist review and auto-unlock** [#27923](https://github.com/calcom/cal.com/pull/27923) - Correct email ordering, deleteEntry logic, and auto-unlock when entries are removed. (Author: @alishaz-polymath)
+- **Fix BookingDetailsSheet flicker** [#27894](https://github.com/calcom/cal.com/pull/27894) - Stop UI flicker when switching between bookings. (Author: @eunjae-lee)
+- **Fix icon sizing regression** [#27924](https://github.com/calcom/cal.com/pull/27924) - Reset default icon size to 16px and fix download button alignment. (Author: @eunjae-lee)
+- **Fix booking drawer text overlap** [#27897](https://github.com/calcom/cal.com/pull/27897) - Remove negative top margin from footer so content doesn't get hidden. (Author: @hariombalhara)
+- **Fix Vitest RPC errors in app-store** [#27931](https://github.com/calcom/cal.com/pull/27931) - Inline package descriptions to stop external package.json reads. (Author: @emrysal)
+- **Fix data-table hook imports** [#27900](https://github.com/calcom/cal.com/pull/27900) - Update paths missed in earlier refactor for useDataTable, useFilterValue, and DataTableProvider. (Author: @eunjae-lee)
+- **Prevent e2e test UID collisions** [#27916](https://github.com/calcom/cal.com/pull/27916) - Use randomString for booking UIDs in slots tests to avoid unique constraint failures. (Author: @alishaz-polymath)
+- **Include locale-prefixed paths in bot protection** [#27910](https://github.com/calcom/cal.com/pull/27910) - Extend bot detection to cover routes with locale prefixes. (Author: @volnei)
+- **Preserve app-store enabled state during seed** [#27918](https://github.com/calcom/cal.com/pull/27918) - Respect existing enabled state instead of forcing defaults. (Author: @devanshu0x)
+- **Fallback to personal credits when team credits deplete** [#27518](https://github.com/calcom/cal.com/pull/27518) - Let users keep working with personal credits if team pool runs out. (Author: @CarinaWolli)
+
+### Infrastructure
+
+- **Bump axios to 1.13.5** [#27864](https://github.com/calcom/cal.com/pull/27864) - Includes follow-redirects 1.15.11 for security. (Author: @pedroccastro)
+- **Migrate data-table hooks to web modules** [#27833](https://github.com/calcom/cal.com/pull/27833) - Move data-table hooks and provider to web-specific modules for cleaner organization. (Author: @eunjae-lee)
+- **Migrate Icon to @coss/ui/icons** [#27458](https://github.com/calcom/cal.com/pull/27458) - Replace dynamic Icon imports with typed component icons across 28 batches. (Author: @eunjae-lee)
+
+### Internal Changes
+
+- **Show invite link settings modal** [#27917](https://github.com/calcom/cal.com/pull/27917) - UI updates for invite management. (Author: @anikdhabal)
+- **Add onboarding-v3 feature flag** [#27912](https://github.com/calcom/cal.com/pull/27912) - Global flag with seed migration, account review UI, and watchlist integration. (Author: @emrysal)
+- **Add active user billing strategy** [#27867](https://github.com/calcom/cal.com/pull/27867) - Factory-based billing supporting seat and active-user modes with Stripe webhooks and HWM tracking. (Author: @sean-brydon)
+
+### Testing
+
+- **Exclude test files from CODEOWNERS** [#27919](https://github.com/calcom/cal.com/pull/27919) - Add patterns (*.test.*, *.integration-test.*, *.e2e-spec.*) to CODEOWNERS test exclusions. (Author: @hariombalhara)
+- **Add e2e-spec to CODEOWNERS** [#27926](https://github.com/calcom/cal.com/pull/27926) - Expand test file exclusion patterns. (Author: @anikdhabal)
+
+### Documentation
+
+- **Apply biome formatting to utility packages** [#27880](https://github.com/calcom/cal.com/pull/27880) - Standardized formatting for packages/sms, prisma, emails, and lib. (Author: @eunjae-lee)
+- **Trim license section from README** [#27903](https://github.com/calcom/cal.com/pull/27903) - Simplify README for clarity. (Author: @Kmadhav824)
+- **Organize the Out of Office page** [#27865](https://github.com/calcom/cal.com/pull/27865) - Clean up UI and remove unused imports. (Author: @Recxsmacx)
+- **Display phone and timezone in BookingDetailsSheet** [#27909](https://github.com/calcom/cal.com/pull/27909) - Show attendee phone and localized timezone info. (Author: @eunjae-lee)

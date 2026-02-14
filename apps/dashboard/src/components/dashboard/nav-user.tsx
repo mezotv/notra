@@ -2,7 +2,9 @@
 
 import {
   Logout01Icon,
+  Moon02Icon,
   MoreVerticalCircle01Icon,
+  Sun03Icon,
   User02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -28,6 +30,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -37,7 +40,9 @@ import { cn } from "@/lib/utils";
 export function NavUser() {
   const router = useRouter();
   const { isMobile, state } = useSidebar();
+  const { setTheme, resolvedTheme } = useTheme();
   const isCollapsed = state === "collapsed";
+  const isDark = resolvedTheme === "dark";
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const { activeOrganization } = useOrganizationsContext();
@@ -180,6 +185,13 @@ export function NavUser() {
               >
                 <HugeiconsIcon icon={User02Icon} />
                 Account
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setTheme(isDark ? "light" : "dark")}
+              >
+                <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} />
+                {isDark ? "Light Mode" : "Dark Mode"}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

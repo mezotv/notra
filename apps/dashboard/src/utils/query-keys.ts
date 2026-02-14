@@ -48,4 +48,7 @@ export const QUERY_KEYS = {
     today: (organizationId: string) =>
       ["posts", organizationId, "today"] as const,
   },
+  ONBOARDING: {
+    status: (organizationId: string) => ["onboarding", organizationId] as const,
+  },
 } as const;

@@ -29,6 +29,7 @@ import {
   StepperTrigger,
 } from "@notra/ui/components/ui/stepper";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
 import { Check, Loader2Icon, Minus } from "lucide-react";
@@ -38,7 +39,6 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { TitleCard } from "@/components/title-card";
 import type { ToneProfile } from "@/utils/schemas/brand";
 import {
   useAnalyzeBrand,
@@ -606,6 +606,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
       lastToastError.current = message;
       toast.error(message);
+    },
+    () => {
+      toast.success("Brand identity saved");
     }
   );
   const analyzeMutation = useAnalyzeBrand(organizationId, startPolling);

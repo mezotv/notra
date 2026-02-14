@@ -19,12 +19,12 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
 import type { CheckoutResult, Product } from "autumn-js";
 import { useCustomer, usePricingTable } from "autumn-js/react";
 import { useId, useMemo, useState } from "react";
 import { PageContainer } from "@/components/layout/container";
-import { TitleCard } from "@/components/title-card";
 
 const SCENARIO_TEXT: Record<string, string> = {
   scheduled: "Plan Scheduled",
@@ -49,7 +49,9 @@ function formatInvoiceProductName(productId: string): string {
 }
 
 function getInvoiceDescription(productIds?: string[]): string {
-  if (!productIds?.length) return "Subscription";
+  if (!productIds?.length) {
+    return "Subscription";
+  }
 
   return productIds.map(formatInvoiceProductName).join(", ");
 }
@@ -58,9 +60,15 @@ function getPricingButtonText(product: Product): string {
   const { scenario, properties, free_trial } = product;
   const { is_one_off, updateable } = properties ?? {};
 
-  if (free_trial?.trial_available) return "Start Free Trial";
-  if (scenario === "active" && updateable) return "Update";
-  if (scenario === "new" && is_one_off) return "Purchase";
+  if (free_trial?.trial_available) {
+    return "Start Free Trial";
+  }
+  if (scenario === "active" && updateable) {
+    return "Update";
+  }
+  if (scenario === "new" && is_one_off) {
+    return "Purchase";
+  }
 
   return SCENARIO_TEXT[scenario ?? ""] ?? "Get Started";
 }
@@ -70,7 +78,9 @@ function getProductPrice(product: Product): {
   interval: string;
 } {
   const priceItem = product.items.find((item) => item.price !== undefined);
-  if (!priceItem?.price) return { amount: 0, interval: "month" };
+  if (!priceItem?.price) {
+    return { amount: 0, interval: "month" };
+  }
 
   return {
     amount: priceItem.price,
@@ -141,7 +151,9 @@ function getConfirmationTexts(result: CheckoutResult): {
 }
 
 function getProductFeatures(product: Product | undefined): string[] {
-  if (!product?.items) return [];
+  if (!product?.items) {
+    return [];
+  }
 
   return product.items
     .filter((item) => {
@@ -166,7 +178,9 @@ function getProductFeatures(product: Product | undefined): string[] {
       }
 
       const featureName = item.feature?.name ?? "";
-      if (!featureName) return "";
+      if (!featureName) {
+        return "";
+      }
 
       const includedUsage = item.included_usage;
 
@@ -252,7 +266,9 @@ export default function BillingPage() {
   }
 
   async function handleConfirm() {
-    if (!pendingCheckout) return;
+    if (!pendingCheckout) {
+      return;
+    }
 
     setLoading("confirm");
     try {

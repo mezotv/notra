@@ -6,8 +6,8 @@ import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { gateway } from "@/lib/ai/gateway";
 import { getFirecrawlClient } from "@/lib/firecrawl";
-import { openrouter } from "@/lib/openrouter";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { brandSettingsSchema } from "@/utils/schemas/brand";
@@ -61,7 +61,9 @@ type ExtractionResult =
 const STEP_COUNT = 3;
 
 const isFirecrawlUnsupportedMessage = (message?: string | null) => {
-  if (!message) return false;
+  if (!message) {
+    return false;
+  }
   const normalized = message.toLowerCase();
   return (
     normalized.includes("do not support this site") ||
@@ -72,7 +74,9 @@ const isFirecrawlUnsupportedMessage = (message?: string | null) => {
 };
 
 async function setProgress(organizationId: string, data: ProgressData) {
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
   await redis.set(`brand:progress:${organizationId}`, data, {
     ex: PROGRESS_TTL,
   });
@@ -86,7 +90,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
     if (!parseResult.success) {
       console.error(
         "[Brand Analysis] Invalid payload:",
-        parseResult.error.flatten()
+        z.flattenError(parseResult.error)
       );
       await context.cancel();
       return;
@@ -185,7 +189,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
       async () => {
         try {
           const { output } = await generateText({
-            model: openrouter("google/gemini-2.0-flash-001"),
+            model: gateway("anthropic/claude-haiku-4.5"),
             output: Output.object({ schema: brandSettingsSchema }),
             prompt: `Analyze this website content and extract brand identity information.
 

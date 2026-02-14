@@ -9,6 +9,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
   Tooltip,
   TooltipContent,
@@ -22,7 +23,6 @@ import { memo, useMemo, useState } from "react";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { TitleCard } from "@/components/title-card";
 import type { IntegrationConfig } from "@/lib/integrations/catalog";
 import {
   ALL_INTEGRATIONS,

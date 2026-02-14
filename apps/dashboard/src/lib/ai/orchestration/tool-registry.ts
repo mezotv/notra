@@ -9,13 +9,19 @@ import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
 import type { RepoContext, ToolSet, ValidatedIntegration } from "./types";
 
 interface BuildToolSetParams {
+  organizationId: string;
   currentMarkdown: string;
   onMarkdownUpdate?: (markdown: string) => void;
   validatedIntegrations: ValidatedIntegration[];
 }
 
 export function buildToolSet(params: BuildToolSetParams): ToolSet {
-  const { currentMarkdown, onMarkdownUpdate, validatedIntegrations } = params;
+  const {
+    organizationId,
+    currentMarkdown,
+    onMarkdownUpdate,
+    validatedIntegrations,
+  } = params;
 
   const { getMarkdown, editMarkdown } = createMarkdownTools({
     currentMarkdown,
@@ -39,9 +45,27 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
   );
 
   if (hasGitHub) {
-    tools.getPullRequests = createGetPullRequestsTool();
-    tools.getReleaseByTag = createGetReleaseByTagTool();
-    tools.getCommitsByTimeframe = createGetCommitsByTimeframeTool();
+    const allowedRepositories = validatedIntegrations.flatMap((integration) =>
+      integration.type === "github"
+        ? integration.repositories.map((repository) => ({
+            owner: repository.owner,
+            repo: repository.repo,
+          }))
+        : []
+    );
+
+    tools.getPullRequests = createGetPullRequestsTool({
+      organizationId,
+      allowedRepositories,
+    });
+    tools.getReleaseByTag = createGetReleaseByTagTool({
+      organizationId,
+      allowedRepositories,
+    });
+    tools.getCommitsByTimeframe = createGetCommitsByTimeframeTool({
+      organizationId,
+      allowedRepositories,
+    });
 
     const repos = getGitHubRepoList(validatedIntegrations);
     descriptions.push(

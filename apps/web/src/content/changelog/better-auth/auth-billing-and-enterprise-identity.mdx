@@ -1,0 +1,55 @@
+---
+title: "Better Auth February 2–13, 2026"
+date: "2026-02-13"
+description: "Stripe seat-based and usage-based billing, IdP-initiated SAML Single Logout, SCIM ownership model, test utilities plugin, and TXT record verification for SSO domains."
+---
+
+Over the past seven days, Better Auth delivered critical authentication and billing infrastructure updates, alongside enterprise identity management enhancements. The platform expanded Stripe integration capabilities, improved single sign-on robustness, and introduced comprehensive testing utilities. Eleven high-impact features and fixes were merged, strengthening support for modern billing strategies, federated identity verification, and multi-tenant SCIM workflows while addressing edge cases in rate limiting, email validation, and data type coercion.
+
+## Highlights
+
+### Seat-based and usage-based billing for Stripe
+
+Flexible billing models now support per-seat subscription tiers and metered consumption tracking with configurable line items, letting B2B platforms monetize variable usage patterns alongside fixed-rate tiers. [#7930](https://github.com/better-auth/better-auth/pull/7930)
+
+### IdP-initiated SAML Single Logout (SLO) support
+
+Identity providers can now initiate logout flows directly, broadening compatibility with enterprise federation workflows that require asymmetric SSO lifecycle management. [#7567](https://github.com/better-auth/better-auth/pull/7567)
+
+### SCIM ownership model and connection management
+
+Multi-tenant identity synchronization now enforces explicit ownership, with dedicated endpoints for SCIM connection provisioning and lifecycle control—critical for regulated directory integrations. [#7931](https://github.com/better-auth/better-auth/pull/7931)
+
+### Test utilities plugin for integration and E2E testing
+
+A new plugin streamlines auth flow testing with built-in helpers for simulating credentials, session management, and multi-user scenarios, reducing boilerplate in integration test suites. [#7746](https://github.com/better-auth/better-auth/pull/7746)
+
+### TXT record verification at subdomain level for SSO domain control
+
+SSO domain verification now correctly resolves TXT records at the designated verification subdomain rather than root, preventing configuration conflicts in shared hosting environments. [#7935](https://github.com/better-auth/better-auth/pull/7935)
+
+## More Updates
+
+### Features & Enhancements
+
+- **Added&#32;`billingInterval`&#32;field to Stripe subscription** [#7221](https://github.com/better-auth/better-auth/pull/7221) - Enables explicit billing cycle configuration for flexible pricing schedules. (Author: @bytaesu)
+- **SCIM connection management endpoints** [#7898](https://github.com/better-auth/better-auth/pull/7898) - Exposes REST endpoints for provisioning and managing SCIM integrations with full lifecycle support. (Author: @jonathansamines)
+
+### Bug Fixes
+
+- **Separate rate limit request and response handling** [#7939](https://github.com/better-auth/better-auth/pull/7939) - Decouples inbound request throttling from outbound response limits for clearer rate-limit semantics. (Author: @himself65)
+- **Propagate trial data in Stripe subscription webhook handlers** [#7955](https://github.com/better-auth/better-auth/pull/7955) - Trial period metadata now flows correctly through webhook callbacks, preventing plan mismatches. (Author: @bytaesu)
+- **Remove&#32;`getSubscriptionUsage`&#32;endpoint** [#7949](https://github.com/better-auth/better-auth/pull/7949) - Deprecated unused metered usage endpoint to consolidate billing API surface. (Author: @bytaesu)
+- **Prevent duplicate line items when priceId equals seatPriceId** [#7947](https://github.com/better-auth/better-auth/pull/7947) - Eliminates duplicate charges when subscription and seat pricing IDs coincide. (Author: @bytaesu)
+- **Move meters configuration into plans for usage-based billing** [#7946](https://github.com/better-auth/better-auth/pull/7946) - Restructures metering config nesting for clearer plan-level usage tracking. (Author: @bytaesu)
+- **Remove broken direct FedCM API call and harden prompt lifecycle** [#7928](https://github.com/better-auth/better-auth/pull/7928) - Fixes FedCM integration by removing unreliable direct API calls and stabilizing prompt state transitions. (Author: @bytaesu)
+- **Coerce string WHERE values to match field types in adapter** [#7860](https://github.com/better-auth/better-auth/pull/7860) - Ensures database query predicates respect field type definitions, preventing type mismatches. (Author: @bytaesu)
+- **Apply listUsers filter when filterValue is defined** [#7827](https://github.com/better-auth/better-auth/pull/7827) - Admin user listing now correctly applies conditional filtering logic. (Author: @coderrshyam)
+- **Case-insensitive email matching for social account linking** [#7812](https://github.com/better-auth/better-auth/pull/7812) - OAuth account linking now normalizes email case, preventing duplicate accounts from different providers. (Author: @karuppusamy-d)
+- **Safely coerce date values from DB in OAuth provider plugin** [#7937](https://github.com/better-auth/better-auth/pull/7937) - Date deserialization now handles type coercion gracefully across database vendors. (Author: @himself65)
+- **Remove unreachable null check in&#32;`acceptInvitation`** [#7825](https://github.com/better-auth/better-auth/pull/7825) - Eliminates dead code path in organization invitation acceptance flow. (Author: @Saurav3004)
+
+### Documentation
+
+- **Add&#32;`trustedProxyHeaders`&#32;section to security reference** [#7835](https://github.com/better-auth/better-auth/pull/7835) - Documents trusted proxy header configuration for X-Forwarded-For and similar headers in production deployments. (Author: @Paola3stefania)
+- **Fix typo in docs and unresolved imports** [#7954](https://github.com/better-auth/better-auth/pull/7954) - Corrects documentation errors and resolves missing module references. (Author: @jslno)

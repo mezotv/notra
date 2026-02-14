@@ -12,7 +12,9 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
+import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
+import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
@@ -32,6 +34,7 @@ import {
   type TextSelection,
 } from "./plugins/selection-plugin";
 import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
+import { TableActionMenuPlugin } from "./plugins/table-action-menu-plugin";
 
 interface LexicalEditorProps {
   initialMarkdown: string;
@@ -74,6 +77,9 @@ export function LexicalEditor({
         LinkNode,
         AutoLinkNode,
         HorizontalRuleNode,
+        TableNode,
+        TableRowNode,
+        TableCellNode,
       ],
       theme: editorTheme,
       editable,
@@ -110,6 +116,7 @@ export function LexicalEditor({
         <HistoryPlugin />
         <ListPlugin />
         <HorizontalRulePlugin />
+        <TablePlugin hasCellMerge={false} hasTabHandler />
         {editable && (
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
         )}
@@ -132,6 +139,7 @@ export function LexicalEditor({
           <>
             <FloatingToolbarPlugin anchorElem={floatingAnchorElem} />
             <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
+            <TableActionMenuPlugin anchorElem={floatingAnchorElem} />
           </>
         )}
       </div>

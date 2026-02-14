@@ -1,88 +1,310 @@
 import { type Tool, tool } from "ai";
 import * as z from "zod";
+import { getAICachedTools } from "@/lib/ai/tool-cache";
 import { createOctokit } from "@/lib/octokit";
 import { getTokenForRepository } from "@/lib/services/github-integration";
 import { toolDescription } from "../utils/description";
 
-export function createGetPullRequestsTool(): Tool {
-  return tool({
-    description: toolDescription({
-      toolName: "get_pull_requests",
-      intro:
-        "Gets the full details of a specific pull request from a GitHub repository including title, description, status, author, reviewers, and merge info.",
-      whenToUse:
-        "When user asks about a specific PR, wants to see PR details, needs to check PR status, or references a pull request by number.",
-      usageNotes: `Requires the repository owner, repo name, and PR number.
-Returns comprehensive PR data including diff stats, labels, and review state.`,
-    }),
-    inputSchema: z.object({
-      repo: z
-        .string()
-        .describe("The name of the repository to get the pull requests for"),
-      owner: z.string().describe("The owner of the repository"),
-      pull_number: z
-        .number()
-        .describe("The number of the pull request to get the details for"),
-    }),
-    execute: async ({ repo, owner, pull_number }) => {
-      const token = await getTokenForRepository(owner, repo);
-      const octokit = createOctokit(token);
-      const pullRequest = await octokit.request(
-        "GET /repos/{owner}/{repo}/pulls/{pull_number}",
-        {
-          owner,
-          repo,
-          pull_number,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
-      return pullRequest.data;
-    },
-  });
+interface GitHubToolsAccessConfig {
+  organizationId?: string;
+  allowedRepositories?: Array<{ owner: string; repo: string }>;
 }
 
-export function createGetReleaseByTagTool(): Tool {
-  return tool({
-    description: toolDescription({
-      toolName: "get_release_by_tag",
-      intro:
-        "Gets release details from a GitHub repository by tag name including release notes, assets, and publish date.",
-      whenToUse:
-        "When user asks about a specific release version, wants changelog or release notes, or needs to find release assets and downloads.",
-      usageNotes: `Use 'latest' as the tag if the user wants the most recent release and doesn't specify a version.
-Returns release body (changelog), assets list, author, and timestamps.`,
-    }),
-    inputSchema: z.object({
-      repo: z
-        .string()
-        .describe("The name of the repository to get the releases for"),
-      owner: z.string().describe("The owner of the repository"),
-      tag: z
-        .string()
-        .default("latest")
-        .describe(
-          "The tag of the release to get the details for. Use 'latest' if you don't know the tag"
-        ),
-    }),
-    execute: async ({ repo, owner, tag }) => {
-      const token = await getTokenForRepository(owner, repo);
-      const octokit = createOctokit(token);
-      const releases = await octokit.request(
-        "GET /repos/{owner}/{repo}/releases/tags/{tag}",
-        {
-          owner,
-          repo,
-          tag,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
-      return releases.data;
-    },
+const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
+  "GitHub API rate limit reached. Please retry later.";
+
+interface ErrorWithStatus {
+  status?: number;
+  message?: string;
+  response?: {
+    headers?: Record<string, string | number | undefined>;
+    data?: unknown;
+  };
+}
+
+function parseRetryAfterSeconds(value?: string | number) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function getHeaderCaseInsensitive(
+  headers: Record<string, string | number | undefined> | undefined,
+  name: string
+) {
+  if (!headers) {
+    return undefined;
+  }
+
+  const key = Object.keys(headers).find(
+    (headerName) => headerName.toLowerCase() === name.toLowerCase()
+  );
+
+  if (!key) {
+    return undefined;
+  }
+
+  return headers[key];
+}
+
+export class GitHubRateLimitError extends Error {
+  readonly retryAfterSeconds?: number;
+
+  constructor(retryAfterSeconds?: number) {
+    super(GITHUB_PRIMARY_RATE_LIMIT_MESSAGE);
+    this.name = "GitHubRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+export function isGitHubRateLimitError(
+  error: unknown
+): error is GitHubRateLimitError {
+  if (error instanceof GitHubRateLimitError) {
+    return true;
+  }
+
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as {
+    name?: string;
+    message?: string;
+    cause?: unknown;
+  };
+
+  if (candidate.name === "GitHubRateLimitError") {
+    return true;
+  }
+
+  if (candidate.message?.includes(GITHUB_PRIMARY_RATE_LIMIT_MESSAGE)) {
+    return true;
+  }
+
+  if (candidate.cause) {
+    return isGitHubRateLimitError(candidate.cause);
+  }
+
+  return false;
+}
+
+function toGitHubRateLimitError(error: unknown) {
+  const maybeError = error as ErrorWithStatus;
+  const status = maybeError?.status;
+  const headers = maybeError?.response?.headers;
+
+  const remaining = getHeaderCaseInsensitive(headers, "x-ratelimit-remaining");
+  const retryAfter = getHeaderCaseInsensitive(headers, "retry-after");
+  const resetAt = getHeaderCaseInsensitive(headers, "x-ratelimit-reset");
+  const retryAfterSecondsFromHeader = parseRetryAfterSeconds(retryAfter);
+
+  let retryAfterSeconds = retryAfterSecondsFromHeader;
+  if (!retryAfterSeconds) {
+    const resetEpochSeconds = parseRetryAfterSeconds(resetAt);
+    if (resetEpochSeconds) {
+      const nowEpochSeconds = Math.floor(Date.now() / 1000);
+      const diff = resetEpochSeconds - nowEpochSeconds;
+      retryAfterSeconds = diff > 0 ? diff : undefined;
+    }
+  }
+
+  const isRateLimitedByStatus = status === 429;
+  const isRateLimitedByForbidden =
+    status === 403 && String(remaining ?? "") === "0";
+  const isSecondaryRateLimit =
+    status === 403 &&
+    maybeError?.message?.toLowerCase().includes("secondary rate limit") ===
+      true;
+
+  if (
+    isRateLimitedByStatus ||
+    isRateLimitedByForbidden ||
+    isSecondaryRateLimit
+  ) {
+    return new GitHubRateLimitError(retryAfterSeconds);
+  }
+
+  return null;
+}
+
+async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
+  try {
+    return await operation();
+  } catch (error) {
+    const rateLimitError = toGitHubRateLimitError(error);
+    if (rateLimitError) {
+      throw rateLimitError;
+    }
+    throw error;
+  }
+}
+
+function isRepositoryAllowed(
+  owner: string,
+  repo: string,
+  allowedRepositories?: Array<{ owner: string; repo: string }>
+) {
+  if (!allowedRepositories?.length) {
+    return true;
+  }
+
+  const normalizedOwner = owner.toLowerCase();
+  const normalizedRepo = repo.toLowerCase();
+
+  return allowedRepositories.some(
+    (allowedRepo) =>
+      allowedRepo.owner.toLowerCase() === normalizedOwner &&
+      allowedRepo.repo.toLowerCase() === normalizedRepo
+  );
+}
+
+function assertRepositoryAccess(
+  owner: string,
+  repo: string,
+  config?: GitHubToolsAccessConfig
+) {
+  if (!isRepositoryAllowed(owner, repo, config?.allowedRepositories)) {
+    throw new Error(
+      `Repository access denied for ${owner}/${repo}. This repository is not available in your current integration context.`
+    );
+  }
+}
+
+export function createGetPullRequestsTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
+  const cached = getAICachedTools({
+    organizationId: config?.organizationId,
+    namespace: "github",
   });
+
+  return cached(
+    tool({
+      description: toolDescription({
+        toolName: "get_pull_requests",
+        intro:
+          "Gets the full details of a specific pull request from a GitHub repository including title, description, status, author, reviewers, and merge info.",
+        whenToUse:
+          "When user asks about a specific PR, wants to see PR details, needs to check PR status, or references a pull request by number.",
+        usageNotes: `Requires the repository owner, repo name, and PR number.
+Returns comprehensive PR data including diff stats, labels, and review state.`,
+      }),
+      inputSchema: z.object({
+        repo: z
+          .string()
+          .describe("The name of the repository to get the pull requests for"),
+        owner: z.string().describe("The owner of the repository"),
+        pull_number: z
+          .number()
+          .describe("The number of the pull request to get the details for"),
+      }),
+      execute: async ({ repo, owner, pull_number }) => {
+        assertRepositoryAccess(owner, repo, config);
+
+        const token = await getTokenForRepository(owner, repo, {
+          organizationId: config?.organizationId,
+        });
+        const octokit = createOctokit(token);
+        const pullRequest = await withGitHubRateLimitHandling(() =>
+          octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+            owner,
+            repo,
+            pull_number,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          })
+        );
+        return pullRequest.data;
+      },
+    }),
+    {
+      // PR details can change (reviews/merge), but for changelog generation we
+      // mostly re-request the same PR within a short time window.
+      ttl: 10 * 60 * 1000,
+      keyGenerator: (params: unknown) => {
+        const { owner, repo, pull_number } = params as {
+          owner: string;
+          repo: string;
+          pull_number: number;
+        };
+        return `get_pull_requests:${owner.toLowerCase()}/${repo.toLowerCase()}#${String(pull_number)}`;
+      },
+    }
+  );
+}
+
+export function createGetReleaseByTagTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
+  const cached = getAICachedTools({
+    organizationId: config?.organizationId,
+    namespace: "github",
+  });
+
+  return cached(
+    tool({
+      description: toolDescription({
+        toolName: "get_release_by_tag",
+        intro:
+          "Gets release details from a GitHub repository by tag name including release notes, assets, and publish date.",
+        whenToUse:
+          "When user asks about a specific release version, wants changelog or release notes, or needs to find release assets and downloads.",
+        usageNotes: `Use 'latest' as the tag if the user wants the most recent release and doesn't specify a version.
+Returns release body (changelog), assets list, author, and timestamps.`,
+      }),
+      inputSchema: z.object({
+        repo: z
+          .string()
+          .describe("The name of the repository to get the releases for"),
+        owner: z.string().describe("The owner of the repository"),
+        tag: z
+          .string()
+          .default("latest")
+          .describe(
+            "The tag of the release to get the details for. Use 'latest' if you don't know the tag"
+          ),
+      }),
+      execute: async ({ repo, owner, tag }) => {
+        assertRepositoryAccess(owner, repo, config);
+
+        const token = await getTokenForRepository(owner, repo, {
+          organizationId: config?.organizationId,
+        });
+        const octokit = createOctokit(token);
+        const releases = await withGitHubRateLimitHandling(() =>
+          octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+            owner,
+            repo,
+            tag,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          })
+        );
+        return releases.data;
+      },
+    }),
+    {
+      ttl: 30 * 60 * 1000,
+      keyGenerator: (params: unknown) => {
+        const { owner, repo, tag } = params as {
+          owner: string;
+          repo: string;
+          tag?: string;
+        };
+        return `get_release_by_tag:${owner.toLowerCase()}/${repo.toLowerCase()}@${String(tag ?? "latest").toLowerCase()}`;
+      },
+    }
+  );
 }
 
 export const getISODateFromDaysAgo = (days: number): string => {
@@ -91,43 +313,67 @@ export const getISODateFromDaysAgo = (days: number): string => {
   return date.toISOString();
 };
 
-export function createGetCommitsByTimeframeTool(): Tool {
-  return tool({
-    description: toolDescription({
-      toolName: "get_commits_by_timeframe",
-      intro:
-        "Gets all commits from the default branch within a specified number of days. Returns commit messages, authors, dates, and SHAs.",
-      whenToUse:
-        "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
-      usageNotes: `Use the timeframe requested in the prompt or user request.
-Use this for activity summaries, changelog generation, or understanding recent changes.`,
-    }),
-    inputSchema: z.object({
-      owner: z.string().describe("The owner of the repository"),
-      repo: z.string().describe("The name of the repository"),
-      days: z
-        .number()
-        .default(7)
-        .describe("How many days of commit history to retrieve"),
-    }),
-    execute: async ({ owner, repo, days }) => {
-      const token = await getTokenForRepository(owner, repo);
-      const octokit = createOctokit(token);
-      const since = getISODateFromDaysAgo(days);
-
-      const response = await octokit.request(
-        "GET /repos/{owner}/{repo}/commits",
-        {
-          owner,
-          repo,
-          since,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        }
-      );
-
-      return response.data;
-    },
+export function createGetCommitsByTimeframeTool(
+  config?: GitHubToolsAccessConfig
+): Tool {
+  const cached = getAICachedTools({
+    organizationId: config?.organizationId,
+    namespace: "github",
   });
+
+  return cached(
+    tool({
+      description: toolDescription({
+        toolName: "get_commits_by_timeframe",
+        intro:
+          "Gets all commits from the default branch within a specified number of days. Returns commit messages, authors, dates, and SHAs.",
+        whenToUse:
+          "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
+        usageNotes: `Use the timeframe requested in the prompt or user request.
+Use this for activity summaries, changelog generation, or understanding recent changes.`,
+      }),
+      inputSchema: z.object({
+        owner: z.string().describe("The owner of the repository"),
+        repo: z.string().describe("The name of the repository"),
+        days: z
+          .number()
+          .default(7)
+          .describe("How many days of commit history to retrieve"),
+      }),
+      execute: async ({ owner, repo, days }) => {
+        assertRepositoryAccess(owner, repo, config);
+
+        const token = await getTokenForRepository(owner, repo, {
+          organizationId: config?.organizationId,
+        });
+        const octokit = createOctokit(token);
+        const since = getISODateFromDaysAgo(days);
+        const response = await withGitHubRateLimitHandling(() =>
+          octokit.request("GET /repos/{owner}/{repo}/commits", {
+            owner,
+            repo,
+            since,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          })
+        );
+
+        return response.data;
+      },
+    }),
+    {
+      // Commit lists change frequently; keep TTL short to reduce staleness while
+      // still eliminating duplicate calls within a single agent run.
+      ttl: 2 * 60 * 1000,
+      keyGenerator: (params: unknown) => {
+        const { owner, repo, days } = params as {
+          owner: string;
+          repo: string;
+          days: number;
+        };
+        return `get_commits_by_timeframe:${owner.toLowerCase()}/${repo.toLowerCase()}:days=${String(days)}`;
+      },
+    }
+  );
 }

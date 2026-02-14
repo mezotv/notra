@@ -16,29 +16,32 @@ export const WelcomeEmail = () => {
         </Text>
 
         <Text>
-          I built Notra because I was shipping faster than ever but didn't have
-          enough time to come up with tweets, changelogs or linkedIn posts. I
-          hope you can stay long enough to see my full vision for Notra! :D
+          We built Notra because we were shipping faster than ever but didn't
+          have enough time to come up with tweets, changelogs and LinkedIn
+          posts.
         </Text>
 
         <Text>
           If you have any questions, feedback, or just want to chat reply to
-          this email. I read every single one.
+          this email. We read every single one of them.
         </Text>
 
         <Text>
-          Or schedule a talk with me at{" "}
-          <Link href="https://cal.com/dominikkoch">cal.com/dominikkoch</Link>!
+          Or schedule a talk with us at{" "}
+          <Link href="https://usenotra.com/founder-call">
+            usenotra.com/founder-call
+          </Link>
+          !
         </Text>
 
         <Text>
-          btw you can get started at <Link href={appUrl}>app.usenotra.com</Link>
+          You can get started at <Link href={appUrl}>app.usenotra.com</Link>
         </Text>
 
         <Text>
           Cheers,
           <br />
-          Dominik
+          Dominik & The Notra Team
         </Text>
 
         <Text style={{ fontSize: "12px", color: "#999", marginTop: "32px" }}>

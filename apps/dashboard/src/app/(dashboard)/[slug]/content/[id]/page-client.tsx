@@ -10,6 +10,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
@@ -25,7 +31,7 @@ import { CONTENT_TYPE_LABELS } from "@/components/content/content-card";
 import { DiffView } from "@/components/content/diff-view";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
-import { TitleCard } from "@/components/title-card";
+import { sourceMetadataSchema } from "@/utils/schemas/content";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -59,6 +65,44 @@ function extractTitleFromMarkdown(markdown: string): string {
   return match?.[1] ?? "Untitled";
 }
 
+const LOOKBACK_LABELS: Record<string, string> = {
+  current_day: "Current day",
+  yesterday: "Yesterday",
+  last_7_days: "Last 7 days",
+  last_14_days: "Last 14 days",
+  last_30_days: "Last 30 days",
+};
+
+const TRIGGER_TYPE_LABELS: Record<string, string> = {
+  cron: "Scheduled",
+  github_webhook: "Webhook",
+  manual: "Manual",
+};
+
+function formatLookbackWindow(window: string): string {
+  return LOOKBACK_LABELS[window] ?? window;
+}
+
+function formatDateRange(start: string, end: string): string {
+  const fmt = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${fmt.format(new Date(start))} – ${fmt.format(new Date(end))}`;
+}
+
+function formatTriggerType(type: string): string {
+  return TRIGGER_TYPE_LABELS[type] ?? type;
+}
+
+function formatRepos(repos: { owner: string; repo: string }[]): string {
+  if (repos.length === 1 && repos[0]) {
+    return `${repos[0].owner}/${repos[0].repo}`;
+  }
+  return `${repos.length} repositories`;
+}
+
 export default function PageClient({
   contentId,
   organizationSlug,
@@ -84,13 +128,18 @@ export default function PageClient({
   const editorRef = useRef<EditorRefHandle | null>(null);
   const handleSaveRef = useRef<() => void>(() => {});
   const handleDiscardRef = useRef<() => void>(() => {});
+  const needsNormalizationRef = useRef(false);
+  const originalMarkdownRef = useRef("");
+  const editedMarkdownRef = useRef<string | null>(null);
 
-  // Initialize content when data loads
   useEffect(() => {
     if (data?.content && editedMarkdown === null) {
       setEditedMarkdown(data.content.markdown);
       setOriginalMarkdown(data.content.markdown);
-      setEditorKey((k) => k + 1); // Force Lexical to remount with new content
+      originalMarkdownRef.current = data.content.markdown;
+      editedMarkdownRef.current = data.content.markdown;
+      needsNormalizationRef.current = true;
+      setEditorKey((k) => k + 1);
     }
   }, [data, editedMarkdown]);
 
@@ -141,6 +190,7 @@ export default function PageClient({
       }
 
       setOriginalMarkdown(editedMarkdown);
+      originalMarkdownRef.current = editedMarkdown;
       toast.success("Content saved");
     } catch (err) {
       console.error("Error saving content:", err);
@@ -152,7 +202,7 @@ export default function PageClient({
 
   const handleDiscard = useCallback(() => {
     setEditedMarkdown(originalMarkdown);
-    // Update Lexical editor content directly without remounting
+    editedMarkdownRef.current = originalMarkdown;
     editorRef.current?.setMarkdown(originalMarkdown);
   }, [originalMarkdown]);
 
@@ -248,7 +298,17 @@ export default function PageClient({
 
   // Handle Lexical editor changes
   const handleEditorChange = useCallback((markdown: string) => {
+    if (
+      needsNormalizationRef.current &&
+      editedMarkdownRef.current === originalMarkdownRef.current
+    ) {
+      needsNormalizationRef.current = false;
+      setOriginalMarkdown(markdown);
+      originalMarkdownRef.current = markdown;
+    }
+    needsNormalizationRef.current = false;
     setEditedMarkdown(markdown);
+    editedMarkdownRef.current = markdown;
   }, []);
 
   // Handle Lexical selection
@@ -275,7 +335,7 @@ export default function PageClient({
           const lines = textarea.value.substring(0, offset).split("\n");
           return {
             line: lines.length,
-            char: (lines[lines.length - 1]?.length ?? 0) + 1,
+            char: (lines.at(-1)?.length ?? 0) + 1,
           };
         };
         const start = getLineAndChar(startOffset);
@@ -358,7 +418,9 @@ export default function PageClient({
       if (message?.role === "assistant" && message.parts) {
         for (let j = message.parts.length - 1; j >= 0; j--) {
           const part = message.parts[j];
-          if (!part) continue;
+          if (!part) {
+            continue;
+          }
           if (part.type === "text" && part.text?.trim()) {
             return part.text.trim();
           }
@@ -410,6 +472,7 @@ export default function PageClient({
                 `[Tool] editMarkdown result applied, toolCallId=${toolPart.toolCallId}`
               );
               setEditedMarkdown(fixedMarkdown);
+              editedMarkdownRef.current = fixedMarkdown;
               editorRef.current?.setMarkdown(fixedMarkdown);
             }
           }
@@ -480,16 +543,65 @@ export default function PageClient({
               Back to Content
             </Button>
           </Link>
-          <div className="flex items-center gap-3">
-            <time
-              className="text-muted-foreground text-sm"
-              dateTime={content.date}
-            >
-              {formatDate(new Date(content.date))}
-            </time>
-            <Badge variant="secondary">
-              {CONTENT_TYPE_LABELS[content.contentType]}
-            </Badge>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <time
+                className="text-muted-foreground text-sm"
+                dateTime={content.date}
+              >
+                {formatDate(new Date(content.date))}
+              </time>
+              <Badge variant="secondary">
+                {CONTENT_TYPE_LABELS[content.contentType]}
+              </Badge>
+            </div>
+            {content.sourceMetadata &&
+              (() => {
+                const parsed = sourceMetadataSchema.safeParse(
+                  content.sourceMetadata
+                );
+                if (!parsed.success || !parsed.data) {
+                  return null;
+                }
+                const meta = parsed.data;
+                const repoLabel = formatRepos(meta.repositories);
+                const needsTooltip = meta.repositories.length > 1;
+                return (
+                  <p className="text-muted-foreground text-xs">
+                    {formatTriggerType(meta.triggerSourceType)}
+                    {" \u00B7 "}
+                    {needsTooltip ? (
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <span className="cursor-help underline decoration-dotted underline-offset-2">
+                              {repoLabel}
+                            </span>
+                          }
+                        />
+                        <TooltipContent>
+                          <ul>
+                            {meta.repositories.map((r) => (
+                              <li key={`${r.owner}/${r.repo}`}>
+                                {r.owner}/{r.repo}
+                              </li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      repoLabel
+                    )}
+                    {" \u00B7 "}
+                    {formatLookbackWindow(meta.lookbackWindow)} (
+                    {formatDateRange(
+                      meta.lookbackRange.start,
+                      meta.lookbackRange.end
+                    )}
+                    )
+                  </p>
+                );
+              })()}
           </div>
         </div>
 
@@ -535,7 +647,10 @@ export default function PageClient({
               <textarea
                 aria-label="Markdown content editor"
                 className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
-                onChange={(e) => setEditedMarkdown(e.target.value)}
+                onChange={(e) => {
+                  setEditedMarkdown(e.target.value);
+                  editedMarkdownRef.current = e.target.value;
+                }}
                 onMouseUp={handleTextareaSelect}
                 onSelect={handleTextareaSelect}
                 ref={textareaRef}
