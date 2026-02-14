@@ -254,12 +254,12 @@ export const { POST } = serve<SchedulePayload>(
       }
     );
 
-    let isCanceledForCreditLimit = false;
-    let aiCreditReserved = false;
-
-    await context.run("reserve-ai-credit", async () => {
+    const aiCreditReservation = await context.run<{
+      canceled: boolean;
+      reserved: boolean;
+    }>("reserve-ai-credit", async () => {
       if (!autumn) {
-        return;
+        return { canceled: false, reserved: false };
       }
 
       const { data, error } = await autumn.check({
@@ -280,15 +280,14 @@ export const { POST } = serve<SchedulePayload>(
             balance: data?.balance ?? 0,
           }
         );
-        isCanceledForCreditLimit = true;
         await context.cancel();
-        return;
+        return { canceled: true, reserved: false };
       }
 
-      aiCreditReserved = true;
+      return { canceled: false, reserved: true };
     });
 
-    if (isCanceledForCreditLimit) {
+    if (aiCreditReservation.canceled) {
       return;
     }
 
@@ -361,7 +360,7 @@ export const { POST } = serve<SchedulePayload>(
 
       if (contentResult.status === "rate_limited") {
         const autumnClient = autumn;
-        if (aiCreditReserved && autumnClient) {
+        if (aiCreditReservation.reserved && autumnClient) {
           await context.run("refund-ai-credit-after-rate-limit", async () => {
             const { error } = await autumnClient.track({
               customer_id: trigger.organizationId,
@@ -454,7 +453,7 @@ export const { POST } = serve<SchedulePayload>(
       return { success: true, triggerId, postId };
     } catch (error) {
       const autumnClient = autumn;
-      if (aiCreditReserved && autumnClient) {
+      if (aiCreditReservation.reserved && autumnClient) {
         await context.run("refund-ai-credit-after-failure", async () => {
           const { error: refundError } = await autumnClient.track({
             customer_id: trigger.organizationId,
