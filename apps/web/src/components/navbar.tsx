@@ -61,7 +61,12 @@ export function Navbar() {
 
           <div className="flex min-w-0 flex-1 items-center justify-between border-border border-r border-l bg-background/80 px-3 backdrop-blur-sm sm:px-4 md:px-5">
             <div className="flex min-w-0 items-center justify-center">
-              <DropdownMenu onOpenChange={setLogoMenuOpen} open={logoMenuOpen}>
+              <DropdownMenu
+                onOpenChange={(open) => {
+                  if (!open) setLogoMenuOpen(false);
+                }}
+                open={logoMenuOpen}
+              >
                 <DropdownMenuTrigger
                   className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                   onContextMenu={(e) => {
