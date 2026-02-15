@@ -1,4 +1,4 @@
-import { z } from "better-auth";
+import { z } from "zod";
 
 export const changelogOutputSchema = z.object({
   title: z.string().max(120).describe("The changelog title, no markdown"),
