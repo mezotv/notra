@@ -1,18 +1,9 @@
 import { changelog } from "@/../.source/server";
 import { getCompany, getEntrySlug } from "@/utils/changelog";
+import { markdownResponse } from "@/utils/markdown";
 
 interface RouteProps {
   params: Promise<{ name: string }>;
-}
-
-function markdownResponse(content: string, status = 200) {
-  return new Response(content, {
-    status,
-    headers: {
-      "content-type": "text/markdown; charset=utf-8",
-      vary: "accept",
-    },
-  });
 }
 
 export async function GET(_: Request, { params }: RouteProps) {

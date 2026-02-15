@@ -11,6 +11,21 @@ const nextConfig: NextConfig = {
   rewrites: async () => ({
     beforeFiles: [
       {
+        source: "/",
+        destination: "/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
+      },
+      {
+        source: "/index.md",
+        destination: "/markdown",
+      },
+      {
         source: "/changelog/:name",
         destination: "/changelog/:name/markdown",
         has: [
