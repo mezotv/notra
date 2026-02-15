@@ -22,15 +22,15 @@ import type React from "react";
 import { isValidElement, useRef, useState } from "react";
 import { toast } from "sonner";
 import { parseGitHubUrl } from "@/lib/utils/github";
+import {
+  type AddRepositoryFormValues,
+  addRepositoryFormSchema,
+} from "@/schemas/integrations";
 import type {
   AddRepositoryDialogProps,
   AvailableRepo,
 } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import {
-  type AddRepositoryFormValues,
-  addRepositoryFormSchema,
-} from "@/utils/schemas/integrations";
 
 function RepositorySelector({
   field,

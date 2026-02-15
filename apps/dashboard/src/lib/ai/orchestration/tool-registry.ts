@@ -6,7 +6,11 @@ import {
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import type { RepoContext, ToolSet, ValidatedIntegration } from "./types";
+import type {
+  RepoContext,
+  ToolSet,
+  ValidatedIntegration,
+} from "@/types/ai/orchestration";
 
 interface BuildToolSetParams {
   organizationId: string;
@@ -25,7 +29,11 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
 
   const { getMarkdown, editMarkdown } = createMarkdownTools({
     currentMarkdown,
-    onUpdate: onMarkdownUpdate ?? (() => {}),
+    onUpdate:
+      onMarkdownUpdate ??
+      (() => {
+        console.log("onMarkdownUpdate is not set");
+      }),
   });
 
   const tools: Record<string, Tool> = {

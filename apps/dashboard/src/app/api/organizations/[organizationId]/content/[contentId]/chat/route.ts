@@ -5,7 +5,7 @@ import { orchestrateChat } from "@/lib/ai/orchestration";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
 import { FEATURES } from "@/lib/billing/constants";
-import { chatRequestSchema } from "@/utils/schemas/content";
+import { chatRequestSchema } from "@/schemas/content";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; contentId: string }>;

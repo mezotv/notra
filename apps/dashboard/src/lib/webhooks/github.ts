@@ -3,13 +3,13 @@ import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { redis } from "@/lib/redis";
 import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
-import type { WebhookContext, WebhookResult } from "@/types/webhooks";
 import {
   type GitHubEventType,
   type GitHubWebhookPayload,
   githubWebhookPayloadSchema,
   isGitHubEventType,
-} from "@/utils/schemas/github-webhook";
+} from "@/schemas/github-webhook";
+import type { WebhookContext, WebhookResult } from "@/types/webhooks";
 
 const DELIVERY_TTL_SECONDS = 60 * 60 * 24;
 

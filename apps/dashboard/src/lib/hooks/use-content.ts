@@ -1,8 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { ContentResponse } from "@/schemas/content";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import type { ContentResponse } from "@/utils/schemas/content";
 
 interface ContentApiResponse {
   content: ContentResponse;

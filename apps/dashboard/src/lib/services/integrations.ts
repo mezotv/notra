@@ -1,4 +1,4 @@
-import type { IntegrationType } from "@/utils/schemas/integrations";
+import type { IntegrationType } from "@/schemas/integrations";
 import { getGitHubIntegrationsByOrganization } from "./github-integration";
 
 export interface IntegrationWithRepositories {

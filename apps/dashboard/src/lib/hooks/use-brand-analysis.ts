@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import type { UpdateBrandSettingsInput } from "@/schemas/brand";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import type { UpdateBrandSettingsInput } from "@/utils/schemas/brand";
 
 interface BrandSettings {
   id: string;

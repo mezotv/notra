@@ -14,9 +14,9 @@ import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import { organizationSlugSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import { organizationSlugSchema } from "@/utils/schemas/organization";
 
 interface PageProps {
   params: Promise<{ slug: string }>;

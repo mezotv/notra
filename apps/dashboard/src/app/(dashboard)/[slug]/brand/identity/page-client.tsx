@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { ToneProfile } from "@/utils/schemas/brand";
+import type { ToneProfile } from "@/schemas/brand";
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,

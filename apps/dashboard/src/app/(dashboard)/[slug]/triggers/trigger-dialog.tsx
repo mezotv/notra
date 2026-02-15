@@ -36,18 +36,18 @@ import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
-import type { GitHubIntegration } from "@/types/integrations";
-import type { Trigger } from "@/types/triggers";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import type {
   LookbackWindow,
   OutputContentType,
   WebhookEventType,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 import {
   LOOKBACK_WINDOWS,
   MAX_SCHEDULE_NAME_LENGTH,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
+import type { GitHubIntegration } from "@/types/integrations";
+import type { Trigger } from "@/types/triggers";
+import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePicker } from "./trigger-schedule-picker";
 
 const EVENT_OPTIONS: Array<{ value: WebhookEventType; label: string }> = [

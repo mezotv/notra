@@ -10,7 +10,7 @@ import { gateway } from "@/lib/ai/gateway";
 import { getFirecrawlClient } from "@/lib/firecrawl";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
-import { brandSettingsSchema } from "@/utils/schemas/brand";
+import { brandSettingsSchema } from "@/schemas/brand";
 
 const PROGRESS_TTL = 300;
 

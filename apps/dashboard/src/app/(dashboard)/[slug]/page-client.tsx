@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
-import type { ContentType } from "@/utils/schemas/content";
+import type { ContentType } from "@/schemas/content";
 
 interface PageClientProps {
   organizationSlug: string;

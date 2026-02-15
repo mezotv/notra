@@ -5,9 +5,9 @@ import {
 } from "@/lib/services/github-integration";
 import { handleGitHubWebhook } from "@/lib/webhooks/github";
 import { handleLinearWebhook } from "@/lib/webhooks/linear";
+import type { InputIntegrationType } from "@/schemas/integrations";
+import { webhookParamsWithRepoSchema } from "@/schemas/webhooks";
 import type { WebhookContext, WebhookHandler } from "@/types/webhooks";
-import type { InputIntegrationType } from "@/utils/schemas/integrations";
-import { webhookParamsWithRepoSchema } from "@/utils/schemas/webhooks";
 
 interface RouteContext {
   params: Promise<{

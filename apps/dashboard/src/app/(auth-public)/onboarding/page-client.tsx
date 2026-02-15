@@ -10,9 +10,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 import { generateOrganizationAvatar, slugify } from "@/lib/utils";
+import { createOrganizationSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import { createOrganizationSchema } from "@/utils/schemas/organization";
 
 export function OnboardingClient() {
   const router = useRouter();

@@ -10,7 +10,7 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
-import type { OutputContentType } from "@/utils/schemas/integrations";
+import type { OutputContentType } from "@/schemas/integrations";
 import { getConfiguredAppUrl } from "@/utils/url";
 import { createOctokit } from "../octokit";
 

@@ -7,8 +7,8 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { deleteQstashSchedule } from "@/lib/triggers/qstash";
+import { configureTriggerBodySchema } from "@/schemas/integrations";
 import type { Trigger } from "@/types/triggers";
-import { configureTriggerBodySchema } from "@/utils/schemas/integrations";
 
 const COMING_SOON = true;
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);

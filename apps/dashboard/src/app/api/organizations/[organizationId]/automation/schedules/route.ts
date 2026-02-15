@@ -15,13 +15,13 @@ import {
   createQstashSchedule,
   deleteQstashSchedule,
 } from "@/lib/triggers/qstash";
-import type { Trigger } from "@/types/triggers";
 import {
   configureScheduleBodySchema,
   getSchedulesQuerySchema,
   type LookbackWindow,
   triggerTargetsSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
+import type { Trigger } from "@/types/triggers";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";

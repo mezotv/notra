@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { createGitHubIntegration } from "@/lib/services/github-integration";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
-import { createGitHubIntegrationRequestSchema } from "@/utils/schemas/integrations";
+import { createGitHubIntegrationRequestSchema } from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;

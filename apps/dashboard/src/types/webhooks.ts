@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import type { InputIntegrationType } from "@/utils/schemas/integrations";
+import type { InputIntegrationType } from "@/schemas/integrations";
 
 export interface WebhookContext {
   provider: InputIntegrationType;

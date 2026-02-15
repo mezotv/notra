@@ -31,8 +31,8 @@ import {
   OUTPUT_SOURCES,
 } from "@/lib/integrations/catalog";
 import type { IntegrationsResponse } from "@/lib/services/integrations";
+import type { IntegrationType } from "@/schemas/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import type { IntegrationType } from "@/utils/schemas/integrations";
 import { IntegrationsPageSkeleton } from "./skeleton";
 
 const TAB_VALUES = ["all", "installed"] as const;

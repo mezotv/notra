@@ -1,5 +1,8 @@
 import { getGitHubIntegrationById } from "@/lib/services/github-integration";
-import type { ContextItem, ValidatedIntegration } from "./types";
+import type {
+  ContextItem,
+  ValidatedIntegration,
+} from "@/types/ai/orchestration";
 
 export async function validateIntegrations(
   organizationId: string,

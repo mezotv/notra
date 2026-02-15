@@ -3,7 +3,7 @@ import { brandSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { updateBrandSettingsSchema } from "@/utils/schemas/brand";
+import { updateBrandSettingsSchema } from "@/schemas/brand";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;

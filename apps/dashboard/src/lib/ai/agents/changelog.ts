@@ -8,7 +8,6 @@ import {
   ToolLoopAgent,
   wrapLanguageModel,
 } from "ai";
-import { z } from "zod";
 import { gateway } from "@/lib/ai/gateway";
 import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
@@ -22,18 +21,11 @@ import {
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
-
-export const changelogOutputSchema = z.object({
-  title: z.string().max(120).describe("The changelog title, no markdown"),
-  markdown: z
-    .string()
-    .describe(
-      "The full changelog content body as markdown/MDX, without the title heading (title is a separate field)"
-    ),
-});
-
-export type ChangelogOutput = z.infer<typeof changelogOutputSchema>;
+import {
+  type ChangelogOutput,
+  changelogOutputSchema,
+} from "@/schemas/ai/changelog";
+import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
 
 export interface ChangelogAgentResult {
   output: ChangelogOutput;
@@ -71,7 +63,7 @@ export async function generateChangelog(
     middleware: extractJsonMiddleware(),
   });
 
-  const resolvedTone: ToneProfile = getValidToneProfile(tone, "Conversational");
+  const resolvedTone = getValidToneProfile(tone, "Conversational");
 
   const promptFactory =
     changelogPromptByTone[resolvedTone] ?? changelogPromptByTone.Conversational;

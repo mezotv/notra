@@ -20,12 +20,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
-import type { GitHubIntegration } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import {
   type EditGitHubIntegrationFormValues,
   editGitHubIntegrationFormSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
+import type { GitHubIntegration } from "@/types/integrations";
+import { QUERY_KEYS } from "@/utils/query-keys";
 
 interface EditIntegrationDialogProps {
   integration: GitHubIntegration;
