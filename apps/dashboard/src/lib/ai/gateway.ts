@@ -1,11 +1,14 @@
 import { createGateway } from "@ai-sdk/gateway";
+import type {
+  GatewayArgs,
+  GatewayClient,
+  GatewayResult,
+} from "@/types/ai/gateway";
 
 const headers = {
   "http-referer": "https://www.usenotra.com",
   "x-title": "Notra",
 };
-
-type GatewayClient = ReturnType<typeof createGateway>;
 
 let gatewayClient: GatewayClient | null = null;
 
@@ -17,9 +20,6 @@ function getGatewayClient(): GatewayClient {
   gatewayClient = createGateway({ headers });
   return gatewayClient;
 }
-
-type GatewayArgs = Parameters<GatewayClient>;
-type GatewayResult = ReturnType<GatewayClient>;
 
 export const gateway = (...args: GatewayArgs): GatewayResult => {
   const client = getGatewayClient();

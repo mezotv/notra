@@ -2,21 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { type Tool, tool } from "ai";
 import matter from "gray-matter";
-import * as z from "zod";
-import { toolDescription } from "../utils/description";
-
-interface SkillMetadata {
-  name: string;
-  version?: string;
-  description?: string;
-  "allowed-tools"?: string[];
-  folder: string;
-  filename: string;
-}
-
-interface Skill extends SkillMetadata {
-  content: string;
-}
+import z from "zod";
+import type { Skill, SkillMetadata } from "@/types/ai/tools";
+import { toolDescription } from "@/utils/ai/description";
 
 function parseSkillFrontmatter(content: string): Partial<SkillMetadata> {
   const parsed = matter(content);

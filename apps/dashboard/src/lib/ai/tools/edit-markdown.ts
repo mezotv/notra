@@ -1,51 +1,9 @@
 import { tool } from "ai";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
+import z from "zod";
+import { type EditOperation, editOperationSchema } from "@/schemas/ai/tools";
+import type { EditMarkdownContext } from "@/types/ai/tools";
 
-const editOperationSchema = z.discriminatedUnion("op", [
-  z.object({
-    op: z.literal("replaceLine"),
-    line: z.number().describe("The line number to replace (1-indexed)"),
-    content: z.string().describe("The new content for the line"),
-  }),
-  z.object({
-    op: z.literal("replaceRange"),
-    startLine: z.number().describe("The starting line number (1-indexed)"),
-    endLine: z.number().describe("The ending line number (1-indexed)"),
-    content: z
-      .string()
-      .describe("The new content (use \\n for multiple lines)"),
-  }),
-  z.object({
-    op: z.literal("insert"),
-    afterLine: z
-      .number()
-      .describe("Line number after which to insert (0 for start)"),
-    content: z.string().describe("The content to insert"),
-  }),
-  z.object({
-    op: z.literal("deleteLine"),
-    line: z.number().describe("The line number to delete (1-indexed)"),
-  }),
-  z.object({
-    op: z.literal("deleteRange"),
-    startLine: z
-      .number()
-      .describe("The starting line number to delete (1-indexed)"),
-    endLine: z
-      .number()
-      .describe("The ending line number to delete (1-indexed)"),
-  }),
-]);
-
-export type EditOperation = z.infer<typeof editOperationSchema>;
-
-interface EditMarkdownContext {
-  currentMarkdown: string;
-  onUpdate: (markdown: string) => void;
-}
-
-function getOperationLineNumber(op: EditOperation): number {
+function getOperationLineNumber(op: EditOperation) {
   if ("line" in op && op.line !== undefined) {
     return op.line;
   }
@@ -58,7 +16,7 @@ function getOperationLineNumber(op: EditOperation): number {
   return 0;
 }
 
-function applyOperation(lines: string[], op: EditOperation): void {
+function applyOperation(lines: string[], op: EditOperation) {
   if (op.op === "replaceLine") {
     lines[op.line - 1] = op.content;
   } else if (op.op === "replaceRange") {

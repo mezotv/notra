@@ -1,26 +1,16 @@
 import { type Tool, tool } from "ai";
-import * as z from "zod";
-import { getAICachedTools } from "@/lib/ai/tool-cache";
+import z from "zod";
 import { createOctokit } from "@/lib/octokit";
 import { getTokenForRepository } from "@/lib/services/github-integration";
-import { toolDescription } from "../utils/description";
-
-interface GitHubToolsAccessConfig {
-  organizationId?: string;
-  allowedRepositories?: Array<{ owner: string; repo: string }>;
-}
+import type {
+  ErrorWithStatus,
+  GitHubToolsAccessConfig,
+} from "@/types/ai/tools";
+import { toolDescription } from "@/utils/ai/description";
+import { getAICachedTools } from "./tool-cache";
 
 const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
   "GitHub API rate limit reached. Please retry later.";
-
-interface ErrorWithStatus {
-  status?: number;
-  message?: string;
-  response?: {
-    headers?: Record<string, string | number | undefined>;
-    data?: unknown;
-  };
-}
 
 function parseRetryAfterSeconds(value?: string | number) {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -307,7 +297,7 @@ Returns release body (changelog), assets list, author, and timestamps.`,
   );
 }
 
-export const getISODateFromDaysAgo = (days: number): string => {
+export const getISODateFromDaysAgo = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();

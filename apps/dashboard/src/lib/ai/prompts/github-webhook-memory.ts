@@ -1,9 +1,4 @@
-interface GithubWebhookMemoryPromptParams {
-  eventType: "release" | "push" | "star";
-  repository: string;
-  action: string;
-  data: Record<string, unknown>;
-}
+import type { GithubWebhookMemoryPromptParams } from "@/types/ai/prompts";
 
 export function getGithubWebhookMemoryPrompt(
   params: GithubWebhookMemoryPromptParams

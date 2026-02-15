@@ -1,19 +1,5 @@
 import dedent from "dedent";
-
-interface TextSelection {
-  text: string;
-  startLine: number;
-  startChar: number;
-  endLine: number;
-  endChar: number;
-}
-
-interface ContentEditorChatPromptParams {
-  selection?: TextSelection;
-  repoContext?: { owner: string; repo: string }[];
-  toolDescriptions?: string[];
-  hasGitHubEnabled?: boolean;
-}
+import type { ContentEditorChatPromptParams } from "@/types/ai/prompts";
 
 export function getContentEditorChatPrompt(
   params: ContentEditorChatPromptParams

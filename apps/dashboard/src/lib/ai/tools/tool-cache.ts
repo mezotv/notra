@@ -1,15 +1,6 @@
 import { createCached } from "@ai-sdk-tools/cache";
 import { redis } from "@/lib/redis";
-
-type CachedWrapper = <TTool extends object>(
-  tool: TTool,
-  options?: {
-    ttl?: number;
-    keyGenerator?: (params: unknown, context?: unknown) => string;
-    shouldCache?: (params: unknown, result: unknown) => boolean;
-    debug?: boolean;
-  }
-) => TTool;
+import type { CachedWrapper } from "@/types/ai/tools";
 
 function normalizeKeyPart(value: string) {
   return value

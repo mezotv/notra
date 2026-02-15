@@ -1,12 +1,5 @@
 import dedent from "dedent";
-
-interface ToolDescription {
-  intro: string;
-  toolName: string;
-  whenToUse?: string;
-  whenNotToUse?: string;
-  usageNotes?: string;
-}
+import type { ToolDescription } from "@/types/ai/tools";
 
 export const toolDescription = (input: ToolDescription) => {
   const intro = input.intro ? dedent(input.intro) : undefined;
