@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { orchestrateChat } from "@/lib/ai/orchestration";
+import { orchestrateChat } from "@/lib/ai/orchestration/orchestrate";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
 import { FEATURES } from "@/lib/billing/constants";
