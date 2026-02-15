@@ -13,7 +13,6 @@ import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
 import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
-import type { ChangelogTonePromptInput } from "@/lib/ai/prompts/changelog/types";
 import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
 import {
   createGetCommitsByTimeframeTool,
@@ -21,22 +20,12 @@ import {
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import {
-  type ChangelogOutput,
-  changelogOutputSchema,
-} from "@/schemas/ai/changelog";
+import { changelogOutputSchema } from "@/schemas/ai/agents";
 import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
-
-export interface ChangelogAgentResult {
-  output: ChangelogOutput;
-}
-
-export interface ChangelogAgentOptions {
-  organizationId: string;
-  repositories: Array<{ owner: string; repo: string }>;
-  tone?: ToneProfile;
-  promptInput: ChangelogTonePromptInput;
-}
+import type {
+  ChangelogAgentOptions,
+  ChangelogAgentResult,
+} from "@/types/ai/agents";
 
 const changelogPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalChangelogPrompt,

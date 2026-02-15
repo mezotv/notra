@@ -4,14 +4,7 @@ import { gateway } from "@/lib/ai/gateway";
 import { routeMessage, selectModel } from "@/lib/ai/orchestration/router";
 import { createMarkdownTools } from "@/lib/ai/tools/edit-markdown";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-
-interface ChatAgentContext {
-  organizationId: string;
-  currentMarkdown: string;
-  selectedText?: string;
-  onMarkdownUpdate: (markdown: string) => void;
-  brandContext?: string;
-}
+import type { ChatAgentContext } from "@/types/ai/agents";
 
 export async function createChatAgent(
   context: ChatAgentContext,

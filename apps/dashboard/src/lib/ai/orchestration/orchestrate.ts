@@ -8,9 +8,8 @@ import {
 import { gateway } from "@/lib/ai/gateway";
 import { getContentEditorChatPrompt } from "@/lib/ai/prompts/content-editor";
 import type {
-  ContextItem,
-  RoutingResult,
-  TextSelection,
+  OrchestrateInput,
+  OrchestrateResult,
 } from "@/types/ai/orchestration";
 import {
   hasEnabledGitHubIntegration,
@@ -18,20 +17,6 @@ import {
 } from "./integration-validator";
 import { routeAndSelectModel } from "./router";
 import { buildToolSet, getRepoContextFromIntegrations } from "./tool-registry";
-
-interface OrchestrateInput {
-  organizationId: string;
-  messages: UIMessage[];
-  currentMarkdown: string;
-  selection?: TextSelection;
-  context?: ContextItem[];
-  maxSteps?: number;
-}
-
-interface OrchestrateResult {
-  stream: ReturnType<typeof streamText>;
-  routingDecision: RoutingResult;
-}
 
 export async function orchestrateChat(
   input: OrchestrateInput

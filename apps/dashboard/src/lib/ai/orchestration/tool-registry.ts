@@ -7,17 +7,11 @@ import {
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
 import type {
+  BuildToolSetParams,
   RepoContext,
   ToolSet,
   ValidatedIntegration,
 } from "@/types/ai/orchestration";
-
-interface BuildToolSetParams {
-  organizationId: string;
-  currentMarkdown: string;
-  onMarkdownUpdate?: (markdown: string) => void;
-  validatedIntegrations: ValidatedIntegration[];
-}
 
 export function buildToolSet(params: BuildToolSetParams): ToolSet {
   const {
