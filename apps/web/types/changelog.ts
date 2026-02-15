@@ -1,5 +1,5 @@
 export interface ChangelogCompanyOgImageProps {
-  params: Promise<unknown>;
+  params: Promise<{ name: string }>;
 }
 
 export interface ChangelogEntryOgImageProps {
