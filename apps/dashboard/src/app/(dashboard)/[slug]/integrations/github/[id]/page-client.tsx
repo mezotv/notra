@@ -333,10 +333,6 @@ export default function PageClient({ integrationId }: PageClientProps) {
     integration.repositories.length === 1 && primaryRepository
       ? `${primaryRepository.owner}/${primaryRepository.repo}`
       : null;
-  const shouldShowRepositoryFullName =
-    !!repositoryFullName &&
-    repositoryFullName.toLowerCase() !==
-      integration.displayName.trim().toLowerCase();
 
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -346,7 +342,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
             <h1 className="font-bold text-3xl tracking-tight">
               {integration.displayName}
             </h1>
-            {shouldShowRepositoryFullName && repositoryFullName ? (
+            {repositoryFullName ? (
               <p className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Github className="size-4 shrink-0" />
                 <span>{repositoryFullName}</span>

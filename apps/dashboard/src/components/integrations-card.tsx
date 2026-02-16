@@ -165,11 +165,7 @@ export function InstalledIntegrationCard({
   const repositoryFullName = primaryRepository
     ? `${primaryRepository.owner}/${primaryRepository.repo}`
     : null;
-  const shouldShowRepositoryFullName =
-    repositoryCount === 1 &&
-    !!repositoryFullName &&
-    repositoryFullName.toLowerCase() !==
-      integration.displayName.trim().toLowerCase();
+  const showRepositoryFullName = repositoryCount === 1 && !!repositoryFullName;
   const repositoryText =
     repositoryCount === 0
       ? "No repositories"
@@ -243,7 +239,7 @@ export function InstalledIntegrationCard({
       icon={icon}
       onClick={handleCardClick}
     >
-      {shouldShowRepositoryFullName && repositoryFullName ? (
+      {showRepositoryFullName && repositoryFullName ? (
         <p className="mb-1 flex items-center gap-1.5 text-muted-foreground text-xs">
           <Github className="size-3.5 shrink-0" />
           <span className="truncate">{repositoryFullName}</span>
