@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { Input } from "@notra/ui/components/ui/input";
+import { Github } from "@notra/ui/components/ui/svgs/github";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
@@ -327,6 +328,16 @@ export default function PageClient({ integrationId }: PageClientProps) {
     );
   }
 
+  const primaryRepository = integration.repositories[0];
+  const repositoryFullName =
+    integration.repositories.length === 1 && primaryRepository
+      ? `${primaryRepository.owner}/${primaryRepository.repo}`
+      : null;
+  const shouldShowRepositoryFullName =
+    !!repositoryFullName &&
+    repositoryFullName.toLowerCase() !==
+      integration.displayName.trim().toLowerCase();
+
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -335,6 +346,12 @@ export default function PageClient({ integrationId }: PageClientProps) {
             <h1 className="font-bold text-3xl tracking-tight">
               {integration.displayName}
             </h1>
+            {shouldShowRepositoryFullName && repositoryFullName ? (
+              <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Github className="size-4 shrink-0" />
+                <span>{repositoryFullName}</span>
+              </p>
+            ) : null}
             <p className="text-muted-foreground">
               Configure your GitHub integration and manage repositories
             </p>
