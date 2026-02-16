@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { decryptToken } from "@/lib/crypto/token-encryption";
-import { createOctokit } from "@/lib/octokit";
 import {
   deleteGitHubIntegration,
+  GitHubBranchNotFoundError,
   getGitHubIntegrationById,
   updateGitHubIntegration,
   updateRepository,
+  validateRepositoryBranchExists,
 } from "@/lib/services/github-integration";
 import {
   integrationIdParamSchema,
@@ -15,10 +15,6 @@ import {
 
 interface RouteContext {
   params: Promise<{ organizationId: string; integrationId: string }>;
-}
-
-interface ErrorWithStatus {
-  status?: number;
 }
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
@@ -147,30 +143,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       }
 
       if (normalizedBranch) {
-        const token = integration.encryptedToken
-          ? decryptToken(integration.encryptedToken)
-          : undefined;
-        const octokit = createOctokit(token);
-
         try {
-          await octokit.request("GET /repos/{owner}/{repo}/branches/{branch}", {
+          await validateRepositoryBranchExists({
             owner: repository.owner,
             repo: repository.repo,
             branch: normalizedBranch,
-            headers: {
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
+            encryptedToken: integration.encryptedToken,
           });
         } catch (error) {
-          const status = (error as ErrorWithStatus).status;
-
-          if (status === 404) {
-            return NextResponse.json(
-              {
-                error: `Branch "${normalizedBranch}" does not exist in ${repository.owner}/${repository.repo}`,
-              },
-              { status: 400 }
-            );
+          if (error instanceof GitHubBranchNotFoundError) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
           }
 
           throw error;

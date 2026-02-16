@@ -11,6 +11,10 @@ import { and, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
 import type {
+  ErrorWithStatus,
+  ValidateRepositoryBranchExistsParams,
+} from "@/types/lib/services/github";
+import type {
   AddRepositoryParams,
   ConfigureOutputParams,
   CreateGitHubIntegrationParams,
@@ -20,6 +24,13 @@ import { getConfiguredAppUrl } from "@/utils/url";
 import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+
+export class GitHubBranchNotFoundError extends Error {
+  constructor(owner: string, repo: string, branch: string) {
+    super(`Branch "${branch}" does not exist in ${owner}/${repo}`);
+    this.name = "GitHubBranchNotFoundError";
+  }
+}
 
 function generateWebhookSecret(): string {
   return crypto.randomBytes(32).toString("hex");
@@ -419,6 +430,39 @@ export async function updateRepository(
     .returning();
 
   return updated;
+}
+
+export async function validateRepositoryBranchExists(
+  params: ValidateRepositoryBranchExistsParams
+) {
+  const { owner, repo, branch, encryptedToken } = params;
+
+  const normalizedBranch = branch.trim();
+  if (!normalizedBranch) {
+    return;
+  }
+
+  const token = encryptedToken ? decryptToken(encryptedToken) : undefined;
+  const octokit = createOctokit(token);
+
+  try {
+    await octokit.request("GET /repos/{owner}/{repo}/branches/{branch}", {
+      owner,
+      repo,
+      branch: normalizedBranch,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+  } catch (error) {
+    const status = (error as ErrorWithStatus).status;
+
+    if (status === 404) {
+      throw new GitHubBranchNotFoundError(owner, repo, normalizedBranch);
+    }
+
+    throw error;
+  }
 }
 
 export async function toggleOutput(outputId: string, enabled: boolean) {

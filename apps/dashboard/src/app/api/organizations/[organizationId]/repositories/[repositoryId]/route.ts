@@ -2,8 +2,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteRepository,
+  GitHubBranchNotFoundError,
   getRepositoryById,
   updateRepository,
+  validateRepositoryBranchExists,
 } from "@/lib/services/github-integration";
 import {
   repositoryIdParamSchema,
@@ -114,6 +116,23 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const { enabled, defaultBranch } = bodyValidation.data;
     const normalizedDefaultBranch =
       defaultBranch !== undefined ? defaultBranch?.trim() || null : undefined;
+
+    if (normalizedDefaultBranch) {
+      try {
+        await validateRepositoryBranchExists({
+          owner: repository.owner,
+          repo: repository.repo,
+          branch: normalizedDefaultBranch,
+          encryptedToken: repository.integration.encryptedToken,
+        });
+      } catch (error) {
+        if (error instanceof GitHubBranchNotFoundError) {
+          return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+
+        throw error;
+      }
+    }
 
     const updated = await updateRepository(repositoryId, {
       ...(enabled !== undefined ? { enabled } : {}),
