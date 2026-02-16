@@ -5,7 +5,6 @@ import {
   contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
-  githubRepositories,
   posts,
 } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
@@ -45,7 +44,6 @@ interface RepositoryData {
   id: string;
   owner: string;
   repo: string;
-  integrationId: string;
 }
 
 interface GeneratedContent {
@@ -208,19 +206,16 @@ export const { POST } = serve<SchedulePayload>(
 
         const repos = await db
           .select({
-            id: githubRepositories.id,
-            owner: githubRepositories.owner,
-            repo: githubRepositories.repo,
-            integrationId: githubRepositories.integrationId,
+            id: githubIntegrations.id,
+            owner: githubIntegrations.owner,
+            repo: githubIntegrations.repo,
           })
-          .from(githubRepositories)
-          .innerJoin(
-            githubIntegrations,
-            eq(githubRepositories.integrationId, githubIntegrations.id)
-          )
-          .where(inArray(githubRepositories.id, repositoryIds));
+          .from(githubIntegrations)
+          .where(inArray(githubIntegrations.id, repositoryIds));
 
-        return repos;
+        return repos.filter(
+          (repo): repo is RepositoryData => !!(repo.owner && repo.repo)
+        );
       }
     );
 

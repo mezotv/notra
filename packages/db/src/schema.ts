@@ -164,6 +164,11 @@ export const githubIntegrations = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     displayName: text("display_name").notNull(),
     encryptedToken: text("encrypted_token"),
+    owner: text("owner"),
+    repo: text("repo"),
+    defaultBranch: text("default_branch"),
+    repositoryEnabled: boolean("repository_enabled").default(true).notNull(),
+    encryptedWebhookSecret: text("encrypted_webhook_secret"),
     enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -174,6 +179,11 @@ export const githubIntegrations = pgTable(
   (table) => [
     index("githubIntegrations_organizationId_idx").on(table.organizationId),
     index("githubIntegrations_createdByUserId_idx").on(table.createdByUserId),
+    uniqueIndex("githubIntegrations_organization_owner_repo_uidx").on(
+      table.organizationId,
+      table.owner,
+      table.repo
+    ),
   ]
 );
 
@@ -219,37 +229,13 @@ export const contentTriggerLookbackWindows = pgTable(
   }
 );
 
-export const githubRepositories = pgTable(
-  "github_repositories",
-  {
-    id: text("id").primaryKey(),
-    integrationId: text("integration_id")
-      .notNull()
-      .references(() => githubIntegrations.id, { onDelete: "cascade" }),
-    owner: text("owner").notNull(),
-    repo: text("repo").notNull(),
-    defaultBranch: text("default_branch"),
-    enabled: boolean("enabled").default(true).notNull(),
-    encryptedWebhookSecret: text("encrypted_webhook_secret"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => [
-    index("githubRepositories_integrationId_idx").on(table.integrationId),
-    uniqueIndex("githubRepositories_integration_owner_repo_uidx").on(
-      table.integrationId,
-      table.owner,
-      table.repo
-    ),
-  ]
-);
-
 export const repositoryOutputs = pgTable(
   "repository_outputs",
   {
     id: text("id").primaryKey(),
     repositoryId: text("repository_id")
       .notNull()
-      .references(() => githubRepositories.id, { onDelete: "cascade" }),
+      .references(() => githubIntegrations.id, { onDelete: "cascade" }),
     outputType: text("output_type").notNull(),
     enabled: boolean("enabled").default(true).notNull(),
     config: jsonb("config"),
@@ -389,7 +375,7 @@ export const githubIntegrationsRelations = relations(
       fields: [githubIntegrations.createdByUserId],
       references: [users.id],
     }),
-    repositories: many(githubRepositories),
+    outputs: many(repositoryOutputs),
   })
 );
 
@@ -417,23 +403,12 @@ export const contentTriggerLookbackWindowsRelations = relations(
   })
 );
 
-export const githubRepositoriesRelations = relations(
-  githubRepositories,
-  ({ one, many }) => ({
-    integration: one(githubIntegrations, {
-      fields: [githubRepositories.integrationId],
-      references: [githubIntegrations.id],
-    }),
-    outputs: many(repositoryOutputs),
-  })
-);
-
 export const repositoryOutputsRelations = relations(
   repositoryOutputs,
   ({ one }) => ({
-    repository: one(githubRepositories, {
+    integration: one(githubIntegrations, {
       fields: [repositoryOutputs.repositoryId],
-      references: [githubRepositories.id],
+      references: [githubIntegrations.id],
     }),
   })
 );

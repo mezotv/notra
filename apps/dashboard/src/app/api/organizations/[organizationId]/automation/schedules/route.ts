@@ -3,7 +3,7 @@ import { db } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
   contentTriggers,
-  githubRepositories,
+  githubIntegrations,
 } from "@notra/db/schema";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -169,16 +169,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       allRepositoryIds.length > 0
         ? await db
             .select({
-              id: githubRepositories.id,
-              owner: githubRepositories.owner,
-              repo: githubRepositories.repo,
+              id: githubIntegrations.id,
+              owner: githubIntegrations.owner,
+              repo: githubIntegrations.repo,
             })
-            .from(githubRepositories)
-            .where(inArray(githubRepositories.id, allRepositoryIds))
+            .from(githubIntegrations)
+            .where(inArray(githubIntegrations.id, allRepositoryIds))
         : [];
 
     const repositoryMap = Object.fromEntries(
-      repositories.map((r) => [r.id, `${r.owner}/${r.repo}`])
+      repositories
+        .filter((repository) => repository.owner && repository.repo)
+        .map((repository) => [
+          repository.id,
+          `${repository.owner}/${repository.repo}`,
+        ])
     );
 
     return NextResponse.json({

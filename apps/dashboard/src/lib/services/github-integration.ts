@@ -2,11 +2,9 @@ import crypto from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
   githubIntegrations,
-  githubRepositories,
   members,
   repositoryOutputs,
 } from "@notra/db/schema";
-
 import { and, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
@@ -36,23 +34,70 @@ function generateWebhookSecret(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+function toRepositoryRecord(integration: {
+  id: string;
+  owner: string | null;
+  repo: string | null;
+  defaultBranch: string | null;
+  repositoryEnabled: boolean;
+  encryptedWebhookSecret: string | null;
+  outputs?: Array<{
+    id: string;
+    repositoryId: string;
+    outputType: string;
+    enabled: boolean;
+    config: unknown;
+    createdAt: Date;
+  }>;
+}) {
+  return {
+    id: integration.id,
+    owner: integration.owner ?? "",
+    repo: integration.repo ?? "",
+    defaultBranch: integration.defaultBranch,
+    enabled: integration.repositoryEnabled,
+    encryptedWebhookSecret: integration.encryptedWebhookSecret,
+    outputs: integration.outputs ?? [],
+  };
+}
+
+function toIntegrationWithRepository<
+  T extends {
+    id: string;
+    owner: string | null;
+    repo: string | null;
+    defaultBranch: string | null;
+    repositoryEnabled: boolean;
+    encryptedWebhookSecret: string | null;
+    outputs?: Array<{
+      id: string;
+      repositoryId: string;
+      outputType: string;
+      enabled: boolean;
+      config: unknown;
+      createdAt: Date;
+    }>;
+  },
+>(integration: T) {
+  return {
+    ...integration,
+    repositories: [toRepositoryRecord(integration)],
+  };
+}
+
 async function findRepositoryInOrganization(
   organizationId: string,
   owner: string,
   repo: string
 ) {
   const [existing] = await db
-    .select({ id: githubRepositories.id })
-    .from(githubRepositories)
-    .innerJoin(
-      githubIntegrations,
-      eq(githubRepositories.integrationId, githubIntegrations.id)
-    )
+    .select({ id: githubIntegrations.id })
+    .from(githubIntegrations)
     .where(
       and(
         eq(githubIntegrations.organizationId, organizationId),
-        sql`lower(${githubRepositories.owner}) = ${owner.toLowerCase()}`,
-        sql`lower(${githubRepositories.repo}) = ${repo.toLowerCase()}`
+        sql`lower(${githubIntegrations.owner}) = ${owner.toLowerCase()}`,
+        sql`lower(${githubIntegrations.repo}) = ${repo.toLowerCase()}`
       )
     )
     .limit(1);
@@ -131,6 +176,9 @@ export async function createGitHubIntegration(
     }
   }
 
+  const webhookSecret = generateWebhookSecret();
+  const encryptedWebhookSecret = encryptToken(webhookSecret);
+
   const [integration] = await db
     .insert(githubIntegrations)
     .values({
@@ -139,6 +187,11 @@ export async function createGitHubIntegration(
       createdByUserId: userId,
       encryptedToken,
       displayName,
+      owner,
+      repo,
+      defaultBranch,
+      repositoryEnabled: true,
+      encryptedWebhookSecret,
       enabled: true,
     })
     .returning();
@@ -147,45 +200,24 @@ export async function createGitHubIntegration(
     throw new Error("Failed to create integration");
   }
 
-  // Generate webhook secret upfront so it's ready immediately
-  const webhookSecret = generateWebhookSecret();
-  const encryptedWebhookSecret = encryptToken(webhookSecret);
-
-  const [repository] = await db
-    .insert(githubRepositories)
-    .values({
-      id: nanoid(),
-      integrationId: integration.id,
-      owner,
-      repo,
-      defaultBranch,
-      enabled: true,
-      encryptedWebhookSecret,
-    })
-    .returning();
-
-  if (!repository) {
-    throw new Error("Failed to create repository");
-  }
-
   await db.insert(repositoryOutputs).values([
     {
       id: nanoid(),
-      repositoryId: repository.id,
+      repositoryId: integration.id,
       outputType: "changelog",
       enabled: true,
       config: null,
     },
     {
       id: nanoid(),
-      repositoryId: repository.id,
+      repositoryId: integration.id,
       outputType: "blog_post",
       enabled: false,
       config: null,
     },
     {
       id: nanoid(),
-      repositoryId: repository.id,
+      repositoryId: integration.id,
       outputType: "twitter_post",
       enabled: false,
       config: null,
@@ -200,8 +232,10 @@ export async function createGitHubIntegration(
   return fullIntegration;
 }
 
-export function getGitHubIntegrationsByOrganization(organizationId: string) {
-  return db.query.githubIntegrations.findMany({
+export async function getGitHubIntegrationsByOrganization(
+  organizationId: string
+) {
+  const integrations = await db.query.githubIntegrations.findMany({
     where: eq(githubIntegrations.organizationId, organizationId),
     with: {
       createdByUser: {
@@ -212,17 +246,17 @@ export function getGitHubIntegrationsByOrganization(organizationId: string) {
           image: true,
         },
       },
-      repositories: {
-        with: {
-          outputs: true,
-        },
-      },
+      outputs: true,
     },
   });
+
+  return integrations.map((integration) =>
+    toIntegrationWithRepository(integration)
+  );
 }
 
-export function getGitHubIntegrationById(integrationId: string) {
-  return db.query.githubIntegrations.findFirst({
+export async function getGitHubIntegrationById(integrationId: string) {
+  const integration = await db.query.githubIntegrations.findFirst({
     where: eq(githubIntegrations.id, integrationId),
     with: {
       organization: true,
@@ -234,13 +268,15 @@ export function getGitHubIntegrationById(integrationId: string) {
           image: true,
         },
       },
-      repositories: {
-        with: {
-          outputs: true,
-        },
-      },
+      outputs: true,
     },
   });
+
+  if (!integration) {
+    return null;
+  }
+
+  return toIntegrationWithRepository(integration);
 }
 
 export async function getDecryptedToken(integrationId: string, userId: string) {
@@ -267,90 +303,59 @@ export async function getDecryptedToken(integrationId: string, userId: string) {
 }
 
 export async function addRepository(
-  params: AddRepositoryParams & { userId: string }
+  _params: AddRepositoryParams & { userId: string }
 ) {
-  const { integrationId, owner, repo, outputs = [], userId } = params;
-
-  const integration = await getGitHubIntegrationById(integrationId);
-  if (!integration) {
-    throw new Error("Integration not found");
-  }
-
-  const hasAccess = await validateUserOrgAccess(
-    userId,
-    integration.organizationId
+  throw new Error(
+    "GitHub integrations now support exactly one repository. Create a new integration for another repo."
   );
-
-  if (!hasAccess) {
-    throw new Error("User does not have access to this integration");
-  }
-
-  const existingRepositoryInOrg = await findRepositoryInOrganization(
-    integration.organizationId,
-    owner,
-    repo
-  );
-
-  if (existingRepositoryInOrg) {
-    throw new Error("Repository already connected");
-  }
-
-  // Generate webhook secret upfront so it's ready immediately
-  const webhookSecret = generateWebhookSecret();
-  const encryptedWebhookSecret = encryptToken(webhookSecret);
-
-  const [repository] = await db
-    .insert(githubRepositories)
-    .values({
-      id: nanoid(),
-      integrationId,
-      owner,
-      repo,
-      enabled: true,
-      encryptedWebhookSecret,
-    })
-    .returning();
-
-  if (!repository) {
-    throw new Error("Failed to create repository");
-  }
-
-  if (outputs.length > 0) {
-    await db.insert(repositoryOutputs).values(
-      outputs.map((output) => ({
-        id: nanoid(),
-        repositoryId: repository.id,
-        outputType: output.type,
-        enabled: output.enabled ?? true,
-        config: output.config,
-      }))
-    );
-  }
-
-  return repository;
 }
 
-export function getRepositoryById(repositoryId: string) {
-  return db.query.githubRepositories.findFirst({
-    where: eq(githubRepositories.id, repositoryId),
+export async function getRepositoryById(repositoryId: string) {
+  const integration = await db.query.githubIntegrations.findFirst({
+    where: eq(githubIntegrations.id, repositoryId),
     with: {
-      integration: true,
       outputs: true,
     },
   });
+
+  if (!integration) {
+    return null;
+  }
+
+  return {
+    ...toRepositoryRecord(integration),
+    integration: {
+      id: integration.id,
+      organizationId: integration.organizationId,
+      encryptedToken: integration.encryptedToken,
+      enabled: integration.enabled,
+    },
+  };
 }
 
-export function getOutputById(outputId: string) {
-  return db.query.repositoryOutputs.findFirst({
+export async function getOutputById(outputId: string) {
+  const output = await db.query.repositoryOutputs.findFirst({
     where: eq(repositoryOutputs.id, outputId),
     with: {
-      repository: {
-        with: {
-          integration: true,
-        },
-      },
+      integration: true,
     },
   });
+
+  if (!output) {
+    return null;
+  }
+
+  return {
+    ...output,
+    repository: {
+      id: output.integration.id,
+      owner: output.integration.owner ?? "",
+      repo: output.integration.repo ?? "",
+      defaultBranch: output.integration.defaultBranch,
+      enabled: output.integration.repositoryEnabled,
+      integration: output.integration,
+    },
+  };
 }
 
 export async function configureOutput(params: ConfigureOutputParams) {
@@ -424,9 +429,16 @@ export async function updateRepository(
   data: { enabled?: boolean; defaultBranch?: string | null }
 ) {
   const [updated] = await db
-    .update(githubRepositories)
-    .set(data)
-    .where(eq(githubRepositories.id, repositoryId))
+    .update(githubIntegrations)
+    .set({
+      ...(data.enabled !== undefined
+        ? { repositoryEnabled: data.enabled }
+        : {}),
+      ...(data.defaultBranch !== undefined
+        ? { defaultBranch: data.defaultBranch }
+        : {}),
+    })
+    .where(eq(githubIntegrations.id, repositoryId))
     .returning();
 
   return updated;
@@ -483,8 +495,8 @@ export async function deleteGitHubIntegration(integrationId: string) {
 
 export async function deleteRepository(repositoryId: string) {
   await db
-    .delete(githubRepositories)
-    .where(eq(githubRepositories.id, repositoryId));
+    .delete(githubIntegrations)
+    .where(eq(githubIntegrations.id, repositoryId));
 }
 
 export async function listAvailableRepositories(
@@ -523,8 +535,8 @@ export async function getTokenForRepository(
   options?: { organizationId?: string }
 ) {
   const whereClauses = [
-    sql`lower(${githubRepositories.owner}) = ${owner.toLowerCase()}`,
-    sql`lower(${githubRepositories.repo}) = ${repo.toLowerCase()}`,
+    sql`lower(${githubIntegrations.owner}) = ${owner.toLowerCase()}`,
+    sql`lower(${githubIntegrations.repo}) = ${repo.toLowerCase()}`,
   ];
 
   if (options?.organizationId) {
@@ -533,24 +545,27 @@ export async function getTokenForRepository(
     );
   }
 
-  const [repository] = await db
+  const [integration] = await db
     .select({
       encryptedToken: githubIntegrations.encryptedToken,
       integrationEnabled: githubIntegrations.enabled,
+      repositoryEnabled: githubIntegrations.repositoryEnabled,
     })
-    .from(githubRepositories)
-    .innerJoin(
-      githubIntegrations,
-      eq(githubRepositories.integrationId, githubIntegrations.id)
-    )
+    .from(githubIntegrations)
     .where(and(...whereClauses))
     .limit(1);
 
-  if (!(repository?.encryptedToken && repository.integrationEnabled)) {
+  if (
+    !(
+      integration?.encryptedToken &&
+      integration.integrationEnabled &&
+      integration.repositoryEnabled
+    )
+  ) {
     return undefined;
   }
 
-  return decryptToken(repository.encryptedToken);
+  return decryptToken(integration.encryptedToken);
 }
 
 export async function getTokenForIntegrationId(integrationId: string) {
@@ -588,9 +603,9 @@ export async function generateWebhookSecretForRepository(
   const encryptedSecret = encryptToken(secret);
 
   await db
-    .update(githubRepositories)
+    .update(githubIntegrations)
     .set({ encryptedWebhookSecret: encryptedSecret })
-    .where(eq(githubRepositories.id, repositoryId));
+    .where(eq(githubIntegrations.id, repositoryId));
 
   const webhookUrl = buildWebhookUrl(
     repository.integration.id,
@@ -647,29 +662,29 @@ export async function getWebhookConfigForRepository(
 }
 
 export async function hasWebhookConfigured(repositoryId: string) {
-  const repository = await db.query.githubRepositories.findFirst({
-    where: eq(githubRepositories.id, repositoryId),
+  const integration = await db.query.githubIntegrations.findFirst({
+    where: eq(githubIntegrations.id, repositoryId),
     columns: {
       encryptedWebhookSecret: true,
     },
   });
 
-  return !!repository?.encryptedWebhookSecret;
+  return !!integration?.encryptedWebhookSecret;
 }
 
 export async function getWebhookSecretByRepositoryId(repositoryId: string) {
-  const repository = await db.query.githubRepositories.findFirst({
-    where: eq(githubRepositories.id, repositoryId),
+  const integration = await db.query.githubIntegrations.findFirst({
+    where: eq(githubIntegrations.id, repositoryId),
     columns: {
       encryptedWebhookSecret: true,
     },
   });
 
-  if (!repository?.encryptedWebhookSecret) {
+  if (!integration?.encryptedWebhookSecret) {
     return null;
   }
 
-  return decryptToken(repository.encryptedWebhookSecret);
+  return decryptToken(integration.encryptedWebhookSecret);
 }
 
 function buildWebhookUrl(

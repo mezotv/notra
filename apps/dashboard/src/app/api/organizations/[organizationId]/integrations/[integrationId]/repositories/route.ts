@@ -143,6 +143,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
+    if (
+      error instanceof Error &&
+      error.message.includes("exactly one repository")
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "Internal server error",
