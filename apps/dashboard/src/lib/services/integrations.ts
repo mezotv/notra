@@ -32,6 +32,7 @@ const integrationFetchers: Partial<
           id: repo.id,
           owner: repo.owner,
           repo: repo.repo,
+          defaultBranch: repo.defaultBranch,
           enabled: repo.enabled,
         })),
       };
