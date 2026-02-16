@@ -59,6 +59,9 @@ export function EditIntegrationDialog({
           body: JSON.stringify({
             displayName: values.displayName,
             enabled: values.enabled,
+            ...(primaryRepository
+              ? { branch: values.branch?.trim() || null }
+              : {}),
           }),
         }
       );
@@ -67,27 +70,6 @@ export function EditIntegrationDialog({
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to update integration");
-      }
-
-      if (primaryRepository) {
-        const repositoryResponse = await fetch(
-          `/api/organizations/${organizationId}/repositories/${primaryRepository.id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              defaultBranch: values.branch?.trim() || null,
-            }),
-          }
-        );
-
-        const repositoryData = await repositoryResponse.json();
-
-        if (!repositoryResponse.ok) {
-          throw new Error(
-            repositoryData.error || "Failed to update repository"
-          );
-        }
       }
 
       return data;
@@ -151,6 +133,24 @@ export function EditIntegrationDialog({
             }}
           >
             <div className="space-y-4 py-4">
+              <form.Field name="enabled">
+                {(field) => (
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="space-y-0.5">
+                      <Label>Enable Integration</Label>
+                      <p className="text-muted-foreground text-sm">
+                        When disabled, no outputs will be generated
+                      </p>
+                    </div>
+                    <Switch
+                      checked={field.state.value}
+                      disabled={mutation.isPending}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
+                  </div>
+                )}
+              </form.Field>
+
               <form.Field
                 name="displayName"
                 validators={{
@@ -177,24 +177,6 @@ export function EditIntegrationDialog({
                       </p>
                     ) : null}
                   </Field>
-                )}
-              </form.Field>
-
-              <form.Field name="enabled">
-                {(field) => (
-                  <div className="flex items-center justify-between space-x-2">
-                    <div className="space-y-0.5">
-                      <Label>Enable Integration</Label>
-                      <p className="text-muted-foreground text-sm">
-                        When disabled, no outputs will be generated
-                      </p>
-                    </div>
-                    <Switch
-                      checked={field.state.value}
-                      disabled={mutation.isPending}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                  </div>
                 )}
               </form.Field>
 

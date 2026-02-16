@@ -112,10 +112,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const { enabled, defaultBranch } = bodyValidation.data;
+    const normalizedDefaultBranch =
+      defaultBranch !== undefined ? defaultBranch?.trim() || null : undefined;
+
     const updated = await updateRepository(repositoryId, {
       ...(enabled !== undefined ? { enabled } : {}),
-      ...(defaultBranch !== undefined
-        ? { defaultBranch: defaultBranch?.trim() || null }
+      ...(normalizedDefaultBranch !== undefined
+        ? { defaultBranch: normalizedDefaultBranch }
         : {}),
     });
 

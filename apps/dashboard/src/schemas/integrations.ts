@@ -118,7 +118,8 @@ export type OutputIdParam = z.infer<typeof outputIdParamSchema>;
 
 export const updateIntegrationBodySchema = z.object({
   enabled: z.boolean(),
-  displayName: z.string().optional(),
+  displayName: z.string().trim().min(1).optional(),
+  branch: z.string().trim().min(1).nullable().optional(),
 });
 export type UpdateIntegrationBody = z.infer<typeof updateIntegrationBodySchema>;
 

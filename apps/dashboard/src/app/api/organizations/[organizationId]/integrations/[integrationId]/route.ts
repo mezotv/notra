@@ -1,9 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { decryptToken } from "@/lib/crypto/token-encryption";
+import { createOctokit } from "@/lib/octokit";
 import {
   deleteGitHubIntegration,
   getGitHubIntegrationById,
   updateGitHubIntegration,
+  updateRepository,
 } from "@/lib/services/github-integration";
 import {
   integrationIdParamSchema,
@@ -12,6 +15,10 @@ import {
 
 interface RouteContext {
   params: Promise<{ organizationId: string; integrationId: string }>;
+}
+
+interface ErrorWithStatus {
+  status?: number;
 }
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
@@ -115,11 +122,79 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { enabled, displayName } = bodyValidation.data;
-    const updated = await updateGitHubIntegration(integrationId, {
+    const { enabled, displayName, branch } = bodyValidation.data;
+    const normalizedBranch =
+      branch !== undefined ? branch?.trim() || null : undefined;
+
+    if (normalizedBranch !== undefined) {
+      if (integration.repositories.length !== 1) {
+        return NextResponse.json(
+          {
+            error:
+              "Branch can only be edited for integrations with a single repository",
+          },
+          { status: 400 }
+        );
+      }
+
+      const repository = integration.repositories[0];
+
+      if (!repository) {
+        return NextResponse.json(
+          { error: "Repository not found" },
+          { status: 404 }
+        );
+      }
+
+      if (normalizedBranch) {
+        const token = integration.encryptedToken
+          ? decryptToken(integration.encryptedToken)
+          : undefined;
+        const octokit = createOctokit(token);
+
+        try {
+          await octokit.request("GET /repos/{owner}/{repo}/branches/{branch}", {
+            owner: repository.owner,
+            repo: repository.repo,
+            branch: normalizedBranch,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          });
+        } catch (error) {
+          const status = (error as ErrorWithStatus).status;
+
+          if (status === 404) {
+            return NextResponse.json(
+              {
+                error: `Branch "${normalizedBranch}" does not exist in ${repository.owner}/${repository.repo}`,
+              },
+              { status: 400 }
+            );
+          }
+
+          throw error;
+        }
+      }
+
+      await updateRepository(repository.id, {
+        defaultBranch: normalizedBranch,
+      });
+    }
+
+    await updateGitHubIntegration(integrationId, {
       enabled,
       displayName,
     });
+
+    const updated = await getGitHubIntegrationById(integrationId);
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Integration not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
