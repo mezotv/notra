@@ -63,6 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       displayName,
       owner: data.owner,
       repo: data.repo,
+      defaultBranch: data.branch || null,
     });
 
     return NextResponse.json(integration);

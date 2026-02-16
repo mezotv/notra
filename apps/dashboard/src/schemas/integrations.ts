@@ -43,6 +43,7 @@ export const addGitHubIntegrationFormSchema = z.object({
       (value) => isValidGitHubUrl(value),
       "Invalid GitHub repository URL or format. Use: https://github.com/owner/repo, git@github.com:owner/repo, or owner/repo"
     ),
+  branch: z.string().optional().nullable(),
   token: z.string().optional().nullable(),
 });
 export type AddGitHubIntegrationFormValues = z.infer<
@@ -53,6 +54,7 @@ export const createGitHubIntegrationRequestSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
   owner: z.string().min(1, "Repository owner is required"),
   repo: z.string().min(1, "Repository name is required"),
+  branch: z.string().optional().nullable(),
   token: z.string().optional().nullable(),
 });
 export type CreateGitHubIntegrationRequest = z.infer<

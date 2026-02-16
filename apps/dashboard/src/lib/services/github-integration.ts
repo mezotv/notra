@@ -65,7 +65,15 @@ export async function validateUserOrgAccess(
 export async function createGitHubIntegration(
   params: CreateGitHubIntegrationParams
 ) {
-  const { organizationId, userId, token, displayName, owner, repo } = params;
+  const {
+    organizationId,
+    userId,
+    token,
+    displayName,
+    owner,
+    repo,
+    defaultBranch,
+  } = params;
 
   const hasAccess = await validateUserOrgAccess(userId, organizationId);
   if (!hasAccess) {
@@ -139,6 +147,7 @@ export async function createGitHubIntegration(
       integrationId: integration.id,
       owner,
       repo,
+      defaultBranch,
       enabled: true,
       encryptedWebhookSecret,
     })

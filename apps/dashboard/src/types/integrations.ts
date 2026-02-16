@@ -11,6 +11,7 @@ export interface GitHubRepository {
   id: string;
   owner: string;
   repo: string;
+  defaultBranch: string | null;
   enabled: boolean;
   hasWebhook?: boolean;
   outputs?: RepositoryOutput[];

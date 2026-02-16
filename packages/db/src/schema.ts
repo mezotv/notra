@@ -228,6 +228,7 @@ export const githubRepositories = pgTable(
       .references(() => githubIntegrations.id, { onDelete: "cascade" }),
     owner: text("owner").notNull(),
     repo: text("repo").notNull(),
+    defaultBranch: text("default_branch"),
     enabled: boolean("enabled").default(true).notNull(),
     encryptedWebhookSecret: text("encrypted_webhook_secret"),
     createdAt: timestamp("created_at").defaultNow().notNull(),

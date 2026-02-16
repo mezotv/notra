@@ -1,6 +1,6 @@
 {
-  "id": "a6bcac1d-a45e-49ee-a136-23c8f6964902",
-  "prevId": "26f636f1-4ef2-4272-8150-386a809b5d3e",
+  "id": "1252325b-3670-4d3d-8395-7cb545b39e53",
+  "prevId": "a6bcac1d-a45e-49ee-a136-23c8f6964902",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -573,6 +573,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "default_branch": {
+          "name": "default_branch",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "enabled": {
           "name": "enabled",
