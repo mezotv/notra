@@ -57,6 +57,7 @@ export async function validateIntegrations(
           id: r.id,
           owner: r.owner,
           repo: r.repo,
+          defaultBranch: r.defaultBranch ?? null,
           enabled: r.enabled,
         }));
 

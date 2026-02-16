@@ -125,14 +125,23 @@ export type UpdateIntegrationBody = z.infer<typeof updateIntegrationBodySchema>;
 export const editGitHubIntegrationFormSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
   enabled: z.boolean(),
+  branch: z.string().optional().nullable(),
 });
 export type EditGitHubIntegrationFormValues = z.infer<
   typeof editGitHubIntegrationFormSchema
 >;
 
-export const updateRepositoryBodySchema = z.object({
-  enabled: z.boolean(),
-});
+export const updateRepositoryBodySchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    defaultBranch: z.string().optional().nullable(),
+  })
+  .refine(
+    (value) => value.enabled !== undefined || value.defaultBranch !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
 export type UpdateRepositoryBody = z.infer<typeof updateRepositoryBodySchema>;
 
 export const updateOutputBodySchema = z.object({

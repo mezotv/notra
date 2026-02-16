@@ -338,6 +338,10 @@ export default function PageClient({ integrationId }: PageClientProps) {
     integration.repositories.length === 1 && primaryRepository
       ? `${primaryRepository.owner}/${primaryRepository.repo}`
       : null;
+  const repositoryDefaultBranch =
+    integration.repositories.length === 1
+      ? (primaryRepository?.defaultBranch ?? null)
+      : null;
   const createdLabel = integration.createdByUser
     ? `Added by ${integration.createdByUser.name} on ${new Date(integration.createdAt).toLocaleDateString()}`
     : `Created on ${new Date(integration.createdAt).toLocaleDateString()}`;
@@ -369,6 +373,15 @@ export default function PageClient({ integrationId }: PageClientProps) {
               <p className="flex items-center gap-2 text-muted-foreground text-sm">
                 <Github className="size-4 shrink-0" />
                 <span>{repositoryFullName}</span>
+                {repositoryDefaultBranch ? (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="size-1 rounded-full bg-muted-foreground/70"
+                    />
+                    <span>{repositoryDefaultBranch}</span>
+                  </>
+                ) : null}
               </p>
             ) : null}
             <p className="text-muted-foreground">

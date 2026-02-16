@@ -10,6 +10,7 @@ export interface ValidatedIntegration {
     id: string;
     owner: string;
     repo: string;
+    defaultBranch: string | null;
     enabled: boolean;
   }>;
 }

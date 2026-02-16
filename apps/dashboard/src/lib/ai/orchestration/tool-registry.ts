@@ -52,6 +52,7 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
         ? integration.repositories.map((repository) => ({
             owner: repository.owner,
             repo: repository.repo,
+            defaultBranch: repository.defaultBranch,
           }))
         : []
     );

@@ -405,9 +405,16 @@ export async function updateGitHubIntegration(
 }
 
 export async function toggleRepository(repositoryId: string, enabled: boolean) {
+  return updateRepository(repositoryId, { enabled });
+}
+
+export async function updateRepository(
+  repositoryId: string,
+  data: { enabled?: boolean; defaultBranch?: string | null }
+) {
   const [updated] = await db
     .update(githubRepositories)
-    .set({ enabled })
+    .set(data)
     .where(eq(githubRepositories.id, repositoryId))
     .returning();
 

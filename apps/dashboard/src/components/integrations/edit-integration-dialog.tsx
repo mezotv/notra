@@ -42,6 +42,8 @@ export function EditIntegrationDialog({
   onOpenChange: controlledOnOpenChange,
   trigger,
 }: EditIntegrationDialogProps) {
+  const primaryRepository =
+    integration.repositories.length === 1 ? integration.repositories[0] : null;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
@@ -54,7 +56,10 @@ export function EditIntegrationDialog({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            displayName: values.displayName,
+            enabled: values.enabled,
+          }),
         }
       );
 
@@ -62,6 +67,27 @@ export function EditIntegrationDialog({
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to update integration");
+      }
+
+      if (primaryRepository) {
+        const repositoryResponse = await fetch(
+          `/api/organizations/${organizationId}/repositories/${primaryRepository.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              defaultBranch: values.branch?.trim() || null,
+            }),
+          }
+        );
+
+        const repositoryData = await repositoryResponse.json();
+
+        if (!repositoryResponse.ok) {
+          throw new Error(
+            repositoryData.error || "Failed to update repository"
+          );
+        }
       }
 
       return data;
@@ -88,6 +114,7 @@ export function EditIntegrationDialog({
     defaultValues: {
       displayName: integration.displayName,
       enabled: integration.enabled,
+      branch: primaryRepository?.defaultBranch ?? "",
     },
     onSubmit: ({ value }) => {
       const validationResult = editGitHubIntegrationFormSchema.safeParse(value);
@@ -170,6 +197,23 @@ export function EditIntegrationDialog({
                   </div>
                 )}
               </form.Field>
+
+              {primaryRepository ? (
+                <form.Field name="branch">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Default Branch</FieldLabel>
+                      <Input
+                        disabled={mutation.isPending}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="main"
+                        value={field.state.value ?? ""}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+              ) : null}
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={mutation.isPending}>

@@ -3,7 +3,7 @@ import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteRepository,
   getRepositoryById,
-  toggleRepository,
+  updateRepository,
 } from "@/lib/services/github-integration";
 import {
   repositoryIdParamSchema,
@@ -111,8 +111,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { enabled } = bodyValidation.data;
-    const updated = await toggleRepository(repositoryId, enabled);
+    const { enabled, defaultBranch } = bodyValidation.data;
+    const updated = await updateRepository(repositoryId, {
+      ...(enabled !== undefined ? { enabled } : {}),
+      ...(defaultBranch !== undefined
+        ? { defaultBranch: defaultBranch?.trim() || null }
+        : {}),
+    });
 
     return NextResponse.json(updated);
   } catch (error) {

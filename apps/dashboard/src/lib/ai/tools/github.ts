@@ -140,7 +140,11 @@ async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
 function isRepositoryAllowed(
   owner: string,
   repo: string,
-  allowedRepositories?: Array<{ owner: string; repo: string }>
+  allowedRepositories?: Array<{
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+  }>
 ) {
   if (!allowedRepositories?.length) {
     return true;
@@ -154,6 +158,57 @@ function isRepositoryAllowed(
       allowedRepo.owner.toLowerCase() === normalizedOwner &&
       allowedRepo.repo.toLowerCase() === normalizedRepo
   );
+}
+
+function getConfiguredDefaultBranch(
+  owner: string,
+  repo: string,
+  allowedRepositories?: Array<{
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+  }>
+) {
+  if (!allowedRepositories?.length) {
+    return undefined;
+  }
+
+  const normalizedOwner = owner.toLowerCase();
+  const normalizedRepo = repo.toLowerCase();
+
+  const matchedRepo = allowedRepositories.find(
+    (allowedRepo) =>
+      allowedRepo.owner.toLowerCase() === normalizedOwner &&
+      allowedRepo.repo.toLowerCase() === normalizedRepo
+  );
+
+  const branch = matchedRepo?.defaultBranch?.trim();
+  return branch ? branch : undefined;
+}
+
+function getNextPageFromLinkHeader(
+  linkHeader?: string | number
+): number | undefined {
+  if (typeof linkHeader !== "string" || !linkHeader.trim()) {
+    return undefined;
+  }
+
+  const nextMatch = linkHeader.match(/<([^>]+)>\s*;\s*rel="next"/i);
+  if (!nextMatch?.[1]) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(nextMatch[1]);
+    const pageValue = url.searchParams.get("page");
+    if (!pageValue) {
+      return undefined;
+    }
+    const parsed = Number.parseInt(pageValue, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function assertRepositoryAccess(
@@ -316,7 +371,7 @@ export function createGetCommitsByTimeframeTool(
       description: toolDescription({
         toolName: "get_commits_by_timeframe",
         intro:
-          "Gets all commits from the default branch within a specified number of days. Returns commit messages, authors, dates, and SHAs.",
+          "Gets one paginated batch of commits from a repository within a specified number of days. Returns commit details plus pagination metadata.",
         whenToUse:
           "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
         usageNotes: `Use the timeframe requested in the prompt or user request.
@@ -325,12 +380,18 @@ Use this for activity summaries, changelog generation, or understanding recent c
       inputSchema: z.object({
         owner: z.string().describe("The owner of the repository"),
         repo: z.string().describe("The name of the repository"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .default(1)
+          .describe("The page number to retrieve (starts at 1)"),
         days: z
           .number()
           .default(7)
           .describe("How many days of commit history to retrieve"),
       }),
-      execute: async ({ owner, repo, days }) => {
+      execute: async ({ owner, repo, days, page }) => {
         assertRepositoryAccess(owner, repo, config);
 
         const token = await getTokenForRepository(owner, repo, {
@@ -340,13 +401,19 @@ Use this for activity summaries, changelog generation, or understanding recent c
         const since = getISODateFromDaysAgo(days);
         // TODO: We need an actual todo date in the future to allow for more flexible timeframes
         const until = new Date().toISOString();
+        const sha = getConfiguredDefaultBranch(
+          owner,
+          repo,
+          config?.allowedRepositories
+        );
         const response = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/commits", {
             owner,
             repo,
             since,
+            page,
             until,
-            //TODO: We need to paginate this in the future to get all commits
+            ...(sha ? { sha } : {}),
             per_page: 100,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -354,7 +421,17 @@ Use this for activity summaries, changelog generation, or understanding recent c
           })
         );
 
-        return response.data;
+        const nextPage = getNextPageFromLinkHeader(response.headers?.link);
+
+        return {
+          commits: response.data,
+          pagination: {
+            page,
+            perPage: 100,
+            hasNextPage: nextPage !== undefined,
+            nextPage: nextPage ?? null,
+          },
+        };
       },
     }),
     {
@@ -362,12 +439,18 @@ Use this for activity summaries, changelog generation, or understanding recent c
       // still eliminating duplicate calls within a single agent run.
       ttl: 2 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, days } = params as {
+        const { owner, repo, days, page } = params as {
           owner: string;
           repo: string;
           days: number;
+          page?: number;
         };
-        return `get_commits_by_timeframe:${owner.toLowerCase()}/${repo.toLowerCase()}:days=${String(days)}`;
+        const sha = getConfiguredDefaultBranch(
+          owner,
+          repo,
+          config?.allowedRepositories
+        );
+        return `get_commits_by_timeframe:${owner.toLowerCase()}/${repo.toLowerCase()}:days=${String(days)}:page=${String(page ?? 1)}:sha=${encodeURIComponent(sha ?? "default")}`;
       },
     }
   );

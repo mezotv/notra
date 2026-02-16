@@ -8,7 +8,11 @@ export interface ChangelogAgentResult {
 
 export interface ChangelogAgentOptions {
   organizationId: string;
-  repositories: Array<{ owner: string; repo: string }>;
+  repositories: Array<{
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+  }>;
   tone?: ToneProfile;
   promptInput: ChangelogTonePromptInput;
 }
