@@ -10,7 +10,12 @@ import {
 import { and, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
-import type { OutputContentType } from "@/utils/schemas/integrations";
+import type {
+  AddRepositoryParams,
+  ConfigureOutputParams,
+  CreateGitHubIntegrationParams,
+  WebhookConfig,
+} from "@/types/lib/services/integrations";
 import { getConfiguredAppUrl } from "@/utils/url";
 import { createOctokit } from "../octokit";
 
@@ -18,33 +23,6 @@ const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
 function generateWebhookSecret(): string {
   return crypto.randomBytes(32).toString("hex");
-}
-
-interface CreateGitHubIntegrationParams {
-  organizationId: string;
-  userId: string;
-  token: string | null;
-  displayName: string;
-  owner: string;
-  repo: string;
-}
-
-interface AddRepositoryParams {
-  integrationId: string;
-  owner: string;
-  repo: string;
-  outputs?: Array<{
-    type: OutputContentType;
-    enabled?: boolean;
-    config?: Record<string, unknown>;
-  }>;
-}
-
-interface ConfigureOutputParams {
-  repositoryId: string;
-  outputType: OutputContentType;
-  enabled: boolean;
-  config?: Record<string, unknown>;
 }
 
 async function findRepositoryInOrganization(
@@ -74,7 +52,7 @@ async function findRepositoryInOrganization(
 export async function validateUserOrgAccess(
   userId: string,
   organizationId: string
-): Promise<boolean> {
+) {
   const member = await db.query.members.findFirst({
     where: and(
       eq(members.userId, userId),
@@ -245,10 +223,7 @@ export function getGitHubIntegrationById(integrationId: string) {
   });
 }
 
-export async function getDecryptedToken(
-  integrationId: string,
-  userId: string
-): Promise<string | null> {
+export async function getDecryptedToken(integrationId: string, userId: string) {
   const integration = await getGitHubIntegrationById(integrationId);
 
   if (!integration) {
@@ -486,7 +461,7 @@ export async function getTokenForRepository(
   owner: string,
   repo: string,
   options?: { organizationId?: string }
-): Promise<string | undefined> {
+) {
   const whereClauses = [
     sql`lower(${githubRepositories.owner}) = ${owner.toLowerCase()}`,
     sql`lower(${githubRepositories.repo}) = ${repo.toLowerCase()}`,
@@ -518,9 +493,7 @@ export async function getTokenForRepository(
   return decryptToken(repository.encryptedToken);
 }
 
-export async function getTokenForIntegrationId(
-  integrationId: string
-): Promise<string | null> {
+export async function getTokenForIntegrationId(integrationId: string) {
   const integration = await db.query.githubIntegrations.findFirst({
     where: eq(githubIntegrations.id, integrationId),
   });
@@ -530,14 +503,6 @@ export async function getTokenForIntegrationId(
   }
 
   return decryptToken(integration.encryptedToken);
-}
-
-export interface WebhookConfig {
-  webhookUrl: string;
-  webhookSecret: string;
-  repositoryId: string;
-  owner: string;
-  repo: string;
 }
 
 export async function generateWebhookSecretForRepository(
@@ -621,9 +586,7 @@ export async function getWebhookConfigForRepository(
   };
 }
 
-export async function hasWebhookConfigured(
-  repositoryId: string
-): Promise<boolean> {
+export async function hasWebhookConfigured(repositoryId: string) {
   const repository = await db.query.githubRepositories.findFirst({
     where: eq(githubRepositories.id, repositoryId),
     columns: {
@@ -634,9 +597,7 @@ export async function hasWebhookConfigured(
   return !!repository?.encryptedWebhookSecret;
 }
 
-export async function getWebhookSecretByRepositoryId(
-  repositoryId: string
-): Promise<string | null> {
+export async function getWebhookSecretByRepositoryId(repositoryId: string) {
   const repository = await db.query.githubRepositories.findFirst({
     where: eq(githubRepositories.id, repositoryId),
     columns: {

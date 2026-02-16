@@ -1,15 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { OnboardingStatus } from "@/types/lib/hooks/onboarding";
 import { QUERY_KEYS } from "@/utils/query-keys";
-
-interface OnboardingStatus {
-  hasBrandIdentity: boolean;
-  hasIntegration: boolean;
-  hasSchedule: boolean;
-  onboardingCompleted: boolean;
-  onboardingDismissed: boolean;
-}
 
 export function useOnboardingStatus(organizationId: string) {
   return useQuery({

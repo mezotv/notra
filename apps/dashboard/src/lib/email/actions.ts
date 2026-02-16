@@ -3,6 +3,12 @@
 import { EMAIL_CONFIG, sendDevEmail } from "@notra/email";
 import { headers } from "next/headers";
 import { Resend } from "resend";
+import type {
+  SendInviteEmailProps,
+  SendResetPasswordProps,
+  SendVerificationEmailProps,
+  SendWelcomeEmailProps,
+} from "@/types/lib/email/actions";
 import { getServerSession } from "../auth/session";
 import {
   sendInviteEmail,
@@ -14,15 +20,6 @@ import {
 const resendApiKey = process.env.RESEND_API_KEY;
 const isDevelopment = process.env.NODE_ENV === "development";
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
-
-interface SendInviteEmailProps {
-  inviteeEmail: string;
-  inviteeUsername?: string;
-  inviterName: string;
-  inviterEmail: string;
-  workspaceName: string;
-  inviteLink: string;
-}
 
 export async function sendInviteEmailAction({
   inviteeEmail,
@@ -88,11 +85,7 @@ export async function sendVerificationEmailAction({
   userEmail,
   otp,
   type,
-}: {
-  userEmail: string;
-  otp: string;
-  type: "sign-in" | "email-verification";
-}) {
+}: SendVerificationEmailProps) {
   if (!resend && isDevelopment) {
     const subject =
       type === "sign-in" ? "Your sign-in code" : "Verify your email address";
@@ -137,10 +130,7 @@ export async function sendVerificationEmailAction({
 export async function sendResetPasswordAction({
   userEmail,
   resetLink,
-}: {
-  userEmail: string;
-  resetLink: string;
-}) {
+}: SendResetPasswordProps) {
   if (!resend && isDevelopment) {
     return sendDevEmail({
       from: EMAIL_CONFIG.from,
@@ -178,9 +168,7 @@ export async function sendResetPasswordAction({
 
 export async function sendWelcomeEmailAction({
   userEmail,
-}: {
-  userEmail: string;
-}) {
+}: SendWelcomeEmailProps) {
   if (!resend && isDevelopment) {
     return sendDevEmail({
       from: "Dominik from Notra <dominik@usenotra.com>",

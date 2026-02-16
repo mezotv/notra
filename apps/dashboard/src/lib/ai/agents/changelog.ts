@@ -8,13 +8,11 @@ import {
   ToolLoopAgent,
   wrapLanguageModel,
 } from "ai";
-import { z } from "zod";
 import { gateway } from "@/lib/ai/gateway";
 import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
 import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
-import type { ChangelogTonePromptInput } from "@/lib/ai/prompts/changelog/types";
 import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
 import {
   createGetCommitsByTimeframeTool,
@@ -22,29 +20,12 @@ import {
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
-
-export const changelogOutputSchema = z.object({
-  title: z.string().max(120).describe("The changelog title, no markdown"),
-  markdown: z
-    .string()
-    .describe(
-      "The full changelog content body as markdown/MDX, without the title heading (title is a separate field)"
-    ),
-});
-
-export type ChangelogOutput = z.infer<typeof changelogOutputSchema>;
-
-export interface ChangelogAgentResult {
-  output: ChangelogOutput;
-}
-
-export interface ChangelogAgentOptions {
-  organizationId: string;
-  repositories: Array<{ owner: string; repo: string }>;
-  tone?: ToneProfile;
-  promptInput: ChangelogTonePromptInput;
-}
+import { changelogOutputSchema } from "@/schemas/ai/agents";
+import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
+import type {
+  ChangelogAgentOptions,
+  ChangelogAgentResult,
+} from "@/types/lib/ai/agents";
 
 const changelogPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalChangelogPrompt,
@@ -71,7 +52,7 @@ export async function generateChangelog(
     middleware: extractJsonMiddleware(),
   });
 
-  const resolvedTone: ToneProfile = getValidToneProfile(tone, "Conversational");
+  const resolvedTone = getValidToneProfile(tone, "Conversational");
 
   const promptFactory =
     changelogPromptByTone[resolvedTone] ?? changelogPromptByTone.Conversational;

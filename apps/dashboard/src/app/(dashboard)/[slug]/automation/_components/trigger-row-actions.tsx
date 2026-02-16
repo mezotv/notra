@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 
-import type { Trigger } from "@/types/triggers";
+import type { Trigger } from "@/types/lib/triggers/triggers";
 
 interface TriggerRowActionsProps {
   trigger: Trigger;

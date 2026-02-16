@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { marked } from "marked";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { updateContentSchema } from "@/utils/schemas/content";
+import { updateContentSchema } from "@/schemas/content";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
 

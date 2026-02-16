@@ -19,8 +19,8 @@ import { autumn } from "@/lib/billing/autumn";
 import { FEATURES } from "@/lib/billing/constants";
 import { trackScheduledContentCreated } from "@/lib/databuddy";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
-import { getValidToneProfile, type ToneProfile } from "@/utils/schemas/brand";
-import type { LookbackWindow } from "@/utils/schemas/integrations";
+import { getValidToneProfile } from "@/schemas/brand";
+import type { LookbackWindow } from "@/schemas/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 

@@ -3,17 +3,23 @@ import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { redis } from "@/lib/redis";
 import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
-import type { WebhookContext, WebhookResult } from "@/types/webhooks";
 import {
   type GitHubEventType,
   type GitHubWebhookPayload,
   githubWebhookPayloadSchema,
   isGitHubEventType,
-} from "@/utils/schemas/github-webhook";
+} from "@/schemas/github-webhook";
+import type {
+  GithubCreateMemoryEntryProps,
+  GithubMemoryEventType,
+  GithubProcessedEvent,
+  WebhookContext,
+  WebhookResult,
+} from "@/types/lib/webhooks/webhooks";
 
 const DELIVERY_TTL_SECONDS = 60 * 60 * 24;
 
-async function isDeliveryProcessed(deliveryId: string): Promise<boolean> {
+async function isDeliveryProcessed(deliveryId: string) {
   if (!(redis && deliveryId)) {
     return false;
   }
@@ -22,7 +28,7 @@ async function isDeliveryProcessed(deliveryId: string): Promise<boolean> {
   return exists === 1;
 }
 
-async function markDeliveryProcessed(deliveryId: string): Promise<void> {
+async function markDeliveryProcessed(deliveryId: string) {
   if (!(redis && deliveryId)) {
     return;
   }
@@ -30,15 +36,7 @@ async function markDeliveryProcessed(deliveryId: string): Promise<void> {
   await redis.set(key, "1", { ex: DELIVERY_TTL_SECONDS });
 }
 
-type MemoryEventType = Exclude<GitHubEventType, "ping">;
-
 const STAR_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10_000];
-
-interface ProcessedEvent {
-  type: string;
-  action: string;
-  data: Record<string, unknown>;
-}
 
 function isStarMilestone(stars?: number) {
   if (!stars) {
@@ -58,14 +56,7 @@ async function createMemoryEntry({
   action,
   data,
   customId,
-}: {
-  organizationId: string;
-  eventType: MemoryEventType;
-  repository: string;
-  action: string;
-  data: Record<string, unknown>;
-  customId: string;
-}) {
+}: GithubCreateMemoryEntryProps) {
   const apiKey = process.env.SUPERMEMORY_API_KEY;
   if (!apiKey) {
     return null;
@@ -107,11 +98,7 @@ async function createMemoryEntry({
   return response.json();
 }
 
-function verifySignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
+function verifySignature(payload: string, signature: string, secret: string) {
   const hmac = crypto.createHmac("sha256", secret);
   const digest = `sha256=${hmac.update(payload).digest("hex")}`;
   const digestBuffer = Buffer.from(digest);
@@ -122,14 +109,14 @@ function verifySignature(
   return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
 }
 
-function isDefaultBranchRef(ref: string, defaultBranch: string): boolean {
+function isDefaultBranchRef(ref: string, defaultBranch: string) {
   return ref === `refs/heads/${defaultBranch}`;
 }
 
 function processReleaseEvent(
   action: string,
   payload: GitHubWebhookPayload
-): ProcessedEvent | null {
+): GithubProcessedEvent | null {
   const validActions = ["published", "created", "edited", "prereleased"];
   if (!validActions.includes(action)) {
     return null;
@@ -161,7 +148,7 @@ function processReleaseEvent(
 
 function processPushEvent(
   payload: GitHubWebhookPayload
-): ProcessedEvent | null {
+): GithubProcessedEvent | null {
   const ref = payload.ref;
   const defaultBranch = payload.repository?.default_branch;
   const commits = payload.commits;
@@ -204,7 +191,7 @@ function processPushEvent(
 function processStarEvent(
   action: string,
   payload: GitHubWebhookPayload
-): ProcessedEvent | null {
+): GithubProcessedEvent | null {
   if (action !== "created") {
     return null;
   }
@@ -383,7 +370,7 @@ export async function handleGitHubWebhook(
   const payload = validation.data;
   const action = payload.action ?? "";
 
-  let processedEvent: ProcessedEvent | null = null;
+  let processedEvent: GithubProcessedEvent | null = null;
 
   switch (event) {
     case "release":
@@ -448,7 +435,7 @@ export async function handleGitHubWebhook(
     const customId = `github:${repositoryId}:${delivery ?? crypto.randomUUID()}`;
     await createMemoryEntry({
       organizationId,
-      eventType: processedEvent.type as MemoryEventType,
+      eventType: processedEvent.type as GithubMemoryEventType,
       repository: repositoryName,
       action: processedEvent.action,
       data: processedEvent.data,

@@ -17,6 +17,8 @@
   "dependencies": {
     "@ai-sdk-tools/cache": "^1.2.0",
     "@ai-sdk/react": "^3.0.51",
+    "@aws-sdk/client-s3": "^3.990.0",
+    "@aws-sdk/s3-request-presigner": "^3.990.0",
     "@databuddy/sdk": "^2.3.24",
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.4",

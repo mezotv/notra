@@ -2,32 +2,9 @@ import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import * as z from "zod";
+import { organizationIdSchema } from "@/schemas/auth/organization";
+import type { OrganizationAuth } from "@/types/lib/auth/organization";
 import { getServerSession } from "./session";
-
-type User = NonNullable<Awaited<ReturnType<typeof getServerSession>>["user"]>;
-
-export interface OrganizationContext {
-  user: User;
-  organizationId: string;
-  membership: {
-    id: string;
-    role: string;
-  };
-}
-
-const organizationIdSchema = z.string().min(1);
-interface OrganizationAuthResult {
-  success: true;
-  context: OrganizationContext;
-}
-
-interface OrganizationAuthError {
-  success: false;
-  response: NextResponse;
-}
-
-export type OrganizationAuth = OrganizationAuthResult | OrganizationAuthError;
 
 export async function withOrganizationAuth(
   request: NextRequest,

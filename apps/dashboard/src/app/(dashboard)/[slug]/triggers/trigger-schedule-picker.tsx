@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import type { CronFrequency } from "@/utils/schemas/integrations";
+import type { CronFrequency } from "@/schemas/integrations";
 
 interface ScheduleValue {
   frequency: CronFrequency;

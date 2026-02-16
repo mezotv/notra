@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
 
-function getEncryptionKey(): Buffer {
+function getEncryptionKey() {
   const key = process.env.INTEGRATION_ENCRYPTION_KEY;
   if (!key) {
     throw new Error(
@@ -19,7 +19,7 @@ function getEncryptionKey(): Buffer {
   return decodedKey;
 }
 
-export function encryptToken(token: string): string {
+export function encryptToken(token: string) {
   const key = getEncryptionKey();
   const iv = crypto.randomBytes(IV_LENGTH);
 
@@ -33,7 +33,7 @@ export function encryptToken(token: string): string {
   return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
 }
 
-export function decryptToken(encryptedToken: string): string {
+export function decryptToken(encryptedToken: string) {
   const key = getEncryptionKey();
   const parts = encryptedToken.split(":");
 

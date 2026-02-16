@@ -1,6 +1,4 @@
-import Firecrawl from "@mendable/firecrawl-js";
-
-type FirecrawlClient = InstanceType<typeof Firecrawl>;
+import Firecrawl, { type FirecrawlClient } from "@mendable/firecrawl-js";
 
 let firecrawlClient: FirecrawlClient | null = null;
 

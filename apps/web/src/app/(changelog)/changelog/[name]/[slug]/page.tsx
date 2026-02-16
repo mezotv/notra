@@ -50,6 +50,7 @@ export async function generateMetadata({
       siteName: "Notra",
     },
     twitter: {
+      card: "summary_large_image",
       title: entry.title,
       description: entry.description,
     },

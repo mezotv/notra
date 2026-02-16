@@ -53,7 +53,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { Trigger, TriggerSourceType } from "@/types/triggers";
+import type { Trigger, TriggerSourceType } from "@/types/lib/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { AddTriggerDialog } from "../../triggers/trigger-dialog";

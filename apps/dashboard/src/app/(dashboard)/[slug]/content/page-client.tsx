@@ -6,7 +6,7 @@ import { ContentCard } from "@/components/content/content-card";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { ContentType, Post } from "@/utils/schemas/content";
+import type { ContentType, Post } from "@/schemas/content";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
 

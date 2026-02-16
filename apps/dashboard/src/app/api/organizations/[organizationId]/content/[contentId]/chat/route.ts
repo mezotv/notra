@@ -1,11 +1,11 @@
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { orchestrateChat } from "@/lib/ai/orchestration";
+import { orchestrateChat } from "@/lib/ai/orchestration/orchestrate";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
-import { FEATURES } from "@/lib/billing/constants";
-import { chatRequestSchema } from "@/utils/schemas/content";
+import { chatRequestSchema } from "@/schemas/content";
+import { FEATURES } from "@/utils/constants";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; contentId: string }>;

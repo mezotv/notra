@@ -1,14 +1,11 @@
 import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
-import type { TriggerSourceConfig } from "@/types/triggers";
+import type {
+  CreateQstashScheduleProps,
+  WorkflowDelay,
+} from "@/types/lib/triggers/qstash";
+import type { TriggerSourceConfig } from "@/types/lib/triggers/triggers";
 import { getConfiguredAppUrl, requireConfiguredAppUrl } from "@/utils/url";
-
-type WorkflowDelay =
-  | number
-  | `${bigint}s`
-  | `${bigint}m`
-  | `${bigint}h`
-  | `${bigint}d`;
 
 function getQstashToken() {
   const token = process.env.QSTASH_TOKEN;
@@ -59,11 +56,7 @@ export async function createQstashSchedule({
   triggerId,
   cron,
   scheduleId,
-}: {
-  triggerId: string;
-  cron: string;
-  scheduleId?: string;
-}) {
+}: CreateQstashScheduleProps) {
   const client = getQStashClient();
   const appUrl = getAppUrl();
 

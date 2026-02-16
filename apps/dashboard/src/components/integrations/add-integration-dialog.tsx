@@ -22,16 +22,16 @@ import { isValidElement, useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { parseGitHubUrl } from "@/lib/utils/github";
+import {
+  type AddGitHubIntegrationFormValues,
+  addGitHubIntegrationFormSchema,
+} from "@/schemas/integrations";
 import type {
   AddIntegrationDialogProps,
   GitHubIntegration,
   GitHubRepoInfo,
 } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import {
-  type AddGitHubIntegrationFormValues,
-  addGitHubIntegrationFormSchema,
-} from "@/utils/schemas/integrations";
 import { WebhookSetupDialog } from "./wehook-setup-dialog";
 
 export function AddIntegrationDialog({

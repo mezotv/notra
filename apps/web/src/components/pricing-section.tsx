@@ -103,7 +103,7 @@ export default function PricingSection() {
 
   return (
     <div className="flex w-full flex-col items-center justify-center gap-2">
-      <div className="flex items-center justify-center gap-6 self-stretch border-primary/12 border-b px-6 py-12 md:px-24 md:py-16">
+      <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
         <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
           <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
             Pick the plan that fits your team
@@ -171,7 +171,7 @@ export default function PricingSection() {
         </div>
       </div>
 
-      <div className="flex items-center justify-center self-stretch shadow-[inset_0_1px_0_var(--border),inset_0_-1px_0_var(--border)]">
+      <div className="flex items-center justify-center self-stretch shadow-[inset_0_-1px_0_var(--border)]">
         <div className="flex w-full items-start justify-center">
           <div className="relative hidden w-12 self-stretch overflow-hidden md:block">
             <div className="absolute top-[-120px] left-[-58px] flex w-[162px] flex-col items-start justify-start">

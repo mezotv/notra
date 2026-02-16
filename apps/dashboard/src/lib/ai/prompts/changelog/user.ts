@@ -1,5 +1,5 @@
 import dedent from "dedent";
-import type { ChangelogTonePromptInput } from "./types";
+import type { ChangelogTonePromptInput } from "@/types/lib/ai/prompts";
 
 export function getChangelogUserPrompt(
   params: ChangelogTonePromptInput

@@ -13,7 +13,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId } from "react";
 
-const NON_ORG_PATHS = ["/account"];
+const NON_ORG_PATHS: string[] = [];
 
 export function SiteHeader() {
   const pathname = usePathname();

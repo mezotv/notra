@@ -7,27 +7,16 @@ import {
 } from "ai";
 import { gateway } from "@/lib/ai/gateway";
 import { getContentEditorChatPrompt } from "@/lib/ai/prompts/content-editor";
+import type {
+  OrchestrateInput,
+  OrchestrateResult,
+} from "@/types/lib/ai/orchestration";
 import {
   hasEnabledGitHubIntegration,
   validateIntegrations,
 } from "./integration-validator";
 import { routeAndSelectModel } from "./router";
 import { buildToolSet, getRepoContextFromIntegrations } from "./tool-registry";
-import type { ContextItem, RoutingResult, TextSelection } from "./types";
-
-interface OrchestrateInput {
-  organizationId: string;
-  messages: UIMessage[];
-  currentMarkdown: string;
-  selection?: TextSelection;
-  context?: ContextItem[];
-  maxSteps?: number;
-}
-
-interface OrchestrateResult {
-  stream: ReturnType<typeof streamText>;
-  routingDecision: RoutingResult;
-}
 
 export async function orchestrateChat(
   input: OrchestrateInput
@@ -116,16 +105,3 @@ function getLastUserMessage(messages: UIMessage[]): string {
   }
   return "";
 }
-
-export {
-  hasEnabledGitHubIntegration,
-  validateIntegrations,
-} from "./integration-validator";
-export {
-  MODELS,
-  routeAndSelectModel,
-  routeMessage,
-  selectModel,
-} from "./router";
-export { buildToolSet } from "./tool-registry";
-export * from "./types";

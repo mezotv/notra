@@ -6,17 +6,13 @@ import {
   WelcomeEmail,
 } from "@notra/email";
 import type { Resend } from "resend";
+import type { EmailResult, SendInviteEmailProps } from "@/types/lib/email/send";
 
 // --- Retry & Idempotency ---
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30_000;
-
-interface EmailResult {
-  data: { id: string } | null;
-  error: { name: string; message: string } | null;
-}
 
 function isRetryable(error: { name: string; message: string }): boolean {
   const name = error.name.toLowerCase();
@@ -98,15 +94,6 @@ async function sendWithRetry(
 
 // --- Send Functions ---
 
-interface SendInviteEmailProps {
-  inviteeEmail: string;
-  inviteeUsername?: string;
-  inviterName: string;
-  inviterEmail: string;
-  organizationName: string;
-  inviteLink: string;
-}
-
 export async function sendInviteEmail(
   resend: Resend,
   {
@@ -137,9 +124,7 @@ export async function sendInviteEmail(
   );
 }
 
-function getVerificationSubject(
-  type: "sign-in" | "email-verification"
-): string {
+function getVerificationSubject(type: "sign-in" | "email-verification") {
   switch (type) {
     case "sign-in":
       return "Your sign-in code";

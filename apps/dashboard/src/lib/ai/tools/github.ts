@@ -1,26 +1,16 @@
 import { type Tool, tool } from "ai";
-import * as z from "zod";
-import { getAICachedTools } from "@/lib/ai/tool-cache";
+import z from "zod";
 import { createOctokit } from "@/lib/octokit";
 import { getTokenForRepository } from "@/lib/services/github-integration";
-import { toolDescription } from "../utils/description";
-
-interface GitHubToolsAccessConfig {
-  organizationId?: string;
-  allowedRepositories?: Array<{ owner: string; repo: string }>;
-}
+import type {
+  ErrorWithStatus,
+  GitHubToolsAccessConfig,
+} from "@/types/lib/ai/tools";
+import { toolDescription } from "@/utils/ai/description";
+import { getAICachedTools } from "./tool-cache";
 
 const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
   "GitHub API rate limit reached. Please retry later.";
-
-interface ErrorWithStatus {
-  status?: number;
-  message?: string;
-  response?: {
-    headers?: Record<string, string | number | undefined>;
-    data?: unknown;
-  };
-}
 
 function parseRetryAfterSeconds(value?: string | number) {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -307,7 +297,7 @@ Returns release body (changelog), assets list, author, and timestamps.`,
   );
 }
 
-export const getISODateFromDaysAgo = (days: number): string => {
+export const getISODateFromDaysAgo = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();
@@ -348,11 +338,16 @@ Use this for activity summaries, changelog generation, or understanding recent c
         });
         const octokit = createOctokit(token);
         const since = getISODateFromDaysAgo(days);
+        // TODO: We need an actual todo date in the future to allow for more flexible timeframes
+        const until = new Date().toISOString();
         const response = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/commits", {
             owner,
             repo,
             since,
+            until,
+            //TODO: We need to paginate this in the future to get all commits
+            per_page: 100,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },

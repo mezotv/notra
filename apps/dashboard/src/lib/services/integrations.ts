@@ -1,28 +1,9 @@
-import type { IntegrationType } from "@/utils/schemas/integrations";
+import type { IntegrationType } from "@/schemas/integrations";
+import type {
+  IntegrationFetcher,
+  IntegrationsResponse,
+} from "@/types/lib/services/integrations";
 import { getGitHubIntegrationsByOrganization } from "./github-integration";
-
-export interface IntegrationWithRepositories {
-  id: string;
-  displayName: string;
-  type: IntegrationType;
-  enabled: boolean;
-  createdAt: Date;
-  repositories: Array<{
-    id: string;
-    owner: string;
-    repo: string;
-    enabled: boolean;
-  }>;
-}
-
-export interface IntegrationsResponse {
-  integrations: IntegrationWithRepositories[];
-  count: number;
-}
-
-type IntegrationFetcher = (
-  organizationId: string
-) => Promise<IntegrationWithRepositories[]>;
 
 const integrationFetchers: Partial<
   Record<IntegrationType, IntegrationFetcher>
@@ -61,7 +42,7 @@ const integrationFetchers: Partial<
 export function registerIntegrationFetcher(
   type: IntegrationType,
   fetcher: IntegrationFetcher
-): void {
+) {
   integrationFetchers[type] = fetcher;
 }
 
@@ -87,7 +68,7 @@ export async function getIntegrationsByOrganization(
 
 export async function getIntegrationCountByOrganization(
   organizationId: string
-): Promise<number> {
+) {
   const { count } = await getIntegrationsByOrganization(organizationId);
   return count;
 }

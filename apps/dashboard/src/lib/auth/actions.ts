@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth/server";
+import type { InvitationResponse } from "@/types/lib/auth/actions";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/utils/constants";
 
 export async function validateOrganizationAccess(slug: string) {
@@ -109,20 +110,9 @@ export async function getLastActiveOrganization(userId: string) {
   return;
 }
 
-export async function getInvitationById(invitationId: string): Promise<{
-  id: string;
-  organizationId: string;
-  organizationName: string;
-  organizationSlug: string;
-  inviterEmail: string;
-  inviterName: string;
-  inviterId: string;
-  email: string;
-  role: string | null;
-  status: "pending" | "accepted" | "rejected" | "canceled";
-  expiresAt: Date;
-  expired: boolean;
-} | null> {
+export async function getInvitationById(
+  invitationId: string
+): InvitationResponse {
   const invitation = await db.query.invitations.findFirst({
     where: eq(invitations.id, invitationId),
     with: {

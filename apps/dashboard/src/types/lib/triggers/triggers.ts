@@ -2,7 +2,7 @@ import type {
   LookbackWindow,
   OutputContentType,
   WebhookEventType,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 
 export type TriggerSourceType =
   | "github_webhook"

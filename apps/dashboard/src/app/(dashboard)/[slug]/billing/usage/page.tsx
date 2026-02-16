@@ -20,7 +20,7 @@ import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { PageContainer } from "@/components/layout/container";
-import { FEATURES } from "@/lib/billing/constants";
+import { FEATURES } from "@/utils/constants";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
 type RangeOption = (typeof ranges)[number];

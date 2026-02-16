@@ -1,5 +1,5 @@
 import type React from "react";
-import type { IntegrationType } from "@/utils/schemas/integrations";
+import type { IntegrationType } from "@/schemas/integrations";
 
 export interface RepositoryOutput {
   id: string;

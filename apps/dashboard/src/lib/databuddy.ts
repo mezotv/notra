@@ -1,4 +1,5 @@
 import { Databuddy } from "@databuddy/sdk/node";
+import type { ScheduledContentCreatedEvent } from "@/types/lib/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
 
@@ -17,15 +18,6 @@ export const databuddy = apiKey
   : null;
 
 const isDevelopment = process.env.NODE_ENV === "development";
-
-interface ScheduledContentCreatedEvent {
-  triggerId: string;
-  organizationId: string;
-  postId: string;
-  outputType: string;
-  lookbackWindow: string;
-  repositoryCount: number;
-}
 
 export async function trackScheduledContentCreated(
   event: ScheduledContentCreatedEvent

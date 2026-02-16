@@ -7,7 +7,7 @@ import {
 import {
   configureOutputBodySchema,
   repositoryIdParamSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; repositoryId: string }>;

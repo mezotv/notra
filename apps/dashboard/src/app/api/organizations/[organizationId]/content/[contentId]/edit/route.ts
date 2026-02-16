@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { createChatAgent } from "@/lib/ai/agents/chat";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { editContentSchema } from "@/utils/schemas/content";
+import { editContentSchema } from "@/schemas/content";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; contentId: string }>;

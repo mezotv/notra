@@ -21,7 +21,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
-import type { Trigger } from "@/types/triggers";
+import type { Trigger } from "@/types/lib/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { getConfiguredAppUrl, normalizeUrl } from "@/utils/url";

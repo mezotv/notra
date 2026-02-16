@@ -1,3 +1,5 @@
+import type { streamText, UIMessage } from "ai";
+
 export interface ValidatedIntegration {
   id: string;
   type: "github";
@@ -54,4 +56,25 @@ export interface ToolSet {
 export interface RepoContext {
   owner: string;
   repo: string;
+}
+
+export interface OrchestrateInput {
+  organizationId: string;
+  messages: UIMessage[];
+  currentMarkdown: string;
+  selection?: TextSelection;
+  context?: ContextItem[];
+  maxSteps?: number;
+}
+
+export interface OrchestrateResult {
+  stream: ReturnType<typeof streamText>;
+  routingDecision: RoutingResult;
+}
+
+export interface BuildToolSetParams {
+  organizationId: string;
+  currentMarkdown: string;
+  onMarkdownUpdate?: (markdown: string) => void;
+  validatedIntegrations: ValidatedIntegration[];
 }
