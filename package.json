@@ -14,6 +14,8 @@
     "db:seed:automation": "dotenv -- bun packages/db/scripts/seed-automation.ts",
     "db:seed:posts": "dotenv -- bun packages/db/scripts/seed-posts.ts",
     "db:migrate:github-integrations": "dotenv -- bun packages/db/scripts/migrate-github-repos-to-integrations.ts",
+    "db:migrate:all": "bun run db:migrate:github-integrations && bun run db:migrate",
+    "build:dashboard:vercel": "bun run db:migrate:all && dotenv -- turbo run build --filter=dashboard",
     "db:seed": "bun run db:seed:posts && bun run db:seed:automation",
     "email:dev": "dotenv -- bun run --filter=@notra/email dev",
     "check": "ultracite check",

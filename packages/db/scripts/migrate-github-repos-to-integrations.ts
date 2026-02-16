@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/schema";
 
@@ -32,6 +32,26 @@ function formatItems(items: string[]) {
 
 async function migrate() {
   console.log("Starting GitHub repository -> integration migration...");
+
+  await db.execute(sql`
+    ALTER TABLE github_integrations ADD COLUMN IF NOT EXISTS owner text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE github_integrations ADD COLUMN IF NOT EXISTS repo text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE github_integrations ADD COLUMN IF NOT EXISTS default_branch text;
+  `);
+  await db.execute(sql`
+    ALTER TABLE github_integrations ADD COLUMN IF NOT EXISTS repository_enabled boolean DEFAULT true NOT NULL;
+  `);
+  await db.execute(sql`
+    ALTER TABLE github_integrations ADD COLUMN IF NOT EXISTS encrypted_webhook_secret text;
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS githubIntegrations_organization_owner_repo_uidx
+    ON github_integrations USING btree (organization_id, owner, repo);
+  `);
 
   const tableResult = await db.execute<{ tableName: string | null }>(sql`
     select to_regclass($$public.github_repositories$$) as "tableName"
@@ -80,30 +100,51 @@ async function migrate() {
     repositoriesByIntegrationId.set(repository.integrationId, current);
   }
 
-  const invalidIntegrations: string[] = [];
+  const multiRepositoryIntegrations: string[] = [];
+  const missingRepositoryIntegrations: string[] = [];
 
   for (const integration of integrations) {
     const relatedRepositories =
       repositoriesByIntegrationId.get(integration.id) ?? [];
 
-    if (relatedRepositories.length !== 1) {
-      invalidIntegrations.push(
+    if (relatedRepositories.length > 1) {
+      multiRepositoryIntegrations.push(
         `${integration.id} has ${relatedRepositories.length} repositories`
       );
     }
+
+    if (relatedRepositories.length === 0) {
+      missingRepositoryIntegrations.push(integration.id);
+    }
   }
 
-  if (invalidIntegrations.length > 0) {
+  if (multiRepositoryIntegrations.length > 0) {
     throw new Error(
       [
-        "Migration aborted. Expected exactly one repository per integration:",
-        formatItems(invalidIntegrations),
+        "Migration aborted. Expected at most one repository per integration:",
+        formatItems(multiRepositoryIntegrations),
       ].join("\n")
     );
   }
 
+  if (missingRepositoryIntegrations.length > 0) {
+    console.warn(
+      [
+        "Found integrations with no repositories. They will be deleted:",
+        formatItems(missingRepositoryIntegrations),
+      ].join("\n")
+    );
+  }
+
+  const missingRepositoryIntegrationIds = new Set(
+    missingRepositoryIntegrations
+  );
+  const integrationsToMigrate = integrations.filter(
+    (integration) => !missingRepositoryIntegrationIds.has(integration.id)
+  );
+
   const integrationIdSet = new Set(
-    integrations.map((integration) => integration.id)
+    integrationsToMigrate.map((integration) => integration.id)
   );
 
   const repositoryIdToIntegrationId = new Map<string, string>();
@@ -112,12 +153,67 @@ async function migrate() {
   }
 
   await db.transaction(async (tx) => {
+    if (missingRepositoryIntegrations.length > 0) {
+      const outputsReferencingMissingIntegrations = await tx
+        .select({ id: schema.repositoryOutputs.id })
+        .from(schema.repositoryOutputs)
+        .where(
+          inArray(
+            schema.repositoryOutputs.repositoryId,
+            missingRepositoryIntegrations
+          )
+        );
+
+      if (outputsReferencingMissingIntegrations.length > 0) {
+        throw new Error(
+          [
+            "Migration aborted. Missing-repository integrations are referenced by repository_outputs:",
+            formatItems(
+              outputsReferencingMissingIntegrations.map((row) => row.id)
+            ),
+          ].join("\n")
+        );
+      }
+
+      const triggers = await tx
+        .select({
+          id: schema.contentTriggers.id,
+          targets: schema.contentTriggers.targets,
+        })
+        .from(schema.contentTriggers);
+
+      const triggersReferencingMissingIntegrations = triggers
+        .filter((trigger) => {
+          const targets = (trigger.targets as TriggerTargets | null) ?? {};
+          const repositoryIds = targets.repositoryIds ?? [];
+          return repositoryIds.some((id) =>
+            missingRepositoryIntegrationIds.has(id)
+          );
+        })
+        .map((trigger) => trigger.id);
+
+      if (triggersReferencingMissingIntegrations.length > 0) {
+        throw new Error(
+          [
+            "Migration aborted. Missing-repository integrations are referenced by content_triggers:",
+            formatItems(triggersReferencingMissingIntegrations),
+          ].join("\n")
+        );
+      }
+
+      await tx
+        .delete(schema.githubIntegrations)
+        .where(
+          inArray(schema.githubIntegrations.id, missingRepositoryIntegrations)
+        );
+    }
+
     await tx.execute(sql`
       ALTER TABLE repository_outputs
       DROP CONSTRAINT IF EXISTS repository_outputs_repository_id_github_repositories_id_fk
     `);
 
-    for (const integration of integrations) {
+    for (const integration of integrationsToMigrate) {
       const repository = repositoriesByIntegrationId.get(integration.id)?.[0];
 
       if (!repository) {
@@ -230,9 +326,20 @@ async function migrate() {
       END
       $$;
     `);
+
+    await tx.execute(sql`
+      ALTER TABLE github_repositories DISABLE ROW LEVEL SECURITY;
+    `);
+
+    await tx.execute(sql`
+      DROP TABLE IF EXISTS github_repositories;
+    `);
   });
 
-  console.log(`Migrated ${integrations.length} integrations`);
+  console.log(`Migrated ${integrationsToMigrate.length} integrations`);
+  console.log(
+    `Deleted ${missingRepositoryIntegrations.length} integrations with no repository rows`
+  );
   console.log(`Re-keyed ${repositories.length} repository IDs`);
   console.log("GitHub migration completed successfully.");
 }
