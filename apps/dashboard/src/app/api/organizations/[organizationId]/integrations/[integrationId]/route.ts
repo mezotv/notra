@@ -119,8 +119,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const { enabled, displayName, branch } = bodyValidation.data;
-    const normalizedBranch =
-      branch !== undefined ? branch?.trim() || null : undefined;
+    const normalizedBranch = branch !== undefined ? branch || null : undefined;
 
     if (normalizedBranch !== undefined) {
       if (integration.repositories.length !== 1) {

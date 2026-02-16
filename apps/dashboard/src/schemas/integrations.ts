@@ -135,7 +135,7 @@ export type EditGitHubIntegrationFormValues = z.infer<
 export const updateRepositoryBodySchema = z
   .object({
     enabled: z.boolean().optional(),
-    defaultBranch: z.string().optional().nullable(),
+    defaultBranch: z.string().trim().min(1).optional().nullable(),
   })
   .refine(
     (value) => value.enabled !== undefined || value.defaultBranch !== undefined,

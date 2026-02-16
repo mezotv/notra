@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const { enabled, defaultBranch } = bodyValidation.data;
     const normalizedDefaultBranch =
-      defaultBranch !== undefined ? defaultBranch?.trim() || null : undefined;
+      defaultBranch !== undefined ? defaultBranch || null : undefined;
 
     if (normalizedDefaultBranch) {
       try {
