@@ -287,18 +287,22 @@ export function AddIntegrationDialog({
                         parsed.owner,
                         parsed.repo,
                         currentToken || undefined
-                      ).then((result) => {
-                        const latestParsed = parseGitHubUrl(
-                          form.getFieldValue("repoUrl")
-                        );
-                        const isSameRepo =
-                          latestParsed?.owner === parsed.owner &&
-                          latestParsed?.repo === parsed.repo;
+                      )
+                        .then((result) => {
+                          const latestParsed = parseGitHubUrl(
+                            form.getFieldValue("repoUrl")
+                          );
+                          const isSameRepo =
+                            latestParsed?.owner === parsed.owner &&
+                            latestParsed?.repo === parsed.repo;
 
-                        if (isSameRepo && result?.defaultBranch) {
-                          form.setFieldValue("branch", result.defaultBranch);
-                        }
-                      });
+                          if (isSameRepo && result?.defaultBranch) {
+                            form.setFieldValue("branch", result.defaultBranch);
+                          }
+                        })
+                        .catch(() => {
+                          return null;
+                        });
                     } else {
                       abortControllerRef.current?.abort();
                       abortControllerRef.current = null;
@@ -403,18 +407,18 @@ export function AddIntegrationDialog({
                                 repoInfo &&
                                 probeStatus === "not_found"
                               ) {
-                                probeRepo(
-                                  repoInfo.owner,
-                                  repoInfo.repo,
-                                  token
-                                ).then((result) => {
-                                  if (result?.defaultBranch) {
-                                    form.setFieldValue(
-                                      "branch",
-                                      result.defaultBranch
-                                    );
-                                  }
-                                });
+                                probeRepo(repoInfo.owner, repoInfo.repo, token)
+                                  .then((result) => {
+                                    if (result?.defaultBranch) {
+                                      form.setFieldValue(
+                                        "branch",
+                                        result.defaultBranch
+                                      );
+                                    }
+                                  })
+                                  .catch(() => {
+                                    return null;
+                                  });
                               }
                             }}
                             onChange={(e) => field.handleChange(e.target.value)}

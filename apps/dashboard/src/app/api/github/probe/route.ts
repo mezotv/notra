@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getServerSession } from "@/lib/auth/session";
 import { createOctokit } from "@/lib/octokit";
+
+const probeRepoRequestSchema = z.object({
+  owner: z.string().trim().min(1, "owner is required"),
+  repo: z.string().trim().min(1, "repo is required"),
+  token: z.string().trim().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,18 +20,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { owner, repo, token } = body as {
-      owner: string;
-      repo: string;
-      token?: string;
-    };
+    const validationResult = probeRepoRequestSchema.safeParse(body);
 
-    if (!owner || !repo) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: "owner and repo are required" },
+        {
+          error: "Validation failed",
+          details: validationResult.error.issues,
+        },
         { status: 400 }
       );
     }
+
+    const { owner, repo, token } = validationResult.data;
 
     const octokit = createOctokit(token || undefined);
 
@@ -47,11 +55,14 @@ export async function POST(request: NextRequest) {
           : 500;
 
       if (status === 404) {
-        return NextResponse.json({ status: "not_found" });
+        return NextResponse.json({ status: "not_found" }, { status: 404 });
       }
 
       if (status === 401 || status === 403) {
-        return NextResponse.json({ status: "unauthorized" });
+        return NextResponse.json(
+          { status: "unauthorized" },
+          { status: status === 401 ? 401 : 403 }
+        );
       }
 
       return NextResponse.json(
