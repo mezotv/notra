@@ -16,7 +16,7 @@ export function getContentEditorChatPrompt(
 
   const githubSection =
     hasGitHubEnabled && repoContext?.length
-      ? `\n\n## GitHub Repositories\nThe user has added the following GitHub repositories as context:\n${repoContext.map((c) => `- ${c.owner}/${c.repo}`).join("\n")}\n\nWhen working with GitHub data, use the available GitHub tools to fetch PRs, releases, or commits.`
+      ? `\n\n## GitHub Repositories\nThe user has added the following GitHub repositories as context:\n${repoContext.map((c) => `- ${c.owner}/${c.repo} (repositoryId: ${c.repositoryId}, defaultBranch: ${c.defaultBranch ?? "not set"})`).join("\n")}\n\nWhen working with GitHub data, use the available GitHub tools to fetch PRs, releases, or commits.\nFor commit history, pass repositoryId when available so the tool can resolve the correct integration-specific default branch automatically.`
       : "";
 
   return dedent`

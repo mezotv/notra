@@ -50,6 +50,8 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
     const allowedRepositories = validatedIntegrations.flatMap((integration) =>
       integration.type === "github"
         ? integration.repositories.map((repository) => ({
+            id: repository.id,
+            integrationId: integration.id,
             owner: repository.owner,
             repo: repository.repo,
             defaultBranch: repository.defaultBranch,
@@ -98,7 +100,12 @@ export function getRepoContextFromIntegrations(
   for (const integration of integrations) {
     if (integration.type === "github") {
       for (const repo of integration.repositories) {
-        repos.push({ owner: repo.owner, repo: repo.repo });
+        repos.push({
+          repositoryId: repo.id,
+          owner: repo.owner,
+          repo: repo.repo,
+          defaultBranch: repo.defaultBranch,
+        });
       }
     }
   }

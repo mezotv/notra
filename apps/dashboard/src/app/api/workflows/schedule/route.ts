@@ -299,7 +299,7 @@ export const { POST } = serve<SchedulePayload>(
             const repoList = repositories
               .map(
                 (r) =>
-                  `${r.owner}/${r.repo} (branch: ${r.defaultBranch ?? "No branch Provided"})`
+                  `${r.owner}/${r.repo} (repositoryId: ${r.id}, branch: ${r.defaultBranch ?? "No branch provided"})`
               )
               .join(", ");
 
@@ -307,8 +307,10 @@ export const { POST } = serve<SchedulePayload>(
               const { output } = await generateChangelog({
                 organizationId: trigger.organizationId,
                 repositories: repositories.map((repository) => ({
+                  id: repository.id,
                   owner: repository.owner,
                   repo: repository.repo,
+                  defaultBranch: repository.defaultBranch,
                 })),
                 tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
                 promptInput: {
