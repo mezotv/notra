@@ -49,7 +49,7 @@ export function getProfessionalChangelogPrompt(): string {
     Available tools:
     - getPullRequests (pull_number, integrationId): detailed PR context.
     - getReleaseByTag (tag=latest, integrationId): release/version context.
-    - getCommitsByTimeframe (days, integrationId, branch?): commit-level context.
+    - getCommitsByTimeframe (days, integrationId, page?): commit-level context.
     - listAvailableSkills: inspect available skills.
     - getSkillByName: load a specific skill.
 
