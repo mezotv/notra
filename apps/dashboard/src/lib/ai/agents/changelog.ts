@@ -37,11 +37,11 @@ const changelogPromptByTone: Record<ToneProfile, () => string> = {
 export async function generateChangelog(
   options: ChangelogAgentOptions
 ): Promise<ChangelogAgentResult> {
-  const { 
-    organizationId, 
-    repositories, 
-    tone = "Conversational", 
-    promptInput 
+  const {
+    organizationId,
+    repositories,
+    tone = "Conversational",
+    promptInput,
   } = options;
 
   if (!repositories || repositories.length === 0) {

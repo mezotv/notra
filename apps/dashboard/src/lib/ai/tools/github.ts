@@ -146,12 +146,13 @@ function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
   >();
 
   return async (integrationId: string) => {
-    if (config?.allowedIntegrationIds !== undefined) {
-      if (!config.allowedIntegrationIds.includes(integrationId)) {
-        throw new Error(
-          `Repository access denied. Integration ID ${integrationId} is not in the allowed list.`
-        );
-      }
+    if (
+      config?.allowedIntegrationIds !== undefined &&
+      !config.allowedIntegrationIds.includes(integrationId)
+    ) {
+      throw new Error(
+        `Repository access denied. Integration ID ${integrationId} is not in the allowed list.`
+      );
     }
 
     let cached = cache.get(integrationId);
