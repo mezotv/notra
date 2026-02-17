@@ -23,6 +23,15 @@ import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
+export interface GitHubToolRepositoryContext {
+  integrationId: string;
+  organizationId: string;
+  owner: string;
+  repo: string;
+  defaultBranch: string | null;
+  token: string | undefined;
+}
+
 export class GitHubBranchNotFoundError extends Error {
   constructor(owner: string, repo: string, branch: string) {
     super(`Branch "${branch}" does not exist in ${owner}/${repo}`);
@@ -578,6 +587,64 @@ export async function getTokenForIntegrationId(integrationId: string) {
   }
 
   return decryptToken(integration.encryptedToken);
+}
+
+export async function getGitHubToolRepositoryContextByIntegrationId(
+  integrationId: string,
+  options?: { organizationId?: string }
+): Promise<GitHubToolRepositoryContext> {
+  const whereClause = options?.organizationId
+    ? and(
+        eq(githubIntegrations.id, integrationId),
+        eq(githubIntegrations.organizationId, options.organizationId)
+      )
+    : eq(githubIntegrations.id, integrationId);
+
+  const [integration] = await db
+    .select({
+      id: githubIntegrations.id,
+      organizationId: githubIntegrations.organizationId,
+      owner: githubIntegrations.owner,
+      repo: githubIntegrations.repo,
+      defaultBranch: githubIntegrations.defaultBranch,
+      encryptedToken: githubIntegrations.encryptedToken,
+      integrationEnabled: githubIntegrations.enabled,
+      repositoryEnabled: githubIntegrations.repositoryEnabled,
+    })
+    .from(githubIntegrations)
+    .where(whereClause)
+    .limit(1);
+
+  if (!integration) {
+    throw new Error(
+      `Repository access denied. Unknown integrationId ${integrationId}.`
+    );
+  }
+
+  if (!(integration.integrationEnabled && integration.repositoryEnabled)) {
+    throw new Error(
+      `Repository access denied for integrationId ${integrationId}. Integration is disabled.`
+    );
+  }
+
+  const owner = integration.owner?.trim();
+  const repo = integration.repo?.trim();
+  if (!owner || !repo) {
+    throw new Error(
+      `Repository configuration missing for integrationId ${integrationId}.`
+    );
+  }
+
+  return {
+    integrationId: integration.id,
+    organizationId: integration.organizationId,
+    owner,
+    repo,
+    defaultBranch: integration.defaultBranch,
+    token: integration.encryptedToken
+      ? decryptToken(integration.encryptedToken)
+      : undefined,
+  };
 }
 
 export async function generateWebhookSecretForRepository(

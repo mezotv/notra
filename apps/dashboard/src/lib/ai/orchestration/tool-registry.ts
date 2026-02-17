@@ -47,28 +47,14 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
   );
 
   if (hasGitHub) {
-    const allowedRepositories = validatedIntegrations.flatMap((integration) =>
-      integration.type === "github"
-        ? integration.repositories.map((repository) => ({
-            integrationId: integration.id,
-            owner: repository.owner,
-            repo: repository.repo,
-            defaultBranch: repository.defaultBranch,
-          }))
-        : []
-    );
-
     tools.getPullRequests = createGetPullRequestsTool({
       organizationId,
-      allowedRepositories,
     });
     tools.getReleaseByTag = createGetReleaseByTagTool({
       organizationId,
-      allowedRepositories,
     });
     tools.getCommitsByTimeframe = createGetCommitsByTimeframeTool({
       organizationId,
-      allowedRepositories,
     });
 
     const repos = getGitHubRepoList(validatedIntegrations);

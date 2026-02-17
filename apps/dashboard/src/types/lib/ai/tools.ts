@@ -5,12 +5,6 @@ export interface EditMarkdownContext {
 
 export interface GitHubToolsAccessConfig {
   organizationId?: string;
-  allowedRepositories?: Array<{
-    integrationId: string;
-    owner: string;
-    repo: string;
-    defaultBranch?: string | null;
-  }>;
 }
 
 export interface ErrorWithStatus {

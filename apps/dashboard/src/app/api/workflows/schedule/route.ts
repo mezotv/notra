@@ -8,6 +8,7 @@ import {
   posts,
 } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
+import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { eq, inArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -289,6 +290,7 @@ export const { POST } = serve<SchedulePayload>(
     }
 
     // Step 3: Generate content based on output type
+    let createdPostId: string | null = null;
     try {
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
@@ -431,16 +433,26 @@ export const { POST } = serve<SchedulePayload>(
 
         return id;
       });
+      createdPostId = postId;
 
       await context.run("track-content-created", async () => {
-        await trackScheduledContentCreated({
-          triggerId: trigger.id,
-          organizationId: trigger.organizationId,
-          postId,
-          outputType: trigger.outputType,
-          lookbackWindow,
-          repositoryCount: repositories.length,
-        });
+        try {
+          await trackScheduledContentCreated({
+            triggerId: trigger.id,
+            organizationId: trigger.organizationId,
+            postId,
+            outputType: trigger.outputType,
+            lookbackWindow,
+            repositoryCount: repositories.length,
+          });
+        } catch (trackingError) {
+          console.error("[Schedule] Failed to track content creation", {
+            triggerId,
+            organizationId: trigger.organizationId,
+            postId,
+            error: trackingError,
+          });
+        }
       });
 
       if (process.env.NODE_ENV === "development") {
@@ -451,26 +463,33 @@ export const { POST } = serve<SchedulePayload>(
 
       return { success: true, triggerId, postId };
     } catch (error) {
+      if (error instanceof WorkflowAbort) {
+        throw error;
+      }
+
+      if (createdPostId) {
+        console.warn(
+          `[Schedule] Non-critical error after creating post ${createdPostId} for trigger ${triggerId}. Marking workflow successful.`,
+          { error }
+        );
+        return { success: true, triggerId, postId: createdPostId };
+      }
+
       const autumnClient = autumn;
       if (aiCreditReservation.reserved && autumnClient) {
-        await context.run("refund-ai-credit-after-failure", async () => {
-          const { error: refundError } = await autumnClient.track({
-            customer_id: trigger.organizationId,
-            feature_id: FEATURES.AI_CREDITS,
-            value: -1,
-          });
-
-          if (refundError) {
-            console.error(
-              "[Schedule] Failed to refund AI credit after failure",
-              {
-                triggerId,
-                organizationId: trigger.organizationId,
-                error: refundError,
-              }
-            );
-          }
+        const { error: refundError } = await autumnClient.track({
+          customer_id: trigger.organizationId,
+          feature_id: FEATURES.AI_CREDITS,
+          value: -1,
         });
+
+        if (refundError) {
+          console.error("[Schedule] Failed to refund AI credit after failure", {
+            triggerId,
+            organizationId: trigger.organizationId,
+            error: refundError,
+          });
+        }
       }
 
       throw error;

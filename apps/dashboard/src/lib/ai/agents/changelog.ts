@@ -67,15 +67,12 @@ export async function generateChangelog(
     tools: {
       getPullRequests: createGetPullRequestsTool({
         organizationId,
-        allowedRepositories: repositories,
       }),
       getReleaseByTag: createGetReleaseByTagTool({
         organizationId,
-        allowedRepositories: repositories,
       }),
       getCommitsByTimeframe: createGetCommitsByTimeframeTool({
         organizationId,
-        allowedRepositories: repositories,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
