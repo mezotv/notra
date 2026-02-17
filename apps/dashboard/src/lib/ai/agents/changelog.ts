@@ -37,7 +37,12 @@ const changelogPromptByTone: Record<ToneProfile, () => string> = {
 export async function generateChangelog(
   options: ChangelogAgentOptions
 ): Promise<ChangelogAgentResult> {
-  const { organizationId, repositories, tone = "Conversational", promptInput } = options;
+  const { 
+    organizationId, 
+    repositories = [], 
+    tone = "Conversational", 
+    promptInput 
+  } = options;
 
   const model = wrapLanguageModel({
     model: withSupermemory(
