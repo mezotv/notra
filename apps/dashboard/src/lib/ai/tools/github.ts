@@ -152,6 +152,9 @@ function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
         organizationId: config?.organizationId,
       });
       cache.set(integrationId, cached);
+      cached.catch(() => {
+        cache.delete(integrationId);
+      });
     }
     return cached;
   };

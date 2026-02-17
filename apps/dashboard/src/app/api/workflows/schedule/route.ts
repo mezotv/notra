@@ -477,19 +477,24 @@ export const { POST } = serve<SchedulePayload>(
 
       const autumnClient = autumn;
       if (aiCreditReservation.reserved && autumnClient) {
-        const { error: refundError } = await autumnClient.track({
-          customer_id: trigger.organizationId,
-          feature_id: FEATURES.AI_CREDITS,
-          value: -1,
-        });
-
-        if (refundError) {
-          console.error("[Schedule] Failed to refund AI credit after failure", {
-            triggerId,
-            organizationId: trigger.organizationId,
-            error: refundError,
+        await context.run("refund-ai-credit-after-failure", async () => {
+          const { error: refundError } = await autumnClient.track({
+            customer_id: trigger.organizationId,
+            feature_id: FEATURES.AI_CREDITS,
+            value: -1,
           });
-        }
+
+          if (refundError) {
+            console.error(
+              "[Schedule] Failed to refund AI credit after failure",
+              {
+                triggerId,
+                organizationId: trigger.organizationId,
+                error: refundError,
+              }
+            );
+          }
+        });
       }
 
       throw error;
