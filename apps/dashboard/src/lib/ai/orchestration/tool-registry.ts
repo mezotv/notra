@@ -92,15 +92,11 @@ function getGitHubRepoList(integrations: ValidatedIntegration[]): string {
 export function getRepoContextFromIntegrations(
   integrations: ValidatedIntegration[]
 ): RepoContext[] {
-  const repos: RepoContext[] = [];
-  for (const integration of integrations) {
-    if (integration.type === "github") {
-      for (const repo of integration.repositories) {
-        repos.push({
-          integrationId: integration.id,
-        });
-      }
-    }
-  }
-  return repos;
+  return Array.from(
+    new Set(
+      integrations
+        .filter((integration) => integration.type === "github")
+        .map((integration) => integration.id)
+    )
+  ).map((integrationId) => ({ integrationId }));
 }
