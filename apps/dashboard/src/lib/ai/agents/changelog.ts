@@ -44,6 +44,13 @@ export async function generateChangelog(
     promptInput 
   } = options;
 
+  // Validate that repositories are provided
+  if (!repositories || repositories.length === 0) {
+    throw new Error(
+      "At least one repository must be provided to generate a changelog."
+    );
+  }
+
   const model = wrapLanguageModel({
     model: withSupermemory(
       gateway("anthropic/claude-haiku-4.5"),
