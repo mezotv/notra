@@ -497,12 +497,6 @@ Use this for activity summaries, changelog generation, or understanding recent c
           .min(1)
           .default(1)
           .describe("The page number to retrieve (starts at 1)"),
-        branch: z
-          .string()
-          .describe(
-            "Optional branch override. If omitted, the tool automatically uses the repository's configured default branch."
-          )
-          .optional(),
         days: z
           .number()
           .default(7)
