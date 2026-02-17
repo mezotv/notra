@@ -297,17 +297,14 @@ export const { POST } = serve<SchedulePayload>(
             const lookbackRange = resolveLookbackRange(lookbackWindow);
             const todayUtc = formatUtcTodayContext(lookbackRange.end);
             const repoList = repositories
-              .map(
-                (r) =>
-                  `${r.owner}/${r.repo} (repositoryId: ${r.id}, branch: ${r.defaultBranch ?? "No branch provided"})`
-              )
+              .map((r) => `integrationId: ${r.id}`)
               .join(", ");
 
             try {
               const { output } = await generateChangelog({
                 organizationId: trigger.organizationId,
                 repositories: repositories.map((repository) => ({
-                  id: repository.id,
+                  integrationId: repository.id,
                   owner: repository.owner,
                   repo: repository.repo,
                   defaultBranch: repository.defaultBranch,

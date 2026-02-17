@@ -140,9 +140,9 @@ async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
 function isRepositoryAllowed(
   owner: string,
   repo: string,
-  repositoryId?: string,
+  integrationId?: string,
   allowedRepositories?: Array<{
-    id?: string;
+    integrationId: string;
     owner: string;
     repo: string;
     defaultBranch?: string | null;
@@ -156,7 +156,11 @@ function isRepositoryAllowed(
   const normalizedRepo = repo.toLowerCase();
 
   return allowedRepositories.some((allowedRepo) => {
-    if (repositoryId && allowedRepo.id && allowedRepo.id !== repositoryId) {
+    if (
+      integrationId &&
+      allowedRepo.integrationId &&
+      allowedRepo.integrationId !== integrationId
+    ) {
       return false;
     }
 
@@ -165,6 +169,29 @@ function isRepositoryAllowed(
       allowedRepo.repo.toLowerCase() === normalizedRepo
     );
   });
+}
+
+function resolveRepositoryFromIntegrationId(
+  integrationId: string | undefined,
+  config?: GitHubToolsAccessConfig
+) {
+  const allowedRepositories = config?.allowedRepositories ?? [];
+
+  if (!integrationId) {
+    return undefined;
+  }
+
+  const byIntegrationId = allowedRepositories.find(
+    (repository) => repository.integrationId === integrationId
+  );
+
+  if (!byIntegrationId) {
+    throw new Error(
+      `Repository access denied. Unknown integrationId ${integrationId}.`
+    );
+  }
+
+  return byIntegrationId;
 }
 
 function normalizeBranchValue(branch?: string | null): string | undefined {
@@ -194,7 +221,7 @@ function getAllowedRepositoryMatches(
 function resolveRepositoryBranch(
   owner: string,
   repo: string,
-  repositoryId: string | undefined,
+  integrationId: string | undefined,
   config?: GitHubToolsAccessConfig
 ) {
   const matches = getAllowedRepositoryMatches(owner, repo, config);
@@ -202,15 +229,17 @@ function resolveRepositoryBranch(
     return undefined;
   }
 
-  if (repositoryId) {
-    const byId = matches.find((match) => match.id === repositoryId);
-    if (!byId) {
+  if (integrationId) {
+    const byIntegrationId = matches.find(
+      (match) => match.integrationId === integrationId
+    );
+    if (!byIntegrationId) {
       throw new Error(
-        `Repository access denied for ${owner}/${repo} with repositoryId ${repositoryId}.`
+        `Repository access denied for ${owner}/${repo} with integrationId ${integrationId}.`
       );
     }
 
-    return normalizeBranchValue(byId.defaultBranch);
+    return normalizeBranchValue(byIntegrationId.defaultBranch);
   }
 
   if (matches.length === 1) {
@@ -225,7 +254,7 @@ function resolveRepositoryBranch(
   }
 
   throw new Error(
-    `Ambiguous repository context for ${owner}/${repo}. Multiple integrations have different default branches. Pass repositoryId in getCommitsByTimeframe.`
+    `Ambiguous repository context for ${owner}/${repo}. Multiple integrations have different default branches. Pass integrationId in getCommitsByTimeframe.`
   );
 }
 
@@ -255,11 +284,16 @@ function getNextPageFromLinkHeader(
 function assertRepositoryAccess(
   owner: string,
   repo: string,
-  repositoryId: string | undefined,
+  integrationId: string | undefined,
   config?: GitHubToolsAccessConfig
 ) {
   if (
-    !isRepositoryAllowed(owner, repo, repositoryId, config?.allowedRepositories)
+    !isRepositoryAllowed(
+      owner,
+      repo,
+      integrationId,
+      config?.allowedRepositories
+    )
   ) {
     throw new Error(
       `Repository access denied for ${owner}/${repo}. This repository is not available in your current integration context.`
@@ -283,29 +317,46 @@ export function createGetPullRequestsTool(
           "Gets the full details of a specific pull request from a GitHub repository including title, description, status, author, reviewers, and merge info.",
         whenToUse:
           "When user asks about a specific PR, wants to see PR details, needs to check PR status, or references a pull request by number.",
-        usageNotes: `Requires the repository owner, repo name, and PR number.
+        usageNotes: `Requires integrationId and PR number.
 Returns comprehensive PR data including diff stats, labels, and review state.`,
       }),
       inputSchema: z.object({
-        repo: z
+        integrationId: z
           .string()
-          .describe("The name of the repository to get the pull requests for"),
-        owner: z.string().describe("The owner of the repository"),
+          .describe("The integration ID for the configured repository"),
         pull_number: z
           .number()
           .describe("The number of the pull request to get the details for"),
       }),
-      execute: async ({ repo, owner, pull_number }) => {
-        assertRepositoryAccess(owner, repo, undefined, config);
+      execute: async ({ integrationId, pull_number }) => {
+        const resolved = resolveRepositoryFromIntegrationId(
+          integrationId,
+          config
+        );
 
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
+        if (!resolved) {
+          throw new Error("Could not resolve repository. Pass integrationId.");
+        }
+
+        assertRepositoryAccess(
+          resolved.owner,
+          resolved.repo,
+          resolved.integrationId,
+          config
+        );
+
+        const token = await getTokenForRepository(
+          resolved.owner,
+          resolved.repo,
+          {
+            organizationId: config?.organizationId,
+          }
+        );
         const octokit = createOctokit(token);
         const pullRequest = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             pull_number,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -320,12 +371,11 @@ Returns comprehensive PR data including diff stats, labels, and review state.`,
       // mostly re-request the same PR within a short time window.
       ttl: 10 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, pull_number } = params as {
-          owner: string;
-          repo: string;
+        const { integrationId, pull_number } = params as {
+          integrationId: string;
           pull_number: number;
         };
-        return `get_pull_requests:${owner.toLowerCase()}/${repo.toLowerCase()}#${String(pull_number)}`;
+        return `get_pull_requests:integration=${integrationId}#${String(pull_number)}`;
       },
     }
   );
@@ -351,10 +401,9 @@ export function createGetReleaseByTagTool(
 Returns release body (changelog), assets list, author, and timestamps.`,
       }),
       inputSchema: z.object({
-        repo: z
+        integrationId: z
           .string()
-          .describe("The name of the repository to get the releases for"),
-        owner: z.string().describe("The owner of the repository"),
+          .describe("The integration ID for the configured repository"),
         tag: z
           .string()
           .default("latest")
@@ -362,17 +411,35 @@ Returns release body (changelog), assets list, author, and timestamps.`,
             "The tag of the release to get the details for. Use 'latest' if you don't know the tag"
           ),
       }),
-      execute: async ({ repo, owner, tag }) => {
-        assertRepositoryAccess(owner, repo, undefined, config);
+      execute: async ({ integrationId, tag }) => {
+        const resolved = resolveRepositoryFromIntegrationId(
+          integrationId,
+          config
+        );
 
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
+        if (!resolved) {
+          throw new Error("Could not resolve repository. Pass integrationId.");
+        }
+
+        assertRepositoryAccess(
+          resolved.owner,
+          resolved.repo,
+          resolved.integrationId,
+          config
+        );
+
+        const token = await getTokenForRepository(
+          resolved.owner,
+          resolved.repo,
+          {
+            organizationId: config?.organizationId,
+          }
+        );
         const octokit = createOctokit(token);
         const releases = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             tag,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -385,12 +452,11 @@ Returns release body (changelog), assets list, author, and timestamps.`,
     {
       ttl: 30 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, tag } = params as {
-          owner: string;
-          repo: string;
+        const { integrationId, tag } = params as {
+          integrationId: string;
           tag?: string;
         };
-        return `get_release_by_tag:${owner.toLowerCase()}/${repo.toLowerCase()}@${String(tag ?? "latest").toLowerCase()}`;
+        return `get_release_by_tag:integration=${integrationId}@${String(tag ?? "latest").toLowerCase()}`;
       },
     }
   );
@@ -422,14 +488,9 @@ export function createGetCommitsByTimeframeTool(
 Use this for activity summaries, changelog generation, or understanding recent changes.`,
       }),
       inputSchema: z.object({
-        owner: z.string().describe("The owner of the repository"),
-        repo: z.string().describe("The name of the repository"),
-        repositoryId: z
+        integrationId: z
           .string()
-          .describe(
-            "Optional repository integration ID. Provide this when the same owner/repo exists in multiple integrations so the tool can resolve the correct default branch."
-          )
-          .optional(),
+          .describe("The integration ID for the configured repository"),
         page: z
           .number()
           .int()
@@ -447,19 +508,38 @@ Use this for activity summaries, changelog generation, or understanding recent c
           .default(7)
           .describe("How many days of commit history to retrieve"),
       }),
-      execute: async ({ owner, repo, repositoryId, days, page, branch }) => {
-        assertRepositoryAccess(owner, repo, repositoryId, config);
+      execute: async ({ integrationId, days, page, branch }) => {
+        const resolved = resolveRepositoryFromIntegrationId(
+          integrationId,
+          config
+        );
+
+        if (!resolved) {
+          throw new Error("Could not resolve repository. Pass integrationId.");
+        }
+
+        assertRepositoryAccess(
+          resolved.owner,
+          resolved.repo,
+          integrationId,
+          config
+        );
+
         const resolvedBranch = resolveRepositoryBranch(
-          owner,
-          repo,
-          repositoryId,
+          resolved.owner,
+          resolved.repo,
+          integrationId,
           config
         );
         const effectiveBranch = normalizeBranchValue(branch) ?? resolvedBranch;
 
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
+        const token = await getTokenForRepository(
+          resolved.owner,
+          resolved.repo,
+          {
+            organizationId: config?.organizationId,
+          }
+        );
         const octokit = createOctokit(token);
         const since = getISODateFromDaysAgo(days);
         // TODO: We need an actual todo date in the future to allow for more flexible timeframes
@@ -467,8 +547,8 @@ Use this for activity summaries, changelog generation, or understanding recent c
 
         const response = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/commits", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             since,
             page,
             ...(effectiveBranch ? { sha: effectiveBranch } : {}),
@@ -498,15 +578,14 @@ Use this for activity summaries, changelog generation, or understanding recent c
       // still eliminating duplicate calls within a single agent run.
       ttl: 2 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, repositoryId, branch, days, page } = params as {
-          owner: string;
-          repo: string;
-          repositoryId?: string;
+        const { integrationId, branch, days, page } = params as {
+          integrationId: string;
           branch?: string;
           days: number;
           page?: number;
         };
-        return `get_commits_by_timeframe:${owner.toLowerCase()}/${repo.toLowerCase()}:repository=${String(repositoryId ?? "none")}:branch=${String(normalizeBranchValue(branch) ?? "auto")}:days=${String(days)}:page=${String(page ?? 1)}`;
+
+        return `get_commits_by_timeframe:integration=${integrationId}:branch=${String(normalizeBranchValue(branch) ?? "auto")}:days=${String(days)}:page=${String(page ?? 1)}`;
       },
     }
   );

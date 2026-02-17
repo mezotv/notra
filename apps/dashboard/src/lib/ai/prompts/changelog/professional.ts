@@ -47,9 +47,9 @@ export function getProfessionalChangelogPrompt(): string {
     - Never use em dashes (—) or en dashes (–). Use commas, periods, semicolons, or parentheses instead.
 
     Available tools:
-    - getPullRequests (owner, repo, pull_number): detailed PR context.
-    - getReleaseByTag (owner, repo, tag=latest): release/version context.
-    - getCommitsByTimeframe (owner, repo, days, repositoryId?, branch?): commit-level context.
+    - getPullRequests (pull_number, integrationId): detailed PR context.
+    - getReleaseByTag (tag=latest, integrationId): release/version context.
+    - getCommitsByTimeframe (days, integrationId, branch?): commit-level context.
     - listAvailableSkills: inspect available skills.
     - getSkillByName: load a specific skill.
 
@@ -57,7 +57,7 @@ export function getProfessionalChangelogPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
-    - Prefer passing repositoryId so the tool can resolve the correct integration-specific default branch automatically.
+    - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".

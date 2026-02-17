@@ -6,8 +6,7 @@ export interface EditMarkdownContext {
 export interface GitHubToolsAccessConfig {
   organizationId?: string;
   allowedRepositories?: Array<{
-    id?: string;
-    integrationId?: string;
+    integrationId: string;
     owner: string;
     repo: string;
     defaultBranch?: string | null;

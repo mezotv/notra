@@ -9,7 +9,7 @@ export interface ChangelogAgentResult {
 export interface ChangelogAgentOptions {
   organizationId: string;
   repositories: Array<{
-    id?: string;
+    integrationId: string;
     owner: string;
     repo: string;
     defaultBranch?: string | null;
