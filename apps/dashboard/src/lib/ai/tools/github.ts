@@ -146,7 +146,6 @@ function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
   >();
 
   return async (integrationId: string) => {
-    // Validate integrationId against allowlist if provided
     if (config?.allowedIntegrationIds !== undefined) {
       if (!config.allowedIntegrationIds.includes(integrationId)) {
         throw new Error(

@@ -44,7 +44,6 @@ export async function generateChangelog(
     promptInput 
   } = options;
 
-  // Validate that repositories are provided
   if (!repositories || repositories.length === 0) {
     throw new Error(
       "At least one repository must be provided to generate a changelog."
@@ -66,7 +65,6 @@ export async function generateChangelog(
   const instructions = promptFactory();
   const prompt = getChangelogUserPrompt(promptInput);
 
-  // Extract allowed integration IDs from repositories and deduplicate
   const allowedIntegrationIds = Array.from(
     new Set(repositories.map((repo) => repo.integrationId))
   );
