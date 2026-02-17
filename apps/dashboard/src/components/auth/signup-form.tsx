@@ -26,7 +26,7 @@ const signupSchema = z.object({
     .min(8, "Password must be at least 8 characters"),
 });
 
-export interface SignupFormProps {
+interface SignupFormProps {
   title?: string;
   description?: string;
   onSuccess?: () => void;
@@ -83,32 +83,32 @@ export function SignupForm({
     }
 
     setIsAuthLoading(true);
-    try {
-      const result = await authClient.signUp.email({
+    authClient.signUp
+      .email({
         email,
         password,
         name: email.split("@")[0] || "User",
-      });
+      })
+      .then((result) => {
+        if (result.error) {
+          toast.error(
+            result.error.message ?? "Failed to sign up. Please try again."
+          );
+          setIsAuthLoading(false);
+          return;
+        }
 
-      if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to sign up. Please try again."
-        );
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          window.location.href = callbackURL;
+        }
+      })
+      .catch((error) => {
+        console.error("Email signup error:", error);
+        toast.error("Failed to sign up. Please try again.");
         setIsAuthLoading(false);
-        return;
-      }
-
-      // Call onSuccess callback if provided, otherwise redirect through callback
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        window.location.href = callbackURL;
-      }
-    } catch (error) {
-      console.error("Email signup error:", error);
-      toast.error("Failed to sign up. Please try again.");
-      setIsAuthLoading(false);
-    }
+      });
   }
 
   return (

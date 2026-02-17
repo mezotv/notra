@@ -30,7 +30,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { authClient } from "@/lib/auth/client";
@@ -75,71 +75,78 @@ function PageClient({
 }: PageClientProps) {
   const { data: session } = authClient.useSession();
   const sessionUser = session?.user;
-  const [user, setUser] = useState(initialUser);
+  const user = sessionUser ?? initialUser;
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>("pending");
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [accepting, setAccepting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const router = useRouter();
 
-  // Sync session user with local state
-  useEffect(() => {
-    if (sessionUser) {
-      setUser(sessionUser);
-    }
-  }, [sessionUser]);
-
-  const handleAccept = async () => {
+  const handleAccept = () => {
     setAccepting(true);
     setError(null);
-    try {
-      const res = await authClient.organization.acceptInvitation({
+    let shouldRedirect = false;
+
+    authClient.organization
+      .acceptInvitation({
         invitationId,
+      })
+      .then((res) => {
+        if (res.error) {
+          setError(res.error.message || "Failed to accept invitation");
+        } else {
+          setInviteStatus("accepted");
+          shouldRedirect = true;
+        }
+      })
+      .catch((error) => {
+        console.error("Error accepting invitation:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again."
+        );
+      })
+      .finally(() => {
+        setAccepting(false);
+
+        if (shouldRedirect) {
+          router.push(`/${invitation.organizationSlug}`);
+        }
       });
-
-      if (res.error) {
-        setError(res.error.message || "Failed to accept invitation");
-        return;
-      }
-
-      setInviteStatus("accepted");
-      router.push(`/${invitation.organizationSlug}`);
-    } catch (error) {
-      console.error("Error accepting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
-      setAccepting(false);
-    }
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     setRejecting(true);
     setError(null);
-    try {
-      const res = await authClient.organization.rejectInvitation({
+    let shouldReject = false;
+
+    authClient.organization
+      .rejectInvitation({
         invitationId,
+      })
+      .then((res) => {
+        if (res.error) {
+          setError(res.error.message || "Failed to reject invitation");
+        } else {
+          shouldReject = true;
+        }
+      })
+      .catch((error) => {
+        console.error("Error rejecting invitation:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again."
+        );
+      })
+      .finally(() => {
+        setRejecting(false);
+
+        if (shouldReject) {
+          setInviteStatus("rejected");
+        }
       });
-
-      if (res.error) {
-        setError(res.error.message || "Failed to reject invitation");
-        return;
-      }
-
-      setInviteStatus("rejected");
-    } catch (error) {
-      console.error("Error rejecting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
-      setRejecting(false);
-    }
   };
 
   // Show error state if invitation is invalid/expired

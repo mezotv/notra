@@ -15,12 +15,12 @@ export const organizationSlugSchema = z
     "This slug is reserved and cannot be used for an organization"
   );
 
-export const organizationNameSchema = z
+const organizationNameSchema = z
   .string()
   .min(2, "Organization name must be at least 2 characters")
   .max(100, "Organization name must be at most 100 characters");
 
-export const organizationWebsiteSchema = z
+const organizationWebsiteSchema = z
   .string()
   .url("Please enter a valid URL (e.g., https://example.com)")
   .optional()

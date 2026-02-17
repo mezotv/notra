@@ -47,69 +47,87 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
     return null;
   }
 
-  async function handleResendInvitation() {
+  function handleResendInvitation() {
     if (!activeOrganization) {
       return;
     }
 
     setIsResending(true);
-    try {
-      const { error } = await authClient.organization.inviteMember({
+    let didResend = false;
+
+    authClient.organization
+      .inviteMember({
         email: invitation.email,
         role: invitation.role as "member" | "owner" | "admin",
         organizationId: activeOrganization.id,
         resend: true,
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast.error(error.message || "Failed to resend invitation");
+          return null;
+        }
+        toast.success(`Invitation resent to ${invitation.email}`);
+        return queryClient
+          .invalidateQueries({
+            queryKey: ["invitations", activeOrganization.id],
+          })
+          .then(() => {
+            didResend = true;
+            return null;
+          });
+      })
+      .catch((error) => {
+        console.error("Error resending invitation:", error);
+        toast.error("Failed to resend invitation");
+      })
+      .finally(() => {
+        setIsResending(false);
+
+        if (didResend) {
+          setShowResendDialog(false);
+        }
       });
-
-      if (error) {
-        toast.error(error.message || "Failed to resend invitation");
-        return;
-      }
-
-      toast.success(`Invitation resent to ${invitation.email}`);
-
-      await queryClient.invalidateQueries({
-        queryKey: ["invitations", activeOrganization.id],
-      });
-
-      setShowResendDialog(false);
-    } catch (error) {
-      console.error("Error resending invitation:", error);
-      toast.error("Failed to resend invitation");
-    } finally {
-      setIsResending(false);
-    }
   }
 
-  async function handleCancelInvitation() {
+  function handleCancelInvitation() {
     if (!activeOrganization) {
       return;
     }
 
     setIsCanceling(true);
-    try {
-      const { error } = await authClient.organization.cancelInvitation({
+    let didCancel = false;
+
+    authClient.organization
+      .cancelInvitation({
         invitationId: invitation.id,
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast.error(error.message || "Failed to cancel invitation");
+          return null;
+        }
+        toast.success(`Invitation to ${invitation.email} has been canceled`);
+        return queryClient
+          .invalidateQueries({
+            queryKey: ["invitations", activeOrganization.id],
+          })
+          .then(() => {
+            didCancel = true;
+            return null;
+          });
+      })
+      .catch((error) => {
+        console.error("Error canceling invitation:", error);
+        toast.error("Failed to cancel invitation");
+      })
+      .finally(() => {
+        setIsCanceling(false);
+
+        if (didCancel) {
+          setShowCancelDialog(false);
+        }
       });
-
-      if (error) {
-        toast.error(error.message || "Failed to cancel invitation");
-        return;
-      }
-
-      toast.success(`Invitation to ${invitation.email} has been canceled`);
-
-      await queryClient.invalidateQueries({
-        queryKey: ["invitations", activeOrganization.id],
-      });
-
-      setShowCancelDialog(false);
-    } catch (error) {
-      console.error("Error canceling invitation:", error);
-      toast.error("Failed to cancel invitation");
-    } finally {
-      setIsCanceling(false);
-    }
   }
 
   return (

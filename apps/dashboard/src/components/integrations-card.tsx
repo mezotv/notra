@@ -29,7 +29,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
-export interface InstalledIntegration {
+interface InstalledIntegration {
   id: string;
   displayName: string;
   type: string;
@@ -49,7 +49,7 @@ export interface InstalledIntegration {
   }>;
 }
 
-export interface InstalledIntegrationCardProps {
+interface InstalledIntegrationCardProps {
   integration: InstalledIntegration;
   organizationId: string;
   organizationSlug: string;
@@ -176,13 +176,12 @@ export function InstalledIntegrationCard({
       accentColor={accentColor}
       action={
         <>
-          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Event propagation barrier */}
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: Event propagation barrier */}
           <div
             className="flex items-center gap-1.5 sm:gap-2"
             data-no-card-click
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
+            role="presentation"
           >
             <Badge variant={integration.enabled ? "default" : "secondary"}>
               {integration.enabled ? "Enabled" : "Disabled"}

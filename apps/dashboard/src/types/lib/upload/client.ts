@@ -1,10 +1,5 @@
 export type UploadType = "avatar" | "logo" | "content";
 
-/** Error shape returned by the upload API */
-export interface UploadApiError {
-  error: string;
-}
-
 /** Response from POST /api/upload */
 export interface UploadPresignedResponse {
   /** Presigned PUT URL for direct upload to R2 */

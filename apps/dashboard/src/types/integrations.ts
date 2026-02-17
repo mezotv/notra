@@ -1,5 +1,4 @@
 import type React from "react";
-import type { IntegrationType } from "@/schemas/integrations";
 
 export interface RepositoryOutput {
   id: string;
@@ -15,34 +14,6 @@ export interface GitHubRepository {
   enabled: boolean;
   hasWebhook?: boolean;
   outputs?: RepositoryOutput[];
-}
-
-export type Repository = GitHubRepository;
-
-export interface GitHubIntegration {
-  id: string;
-  displayName: string;
-  enabled: boolean;
-  createdAt: string;
-  createdByUser?: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-  repositories: GitHubRepository[];
-}
-
-export type WebhookLogType = "release" | "push" | "star" | "ping";
-
-export interface IntegrationWebhookLog {
-  id: string;
-  type: WebhookLogType;
-  action: string;
-  status: "success" | "failed";
-  message?: string;
-  payload?: Record<string, unknown>;
-  createdAt: string;
 }
 
 export interface GitHubIntegration {
@@ -65,36 +36,9 @@ export interface GitHubRepoInfo {
   fullUrl: string;
 }
 
-export interface AvailableRepo {
-  owner: string;
-  name: string;
-  fullName: string;
-  private: boolean;
-  description: string | null;
-}
-
-export interface IntegrationUIConfig {
-  id: IntegrationType;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  available: boolean;
-  category: "input" | "output";
-}
-
 export interface AddIntegrationDialogProps {
   organizationId?: string;
   organizationSlug?: string;
-  onSuccess?: () => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  trigger?: React.ReactNode;
-}
-
-export interface AddRepositoryDialogProps {
-  integrationId: string;
-  organizationId: string;
   onSuccess?: () => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -106,11 +50,6 @@ export interface IntegrationCardProps {
   organizationId: string;
   organizationSlug: string;
   onUpdate?: () => void;
-}
-
-export interface RepositoryListProps {
-  integrationId: string;
-  organizationId: string;
 }
 
 export interface WebhookConfig {

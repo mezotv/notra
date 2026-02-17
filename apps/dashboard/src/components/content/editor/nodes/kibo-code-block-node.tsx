@@ -18,7 +18,7 @@ const KiboCodeBlockComponent = lazy(
   () => import("./kibo-code-block-component")
 );
 
-export interface SerializedKiboCodeBlockNode
+interface SerializedKiboCodeBlockNode
   extends Spread<
     {
       code: string;

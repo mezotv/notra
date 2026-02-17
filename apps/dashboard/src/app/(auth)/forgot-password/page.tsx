@@ -22,6 +22,7 @@ export default function ForgotPassword() {
     }
 
     setIsLoading(true);
+    let didSubmit = false;
 
     try {
       const result = await authClient.requestPasswordReset({
@@ -31,14 +32,17 @@ export default function ForgotPassword() {
 
       if (result.error) {
         toast.error("Something went wrong. Please try again.");
-        return;
+      } else {
+        didSubmit = true;
       }
-
-      setIsSubmitted(true);
     } catch {
       toast.error("Network error. Please check your connection and try again.");
-    } finally {
-      setIsLoading(false);
+    }
+
+    setIsLoading(false);
+
+    if (didSubmit) {
+      setIsSubmitted(true);
     }
   }
 

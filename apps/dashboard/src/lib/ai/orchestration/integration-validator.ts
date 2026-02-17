@@ -95,13 +95,3 @@ export function hasEnabledGitHubIntegration(
   );
 }
 
-export function getRepoContexts(
-  validatedIntegrations: ValidatedIntegration[]
-): Array<{ owner: string; repo: string }> {
-  return validatedIntegrations.flatMap((i) =>
-    i.repositories.map((r) => ({
-      owner: r.owner,
-      repo: r.repo,
-    }))
-  );
-}

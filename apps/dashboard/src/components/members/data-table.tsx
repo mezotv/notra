@@ -24,12 +24,15 @@ interface DataTableProps<TData> {
   emptyMessage?: string;
 }
 
+const SKELETON_ROW_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
+
 export function DataTable<TData>({
   columns,
   data,
   isLoading,
   emptyMessage = "No data found.",
 }: DataTableProps<TData>) {
+  "use no memo";
   const table = useReactTable({
     data,
     columns,
@@ -49,8 +52,8 @@ export function DataTable<TData>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[1, 2, 3].map((i) => (
-              <TableRow key={i}>
+            {SKELETON_ROW_KEYS.map((rowKey) => (
+              <TableRow key={rowKey}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Skeleton className="size-8 rounded-full" />

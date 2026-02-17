@@ -27,13 +27,9 @@ export const brandSettingsSchema = z.object({
   audience: z.string().min(10, "Please describe your target audience"),
 });
 
-export type BrandSettingsInput = z.infer<typeof brandSettingsSchema>;
-
 export const analyzeBrandSchema = z.object({
   url: z.url("Please enter a valid URL"),
 });
-
-export type AnalyzeBrandInput = z.infer<typeof analyzeBrandSchema>;
 
 export const updateBrandSettingsSchema = brandSettingsSchema.partial();
 

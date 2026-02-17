@@ -236,31 +236,34 @@ export function OrgSelector() {
     router.prefetch(targetPath);
     setIsSwitching(true);
 
-    try {
-      const { error } = await authClient.organization.setActive({
+    authClient.organization
+      .setActive({
         organizationId: org.id,
-      });
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast.error(error.message || "Failed to switch organization");
+          setIsSwitching(false);
+          return;
+        }
 
-      if (error) {
-        toast.error(error.message || "Failed to switch organization");
+        return Promise.all([
+          setLastVisitedOrganization(org.slug),
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.activeOrganization,
+          }),
+        ]).then(() => {
+          setIsSwitching(false);
+          startTransition(() => {
+            router.replace(targetPath);
+          });
+        });
+      })
+      .catch((error) => {
+        toast.error("Failed to switch organization");
+        console.error(error);
         setIsSwitching(false);
-        return;
-      }
-
-      await setLastVisitedOrganization(org.slug);
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });
-
-      setIsSwitching(false);
-      startTransition(() => {
-        router.replace(targetPath);
-      });
-    } catch (error) {
-      toast.error("Failed to switch organization");
-      console.error(error);
-      setIsSwitching(false);
-    }
   }
 
   const showSkeleton = !activeOrganization && isLoading;

@@ -65,7 +65,6 @@ export default function KiboCodeBlockComponent({
   const [editor] = useLexicalComposerContext();
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
-  const [localCode, setLocalCode] = useState(code);
   const [isCopied, setIsCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -74,22 +73,16 @@ export default function KiboCodeBlockComponent({
   const lineIdPrefix = useId();
 
   const normalizedLanguage = language || "plain";
-  const lineCount = Math.max(1, localCode.split("\n").length);
-
-  // Sync local code with prop
-  useEffect(() => {
-    setLocalCode(code);
-  }, [code]);
+  const lineCount = Math.max(1, code.split("\n").length);
 
   // Auto-resize textarea when content changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: localCode triggers resize
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
-  }, [localCode]);
+  }, [code]);
 
   // Cleanup copy timeout
   useEffect(() => {
@@ -165,7 +158,6 @@ export default function KiboCodeBlockComponent({
   const handleCodeChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newCode = e.target.value;
-      setLocalCode(newCode);
       editor.update(() => {
         const node = $getNodeByKey(nodeKey);
         if ($isKiboCodeBlockNode(node)) {
@@ -180,7 +172,7 @@ export default function KiboCodeBlockComponent({
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
       return;
     }
-    navigator.clipboard.writeText(localCode).catch(() => {
+    navigator.clipboard.writeText(code).catch(() => {
       // Ignore clipboard errors
     });
     setIsCopied(true);
@@ -191,7 +183,7 @@ export default function KiboCodeBlockComponent({
       setIsCopied(false);
       copyTimeoutRef.current = null;
     }, 2000);
-  }, [localCode]);
+  }, [code]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -206,19 +198,29 @@ export default function KiboCodeBlockComponent({
     []
   );
 
+  const handleContainerKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        textareaRef.current?.focus();
+      }
+    },
+    []
+  );
+
   const CopyButtonIcon = isCopied ? CheckIcon : CopyIcon;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Interactive editor element
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Interactive editor element
-    // biome-ignore lint/a11y/useKeyWithClickEvents: Click focuses textarea
     <div
       className={cn(
         "relative my-4 overflow-hidden rounded-lg border bg-secondary/50",
         isSelected && "ring-2 ring-primary ring-offset-2"
       )}
       onClick={() => textareaRef.current?.focus()}
+      onKeyDown={handleContainerKeyDown}
       ref={blockRef}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex items-center justify-between border-b bg-secondary px-1 py-1">
         <Select onValueChange={handleLanguageChange} value={normalizedLanguage}>
@@ -267,7 +269,7 @@ export default function KiboCodeBlockComponent({
           ref={textareaRef}
           rows={1}
           spellCheck={false}
-          value={localCode}
+          value={code}
         />
       </div>
     </div>

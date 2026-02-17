@@ -324,11 +324,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const handleDelete = useCallback((id: string) => {
     setDeleteTriggerId(id);
-  }, []);
+  }, [setDeleteTriggerId]);
 
   const handleEdit = useCallback((trigger: Trigger) => {
     setEditTrigger(trigger);
-  }, []);
+  }, [setEditTrigger]);
 
   const confirmDelete = useCallback(() => {
     if (deleteTriggerId) {

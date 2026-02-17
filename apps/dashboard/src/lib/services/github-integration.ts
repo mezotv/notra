@@ -23,7 +23,7 @@ import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
-export interface GitHubToolRepositoryContext {
+interface GitHubToolRepositoryContext {
   integrationId: string;
   organizationId: string;
   owner: string;
@@ -114,7 +114,7 @@ async function findRepositoryInOrganization(
   return existing ?? null;
 }
 
-export async function validateUserOrgAccess(
+async function validateUserOrgAccess(
   userId: string,
   organizationId: string
 ) {
@@ -288,7 +288,7 @@ export async function getGitHubIntegrationById(integrationId: string) {
   return toIntegrationWithRepository(integration);
 }
 
-export async function getDecryptedToken(integrationId: string, userId: string) {
+async function getDecryptedToken(integrationId: string, userId: string) {
   const integration = await getGitHubIntegrationById(integrationId);
 
   if (!integration) {
@@ -403,7 +403,7 @@ export async function configureOutput(params: ConfigureOutputParams) {
   return created;
 }
 
-export async function toggleGitHubIntegration(
+async function toggleGitHubIntegration(
   integrationId: string,
   enabled: boolean
 ) {
@@ -429,7 +429,7 @@ export async function updateGitHubIntegration(
   return updated;
 }
 
-export async function toggleRepository(repositoryId: string, enabled: boolean) {
+async function toggleRepository(repositoryId: string, enabled: boolean) {
   return updateRepository(repositoryId, { enabled });
 }
 
@@ -538,7 +538,7 @@ export async function listAvailableRepositories(
   }));
 }
 
-export async function getTokenForRepository(
+async function getTokenForRepository(
   owner: string,
   repo: string,
   options?: { organizationId?: string }
@@ -577,7 +577,7 @@ export async function getTokenForRepository(
   return decryptToken(integration.encryptedToken);
 }
 
-export async function getTokenForIntegrationId(integrationId: string) {
+async function getTokenForIntegrationId(integrationId: string) {
   const integration = await db.query.githubIntegrations.findFirst({
     where: eq(githubIntegrations.id, integrationId),
   });
@@ -592,7 +592,7 @@ export async function getTokenForIntegrationId(integrationId: string) {
 export async function getGitHubToolRepositoryContextByIntegrationId(
   integrationId: string,
   options?: { organizationId?: string }
-): Promise<GitHubToolRepositoryContext> {
+) {
   const whereClause = options?.organizationId
     ? and(
         eq(githubIntegrations.id, integrationId),
@@ -728,7 +728,7 @@ export async function getWebhookConfigForRepository(
   };
 }
 
-export async function hasWebhookConfigured(repositoryId: string) {
+async function hasWebhookConfigured(repositoryId: string) {
   const integration = await db.query.githubIntegrations.findFirst({
     where: eq(githubIntegrations.id, repositoryId),
     columns: {

@@ -38,57 +38,60 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
       slug: "",
       website: "",
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       setIsCreating(true);
+      let nextSlug: string | null = null;
 
-      try {
-        const websiteUrl = value.website
-          ? `https://${value.website}`
-          : undefined;
-        const { data, error } = await authClient.organization.create({
+      const websiteUrl = value.website
+        ? `https://${value.website}`
+        : undefined;
+
+      authClient.organization
+        .create({
           name: value.name,
           slug: value.slug,
           logo: generateOrganizationAvatar(value.slug),
           websiteUrl,
-        });
+        })
+        .then(({ data, error }) => {
+          if (error) {
+            toast.error(error.message || "Failed to create organization");
+            return null;
+          }
+          if (!data) {
+            toast.error("Failed to create organization");
+            return null;
+          }
 
-        if (error) {
-          toast.error(error.message || "Failed to create organization");
-          return;
-        }
-
-        if (!data) {
+          return Promise.all([
+            authClient.organization.setActive({
+              organizationId: data.id,
+            }),
+            setLastVisitedOrganization(data.slug),
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.AUTH.organizations,
+            }),
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.AUTH.activeOrganization,
+            }),
+          ]).then(() => {
+            toast.success("Organization created successfully");
+            nextSlug = data.slug;
+            return null;
+          });
+        })
+        .catch(() => {
           toast.error("Failed to create organization");
-          return;
-        }
+        })
+        .finally(() => {
+          setIsCreating(false);
 
-        await authClient.organization.setActive({
-          organizationId: data.id,
+          if (nextSlug) {
+            onOpenChange(false);
+            form.reset();
+            router.push(`/${nextSlug}`);
+          }
         });
-
-        await setLastVisitedOrganization(data.slug);
-
-        await Promise.allSettled([
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.organizations,
-          }),
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          }),
-        ]);
-
-        toast.success("Organization created successfully");
-
-        onOpenChange(false);
-
-        form.reset();
-
-        router.push(`/${data.slug}`);
-      } catch (_error) {
-        toast.error("Failed to create organization");
-      } finally {
-        setIsCreating(false);
-      }
     },
   });
 
@@ -102,13 +105,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
-        >
+        <form onSubmit={form.handleSubmit}>
           <div className="grid gap-4 py-4">
             <form.Field
               name="name"

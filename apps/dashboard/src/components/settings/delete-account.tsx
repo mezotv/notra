@@ -94,58 +94,66 @@ export function DeleteAccountSection() {
     }));
   }
 
-  async function handleDeleteAccount() {
+  function handleDeleteAccount() {
     setIsDeleting(true);
-    try {
-      if (ownedOrganizations.length > 0) {
-        const transfers: TransferDecision[] = [
-          ...orgsWithOtherMembers.map((org) => ({
-            orgId: org.id,
-            action: decisions[org.id] || ("delete" as const),
-          })),
-          ...soleOwnerOrgs.map((org) => ({
-            orgId: org.id,
-            action: "delete" as const,
-          })),
-        ];
+    let shouldRedirect = false;
 
-        try {
-          const response = await fetch("/api/user/delete-with-transfers", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transfers }),
-          });
-
+    const transfersPromise = ownedOrganizations.length
+      ? fetch("/api/user/delete-with-transfers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            transfers: [
+              ...orgsWithOtherMembers.map((org) => ({
+                orgId: org.id,
+                action: decisions[org.id] || ("delete" as const),
+              })),
+              ...soleOwnerOrgs.map((org) => ({
+                orgId: org.id,
+                action: "delete" as const,
+              })),
+            ],
+          }),
+        }).then(async (response) => {
           if (!response.ok) {
             const error = await response.json();
             toast.error(error.error ?? "Failed to process organizations");
-            setIsDeleting(false);
-            return;
+            return false;
           }
-        } catch (fetchError) {
-          console.error("Failed to process organizations:", fetchError);
-          toast.error("Failed to process organizations. Please try again.");
-          setIsDeleting(false);
+          return true;
+        })
+      : Promise.resolve(true);
+
+    transfersPromise
+      .then((canContinue) => {
+        if (!canContinue) {
+          return null;
+        }
+        return authClient.deleteUser({
+          callbackURL: "/",
+        });
+      })
+      .then((result) => {
+        if (!result) {
           return;
         }
-      }
-
-      const result = await authClient.deleteUser({
-        callbackURL: "/",
+        if (result.error) {
+          toast.error(result.error.message ?? "Failed to delete account");
+        } else {
+          toast.success("Account deleted successfully");
+          shouldRedirect = true;
+        }
+      })
+      .catch((error) => {
+        console.error("Delete account error:", error);
+        toast.error("Failed to delete account");
+      })
+      .finally(() => {
+        setIsDeleting(false);
+        if (shouldRedirect) {
+          router.push("/");
+        }
       });
-
-      if (result?.error) {
-        toast.error(result.error.message ?? "Failed to delete account");
-      } else {
-        toast.success("Account deleted successfully");
-        router.push("/");
-      }
-    } catch (error) {
-      console.error("Delete account error:", error);
-      toast.error("Failed to delete account");
-    } finally {
-      setIsDeleting(false);
-    }
   }
 
   function handleOpenChange(open: boolean) {

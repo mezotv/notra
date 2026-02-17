@@ -14,7 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 
-export interface LoginFormProps {
+interface LoginFormProps {
   title?: string;
   description?: string;
   onSuccess?: () => void;
@@ -67,31 +67,31 @@ export function LoginForm({
     }
 
     setIsAuthLoading(true);
-    try {
-      const result = await authClient.signIn.email({
+    authClient.signIn
+      .email({
         email,
         password,
-      });
+      })
+      .then((result) => {
+        if (result.error) {
+          toast.error(
+            result.error.message ?? "Failed to sign in. Please try again."
+          );
+          setIsAuthLoading(false);
+          return;
+        }
 
-      if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to sign in. Please try again."
-        );
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          window.location.href = callbackURL;
+        }
+      })
+      .catch((error) => {
+        console.error("Email login error:", error);
+        toast.error("Failed to sign in. Please try again.");
         setIsAuthLoading(false);
-        return;
-      }
-
-      // Call onSuccess callback if provided, otherwise redirect through callback
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        window.location.href = callbackURL;
-      }
-    } catch (error) {
-      console.error("Email login error:", error);
-      toast.error("Failed to sign in. Please try again.");
-      setIsAuthLoading(false);
-    }
+      });
   }
 
   return (

@@ -17,8 +17,8 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { PageContainer } from "@/components/layout/container";
 import { FEATURES } from "@/utils/constants";
 
@@ -31,6 +31,23 @@ const chartConfig = {
     color: "var(--chart-1)",
   },
 } satisfies ChartConfig;
+
+const AreaChart = dynamic(() => import("recharts").then((mod) => mod.AreaChart), {
+  ssr: false,
+});
+const Area = dynamic(() => import("recharts").then((mod) => mod.Area), {
+  ssr: false,
+});
+const CartesianGrid = dynamic(
+  () => import("recharts").then((mod) => mod.CartesianGrid),
+  { ssr: false }
+);
+const XAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), {
+  ssr: false,
+});
+const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), {
+  ssr: false,
+});
 
 function formatDateLabel(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -86,13 +103,15 @@ export default function BillingUsagePage() {
       ? (total?.[FEATURES.AI_CREDITS]?.sum ?? 0)
       : 0;
 
+  const customerFeatures = customer?.features ?? null;
+
   // Extract all features from customer object
   const features = useMemo<FeatureData[]>(() => {
-    if (!customer?.features) {
+    if (!customerFeatures) {
       return [];
     }
 
-    return Object.entries(customer.features).map(([id, feature]) => {
+    return Object.entries(customerFeatures).map(([id, feature]) => {
       const balance =
         typeof feature?.balance === "number" ? feature.balance : null;
       const included =
@@ -109,7 +128,7 @@ export default function BillingUsagePage() {
         unlimited,
       };
     });
-  }, [customer?.features]);
+  }, [customerFeatures]);
 
   // Separate limited and unlimited features
   const limitedFeatures = features.filter(

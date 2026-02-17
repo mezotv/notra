@@ -20,7 +20,7 @@ import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import remend from "remend";
 import { toast } from "sonner";
 import ChatInput, {
@@ -90,6 +90,72 @@ function formatRepos(repos: { owner: string; repo: string }[]): string {
   return `${repos.length} repositories`;
 }
 
+interface EditorState {
+  editedMarkdown: string | null;
+  originalMarkdown: string;
+  selection: TextSelection | null;
+  editorKey: number;
+  context: ContextItem[];
+}
+
+type EditorAction =
+  | { type: "initialize"; markdown: string }
+  | { type: "setEditedMarkdown"; markdown: string | null }
+  | { type: "setOriginalMarkdown"; markdown: string }
+  | { type: "setSelection"; selection: TextSelection | null }
+  | { type: "addContext"; item: ContextItem }
+  | { type: "removeContext"; item: ContextItem };
+
+const initialEditorState: EditorState = {
+  editedMarkdown: null,
+  originalMarkdown: "",
+  selection: null,
+  editorKey: 0,
+  context: [],
+};
+
+function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  switch (action.type) {
+    case "initialize":
+      return {
+        ...state,
+        editedMarkdown: action.markdown,
+        originalMarkdown: action.markdown,
+        editorKey: state.editorKey + 1,
+      };
+    case "setEditedMarkdown":
+      return { ...state, editedMarkdown: action.markdown };
+    case "setOriginalMarkdown":
+      return { ...state, originalMarkdown: action.markdown };
+    case "setSelection":
+      return { ...state, selection: action.selection };
+    case "addContext":
+      if (
+        state.context.some(
+          (item) =>
+            item.type === action.item.type &&
+            item.owner === action.item.owner &&
+            item.repo === action.item.repo
+        )
+      ) {
+        return state;
+      }
+      return { ...state, context: [...state.context, action.item] };
+    case "removeContext":
+      return {
+        ...state,
+        context: state.context.filter(
+          (item) =>
+            item.type !== action.item.type ||
+            item.owner !== action.item.owner ||
+            item.repo !== action.item.repo
+        ),
+      };
+    default:
+      return state;
+  }
+}
+
 export default function PageClient({
   contentId,
   organizationSlug,
@@ -104,11 +170,12 @@ export default function PageClient({
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
 
-  const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
-  const [originalMarkdown, setOriginalMarkdown] = useState("");
-  const [selection, setSelection] = useState<TextSelection | null>(null);
-  const [editorKey, setEditorKey] = useState(0);
-  const [context, setContext] = useState<ContextItem[]>([]);
+  const [editorState, dispatch] = useReducer(
+    editorReducer,
+    initialEditorState
+  );
+  const { editedMarkdown, originalMarkdown, selection, editorKey, context } =
+    editorState;
 
   const saveToastIdRef = useRef<string | number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,14 +188,13 @@ export default function PageClient({
 
   useEffect(() => {
     if (data?.content && editedMarkdown === null) {
-      setEditedMarkdown(data.content.markdown);
-      setOriginalMarkdown(data.content.markdown);
-      originalMarkdownRef.current = data.content.markdown;
-      editedMarkdownRef.current = data.content.markdown;
+      const markdown = data.content.markdown;
+      dispatch({ type: "initialize", markdown });
+      originalMarkdownRef.current = markdown;
+      editedMarkdownRef.current = markdown;
       needsNormalizationRef.current = true;
-      setEditorKey((k) => k + 1);
     }
-  }, [data, editedMarkdown]);
+  }, [data, editedMarkdown, dispatch]);
 
   const currentMarkdown = editedMarkdown ?? data?.content?.markdown ?? "";
   const hasChanges =
@@ -162,6 +228,7 @@ export default function PageClient({
     }
 
     setIsSaving(true);
+
     try {
       const response = await fetch(
         `/api/organizations/${organizationId}/content/${contentId}`,
@@ -173,25 +240,25 @@ export default function PageClient({
       );
 
       if (!response.ok) {
-        throw new Error("Failed to save");
+        toast.error("Failed to save content");
+      } else {
+        dispatch({ type: "setOriginalMarkdown", markdown: editedMarkdown });
+        originalMarkdownRef.current = editedMarkdown;
+        toast.success("Content saved");
       }
-
-      setOriginalMarkdown(editedMarkdown);
-      originalMarkdownRef.current = editedMarkdown;
-      toast.success("Content saved");
     } catch (err) {
       console.error("Error saving content:", err);
       toast.error("Failed to save content");
-    } finally {
-      setIsSaving(false);
     }
+
+    setIsSaving(false);
   }, [editedMarkdown, organizationId, contentId]);
 
   const handleDiscard = useCallback(() => {
-    setEditedMarkdown(originalMarkdown);
+    dispatch({ type: "setEditedMarkdown", markdown: originalMarkdown });
     editedMarkdownRef.current = originalMarkdown;
     editorRef.current?.setMarkdown(originalMarkdown);
-  }, [originalMarkdown]);
+  }, [dispatch, originalMarkdown]);
 
   // Keep refs updated with latest callbacks
   useEffect(() => {
@@ -249,61 +316,51 @@ export default function PageClient({
   }, []);
 
   const clearSelection = useCallback(() => {
-    setSelection(null);
+    dispatch({ type: "setSelection", selection: null });
     window.getSelection()?.removeAllRanges();
-  }, []);
+  }, [dispatch]);
 
-  const handleAddContext = useCallback((item: ContextItem) => {
-    setContext((prev) => {
-      // Check if already in context
-      if (
-        prev.some(
-          (c) =>
-            c.type === item.type &&
-            c.owner === item.owner &&
-            c.repo === item.repo
-        )
-      ) {
-        return prev;
-      }
-      return [...prev, item];
-    });
-  }, []);
+  const handleAddContext = useCallback(
+    (item: ContextItem) => {
+      dispatch({ type: "addContext", item });
+    },
+    [dispatch]
+  );
 
-  const handleRemoveContext = useCallback((item: ContextItem) => {
-    setContext((prev) =>
-      prev.filter(
-        (c) =>
-          !(
-            c.type === item.type &&
-            c.owner === item.owner &&
-            c.repo === item.repo
-          )
-      )
-    );
-  }, []);
+  const handleRemoveContext = useCallback(
+    (item: ContextItem) => {
+      dispatch({ type: "removeContext", item });
+    },
+    [dispatch]
+  );
 
   // Handle Lexical editor changes
-  const handleEditorChange = useCallback((markdown: string) => {
-    if (
-      needsNormalizationRef.current &&
-      editedMarkdownRef.current === originalMarkdownRef.current
-    ) {
+  const handleEditorChange = useCallback(
+    (markdown: string) => {
+      if (
+        needsNormalizationRef.current &&
+        editedMarkdownRef.current === originalMarkdownRef.current
+      ) {
+        needsNormalizationRef.current = false;
+        dispatch({ type: "setOriginalMarkdown", markdown });
+        originalMarkdownRef.current = markdown;
+      }
       needsNormalizationRef.current = false;
-      setOriginalMarkdown(markdown);
-      originalMarkdownRef.current = markdown;
-    }
-    needsNormalizationRef.current = false;
-    setEditedMarkdown(markdown);
-    editedMarkdownRef.current = markdown;
-  }, []);
+      dispatch({ type: "setEditedMarkdown", markdown });
+      editedMarkdownRef.current = markdown;
+    },
+    [dispatch]
+  );
 
   // Handle Lexical selection
-  const handleSelectionChange = useCallback((sel: TextSelection | null) => {
-    if (sel && sel.text.length > 0) {
-      setSelection(sel);
-    }
-  }, []);
+  const handleSelectionChange = useCallback(
+    (sel: TextSelection | null) => {
+      if (sel && sel.text.length > 0) {
+        dispatch({ type: "setSelection", selection: sel });
+      }
+    },
+    [dispatch]
+  );
 
   // Handle textarea selection
   const handleTextareaSelect = useCallback(() => {
@@ -327,23 +384,35 @@ export default function PageClient({
         };
         const start = getLineAndChar(startOffset);
         const end = getLineAndChar(endOffset);
-        setSelection({
-          text,
-          startLine: start.line,
-          startChar: start.char,
-          endLine: end.line,
-          endChar: end.char,
+        dispatch({
+          type: "setSelection",
+          selection: {
+            text,
+            startLine: start.line,
+            startChar: start.char,
+            endLine: end.line,
+            endChar: end.char,
+          },
         });
       }
     }
   }, []);
 
   const currentMarkdownRef = useRef(currentMarkdown);
-  const selectionRef = useRef(selection);
-  const contextRef = useRef(context);
-  currentMarkdownRef.current = currentMarkdown;
-  selectionRef.current = selection;
-  contextRef.current = context;
+  const selectionRef = useRef<TextSelection | null>(null);
+  const contextRef = useRef<ContextItem[]>([]);
+
+  useEffect(() => {
+    currentMarkdownRef.current = currentMarkdown;
+  }, [currentMarkdown]);
+
+  useEffect(() => {
+    selectionRef.current = selection;
+  }, [selection]);
+
+  useEffect(() => {
+    contextRef.current = context;
+  }, [context]);
 
   const [chatError, setChatError] = useState<string | null>(null);
 
@@ -458,7 +527,7 @@ export default function PageClient({
               console.log(
                 `[Tool] editMarkdown result applied, toolCallId=${toolPart.toolCallId}`
               );
-              setEditedMarkdown(fixedMarkdown);
+              dispatch({ type: "setEditedMarkdown", markdown: fixedMarkdown });
               editedMarkdownRef.current = fixedMarkdown;
               editorRef.current?.setMarkdown(fixedMarkdown);
             }
@@ -640,7 +709,10 @@ export default function PageClient({
                 aria-label="Markdown content editor"
                 className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
                 onChange={(e) => {
-                  setEditedMarkdown(e.target.value);
+                  dispatch({
+                    type: "setEditedMarkdown",
+                    markdown: e.target.value,
+                  });
                   editedMarkdownRef.current = e.target.value;
                 }}
                 onMouseUp={handleTextareaSelect}

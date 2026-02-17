@@ -40,13 +40,6 @@ const integrationFetchers: Partial<
   },
 };
 
-export function registerIntegrationFetcher(
-  type: IntegrationType,
-  fetcher: IntegrationFetcher
-) {
-  integrationFetchers[type] = fetcher;
-}
-
 export async function getIntegrationsByOrganization(
   organizationId: string
 ): Promise<IntegrationsResponse> {
@@ -67,9 +60,3 @@ export async function getIntegrationsByOrganization(
   };
 }
 
-export async function getIntegrationCountByOrganization(
-  organizationId: string
-) {
-  const { count } = await getIntegrationsByOrganization(organizationId);
-  return count;
-}

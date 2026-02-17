@@ -10,12 +10,19 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 
 export function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const isLoggedIn = useSyncExternalStore(
+    () => () => {},
+    () =>
+      typeof document === "undefined"
+        ? false
+        : document.cookie.includes("better-auth.session_token"),
+    () => false
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
 
@@ -27,10 +34,6 @@ export function Navbar() {
     } catch {
       toast.error("Failed to copy to clipboard");
     }
-  }, []);
-
-  useEffect(() => {
-    setIsLoggedIn(document.cookie.includes("better-auth.session_token"));
   }, []);
 
   useEffect(() => {

@@ -44,7 +44,7 @@ function getHeaderCaseInsensitive(
   return headers[key];
 }
 
-export class GitHubRateLimitError extends Error {
+class GitHubRateLimitError extends Error {
   readonly retryAfterSeconds?: number;
 
   constructor(retryAfterSeconds?: number) {
@@ -311,7 +311,7 @@ Returns release body (changelog), assets list, author, and timestamps.`,
   );
 }
 
-export const getISODateFromDaysAgo = (days: number) => {
+const getISODateFromDaysAgo = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();

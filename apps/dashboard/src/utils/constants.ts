@@ -34,8 +34,6 @@ export const FEATURES = {
   LOG_RETENTION_30_DAYS: "log_retention_30_days",
 } as const;
 
-export type FeatureId = (typeof FEATURES)[keyof typeof FEATURES];
-
 export const ALLOWED_RASTER_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -56,4 +54,3 @@ export const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_LOGO_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_CONTENT_FILE_SIZE = 250 * 1024 * 1024;
 
-export const CONTENT_LIMIT = 20;

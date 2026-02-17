@@ -101,8 +101,8 @@ function FloatingToolbar({
     const handleScroll = () => updatePosition();
     const handleResize = () => updatePosition();
 
-    window.addEventListener("scroll", handleScroll);
-    anchorElem.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    anchorElem.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
 
     return () => {
@@ -130,27 +130,20 @@ function FloatingToolbar({
     );
   }, [editor, updatePosition]);
 
-  // Focus input when entering link edit mode
-  useEffect(() => {
-    if (isLinkEditMode) {
-      const timeoutId = setTimeout(() => linkInputRef.current?.focus(), 0);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isLinkEditMode]);
 
   const handleLinkClick = useCallback(() => {
     if (isLink) {
       // Edit existing link - populate with current URL
       setLinkUrl(existingLinkUrl || "https://");
       setIsEditingExistingLink(true);
-      setIsLinkEditMode(true);
     } else {
       // Create link with placeholder URL first, then enter edit mode
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
       setLinkUrl("https://");
       setIsEditingExistingLink(false);
-      setIsLinkEditMode(true);
     }
+    setIsLinkEditMode(true);
+    setTimeout(() => linkInputRef.current?.focus(), 0);
   }, [editor, isLink, existingLinkUrl, setIsLinkEditMode]);
 
   const submitLink = useCallback(() => {
@@ -326,15 +319,33 @@ export function FloatingToolbarPlugin({
   anchorElem,
 }: FloatingToolbarPluginProps) {
   const [editor] = useLexicalComposerContext();
-  const [isText, setIsText] = useState(false);
-  const [isBold, setIsBold] = useState(false);
-  const [isItalic, setIsItalic] = useState(false);
-  const [isUnderline, setIsUnderline] = useState(false);
-  const [isStrikethrough, setIsStrikethrough] = useState(false);
-  const [isCode, setIsCode] = useState(false);
-  const [isLink, setIsLink] = useState(false);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [isLinkEditMode, setIsLinkEditMode] = useState(false);
+  const [toolbarState, setToolbarState] = useState({
+    isText: false,
+    isBold: false,
+    isItalic: false,
+    isUnderline: false,
+    isStrikethrough: false,
+    isCode: false,
+    isLink: false,
+    linkUrl: "",
+    isLinkEditMode: false,
+  });
+
+  const {
+    isText,
+    isBold,
+    isItalic,
+    isUnderline,
+    isStrikethrough,
+    isCode,
+    isLink,
+    linkUrl,
+    isLinkEditMode,
+  } = toolbarState;
+
+  const setIsLinkEditMode = useCallback((value: boolean) => {
+    setToolbarState((prev) => ({ ...prev, isLinkEditMode: value }));
+  }, []);
 
   const updateToolbar = useCallback(() => {
     editor.getEditorState().read(() => {
@@ -344,37 +355,39 @@ export function FloatingToolbarPlugin({
 
       const selection = $getSelection();
       if (!$isRangeSelection(selection) || selection.isCollapsed()) {
-        setIsText(false);
+        setToolbarState((prev) => ({ ...prev, isText: false }));
         return;
       }
 
       const node = getSelectedNode(selection);
       if (!node) {
-        setIsText(false);
+        setToolbarState((prev) => ({ ...prev, isText: false }));
         return;
       }
-
-      setIsBold(selection.hasFormat("bold"));
-      setIsItalic(selection.hasFormat("italic"));
-      setIsUnderline(selection.hasFormat("underline"));
-      setIsStrikethrough(selection.hasFormat("strikethrough"));
-      setIsCode(selection.hasFormat("code"));
 
       const parent = node.getParent();
       const isParentLink = $isLinkNode(parent);
       const isNodeLink = $isLinkNode(node);
       const hasLink = isParentLink || isNodeLink;
-      setIsLink(hasLink);
-      if (isParentLink) {
-        setLinkUrl(parent.getURL());
-      } else if (isNodeLink) {
-        setLinkUrl(node.getURL());
-      } else {
-        setLinkUrl("");
-      }
+      const resolvedLinkUrl = isParentLink
+        ? parent.getURL()
+        : isNodeLink
+          ? node.getURL()
+          : "";
 
       const textContent = selection.getTextContent().replace(/\n/g, "");
-      setIsText(textContent !== "");
+
+      setToolbarState((prev) => ({
+        ...prev,
+        isBold: selection.hasFormat("bold"),
+        isItalic: selection.hasFormat("italic"),
+        isUnderline: selection.hasFormat("underline"),
+        isStrikethrough: selection.hasFormat("strikethrough"),
+        isCode: selection.hasFormat("code"),
+        isLink: hasLink,
+        linkUrl: resolvedLinkUrl,
+        isText: textContent !== "",
+      }));
     });
   }, [editor]);
 
@@ -407,7 +420,7 @@ export function FloatingToolbarPlugin({
       }),
       editor.registerRootListener(() => {
         if (editor.getRootElement() === null) {
-          setIsText(false);
+          setToolbarState((prev) => ({ ...prev, isText: false }));
         }
       })
     );

@@ -39,7 +39,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import type { GitHubRepository } from "@/types/integrations";
@@ -79,6 +79,8 @@ interface ChatInputProps {
   onClearError?: () => void;
 }
 
+const EMPTY_CONTEXT: ContextItem[] = [];
+
 const ChatInput = ({
   onSend,
   isLoading = false,
@@ -87,7 +89,7 @@ const ChatInput = ({
   onClearSelection,
   organizationSlug,
   organizationId,
-  context = [],
+  context = EMPTY_CONTEXT,
   onAddContext,
   onRemoveContext,
   value: controlledValue,
@@ -185,13 +187,6 @@ const ChatInput = ({
       element.scrollHeight > maxHeightPx ? "auto" : "hidden";
   }, []);
 
-  // Resize textarea when controlled value changes
-  useEffect(() => {
-    if (isControlled) {
-      requestAnimationFrame(resizeTextarea);
-    }
-  }, [isControlled, resizeTextarea]);
-
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
     if (!trimmed || isLoading) {
@@ -287,10 +282,10 @@ const ChatInput = ({
           )}
           {(context.length > 0 || selection) && (
             <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 pb-1">
-              {context.map((item, index) => (
+              {context.map((item) => (
                 <div
                   className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs"
-                  key={`${item.type}-${item.owner}-${item.repo}-${index}`}
+                  key={`${item.type}-${item.owner}-${item.repo}`}
                 >
                   <Github className="size-3.5" />
                   <span className="font-medium">

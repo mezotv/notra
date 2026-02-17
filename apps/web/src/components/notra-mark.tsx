@@ -70,7 +70,7 @@ export function NotraMark({
   );
 }
 
-export function NotraWordmarkSvg({ className = "" }: NotraWordmarkSvgProps) {
+function NotraWordmarkSvg({ className = "" }: NotraWordmarkSvgProps) {
   return (
     <svg
       className={className}

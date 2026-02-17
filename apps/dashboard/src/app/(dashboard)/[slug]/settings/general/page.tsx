@@ -41,7 +41,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !organization?.id) {
       return;
@@ -49,49 +49,54 @@ export default function GeneralSettingsPage({ params }: PageProps) {
     e.target.value = "";
 
     setIsUploadingLogo(true);
-    try {
-      const { url } = await uploadFile({ file, type: "logo" });
-      const result = await authClient.organization.update({
-        organizationId: organization.id,
-        data: { logo: url },
-      });
 
-      if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to update organization logo"
+    uploadFile({ file, type: "logo" })
+      .then(({ url }) =>
+        authClient.organization.update({
+          organizationId: organization.id,
+          data: { logo: url },
+        })
+      )
+      .then((result) => {
+        if (result.error) {
+          toast.error(
+            result.error.message ?? "Failed to update organization logo"
+          );
+          return null;
+        }
+
+        toast.success("Organization logo updated");
+        return Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.organizations,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.activeOrganization,
+          }),
+        ]).then(() =>
+          Promise.all([
+            queryClient.refetchQueries({
+              queryKey: QUERY_KEYS.AUTH.organizations,
+              type: "active",
+            }),
+            queryClient.refetchQueries({
+              queryKey: QUERY_KEYS.AUTH.activeOrganization,
+              type: "active",
+            }),
+          ])
         );
-        return;
-      }
-
-      toast.success("Organization logo updated");
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.organizations,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.activeOrganization,
-        }),
-      ]);
-      await Promise.all([
-        queryClient.refetchQueries({
-          queryKey: QUERY_KEYS.AUTH.organizations,
-          type: "active",
-        }),
-        queryClient.refetchQueries({
-          queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          type: "active",
-        }),
-      ]);
-    } catch (error) {
-      console.error("Logo upload error:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload organization logo"
-      );
-    } finally {
-      setIsUploadingLogo(false);
-    }
+      })
+      .catch((error) => {
+        console.error("Logo upload error:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to upload organization logo"
+        );
+      })
+      .finally(() => {
+        setIsUploadingLogo(false);
+      });
   }
 
   const form = useForm({
@@ -99,60 +104,66 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       name: organization?.name ?? "",
       slug: organization?.slug ?? "",
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       if (!organization?.id) {
         return;
       }
 
       setIsUpdating(true);
-      try {
-        const result = await authClient.organization.update({
+
+      authClient.organization
+        .update({
           organizationId: organization.id,
           data: {
             name: value.name,
             slug: value.slug,
           },
+        })
+        .then((result) => {
+          if (result.error) {
+            toast.error(result.error.message ?? "Failed to update organization");
+            return null;
+          }
+
+          return Promise.all([
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.AUTH.organizations,
+            }),
+            queryClient.invalidateQueries({
+              queryKey: QUERY_KEYS.AUTH.activeOrganization,
+            }),
+          ])
+            .then(() =>
+              Promise.all([
+                queryClient.refetchQueries({
+                  queryKey: QUERY_KEYS.AUTH.organizations,
+                  type: "active",
+                }),
+                queryClient.refetchQueries({
+                  queryKey: QUERY_KEYS.AUTH.activeOrganization,
+                  type: "active",
+                }),
+              ])
+            )
+            .then(() => {
+              const updatedSlug = result.data?.slug ?? value.slug;
+              return setLastVisitedOrganization(updatedSlug).then(() => {
+                if (updatedSlug !== slug) {
+                  router.replace(`/${updatedSlug}/settings/general`);
+                }
+              });
+            })
+            .then(() => {
+              toast.success("Organization updated successfully");
+              return null;
+            });
+        })
+        .catch(() => {
+          toast.error("Failed to update organization");
+        })
+        .finally(() => {
+          setIsUpdating(false);
         });
-
-        if (result.error) {
-          toast.error(result.error.message ?? "Failed to update organization");
-          return;
-        }
-
-        await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.organizations,
-          }),
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          }),
-        ]);
-
-        await Promise.all([
-          queryClient.refetchQueries({
-            queryKey: QUERY_KEYS.AUTH.organizations,
-            type: "active",
-          }),
-          queryClient.refetchQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-            type: "active",
-          }),
-        ]);
-
-        const updatedSlug = result.data?.slug ?? value.slug;
-
-        await setLastVisitedOrganization(updatedSlug);
-
-        if (updatedSlug !== slug) {
-          router.replace(`/${updatedSlug}/settings/general`);
-        }
-
-        toast.success("Organization updated successfully");
-      } catch {
-        toast.error("Failed to update organization");
-      } finally {
-        setIsUpdating(false);
-      }
     },
   });
 
@@ -198,13 +209,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         </div>
 
         <TitleCard heading="Organization Details">
-          <form
-            className="space-y-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
-          >
+          <form className="space-y-6" onSubmit={form.handleSubmit}>
             <div className="flex items-center gap-4">
               <input
                 accept="image/jpeg,image/png,image/gif,image/webp,image/avif"

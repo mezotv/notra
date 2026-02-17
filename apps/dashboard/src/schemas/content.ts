@@ -22,7 +22,6 @@ export const sourceMetadataSchema = z
   .nullable()
   .optional();
 
-export type SourceMetadata = z.infer<typeof sourceMetadataSchema>;
 
 export const contentSchema = z.object({
   id: z.string(),
@@ -61,26 +60,21 @@ export const editContentSchema = z.object({
   selectedText: z.string().optional(),
 });
 
-export type EditContentInput = z.infer<typeof editContentSchema>;
 
-export const contextItemSchema = z.object({
+const contextItemSchema = z.object({
   type: z.literal("github-repo"),
   owner: z.string(),
   repo: z.string(),
   integrationId: z.string(),
 });
 
-export type ContextItem = z.infer<typeof contextItemSchema>;
-
-export const textSelectionSchema = z.object({
+const textSelectionSchema = z.object({
   text: z.string(),
   startLine: z.number(),
   startChar: z.number(),
   endLine: z.number(),
   endChar: z.number(),
 });
-
-export type TextSelection = z.infer<typeof textSelectionSchema>;
 
 export const chatRequestSchema = z.object({
   messages: z.array(z.any()), // UIMessage from ai sdk
@@ -89,10 +83,8 @@ export const chatRequestSchema = z.object({
   context: z.array(contextItemSchema).optional(),
 });
 
-export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
 export const updateContentSchema = z.object({
   markdown: z.string(),
 });
 
-export type UpdateContentInput = z.infer<typeof updateContentSchema>;

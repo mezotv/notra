@@ -2,7 +2,6 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -11,6 +10,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@notra/ui/components/ui/alert-dialog";
+import { Button } from "@notra/ui/components/ui/button";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -125,13 +125,7 @@ export function EditIntegrationDialog({
               Update your GitHub integration settings
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              form.handleSubmit();
-            }}
-          >
+          <form onSubmit={form.handleSubmit}>
             <div className="space-y-4 py-4">
               <form.Field name="enabled">
                 {(field) => (
@@ -203,16 +197,12 @@ export function EditIntegrationDialog({
               </AlertDialogCancel>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <AlertDialogAction
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      form.handleSubmit();
-                    }}
-                    type="button"
+                    type="submit"
                   >
                     {mutation.isPending ? "Saving..." : "Save Changes"}
-                  </AlertDialogAction>
+                  </Button>
                 )}
               </form.Subscribe>
             </AlertDialogFooter>

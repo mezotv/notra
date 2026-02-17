@@ -10,7 +10,7 @@ import {
   MAX_LOGO_FILE_SIZE,
 } from "@/utils/constants";
 
-export const uploadAvatarSchema = z.object({
+const uploadAvatarSchema = z.object({
   type: z.literal("avatar"),
   fileType: z.coerce.string().nonempty(),
   fileSize: z.coerce
@@ -22,7 +22,7 @@ export const uploadAvatarSchema = z.object({
     }),
 });
 
-export const uploadLogoSchema = z.object({
+const uploadLogoSchema = z.object({
   type: z.literal("logo"),
   fileType: z.coerce.string().nonempty(),
   fileSize: z.coerce
@@ -34,7 +34,7 @@ export const uploadLogoSchema = z.object({
     }),
 });
 
-export const uploadMediaSchema = z.object({
+const uploadMediaSchema = z.object({
   type: z.literal("content"),
   fileType: z.coerce.string().nonempty(),
   fileSize: z.coerce
@@ -58,9 +58,6 @@ const maxSizeByType = {
   content: MAX_CONTENT_FILE_SIZE,
 };
 
-export const DeleteSchema = z.object({
-  mediaIds: z.array(z.string()).min(1).max(100),
-});
 
 export function validateUpload({
   type,

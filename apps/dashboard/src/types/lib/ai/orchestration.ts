@@ -15,11 +15,6 @@ export interface ValidatedIntegration {
   }>;
 }
 
-export interface EnabledCapabilities {
-  github: boolean;
-  skills: boolean;
-  markdown: boolean;
-}
 
 export interface TextSelection {
   text: string;

@@ -374,31 +374,51 @@ void main(){
 
 const MAX_CLICKS = 10;
 
-const PixelBlast: React.FC<PixelBlastProps> = ({
-  variant = "square",
-  pixelSize = 3,
-  color = "#B19EEF",
-  className,
-  style,
-  antialias = true,
-  patternScale = 2,
-  patternDensity = 1,
-  liquid = false,
-  liquidStrength = 0.1,
-  liquidRadius = 1,
-  pixelSizeJitter = 0,
-  enableRipples = true,
-  rippleIntensityScale = 1,
-  rippleThickness = 0.1,
-  rippleSpeed = 0.3,
-  liquidWobbleSpeed = 4.5,
-  autoPauseOffscreen = true,
-  speed = 0.5,
-  transparent = true,
-  edgeFade = 0.5,
-  noiseAmount = 0,
-}) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+function usePixelBlastRenderer({
+  containerRef,
+  variant,
+  pixelSize,
+  color,
+  antialias,
+  patternScale,
+  patternDensity,
+  liquid,
+  liquidStrength,
+  liquidRadius,
+  pixelSizeJitter,
+  enableRipples,
+  rippleIntensityScale,
+  rippleThickness,
+  rippleSpeed,
+  liquidWobbleSpeed,
+  autoPauseOffscreen,
+  speed,
+  transparent,
+  edgeFade,
+  noiseAmount,
+}: {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  variant: PixelBlastVariant;
+  pixelSize: number;
+  color: string;
+  antialias: boolean;
+  patternScale: number;
+  patternDensity: number;
+  liquid: boolean;
+  liquidStrength: number;
+  liquidRadius: number;
+  pixelSizeJitter: number;
+  enableRipples: boolean;
+  rippleIntensityScale: number;
+  rippleThickness: number;
+  rippleSpeed: number;
+  liquidWobbleSpeed: number;
+  autoPauseOffscreen: boolean;
+  speed: number;
+  transparent: boolean;
+  edgeFade: number;
+  noiseAmount: number;
+}) {
   const visibilityRef = useRef({ visible: true });
   const speedRef = useRef(speed);
 
@@ -435,6 +455,7 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     liquidEffect?: Effect;
   } | null>(null);
   const prevConfigRef = useRef<ReinitConfig | null>(null);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
@@ -778,7 +799,57 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     color,
     speed,
   ]);
+}
 
+const PixelBlast: React.FC<PixelBlastProps> = ({
+  variant = "square",
+  pixelSize = 3,
+  color = "#B19EEF",
+  className,
+  style,
+  antialias = true,
+  patternScale = 2,
+  patternDensity = 1,
+  liquid = false,
+  liquidStrength = 0.1,
+  liquidRadius = 1,
+  pixelSizeJitter = 0,
+  enableRipples = true,
+  rippleIntensityScale = 1,
+  rippleThickness = 0.1,
+  rippleSpeed = 0.3,
+  liquidWobbleSpeed = 4.5,
+  autoPauseOffscreen = true,
+  speed = 0.5,
+  transparent = true,
+  edgeFade = 0.5,
+  noiseAmount = 0,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  usePixelBlastRenderer({
+    containerRef,
+    variant,
+    pixelSize,
+    color,
+    antialias,
+    patternScale,
+    patternDensity,
+    liquid,
+    liquidStrength,
+    liquidRadius,
+    pixelSizeJitter,
+    enableRipples,
+    rippleIntensityScale,
+    rippleThickness,
+    rippleSpeed,
+    liquidWobbleSpeed,
+    autoPauseOffscreen,
+    speed,
+    transparent,
+    edgeFade,
+    noiseAmount,
+  });
   return (
     <div
       aria-label="PixelBlast interactive background"

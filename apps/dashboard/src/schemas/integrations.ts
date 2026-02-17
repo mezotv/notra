@@ -2,18 +2,14 @@
 import * as z from "zod";
 import { GITHUB_URL_PATTERNS } from "@/utils/constants";
 
-export const INTEGRATION_CATEGORIES = ["input", "output"] as const;
-export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
-
 export const INPUT_INTEGRATION_TYPES = ["github", "slack", "linear"] as const;
 export type InputIntegrationType = (typeof INPUT_INTEGRATION_TYPES)[number];
 
-export const OUTPUT_INTEGRATION_TYPES = [
+const OUTPUT_INTEGRATION_TYPES = [
   "marble",
   "webflow",
   "framer",
 ] as const;
-export type OutputIntegrationType = (typeof OUTPUT_INTEGRATION_TYPES)[number];
 
 export const INTEGRATION_TYPES = [
   ...INPUT_INTEGRATION_TYPES,
@@ -57,18 +53,6 @@ export const createGitHubIntegrationRequestSchema = z.object({
   branch: z.string().optional().nullable(),
   token: z.string().optional().nullable(),
 });
-export type CreateGitHubIntegrationRequest = z.infer<
-  typeof createGitHubIntegrationRequestSchema
->;
-
-export const addRepositoryFormSchema = z.object({
-  repository: z
-    .string()
-    .min(1, "Please select a repository")
-    .regex(/^[^/]+\/[^/]+$/, "Invalid repository format. Expected: owner/repo"),
-});
-export type AddRepositoryFormValues = z.infer<typeof addRepositoryFormSchema>;
-
 export const addRepositoryRequestSchema = z.object({
   owner: z
     .string()
@@ -94,34 +78,23 @@ export const addRepositoryRequestSchema = z.object({
       { type: "investor_update", enabled: false },
     ]),
 });
-export type AddRepositoryRequest = z.infer<typeof addRepositoryRequestSchema>;
-
-export const getIntegrationsQuerySchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-export type GetIntegrationsQuery = z.infer<typeof getIntegrationsQuerySchema>;
-
 export const integrationIdParamSchema = z.object({
   integrationId: z.string().min(1, "Integration ID is required"),
 });
-export type IntegrationIdParam = z.infer<typeof integrationIdParamSchema>;
 
 export const repositoryIdParamSchema = z.object({
   repositoryId: z.string().min(1, "Repository ID is required"),
 });
-export type RepositoryIdParam = z.infer<typeof repositoryIdParamSchema>;
 
 export const outputIdParamSchema = z.object({
   outputId: z.string().min(1, "Output ID is required"),
 });
-export type OutputIdParam = z.infer<typeof outputIdParamSchema>;
 
 export const updateIntegrationBodySchema = z.object({
   enabled: z.boolean(),
   displayName: z.string().trim().min(1).optional(),
   branch: z.string().trim().min(1).nullable().optional(),
 });
-export type UpdateIntegrationBody = z.infer<typeof updateIntegrationBodySchema>;
 
 export const editGitHubIntegrationFormSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
@@ -143,19 +116,16 @@ export const updateRepositoryBodySchema = z
       message: "At least one field must be provided",
     }
   );
-export type UpdateRepositoryBody = z.infer<typeof updateRepositoryBodySchema>;
 
 export const updateOutputBodySchema = z.object({
   enabled: z.boolean(),
 });
-export type UpdateOutputBody = z.infer<typeof updateOutputBodySchema>;
 
 export const configureOutputBodySchema = z.object({
   outputType: z.enum(OUTPUT_CONTENT_TYPES),
   enabled: z.boolean(),
   config: z.record(z.string(), z.unknown()).optional(),
 });
-export type ConfigureOutputBody = z.infer<typeof configureOutputBodySchema>;
 
 export const WEBHOOK_EVENT_TYPES = ["release", "push", "star"] as const;
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
@@ -174,14 +144,14 @@ export type LookbackWindow = (typeof LOOKBACK_WINDOWS)[number];
 
 export const MAX_SCHEDULE_NAME_LENGTH = 120;
 
-export const triggerSourceTypeSchema = z.enum([
+const triggerSourceTypeSchema = z.enum([
   "github_webhook",
   "linear_webhook",
   "cron",
   "manual",
 ]);
 
-export const triggerSourceConfigSchema = z.object({
+const triggerSourceConfigSchema = z.object({
   eventTypes: z.array(z.enum(WEBHOOK_EVENT_TYPES)).optional(),
   cron: z
     .object({
@@ -198,7 +168,7 @@ export const triggerTargetsSchema = z.object({
   repositoryIds: z.array(z.string()).min(1),
 });
 
-export const triggerOutputConfigSchema = z
+const triggerOutputConfigSchema = z
   .object({
     publishDestination: z.enum(["webflow", "framer", "custom"]).optional(),
   })
@@ -212,11 +182,8 @@ export const configureTriggerBodySchema = z.object({
   outputConfig: triggerOutputConfigSchema,
   enabled: z.boolean(),
 });
-export type ConfigureTriggerBody = z.infer<typeof configureTriggerBodySchema>;
 
-export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = ["changelog"] as const;
-export type ScheduleOutputType =
-  (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
+const SUPPORTED_SCHEDULE_OUTPUT_TYPES = ["changelog"] as const;
 
 export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
   name: z.string().trim().min(1).max(MAX_SCHEDULE_NAME_LENGTH),
@@ -233,9 +200,7 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
   outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
   lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
 });
-export type ConfigureScheduleBody = z.infer<typeof configureScheduleBodySchema>;
 
 export const getSchedulesQuerySchema = z.object({
   repositoryIds: z.array(z.string().min(1)).optional(),
 });
-export type GetSchedulesQuery = z.infer<typeof getSchedulesQuerySchema>;

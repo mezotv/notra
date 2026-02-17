@@ -35,6 +35,8 @@ import { authClient } from "@/lib/auth/client";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
+const SKELETON_ROW_KEYS = ["skeleton-1", "skeleton-2", "skeleton-3"] as const;
+
 export function OrganizationsSection() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -51,87 +53,94 @@ export function OrganizationsSection() {
 
     setIsSwitching(org.id);
 
-    try {
-      const { error } = await authClient.organization.setActive({
+    authClient.organization
+      .setActive({
         organizationId: org.id,
+      })
+      .then(({ error }) => {
+        if (error) {
+          toast.error(error.message || "Failed to switch organization");
+          setIsSwitching(null);
+          return;
+        }
+
+        return Promise.all([
+          setLastVisitedOrganization(org.slug),
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.activeOrganization,
+          }),
+        ]).then(() => {
+          router.push(`/${org.slug}`);
+          setIsSwitching(null);
+        });
+      })
+      .catch((error) => {
+        toast.error("Failed to switch organization");
+        console.error(error);
+        setIsSwitching(null);
       });
-
-      if (error) {
-        toast.error(error.message || "Failed to switch organization");
-        return;
-      }
-
-      await setLastVisitedOrganization(org.slug);
-
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
-      });
-
-      router.push(`/${org.slug}`);
-    } catch (error) {
-      toast.error("Failed to switch organization");
-      console.error(error);
-    } finally {
-      setIsSwitching(null);
-    }
   }
 
   async function leaveOrganization(org: Organization) {
     setIsLeaving(org.id);
 
-    try {
-      const { error } = await authClient.organization.leave({
+    authClient.organization
+      .leave({
         organizationId: org.id,
-      });
-
-      if (error) {
-        toast.error(error.message || "Failed to leave organization");
-        return;
-      }
-
-      toast.success(`Left ${org.name}`);
-
-      // Refresh organizations list and wait for fresh data
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.organizations,
-      });
-      const freshOrgs = await queryClient.fetchQuery({
-        queryKey: QUERY_KEYS.AUTH.organizations,
-        queryFn: async () => {
-          const result = await authClient.organization.list();
-          return result.data ?? [];
-        },
-      });
-
-      if (activeOrganization?.id === org.id) {
-        const firstOrg = freshOrgs[0];
-        if (firstOrg) {
-          await authClient.organization.setActive({
-            organizationId: firstOrg.id,
-          });
-          await setLastVisitedOrganization(firstOrg.slug);
-          await queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          });
-          router.push(`/${firstOrg.slug}`);
+      })
+      .then(async ({ error }) => {
+        if (error) {
+          toast.error(error.message || "Failed to leave organization");
+          setIsLeaving(null);
+          return;
         }
-      }
-    } catch (error) {
-      toast.error("Failed to leave organization");
-      console.error(error);
-    } finally {
-      setIsLeaving(null);
-    }
+
+        toast.success(`Left ${org.name}`);
+
+        await queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.organizations,
+        });
+        const freshOrgs = await queryClient.fetchQuery({
+          queryKey: QUERY_KEYS.AUTH.organizations,
+          queryFn: async () => {
+            const result = await authClient.organization.list();
+            return result.data ?? [];
+          },
+        });
+
+        if (activeOrganization?.id === org.id) {
+          const firstOrg = freshOrgs[0];
+          if (firstOrg) {
+            await Promise.all([
+              authClient.organization.setActive({
+                organizationId: firstOrg.id,
+              }),
+              setLastVisitedOrganization(firstOrg.slug),
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.AUTH.activeOrganization,
+              }),
+            ]);
+            router.push(`/${firstOrg.slug}`);
+          }
+        }
+
+        setIsLeaving(null);
+      })
+      .catch((error) => {
+        toast.error("Failed to leave organization");
+        console.error(error);
+        setIsLeaving(null);
+      });
   }
 
   if (isLoading) {
     return (
       <TitleCard className="lg:col-span-2" heading="Organizations">
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
+          {SKELETON_ROW_KEYS.map((rowKey) => (
             <div
               className="flex items-center justify-between rounded-lg border p-4"
-              key={i}
+              key={rowKey}
             >
               <div className="flex items-center gap-3">
                 <Skeleton className="size-10 rounded-lg" />

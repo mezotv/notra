@@ -1,6 +1,6 @@
 import type { ContentType } from "@/components/content/content-card";
 
-export interface ContentItem {
+interface ContentItem {
   id: string;
   title: string;
   content: string;
@@ -9,7 +9,7 @@ export interface ContentItem {
   date: Date;
 }
 
-export const EXAMPLE_CONTENT: ContentItem[] = [
+const EXAMPLE_CONTENT: ContentItem[] = [
   {
     id: "1",
     title: "Q4 2024 Product Update",
@@ -546,6 +546,6 @@ Contact our support team at support@example.com or join our Discord community.`,
   },
 ];
 
-export function getContentById(id: string): ContentItem | undefined {
+export function getContentById(id: string) {
   return EXAMPLE_CONTENT.find((c) => c.id === id);
 }

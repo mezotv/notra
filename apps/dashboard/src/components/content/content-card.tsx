@@ -70,5 +70,5 @@ const ContentCard = memo(function ContentCard({
   return cardContent;
 });
 
-export { ContentCard, CONTENT_TYPES, getContentTypeLabel };
-export type { ContentCardProps, ContentType };
+export { ContentCard, getContentTypeLabel };
+export type { ContentType };

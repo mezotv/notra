@@ -143,7 +143,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -151,34 +151,37 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
     e.target.value = "";
 
     setIsUploadingAvatar(true);
-    try {
-      const { url } = await uploadFile({ file, type: "avatar" });
-      const result = await authClient.updateUser({ image: url });
 
-      if (result.error) {
-        toast.error(result.error.message ?? "Failed to update profile picture");
-        return;
-      }
-
-      toast.success("Profile picture updated");
-      await onSessionRefetch?.();
-    } catch (error) {
-      console.error("Avatar upload error:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload profile picture"
-      );
-    } finally {
-      setIsUploadingAvatar(false);
-    }
+    uploadFile({ file, type: "avatar" })
+      .then(({ url }) => authClient.updateUser({ image: url }))
+      .then((result) => {
+        if (result.error) {
+          toast.error(
+            result.error.message ?? "Failed to update profile picture"
+          );
+          return null;
+        }
+        toast.success("Profile picture updated");
+        return Promise.resolve(onSessionRefetch?.());
+      })
+      .catch((error) => {
+        console.error("Avatar upload error:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to upload profile picture"
+        );
+      })
+      .finally(() => {
+        setIsUploadingAvatar(false);
+      });
   }
 
   const form = useForm({
     defaultValues: {
       name: user.name,
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       const validated = nameSchema.safeParse(value.name);
 
       if (!validated.success) {
@@ -192,22 +195,24 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
       }
 
       setIsUpdating(true);
-      try {
-        const result = await authClient.updateUser({
+
+      authClient
+        .updateUser({
           name: validated.data,
+        })
+        .then((result) => {
+          if (result.error) {
+            toast.error(result.error.message ?? "Failed to update profile");
+          } else {
+            toast.success("Profile updated successfully");
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to update profile");
+        })
+        .finally(() => {
+          setIsUpdating(false);
         });
-
-        if (result.error) {
-          toast.error(result.error.message ?? "Failed to update profile");
-          return;
-        }
-
-        toast.success("Profile updated successfully");
-      } catch {
-        toast.error("Failed to update profile");
-      } finally {
-        setIsUpdating(false);
-      }
     },
   });
 
@@ -256,12 +261,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
+        <form onSubmit={form.handleSubmit}>
           <form.Field name="name">
             {(field) => (
               <div className="space-y-2">
@@ -311,7 +311,7 @@ function LoginDetailsSection({
       newPassword: "",
       confirmPassword: "",
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       const validated = passwordSchema.safeParse(value);
 
       if (!validated.success) {
@@ -321,25 +321,27 @@ function LoginDetailsSection({
       }
 
       setIsChangingPassword(true);
-      try {
-        const result = await authClient.changePassword({
+
+      authClient
+        .changePassword({
           currentPassword: validated.data.currentPassword,
           newPassword: validated.data.newPassword,
           revokeOtherSessions: false,
+        })
+        .then((result) => {
+          if (result.error) {
+            toast.error(result.error.message ?? "Failed to change password");
+          } else {
+            toast.success("Password changed successfully");
+            form.reset();
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to change password");
+        })
+        .finally(() => {
+          setIsChangingPassword(false);
         });
-
-        if (result.error) {
-          toast.error(result.error.message ?? "Failed to change password");
-          return;
-        }
-
-        toast.success("Password changed successfully");
-        form.reset();
-      } catch {
-        toast.error("Failed to change password");
-      } finally {
-        setIsChangingPassword(false);
-      }
     },
   });
 
@@ -364,13 +366,7 @@ function LoginDetailsSection({
         </div>
 
         {hasPasswordAccount && (
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
-          >
+          <form className="space-y-4" onSubmit={form.handleSubmit}>
             <div className="border-t pt-4">
               <p className="mb-4 font-medium text-sm">Update your password</p>
 
@@ -508,45 +504,44 @@ function ConnectedAccountsSection({
 
   const canUnlink = accounts.length > 1;
 
-  async function handleLinkAccount(provider: "google" | "github") {
+  function handleLinkAccount(provider: "google" | "github") {
     setLoadingProvider(provider);
-    try {
-      await authClient.linkSocial({
+    authClient
+      .linkSocial({
         provider,
         callbackURL: window.location.pathname,
+      })
+      .catch(() => {
+        toast.error(`Failed to link ${provider} account`);
+        setLoadingProvider(null);
       });
-    } catch {
-      toast.error(`Failed to link ${provider} account`);
-    } finally {
-      setLoadingProvider(null);
-    }
   }
 
-  async function handleUnlinkAccount(provider: "google" | "github") {
+  function handleUnlinkAccount(provider: "google" | "github") {
     if (!canUnlink) {
       toast.error("You must have at least one login method");
       return;
     }
 
     setLoadingProvider(provider);
-    try {
-      const result = await authClient.unlinkAccount({
+    authClient
+      .unlinkAccount({
         providerId: provider,
-      });
-
-      if (result.error) {
-        toast.error(result.error.message ?? `Failed to unlink ${provider}`);
+      })
+      .then((result) => {
+        if (result.error) {
+          toast.error(result.error.message ?? `Failed to unlink ${provider}`);
+        } else {
+          toast.success(`${provider} account unlinked`);
+          onAccountsChange();
+        }
+      })
+      .catch(() => {
+        toast.error(`Failed to unlink ${provider}`);
+      })
+      .finally(() => {
         setLoadingProvider(null);
-        return;
-      }
-
-      toast.success(`${provider} account unlinked`);
-      onAccountsChange();
-    } catch {
-      toast.error(`Failed to unlink ${provider}`);
-    } finally {
-      setLoadingProvider(null);
-    }
+      });
   }
 
   if (isError) {

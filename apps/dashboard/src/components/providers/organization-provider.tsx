@@ -11,7 +11,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import { authClient } from "@/lib/auth/client";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -38,8 +37,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
   const hasAutoSelectedRef = useRef(false);
   const lastSyncedSlugRef = useRef<string | null>(null);
   const syncInProgressRef = useRef(false);
-  const [optimisticActiveOrg, setOptimisticActiveOrg] =
-    useState<Organization | null>(null);
 
   const [
     { data: organizationsData, isPending: isLoadingOrgs },
@@ -80,12 +77,18 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
     return segments[0] ?? null;
   }, [pathname]);
 
-  // Clear optimistic state when real data arrives
-  useEffect(() => {
+  const optimisticActiveOrg = useMemo(() => {
     if (activeOrganization) {
-      setOptimisticActiveOrg(null);
+      return null;
     }
-  }, [activeOrganization]);
+    if (slugFromPath) {
+      return organizations.find((org) => org.slug === slugFromPath) ?? null;
+    }
+    if (!isLoading && organizations.length > 0) {
+      return organizations[0] ?? null;
+    }
+    return null;
+  }, [activeOrganization, slugFromPath, organizations, isLoading]);
 
   useEffect(() => {
     if (isLoadingOrgs || isLoadingActive) {
@@ -115,13 +118,11 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
 
     lastSyncedSlugRef.current = slugFromPath;
     syncInProgressRef.current = true;
-    setOptimisticActiveOrg(organizationFromPath);
     authClient.organization
       .setActive({ organizationId: organizationFromPath.id })
       .then((result) => {
         if (result.error) {
           console.error("Failed to sync organization:", result.error);
-          setOptimisticActiveOrg(null);
           lastSyncedSlugRef.current = null;
         } else {
           queryClient.invalidateQueries({
@@ -131,7 +132,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
       })
       .catch((error) => {
         console.error("Error syncing organization:", error);
-        setOptimisticActiveOrg(null);
         lastSyncedSlugRef.current = null;
       })
       .finally(() => {
@@ -159,7 +159,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
       const firstOrg = organizationsData[0];
       if (firstOrg) {
         hasAutoSelectedRef.current = true;
-        setOptimisticActiveOrg(firstOrg);
         authClient.organization
           .setActive({ organizationId: firstOrg.id })
           .then((result) => {
@@ -168,7 +167,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
                 "Failed to auto-set active organization:",
                 result.error
               );
-              setOptimisticActiveOrg(null);
               hasAutoSelectedRef.current = false;
             } else {
               queryClient.invalidateQueries({
@@ -178,7 +176,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
           })
           .catch((error) => {
             console.error("Error auto-setting active organization:", error);
-            setOptimisticActiveOrg(null);
             hasAutoSelectedRef.current = false;
           });
       }

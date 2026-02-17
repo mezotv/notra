@@ -31,7 +31,7 @@ import {
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
@@ -44,19 +44,11 @@ export function NavUser() {
   const isCollapsed = state === "collapsed";
   const isDark = resolvedTheme === "dark";
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const { activeOrganization } = useOrganizationsContext();
 
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
   const slug = activeOrganization?.slug ?? "";
-
-  useEffect(() => {
-    if (!(user || isPending || isRedirecting)) {
-      setIsRedirecting(true);
-      router.push("/login");
-    }
-  }, [user, isPending, isRedirecting, router]);
 
   async function handleSignOut() {
     setIsSigningOut(true);

@@ -2,7 +2,6 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -12,6 +11,7 @@ import {
   AlertDialogTrigger,
 } from "@notra/ui/components/ui/alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -28,8 +28,8 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useReducer,
   useRef,
-  useState,
 } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -54,6 +54,16 @@ interface ProbeResult {
   description?: string;
 }
 
+interface AddIntegrationState {
+  internalOpen: boolean;
+  createdIntegration: GitHubIntegration | null;
+  showWebhookDialog: boolean;
+  initializedBranchRepos: Set<string>;
+  probeStatus: ProbeStatus;
+  tokenOpen: boolean;
+  repoInfo: GitHubRepoInfo | null;
+}
+
 function getRepoKey(owner: string, repo: string) {
   return `${owner.toLowerCase()}/${repo.toLowerCase()}`;
 }
@@ -70,19 +80,47 @@ export function AddIntegrationDialog({
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = propOrganizationId ?? activeOrganization?.id;
   const organizationSlug = propOrganizationSlug ?? activeOrganization?.slug;
-  const [internalOpen, setInternalOpen] = useState(false);
-  const open = controlledOpen ?? internalOpen;
-  const setOpen = controlledOnOpenChange ?? setInternalOpen;
-  const queryClient = useQueryClient();
-  const [createdIntegration, setCreatedIntegration] =
-    useState<GitHubIntegration | null>(null);
-  const [showWebhookDialog, setShowWebhookDialog] = useState(false);
-  const [initializedBranchRepos, setInitializedBranchRepos] = useState<
-    Set<string>
-  >(new Set());
+  const [state, setState] = useReducer(
+    (prev: AddIntegrationState, next: Partial<AddIntegrationState>) => ({
+      ...prev,
+      ...next,
+    }),
+    {
+      internalOpen: false,
+      createdIntegration: null,
+      showWebhookDialog: false,
+      initializedBranchRepos: new Set(),
+      probeStatus: "idle",
+      tokenOpen: false,
+      repoInfo: null,
+    }
+  );
+  const {
+    internalOpen,
+    createdIntegration,
+    showWebhookDialog,
+    initializedBranchRepos,
+    probeStatus,
+    tokenOpen,
+    repoInfo,
+  } = state;
 
-  const [probeStatus, setProbeStatus] = useState<ProbeStatus>("idle");
-  const [tokenOpen, setTokenOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen =
+    controlledOnOpenChange ??
+    ((nextOpen: boolean) => setState({ internalOpen: nextOpen }));
+  const queryClient = useQueryClient();
+
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (nextOpen) {
+        setState({ initializedBranchRepos: new Set() });
+      }
+    },
+    [setOpen]
+  );
+
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const probeRepo = useCallback(
@@ -91,58 +129,56 @@ export function AddIntegrationDialog({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      setProbeStatus("loading");
+      setState({ probeStatus: "loading" });
 
-      try {
-        const response = await fetch("/api/github/probe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, repo, token: token || undefined }),
-          signal: controller.signal,
-        });
-
-        if (controller.signal.aborted) {
-          return null;
-        }
-
-        const payload: unknown = await response.json();
-
-        if (!response.ok) {
-          if (
-            response.status === 401 ||
-            response.status === 403 ||
-            response.status === 404
-          ) {
-            setProbeStatus("not_found");
-            setTokenOpen(true);
+      return fetch("/api/github/probe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner, repo, token: token || undefined }),
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (controller.signal.aborted) {
             return null;
           }
-          setProbeStatus("error");
-          return null;
-        }
 
-        const data = payload as ProbeResult;
+          const payload: unknown = await response.json();
 
-        if (data.status === "not_found" || data.status === "unauthorized") {
-          setProbeStatus("not_found");
-          setTokenOpen(true);
+          if (!response.ok) {
+            if (
+              response.status === 401 ||
+              response.status === 403 ||
+              response.status === 404
+            ) {
+              setState({ probeStatus: "not_found", tokenOpen: true });
+              return null;
+            }
+            setState({ probeStatus: "error" });
+            return null;
+          }
+
+          const data = payload as ProbeResult;
+
+          if (data.status === "not_found" || data.status === "unauthorized") {
+            setState({ probeStatus: "not_found", tokenOpen: true });
+            return data;
+          }
+
+          setState({ probeStatus: "success" });
+
+          if (data.status === "private") {
+            setState({ tokenOpen: true });
+          }
+
           return data;
-        }
-
-        setProbeStatus("success");
-
-        if (data.status === "private") {
-          setTokenOpen(true);
-        }
-
-        return data;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        })
+        .catch((error) => {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return null;
+          }
+          setState({ probeStatus: "error" });
           return null;
-        }
-        setProbeStatus("error");
-        return null;
-      }
+        });
     },
     []
   );
@@ -152,12 +188,6 @@ export function AddIntegrationDialog({
       abortControllerRef.current?.abort();
     };
   }, []);
-
-  useEffect(() => {
-    if (open) {
-      setInitializedBranchRepos(new Set());
-    }
-  }, [open]);
 
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {
@@ -204,12 +234,13 @@ export function AddIntegrationDialog({
       toast.success("GitHub integration added successfully");
       setOpen(false);
       form.reset();
-      setProbeStatus("idle");
-      setTokenOpen(false);
+      setState({
+        probeStatus: "idle",
+        tokenOpen: false,
+        createdIntegration: integration,
+        showWebhookDialog: true,
+      });
       onSuccess?.();
-
-      setCreatedIntegration(integration);
-      setShowWebhookDialog(true);
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -231,7 +262,6 @@ export function AddIntegrationDialog({
     },
   });
 
-  const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
 
   if (!organizationId) {
     return null;
@@ -249,8 +279,7 @@ export function AddIntegrationDialog({
           `/${organizationSlug}/integrations/github/${createdIntegration.id}`
         );
       }
-      setShowWebhookDialog(false);
-      setCreatedIntegration(null);
+      setState({ showWebhookDialog: false, createdIntegration: null });
     }
   };
 
@@ -258,7 +287,7 @@ export function AddIntegrationDialog({
 
   return (
     <>
-      <AlertDialog onOpenChange={setOpen} open={open}>
+      <AlertDialog onOpenChange={handleOpenChange} open={open}>
         {triggerElement}
         <AlertDialogContent className="sm:max-w-[600px]">
           <AlertDialogHeader>
@@ -270,13 +299,7 @@ export function AddIntegrationDialog({
               changelogs, blog posts, and tweets.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              form.handleSubmit();
-            }}
-          >
+          <form onSubmit={form.handleSubmit}>
             <div className="space-y-4 py-4">
               <form.Field
                 name="repoUrl"
@@ -287,14 +310,13 @@ export function AddIntegrationDialog({
                     if (!value.trim()) {
                       abortControllerRef.current?.abort();
                       abortControllerRef.current = null;
-                      setRepoInfo(null);
-                      setProbeStatus("idle");
+                      setState({ repoInfo: null, probeStatus: "idle" });
                       form.setFieldValue("branch", "");
                       return;
                     }
                     const parsed = parseGitHubUrl(value);
                     if (parsed) {
-                      setRepoInfo(parsed);
+                      setState({ repoInfo: parsed });
                       const currentToken = form.getFieldValue("token");
                       probeRepo(
                         parsed.owner,
@@ -316,11 +338,9 @@ export function AddIntegrationDialog({
                             !initializedBranchRepos.has(repoKey)
                           ) {
                             form.setFieldValue("branch", result.defaultBranch);
-                            setInitializedBranchRepos((prev) => {
-                              const next = new Set(prev);
-                              next.add(repoKey);
-                              return next;
-                            });
+                            const next = new Set(initializedBranchRepos);
+                            next.add(repoKey);
+                            setState({ initializedBranchRepos: next });
                           }
                         })
                         .catch(() => {
@@ -329,8 +349,7 @@ export function AddIntegrationDialog({
                     } else {
                       abortControllerRef.current?.abort();
                       abortControllerRef.current = null;
-                      setRepoInfo(null);
-                      setProbeStatus("idle");
+                      setState({ repoInfo: null, probeStatus: "idle" });
                       form.setFieldValue("branch", "");
                     }
                   },
@@ -394,7 +413,10 @@ export function AddIntegrationDialog({
                 )}
               </form.Field>
 
-              <Collapsible onOpenChange={setTokenOpen} open={tokenOpen}>
+              <Collapsible
+                onOpenChange={(nextOpen) => setState({ tokenOpen: nextOpen })}
+                open={tokenOpen}
+              >
                 <CollapsibleTrigger className="flex w-full items-center gap-2 font-medium text-sm">
                   <ChevronDownIcon
                     className={`h-4 w-4 transition-transform ${tokenOpen ? "" : "-rotate-90"}`}
@@ -444,11 +466,11 @@ export function AddIntegrationDialog({
                                         "branch",
                                         result.defaultBranch
                                       );
-                                      setInitializedBranchRepos((prev) => {
-                                        const next = new Set(prev);
-                                        next.add(repoKey);
-                                        return next;
-                                      });
+                                      const next = new Set(
+                                        initializedBranchRepos
+                                      );
+                                      next.add(repoKey);
+                                      setState({ initializedBranchRepos: next });
                                     }
                                   })
                                   .catch(() => {
@@ -484,16 +506,12 @@ export function AddIntegrationDialog({
               </AlertDialogCancel>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <AlertDialogAction
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      form.handleSubmit();
-                    }}
-                    type="button"
+                    type="submit"
                   >
                     {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </AlertDialogAction>
+                  </Button>
                 )}
               </form.Subscribe>
             </AlertDialogFooter>

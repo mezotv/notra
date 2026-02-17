@@ -16,4 +16,3 @@ export const routingDecisionSchema = z.object({
     .describe("Brief 1-2 sentence explanation of the routing decision"),
 });
 
-export type RoutingDecisionSchema = z.infer<typeof routingDecisionSchema>;

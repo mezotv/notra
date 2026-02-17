@@ -12,7 +12,13 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type * as React from "react";
@@ -66,16 +72,17 @@ export function DashboardSidebar({
     : createSettingsVariants(false);
 
   return (
-    <Sidebar
-      collapsible="icon"
-      {...props}
-      className="overflow-hidden border-none"
-    >
+    <LazyMotion features={domAnimation}>
+      <Sidebar
+        collapsible="icon"
+        {...props}
+        className="overflow-hidden border-none"
+      >
       <SidebarHeader>
         <OrgSelector />
         <AnimatePresence initial={false} mode="popLayout">
           {isSettingsRoute && (
-            <motion.div
+            <m.div
               animate="animate"
               exit="exit"
               initial="initial"
@@ -95,14 +102,14 @@ export function DashboardSidebar({
                   tooltip="Back"
                 />
               </SidebarMenu>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </SidebarHeader>
       <SidebarContent>
         <AnimatePresence initial={false} mode="popLayout">
           {isSettingsRoute ? (
-            <motion.div
+            <m.div
               animate="animate"
               className="flex flex-1 flex-col"
               exit="exit"
@@ -112,9 +119,9 @@ export function DashboardSidebar({
               variants={settingsVariants}
             >
               <NavSettings slug={slug} />
-            </motion.div>
+            </m.div>
           ) : (
-            <motion.div
+            <m.div
               animate="animate"
               className="flex flex-1 flex-col"
               exit="exit"
@@ -125,14 +132,14 @@ export function DashboardSidebar({
             >
               <NavMain />
               <NavSecondary className="mt-auto" />
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </SidebarContent>
       <SidebarFooter className="gap-0">
         <AnimatePresence initial={false} mode="popLayout">
           {!isSettingsRoute && (
-            <motion.div
+            <m.div
               animate="animate"
               exit="exit"
               initial="initial"
@@ -141,14 +148,14 @@ export function DashboardSidebar({
               variants={mainVariants}
             >
               <SidebarOnboarding />
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
         <SidebarGroup className={cn(open ? "px-2" : "px-0")}>
           <SidebarMenu>
             <AnimatePresence initial={false} mode="popLayout">
               {!isSettingsRoute && (
-                <motion.div
+                <m.div
                   animate="animate"
                   exit="exit"
                   initial="initial"
@@ -165,13 +172,14 @@ export function DashboardSidebar({
                     }
                     tooltip="Settings"
                   />
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </SidebarMenu>
           <NavUser />
         </SidebarGroup>
       </SidebarFooter>
-    </Sidebar>
+      </Sidebar>
+    </LazyMotion>
   );
 }

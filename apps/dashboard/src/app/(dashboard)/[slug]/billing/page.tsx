@@ -245,24 +245,22 @@ export default function BillingPage() {
 
   async function handleCheckout(productId: string) {
     setLoading(productId);
+
     try {
       const { data, error } = await checkout({ productId });
 
       if (error) {
         console.error("Checkout error:", error);
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
+      } else if (data?.url) {
+        window.location.assign(data.url);
       } else if (data) {
         setPendingCheckout(data);
       }
     } catch (err) {
       console.error("Checkout error:", err);
-    } finally {
-      setLoading(null);
     }
+
+    setLoading(null);
   }
 
   async function handleConfirm() {
@@ -271,15 +269,16 @@ export default function BillingPage() {
     }
 
     setLoading("confirm");
+
     try {
       await attach({ productId: pendingCheckout.product.id });
       setPendingCheckout(null);
       window.location.reload();
     } catch (err) {
       console.error("Attach error:", err);
-    } finally {
-      setLoading(null);
     }
+
+    setLoading(null);
   }
 
   if (productsLoading || customerLoading) {
