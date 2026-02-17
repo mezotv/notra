@@ -39,7 +39,7 @@ export async function generateChangelog(
 ): Promise<ChangelogAgentResult> {
   const { 
     organizationId, 
-    repositories = [], 
+    repositories, 
     tone = "Conversational", 
     promptInput 
   } = options;
@@ -59,8 +59,10 @@ export async function generateChangelog(
   const instructions = promptFactory();
   const prompt = getChangelogUserPrompt(promptInput);
 
-  // Extract allowed integration IDs from repositories
-  const allowedIntegrationIds = repositories.map((repo) => repo.integrationId);
+  // Extract allowed integration IDs from repositories and deduplicate
+  const allowedIntegrationIds = Array.from(
+    new Set(repositories.map((repo) => repo.integrationId))
+  );
 
   const agent = new ToolLoopAgent({
     model,
