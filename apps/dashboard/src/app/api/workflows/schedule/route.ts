@@ -290,7 +290,6 @@ export const { POST } = serve<SchedulePayload>(
     }
 
     // Step 3: Generate content based on output type
-    let createdPostId: string | null = null;
     try {
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
@@ -433,8 +432,6 @@ export const { POST } = serve<SchedulePayload>(
 
         return id;
       });
-      createdPostId = postId;
-
       await context.run("track-content-created", async () => {
         try {
           await trackScheduledContentCreated({
@@ -465,14 +462,6 @@ export const { POST } = serve<SchedulePayload>(
     } catch (error) {
       if (error instanceof WorkflowAbort) {
         throw error;
-      }
-
-      if (createdPostId) {
-        console.warn(
-          `[Schedule] Non-critical error after creating post ${createdPostId} for trigger ${triggerId}. Marking workflow successful.`,
-          { error }
-        );
-        return { success: true, triggerId, postId: createdPostId };
       }
 
       const autumnClient = autumn;

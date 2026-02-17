@@ -47,14 +47,25 @@ export function buildToolSet(params: BuildToolSetParams): ToolSet {
   );
 
   if (hasGitHub) {
+    const allowedIntegrationIds = Array.from(
+      new Set(
+        validatedIntegrations
+          .filter((integration) => integration.type === "github")
+          .map((integration) => integration.id)
+      )
+    );
+
     tools.getPullRequests = createGetPullRequestsTool({
       organizationId,
+      allowedIntegrationIds,
     });
     tools.getReleaseByTag = createGetReleaseByTagTool({
       organizationId,
+      allowedIntegrationIds,
     });
     tools.getCommitsByTimeframe = createGetCommitsByTimeframeTool({
       organizationId,
+      allowedIntegrationIds,
     });
 
     const repos = getGitHubRepoList(validatedIntegrations);
