@@ -5,6 +5,7 @@ export interface EditMarkdownContext {
 
 export interface GitHubToolsAccessConfig {
   organizationId?: string;
+  allowedIntegrationIds?: string[];
 }
 
 export interface ErrorWithStatus {

@@ -146,6 +146,15 @@ function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
   >();
 
   return async (integrationId: string) => {
+    // Validate integrationId against allowlist if provided
+    if (config?.allowedIntegrationIds && config.allowedIntegrationIds.length > 0) {
+      if (!config.allowedIntegrationIds.includes(integrationId)) {
+        throw new Error(
+          `Repository access denied. Integration ID ${integrationId} is not in the allowed list.`
+        );
+      }
+    }
+
     let cached = cache.get(integrationId);
     if (!cached) {
       cached = getGitHubToolRepositoryContextByIntegrationId(integrationId, {

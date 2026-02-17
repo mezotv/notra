@@ -37,7 +37,7 @@ const changelogPromptByTone: Record<ToneProfile, () => string> = {
 export async function generateChangelog(
   options: ChangelogAgentOptions
 ): Promise<ChangelogAgentResult> {
-  const { organizationId, tone = "Conversational", promptInput } = options;
+  const { organizationId, repositories, tone = "Conversational", promptInput } = options;
 
   const model = wrapLanguageModel({
     model: withSupermemory(
@@ -54,6 +54,9 @@ export async function generateChangelog(
   const instructions = promptFactory();
   const prompt = getChangelogUserPrompt(promptInput);
 
+  // Extract allowed integration IDs from repositories
+  const allowedIntegrationIds = repositories.map((repo) => repo.integrationId);
+
   const agent = new ToolLoopAgent({
     model,
     output: Output.object({
@@ -62,12 +65,15 @@ export async function generateChangelog(
     tools: {
       getPullRequests: createGetPullRequestsTool({
         organizationId,
+        allowedIntegrationIds,
       }),
       getReleaseByTag: createGetReleaseByTagTool({
         organizationId,
+        allowedIntegrationIds,
       }),
       getCommitsByTimeframe: createGetCommitsByTimeframeTool({
         organizationId,
+        allowedIntegrationIds,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
