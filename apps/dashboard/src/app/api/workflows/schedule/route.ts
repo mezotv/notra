@@ -459,52 +459,71 @@ export const { POST } = serve<SchedulePayload>(
         }
       });
 
-      await context.run("send-notification-email", async () => {
-        try {
-          const notificationSettings =
-            await db.query.organizationNotificationSettings.findFirst({
-              where: eq(
-                organizationNotificationSettings.organizationId,
-                trigger.organizationId
-              ),
-            });
+      const notificationData = await context.run<{
+        enabled: boolean;
+        ownerEmails: string[];
+        organizationName: string;
+        organizationSlug: string;
+      }>("fetch-notification-data", async () => {
+        const notificationSettings =
+          await db.query.organizationNotificationSettings.findFirst({
+            where: eq(
+              organizationNotificationSettings.organizationId,
+              trigger.organizationId
+            ),
+          });
 
-          if (!notificationSettings?.scheduledContentCreation) {
-            return;
-          }
+        if (!notificationSettings?.scheduledContentCreation) {
+          return {
+            enabled: false,
+            ownerEmails: [],
+            organizationName: "",
+            organizationSlug: "",
+          };
+        }
 
+        const org = await db.query.organizations.findFirst({
+          where: eq(organizations.id, trigger.organizationId),
+          columns: { name: true, slug: true },
+        });
+
+        const ownerMemberships = await db.query.members.findMany({
+          where: and(
+            eq(members.organizationId, trigger.organizationId),
+            eq(members.role, "owner")
+          ),
+          with: { users: { columns: { email: true } } },
+        });
+
+        return {
+          enabled: true,
+          ownerEmails: ownerMemberships.map((m) => m.users.email),
+          organizationName: org?.name ?? "Your organization",
+          organizationSlug: org?.slug ?? "",
+        };
+      });
+
+      if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
+        await context.run("send-notification-emails", async () => {
           const resendApiKey = process.env.RESEND_API_KEY;
           if (!resendApiKey) {
             return;
           }
 
-          const org = await db.query.organizations.findFirst({
-            where: eq(organizations.id, trigger.organizationId),
-            columns: { name: true, slug: true },
-          });
-
-          const ownerMemberships = await db.query.members.findMany({
-            where: and(
-              eq(members.organizationId, trigger.organizationId),
-              eq(members.role, "owner")
-            ),
-            with: { users: { columns: { email: true } } },
-          });
-
           const resend = new Resend(resendApiKey);
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
-          const contentLink = `${baseUrl}/${org?.slug ?? ""}/content/${postId}`;
+          const contentLink = `${baseUrl}/${notificationData.organizationSlug}/content/${postId}`;
           const scheduleName = trigger.name.trim() || trigger.outputType;
           const subject = manual
             ? `New content created from ${scheduleName}`
             : `Your ${scheduleName} schedule created new content`;
 
           await Promise.allSettled(
-            ownerMemberships.map((membership) =>
+            notificationData.ownerEmails.map((email) =>
               sendScheduledContentCreatedEmail(resend, {
-                recipientEmail: membership.users.email,
-                organizationName: org?.name ?? "Your organization",
+                recipientEmail: email,
+                organizationName: notificationData.organizationName,
                 scheduleName,
                 contentTitle: content.title,
                 contentType: trigger.outputType,
@@ -513,21 +532,15 @@ export const { POST } = serve<SchedulePayload>(
               }).then((result) => {
                 if (result.error) {
                   console.error(
-                    `[Schedule] Failed to send notification to ${membership.users.email}:`,
+                    `[Schedule] Failed to send notification to ${email}:`,
                     result.error
                   );
                 }
               })
             )
           );
-        } catch (emailError) {
-          console.error("[Schedule] Failed to send notification emails", {
-            triggerId,
-            organizationId: trigger.organizationId,
-            error: emailError,
-          });
-        }
-      });
+        });
+      }
 
       if (process.env.NODE_ENV === "development") {
         console.log(

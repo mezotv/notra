@@ -69,37 +69,21 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     const { scheduledContentCreation } = validationResult.data;
 
-    const existing = await db.query.organizationNotificationSettings.findFirst({
-      where: eq(
-        organizationNotificationSettings.organizationId,
-        organizationId
-      ),
-    });
-
-    if (existing) {
-      await db
-        .update(organizationNotificationSettings)
-        .set({
-          scheduledContentCreation,
-          updatedAt: new Date(),
-        })
-        .where(
-          eq(organizationNotificationSettings.organizationId, organizationId)
-        );
-    } else {
-      await db.insert(organizationNotificationSettings).values({
+    const [updated] = await db
+      .insert(organizationNotificationSettings)
+      .values({
         id: crypto.randomUUID(),
         organizationId,
         scheduledContentCreation,
-      });
-    }
-
-    const updated = await db.query.organizationNotificationSettings.findFirst({
-      where: eq(
-        organizationNotificationSettings.organizationId,
-        organizationId
-      ),
-    });
+      })
+      .onConflictDoUpdate({
+        target: organizationNotificationSettings.organizationId,
+        set: {
+          scheduledContentCreation,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
 
     return NextResponse.json({ settings: updated });
   } catch {
