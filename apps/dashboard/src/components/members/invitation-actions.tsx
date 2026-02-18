@@ -177,9 +177,13 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
             >
               Cancel
             </ResponsiveDialogClose>
-            <Button disabled={isResending} onClick={handleResendInvitation}>
+            <ResponsiveDialogClose
+              disabled={isResending}
+              onClick={handleResendInvitation}
+              render={<Button />}
+            >
               {isResending ? "Resending..." : "Resend Invitation"}
-            </Button>
+            </ResponsiveDialogClose>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>

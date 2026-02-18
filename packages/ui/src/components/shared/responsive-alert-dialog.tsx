@@ -95,15 +95,21 @@ function ResponsiveAlertDialogHeader({
 }
 
 function ResponsiveAlertDialogFooter({
+  className,
   ...props
 }: React.ComponentProps<typeof AlertDialogFooter>) {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <SheetFooter {...props} />;
+    return (
+      <SheetFooter
+        className={cn("[&_[data-slot=button]]:justify-center", className)}
+        {...props}
+      />
+    );
   }
 
-  return <AlertDialogFooter {...props} />;
+  return <AlertDialogFooter className={className} {...props} />;
 }
 
 function ResponsiveAlertDialogTitle({

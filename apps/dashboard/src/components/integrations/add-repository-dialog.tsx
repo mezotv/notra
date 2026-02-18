@@ -336,16 +336,16 @@ export function AddRepositoryDialog({
             </ResponsiveDialogClose>
             <form.Subscribe selector={(state) => [state.canSubmit]}>
               {([canSubmit]) => (
-                <Button
+                <ResponsiveDialogClose
                   disabled={!canSubmit || mutation.isPending || loadingRepos}
                   onClick={(e) => {
                     e.preventDefault();
                     form.handleSubmit();
                   }}
-                  type="button"
+                  render={<Button type="button" />}
                 >
                   {mutation.isPending ? "Adding..." : "Add Repository"}
-                </Button>
+                </ResponsiveDialogClose>
               )}
             </form.Subscribe>
           </ResponsiveDialogFooter>

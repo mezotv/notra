@@ -99,15 +99,21 @@ function ResponsiveDialogHeader({
 }
 
 function ResponsiveDialogFooter({
+  className,
   ...props
 }: React.ComponentProps<typeof DialogFooter>) {
   const isMobile = useIsMobile();
 
   if (isMobile) {
-    return <SheetFooter {...props} />;
+    return (
+      <SheetFooter
+        className={cn("[&_[data-slot=button]]:justify-center", className)}
+        {...props}
+      />
+    );
   }
 
-  return <DialogFooter {...props} />;
+  return <DialogFooter className={className} {...props} />;
 }
 
 function ResponsiveDialogTitle({
