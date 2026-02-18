@@ -5,18 +5,23 @@ import {
   contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
+  members,
+  organizationNotificationSettings,
+  organizations,
   posts,
 } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import { Resend } from "resend";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
 import { autumn } from "@/lib/billing/autumn";
 import { trackScheduledContentCreated } from "@/lib/databuddy";
+import { sendScheduledContentCreatedEmail } from "@/lib/email/send";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
@@ -26,6 +31,7 @@ const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
 const schedulePayloadSchema = z.object({
   triggerId: z.string().min(1),
+  manual: z.boolean().optional().default(false),
 });
 
 type SchedulePayload = z.infer<typeof schedulePayloadSchema>;
@@ -142,7 +148,7 @@ export const { POST } = serve<SchedulePayload>(
       await context.cancel();
       return;
     }
-    const { triggerId } = parseResult.data;
+    const { triggerId, manual } = parseResult.data;
 
     // Step 1: Fetch trigger configuration
     const trigger = await context.run<TriggerData | null>(
@@ -449,6 +455,76 @@ export const { POST } = serve<SchedulePayload>(
             organizationId: trigger.organizationId,
             postId,
             error: trackingError,
+          });
+        }
+      });
+
+      await context.run("send-notification-email", async () => {
+        try {
+          const notificationSettings =
+            await db.query.organizationNotificationSettings.findFirst({
+              where: eq(
+                organizationNotificationSettings.organizationId,
+                trigger.organizationId
+              ),
+            });
+
+          if (!notificationSettings?.scheduledContentCreation) {
+            return;
+          }
+
+          const resendApiKey = process.env.RESEND_API_KEY;
+          if (!resendApiKey) {
+            return;
+          }
+
+          const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, trigger.organizationId),
+            columns: { name: true, slug: true },
+          });
+
+          const ownerMemberships = await db.query.members.findMany({
+            where: and(
+              eq(members.organizationId, trigger.organizationId),
+              eq(members.role, "owner")
+            ),
+            with: { users: { columns: { email: true } } },
+          });
+
+          const resend = new Resend(resendApiKey);
+          const baseUrl =
+            process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
+          const contentLink = `${baseUrl}/${org?.slug ?? ""}/content/${postId}`;
+          const scheduleName = trigger.name.trim() || trigger.outputType;
+          const subject = manual
+            ? `New content created from ${scheduleName}`
+            : `Your ${scheduleName} schedule created new content`;
+
+          await Promise.allSettled(
+            ownerMemberships.map((membership) =>
+              sendScheduledContentCreatedEmail(resend, {
+                recipientEmail: membership.users.email,
+                organizationName: org?.name ?? "Your organization",
+                scheduleName,
+                contentTitle: content.title,
+                contentType: trigger.outputType,
+                contentLink,
+                subject,
+              }).then((result) => {
+                if (result.error) {
+                  console.error(
+                    `[Schedule] Failed to send notification to ${membership.users.email}:`,
+                    result.error
+                  );
+                }
+              })
+            )
+          );
+        } catch (emailError) {
+          console.error("[Schedule] Failed to send notification emails", {
+            triggerId,
+            organizationId: trigger.organizationId,
+            error: emailError,
           });
         }
       });

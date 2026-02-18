@@ -48,6 +48,10 @@ export const QUERY_KEYS = {
     today: (organizationId: string) =>
       ["posts", organizationId, "today"] as const,
   },
+  NOTIFICATION_SETTINGS: {
+    settings: (organizationId: string) =>
+      ["notification-settings", organizationId] as const,
+  },
   ONBOARDING: {
     status: (organizationId: string) => ["onboarding", organizationId] as const,
   },

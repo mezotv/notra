@@ -7,6 +7,7 @@ import { withOrganizationAuth } from "@/lib/auth/organization";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
+import { triggerIdQuerySchema } from "@/schemas/api-params";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -22,14 +23,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const triggerId = searchParams.get("triggerId");
+    const queryResult = triggerIdQuerySchema.safeParse({
+      triggerId: searchParams.get("triggerId"),
+    });
 
-    if (!triggerId) {
+    if (!queryResult.success) {
       return NextResponse.json(
-        { error: "Trigger ID required" },
+        { error: "Validation failed", details: queryResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { triggerId } = queryResult.data;
 
     const trigger = await db.query.contentTriggers.findFirst({
       where: and(
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const workflowRunId = await triggerScheduleNow(triggerId);
+    const workflowRunId = await triggerScheduleNow(triggerId, { manual: true });
     const logRetentionDays = await checkLogRetention(organizationId);
 
     const scheduleName = trigger.name.trim() || trigger.outputType;

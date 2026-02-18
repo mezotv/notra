@@ -233,6 +233,7 @@ export async function sendScheduledContentCreatedEmail(
     contentTitle,
     contentType,
     contentLink,
+    subject,
   }: SendScheduledContentCreatedEmailProps
 ) {
   return sendWithRetry(
@@ -241,7 +242,7 @@ export async function sendScheduledContentCreatedEmail(
       from: EMAIL_CONFIG.from,
       replyTo: EMAIL_CONFIG.replyTo,
       to: recipientEmail,
-      subject: `Your ${scheduleName} schedule created new content`,
+      subject: subject ?? `Your ${scheduleName} schedule created new content`,
       react: ScheduledContentCreatedEmail({
         organizationName,
         scheduleName,

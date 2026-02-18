@@ -3,6 +3,7 @@
 import {
   AnalyticsUpIcon,
   CreditCardIcon,
+  Notification03Icon,
   Settings01Icon,
   UserCircleIcon,
   UserGroupIcon,
@@ -42,6 +43,11 @@ const organizationItems: NavSettingsItem[] = [
     label: "Members",
     url: "settings/members",
     icon: UserGroupIcon,
+  },
+  {
+    label: "Notifications",
+    url: "settings/notifications",
+    icon: Notification03Icon,
   },
   {
     label: "Billing",

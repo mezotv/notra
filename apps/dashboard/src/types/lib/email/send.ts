@@ -19,4 +19,5 @@ export interface SendScheduledContentCreatedEmailProps {
   contentTitle: string;
   contentType: string;
   contentLink: string;
+  subject?: string;
 }

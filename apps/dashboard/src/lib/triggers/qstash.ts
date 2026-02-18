@@ -82,7 +82,7 @@ export async function deleteQstashSchedule(scheduleId: string) {
 
 export async function triggerScheduleNow(
   triggerId: string,
-  options?: { delay?: WorkflowDelay }
+  options?: { delay?: WorkflowDelay; manual?: boolean }
 ) {
   const client = getWorkflowClient();
   const appUrl = getAppUrl();
@@ -91,7 +91,7 @@ export async function triggerScheduleNow(
 
   const result = await client.trigger({
     url: destination,
-    body: { triggerId },
+    body: { triggerId, ...(options?.manual && { manual: true }) },
     ...(options?.delay && { delay: options.delay }),
   });
 
