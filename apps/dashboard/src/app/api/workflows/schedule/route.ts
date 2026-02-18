@@ -507,6 +507,9 @@ export const { POST } = serve<SchedulePayload>(
         await context.run("send-notification-emails", async () => {
           const resendApiKey = process.env.RESEND_API_KEY;
           if (!resendApiKey) {
+            console.warn(
+              "[Schedule] Resend API key not configured, skipping notification emails"
+            );
             return;
           }
 
