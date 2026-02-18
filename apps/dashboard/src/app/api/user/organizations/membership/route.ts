@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
 import { deleteOrganizationFiles } from "@/lib/upload/cleanup";
@@ -31,9 +31,11 @@ export async function POST(request: NextRequest) {
     let shouldCleanupDeletedOrganization = false;
 
     const result = await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select "id" from "members" where "user_id" = ${user.id} for update`
-      );
+      await tx
+        .select({ id: members.id })
+        .from(members)
+        .where(eq(members.userId, user.id))
+        .for("update");
 
       const membership = await tx.query.members.findFirst({
         where: and(
