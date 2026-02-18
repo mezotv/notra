@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
 import { deleteOrganizationFiles } from "@/lib/upload/cleanup";
@@ -28,86 +28,99 @@ export async function POST(request: NextRequest) {
 
     const { organizationId, action } = validationResult.data;
 
-    const membership = await db.query.members.findFirst({
-      where: and(
-        eq(members.organizationId, organizationId),
-        eq(members.userId, user.id)
-      ),
-      columns: {
-        id: true,
-        role: true,
-      },
-    });
+    let shouldCleanupDeletedOrganization = false;
 
-    if (!membership) {
-      return NextResponse.json(
-        { error: "You are not a member of this organization" },
-        { status: 403 }
+    const result = await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select "id" from "members" where "user_id" = ${user.id} for update`
       );
-    }
 
-    const [membershipCountResult] = await db
-      .select({ count: count() })
-      .from(members)
-      .where(eq(members.userId, user.id));
+      const membership = await tx.query.members.findFirst({
+        where: and(
+          eq(members.organizationId, organizationId),
+          eq(members.userId, user.id)
+        ),
+        columns: {
+          id: true,
+          role: true,
+        },
+      });
 
-    const membershipCount = membershipCountResult?.count ?? 0;
-
-    if (membershipCount <= 1) {
-      return NextResponse.json(
-        { error: "You must keep at least one organization" },
-        { status: 400 }
-      );
-    }
-
-    if (action === "delete") {
-      if (membership.role !== "owner") {
+      if (!membership) {
         return NextResponse.json(
-          { error: "Only organization owners can delete organizations" },
+          { error: "You are not a member of this organization" },
           { status: 403 }
         );
       }
 
-      await db
-        .delete(organizations)
-        .where(eq(organizations.id, organizationId));
+      const [membershipCountResult] = await tx
+        .select({ count: count() })
+        .from(members)
+        .where(eq(members.userId, user.id));
 
+      const membershipCount = membershipCountResult?.count ?? 0;
+
+      if (membershipCount <= 1) {
+        return NextResponse.json(
+          { error: "You must keep at least one organization" },
+          { status: 400 }
+        );
+      }
+
+      if (action === "delete") {
+        if (membership.role !== "owner") {
+          return NextResponse.json(
+            { error: "Only organization owners can delete organizations" },
+            { status: 403 }
+          );
+        }
+
+        await tx
+          .delete(organizations)
+          .where(eq(organizations.id, organizationId));
+        shouldCleanupDeletedOrganization = true;
+
+        return NextResponse.json({
+          success: true,
+          action: "delete",
+        });
+      }
+
+      if (membership.role === "owner") {
+        return NextResponse.json(
+          {
+            error:
+              "Organization owners cannot leave directly. Delete the organization instead.",
+          },
+          { status: 400 }
+        );
+      }
+
+      await tx
+        .delete(members)
+        .where(
+          and(
+            eq(members.organizationId, organizationId),
+            eq(members.userId, user.id)
+          )
+        );
+
+      return NextResponse.json({
+        success: true,
+        action: "leave",
+      });
+    });
+
+    if (shouldCleanupDeletedOrganization) {
       await deleteOrganizationFiles(organizationId).catch((error) => {
         console.error(
           `[Delete Org] Failed to cleanup R2 files for ${organizationId}:`,
           error
         );
       });
-
-      return NextResponse.json({
-        success: true,
-        action: "delete",
-      });
     }
 
-    if (membership.role === "owner") {
-      return NextResponse.json(
-        {
-          error:
-            "Organization owners cannot leave directly. Delete the organization instead.",
-        },
-        { status: 400 }
-      );
-    }
-
-    await db
-      .delete(members)
-      .where(
-        and(
-          eq(members.organizationId, organizationId),
-          eq(members.userId, user.id)
-        )
-      );
-
-    return NextResponse.json({
-      success: true,
-      action: "leave",
-    });
+    return result;
   } catch (error) {
     console.error("Error processing organization membership action:", error);
     return NextResponse.json(
