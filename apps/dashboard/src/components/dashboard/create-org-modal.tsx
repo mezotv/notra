@@ -75,6 +75,9 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           }),
+          queryClient.invalidateQueries({
+            queryKey: ["owned-organizations"],
+          }),
         ]);
 
         toast.success("Organization created successfully");

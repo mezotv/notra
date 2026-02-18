@@ -62,6 +62,9 @@ export function OnboardingClient() {
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           }),
+          queryClient.invalidateQueries({
+            queryKey: ["owned-organizations"],
+          }),
         ]);
 
         toast.success("Organization created successfully");

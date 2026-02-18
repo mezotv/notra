@@ -3,17 +3,6 @@
 import { Logout02Icon, ViewIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ResponsiveAlertDialog,
-  ResponsiveAlertDialogAction,
-  ResponsiveAlertDialogCancel,
-  ResponsiveAlertDialogContent,
-  ResponsiveAlertDialogDescription,
-  ResponsiveAlertDialogFooter,
-  ResponsiveAlertDialogHeader,
-  ResponsiveAlertDialogTitle,
-  ResponsiveAlertDialogTrigger,
-} from "@notra/ui/components/shared/responsive-alert-dialog";
-import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -22,7 +11,7 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -31,7 +20,12 @@ import {
   type Organization,
   useOrganizationsContext,
 } from "@/components/providers/organization-provider";
+import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { authClient } from "@/lib/auth/client";
+import {
+  getOrganizationMembershipAction,
+  getOrganizationMembershipActionLabel,
+} from "@/lib/organizations/membership-action";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
@@ -42,7 +36,28 @@ export function OrganizationsSection() {
     useOrganizationsContext();
 
   const [isSwitching, setIsSwitching] = useState<string | null>(null);
-  const [isLeaving, setIsLeaving] = useState<string | null>(null);
+  const [isProcessingOrgAction, setIsProcessingOrgAction] = useState<
+    string | null
+  >(null);
+
+  const { data: ownedOrganizations = [] } = useQuery({
+    queryKey: ["owned-organizations"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/organizations");
+      if (!response.ok) {
+        throw new Error("Failed to fetch owned organizations");
+      }
+      const data = await response.json();
+      return (data.ownedOrganizations ?? []) as {
+        id: string;
+        memberCount: number;
+      }[];
+    },
+  });
+
+  const ownedOrganizationsById = new Map(
+    ownedOrganizations.map((org) => [org.id, org])
+  );
 
   async function switchOrganization(org: Organization) {
     if (org.slug === activeOrganization?.slug) {
@@ -76,25 +91,44 @@ export function OrganizationsSection() {
     }
   }
 
-  async function leaveOrganization(org: Organization) {
-    setIsLeaving(org.id);
+  async function removeOrganization(
+    org: Organization,
+    action: "leave" | "delete"
+  ) {
+    setIsProcessingOrgAction(org.id);
 
     try {
-      const { error } = await authClient.organization.leave({
-        organizationId: org.id,
+      const response = await fetch("/api/user/organizations/membership", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organizationId: org.id,
+          action,
+        }),
       });
 
-      if (error) {
-        toast.error(error.message || "Failed to leave organization");
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to update organization membership");
         return;
       }
 
-      toast.success(`Left ${org.name}`);
+      if (action === "delete") {
+        toast.success(`Deleted ${org.name}`);
+      } else {
+        toast.success(`Left ${org.name}`);
+      }
 
-      // Refresh organizations list and wait for fresh data
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.organizations,
       });
+      await queryClient.invalidateQueries({
+        queryKey: ["owned-organizations"],
+      });
+
       const freshOrgs = await queryClient.fetchQuery({
         queryKey: QUERY_KEYS.AUTH.organizations,
         queryFn: async () => {
@@ -117,10 +151,10 @@ export function OrganizationsSection() {
         }
       }
     } catch (error) {
-      toast.error("Failed to leave organization");
+      toast.error("Failed to update organization membership");
       console.error(error);
     } finally {
-      setIsLeaving(null);
+      setIsProcessingOrgAction(null);
     }
   }
 
@@ -157,13 +191,13 @@ export function OrganizationsSection() {
 
         <div className="space-y-3">
           {organizations.map((org) => {
-            // Determine if user can leave this org
-            // Users cannot leave if they are the owner
-            // This is a simplified check - in production you'd check the actual role
             const isActive = activeOrganization?.id === org.id;
-            // We'll show a badge indicating their role
-            // Note: We don't have the role directly from list, we'd need to enhance the API
-            // For now, we'll disable leave for single-member orgs
+            const ownedOrg = ownedOrganizationsById.get(org.id);
+            const isOwnedByCurrentUser = !!ownedOrg;
+            const hasOtherMembers = (ownedOrg?.memberCount ?? 0) > 1;
+            const action =
+              getOrganizationMembershipAction(isOwnedByCurrentUser);
+            const actionLabel = getOrganizationMembershipActionLabel(action);
 
             return (
               <div
@@ -217,49 +251,28 @@ export function OrganizationsSection() {
                   )}
 
                   {!isActive && organizations.length > 1 && (
-                    <ResponsiveAlertDialog>
-                      <ResponsiveAlertDialogTrigger
-                        render={
-                          <Button
-                            disabled={isLeaving === org.id}
-                            size="sm"
-                            variant="destructive"
-                          >
-                            {isLeaving === org.id ? (
-                              <LoaderCircle className="size-4 animate-spin" />
-                            ) : (
-                              <>
-                                <HugeiconsIcon icon={Logout02Icon} size={16} />
-                                Leave
-                              </>
-                            )}
-                          </Button>
-                        }
-                      />
-                      <ResponsiveAlertDialogContent>
-                        <ResponsiveAlertDialogHeader>
-                          <ResponsiveAlertDialogTitle>
-                            Leave {org.name}?
-                          </ResponsiveAlertDialogTitle>
-                          <ResponsiveAlertDialogDescription>
-                            You will lose access to this organization and all
-                            its content. You'll need to be invited again to
-                            rejoin.
-                          </ResponsiveAlertDialogDescription>
-                        </ResponsiveAlertDialogHeader>
-                        <ResponsiveAlertDialogFooter>
-                          <ResponsiveAlertDialogCancel>
-                            Cancel
-                          </ResponsiveAlertDialogCancel>
-                          <ResponsiveAlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => leaveOrganization(org)}
-                          >
-                            Leave Organization
-                          </ResponsiveAlertDialogAction>
-                        </ResponsiveAlertDialogFooter>
-                      </ResponsiveAlertDialogContent>
-                    </ResponsiveAlertDialog>
+                    <OrganizationMembershipActionDialog
+                      action={action}
+                      hasOtherMembers={hasOtherMembers}
+                      onConfirm={() => removeOrganization(org, action)}
+                      organizationName={org.name}
+                      trigger={
+                        <Button
+                          disabled={isProcessingOrgAction === org.id}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          {isProcessingOrgAction === org.id ? (
+                            <LoaderCircle className="size-4 animate-spin" />
+                          ) : (
+                            <>
+                              <HugeiconsIcon icon={Logout02Icon} size={16} />
+                              {actionLabel}
+                            </>
+                          )}
+                        </Button>
+                      }
+                    />
                   )}
                 </div>
               </div>

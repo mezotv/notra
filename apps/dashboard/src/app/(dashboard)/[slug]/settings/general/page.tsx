@@ -11,14 +11,19 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { authClient } from "@/lib/auth/client";
+import {
+  getOrganizationMembershipActionLabel,
+  type OrganizationMembershipAction,
+} from "@/lib/organizations/membership-action";
 import { uploadFile } from "@/lib/upload/client";
 import { organizationSlugSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
@@ -32,14 +37,112 @@ export default function GeneralSettingsPage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { getOrganization, activeOrganization } = useOrganizationsContext();
+  const { getOrganization, activeOrganization, organizations } =
+    useOrganizationsContext();
   const organization =
     activeOrganization?.slug === slug
       ? activeOrganization
       : getOrganization(slug);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isRemovingOrganization, setIsRemovingOrganization] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    data: ownedOrganizations = [],
+    isLoading: isLoadingOwnedOrganizations,
+  } = useQuery({
+    queryKey: ["owned-organizations"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/organizations");
+      if (!response.ok) {
+        throw new Error("Failed to fetch owned organizations");
+      }
+      const data = await response.json();
+      return (data.ownedOrganizations ?? []) as {
+        id: string;
+        memberCount: number;
+      }[];
+    },
+  });
+
+  const ownedOrganization = ownedOrganizations.find(
+    (ownedOrg) => ownedOrg.id === organization?.id
+  );
+  const hasOtherMembers = (ownedOrganization?.memberCount ?? 0) > 1;
+  const canDeleteOrganization =
+    !!ownedOrganization && organizations.length > 1 && !!organization;
+
+  async function handleOrganizationMembershipAction(
+    action: OrganizationMembershipAction
+  ) {
+    if (!organization) {
+      return;
+    }
+
+    setIsRemovingOrganization(true);
+
+    try {
+      const response = await fetch("/api/user/organizations/membership", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organizationId: organization.id,
+          action,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to update organization membership");
+        return;
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.AUTH.organizations,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["owned-organizations"],
+      });
+
+      const freshOrgs = await queryClient.fetchQuery({
+        queryKey: QUERY_KEYS.AUTH.organizations,
+        queryFn: async () => {
+          const result = await authClient.organization.list();
+          return result.data ?? [];
+        },
+      });
+
+      const firstOrg = freshOrgs[0];
+      if (!firstOrg) {
+        toast.error("You must keep at least one organization");
+        return;
+      }
+
+      await authClient.organization.setActive({
+        organizationId: firstOrg.id,
+      });
+      await setLastVisitedOrganization(firstOrg.slug);
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.AUTH.activeOrganization,
+      });
+
+      toast.success(
+        action === "delete"
+          ? `Deleted ${organization.name}`
+          : `Left ${organization.name}`
+      );
+      router.push(`/${firstOrg.slug}/settings/account`);
+    } catch (error) {
+      toast.error("Failed to update organization membership");
+      console.error(error);
+    } finally {
+      setIsRemovingOrganization(false);
+    }
+  }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -320,10 +423,48 @@ export default function GeneralSettingsPage({ params }: PageProps) {
                   Permanently delete this organization and all its data
                 </p>
               </div>
-              <Button disabled size="sm" variant="destructive">
-                Delete Organization
-              </Button>
+              {canDeleteOrganization ? (
+                <OrganizationMembershipActionDialog
+                  action="delete"
+                  hasOtherMembers={hasOtherMembers}
+                  onConfirm={() => handleOrganizationMembershipAction("delete")}
+                  organizationName={organization.name}
+                  trigger={
+                    <Button
+                      disabled={isRemovingOrganization}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      {isRemovingOrganization ? (
+                        <>
+                          <Loader2Icon className="size-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        `${getOrganizationMembershipActionLabel("delete")} Organization`
+                      )}
+                    </Button>
+                  }
+                />
+              ) : (
+                <Button disabled size="sm" variant="destructive">
+                  Delete Organization
+                </Button>
+              )}
             </div>
+            {!isLoadingOwnedOrganizations && !ownedOrganization && (
+              <p className="text-muted-foreground text-xs">
+                Only organization owners can delete this organization.
+              </p>
+            )}
+            {!isLoadingOwnedOrganizations &&
+              ownedOrganization &&
+              organizations.length <= 1 && (
+                <p className="text-muted-foreground text-xs">
+                  You need at least one organization. Create another before
+                  deleting this one.
+                </p>
+              )}
           </div>
         </TitleCard>
       </div>
