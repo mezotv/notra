@@ -89,7 +89,7 @@ export function AddIntegrationDialog({
       internalOpen: false,
       createdIntegration: null,
       showWebhookDialog: false,
-      initializedBranchRepos: new Set(),
+      initializedBranchRepos: new Set<string>(),
       probeStatus: "idle",
       tokenOpen: false,
       repoInfo: null,
@@ -115,7 +115,7 @@ export function AddIntegrationDialog({
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen) {
-        setState({ initializedBranchRepos: new Set() });
+        setState({ initializedBranchRepos: new Set<string>() });
       }
     },
     [setOpen]
@@ -261,7 +261,6 @@ export function AddIntegrationDialog({
       mutation.mutate(validationResult.data);
     },
   });
-
 
   if (!organizationId) {
     return null;
@@ -470,7 +469,9 @@ export function AddIntegrationDialog({
                                         initializedBranchRepos
                                       );
                                       next.add(repoKey);
-                                      setState({ initializedBranchRepos: next });
+                                      setState({
+                                        initializedBranchRepos: next,
+                                      });
                                     }
                                   })
                                   .catch(() => {
