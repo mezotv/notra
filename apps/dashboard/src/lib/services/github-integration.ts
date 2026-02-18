@@ -114,10 +114,7 @@ async function findRepositoryInOrganization(
   return existing ?? null;
 }
 
-async function validateUserOrgAccess(
-  userId: string,
-  organizationId: string
-) {
+async function validateUserOrgAccess(userId: string, organizationId: string) {
   const member = await db.query.members.findFirst({
     where: and(
       eq(members.userId, userId),

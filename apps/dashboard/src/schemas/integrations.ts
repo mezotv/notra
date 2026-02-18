@@ -5,11 +5,7 @@ import { GITHUB_URL_PATTERNS } from "@/utils/constants";
 export const INPUT_INTEGRATION_TYPES = ["github", "slack", "linear"] as const;
 export type InputIntegrationType = (typeof INPUT_INTEGRATION_TYPES)[number];
 
-const OUTPUT_INTEGRATION_TYPES = [
-  "marble",
-  "webflow",
-  "framer",
-] as const;
+const OUTPUT_INTEGRATION_TYPES = ["marble", "webflow", "framer"] as const;
 
 export const INTEGRATION_TYPES = [
   ...INPUT_INTEGRATION_TYPES,

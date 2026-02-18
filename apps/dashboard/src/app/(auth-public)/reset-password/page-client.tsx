@@ -123,7 +123,9 @@ export function ResetPasswordClient({
         }
       })
       .catch(() => {
-        toast.error("Network error. Please check your connection and try again.");
+        toast.error(
+          "Network error. Please check your connection and try again."
+        );
       })
       .finally(() => {
         setIsLoading(false);

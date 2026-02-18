@@ -170,10 +170,7 @@ export default function PageClient({
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
 
-  const [editorState, dispatch] = useReducer(
-    editorReducer,
-    initialEditorState
-  );
+  const [editorState, dispatch] = useReducer(editorReducer, initialEditorState);
   const { editedMarkdown, originalMarkdown, selection, editorKey, context } =
     editorState;
 
@@ -239,12 +236,12 @@ export default function PageClient({
         }
       );
 
-      if (!response.ok) {
-        toast.error("Failed to save content");
-      } else {
+      if (response.ok) {
         dispatch({ type: "setOriginalMarkdown", markdown: editedMarkdown });
         originalMarkdownRef.current = editedMarkdown;
         toast.success("Content saved");
+      } else {
+        toast.error("Failed to save content");
       }
     } catch (err) {
       console.error("Error saving content:", err);

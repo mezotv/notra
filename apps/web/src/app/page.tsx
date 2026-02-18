@@ -28,8 +28,8 @@ function HeroSection() {
             into publish-ready content
           </div>
           <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-            Notra connects to GitHub, Linear and Slack to turn shipped work
-            into ready-to-publish content.
+            Notra connects to GitHub, Linear and Slack to turn shipped work into
+            ready-to-publish content.
           </div>
         </div>
       </div>
@@ -277,8 +277,8 @@ function FeaturesSection() {
                 Activity feed
               </h3>
               <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                Every PR, issue, and conversation lands in one organized timeline
-                your whole team can read.
+                Every PR, issue, and conversation lands in one organized
+                timeline your whole team can read.
               </p>
             </div>
             <div className="relative flex w-full items-end justify-center overflow-hidden rounded-lg pt-4">

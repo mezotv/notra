@@ -27,4 +27,3 @@ export const setLastVisitedOrganization = async (
     document.cookie = `${LAST_VISITED_ORGANIZATION_COOKIE}=${organizationSlug}; max-age=${maxAge}; path=/; SameSite=Lax${secureFlag}`;
   }
 };
-

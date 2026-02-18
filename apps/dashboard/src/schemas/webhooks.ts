@@ -8,4 +8,3 @@ export const webhookParamsWithRepoSchema = z.object({
   integrationId: z.string().min(1),
   repositoryId: z.string().min(1),
 });
-

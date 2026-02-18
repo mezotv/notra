@@ -26,4 +26,3 @@ export interface ContentEditorChatPromptParams {
   toolDescriptions?: string[];
   hasGitHubEnabled?: boolean;
 }
-

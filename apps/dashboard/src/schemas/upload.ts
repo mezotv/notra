@@ -58,7 +58,6 @@ const maxSizeByType = {
   content: MAX_CONTENT_FILE_SIZE,
 };
 
-
 export function validateUpload({
   type,
   fileType,

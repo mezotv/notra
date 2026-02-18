@@ -94,4 +94,3 @@ export function hasEnabledGitHubIntegration(
     (i) => i.type === "github" && i.enabled && i.repositories.length > 0
   );
 }
-

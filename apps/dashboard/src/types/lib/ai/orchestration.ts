@@ -15,7 +15,6 @@ export interface ValidatedIntegration {
   }>;
 }
 
-
 export interface TextSelection {
   text: string;
   startLine: number;

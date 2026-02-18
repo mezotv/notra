@@ -15,4 +15,3 @@ export const routingDecisionSchema = z.object({
     .string()
     .describe("Brief 1-2 sentence explanation of the routing decision"),
 });
-

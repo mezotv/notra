@@ -121,7 +121,9 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         })
         .then((result) => {
           if (result.error) {
-            toast.error(result.error.message ?? "Failed to update organization");
+            toast.error(
+              result.error.message ?? "Failed to update organization"
+            );
             return null;
           }
 

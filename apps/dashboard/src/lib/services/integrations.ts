@@ -59,4 +59,3 @@ export async function getIntegrationsByOrganization(
     count: integrations.length,
   };
 }
-

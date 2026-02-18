@@ -4,7 +4,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
-import { LazyMotion, domAnimation, m, useInView } from "motion/react";
+import { domAnimation, LazyMotion, m, useInView } from "motion/react";
 import { useRef } from "react";
 
 const allItems = [

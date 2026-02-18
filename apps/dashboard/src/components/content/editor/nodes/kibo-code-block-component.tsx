@@ -198,16 +198,6 @@ export default function KiboCodeBlockComponent({
     []
   );
 
-  const handleContainerKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        textareaRef.current?.focus();
-      }
-    },
-    []
-  );
-
   const CopyButtonIcon = isCopied ? CheckIcon : CopyIcon;
 
   return (
@@ -216,11 +206,7 @@ export default function KiboCodeBlockComponent({
         "relative my-4 overflow-hidden rounded-lg border bg-secondary/50",
         isSelected && "ring-2 ring-primary ring-offset-2"
       )}
-      onClick={() => textareaRef.current?.focus()}
-      onKeyDown={handleContainerKeyDown}
       ref={blockRef}
-      role="button"
-      tabIndex={0}
     >
       <div className="flex items-center justify-between border-b bg-secondary px-1 py-1">
         <Select onValueChange={handleLanguageChange} value={normalizedLanguage}>

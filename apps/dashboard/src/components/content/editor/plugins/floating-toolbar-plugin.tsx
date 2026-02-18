@@ -130,7 +130,6 @@ function FloatingToolbar({
     );
   }, [editor, updatePosition]);
 
-
   const handleLinkClick = useCallback(() => {
     if (isLink) {
       // Edit existing link - populate with current URL

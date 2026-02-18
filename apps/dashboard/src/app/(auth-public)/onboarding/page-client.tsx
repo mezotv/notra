@@ -29,9 +29,7 @@ export function OnboardingClient() {
       setIsCreating(true);
       let nextSlug: string | null = null;
 
-      const websiteUrl = value.website
-        ? `https://${value.website}`
-        : undefined;
+      const websiteUrl = value.website ? `https://${value.website}` : undefined;
 
       authClient.organization
         .create({

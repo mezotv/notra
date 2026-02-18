@@ -1,9 +1,7 @@
 import type { NextResponse } from "next/server";
 import type { getServerSession } from "@/lib/auth/session";
 
-type User = NonNullable<
-  Awaited<ReturnType<typeof getServerSession>>["user"]
->;
+type User = NonNullable<Awaited<ReturnType<typeof getServerSession>>["user"]>;
 
 interface OrganizationContext {
   user: User;

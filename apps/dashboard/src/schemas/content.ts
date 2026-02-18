@@ -22,7 +22,6 @@ export const sourceMetadataSchema = z
   .nullable()
   .optional();
 
-
 export const contentSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -60,7 +59,6 @@ export const editContentSchema = z.object({
   selectedText: z.string().optional(),
 });
 
-
 const contextItemSchema = z.object({
   type: z.literal("github-repo"),
   owner: z.string(),
@@ -83,8 +81,6 @@ export const chatRequestSchema = z.object({
   context: z.array(contextItemSchema).optional(),
 });
 
-
 export const updateContentSchema = z.object({
   markdown: z.string(),
 });
-
