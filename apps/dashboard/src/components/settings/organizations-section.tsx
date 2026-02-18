@@ -81,7 +81,7 @@ export function OrganizationsSection() {
       });
   }
 
-  async function leaveOrganization(org: Organization) {
+  function leaveOrganization(org: Organization) {
     setIsLeaving(org.id);
 
     authClient.organization

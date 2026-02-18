@@ -50,8 +50,17 @@ function FloatingToolbar({
 }: FloatingToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const focusTimeoutRef = useRef<number | null>(null);
   const [linkUrl, setLinkUrl] = useState("https://");
   const [isEditingExistingLink, setIsEditingExistingLink] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (focusTimeoutRef.current !== null) {
+        window.clearTimeout(focusTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const updatePosition = useCallback(() => {
     const selection = window.getSelection();
@@ -142,7 +151,13 @@ function FloatingToolbar({
       setIsEditingExistingLink(false);
     }
     setIsLinkEditMode(true);
-    setTimeout(() => linkInputRef.current?.focus(), 0);
+    if (focusTimeoutRef.current !== null) {
+      window.clearTimeout(focusTimeoutRef.current);
+    }
+    focusTimeoutRef.current = window.setTimeout(() => {
+      linkInputRef.current?.focus();
+      focusTimeoutRef.current = null;
+    }, 0);
   }, [editor, isLink, existingLinkUrl, setIsLinkEditMode]);
 
   const submitLink = useCallback(() => {
