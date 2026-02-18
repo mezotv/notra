@@ -67,7 +67,7 @@ export function OrganizationsSection() {
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });
 
-      router.push(`/${org.slug}`);
+      router.push(`/${org.slug}/settings/account`);
     } catch (error) {
       toast.error("Failed to switch organization");
       console.error(error);
@@ -113,7 +113,7 @@ export function OrganizationsSection() {
           await queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           });
-          router.push(`/${firstOrg.slug}`);
+          router.push(`/${firstOrg.slug}/settings/account`);
         }
       }
     } catch (error) {
@@ -216,7 +216,6 @@ export function OrganizationsSection() {
                     </Button>
                   )}
 
-                  {/* Only show leave button for non-active orgs to simplify UX */}
                   {!isActive && organizations.length > 1 && (
                     <ResponsiveAlertDialog>
                       <ResponsiveAlertDialogTrigger
@@ -224,7 +223,7 @@ export function OrganizationsSection() {
                           <Button
                             disabled={isLeaving === org.id}
                             size="sm"
-                            variant="ghost"
+                            variant="destructive"
                           >
                             {isLeaving === org.id ? (
                               <LoaderCircle className="size-4 animate-spin" />
