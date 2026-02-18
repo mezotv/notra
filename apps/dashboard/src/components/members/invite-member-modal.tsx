@@ -142,21 +142,17 @@ export function InviteMemberModal({
             >
               Cancel
             </ResponsiveDialogClose>
-            <ResponsiveDialogClose
+            <Button
+              className="w-full justify-center sm:w-auto"
               disabled={!canSubmit || isPending}
               onClick={(e) => {
                 e.preventDefault();
                 handleSubmit();
               }}
-              render={
-                <Button
-                  className="w-full justify-center sm:w-auto"
-                  type="button"
-                />
-              }
+              type="button"
             >
               {isPending ? "Sending..." : "Send Invitation"}
-            </ResponsiveDialogClose>
+            </Button>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>

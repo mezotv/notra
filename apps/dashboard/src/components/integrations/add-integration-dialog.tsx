@@ -487,16 +487,16 @@ export function AddIntegrationDialog({
               </ResponsiveDialogClose>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <ResponsiveDialogClose
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
                       form.handleSubmit();
                     }}
-                    render={<Button type="button" />}
+                    type="button"
                   >
                     {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </ResponsiveDialogClose>
+                  </Button>
                 )}
               </form.Subscribe>
             </ResponsiveDialogFooter>
