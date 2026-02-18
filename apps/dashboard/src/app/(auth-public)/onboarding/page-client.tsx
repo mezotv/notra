@@ -48,7 +48,7 @@ export function OnboardingClient() {
             return null;
           }
 
-          return Promise.all([
+          return Promise.allSettled([
             authClient.organization.setActive({
               organizationId: data.id,
             }),

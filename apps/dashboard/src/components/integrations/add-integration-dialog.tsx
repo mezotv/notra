@@ -110,18 +110,32 @@ export function AddIntegrationDialog({
     controlledOnOpenChange ??
     ((nextOpen: boolean) => setState({ internalOpen: nextOpen }));
   const queryClient = useQueryClient();
+  const initializedBranchReposRef = useRef(new Set<string>());
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen) {
-        setState({ initializedBranchRepos: new Set<string>() });
+        const next = new Set<string>();
+        initializedBranchReposRef.current = next;
+        setState({ initializedBranchRepos: next });
       }
     },
     [setOpen]
   );
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    initializedBranchReposRef.current = initializedBranchRepos;
+  }, [initializedBranchRepos]);
+
+  const addInitializedBranchRepo = useCallback((repoKey: string) => {
+    const next = new Set(initializedBranchReposRef.current);
+    next.add(repoKey);
+    initializedBranchReposRef.current = next;
+    setState({ initializedBranchRepos: next });
+  }, []);
 
   const probeRepo = useCallback(
     async (owner: string, repo: string, token?: string) => {
@@ -334,12 +348,10 @@ export function AddIntegrationDialog({
                           if (
                             isSameRepo &&
                             result?.defaultBranch &&
-                            !initializedBranchRepos.has(repoKey)
+                            !initializedBranchReposRef.current.has(repoKey)
                           ) {
                             form.setFieldValue("branch", result.defaultBranch);
-                            const next = new Set(initializedBranchRepos);
-                            next.add(repoKey);
-                            setState({ initializedBranchRepos: next });
+                            addInitializedBranchRepo(repoKey);
                           }
                         })
                         .catch(() => {
@@ -459,19 +471,15 @@ export function AddIntegrationDialog({
                                     );
                                     if (
                                       result?.defaultBranch &&
-                                      !initializedBranchRepos.has(repoKey)
+                                      !initializedBranchReposRef.current.has(
+                                        repoKey
+                                      )
                                     ) {
                                       form.setFieldValue(
                                         "branch",
                                         result.defaultBranch
                                       );
-                                      const next = new Set(
-                                        initializedBranchRepos
-                                      );
-                                      next.add(repoKey);
-                                      setState({
-                                        initializedBranchRepos: next,
-                                      });
+                                      addInitializedBranchRepo(repoKey);
                                     }
                                   })
                                   .catch(() => {

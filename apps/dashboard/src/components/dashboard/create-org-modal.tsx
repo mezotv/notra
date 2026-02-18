@@ -61,7 +61,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
             return null;
           }
 
-          return Promise.all([
+          return Promise.allSettled([
             authClient.organization.setActive({
               organizationId: data.id,
             }),
