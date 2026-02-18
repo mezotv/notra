@@ -1,17 +1,17 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -239,7 +239,7 @@ export function AddIntegrationDialog({
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (
-      <AlertDialogTrigger render={trigger as React.ReactElement} />
+      <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
 
   const handleWebhookDialogClose = (isOpen: boolean) => {
@@ -258,18 +258,18 @@ export function AddIntegrationDialog({
 
   return (
     <>
-      <AlertDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={setOpen} open={open}>
         {triggerElement}
-        <AlertDialogContent className="sm:max-w-[600px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl">
+        <ResponsiveDialogContent className="sm:max-w-[520px]">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="text-2xl">
               Add GitHub Integration
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            </ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Connect a GitHub repository to enable AI-powered outputs like
               changelogs, blog posts, and tweets.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -478,13 +478,16 @@ export function AddIntegrationDialog({
                 </CollapsibleContent>
               </Collapsible>
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={mutation.isPending}>
+            <ResponsiveDialogFooter>
+              <ResponsiveDialogClose
+                disabled={mutation.isPending}
+                render={<Button variant="outline" />}
+              >
                 Cancel
-              </AlertDialogCancel>
+              </ResponsiveDialogClose>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <AlertDialogAction
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -493,13 +496,13 @@ export function AddIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </AlertDialogAction>
+                  </Button>
                 )}
               </form.Subscribe>
-            </AlertDialogFooter>
+            </ResponsiveDialogFooter>
           </form>
-        </AlertDialogContent>
-      </AlertDialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
       {firstRepository && organizationId ? (
         <WebhookSetupDialog
           onOpenChange={handleWebhookDialogClose}

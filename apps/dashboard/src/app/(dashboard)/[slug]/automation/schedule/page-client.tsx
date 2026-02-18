@@ -10,15 +10,15 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -494,14 +494,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         )}
       </div>
 
-      <AlertDialog
+      <ResponsiveAlertDialog
         onOpenChange={(open) => !open && setDeleteTriggerId(null)}
         open={!!deleteTriggerId}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Delete schedule?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
               This will permanently delete{" "}
               {triggerToDelete ? (
                 <Tooltip>
@@ -524,13 +526,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 "this schedule"
               )}
               . This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={deleteMutation.isPending}>
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               disabled={deleteMutation.isPending}
               onClick={confirmDelete}
               variant="destructive"
@@ -543,10 +545,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               ) : (
                 "Delete"
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
 
       {editTrigger && (
         <AddTriggerDialog

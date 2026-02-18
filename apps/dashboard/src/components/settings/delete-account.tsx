@@ -3,16 +3,16 @@
 import { Alert01Icon, Building06Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+  ResponsiveAlertDialogTrigger,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import {
   Avatar,
   AvatarFallback,
@@ -167,20 +167,25 @@ export function DeleteAccountSection() {
           with caution.
         </p>
         <div className="flex justify-end">
-          <AlertDialog onOpenChange={handleOpenChange} open={isDialogOpen}>
-            <AlertDialogTrigger
+          <ResponsiveAlertDialog
+            onOpenChange={handleOpenChange}
+            open={isDialogOpen}
+          >
+            <ResponsiveAlertDialogTrigger
               render={
                 <Button variant="destructive">Delete Personal Account</Button>
               }
             />
-            <AlertDialogContent className="max-w-lg">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Account</AlertDialogTitle>
-                <AlertDialogDescription>
+            <ResponsiveAlertDialogContent className="max-w-lg">
+              <ResponsiveAlertDialogHeader>
+                <ResponsiveAlertDialogTitle>
+                  Delete Account
+                </ResponsiveAlertDialogTitle>
+                <ResponsiveAlertDialogDescription>
                   You're about to delete your account. This action cannot be
                   undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
+                </ResponsiveAlertDialogDescription>
+              </ResponsiveAlertDialogHeader>
 
               {isLoadingOrgs ? (
                 <div className="space-y-3 py-4">
@@ -321,11 +326,11 @@ export function DeleteAccountSection() {
                 </div>
               )}
 
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={isDeleting}>
+              <ResponsiveAlertDialogFooter>
+                <ResponsiveAlertDialogCancel disabled={isDeleting}>
                   Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
+                </ResponsiveAlertDialogCancel>
+                <ResponsiveAlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   disabled={isDeleting || isLoadingOrgs || !canProceed}
                   onClick={handleDeleteAccount}
@@ -338,10 +343,10 @@ export function DeleteAccountSection() {
                   ) : (
                     "Delete Account"
                   )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </ResponsiveAlertDialogAction>
+              </ResponsiveAlertDialogFooter>
+            </ResponsiveAlertDialogContent>
+          </ResponsiveAlertDialog>
         </div>
       </div>
     </TitleCard>

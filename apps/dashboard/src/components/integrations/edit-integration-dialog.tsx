@@ -1,16 +1,16 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
+import { Button } from "@notra/ui/components/ui/button";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -109,22 +109,22 @@ export function EditIntegrationDialog({
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (
-      <AlertDialogTrigger render={trigger as React.ReactElement} />
+      <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
 
   return (
     <>
       {triggerElement}
-      <AlertDialog onOpenChange={setOpen} open={open}>
-        <AlertDialogContent className="sm:max-w-[500px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl">
+      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+        <ResponsiveDialogContent className="sm:max-w-[500px]">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="text-2xl">
               Edit Integration
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            </ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Update your GitHub integration settings
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -197,13 +197,16 @@ export function EditIntegrationDialog({
                 </form.Field>
               ) : null}
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={mutation.isPending}>
+            <ResponsiveDialogFooter>
+              <ResponsiveDialogClose
+                disabled={mutation.isPending}
+                render={<Button variant="outline" />}
+              >
                 Cancel
-              </AlertDialogCancel>
+              </ResponsiveDialogClose>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <AlertDialogAction
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -212,13 +215,13 @@ export function EditIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Saving..." : "Save Changes"}
-                  </AlertDialogAction>
+                  </Button>
                 )}
               </form.Subscribe>
-            </AlertDialogFooter>
+            </ResponsiveDialogFooter>
           </form>
-        </AlertDialogContent>
-      </AlertDialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </>
   );
 }

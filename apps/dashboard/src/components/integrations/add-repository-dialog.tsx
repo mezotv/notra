@@ -1,16 +1,15 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
@@ -244,25 +243,25 @@ export function AddRepositoryDialog({
   });
 
   return (
-    <AlertDialog onOpenChange={setOpen} open={open}>
+    <ResponsiveDialog onOpenChange={setOpen} open={open}>
       {trigger !== undefined && isValidElement(trigger) ? (
-        <AlertDialogTrigger render={trigger as React.ReactElement} />
+        <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
       ) : (
-        <AlertDialogTrigger>
+        <ResponsiveDialogTrigger>
           <Button size="sm" variant="outline">
             Add Repository
           </Button>
-        </AlertDialogTrigger>
+        </ResponsiveDialogTrigger>
       )}
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Add Repository</AlertDialogTitle>
-          <AlertDialogDescription>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Add Repository</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             {availableRepos.length > 0
               ? "Select a repository from your GitHub account to enable integrations."
               : "Enter a repository in the format owner/repo (e.g., facebook/react) or paste a GitHub URL. For private repositories, ensure your integration has a valid access token."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -328,13 +327,16 @@ export function AddRepositoryDialog({
               }}
             </form.Field>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={mutation.isPending}>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose
+              disabled={mutation.isPending}
+              render={<Button variant="outline" />}
+            >
               Cancel
-            </AlertDialogCancel>
+            </ResponsiveDialogClose>
             <form.Subscribe selector={(state) => [state.canSubmit]}>
               {([canSubmit]) => (
-                <AlertDialogAction
+                <Button
                   disabled={!canSubmit || mutation.isPending || loadingRepos}
                   onClick={(e) => {
                     e.preventDefault();
@@ -343,12 +345,12 @@ export function AddRepositoryDialog({
                   type="button"
                 >
                   {mutation.isPending ? "Adding..." : "Add Repository"}
-                </AlertDialogAction>
+                </Button>
               )}
             </form.Subscribe>
-          </AlertDialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

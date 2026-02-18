@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
@@ -246,22 +246,22 @@ export function InstalledIntegrationCard({
         </p>
       ) : null}
       <p className="text-muted-foreground text-sm">{repositoryText}</p>
-      <AlertDialog
+      <ResponsiveAlertDialog
         onOpenChange={setIsDeleteDialogOpen}
         open={isDeleteDialogOpen}
       >
-        <AlertDialogContent className="sm:max-w-[520px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg">
+        <ResponsiveAlertDialogContent className="sm:max-w-[520px]">
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle className="text-lg">
               Delete {integration.displayName}?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
               This action permanently removes the integration and all connected
               metadata. Type{" "}
               <span className="font-semibold">{deleteConfirmationText}</span> to
               confirm.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
           <div className="space-y-2">
             <Input
               aria-label="Confirm integration deletion"
@@ -274,8 +274,8 @@ export function InstalledIntegrationCard({
               Deletion is permanent and cannot be undone.
             </p>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel
               disabled={deleteMutation.isPending}
               onClick={(event) => {
                 event.stopPropagation();
@@ -283,8 +283,8 @@ export function InstalledIntegrationCard({
               }}
             >
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               disabled={deleteMutation.isPending || !isDeleteConfirmMatch}
               onClick={(event) => {
                 event.preventDefault();
@@ -295,10 +295,10 @@ export function InstalledIntegrationCard({
               variant="destructive"
             >
               {deleteMutation.isPending ? "Deleting..." : "Delete integration"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
     </TitleCard>
   );
 }

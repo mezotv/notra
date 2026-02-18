@@ -3,16 +3,16 @@
 import { Logout02Icon, ViewIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+  ResponsiveAlertDialogTrigger,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import {
   Avatar,
   AvatarFallback,
@@ -218,8 +218,8 @@ export function OrganizationsSection() {
 
                   {/* Only show leave button for non-active orgs to simplify UX */}
                   {!isActive && organizations.length > 1 && (
-                    <AlertDialog>
-                      <AlertDialogTrigger
+                    <ResponsiveAlertDialog>
+                      <ResponsiveAlertDialogTrigger
                         render={
                           <Button
                             disabled={isLeaving === org.id}
@@ -237,26 +237,30 @@ export function OrganizationsSection() {
                           </Button>
                         }
                       />
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Leave {org.name}?</AlertDialogTitle>
-                          <AlertDialogDescription>
+                      <ResponsiveAlertDialogContent>
+                        <ResponsiveAlertDialogHeader>
+                          <ResponsiveAlertDialogTitle>
+                            Leave {org.name}?
+                          </ResponsiveAlertDialogTitle>
+                          <ResponsiveAlertDialogDescription>
                             You will lose access to this organization and all
                             its content. You'll need to be invited again to
                             rejoin.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
+                          </ResponsiveAlertDialogDescription>
+                        </ResponsiveAlertDialogHeader>
+                        <ResponsiveAlertDialogFooter>
+                          <ResponsiveAlertDialogCancel>
+                            Cancel
+                          </ResponsiveAlertDialogCancel>
+                          <ResponsiveAlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             onClick={() => leaveOrganization(org)}
                           >
                             Leave Organization
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          </ResponsiveAlertDialogAction>
+                        </ResponsiveAlertDialogFooter>
+                      </ResponsiveAlertDialogContent>
+                    </ResponsiveAlertDialog>
                   )}
                 </div>
               </div>
