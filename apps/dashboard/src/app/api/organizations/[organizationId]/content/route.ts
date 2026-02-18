@@ -3,11 +3,9 @@ import { posts } from "@notra/db/schema";
 import { and, desc, eq, gte, type InferSelectModel, lt, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { contentListQuerySchema } from "@/schemas/api-params";
 
 type Post = InferSelectModel<typeof posts>;
-
-const DEFAULT_LIMIT = 12;
-const MAX_LIMIT = 100;
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -70,17 +68,22 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const cursor = searchParams.get("cursor");
-    const limitParam = searchParams.get("limit");
-    const dateParam = searchParams.get("date");
-    const parsedLimit = limitParam
-      ? Number.parseInt(limitParam, 10)
-      : DEFAULT_LIMIT;
-    const limit = Number.isNaN(parsedLimit)
-      ? DEFAULT_LIMIT
-      : Math.min(Math.max(1, parsedLimit), MAX_LIMIT);
+    const queryResult = contentListQuerySchema.safeParse({
+      cursor: searchParams.get("cursor") ?? undefined,
+      limit: searchParams.get("limit") ?? undefined,
+      date: searchParams.get("date") ?? undefined,
+    });
 
-    const dateRange = getDateRange(dateParam);
+    if (!queryResult.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: queryResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { cursor, limit, date: dateParam } = queryResult.data;
+
+    const dateRange = getDateRange(dateParam ?? null);
 
     if (dateParam && !dateRange) {
       return NextResponse.json({ error: "Invalid date" }, { status: 400 });

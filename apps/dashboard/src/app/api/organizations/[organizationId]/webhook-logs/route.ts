@@ -2,13 +2,12 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { listWebhookLogs } from "@/lib/webhooks/logging";
+import { webhookLogsQuerySchema } from "@/schemas/api-params";
 import type { Log, LogsResponse } from "@/types/lib/webhooks/webhooks";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
 }
-
-const PAGE_SIZE_DEFAULT = 10;
 
 function paginateLogs(logs: Log[], page: number, pageSize: number) {
   const startIndex = (page - 1) * pageSize;
@@ -26,28 +25,26 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = Math.max(
-      1,
-      Number.parseInt(searchParams.get("page") || "1", 10)
-    );
-    const pageSize = Math.min(
-      100,
-      Math.max(
-        1,
-        Number.parseInt(
-          searchParams.get("pageSize") || `${PAGE_SIZE_DEFAULT}`,
-          10
-        )
-      )
-    );
+    const queryResult = webhookLogsQuerySchema.safeParse({
+      page: searchParams.get("page") ?? undefined,
+      pageSize: searchParams.get("pageSize") ?? undefined,
+      integrationType: searchParams.get("integrationType") ?? undefined,
+      integrationId: searchParams.get("integrationId"),
+    });
 
-    const integrationType = searchParams.get("integrationType") || "github";
-    const integrationId = searchParams.get("integrationId");
+    if (!queryResult.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: queryResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const { page, pageSize, integrationType, integrationId } = queryResult.data;
 
     const logs = await listWebhookLogs(
       organizationId,
-      integrationType as Log["integrationType"],
-      integrationId === "all" ? null : integrationId
+      integrationType,
+      integrationId === "all" ? null : (integrationId ?? null)
     );
 
     const paginatedLogs = paginateLogs(logs, page, pageSize);

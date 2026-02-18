@@ -4,17 +4,9 @@ import { and, eq, ne } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
 import { deleteOrganizationFiles, deleteUserFiles } from "@/lib/upload/cleanup";
+import { deleteWithTransfersSchema } from "@/schemas/api-params";
 
 export const dynamic = "force-dynamic";
-
-interface TransferAction {
-  orgId: string;
-  action: "transfer" | "delete";
-}
-
-interface DeleteWithTransfersRequest {
-  transfers: TransferAction[];
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,15 +16,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await request.json()) as DeleteWithTransfersRequest;
-    const { transfers } = body;
+    const body = await request.json();
+    const validationResult = deleteWithTransfersSchema.safeParse(body);
 
-    if (!(transfers && Array.isArray(transfers))) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Validation failed", details: validationResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { transfers } = validationResult.data;
 
     const organizationsToCleanup: string[] = [];
 

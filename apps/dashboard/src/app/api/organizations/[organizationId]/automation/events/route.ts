@@ -7,6 +7,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { deleteQstashSchedule } from "@/lib/triggers/qstash";
+import { triggerIdQuerySchema } from "@/schemas/api-params";
 import { configureTriggerBodySchema } from "@/schemas/integrations";
 import type { Trigger } from "@/types/lib/triggers/triggers";
 
@@ -196,13 +197,18 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const triggerId = searchParams.get("triggerId");
-    if (!triggerId) {
+    const queryResult = triggerIdQuerySchema.safeParse({
+      triggerId: searchParams.get("triggerId"),
+    });
+
+    if (!queryResult.success) {
       return NextResponse.json(
-        { error: "Trigger ID required" },
+        { error: "Validation failed", details: queryResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { triggerId } = queryResult.data;
 
     const body = await request.json();
     const bodyValidation = configureTriggerBodySchema.safeParse(body);
@@ -300,13 +306,18 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     }
 
     const { searchParams } = new URL(request.url);
-    const triggerId = searchParams.get("triggerId");
-    if (!triggerId) {
+    const queryResult = triggerIdQuerySchema.safeParse({
+      triggerId: searchParams.get("triggerId"),
+    });
+
+    if (!queryResult.success) {
       return NextResponse.json(
-        { error: "Trigger ID required" },
+        { error: "Validation failed", details: queryResult.error.issues },
         { status: 400 }
       );
     }
+
+    const { triggerId } = queryResult.data;
 
     const existing = await db.query.contentTriggers.findFirst({
       where: and(
