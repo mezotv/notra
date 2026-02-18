@@ -57,7 +57,7 @@ export default function ChangelogOverviewPage() {
     <>
       <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4 self-center">
         <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-          Example Changelogs<span className="text-primary">.</span>
+          Example <span className="text-primary">Changelogs</span>
         </h1>
         <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
           See how Notra transforms GitHub activity into professional

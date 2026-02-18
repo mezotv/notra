@@ -73,7 +73,7 @@ export default async function CompanyChangelogPage({ params }: PageProps) {
 
       <div className="mt-8 flex w-full max-w-[586px] flex-col items-center gap-4 self-center">
         <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-          {company.name} Changelog<span className="text-primary">.</span>
+          {company.name} <span className="text-primary">Changelog</span>
         </h1>
         <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
           Changelog entries generated from GitHub activity,

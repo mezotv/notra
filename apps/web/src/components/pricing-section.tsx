@@ -106,8 +106,8 @@ export default function PricingSection() {
       <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
         <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
           <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-            Pick the plan that fits your team
-            <span className="text-primary">.</span>
+            Pick the plan that fits{" "}
+            <span className="text-primary">your team</span>
           </div>
 
           <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">

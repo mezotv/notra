@@ -59,9 +59,9 @@ export default function FAQSection() {
       <div className="flex flex-1 flex-col items-start justify-start gap-6 px-4 py-16 md:px-12 md:py-20 lg:flex-row lg:gap-12">
         <div className="flex w-full flex-col items-start justify-center gap-4 lg:flex-1 lg:py-5">
           <div className="flex w-full flex-col justify-center text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:leading-[44px]">
-            Frequently Asked{" "}
-            <span className="whitespace-nowrap">
-              Questions<span className="text-primary">.</span>
+            Frequently{" "}
+            <span className="whitespace-nowrap text-primary">
+              Asked Questions
             </span>
           </div>
           <div className="w-full font-normal font-sans text-base text-muted-foreground leading-7">
