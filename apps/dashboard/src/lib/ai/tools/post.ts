@@ -47,6 +47,13 @@ export function createCreatePostTool(
         ),
     }),
     execute: async ({ title, markdown }) => {
+      if (result.postId) {
+        return {
+          postId: result.postId,
+          status: "already_created",
+          message: "Post already created. Use updatePost to modify it.",
+        };
+      }
       const id = nanoid();
       await db.insert(posts).values({
         id,
@@ -100,7 +107,7 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
         return { postId, status: "no_changes" };
       }
 
-      await db
+      const rows = await db
         .update(posts)
         .set(updates)
         .where(
@@ -108,7 +115,12 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
             eq(posts.id, postId),
             eq(posts.organizationId, config.organizationId)
           )
-        );
+        )
+        .returning({ id: posts.id });
+
+      if (rows.length === 0) {
+        return { postId, status: "not_found" };
+      }
 
       return { postId, status: "updated" };
     },
