@@ -1,5 +1,5 @@
 import { type Tool, tool } from "ai";
-import z from "zod";
+import * as z from "zod";
 import { createOctokit } from "@/lib/octokit";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
 import type {

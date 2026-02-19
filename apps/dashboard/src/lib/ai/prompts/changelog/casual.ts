@@ -52,6 +52,9 @@ export function getCasualChangelogPrompt(): string {
     - getCommitsByTimeframe (days, integrationId, page?): commit-level context.
     - listAvailableSkills: inspect available skills.
     - getSkillByName: load a specific skill.
+    - createPost (title, markdown): saves the finished changelog as a post. Content type and source repositories are set automatically.
+    - updatePost (postId, title?, markdown?): revises an already-created post.
+    - viewPost (postId): retrieves a post for review before updating.
 
     Tool usage guidance:
     - Use getPullRequests when PR descriptions are unclear or incomplete.
@@ -63,6 +66,8 @@ export function getCasualChangelogPrompt(): string {
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
+    - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
+    - If you need to revise after creating, call viewPost to review and updatePost to make changes.
     </rules>
 
     <examples>
@@ -121,11 +126,11 @@ export function getCasualChangelogPrompt(): string {
 
     <the-ask>
     Generate the changelog now.
-    Return structured output that matches the schema with two fields:
+    When your content is finalized, call the createPost tool with:
     - title: plain text, max 120 characters, no markdown
-    - markdown: markdown/MDX body only (do not include the title as a heading)
+    - markdown: the full changelog content body as markdown/MDX, without the title heading
 
-    The markdown field must:
+    The markdown must:
     - Start with the Summary paragraph (strictly 120-180 words)
     - Not include a "## Summary" heading
     - Next heading must be: ## Highlights
@@ -142,13 +147,7 @@ export function getCasualChangelogPrompt(): string {
     - PR entries in this exact format:
       - **[Descriptive Title]** [#\${number}](https://github.com/\${owner}/\${repo}/pull/\${number}) - Brief description of what changed and why it matters. (Author: [@\${author}](https://github.com/\${author}/))
 
-    CRITICAL OUTPUT FORMAT (repeat):
-    - Your entire response must be a single JSON object matching this schema exactly: {"title": string, "markdown": string}
-    - Output ONLY the JSON object. No prose, no markdown, no code fences.
-    - Use exactly these two keys: "title" and "markdown". Do not include any other keys.
-    - Both values must be strings (not null, not arrays).
-    - JSON must be valid: double quotes, no trailing commas.
-    - IMPORTANT: JSON strings cannot contain raw newlines. Encode line breaks in "markdown" using \\n.
+    CRITICAL: You MUST call createPost to save the changelog. Do not return the content as text output.
     </the-ask>
 
     <thinking-instructions>

@@ -1,13 +1,5 @@
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
-import {
-  extractJsonMiddleware,
-  NoObjectGeneratedError,
-  Output,
-  parsePartialJson,
-  stepCountIs,
-  ToolLoopAgent,
-  wrapLanguageModel,
-} from "ai";
+import { stepCountIs, ToolLoopAgent } from "ai";
 import { gateway } from "@/lib/ai/gateway";
 import { getCasualChangelogPrompt } from "@/lib/ai/prompts/changelog/casual";
 import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/conversational";
@@ -19,8 +11,13 @@ import {
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
 } from "@/lib/ai/tools/github";
+import {
+  createCreatePostTool,
+  createUpdatePostTool,
+  createViewPostTool,
+  type PostToolsResult,
+} from "@/lib/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import { changelogOutputSchema } from "@/schemas/ai/agents";
 import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
 import type {
   ChangelogAgentOptions,
@@ -42,6 +39,7 @@ export async function generateChangelog(
     repositories,
     tone = "Conversational",
     promptInput,
+    sourceMetadata,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -50,13 +48,10 @@ export async function generateChangelog(
     );
   }
 
-  const model = wrapLanguageModel({
-    model: withSupermemory(
-      gateway("anthropic/claude-haiku-4.5"),
-      organizationId
-    ),
-    middleware: extractJsonMiddleware(),
-  });
+  const model = withSupermemory(
+    gateway("anthropic/claude-haiku-4.5"),
+    organizationId
+  );
 
   const resolvedTone = getValidToneProfile(tone, "Conversational");
 
@@ -69,11 +64,15 @@ export async function generateChangelog(
     new Set(repositories.map((repo) => repo.integrationId))
   );
 
+  const postToolsResult: PostToolsResult = {};
+  const postToolsConfig = {
+    organizationId,
+    contentType: "changelog",
+    sourceMetadata,
+  };
+
   const agent = new ToolLoopAgent({
     model,
-    output: Output.object({
-      schema: changelogOutputSchema,
-    }),
     tools: {
       getPullRequests: createGetPullRequestsTool({
         organizationId,
@@ -89,28 +88,24 @@ export async function generateChangelog(
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
+      createPost: createCreatePostTool(postToolsConfig, postToolsResult),
+      updatePost: createUpdatePostTool(postToolsConfig),
+      viewPost: createViewPostTool(postToolsConfig),
     },
     instructions,
     stopWhen: stepCountIs(35),
   });
 
-  try {
-    const result = await agent.generate({ prompt });
-    return { output: result.output };
-  } catch (error) {
-    if (!NoObjectGeneratedError.isInstance(error) || !error.text) {
-      throw error;
-    }
-    const { state, value } = await parsePartialJson(error.text);
-    if (
-      (state === "repaired-parse" || state === "successful-parse") &&
-      value != null
-    ) {
-      const parsed = changelogOutputSchema.safeParse(value);
-      if (parsed.success) {
-        return { output: parsed.data };
-      }
-    }
-    throw error;
+  await agent.generate({ prompt });
+
+  if (!postToolsResult.postId) {
+    throw new Error(
+      "Changelog agent completed without creating a post. No createPost tool call was made."
+    );
   }
+
+  return {
+    postId: postToolsResult.postId,
+    title: postToolsResult.title ?? "",
+  };
 }

@@ -8,13 +8,11 @@ import {
   members,
   organizationNotificationSettings,
   organizations,
-  posts,
 } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
-import { customAlphabet } from "nanoid";
 import { Resend } from "resend";
 import { z } from "zod";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
@@ -26,8 +24,6 @@ import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 import { FEATURES } from "@/utils/constants";
-
-const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
 const schedulePayloadSchema = z.object({
   triggerId: z.string().min(1),
@@ -55,14 +51,10 @@ interface RepositoryData {
   defaultBranch: string | null;
 }
 
-interface GeneratedContent {
-  title: string;
-  markdown: string;
-}
-
 type ContentGenerationResult =
-  | { status: "ok"; content: GeneratedContent }
-  | { status: "rate_limited"; retryAfterSeconds?: number };
+  | { status: "ok"; postId: string; title: string }
+  | { status: "rate_limited"; retryAfterSeconds?: number }
+  | { status: "unsupported_output_type"; outputType: string };
 
 type BrandSettingsData = {
   toneProfile: string | null;
@@ -308,8 +300,22 @@ export const { POST } = serve<SchedulePayload>(
               .map((r) => `integrationId: ${r.id}`)
               .join(", ");
 
+            const sourceMetadata: PostSourceMetadata = {
+              triggerId: trigger.id,
+              triggerSourceType: trigger.sourceType,
+              repositories: repositories.map((r) => ({
+                owner: r.owner,
+                repo: r.repo,
+              })),
+              lookbackWindow,
+              lookbackRange: {
+                start: lookbackRange.start.toISOString(),
+                end: lookbackRange.end.toISOString(),
+              },
+            };
+
             try {
-              const { output } = await generateChangelog({
+              const { postId, title } = await generateChangelog({
                 organizationId: trigger.organizationId,
                 repositories: repositories.map((repository) => ({
                   integrationId: repository.id,
@@ -329,14 +335,13 @@ export const { POST } = serve<SchedulePayload>(
                   audience: brand?.audience ?? undefined,
                   customInstructions: brand?.customInstructions ?? null,
                 },
+                sourceMetadata,
               });
 
               return {
                 status: "ok",
-                content: {
-                  title: output.title,
-                  markdown: output.markdown,
-                },
+                postId,
+                title,
               };
             } catch (error) {
               if (isGitHubRateLimitError(error)) {
@@ -350,17 +355,14 @@ export const { POST } = serve<SchedulePayload>(
             }
           }
 
-          // For other output types, log and return placeholder
+          // For other output types, return a distinct status so we do not
+          // enter rate-limit retry flow.
           console.log(
             `[Schedule] Output type ${trigger.outputType} not fully implemented yet`
           );
-
           return {
-            status: "ok",
-            content: {
-              title: `${trigger.outputType} - ${new Date().toLocaleDateString()}`,
-              markdown: `*Automated ${trigger.outputType} generation is coming soon.*\n\nRepositories: ${repositories.map((r) => `${r.owner}/${r.repo}`).join(", ")}`,
-            },
+            status: "unsupported_output_type",
+            outputType: trigger.outputType,
           };
         }
       );
@@ -407,38 +409,43 @@ export const { POST } = serve<SchedulePayload>(
         return;
       }
 
-      const content = contentResult.content;
+      if (contentResult.status === "unsupported_output_type") {
+        const autumnClient = autumn;
+        if (aiCreditReservation.reserved && autumnClient) {
+          await context.run(
+            "refund-ai-credit-after-unsupported-output-type",
+            async () => {
+              const { error } = await autumnClient.track({
+                customer_id: trigger.organizationId,
+                feature_id: FEATURES.AI_CREDITS,
+                value: 0,
+              });
 
-      const postId = await context.run<string>("save-post", async () => {
-        const id = nanoid();
-        const lookbackRange = resolveLookbackRange(lookbackWindow);
+              if (error) {
+                console.error(
+                  "[Schedule] Failed to refund AI credit after unsupported output type",
+                  {
+                    triggerId,
+                    organizationId: trigger.organizationId,
+                    outputType: contentResult.outputType,
+                    error,
+                  }
+                );
+              }
+            }
+          );
+        }
 
-        const sourceMetadata: PostSourceMetadata = {
-          triggerId: trigger.id,
-          triggerSourceType: trigger.sourceType,
-          repositories: repositories.map((r) => ({
-            owner: r.owner,
-            repo: r.repo,
-          })),
-          lookbackWindow,
-          lookbackRange: {
-            start: lookbackRange.start.toISOString(),
-            end: lookbackRange.end.toISOString(),
-          },
-        };
+        console.warn(
+          `[Schedule] Output type ${contentResult.outputType} is not implemented for trigger ${triggerId}. Canceling without retry.`
+        );
 
-        await db.insert(posts).values({
-          id,
-          organizationId: trigger.organizationId,
-          title: content.title,
-          content: content.markdown,
-          markdown: content.markdown,
-          contentType: trigger.outputType,
-          sourceMetadata,
-        });
+        await context.cancel();
+        return;
+      }
 
-        return id;
-      });
+      const { postId, title: contentTitle } = contentResult;
+
       await context.run("track-content-created", async () => {
         try {
           await trackScheduledContentCreated({
@@ -528,7 +535,7 @@ export const { POST } = serve<SchedulePayload>(
                 recipientEmail: email,
                 organizationName: notificationData.organizationName,
                 scheduleName,
-                contentTitle: content.title,
+                contentTitle,
                 contentType: trigger.outputType,
                 contentLink,
                 organizationSlug: notificationData.organizationSlug,

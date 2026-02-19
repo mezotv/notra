@@ -1,9 +1,10 @@
-import type { ChangelogOutput } from "@/schemas/ai/agents";
+import type { PostSourceMetadata } from "@notra/db/schema";
 import type { ToneProfile } from "@/schemas/brand";
 import type { ChangelogTonePromptInput } from "./prompts";
 
 export interface ChangelogAgentResult {
-  output: ChangelogOutput;
+  postId: string;
+  title: string;
 }
 
 export interface ChangelogAgentOptions {
@@ -16,6 +17,7 @@ export interface ChangelogAgentOptions {
   }>;
   tone?: ToneProfile;
   promptInput: ChangelogTonePromptInput;
+  sourceMetadata?: PostSourceMetadata;
 }
 
 export interface ChatAgentContext {
