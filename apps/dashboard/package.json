@@ -47,6 +47,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.14",
     "@toolwind/corner-shape": "^0.0.8-3",
+    "@unkey/api": "^2.3.0",
     "@upstash/qstash": "2.9.0-rc",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",

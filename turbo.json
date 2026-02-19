@@ -32,7 +32,9 @@
     "CLOUDFLARE_PUBLIC_URL",
     "CLOUDFLARE_BUCKET_NAME",
     "AI_SDK_LOG_WARNINGS",
-    "DO_NOT_TRACK"
+    "DO_NOT_TRACK",
+    "UNKEY_ROOT_KEY",
+    "UNKEY_API_ID"
   ],
   "envMode": "strict",
   "tasks": {

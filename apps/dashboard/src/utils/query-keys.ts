@@ -55,4 +55,8 @@ export const QUERY_KEYS = {
   ONBOARDING: {
     status: (organizationId: string) => ["onboarding", organizationId] as const,
   },
+  API_KEYS: {
+    base: ["api-keys"] as const,
+    list: (organizationId: string) => ["api-keys", organizationId] as const,
+  },
 } as const;

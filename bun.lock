@@ -58,6 +58,7 @@
         "@tanstack/react-table": "^8.21.3",
         "@tanstack/react-virtual": "^3.13.14",
         "@toolwind/corner-shape": "^0.0.8-3",
+        "@unkey/api": "^2.3.0",
         "@upstash/qstash": "2.9.0-rc",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.35.8",
@@ -1082,6 +1083,8 @@
     "@types/webxr": ["@types/webxr@0.5.24", "", {}, "sha512-h8fgEd/DpoS9CBrjEQXR+dIDraopAEfu4wYVNY2tEPwk60stPWhvZMf4Foo5FakuQ7HFZoa8WceaWFervK2Ovg=="],
 
     "@ungap/structured-clone": ["@ungap/structured-clone@1.3.0", "", {}, "sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g=="],
+
+    "@unkey/api": ["@unkey/api@2.3.0", "", { "dependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-c+4eeitN75DR0dLsJo0CFJR1rEgQ1IFlN1pKFhVxCzjI6idn8yJT8/8x6MsRjYI+NiTAWDbHRxof44pVHmCDLw=="],
 
     "@upstash/core-analytics": ["@upstash/core-analytics@0.0.10", "", { "dependencies": { "@upstash/redis": "^1.28.3" } }, "sha512-7qJHGxpQgQr9/vmeS1PktEwvNAF7TI4iJDi8Pu2CFZ9YUGHZH4fOP5TfYlZ4aVxfopnELiE4BS4FBjyK7V1/xQ=="],
 

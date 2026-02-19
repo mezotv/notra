@@ -2,6 +2,7 @@
 
 import {
   CreditCardIcon,
+  Key01Icon,
   Notification03Icon,
   Settings01Icon,
   UserCircleIcon,
@@ -52,6 +53,11 @@ const organizationItems: NavSettingsItem[] = [
     label: "Billing & Usage",
     url: "billing",
     icon: CreditCardIcon,
+  },
+  {
+    label: "API Keys",
+    url: "billing/api-keys",
+    icon: Key01Icon,
   },
 ];
 
