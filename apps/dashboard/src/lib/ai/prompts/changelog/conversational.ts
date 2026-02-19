@@ -68,7 +68,7 @@ export function getConversationalChangelogPrompt(): string {
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
     - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
-    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), you MUST still call createPost with a brief summary stating that no changes were found for the period.
+    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, respond with a brief text explanation of why no changelog could be generated.
     </rules>
 
     <examples>
