@@ -26,7 +26,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     });
 
     return NextResponse.json({
-      settings: settings ?? { scheduledContentCreation: false },
+      settings: settings ?? {
+        scheduledContentCreation: false,
+        scheduledContentFailed: false,
+      },
     });
   } catch {
     return NextResponse.json(
@@ -67,21 +70,32 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { scheduledContentCreation } = validationResult.data;
+    const updates: Record<string, boolean | Date> = {
+      updatedAt: new Date(),
+    };
+
+    if (validationResult.data.scheduledContentCreation !== undefined) {
+      updates.scheduledContentCreation =
+        validationResult.data.scheduledContentCreation;
+    }
+    if (validationResult.data.scheduledContentFailed !== undefined) {
+      updates.scheduledContentFailed =
+        validationResult.data.scheduledContentFailed;
+    }
 
     const [updated] = await db
       .insert(organizationNotificationSettings)
       .values({
         id: crypto.randomUUID(),
         organizationId,
-        scheduledContentCreation,
+        scheduledContentCreation:
+          validationResult.data.scheduledContentCreation ?? false,
+        scheduledContentFailed:
+          validationResult.data.scheduledContentFailed ?? false,
       })
       .onConflictDoUpdate({
         target: organizationNotificationSettings.organizationId,
-        set: {
-          scheduledContentCreation,
-          updatedAt: new Date(),
-        },
+        set: updates,
       })
       .returning();
 

@@ -284,6 +284,9 @@ export const organizationNotificationSettings = pgTable(
     scheduledContentCreation: boolean("scheduled_content_creation")
       .default(false)
       .notNull(),
+    scheduledContentFailed: boolean("scheduled_content_failed")
+      .default(false)
+      .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

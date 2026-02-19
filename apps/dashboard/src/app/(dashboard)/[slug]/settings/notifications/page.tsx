@@ -18,6 +18,7 @@ interface PageProps {
 
 interface NotificationSettings {
   scheduledContentCreation: boolean;
+  scheduledContentFailed: boolean;
 }
 
 export default function NotificationsSettingsPage({ params }: PageProps) {
@@ -146,6 +147,24 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
                   id="scheduled-content-creation"
                   onCheckedChange={(checked) =>
                     updateSettings({ scheduledContentCreation: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="scheduled-content-failed">
+                    Scheduled content failures
+                  </Label>
+                  <p className="text-muted-foreground text-xs">
+                    Receive an email when scheduled content generation fails
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.scheduledContentFailed ?? false}
+                  disabled={!isOwner || isUpdating}
+                  id="scheduled-content-failed"
+                  onCheckedChange={(checked) =>
+                    updateSettings({ scheduledContentFailed: checked })
                   }
                 />
               </div>

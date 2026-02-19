@@ -509,7 +509,7 @@ export const { POST } = serve<SchedulePayload>(
               ),
             });
 
-          if (!notificationSettings?.scheduledContentCreation) {
+          if (!notificationSettings?.scheduledContentFailed) {
             return {
               enabled: false,
               ownerEmails: [],

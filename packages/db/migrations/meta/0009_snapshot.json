@@ -1,6 +1,6 @@
 {
-  "id": "b066c507-5d6d-4063-86ed-e3f138322bfa",
-  "prevId": "4882e729-760f-43d9-9e72-faf32c81e5d6",
+  "id": "8bb0ff03-1f3d-43b6-9aa5-1d6b231fc1cc",
+  "prevId": "b066c507-5d6d-4063-86ed-e3f138322bfa",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -845,6 +845,13 @@
         },
         "scheduled_content_creation": {
           "name": "scheduled_content_creation",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "scheduled_content_failed": {
+          "name": "scheduled_content_failed",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
