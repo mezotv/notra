@@ -54,7 +54,8 @@ interface RepositoryData {
 type ContentGenerationResult =
   | { status: "ok"; postId: string; title: string }
   | { status: "rate_limited"; retryAfterSeconds?: number }
-  | { status: "unsupported_output_type"; outputType: string };
+  | { status: "unsupported_output_type"; outputType: string }
+  | { status: "generation_failed"; reason: string };
 
 type BrandSettingsData = {
   toneProfile: string | null;
@@ -351,7 +352,10 @@ export const { POST } = serve<SchedulePayload>(
                 };
               }
 
-              throw error;
+              return {
+                status: "generation_failed",
+                reason: error instanceof Error ? error.message : String(error),
+              };
             }
           }
 
@@ -438,6 +442,41 @@ export const { POST } = serve<SchedulePayload>(
 
         console.warn(
           `[Schedule] Output type ${contentResult.outputType} is not implemented for trigger ${triggerId}. Canceling without retry.`
+        );
+
+        await context.cancel();
+        return;
+      }
+
+      if (contentResult.status === "generation_failed") {
+        const autumnClient = autumn;
+        if (aiCreditReservation.reserved && autumnClient) {
+          await context.run(
+            "refund-ai-credit-after-generation-failure",
+            async () => {
+              const { error } = await autumnClient.track({
+                customer_id: trigger.organizationId,
+                feature_id: FEATURES.AI_CREDITS,
+                value: 0,
+              });
+
+              if (error) {
+                console.error(
+                  "[Schedule] Failed to refund AI credit after generation failure",
+                  {
+                    triggerId,
+                    organizationId: trigger.organizationId,
+                    reason: contentResult.reason,
+                    error,
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        console.error(
+          `[Schedule] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
 
         await context.cancel();

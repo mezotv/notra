@@ -68,6 +68,7 @@ export function getCasualChangelogPrompt(): string {
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
     - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
+    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), you MUST still call createPost with a brief summary stating that no changes were found for the period.
     </rules>
 
     <examples>
