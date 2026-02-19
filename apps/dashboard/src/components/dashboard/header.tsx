@@ -14,6 +14,9 @@ import { usePathname } from "next/navigation";
 import { useId } from "react";
 
 const NON_ORG_PATHS: string[] = [];
+const SEGMENT_LABELS: Record<string, string> = {
+  billing: "Billing & Usage",
+};
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -34,8 +37,9 @@ export function SiteHeader() {
         <BreadcrumbLink
           render={
             <Link href={href}>
-              {segment.charAt(0).toUpperCase() +
-                segment.slice(1).replace(/-/g, " ")}
+              {SEGMENT_LABELS[segment] ??
+                segment.charAt(0).toUpperCase() +
+                  segment.slice(1).replace(/-/g, " ")}
             </Link>
           }
         />

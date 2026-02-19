@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AnalyticsUpIcon,
   CreditCardIcon,
   Notification03Icon,
   Settings01Icon,
@@ -50,14 +49,9 @@ const organizationItems: NavSettingsItem[] = [
     icon: Notification03Icon,
   },
   {
-    label: "Billing",
+    label: "Billing & Usage",
     url: "billing",
     icon: CreditCardIcon,
-  },
-  {
-    label: "Usage",
-    url: "billing/usage",
-    icon: AnalyticsUpIcon,
   },
 ];
 
