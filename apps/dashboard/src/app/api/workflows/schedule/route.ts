@@ -24,6 +24,7 @@ import {
   sendScheduledContentFailedEmail,
 } from "@/lib/email/send";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
+import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 import { FEATURES } from "@/utils/constants";
@@ -482,6 +483,18 @@ export const { POST } = serve<SchedulePayload>(
           `[Schedule] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
 
+        await context.run("log-generation-failure", async () => {
+          await appendWebhookLog({
+            organizationId: trigger.organizationId,
+            integrationId: triggerId,
+            integrationType: "schedule",
+            title: `Schedule "${trigger.name.trim() || trigger.outputType}" failed to generate content`,
+            status: "failed",
+            statusCode: null,
+            errorMessage: contentResult.reason,
+          });
+        });
+
         const failureNotificationData = await context.run<{
           enabled: boolean;
           ownerEmails: string[];
@@ -565,6 +578,18 @@ export const { POST } = serve<SchedulePayload>(
       }
 
       const { postId, title: contentTitle } = contentResult;
+
+      await context.run("log-generation-success", async () => {
+        await appendWebhookLog({
+          organizationId: trigger.organizationId,
+          integrationId: triggerId,
+          integrationType: "schedule",
+          title: `Schedule "${trigger.name.trim() || trigger.outputType}" created "${contentTitle}"`,
+          status: "success",
+          statusCode: null,
+          referenceId: postId,
+        });
+      });
 
       await context.run("track-content-created", async () => {
         try {

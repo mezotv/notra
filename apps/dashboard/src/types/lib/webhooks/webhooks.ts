@@ -35,7 +35,8 @@ export type IntegrationType =
   | "linear"
   | "slack"
   | "webhook"
-  | "manual";
+  | "manual"
+  | "schedule";
 
 export interface Log {
   id: string;
