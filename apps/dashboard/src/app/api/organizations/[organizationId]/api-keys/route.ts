@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
     const keysData = result.data ?? [];
     const keys = keysData.map((key) => {
-      const meta = (key.meta ?? {}) as Record<string, unknown>;
+      const meta = key.meta ?? {};
       return {
         keyId: key.keyId,
         name: key.name ?? "Unnamed",
@@ -46,8 +46,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         createdAt: key.createdAt,
         expires: key.expires ?? null,
         enabled: key.enabled,
-        permission: (meta.permission as string) ?? "api.read",
-        createdBy: (meta.createdBy as string) ?? null,
+        permission: (meta.permission) ?? "api.read",
+        createdBy: (meta.createdBy) ?? null,
       };
     });
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const body: unknown = await request.json();
+    const body = await request.json();
     const validation = createApiKeySchema.safeParse(body);
 
     if (!validation.success) {
