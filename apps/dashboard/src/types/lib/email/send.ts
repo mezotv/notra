@@ -12,6 +12,15 @@ export interface SendInviteEmailProps {
   inviteLink: string;
 }
 
+export interface SendScheduledContentFailedEmailProps {
+  recipientEmail: string;
+  organizationName: string;
+  organizationSlug: string;
+  scheduleName: string;
+  reason: string;
+  subject?: string;
+}
+
 export interface SendScheduledContentCreatedEmailProps {
   recipientEmail: string;
   organizationName: string;

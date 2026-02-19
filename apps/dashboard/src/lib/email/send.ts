@@ -3,6 +3,7 @@ import {
   InviteUserEmail,
   ResetPasswordEmail,
   ScheduledContentCreatedEmail,
+  ScheduledContentFailedEmail,
   VerifyUserEmail,
   WelcomeEmail,
 } from "@notra/email";
@@ -11,6 +12,7 @@ import type {
   EmailResult,
   SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
+  SendScheduledContentFailedEmailProps,
 } from "@/types/lib/email/send";
 
 // --- Retry & Idempotency ---
@@ -221,6 +223,40 @@ export async function sendWelcomeEmail(
       tags: [{ name: "category", value: "welcome" }],
     },
     `notra:welcome:${userEmail}`
+  );
+}
+
+export async function sendScheduledContentFailedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    scheduleName,
+    reason,
+    organizationSlug,
+    subject,
+  }: SendScheduledContentFailedEmailProps
+) {
+  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject:
+        subject ?? `Your ${scheduleName} schedule failed to generate content`,
+      react: ScheduledContentFailedEmail({
+        organizationName,
+        organizationSlug,
+        scheduleName,
+        reason,
+        settingsLink,
+      }),
+      tags: [{ name: "category", value: "schedule-content-failed" }],
+    },
+    `notra:schedule-content-failed:${recipientEmail}:${scheduleName}:${Date.now()}`
   );
 }
 
