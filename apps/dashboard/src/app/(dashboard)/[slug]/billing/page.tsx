@@ -28,10 +28,12 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
 import type { CheckoutResult, Product } from "autumn-js";
 import { useCustomer, usePricingTable } from "autumn-js/react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useId, useMemo, useState } from "react";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
+
+const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
 const SCENARIO_TEXT: Record<string, string> = {
   scheduled: "Plan Scheduled",
@@ -214,9 +216,6 @@ function getProductFeatures(product: Product | undefined): string[] {
 }
 
 export default function BillingPage() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { products, isLoading: productsLoading } = usePricingTable();
   const {
     checkout,
@@ -229,8 +228,9 @@ export default function BillingPage() {
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutResult | null>(
     null
   );
-  const [activeSection, setActiveSection] = useState<"billing" | "usage">(
-    searchParams.get("tab") === "usage" ? "usage" : "billing"
+  const [activeSection, setActiveSection] = useQueryState(
+    "tab",
+    parseAsStringLiteral(BILLING_SECTION_VALUES).withDefault("billing")
   );
   const [loading, setLoading] = useState<string | null>(null);
   const [isYearly, setIsYearly] = useState(true);
@@ -313,20 +313,7 @@ export default function BillingPage() {
     : null;
 
   function handleSectionChange(value: string) {
-    const section = value === "usage" ? "usage" : "billing";
-    setActiveSection(section);
-
-    const nextParams = new URLSearchParams(searchParams.toString());
-    if (section === "usage") {
-      nextParams.set("tab", "usage");
-    } else {
-      nextParams.delete("tab");
-    }
-
-    const nextQuery = nextParams.toString();
-    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
-      scroll: false,
-    });
+    setActiveSection(value === "usage" ? "usage" : "billing");
   }
 
   function renderFreePlanButton() {
