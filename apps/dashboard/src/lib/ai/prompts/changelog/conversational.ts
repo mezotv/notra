@@ -62,6 +62,7 @@ export function getConversationalChangelogPrompt(): string {
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
+    - getCommitsByTimeframe returns a pagination object with hasNextPage and nextPage. If hasNextPage is true, call the tool again with the nextPage value to retrieve all commits.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.
