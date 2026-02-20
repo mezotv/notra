@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
-import type { ContentType } from "@/schemas/content";
+import type { ContentType, PostStatus } from "@/schemas/content";
 
 interface PageClientProps {
   organizationSlug: string;
@@ -59,10 +59,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           {previewPosts.map((post) => (
             <div className="w-full max-w-[340px] sm:max-w-none" key={post.id}>
               <ContentCard
-                className="min-h-[170px] sm:min-h-[140px]"
+                className="min-h-[10.625rem] sm:min-h-[8.75rem]"
                 contentType={post.contentType as ContentType}
                 href={`/${organizationSlug}/content/${post.id}`}
+                id={post.id}
+                organizationId={organizationId}
                 preview={getPreview(post.markdown)}
+                status={post.status as PostStatus}
                 title={post.title}
               />
             </div>

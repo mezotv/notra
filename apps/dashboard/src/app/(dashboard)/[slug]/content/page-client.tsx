@@ -6,7 +6,7 @@ import { ContentCard } from "@/components/content/content-card";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { ContentType, Post } from "@/schemas/content";
+import type { ContentType, Post, PostStatus } from "@/schemas/content";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
 
@@ -43,14 +43,12 @@ function groupPostsByDate(posts: Post[]): Map<string, Post[]> {
 }
 
 function getPreview(markdown: string): string {
-  // Remove markdown headers and get first paragraph-like content
   const lines = markdown
     .split("\n")
     .filter((line) => !line.startsWith("#") && line.trim().length > 0);
 
   const preview = lines.slice(0, 3).join(" ").trim();
 
-  // Clean up markdown formatting
   return preview
     .replace(/\*\*/g, "")
     .replace(/\*/g, "")
@@ -73,7 +71,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -103,7 +100,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const groupedPosts = useMemo(() => groupPostsByDate(allPosts), [allPosts]);
 
-  // Cache preview results to avoid recomputing for each render
   const previewsByPostId = useMemo(() => {
     const map = new Map<string, string>();
     for (const post of allPosts) {
@@ -142,8 +138,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <ContentCard
                   contentType={post.contentType as ContentType}
                   href={`/${organizationSlug}/content/${post.id}`}
+                  id={post.id}
                   key={post.id}
+                  organizationId={organizationId}
                   preview={previewsByPostId.get(post.id) ?? ""}
+                  status={post.status as PostStatus}
                   title={post.title}
                 />
               ))}
@@ -151,7 +150,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </section>
         ))}
 
-        {/* Infinite scroll trigger */}
         <div className="h-10" ref={loadMoreRef}>
           {isFetchingNextPage && (
             <div className="flex items-center justify-center">

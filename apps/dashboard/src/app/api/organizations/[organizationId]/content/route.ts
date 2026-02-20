@@ -146,6 +146,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         content: post.content,
         markdown: post.markdown,
         contentType: post.contentType,
+        status: post.status,
         createdAt: post.createdAt.toISOString(),
         updatedAt: post.updatedAt.toISOString(),
       })),

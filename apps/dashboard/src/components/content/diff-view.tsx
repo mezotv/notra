@@ -93,6 +93,7 @@ export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
           },
           contentText: {
             fontFamily: "var(--font-mono)",
+            wordBreak: "break-word" as const,
           },
         }}
         useDarkTheme={isDark}
