@@ -323,9 +323,9 @@ const NumbersThatSpeak: React.FC<NumbersThatSpeakProps> = ({
                                   }}
                                 >
                                   {["500k", "300k", "200k", "100k", "0"].map(
-                                    (label, index) => (
+                                    (label) => (
                                       <div
-                                        key={index}
+                                        key={label}
                                         style={{
                                           display: "flex",
                                           gap: "6.261px",
@@ -549,7 +549,7 @@ const NumbersThatSpeak: React.FC<NumbersThatSpeakProps> = ({
                                 { height: "89px", color: "#5D4E37" },
                               ].map((item, index) => (
                                 <div
-                                  key={index}
+                                  key={`bar-${index}`}
                                   style={{
                                     width: "12.522px",
                                     height: item.height,
