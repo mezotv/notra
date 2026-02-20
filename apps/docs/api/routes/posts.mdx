@@ -6,6 +6,7 @@ description: "List posts for an organization."
 `GET /v1/:organizationId/posts/`
 
 Returns a paginated list of posts for the given organization.
+By default, only published posts are returned.
 
 ## Path Params
 
@@ -27,11 +28,16 @@ Returns a paginated list of posts for the given organization.
   Page number to fetch. Min `1`.
 </ParamField>
 
+<ParamField query="status" type="draft | published" default="published">
+  Filter by post status. Repeat this parameter to include both statuses
+  (`?status=draft&status=published`).
+</ParamField>
+
 ## Example Request
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/?sort=desc&limit=10&page=1"
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/?sort=desc&limit=10&page=1&status=published"
 ```
 
 <ResponseExample>
@@ -44,6 +50,8 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
       "content": "<p>This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.</p><h2>Highlights</h2><h3>Organization membership unification with server validation</h3><p>Leave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.</p>",
       "markdown": "This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.\n\n## Highlights\n\n### Organization membership unification with server validation\nLeave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.",
       "contentType": "changelog",
+      "sourceMetadata": null,
+      "status": "published",
       "createdAt": "2026-02-19T11:32:54.082Z",
       "updatedAt": "2026-02-19T11:32:54.082Z"
     }
@@ -55,6 +63,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
     "previousPage": null,
     "totalPages": 1,
     "totalItems": 1
+  },
+  "metadata": {
+    "status": ["published"]
   }
 }
 ```

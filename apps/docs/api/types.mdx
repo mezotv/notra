@@ -38,8 +38,14 @@ export type Post = {
   content: string; // HTML string
   markdown: string;
   contentType: "changelog";
+  sourceMetadata: unknown | null;
+  status: "draft" | "published";
   createdAt: string;
   updatedAt: string;
+};
+
+export type ResponseMetadata = {
+  status: Array<"draft" | "published">;
 };
 
 export type Pagination = {
@@ -54,10 +60,12 @@ export type Pagination = {
 export type NotraPostListResponse = {
   posts: Post[];
   pagination: Pagination;
+  metadata: ResponseMetadata;
 };
 
 export type NotraPostResponse = {
-  post: Post;
+  post: Post | null;
+  metadata: ResponseMetadata;
 };
 ```
 
@@ -78,8 +86,14 @@ export const PostSchema = z.object({
   content: z.string(), // HTML string
   markdown: z.string(),
   contentType: z.literal("changelog"),
+  sourceMetadata: z.unknown().nullable(),
+  status: z.enum(["draft", "published"]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+});
+
+export const ResponseMetadataSchema = z.object({
+  status: z.array(z.enum(["draft", "published"])),
 });
 
 export const PaginationSchema = z.object({
@@ -94,9 +108,11 @@ export const PaginationSchema = z.object({
 export const PostListResponseSchema = z.object({
   posts: z.array(PostSchema),
   pagination: PaginationSchema,
+  metadata: ResponseMetadataSchema,
 });
 
 export const PostResponseSchema = z.object({
-  post: PostSchema,
+  post: PostSchema.nullable(),
+  metadata: ResponseMetadataSchema,
 });
 ```

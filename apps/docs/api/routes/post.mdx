@@ -6,6 +6,7 @@ description: "Get a specific post by ID."
 `GET /v1/:organizationId/posts/:postId`
 
 Returns a single post for the given organization.
+By default, this endpoint only returns published posts.
 
 ## Path Params
 
@@ -17,11 +18,18 @@ Returns a single post for the given organization.
   Required post ID.
 </ParamField>
 
+## Query Params
+
+<ParamField query="status" type="draft | published" default="published">
+  Filter by post status. Repeat this parameter to include both statuses
+  (`?status=draft&status=published`).
+</ParamField>
+
 ## Example Request
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/YOUR_POST_ID"
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/YOUR_POST_ID?status=published"
 ```
 
 <ResponseExample>
@@ -33,8 +41,13 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
     "content": "<p>This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.</p><h2>Highlights</h2><h3>Organization membership unification with server validation</h3><p>Leave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.</p>",
     "markdown": "This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.\n\n## Highlights\n\n### Organization membership unification with server validation\nLeave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.",
     "contentType": "changelog",
+    "sourceMetadata": null,
+    "status": "published",
     "createdAt": "2026-02-19T11:32:54.082Z",
     "updatedAt": "2026-02-19T11:32:54.082Z"
+  },
+  "metadata": {
+    "status": ["published"]
   }
 }
 ```

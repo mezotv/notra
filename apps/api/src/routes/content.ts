@@ -1,8 +1,9 @@
-import { and, count, eq } from "@notra/db/operators";
+import { and, count, eq, inArray } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
 import { Hono } from "hono";
 import {
   getPostParamsSchema,
+  getPostQuerySchema,
   getPostsParamsSchema,
   getPostsQuerySchema,
 } from "../schemas/post";
@@ -21,7 +22,10 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
     );
   }
 
-  const queryValidation = getPostsQuerySchema.safeParse(c.req.query());
+  const queryValidation = getPostsQuerySchema.safeParse({
+    ...c.req.query(),
+    status: new URL(c.req.url).searchParams.getAll("status"),
+  });
   if (!queryValidation.success) {
     return c.json(
       { error: queryValidation.error.issues[0]?.message ?? "Invalid query" },
@@ -39,19 +43,23 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
   }
 
   const db = c.get("db");
-  const { limit, page, sort } = queryValidation.data;
+  const { limit, page, sort, status } = queryValidation.data;
   const offset = (page - 1) * limit;
+  const whereClause = and(
+    eq(posts.organizationId, paramsValidation.data.organizationId),
+    status.length === 2 ? undefined : inArray(posts.status, status)
+  );
 
   const [countResult] = await db
     .select({ totalItems: count(posts.id) })
     .from(posts)
-    .where(eq(posts.organizationId, paramsValidation.data.organizationId));
+    .where(whereClause);
 
   const totalItems = countResult?.totalItems ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   const results = await db.query.posts.findMany({
-    where: eq(posts.organizationId, paramsValidation.data.organizationId),
+    where: whereClause,
     orderBy: (table, { asc, desc }) =>
       sort === "asc"
         ? [asc(table.createdAt), asc(table.id)]
@@ -64,6 +72,8 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
       content: true,
       markdown: true,
       contentType: true,
+      sourceMetadata: true,
+      status: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -78,6 +88,9 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
       previousPage: page > 1 ? page - 1 : null,
       totalPages,
       totalItems,
+    },
+    metadata: {
+      status,
     },
   });
 });
@@ -103,11 +116,23 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
+  const queryValidation = getPostQuerySchema.safeParse({
+    status: new URL(c.req.url).searchParams.getAll("status"),
+  });
+  if (!queryValidation.success) {
+    return c.json(
+      { error: queryValidation.error.issues[0]?.message ?? "Invalid query" },
+      400
+    );
+  }
+
   const db = c.get("db");
+  const { status } = queryValidation.data;
   const post = await db.query.posts.findFirst({
     where: and(
       eq(posts.id, paramsValidation.data.postId),
-      eq(posts.organizationId, paramsValidation.data.organizationId)
+      eq(posts.organizationId, paramsValidation.data.organizationId),
+      status.length === 2 ? undefined : inArray(posts.status, status)
     ),
     columns: {
       id: true,
@@ -115,10 +140,17 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
       content: true,
       markdown: true,
       contentType: true,
+      sourceMetadata: true,
+      status: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
-  return c.json({ post });
+  return c.json({
+    post,
+    metadata: {
+      status,
+    },
+  });
 });
