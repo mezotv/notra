@@ -71,7 +71,12 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to resend invitation");
+        if (error.message) {
+          toast.error(error.message);
+        } else {
+          toast.error("Failed to resend invitation");
+        }
+        setIsResending(false);
         return;
       }
 
@@ -82,10 +87,10 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       setShowResendDialog(false);
+      setIsResending(false);
     } catch (error) {
       console.error("Error resending invitation:", error);
       toast.error("Failed to resend invitation");
-    } finally {
       setIsResending(false);
     }
   }
@@ -102,7 +107,12 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to cancel invitation");
+        if (error.message) {
+          toast.error(error.message);
+        } else {
+          toast.error("Failed to cancel invitation");
+        }
+        setIsCanceling(false);
         return;
       }
 
@@ -113,10 +123,10 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       setShowCancelDialog(false);
+      setIsCanceling(false);
     } catch (error) {
       console.error("Error canceling invitation:", error);
       toast.error("Failed to cancel invitation");
-    } finally {
       setIsCanceling(false);
     }
   }

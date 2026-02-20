@@ -42,9 +42,10 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
       setIsCreating(true);
 
       try {
-        const websiteUrl = value.website
-          ? `https://${value.website}`
-          : undefined;
+        let websiteUrl: string | undefined;
+        if (value.website) {
+          websiteUrl = `https://${value.website}`;
+        }
         const { data, error } = await authClient.organization.create({
           name: value.name,
           slug: value.slug,
@@ -53,20 +54,27 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         });
 
         if (error) {
-          toast.error(error.message || "Failed to create organization");
+          if (error.message) {
+            toast.error(error.message);
+          } else {
+            toast.error("Failed to create organization");
+          }
+          setIsCreating(false);
           return;
         }
 
         if (!data) {
           toast.error("Failed to create organization");
+          setIsCreating(false);
           return;
         }
 
-        await authClient.organization.setActive({
-          organizationId: data.id,
-        });
-
-        await setLastVisitedOrganization(data.slug);
+        await Promise.all([
+          authClient.organization.setActive({
+            organizationId: data.id,
+          }),
+          setLastVisitedOrganization(data.slug),
+        ]);
 
         await Promise.allSettled([
           queryClient.invalidateQueries({
@@ -87,9 +95,9 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         form.reset();
 
         router.push(`/${data.slug}`);
+        setIsCreating(false);
       } catch (_error) {
         toast.error("Failed to create organization");
-      } finally {
         setIsCreating(false);
       }
     },
@@ -105,13 +113,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
-        >
+        <div>
           <div className="grid gap-4 py-4">
             <form.Field
               name="name"
@@ -250,11 +252,11 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
             >
               Cancel
             </Button>
-            <Button disabled={isCreating} type="submit">
+            <Button disabled={isCreating} onClick={() => form.handleSubmit()} type="button">
               {isCreating ? "Creating..." : "Create Organization"}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

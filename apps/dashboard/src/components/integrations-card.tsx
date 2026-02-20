@@ -176,13 +176,12 @@ export function InstalledIntegrationCard({
       accentColor={accentColor}
       action={
         <>
-          {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Event propagation barrier */}
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: Event propagation barrier */}
           <div
             className="flex items-center gap-1.5 sm:gap-2"
             data-no-card-click
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
+            role="group"
           >
             <Badge variant={integration.enabled ? "default" : "secondary"}>
               {integration.enabled ? "Enabled" : "Disabled"}

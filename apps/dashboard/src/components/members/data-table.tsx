@@ -30,6 +30,7 @@ export function DataTable<TData>({
   isLoading,
   emptyMessage = "No data found.",
 }: DataTableProps<TData>) {
+  "use no memo";
   const table = useReactTable({
     data,
     columns,
@@ -49,8 +50,8 @@ export function DataTable<TData>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[1, 2, 3].map((i) => (
-              <TableRow key={i}>
+            {[1, 2, 3].map((skeletonId) => (
+              <TableRow key={skeletonId}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Skeleton className="size-8 rounded-full" />

@@ -11,7 +11,7 @@ import {
 } from "@notra/ui/components/ui/onboarding-checklist";
 import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 
@@ -23,19 +23,20 @@ export function SidebarOnboarding() {
   const slug = activeOrganization?.slug ?? "";
 
   const { data } = useOnboardingStatus(orgId);
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
-  }, []);
+  const collapsed = useSyncExternalStore(
+    (callback) => {
+      window.addEventListener("storage", callback);
+      return () => window.removeEventListener("storage", callback);
+    },
+    () => localStorage.getItem(STORAGE_KEY) === "true",
+    () => false
+  );
 
   const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(STORAGE_KEY, String(next));
-      return next;
-    });
-  }, []);
+    const next = !collapsed;
+    localStorage.setItem(STORAGE_KEY, String(next));
+    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+  }, [collapsed]);
 
   if (!data || data.onboardingCompleted || data.onboardingDismissed) {
     return null;

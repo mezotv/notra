@@ -83,6 +83,57 @@ function formatTriggerType(type: string): string {
   return formatSnakeCaseLabel(type);
 }
 
+async function saveContentToServer(
+  organizationId: string,
+  contentId: string,
+  markdown: string
+): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `/api/organizations/${organizationId}/content/${contentId}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markdown }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to save");
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Error saving content:", err);
+    return false;
+  }
+}
+
+function isUsageLimitError(err: Error): boolean {
+  let errorMessage = String(err);
+  if (err.message) {
+    errorMessage = err.message;
+  }
+
+  if (errorMessage.includes("USAGE_LIMIT_REACHED")) {
+    return true;
+  }
+  if (errorMessage.includes("Usage limit reached")) {
+    return true;
+  }
+
+  try {
+    const errorData = JSON.parse(errorMessage);
+    if (errorData.code === "USAGE_LIMIT_REACHED") {
+      return true;
+    }
+  } catch {
+    // Not a JSON error
+  }
+
+  return false;
+}
+
 function formatRepos(repos: { owner: string; repo: string }[]): string {
   if (repos.length === 1 && repos[0]) {
     return `${repos[0].owner}/${repos[0].repo}`;
@@ -162,29 +213,15 @@ export default function PageClient({
     }
 
     setIsSaving(true);
-    try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ markdown: editedMarkdown }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save");
-      }
-
+    const success = await saveContentToServer(organizationId, contentId, editedMarkdown);
+    if (success) {
       setOriginalMarkdown(editedMarkdown);
       originalMarkdownRef.current = editedMarkdown;
       toast.success("Content saved");
-    } catch (err) {
-      console.error("Error saving content:", err);
+    } else {
       toast.error("Failed to save content");
-    } finally {
-      setIsSaving(false);
     }
+    setIsSaving(false);
   }, [editedMarkdown, organizationId, contentId]);
 
   const handleDiscard = useCallback(() => {
@@ -338,23 +375,18 @@ export default function PageClient({
     }
   }, []);
 
-  const currentMarkdownRef = useRef(currentMarkdown);
-  const selectionRef = useRef(selection);
-  const contextRef = useRef(context);
-  currentMarkdownRef.current = currentMarkdown;
-  selectionRef.current = selection;
-  contextRef.current = context;
-
   const [chatError, setChatError] = useState<string | null>(null);
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: `/api/organizations/${organizationId}/content/${contentId}/chat`,
-      body: () => ({
-        currentMarkdown: currentMarkdownRef.current,
-        selection: selectionRef.current ?? undefined,
-        context: contextRef.current,
-      }),
+      body: () => {
+        return {
+          currentMarkdown,
+          selection: selection ? selection : undefined,
+          context,
+        };
+      },
     }),
     onFinish: () => {
       clearSelection();
@@ -363,28 +395,11 @@ export default function PageClient({
     onError: (err) => {
       console.error("Error editing content:", err);
 
-      const errorMessage = err.message || String(err);
-
-      if (
-        errorMessage.includes("USAGE_LIMIT_REACHED") ||
-        errorMessage.includes("Usage limit reached")
-      ) {
+      if (isUsageLimitError(err)) {
         setChatError(
           "You've used all your chat messages this month. Upgrade for more."
         );
         return;
-      }
-
-      try {
-        const errorData = JSON.parse(errorMessage);
-        if (errorData.code === "USAGE_LIMIT_REACHED") {
-          setChatError(
-            "You've used all your chat messages this month. Upgrade for more."
-          );
-          return;
-        }
-      } catch {
-        // Not a JSON error, fall through
       }
 
       toast.error("Failed to edit content");

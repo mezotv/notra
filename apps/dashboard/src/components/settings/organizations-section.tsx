@@ -72,7 +72,12 @@ export function OrganizationsSection() {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to switch organization");
+        if (error.message) {
+          toast.error(error.message);
+        } else {
+          toast.error("Failed to switch organization");
+        }
+        setIsSwitching(null);
         return;
       }
 
@@ -83,10 +88,10 @@ export function OrganizationsSection() {
       });
 
       router.push(`/${org.slug}/settings/account`);
+      setIsSwitching(null);
     } catch (error) {
       toast.error("Failed to switch organization");
       console.error(error);
-    } finally {
       setIsSwitching(null);
     }
   }
@@ -112,7 +117,12 @@ export function OrganizationsSection() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Failed to update organization membership");
+        if (data.error) {
+          toast.error(data.error);
+        } else {
+          toast.error("Failed to update organization membership");
+        }
+        setIsProcessingOrgAction(null);
         return;
       }
 
@@ -122,38 +132,46 @@ export function OrganizationsSection() {
         toast.success(`Left ${org.name}`);
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.organizations,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["owned-organizations"],
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.organizations,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["owned-organizations"],
+        }),
+      ]);
 
       const freshOrgs = await queryClient.fetchQuery({
         queryKey: QUERY_KEYS.AUTH.organizations,
         queryFn: async () => {
           const result = await authClient.organization.list();
-          return result.data ?? [];
+          if (result.data) {
+            return result.data;
+          }
+          return [];
         },
       });
 
-      if (activeOrganization?.id === org.id) {
+      let activeOrgId: string | null = null;\n      if (activeOrganization) {\n        activeOrgId = activeOrganization.id;\n      }
+      if (activeOrgId === org.id) {
         const firstOrg = freshOrgs[0];
         if (firstOrg) {
-          await authClient.organization.setActive({
-            organizationId: firstOrg.id,
-          });
-          await setLastVisitedOrganization(firstOrg.slug);
+          await Promise.all([
+            authClient.organization.setActive({
+              organizationId: firstOrg.id,
+            }),
+            setLastVisitedOrganization(firstOrg.slug),
+          ]);
           await queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           });
           router.push(`/${firstOrg.slug}/settings/account`);
         }
       }
+      setIsProcessingOrgAction(null);
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
       setIsProcessingOrgAction(null);
     }
   }
@@ -162,10 +180,10 @@ export function OrganizationsSection() {
     return (
       <TitleCard className="lg:col-span-2" heading="Organizations">
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3].map((skeletonId) => (
             <div
               className="flex items-center justify-between rounded-lg border p-4"
-              key={i}
+              key={skeletonId}
             >
               <div className="flex items-center gap-3">
                 <Skeleton className="size-10 rounded-lg" />

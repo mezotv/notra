@@ -66,6 +66,7 @@ export function AddIntegrationDialog({
   onOpenChange: controlledOnOpenChange,
   trigger,
 }: AddIntegrationDialogProps) {
+  "use no memo";
   const router = useRouter();
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = propOrganizationId ?? activeOrganization?.id;
@@ -87,17 +88,23 @@ export function AddIntegrationDialog({
 
   const probeRepo = useCallback(
     async (owner: string, repo: string, token?: string) => {
-      abortControllerRef.current?.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
       setProbeStatus("loading");
 
       try {
+        let tokenValue: string | undefined;
+        if (token) {
+          tokenValue = token;
+        }
         const response = await fetch("/api/github/probe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, repo, token: token || undefined }),
+          body: JSON.stringify({ owner, repo, token: tokenValue }),
           signal: controller.signal,
         });
 
@@ -108,22 +115,28 @@ export function AddIntegrationDialog({
         const payload: unknown = await response.json();
 
         if (!response.ok) {
-          if (
-            response.status === 401 ||
-            response.status === 403 ||
-            response.status === 404
-          ) {
-            setProbeStatus("not_found");
-            setTokenOpen(true);
-            return null;
+          const status = response.status;
+          switch (status) {
+            case 401:
+            case 403:
+            case 404:
+              setProbeStatus("not_found");
+              setTokenOpen(true);
+              return null;
+            default:
+              setProbeStatus("error");
+              return null;
           }
-          setProbeStatus("error");
-          return null;
         }
 
         const data = payload as ProbeResult;
 
-        if (data.status === "not_found" || data.status === "unauthorized") {
+        if (data.status === "not_found") {
+          setProbeStatus("not_found");
+          setTokenOpen(true);
+          return data;
+        }
+        if (data.status === "unauthorized") {
           setProbeStatus("not_found");
           setTokenOpen(true);
           return data;
@@ -137,8 +150,10 @@ export function AddIntegrationDialog({
 
         return data;
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return null;
+        if (error instanceof DOMException) {
+          if (error.name === "AbortError") {
+            return null;
+          }
         }
         setProbeStatus("error");
         return null;
@@ -149,15 +164,18 @@ export function AddIntegrationDialog({
 
   useEffect(() => {
     return () => {
-      abortControllerRef.current?.abort();
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, []);
 
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen) {
       setInitializedBranchRepos(new Set());
     }
-  }, [open]);
+    setOpen(isOpen);
+  };
 
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {
@@ -258,7 +276,7 @@ export function AddIntegrationDialog({
 
   return (
     <>
-      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {triggerElement}
         <ResponsiveDialogContent className="sm:max-w-[520px]">
           <ResponsiveDialogHeader>
@@ -270,12 +288,7 @@ export function AddIntegrationDialog({
               changelogs, blog posts, and tweets.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              form.handleSubmit();
-            }}
+          <div>
           >
             <div className="space-y-4 py-4">
               <form.Field
@@ -489,8 +502,7 @@ export function AddIntegrationDialog({
                 {([canSubmit]) => (
                   <Button
                     disabled={!canSubmit || mutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
+                    onClick={() => {
                       form.handleSubmit();
                     }}
                     type="button"
@@ -500,7 +512,7 @@ export function AddIntegrationDialog({
                 )}
               </form.Subscribe>
             </ResponsiveDialogFooter>
-          </form>
+          </div>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
       {firstRepository && organizationId ? (

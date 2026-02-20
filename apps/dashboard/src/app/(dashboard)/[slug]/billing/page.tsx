@@ -215,6 +215,87 @@ function getProductFeatures(product: Product | undefined): string[] {
     .filter((feature) => feature.length > 0);
 }
 
+function FreePlanButton({
+  freeProduct,
+  isPro,
+  loading,
+  onCheckout,
+}: {
+  freeProduct: Product | undefined;
+  isPro: boolean;
+  loading: string | null;
+  onCheckout: (productId: string) => void;
+}) {
+  if (freeProduct && !isPro) {
+    return (
+      <Button className="w-full" disabled variant="outline">
+        Current Plan
+      </Button>
+    );
+  }
+
+  if (freeProduct) {
+    return (
+      <Button
+        className="w-full"
+        disabled={loading !== null}
+        onClick={() => onCheckout(freeProduct.id)}
+        variant="outline"
+      >
+        {loading === freeProduct.id ? "Loading..." : "Downgrade to Free"}
+      </Button>
+    );
+  }
+
+  return (
+    <Button className="w-full" disabled variant="outline">
+      Current Plan
+    </Button>
+  );
+}
+
+function ProPlanButton({
+  proProduct,
+  isPro,
+  isTrialing,
+  loading,
+  onCheckout,
+}: {
+  proProduct: Product | undefined;
+  isPro: boolean;
+  isTrialing: boolean;
+  loading: string | null;
+  onCheckout: (productId: string) => void;
+}) {
+  if (proProduct && isPro) {
+    return (
+      <Button className="w-full" disabled>
+        {isTrialing ? "Trial Active" : "Current Plan"}
+      </Button>
+    );
+  }
+
+  if (proProduct) {
+    return (
+      <Button
+        className="w-full"
+        disabled={loading !== null}
+        onClick={() => onCheckout(proProduct.id)}
+      >
+        {loading === proProduct.id
+          ? "Loading..."
+          : getPricingButtonText(proProduct)}
+      </Button>
+    );
+  }
+
+  return (
+    <Button className="w-full" disabled>
+      Upgrade to Pro
+    </Button>
+  );
+}
+
 export default function BillingPage() {
   const { products, isLoading: productsLoading } = usePricingTable();
   const {
@@ -263,17 +344,20 @@ export default function BillingPage() {
 
       if (error) {
         console.error("Checkout error:", error);
+        setLoading(null);
         return;
       }
 
-      if (data?.url) {
-        window.location.href = data.url;
-      } else if (data) {
-        setPendingCheckout(data);
+      if (data) {
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          setPendingCheckout(data);
+        }
       }
+      setLoading(null);
     } catch (err) {
       console.error("Checkout error:", err);
-    } finally {
       setLoading(null);
     }
   }
@@ -288,9 +372,9 @@ export default function BillingPage() {
       await attach({ productId: pendingCheckout.product.id });
       setPendingCheckout(null);
       window.location.reload();
+      setLoading(null);
     } catch (err) {
       console.error("Attach error:", err);
-    } finally {
       setLoading(null);
     }
   }
@@ -314,65 +398,6 @@ export default function BillingPage() {
 
   function handleSectionChange(value: string) {
     setActiveSection(value === "usage" ? "usage" : "billing");
-  }
-
-  function renderFreePlanButton() {
-    if (freeProduct && !isPro) {
-      return (
-        <Button className="w-full" disabled variant="outline">
-          Current Plan
-        </Button>
-      );
-    }
-
-    if (freeProduct) {
-      return (
-        <Button
-          className="w-full"
-          disabled={loading !== null}
-          onClick={() => handleCheckout(freeProduct.id)}
-          variant="outline"
-        >
-          {loading === freeProduct.id ? "Loading..." : "Downgrade to Free"}
-        </Button>
-      );
-    }
-
-    return (
-      <Button className="w-full" disabled variant="outline">
-        Current Plan
-      </Button>
-    );
-  }
-
-  function renderProPlanButton() {
-    if (proProduct && isPro) {
-      return (
-        <Button className="w-full" disabled>
-          {isTrialing ? "Trial Active" : "Current Plan"}
-        </Button>
-      );
-    }
-
-    if (proProduct) {
-      return (
-        <Button
-          className="w-full"
-          disabled={loading !== null}
-          onClick={() => handleCheckout(proProduct.id)}
-        >
-          {loading === proProduct.id
-            ? "Loading..."
-            : getPricingButtonText(proProduct)}
-        </Button>
-      );
-    }
-
-    return (
-      <Button className="w-full" disabled>
-        Upgrade to Pro
-      </Button>
-    );
   }
 
   return (
@@ -470,7 +495,12 @@ export default function BillingPage() {
                           </div>
                         </div>
 
-                        {renderFreePlanButton()}
+                        <FreePlanButton
+                          freeProduct={freeProduct}
+                          isPro={isPro}
+                          loading={loading}
+                          onCheckout={handleCheckout}
+                        />
 
                         <ul className="space-y-2.5 pt-2">
                           {freeFeatures.map((feature) => (
@@ -531,7 +561,13 @@ export default function BillingPage() {
                           </div>
                         </div>
 
-                        {renderProPlanButton()}
+                        <ProPlanButton
+                          proProduct={proProduct}
+                          isPro={isPro}
+                          isTrialing={isTrialing}
+                          loading={loading}
+                          onCheckout={handleCheckout}
+                        />
 
                         <ul className="space-y-2.5 pt-2">
                           {proFeatures.map((feature) => (

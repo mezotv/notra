@@ -97,49 +97,62 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "Failed to update organization membership");
+        if (data.error) {
+          toast.error(data.error);
+        } else {
+          toast.error("Failed to update organization membership");
+        }
+        setIsRemovingOrganization(false);
         return;
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.organizations,
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["owned-organizations"],
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.organizations,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["owned-organizations"],
+        }),
+      ]);
 
       const freshOrgs = await queryClient.fetchQuery({
         queryKey: QUERY_KEYS.AUTH.organizations,
         queryFn: async () => {
           const result = await authClient.organization.list();
-          return result.data ?? [];
+          if (result.data) {
+            return result.data;
+          }
+          return [];
         },
       });
 
       const firstOrg = freshOrgs[0];
       if (!firstOrg) {
         toast.error("You must keep at least one organization");
+        setIsRemovingOrganization(false);
         return;
       }
 
-      await authClient.organization.setActive({
-        organizationId: firstOrg.id,
-      });
-      await setLastVisitedOrganization(firstOrg.slug);
+      await Promise.all([
+        authClient.organization.setActive({
+          organizationId: firstOrg.id,
+        }),
+        setLastVisitedOrganization(firstOrg.slug),
+      ]);
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });
 
-      toast.success(
-        action === "delete"
-          ? `Deleted ${organization.name}`
-          : `Left ${organization.name}`
-      );
+      if (action === "delete") {
+        toast.success(`Deleted ${organization.name}`);
+      } else {
+        toast.success(`Left ${organization.name}`);
+      }
       router.push(`/${firstOrg.slug}/settings/account`);
+      setIsRemovingOrganization(false);
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
       setIsRemovingOrganization(false);
     }
   }
@@ -160,9 +173,12 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       });
 
       if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to update organization logo"
-        );
+        if (result.error.message) {
+          toast.error(result.error.message);
+        } else {
+          toast.error("Failed to update organization logo");
+        }
+        setIsUploadingLogo(false);
         return;
       }
 
@@ -185,14 +201,14 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           type: "active",
         }),
       ]);
+      setIsUploadingLogo(false);
     } catch (error) {
       console.error("Logo upload error:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload organization logo"
-      );
-    } finally {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to upload organization logo");
+      }
       setIsUploadingLogo(false);
     }
   }
@@ -218,7 +234,12 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to update organization");
+          if (result.error.message) {
+            toast.error(result.error.message);
+          } else {
+            toast.error("Failed to update organization");
+          }
+          setIsUpdating(false);
           return;
         }
 
@@ -242,7 +263,12 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           }),
         ]);
 
-        const updatedSlug = result.data?.slug ?? value.slug;
+        let updatedSlug = value.slug;
+        if (result.data) {
+          if (result.data.slug) {
+            updatedSlug = result.data.slug;
+          }
+        }
 
         await setLastVisitedOrganization(updatedSlug);
 
@@ -251,9 +277,9 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         }
 
         toast.success("Organization updated successfully");
+        setIsUpdating(false);
       } catch {
         toast.error("Failed to update organization");
-      } finally {
         setIsUpdating(false);
       }
     },
@@ -301,12 +327,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         </div>
 
         <TitleCard heading="Organization Details">
-          <form
+          <div
             className="space-y-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
           >
             <div className="flex items-center gap-4">
               <input
@@ -406,7 +428,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               <Input disabled id="organization-id" value={organization.id} />
             </div>
 
-            <Button disabled={isUpdating} type="submit">
+            <Button disabled={isUpdating} onClick={() => form.handleSubmit()} type="button">
               {isUpdating ? (
                 <>
                   <Loader2Icon className="size-4 animate-spin" />
@@ -416,7 +438,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
                 "Save Changes"
               )}
             </Button>
-          </form>
+          </div>
         </TitleCard>
 
         <TitleCard heading="Danger Zone">

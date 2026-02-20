@@ -44,6 +44,7 @@ function RepositorySelector({
   availableRepos: AvailableRepo[];
   mutation: { isPending: boolean };
 }) {
+  "use no memo";
   const parentRef = useRef<HTMLDivElement>(null);
   const shouldVirtualize = availableRepos.length > 20;
 
@@ -262,12 +263,7 @@ export function AddRepositoryDialog({
               : "Enter a repository in the format owner/repo (e.g., facebook/react) or paste a GitHub URL. For private repositories, ensure your integration has a valid access token."}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-          }}
+        <div>
         >
           <div className="space-y-4 py-4">
             <form.Field
@@ -338,8 +334,7 @@ export function AddRepositoryDialog({
               {([canSubmit]) => (
                 <Button
                   disabled={!canSubmit || mutation.isPending || loadingRepos}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     form.handleSubmit();
                   }}
                   type="button"
@@ -349,7 +344,7 @@ export function AddRepositoryDialog({
               )}
             </form.Subscribe>
           </ResponsiveDialogFooter>
-        </form>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

@@ -30,7 +30,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { authClient } from "@/lib/auth/client";
@@ -75,19 +75,13 @@ function PageClient({
 }: PageClientProps) {
   const { data: session } = authClient.useSession();
   const sessionUser = session?.user;
-  const [user, setUser] = useState(initialUser);
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>("pending");
   const [error, setError] = useState<string | null>(initialError ?? null);
   const [accepting, setAccepting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const router = useRouter();
 
-  // Sync session user with local state
-  useEffect(() => {
-    if (sessionUser) {
-      setUser(sessionUser);
-    }
-  }, [sessionUser]);
+  const user = sessionUser ?? initialUser;
 
   const handleAccept = async () => {
     setAccepting(true);
@@ -98,20 +92,25 @@ function PageClient({
       });
 
       if (res.error) {
-        setError(res.error.message || "Failed to accept invitation");
+        if (res.error.message) {
+          setError(res.error.message);
+        } else {
+          setError("Failed to accept invitation");
+        }
+        setAccepting(false);
         return;
       }
 
       setInviteStatus("accepted");
       router.push(`/${invitation.organizationSlug}`);
+      setAccepting(false);
     } catch (error) {
       console.error("Error accepting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
       setAccepting(false);
     }
   };
@@ -125,19 +124,24 @@ function PageClient({
       });
 
       if (res.error) {
-        setError(res.error.message || "Failed to reject invitation");
+        if (res.error.message) {
+          setError(res.error.message);
+        } else {
+          setError("Failed to reject invitation");
+        }
+        setRejecting(false);
         return;
       }
 
       setInviteStatus("rejected");
+      setRejecting(false);
     } catch (error) {
       console.error("Error rejecting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
       setRejecting(false);
     }
   };

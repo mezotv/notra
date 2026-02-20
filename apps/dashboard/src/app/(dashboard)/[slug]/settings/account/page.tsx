@@ -156,20 +156,27 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
       const result = await authClient.updateUser({ image: url });
 
       if (result.error) {
-        toast.error(result.error.message ?? "Failed to update profile picture");
+        if (result.error.message) {
+          toast.error(result.error.message);
+        } else {
+          toast.error("Failed to update profile picture");
+        }
+        setIsUploadingAvatar(false);
         return;
       }
 
       toast.success("Profile picture updated");
-      await onSessionRefetch?.();
+      if (onSessionRefetch) {
+        await onSessionRefetch();
+      }
+      setIsUploadingAvatar(false);
     } catch (error) {
       console.error("Avatar upload error:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to upload profile picture"
-      );
-    } finally {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to upload profile picture");
+      }
       setIsUploadingAvatar(false);
     }
   }
@@ -198,14 +205,19 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to update profile");
+          if (result.error.message) {
+            toast.error(result.error.message);
+          } else {
+            toast.error("Failed to update profile");
+          }
+          setIsUpdating(false);
           return;
         }
 
         toast.success("Profile updated successfully");
+        setIsUpdating(false);
       } catch {
         toast.error("Failed to update profile");
-      } finally {
         setIsUpdating(false);
       }
     },
@@ -256,12 +268,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-        >
+        <div>
           <form.Field name="name">
             {(field) => (
               <div className="space-y-2">
@@ -275,7 +282,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
                     placeholder="Your name"
                     value={field.state.value}
                   />
-                  <Button disabled={isUpdating} size="default" type="submit">
+                  <Button disabled={isUpdating} onClick={() => form.handleSubmit()} size="default" type="button">
                     {isUpdating ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (
@@ -286,7 +293,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
               </div>
             )}
           </form.Field>
-        </form>
+        </div>
       </div>
     </TitleCard>
   );
@@ -329,15 +336,20 @@ function LoginDetailsSection({
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to change password");
+          if (result.error.message) {
+            toast.error(result.error.message);
+          } else {
+            toast.error("Failed to change password");
+          }
+          setIsChangingPassword(false);
           return;
         }
 
         toast.success("Password changed successfully");
         form.reset();
+        setIsChangingPassword(false);
       } catch {
         toast.error("Failed to change password");
-      } finally {
         setIsChangingPassword(false);
       }
     },
@@ -364,12 +376,8 @@ function LoginDetailsSection({
         </div>
 
         {hasPasswordAccount && (
-          <form
+          <div
             className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
-            }}
           >
             <div className="border-t pt-4">
               <p className="mb-4 font-medium text-sm">Update your password</p>
@@ -470,7 +478,8 @@ function LoginDetailsSection({
               <Button
                 className="mt-4"
                 disabled={isChangingPassword}
-                type="submit"
+                onClick={() => form.handleSubmit()}
+                type="button"
               >
                 {isChangingPassword ? (
                   <>
@@ -482,7 +491,7 @@ function LoginDetailsSection({
                 )}
               </Button>
             </div>
-          </form>
+          </div>
         )}
       </div>
     </TitleCard>
@@ -515,9 +524,9 @@ function ConnectedAccountsSection({
         provider,
         callbackURL: window.location.pathname,
       });
+      setLoadingProvider(null);
     } catch {
       toast.error(`Failed to link ${provider} account`);
-    } finally {
       setLoadingProvider(null);
     }
   }
@@ -535,16 +544,20 @@ function ConnectedAccountsSection({
       });
 
       if (result.error) {
-        toast.error(result.error.message ?? `Failed to unlink ${provider}`);
+        if (result.error.message) {
+          toast.error(result.error.message);
+        } else {
+          toast.error(`Failed to unlink ${provider}`);
+        }
         setLoadingProvider(null);
         return;
       }
 
       toast.success(`${provider} account unlinked`);
       onAccountsChange();
+      setLoadingProvider(null);
     } catch {
       toast.error(`Failed to unlink ${provider}`);
-    } finally {
       setLoadingProvider(null);
     }
   }

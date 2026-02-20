@@ -4,17 +4,17 @@ import { Moon02Icon, Sun03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SidebarMenuButton, useSidebar } from "@notra/ui/components/ui/sidebar";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const isDark = resolvedTheme === "dark";
 

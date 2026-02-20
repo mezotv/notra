@@ -17,6 +17,48 @@ interface ChatMessage {
   content: string;
 }
 
+async function fetchChatResponse(
+  allMessages: ChatMessage[],
+  appendMessage: (msg: ChatMessage) => void,
+  onDone: () => void
+) {
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: allMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get response");
+    }
+
+    const data = await response.json();
+    let assistantContent = "Sorry, I couldn't process that request.";
+    if (data.message) {
+      assistantContent = data.message;
+    }
+    appendMessage({
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      content: assistantContent,
+    });
+    onDone();
+  } catch {
+    appendMessage({
+      id: `error-${Date.now()}`,
+      role: "assistant",
+      content: "AI chat is not yet connected. This feature is coming soon!",
+    });
+    onDone();
+  }
+}
+
 export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -30,7 +72,10 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) {
+    if (!input.trim()) {
+      return;
+    }
+    if (isLoading) {
       return;
     }
 
@@ -44,40 +89,11 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
     setInput("");
     setIsLoading(true);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await response.json();
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: data.message || "Sorry, I couldn't process that request.",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
-      const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: "assistant",
-        content: "AI chat is not yet connected. This feature is coming soon!",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
+    await fetchChatResponse(
+      [...messages, userMessage],
+      (msg) => setMessages((prev) => [...prev, msg]),
+      () => setIsLoading(false)
+    );
   };
 
   return (

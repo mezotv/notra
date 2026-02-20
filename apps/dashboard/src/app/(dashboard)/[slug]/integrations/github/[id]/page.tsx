@@ -15,8 +15,10 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug, id } = await params;
-  const { organization } = await validateOrganizationAccess(slug);
-  const integration = await getGitHubIntegrationById(id);
+  const [{ organization }, integration] = await Promise.all([
+    validateOrganizationAccess(slug),
+    getGitHubIntegrationById(id),
+  ]);
 
   if (!integration || integration.organizationId !== organization.id) {
     return { title: "Integration" };

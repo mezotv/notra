@@ -47,6 +47,8 @@ import type { IntegrationsResponse } from "@/types/lib/services/integrations";
 import { FEATURES } from "@/utils/constants";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
+const EMPTY_CONTEXT: ContextItem[] = [];
+
 export interface TextSelection {
   text: string;
   startLine: number;
@@ -87,7 +89,7 @@ const ChatInput = ({
   onClearSelection,
   organizationSlug,
   organizationId,
-  context = [],
+  context = EMPTY_CONTEXT,
   onAddContext,
   onRemoveContext,
   value: controlledValue,
@@ -185,12 +187,12 @@ const ChatInput = ({
       element.scrollHeight > maxHeightPx ? "auto" : "hidden";
   }, []);
 
-  // Resize textarea when controlled value changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Resize on controlled value change
   useEffect(() => {
     if (isControlled) {
       requestAnimationFrame(resizeTextarea);
     }
-  }, [isControlled, resizeTextarea]);
+  }, [controlledValue]);
 
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
@@ -287,10 +289,10 @@ const ChatInput = ({
           )}
           {(context.length > 0 || selection) && (
             <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 pb-1">
-              {context.map((item, index) => (
+              {context.map((item) => (
                 <div
                   className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs"
-                  key={`${item.type}-${item.owner}-${item.repo}-${index}`}
+                  key={`${item.type}-${item.owner}-${item.repo}`}
                 >
                   <Github className="size-3.5" />
                   <span className="font-medium">

@@ -35,9 +35,9 @@ export default function ForgotPassword() {
       }
 
       setIsSubmitted(true);
+      setIsLoading(false);
     } catch {
       toast.error("Network error. Please check your connection and try again.");
-    } finally {
       setIsLoading(false);
     }
   }

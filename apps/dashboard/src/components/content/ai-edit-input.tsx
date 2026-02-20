@@ -56,11 +56,14 @@ export function AiEditInput({
   };
 
   return (
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Intentional to preserve selection
-    // biome-ignore lint/a11y/noStaticElementInteractions: Intentional to preserve selection
     <div
       className="fixed inset-x-0 bottom-6 z-40 md:left-64"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleMouseDown(e as unknown as React.MouseEvent);
+      }}
       onMouseDown={handleMouseDown}
+      role="group"
+      tabIndex={-1}
     >
       <div className="mx-auto max-w-2xl px-4 lg:px-6">
         {selectedText && (

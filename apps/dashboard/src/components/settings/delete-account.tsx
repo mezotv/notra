@@ -99,10 +99,13 @@ export function DeleteAccountSection() {
     try {
       if (ownedOrganizations.length > 0) {
         const transfers: TransferDecision[] = [
-          ...orgsWithOtherMembers.map((org) => ({
-            orgId: org.id,
-            action: decisions[org.id] || ("delete" as const),
-          })),
+          ...orgsWithOtherMembers.map((org) => {
+            const orgAction = decisions[org.id];
+            return {
+              orgId: org.id,
+              action: orgAction ? orgAction : ("delete" as const),
+            };
+          }),
           ...soleOwnerOrgs.map((org) => ({
             orgId: org.id,
             action: "delete" as const,
@@ -118,7 +121,11 @@ export function DeleteAccountSection() {
 
           if (!response.ok) {
             const error = await response.json();
-            toast.error(error.error ?? "Failed to process organizations");
+            if (error.error) {
+              toast.error(error.error);
+            } else {
+              toast.error("Failed to process organizations");
+            }
             setIsDeleting(false);
             return;
           }
@@ -134,16 +141,22 @@ export function DeleteAccountSection() {
         callbackURL: "/",
       });
 
-      if (result?.error) {
-        toast.error(result.error.message ?? "Failed to delete account");
-      } else {
-        toast.success("Account deleted successfully");
-        router.push("/");
+      if (result) {
+        if (result.error) {
+          if (result.error.message) {
+            toast.error(result.error.message);
+          } else {
+            toast.error("Failed to delete account");
+          }
+        } else {
+          toast.success("Account deleted successfully");
+          router.push("/");
+        }
       }
+      setIsDeleting(false);
     } catch (error) {
       console.error("Delete account error:", error);
       toast.error("Failed to delete account");
-    } finally {
       setIsDeleting(false);
     }
   }

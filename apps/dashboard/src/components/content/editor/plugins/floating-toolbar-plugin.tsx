@@ -101,8 +101,8 @@ function FloatingToolbar({
     const handleScroll = () => updatePosition();
     const handleResize = () => updatePosition();
 
-    window.addEventListener("scroll", handleScroll);
-    anchorElem.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    anchorElem.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleResize);
 
     return () => {
@@ -130,26 +130,18 @@ function FloatingToolbar({
     );
   }, [editor, updatePosition]);
 
-  // Focus input when entering link edit mode
-  useEffect(() => {
-    if (isLinkEditMode) {
-      const timeoutId = setTimeout(() => linkInputRef.current?.focus(), 0);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isLinkEditMode]);
-
   const handleLinkClick = useCallback(() => {
     if (isLink) {
-      // Edit existing link - populate with current URL
       setLinkUrl(existingLinkUrl || "https://");
       setIsEditingExistingLink(true);
       setIsLinkEditMode(true);
     } else {
-      // Create link with placeholder URL first, then enter edit mode
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, "https://");
       setLinkUrl("https://");
       setIsEditingExistingLink(false);
       setIsLinkEditMode(true);
+    }
+    setTimeout(() => linkInputRef.current?.focus(), 0);
     }
   }, [editor, isLink, existingLinkUrl, setIsLinkEditMode]);
 

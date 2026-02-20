@@ -36,7 +36,7 @@ export function DataTable<TData>({
   totalPages,
   onPageChange,
   isLoading,
-}: DataTableProps<TData>) {
+}: DataTableProps<TData>) {\n  \"use no memo\";
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({

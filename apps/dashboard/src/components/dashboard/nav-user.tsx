@@ -37,7 +37,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
-export function NavUser() {
+export function NavUser() {\n  \"use no memo\";
   const router = useRouter();
   const { isMobile, state } = useSidebar();
   const { setTheme, resolvedTheme } = useTheme();

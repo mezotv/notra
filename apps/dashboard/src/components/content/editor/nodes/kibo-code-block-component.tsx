@@ -65,7 +65,7 @@ export default function KiboCodeBlockComponent({
   const [editor] = useLexicalComposerContext();
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
-  const [localCode, setLocalCode] = useState(code);
+  const [localCode, setLocalCode] = useState(() => code);
   const [isCopied, setIsCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -76,12 +76,6 @@ export default function KiboCodeBlockComponent({
   const normalizedLanguage = language || "plain";
   const lineCount = Math.max(1, localCode.split("\n").length);
 
-  // Sync local code with prop
-  useEffect(() => {
-    setLocalCode(code);
-  }, [code]);
-
-  // Auto-resize textarea when content changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: localCode triggers resize
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -209,16 +203,18 @@ export default function KiboCodeBlockComponent({
   const CopyButtonIcon = isCopied ? CheckIcon : CopyIcon;
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: Interactive editor element
-    // biome-ignore lint/a11y/noNoninteractiveElementInteractions: Interactive editor element
-    // biome-ignore lint/a11y/useKeyWithClickEvents: Click focuses textarea
     <div
       className={cn(
         "relative my-4 overflow-hidden rounded-lg border bg-secondary/50",
         isSelected && "ring-2 ring-primary ring-offset-2"
       )}
       onClick={() => textareaRef.current?.focus()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") textareaRef.current?.focus();
+      }}
       ref={blockRef}
+      role="group"
+      tabIndex={-1}
     >
       <div className="flex items-center justify-between border-b bg-secondary px-1 py-1">
         <Select onValueChange={handleLanguageChange} value={normalizedLanguage}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 
 interface DiffViewProps {
@@ -11,11 +11,11 @@ interface DiffViewProps {
 
 export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const hasChanges = originalMarkdown !== currentMarkdown;
 
