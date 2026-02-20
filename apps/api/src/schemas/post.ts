@@ -7,6 +7,8 @@ export const getPostsParamsSchema = z.object({
 
 export const getPostsQuerySchema = z.object({
   sort: z.enum(["asc", "desc"]).default("desc"),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  page: z.coerce.number().int().min(1).default(1),
 });
 
 export const getPostParamsSchema = z.object({

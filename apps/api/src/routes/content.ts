@@ -1,5 +1,5 @@
 import { db } from "@notra/db/drizzle";
-import { and, eq } from "@notra/db/operators";
+import { and, count, eq } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
 import type { UnkeyContext } from "@unkey/hono";
 import { Hono } from "hono";
@@ -51,12 +51,25 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
+  const { limit, page, sort } = queryValidation.data;
+  const offset = (page - 1) * limit;
+
+  const [countResult] = await db
+    .select({ totalItems: count(posts.id) })
+    .from(posts)
+    .where(eq(posts.organizationId, paramsValidation.data.organizationId));
+
+  const totalItems = countResult?.totalItems ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / limit));
+
   const results = await db.query.posts.findMany({
     where: eq(posts.organizationId, paramsValidation.data.organizationId),
     orderBy: (table, { asc, desc }) =>
-      queryValidation.data.sort === "asc"
+      sort === "asc"
         ? [asc(table.createdAt), asc(table.id)]
         : [desc(table.createdAt), desc(table.id)],
+    limit,
+    offset,
     columns: {
       id: true,
       title: true,
@@ -70,6 +83,14 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
 
   return c.json({
     posts: results,
+    pagination: {
+      limit,
+      currentPage: page,
+      nextPage: page < totalPages ? page + 1 : null,
+      previousPage: page > 1 ? page - 1 : null,
+      totalPages,
+      totalItems,
+    },
   });
 });
 
