@@ -1,24 +1,33 @@
-import { type UnkeyContext, unkey } from "@unkey/hono";
+import { createDb } from "@notra/db/drizzle-http";
 import { Hono } from "hono";
 import { trimTrailingSlash } from "hono/trailing-slash";
+import { authMiddleware } from "./middleware/auth";
 import { contentRoutes } from "./routes/content";
 
 interface Bindings {
   UNKEY_ROOT_KEY: string;
+  DATABASE_URL: string;
 }
 
-const app = new Hono<{
+type AppEnv = {
   Bindings: Bindings;
-  Variables: { unkey: UnkeyContext };
-}>({ strict: true });
+  Variables: {
+    db: ReturnType<typeof createDb>;
+  };
+};
+
+const app = new Hono<AppEnv>({ strict: true });
 
 app.use(trimTrailingSlash({ alwaysRedirect: true }));
+
 app.use("/v1/*", async (c, next) => {
-  const handler = unkey({
-    rootKey: c.env.UNKEY_ROOT_KEY,
-  });
-  return handler(c, next);
+  c.set("db", createDb(c.env.DATABASE_URL));
+  await next();
 });
+
+app.use("/v1/*", (c, next) =>
+  authMiddleware({ permissions: "api.read" })(c, next)
+);
 
 app.get("/", (c) => {
   return c.text("ok");

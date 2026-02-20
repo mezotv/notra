@@ -1,29 +1,13 @@
-import { db } from "@notra/db/drizzle";
 import { and, count, eq } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
-import type { UnkeyContext } from "@unkey/hono";
 import { Hono } from "hono";
 import {
   getPostParamsSchema,
   getPostsParamsSchema,
   getPostsQuerySchema,
 } from "../schemas/post";
-import {
-  getExternalOrganizationId,
-  hasApiReadPermission,
-} from "../utils/unkey";
 
-export const contentRoutes = new Hono<{ Variables: { unkey: UnkeyContext } }>();
-
-contentRoutes.use("*", async (c, next) => {
-  const keyInfo = c.get("unkey");
-
-  if (!hasApiReadPermission(keyInfo)) {
-    return c.json({ error: "Forbidden: missing api.read permission" }, 403);
-  }
-
-  await next();
-});
+export const contentRoutes = new Hono();
 
 contentRoutes.get("/:organizationId/posts", async (c) => {
   const paramsValidation = getPostsParamsSchema.safeParse(c.req.param());
@@ -45,8 +29,8 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
     );
   }
 
-  const keyInfo = c.get("unkey");
-  const keyOrganizationId = getExternalOrganizationId(keyInfo);
+  const auth = c.get("auth");
+  const keyOrganizationId = auth.identity?.externalId;
   if (
     !keyOrganizationId ||
     keyOrganizationId !== paramsValidation.data.organizationId
@@ -54,6 +38,7 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
+  const db = c.get("db");
   const { limit, page, sort } = queryValidation.data;
   const offset = (page - 1) * limit;
 
@@ -109,8 +94,8 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
     );
   }
 
-  const keyInfo = c.get("unkey");
-  const keyOrganizationId = getExternalOrganizationId(keyInfo);
+  const auth = c.get("auth");
+  const keyOrganizationId = auth.identity?.externalId;
   if (
     !keyOrganizationId ||
     keyOrganizationId !== paramsValidation.data.organizationId
@@ -118,6 +103,7 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
+  const db = c.get("db");
   const post = await db.query.posts.findFirst({
     where: and(
       eq(posts.id, paramsValidation.data.postId),

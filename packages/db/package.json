@@ -7,10 +7,12 @@
   },
   "exports": {
     "./drizzle": "./src/drizzle.ts",
+    "./drizzle-http": "./src/drizzle-http.ts",
     "./schema": "./src/schema.ts",
     "./operators": "./src/operators.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.45.1",
     "nanoid": "^5.1.6"
   },

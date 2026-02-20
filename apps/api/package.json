@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@notra/db": "workspace:*",
-    "@unkey/hono": "^2.0.0",
+    "@unkey/api": "^2.3.0",
     "hono": "^4.12.0",
     "zod": "^4.1.5"
   },
