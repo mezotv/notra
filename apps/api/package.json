@@ -2,9 +2,7 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
     "@notra/db": "workspace:*",
@@ -13,6 +11,6 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "wrangler": "^4.4.0"
+    "@types/bun": "latest"
   }
 }

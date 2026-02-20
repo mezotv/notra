@@ -48,10 +48,10 @@ const faqData: FAQItem[] = [
 ];
 
 export default function FAQSection() {
-  const [openItem, setOpenItem] = useState<number | null>(null);
+  const [openItem, setOpenItem] = useState<string | null>(null);
 
-  const toggleItem = (index: number) => {
-    setOpenItem((prev) => (prev === index ? null : index));
+  const toggleItem = (question: string) => {
+    setOpenItem((prev) => (prev === question ? null : question));
   };
 
   return (
@@ -73,14 +73,14 @@ export default function FAQSection() {
 
         <div className="flex w-full flex-col items-center justify-center lg:flex-1">
           <div className="flex w-full flex-col">
-            {faqData.map((item, index) => {
-              const isOpen = openItem === index;
+            {faqData.map((item) => {
+              const isOpen = openItem === item.question;
 
               return (
                 <Collapsible
                   className="w-full overflow-hidden border-foreground/16 border-b"
-                  key={index}
-                  onOpenChange={() => toggleItem(index)}
+                  key={item.question}
+                  onOpenChange={() => toggleItem(item.question)}
                   open={isOpen}
                 >
                   <CollapsibleTrigger className="flex w-full items-center justify-between gap-5 px-5 py-[18px] text-left transition-colors duration-200 hover:bg-foreground/2">

@@ -221,6 +221,7 @@ export default function DocumentationSection() {
                     className="object-cover object-top blur-[3px]"
                     fill
                     placeholder="blur"
+                    sizes="(max-width: 768px) 100vw, 580px"
                     src={activeCard === 1 ? logsPreview : automationPreview}
                   />
                   <span className="relative z-10 font-medium font-sans text-muted-foreground text-sm">

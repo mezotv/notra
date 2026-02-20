@@ -1,6 +1,5 @@
-"use client";
-
 import { Button } from "@notra/ui/components/ui/button";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ActivityFeed } from "../components/activity-feed";
@@ -12,6 +11,12 @@ import IntegrationOrbit from "../components/integration-orbit";
 import PricingSection from "../components/pricing-section";
 import TestimonialsSection from "../components/testimonials-section";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
+
+export const metadata: Metadata = {
+  title: "Notra - Turn your daily work into publish-ready content",
+  description:
+    "Notra connects to GitHub, Linear and Slack to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+};
 
 export default function LandingPage() {
   return (

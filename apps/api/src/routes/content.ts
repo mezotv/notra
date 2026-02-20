@@ -7,8 +7,11 @@ import {
   getPostParamsSchema,
   getPostsParamsSchema,
   getPostsQuerySchema,
-} from "@/schemas/post";
-import { getExternalOrganizationId, hasApiReadPermission } from "@/utils/unkey";
+} from "../schemas/post";
+import {
+  getExternalOrganizationId,
+  hasApiReadPermission,
+} from "../utils/unkey";
 
 export const contentRoutes = new Hono<{ Variables: { unkey: UnkeyContext } }>();
 

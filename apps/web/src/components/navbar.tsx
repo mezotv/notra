@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 
 export function Navbar() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
 
@@ -27,10 +26,6 @@ export function Navbar() {
     } catch {
       toast.error("Failed to copy to clipboard");
     }
-  }, []);
-
-  useEffect(() => {
-    setIsLoggedIn(document.cookie.includes("better-auth.session_token"));
   }, []);
 
   useEffect(() => {
@@ -128,35 +123,23 @@ export function Navbar() {
               </div>
             </div>
             <div className="hidden h-6 items-start justify-start gap-2 sm:flex sm:h-7 sm:gap-3 md:h-8">
-              {isLoggedIn ? (
-                <Link href="https://app.usenotra.com">
-                  <Button className="overflow-hidden rounded-lg border-transparent bg-primary px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover sm:px-3 sm:py-[6px] md:px-[14px]">
-                    <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-xs leading-5 md:text-[13px]">
-                      Dashboard
-                    </span>
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Link href="https://app.usenotra.com/login">
-                    <Button
-                      className="overflow-hidden rounded-lg border-transparent bg-white px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted sm:px-3 sm:py-[6px] md:px-[14px]"
-                      variant="ghost"
-                    >
-                      <span className="flex flex-col justify-center font-medium font-sans text-primary text-xs leading-5 md:text-[13px]">
-                        Log in
-                      </span>
-                    </Button>
-                  </Link>
-                  <Link href="https://app.usenotra.com/signup">
-                    <Button className="overflow-hidden rounded-lg border-transparent bg-primary px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover sm:px-3 sm:py-[6px] md:px-[14px]">
-                      <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-xs leading-5 md:text-[13px]">
-                        Sign up
-                      </span>
-                    </Button>
-                  </Link>
-                </>
-              )}
+              <Link href="https://app.usenotra.com/login">
+                <Button
+                  className="overflow-hidden rounded-lg border-transparent bg-white px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted sm:px-3 sm:py-[6px] md:px-[14px]"
+                  variant="ghost"
+                >
+                  <span className="flex flex-col justify-center font-medium font-sans text-primary text-xs leading-5 md:text-[13px]">
+                    Log in
+                  </span>
+                </Button>
+              </Link>
+              <Link href="https://app.usenotra.com/signup">
+                <Button className="overflow-hidden rounded-lg border-transparent bg-primary px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover sm:px-3 sm:py-[6px] md:px-[14px]">
+                  <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-xs leading-5 md:text-[13px]">
+                    Sign up
+                  </span>
+                </Button>
+              </Link>
             </div>
             <button
               aria-label={isOpen ? "Close menu" : "Open menu"}
@@ -211,35 +194,23 @@ export function Navbar() {
             </Link>
           </nav>
           <div className="flex flex-col items-center gap-3">
-            {isLoggedIn ? (
-              <Link href="https://app.usenotra.com">
-                <Button className="h-11 overflow-hidden rounded-lg border-transparent bg-primary px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover">
-                  <span className="font-medium font-sans text-base text-primary-foreground">
-                    Dashboard
-                  </span>
-                </Button>
-              </Link>
-            ) : (
-              <>
-                <Link href="https://app.usenotra.com/signup">
-                  <Button className="h-11 overflow-hidden rounded-lg border-transparent bg-primary px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover">
-                    <span className="font-medium font-sans text-base text-primary-foreground">
-                      Sign up
-                    </span>
-                  </Button>
-                </Link>
-                <Link href="https://app.usenotra.com/login">
-                  <Button
-                    className="h-11 overflow-hidden rounded-lg border-transparent bg-white px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted"
-                    variant="ghost"
-                  >
-                    <span className="font-medium font-sans text-base text-primary">
-                      Log in
-                    </span>
-                  </Button>
-                </Link>
-              </>
-            )}
+            <Link href="https://app.usenotra.com/signup">
+              <Button className="h-11 overflow-hidden rounded-lg border-transparent bg-primary px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-primary-hover">
+                <span className="font-medium font-sans text-base text-primary-foreground">
+                  Sign up
+                </span>
+              </Button>
+            </Link>
+            <Link href="https://app.usenotra.com/login">
+              <Button
+                className="h-11 overflow-hidden rounded-lg border-transparent bg-white px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted"
+                variant="ghost"
+              >
+                <span className="font-medium font-sans text-base text-primary">
+                  Log in
+                </span>
+              </Button>
+            </Link>
           </div>
         </div>
       )}

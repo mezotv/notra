@@ -4,7 +4,13 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-02-20",
   "compatibility_flags": ["nodejs_compat"],
-  "keep_vars": true
+  "keep_vars": true,
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
   // "vars": {
   //   "MY_VAR": "my-variable"
   // },

@@ -4,7 +4,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
-import { motion, useInView } from "motion/react";
+import { domAnimation, LazyMotion, m, useInView } from "motion/react";
 import { useRef } from "react";
 
 const allItems = [
@@ -76,32 +76,34 @@ export function ActivityFeed() {
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
   return (
-    <div className="flex w-full flex-col gap-3" ref={ref}>
-      {initialItems.map((item, i) => (
-        <motion.div
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
-          className="w-full"
-          initial={{ opacity: 0, y: -16 }}
-          key={item.id}
-          transition={{ duration: 0.25, ease: "easeOut", delay: i * 0.06 }}
-        >
-          <TitleCard
-            accentColor={item.accentColor}
-            action={
-              <span className="text-muted-foreground text-xs">
-                {i === 0 ? "just now" : `${(i + 1) * 2}m ago`}
-              </span>
-            }
-            className="w-full text-sm"
-            heading={item.heading}
-            icon={item.icon}
+    <LazyMotion features={domAnimation}>
+      <div className="flex w-full flex-col gap-3" ref={ref}>
+        {initialItems.map((item, i) => (
+          <m.div
+            animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
+            className="w-full"
+            initial={{ opacity: 0, y: -16 }}
+            key={item.id}
+            transition={{ duration: 0.25, ease: "easeOut", delay: i * 0.06 }}
           >
-            <p className="truncate text-muted-foreground text-sm">
-              {item.label}
-            </p>
-          </TitleCard>
-        </motion.div>
-      ))}
-    </div>
+            <TitleCard
+              accentColor={item.accentColor}
+              action={
+                <span className="text-muted-foreground text-xs">
+                  {i === 0 ? "just now" : `${(i + 1) * 2}m ago`}
+                </span>
+              }
+              className="w-full text-sm"
+              heading={item.heading}
+              icon={item.icon}
+            >
+              <p className="truncate text-muted-foreground text-sm">
+                {item.label}
+              </p>
+            </TitleCard>
+          </m.div>
+        ))}
+      </div>
+    </LazyMotion>
   );
 }
