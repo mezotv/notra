@@ -39,6 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         content: post.content,
         markdown: post.markdown,
         contentType: post.contentType,
+        status: post.status,
         date: post.createdAt.toISOString(),
         sourceMetadata: post.sourceMetadata ?? null,
       },

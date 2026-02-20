@@ -33,6 +33,7 @@ export const contentSchema = z.object({
   content: z.string(),
   markdown: z.string(),
   contentType: contentTypeSchema,
+  status: postStatusSchema,
   date: z.string(),
   sourceMetadata: sourceMetadataSchema,
 });

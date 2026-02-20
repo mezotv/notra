@@ -175,9 +175,10 @@ export default function PageClient({
 
     setIsSaving(true);
     try {
-      const body: Record<string, string> = {
-        title: title.trim(),
-      };
+      const body: Record<string, string> = {};
+      if (hasTitleChanges) {
+        body.title = title.trim();
+      }
       if (editedMarkdown) {
         body.markdown = editedMarkdown;
       }
@@ -195,11 +196,15 @@ export default function PageClient({
         throw new Error("Failed to save");
       }
 
+      const responseData = (await response.json()) as {
+        content?: { title?: string };
+      };
+
       if (editedMarkdown) {
         setOriginalMarkdown(editedMarkdown);
         originalMarkdownRef.current = editedMarkdown;
       }
-      setPersistedTitle(title.trim());
+      setPersistedTitle(responseData.content?.title ?? title.trim());
       setEditingTitle(null);
       toast.success("Content saved");
     } catch {
@@ -207,7 +212,14 @@ export default function PageClient({
     } finally {
       setIsSaving(false);
     }
-  }, [hasChanges, title, editedMarkdown, organizationId, contentId]);
+  }, [
+    hasChanges,
+    hasTitleChanges,
+    title,
+    editedMarkdown,
+    organizationId,
+    contentId,
+  ]);
 
   const handleDiscard = useCallback(() => {
     setEditedMarkdown(originalMarkdown);
