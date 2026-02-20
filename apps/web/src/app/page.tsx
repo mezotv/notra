@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { Button } from "@notra/ui/components/ui/button";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ActivityFeed } from "../components/activity-feed";

@@ -28,7 +28,7 @@ export function Navbar() {
   const isLoggedIn = useSyncExternalStore(
     subscribeToCookies,
     getIsLoggedIn,
-    () => false,
+    () => false
   );
   const [isOpen, setIsOpen] = useState(false);
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
