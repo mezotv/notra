@@ -9,12 +9,12 @@ interface Bindings {
   DATABASE_URL: string;
 }
 
-type AppEnv = {
+interface AppEnv {
   Bindings: Bindings;
   Variables: {
     db: ReturnType<typeof createDb>;
   };
-};
+}
 
 const app = new Hono<AppEnv>({ strict: true });
 
