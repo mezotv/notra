@@ -32,4 +32,3 @@ export const organizationMembershipActionSchema = z.object({
   organizationId: z.string().min(1),
   action: z.enum(["leave", "delete"]),
 });
-

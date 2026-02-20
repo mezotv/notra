@@ -141,7 +141,7 @@ const ContentCard = memo(function ContentCard({
         className
       )}
     >
-      <div className="flex items-start justify-between gap-4 py-1.5 pl-2 pr-2">
+      <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
         <p className="min-w-0 truncate font-medium text-lg">{title}</p>
         <div className="flex shrink-0 items-center gap-2">
           <DropdownMenu>
@@ -191,8 +191,8 @@ const ContentCard = memo(function ContentCard({
       </div>
       <div className="flex items-center gap-2 px-2 py-1.5">
         <Badge
-          variant={status === "published" ? "default" : "outline"}
           className="capitalize"
+          variant={status === "published" ? "default" : "outline"}
         >
           {status}
         </Badge>

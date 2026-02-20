@@ -18,10 +18,7 @@ export const lookbackWindowEnum = pgEnum("lookback_window", [
   "last_30_days",
 ]);
 
-export const postStatusEnum = pgEnum("post_status", [
-  "draft",
-  "published",
-]);
+export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -327,8 +324,8 @@ export const posts = pgTable(
   (table) => [
     index("posts_org_createdAt_id_idx").on(
       table.organizationId,
-        table.createdAt,
-        table.id
+      table.createdAt,
+      table.id
     ),
   ]
 );
