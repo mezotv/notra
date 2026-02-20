@@ -3,6 +3,7 @@ import type { PostSourceMetadata } from "@notra/db/schema";
 import { posts } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
 import { and, eq } from "drizzle-orm";
+import { marked } from "marked";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -55,11 +56,12 @@ export function createCreatePostTool(
         };
       }
       const id = nanoid();
+      const content = await marked.parse(markdown);
       await db.insert(posts).values({
         id,
         organizationId: config.organizationId,
         title,
-        content: markdown,
+        content,
         markdown,
         contentType: config.contentType,
         sourceMetadata: config.sourceMetadata ?? null,
@@ -99,7 +101,7 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
         updates.title = title;
       }
       if (markdown !== undefined) {
-        updates.content = markdown;
+        updates.content = await marked.parse(markdown);
         updates.markdown = markdown;
       }
 

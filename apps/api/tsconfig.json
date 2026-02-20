@@ -3,8 +3,13 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "outDir": "./dist",
     "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "strictNullChecks": true
   },
   "include": ["src"],

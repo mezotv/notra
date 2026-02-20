@@ -344,7 +344,8 @@ export default function ApiKeysPage() {
                     {(field) => (
                       <Field>
                         <FieldLabel>
-                          Permission<span className="-ml-1 text-destructive">*</span>
+                          Permission
+                          <span className="-ml-1 text-destructive">*</span>
                         </FieldLabel>
                         <Select
                           disabled={mutation.isPending}
@@ -373,7 +374,10 @@ export default function ApiKeysPage() {
                     {(field) => (
                       <Field>
                         <FieldLabel>
-                          Expiration<span className="-ml-1 text-muted-foreground text-xs">(Optional)</span>
+                          Expiration
+                          <span className="-ml-1 text-muted-foreground text-xs">
+                            (Optional)
+                          </span>
                         </FieldLabel>
                         <Select
                           disabled={mutation.isPending}

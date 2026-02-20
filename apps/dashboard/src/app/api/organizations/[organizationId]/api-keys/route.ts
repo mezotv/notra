@@ -46,8 +46,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         createdAt: key.createdAt,
         expires: key.expires ?? null,
         enabled: key.enabled,
-        permission: (meta.permission) ?? "api.read",
-        createdBy: (meta.createdBy) ?? null,
+        permission: meta.permission ?? "api.read",
+        createdBy: meta.createdBy ?? null,
       };
     });
 

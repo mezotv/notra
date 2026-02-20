@@ -401,6 +401,11 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               )}
             </form.Field>
 
+            <div className="space-y-2">
+              <Label htmlFor="organization-id">Organization ID</Label>
+              <Input disabled id="organization-id" value={organization.id} />
+            </div>
+
             <Button disabled={isUpdating} type="submit">
               {isUpdating ? (
                 <>
