@@ -3,6 +3,7 @@
 import {
   ArrowDown01Icon,
   ArrowUp01Icon,
+  Book01Icon,
   Copy01Icon,
   Dots,
 } from "@hugeicons/core-free-icons";
@@ -51,6 +52,12 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
@@ -487,7 +494,31 @@ export default function ApiKeysPage() {
               Manage API keys for programmatic access to your organization.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)}>Create API Key</Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setDialogOpen(true)}>Create API Key</Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      onClick={() =>
+                        window.open(
+                          "https://docs.usenotra.com/api/getting-started",
+                          "_blank",
+                          "noopener,noreferrer"
+                        )
+                      }
+                      size="icon"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <HugeiconsIcon className="size-4" icon={Book01Icon} />
+                </TooltipTrigger>
+                <TooltipContent>View API documentation</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-md border">
