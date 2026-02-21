@@ -475,7 +475,7 @@ export default function ApiKeysPage() {
       permission,
       expiration: getDefaultEditExpiration(key.createdAt, key.expires),
     });
-    editForm.setFieldValue("name", key.name);
+    setEditDialogOpen(true);
     setEditDialogOpen(true);
   };
 
