@@ -462,13 +462,14 @@ export default function ApiKeysPage() {
       ? (key.permission as ApiKeyPermission)
       : "api.read";
 
-    setEditDialogOpen(true);
     editForm.reset({
       keyId: key.keyId,
       name: key.name,
       permission,
       expiration: getDefaultEditExpiration(key.createdAt, key.expires),
     });
+    editForm.setFieldValue("name", key.name);
+    setEditDialogOpen(true);
   };
 
   const copyToClipboard = (text: string) => {
@@ -736,9 +737,11 @@ export default function ApiKeysPage() {
                       Name<span className="-ml-1 text-destructive">*</span>
                     </FieldLabel>
                     <Input
+                      autoFocus
                       disabled={editMutation.isPending}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
                       placeholder="e.g. CI/CD Pipeline"
                       value={field.state.value}
                     />
