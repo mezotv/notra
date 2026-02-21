@@ -28,4 +28,17 @@ export const createApiKeySchema = z.object({
   expiration: z.enum(["never", "7d", "30d", "60d", "90d"]),
 });
 
+export const updateApiKeySchema = z.object({
+  keyId: z.string().min(1, "Key ID is required"),
+  name: z.string().min(1, "Name is required").max(100).trim(),
+  permission: z.enum(API_KEY_PERMISSIONS),
+  expiration: z.enum(["never", "7d", "30d", "60d", "90d"]),
+});
+
+export const deleteApiKeySchema = z.object({
+  keyId: z.string().min(1, "Key ID is required"),
+});
+
 export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>;
+export type UpdateApiKeyInput = z.infer<typeof updateApiKeySchema>;
+export type DeleteApiKeyInput = z.infer<typeof deleteApiKeySchema>;
