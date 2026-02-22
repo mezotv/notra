@@ -19,6 +19,7 @@ interface SeedPost {
   content: string;
   markdown: string;
   contentType: string;
+  status: "draft" | "published";
 }
 
 const SEED_POSTS: SeedPost[] = [
@@ -66,6 +67,7 @@ This quarter we shipped major improvements to our API performance, reduced laten
 
 In Q1 2025, we plan to focus on GraphQL API support, Multi-region deployment, and Enhanced analytics dashboard.`,
     contentType: "investor_update",
+    status: "published",
   },
   {
     title: "Introducing Dark Mode Support",
@@ -107,6 +109,7 @@ This highly requested feature helps:
 
 We'd love to hear your thoughts on our dark mode implementation. Feel free to reach out!`,
     contentType: "blog_post",
+    status: "published",
   },
   {
     title: "Just shipped: Real-time collaboration features!",
@@ -134,6 +137,7 @@ Try it out today!
 
 #ProductUpdate #Collaboration #TeamWork`,
     contentType: "twitter_post",
+    status: "draft",
   },
   {
     title: "Version 2.5.0 Release Notes",
@@ -177,6 +181,7 @@ Try it out today!
 - #1256 - Resolved memory leaks in dashboard
 - #1278 - Improved error handling in API calls`,
     contentType: "changelog",
+    status: "published",
   },
   {
     title: "Scaling Our Engineering Team",
@@ -217,6 +222,7 @@ We're continuing to grow and are looking for talented engineers to join our team
 
 #Engineering #Startup #Growth #Hiring`,
     contentType: "linkedin_post",
+    status: "published",
   },
   {
     title: "API v3 Migration Guide",
@@ -265,6 +271,7 @@ The X-API-Key header is deprecated. Use Authorization: Bearer instead.
 - Test all API endpoints
 - Update error handling`,
     contentType: "blog_post",
+    status: "draft",
   },
   {
     title: "New Dashboard Analytics",
@@ -288,6 +295,7 @@ We've completely revamped our analytics dashboard to give you deeper insights in
 - Export to CSV and PDF
 - Scheduled email reports`,
     contentType: "blog_post",
+    status: "published",
   },
   {
     title: "Security Update: Two-Factor Authentication",
@@ -312,6 +320,7 @@ We're rolling out two-factor authentication to all accounts.
 
 Enable 2FA today to secure your account!`,
     contentType: "changelog",
+    status: "published",
   },
   {
     title: "Mobile App Launch Announcement",
@@ -338,6 +347,7 @@ Our mobile app is now available on iOS and Android!
 
 Download now from the App Store or Google Play.`,
     contentType: "blog_post",
+    status: "draft",
   },
   {
     title: "Q1 2025 Roadmap Preview",
@@ -364,6 +374,7 @@ Here's what we're planning for the first quarter of 2025.
 
 Stay tuned for more updates!`,
     contentType: "investor_update",
+    status: "draft",
   },
   {
     title: "Customer Success Story: TechCorp",
@@ -397,6 +408,7 @@ They implemented our platform to automate workflows and centralize data.
 - 50% reduction in manual errors
 - 2x faster time to market`,
     contentType: "blog_post",
+    status: "published",
   },
   {
     title: "Version 2.6.0 Release Notes",
@@ -427,6 +439,7 @@ They implemented our platform to automate workflows and centralize data.
 - Improved accessibility
 - Better mobile responsiveness`,
     contentType: "changelog",
+    status: "published",
   },
   {
     title: "Announcing our Series B Funding",
@@ -451,6 +464,7 @@ We're excited to announce that we've raised $50M in Series B funding!
 
 Thank you to all our customers and investors for believing in our vision!`,
     contentType: "linkedin_post",
+    status: "published",
   },
   {
     title: "Infrastructure Updates: 99.99% Uptime",
@@ -472,6 +486,7 @@ We've achieved 99.99% uptime for the past 12 months.
 - Enhanced monitoring
 - Automated incident response`,
     contentType: "changelog",
+    status: "draft",
   },
   {
     title: "New Integration: Slack",
@@ -496,6 +511,7 @@ We're excited to announce our new Slack integration!
 
 Set it up in just 2 minutes!`,
     contentType: "twitter_post",
+    status: "draft",
   },
 ];
 
@@ -529,6 +545,7 @@ async function seed() {
         content: post.content,
         markdown: post.markdown,
         contentType: post.contentType,
+        status: post.status,
         createdAt: date,
         updatedAt: date,
       };

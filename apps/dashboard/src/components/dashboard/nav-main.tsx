@@ -4,6 +4,7 @@ import {
   Calendar03Icon,
   CorporateIcon,
   Home01Icon,
+  Key01Icon,
   NoteIcon,
   Notification03Icon,
   PlugIcon,
@@ -22,7 +23,12 @@ import { usePathname } from "next/navigation";
 import { memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
-type NavMainCategory = "none" | "workspace" | "schedules" | "utility";
+type NavMainCategory =
+  | "none"
+  | "workspace"
+  | "automation"
+  | "utility"
+  | "developer";
 
 interface NavMainItem {
   link: string;
@@ -33,7 +39,8 @@ interface NavMainItem {
 
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
   workspace: "Workspace",
-  schedules: "Schedules",
+  automation: "Automation",
+  developer: "Developer",
   utility: "Utility",
 };
 
@@ -60,13 +67,19 @@ const navMainItems: NavMainItem[] = [
     link: "/automation/schedule",
     icon: Calendar03Icon,
     label: "Schedules",
-    category: "schedules",
+    category: "automation",
   },
   {
     link: "/automation/events",
     icon: Notification03Icon,
     label: "Events",
-    category: "schedules",
+    category: "automation",
+  },
+  {
+    link: "/api-keys",
+    icon: Key01Icon,
+    label: "API Keys",
+    category: "developer",
   },
   {
     link: "/integrations",
@@ -85,8 +98,9 @@ const navMainItems: NavMainItem[] = [
 const itemsByCategory: Record<NavMainCategory, NavMainItem[]> = {
   none: [],
   workspace: [],
-  schedules: [],
+  automation: [],
   utility: [],
+  developer: [],
 };
 for (const item of navMainItems) {
   itemsByCategory[item.category].push(item);

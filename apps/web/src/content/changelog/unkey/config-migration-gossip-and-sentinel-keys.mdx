@@ -1,0 +1,74 @@
+---
+title: "Unkey Changelog - February 13-20, 2026"
+date: "2026-02-20"
+description: "File-based config migration across all services, cross-region gossip messaging, sentinel key verification middleware, and TLS-enabled-by-default deployments."
+---
+
+This week brought significant infrastructure improvements and platform expansion to Unkey. The team completed a major migration from environment variables to file-based configuration across all services, deployed cross-region gossip messaging, added a powerful sentinel key verification middleware system, and made the platform more resilient with TLS-enabled-by-default deployments. Enhanced dashboard UI and deployment settings round out a week focused on operational maturity and security hardening.
+
+## Highlights
+
+### Struct-tag-driven configuration system across all services
+
+A new pkg/config package replaces environment-variable-based configuration with file-based TOML/YAML/JSON support. Features struct-tag-driven validation with required/default/min/max/oneof constraints, environment variable expansion, and comprehensive error collection. All eight core services migrated: API, Vault, Ctrl, Krane, Frontline, Preflight, and Sentinel. This simplifies deployment and improves auditability across Kubernetes and Docker environments.
+
+### Cross-region gossip messaging for low-latency clustering
+
+Gossip protocol implementation enables efficient message distribution across regions without requiring every node to know about every peer. Intra-cluster messages and cross-region broadcasts use separate membership lists, with designated ambassadors relaying messages between regions to minimize global latency. Reduces operational complexity for distributed deployments.
+
+### Sentinel key verification middleware engine
+
+First production sentinel middleware adds API key authentication with configurable matching and policy engine. Verifies incoming requests against pre-configured policies before forwarding, enabling fine-grained access control at the gateway level. Includes error page improvements and middleware routing.
+
+### TLS-enabled-by-default with certificate manager support
+
+Services now require explicit opt-out (tls.disabled=true) rather than opt-in for HTTPS. Intelligently uses certificate manager when available, falls back to static certificate files, and logs capability details for easier troubleshooting. Improves default security posture without configuration overhead.
+
+### Comprehensive deploy settings UI overhaul
+
+New deployment settings interface organizes build, runtime, and advanced configuration into expandable grouped cards. Environment variable form supports drag-and-drop and copy-paste operations with visual feedback. GitHub integration, region/instance selection, health checks, custom domains, and command/port configuration now have dedicated UX components preparing for guided deployment onboarding.
+
+## More Updates
+
+### Features & Enhancements
+
+- **New deploy settings UI** [#5073](https://github.com/unkeyed/unkey/pull/5073) - Complete redesign of deployment configuration interface with GitHub integration, environment variables management, and custom domains support. (Author: [@ogzhanolguncu](https://github.com/ogzhanolguncu/))
+- **Config file system** [#5045](https://github.com/unkeyed/unkey/pull/5045) - Introduce file-based TOML/YAML/JSON configuration with struct-tag validation and environment variable expansion. (Author: [@chronark](https://github.com/chronark/))
+- **Gossip protocol implementation** [#5015](https://github.com/unkeyed/unkey/pull/5015) - Multi-region messaging with ambassador pattern and separate cluster/cross-region membership lists. (Author: [@Flo4604](https://github.com/Flo4604/))
+- **Sentinel key verification middleware** [#5079](https://github.com/unkeyed/unkey/pull/5079) - Gateway-level API key authentication with policy matching engine. (Author: [@Flo4604](https://github.com/Flo4604/))
+- **Generate RPC wrappers** [#5028](https://github.com/unkeyed/unkey/pull/5028) - Automated RPC wrapper generation and infrastructure cleanup. (Author: [@Flo4604](https://github.com/Flo4604/))
+- **Sentinel middleware RFC** [#5041](https://github.com/unkeyed/unkey/pull/5041) - Specification for sentinel middleware architecture and capabilities. (Author: [@chronark](https://github.com/chronark/))
+
+### Bug Fixes
+
+- **TLS certificate handling** [#5076](https://github.com/unkeyed/unkey/pull/5076) - Make TLS enabled by default; prefer cert manager over static files with fallback support. (Author: [@Flo4604](https://github.com/Flo4604/))
+- **Modals with combo box** [#5002](https://github.com/unkeyed/unkey/pull/5002) - Fix modal dialog interaction with combo box selectors. (Author: [@perkinsjr](https://github.com/perkinsjr/))
+- **Proto type issues** [#5093](https://github.com/unkeyed/unkey/pull/5093) - Fix runtime exception from type mismatch and simplify deployment overview. (Author: [@chronark](https://github.com/chronark/))
+- **Identity slug copyability** [#5100](https://github.com/unkeyed/unkey/pull/5100) - Enable copy-to-clipboard for identity slugs in permissions table. (Author: [@perkinsjr](https://github.com/perkinsjr/))
+- **No-data state display** [#5065](https://github.com/unkeyed/unkey/pull/5065) - Show appropriate messaging when analytics or dashboards have insufficient data. (Author: [@perkinsjr](https://github.com/perkinsjr/))
+- **Deployment URL labels** [#4976](https://github.com/unkeyed/unkey/pull/4976) - Standardize display of deployment URLs and fix conversion errors. (Author: [@vansh-commits](https://github.com/vansh-commits/))
+- **Cilium policy timing** [#5059](https://github.com/unkeyed/unkey/pull/5059) - Wait for cilium CRDs before applying network policies in cluster initialization. (Author: [@ogzhanolguncu](https://github.com/ogzhanolguncu/))
+- **Hubble UI deployment** [#5056](https://github.com/unkeyed/unkey/pull/5056) - Add retry logic for hubble-ui pod initialization. (Author: [@Flo4604](https://github.com/Flo4604/))
+
+### Infrastructure
+
+- **Prometheus metrics refactoring** [#5102](https://github.com/unkeyed/unkey/pull/5102) - Move metrics to scoped packages for better organization. (Author: [@chronark](https://github.com/chronark/))
+- **Remove chproxy routes** [#5101](https://github.com/unkeyed/unkey/pull/5101) - Clean up legacy routing infrastructure. (Author: [@chronark](https://github.com/chronark/))
+- **Sentinel middleware cleanup** [#5088](https://github.com/unkeyed/unkey/pull/5088) - Refactor after sentinel middleware implementation and fix error pages. (Author: [@chronark](https://github.com/chronark/))
+- **Release workflow rework** [#5044](https://github.com/unkeyed/unkey/pull/5044) - Streamline release process. (Author: [@Flo4604](https://github.com/Flo4604/))
+- **Gossip metrics** [#5107](https://github.com/unkeyed/unkey/pull/5107) - Monitoring and observability for gossip protocol operations. (Author: [@Flo4604](https://github.com/Flo4604/))
+
+### Performance Improvements
+
+- **Allow longer timeout configuration** [#5032](https://github.com/unkeyed/unkey/pull/5032) - Extend maximum timeout limits for slower operations. (Author: [@Flo4604](https://github.com/Flo4604/))
+
+### Testing
+
+- **Remove hand-holding validation** [#5108](https://github.com/unkeyed/unkey/pull/5108) - Streamline validation behavior in development workflows. (Author: [@perkinsjr](https://github.com/perkinsjr/))
+
+### Documentation
+
+- **Remove orphaned SDK documentation** [#5033](https://github.com/unkeyed/unkey/pull/5033) - Clean up outdated Spring Boot, Rust, and Elixir SDK docs. (Author: [@mintlify[bot]](https://github.com/mintlify%5Bbot%5D/) and [@chronark](https://github.com/chronark/))
+- **Cache store interface description** [#5037](https://github.com/unkeyed/unkey/pull/5037) - Add SEO metadata to cache store documentation. (Author: [@mintlify[bot]](https://github.com/mintlify%5Bbot%5D/) and [@chronark](https://github.com/chronark/))
+- **Analytics feature documentation** [#5067](https://github.com/unkeyed/unkey/pull/5067) - Update copy to clarify analytics deletion capabilities. (Author: [@mcstepp](https://github.com/mcstepp/))
+- **Rate limiting benchmark links** [#5040](https://github.com/unkeyed/unkey/pull/5040) - Reference live performance benchmarks in rate limiting documentation. (Author: [@perkinsjr](https://github.com/perkinsjr/))

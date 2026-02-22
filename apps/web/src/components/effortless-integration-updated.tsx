@@ -256,7 +256,7 @@ const EffortlessIntegration: React.FC<EffortlessIntegrationProps> = ({
             zIndex: 2,
           }}
         >
-          <NotraMark className="h-8 w-8 shrink-0" strokeWidth={42} />
+          <NotraMark className="h-8 w-8 shrink-0" />
         </div>
       </div>
     </div>

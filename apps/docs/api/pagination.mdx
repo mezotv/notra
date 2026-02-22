@@ -62,7 +62,7 @@ Every paginated response includes a `pagination` object:
   </Expandable>
 </ResponseField>
 
-## Request examples
+## Request Examples
 
 <Tabs>
 <Tab title="Default Pagination">
@@ -96,7 +96,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 </Tab>
 </Tabs>
 
-## JavaScript example
+## TypeScript Example
 
 Use the pagination object to build navigation controls:
 
@@ -129,6 +129,8 @@ const itemCount = `${pagination.totalItems} total items`;
       "content": "<p>This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.</p><h2>Highlights</h2><h3>Organization membership unification with server validation</h3><p>Leave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.</p>",
       "markdown": "This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.\n\n## Highlights\n\n### Organization membership unification with server validation\nLeave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.",
       "contentType": "changelog",
+      "sourceMetadata": null,
+      "status": "published",
       "createdAt": "2026-02-19T11:32:54.082Z",
       "updatedAt": "2026-02-19T11:32:54.082Z"
     }
@@ -146,22 +148,6 @@ const itemCount = `${pagination.totalItems} total items`;
 </ResponseExample>
 
 <ResponseExample>
-```json Single Post Response
-{
-  "post": {
-    "id": "YOUR_POST_ID",
-    "title": "February 12-19, 2026 Release",
-    "content": "<p>This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.</p><h2>Highlights</h2><h3>Organization membership unification with server validation</h3><p>Leave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.</p>",
-    "markdown": "This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.\n\n## Highlights\n\n### Organization membership unification with server validation\nLeave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.",
-    "contentType": "changelog",
-    "createdAt": "2026-02-19T11:32:54.082Z",
-    "updatedAt": "2026-02-19T11:32:54.082Z"
-  }
-}
-```
-</ResponseExample>
-
-<ResponseExample>
 ```json Empty Result Set
 {
   "posts": [],
@@ -170,7 +156,7 @@ const itemCount = `${pagination.totalItems} total items`;
     "currentPage": 1,
     "nextPage": null,
     "previousPage": null,
-    "totalPages": 0,
+    "totalPages": 1,
     "totalItems": 0
   }
 }
@@ -190,7 +176,7 @@ const itemCount = `${pagination.totalItems} total items`;
 ```
 </ResponseExample>
 
-## Best practices
+## Best Practices
 
 <Tip>
   **Performance:** Use smaller page sizes (5-20 items), especially for mobile
@@ -211,7 +197,7 @@ const itemCount = `${pagination.totalItems} total items`;
   current page, total pages, next, and previous.
 </Tip>
 
-## Error handling
+## Error Handling
 
 <AccordionGroup>
 <Accordion title="Invalid page number">

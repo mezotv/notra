@@ -32,12 +32,28 @@ const postData: NotraPostResponse = await postResponse.json();
 You can copy these types into your project:
 
 ```typescript
+export type SourceMetadata = {
+  triggerId: string;
+  repositories: Array<{
+    owner: string;
+    repo: string;
+  }>;
+  lookbackRange: {
+    start: string; // ISO datetime
+    end: string; // ISO datetime
+  };
+  lookbackWindow: string;
+  triggerSourceType: string;
+};
+
 export type Post = {
   id: string;
   title: string;
   content: string; // HTML string
   markdown: string;
-  contentType: "changelog";
+  contentType: string;
+  sourceMetadata: SourceMetadata | null;
+  status: "draft" | "published";
   createdAt: string;
   updatedAt: string;
 };
@@ -57,7 +73,7 @@ export type NotraPostListResponse = {
 };
 
 export type NotraPostResponse = {
-  post: Post;
+  post: Post | null;
 };
 ```
 
@@ -72,12 +88,30 @@ For runtime validation, you can use these Zod schemas:
 ```typescript
 import { z } from "zod";
 
+export const SourceMetadataSchema = z.object({
+  triggerId: z.string(),
+  repositories: z.array(
+    z.object({
+      owner: z.string(),
+      repo: z.string(),
+    })
+  ),
+  lookbackRange: z.object({
+    start: z.string().datetime(),
+    end: z.string().datetime(),
+  }),
+  lookbackWindow: z.string(),
+  triggerSourceType: z.string(),
+});
+
 export const PostSchema = z.object({
   id: z.string(),
   title: z.string(),
   content: z.string(), // HTML string
   markdown: z.string(),
-  contentType: z.literal("changelog"),
+  contentType: z.string(),
+  sourceMetadata: SourceMetadataSchema.nullable(),
+  status: z.enum(["draft", "published"]),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -97,6 +131,6 @@ export const PostListResponseSchema = z.object({
 });
 
 export const PostResponseSchema = z.object({
-  post: PostSchema,
+  post: PostSchema.nullable(),
 });
 ```

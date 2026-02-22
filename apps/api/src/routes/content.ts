@@ -1,72 +1,154 @@
-import { db } from "@notra/db/drizzle";
-import { and, count, eq } from "@notra/db/operators";
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { and, count, eq, inArray } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
-import type { UnkeyContext } from "@unkey/hono";
-import { Hono } from "hono";
 import {
+  errorResponseSchema,
   getPostParamsSchema,
+  getPostQuerySchema,
+  getPostResponseSchema,
+  getPostsOpenApiQuerySchema,
   getPostsParamsSchema,
-  getPostsQuerySchema,
+  getPostsResponseSchema,
 } from "../schemas/post";
-import {
-  getExternalOrganizationId,
-  hasApiReadPermission,
-} from "../utils/unkey";
 
-export const contentRoutes = new Hono<{ Variables: { unkey: UnkeyContext } }>();
+export const contentRoutes = new OpenAPIHono();
 
-contentRoutes.use("*", async (c, next) => {
-  const keyInfo = c.get("unkey");
-
-  if (!hasApiReadPermission(keyInfo)) {
-    return c.json({ error: "Forbidden: missing api.read permission" }, 403);
-  }
-
-  await next();
+const getPostsRoute = createRoute({
+  method: "get",
+  path: "/{organizationId}/posts",
+  tags: ["Content"],
+  operationId: "listPosts",
+  summary: "List posts",
+  request: {
+    params: getPostsParamsSchema,
+    query: getPostsOpenApiQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Posts fetched successfully",
+      content: {
+        "application/json": {
+          schema: getPostsResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid path params or query",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
 });
 
-contentRoutes.get("/:organizationId/posts", async (c) => {
-  const paramsValidation = getPostsParamsSchema.safeParse(c.req.param());
-  if (!paramsValidation.success) {
-    return c.json(
-      {
-        error:
-          paramsValidation.error.issues[0]?.message ?? "Invalid path params",
+const getPostRoute = createRoute({
+  method: "get",
+  path: "/{organizationId}/posts/{postId}",
+  tags: ["Content"],
+  operationId: "getPost",
+  summary: "Get a single post",
+  request: {
+    params: getPostParamsSchema,
+    query: getPostQuerySchema,
+  },
+  responses: {
+    200: {
+      description: "Post fetched successfully",
+      content: {
+        "application/json": {
+          schema: getPostResponseSchema,
+        },
       },
-      400
-    );
-  }
+    },
+    400: {
+      description: "Invalid path params or query",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
 
-  const queryValidation = getPostsQuerySchema.safeParse(c.req.query());
-  if (!queryValidation.success) {
-    return c.json(
-      { error: queryValidation.error.issues[0]?.message ?? "Invalid query" },
-      400
-    );
-  }
+contentRoutes.openapi(getPostsRoute, async (c) => {
+  const params = c.req.valid("param");
+  const query = c.req.valid("query");
 
-  const keyInfo = c.get("unkey");
-  const keyOrganizationId = getExternalOrganizationId(keyInfo);
-  if (
-    !keyOrganizationId ||
-    keyOrganizationId !== paramsValidation.data.organizationId
-  ) {
+  const auth = c.get("auth");
+  const keyOrganizationId = auth.identity?.externalId;
+  if (!keyOrganizationId || keyOrganizationId !== params.organizationId) {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
-  const { limit, page, sort } = queryValidation.data;
+  const db = c.get("db");
+  const { limit, page, sort, status } = query;
   const offset = (page - 1) * limit;
+  const whereClause = and(
+    eq(posts.organizationId, params.organizationId),
+    status.length === 2 ? undefined : inArray(posts.status, status)
+  );
 
   const [countResult] = await db
     .select({ totalItems: count(posts.id) })
     .from(posts)
-    .where(eq(posts.organizationId, paramsValidation.data.organizationId));
+    .where(whereClause);
 
   const totalItems = countResult?.totalItems ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
 
   const results = await db.query.posts.findMany({
-    where: eq(posts.organizationId, paramsValidation.data.organizationId),
+    where: whereClause,
     orderBy: (table, { asc, desc }) =>
       sort === "asc"
         ? [asc(table.createdAt), asc(table.id)]
@@ -79,49 +161,49 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
       content: true,
       markdown: true,
       contentType: true,
+      sourceMetadata: true,
+      status: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
-  return c.json({
-    posts: results,
-    pagination: {
-      limit,
-      currentPage: page,
-      nextPage: page < totalPages ? page + 1 : null,
-      previousPage: page > 1 ? page - 1 : null,
-      totalPages,
-      totalItems,
+  return c.json(
+    {
+      posts: results,
+      pagination: {
+        limit,
+        currentPage: page,
+        nextPage: page < totalPages ? page + 1 : null,
+        previousPage: page > 1 ? page - 1 : null,
+        totalPages,
+        totalItems,
+      },
+      metadata: {
+        status,
+      },
     },
-  });
+    200
+  );
 });
 
-contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
-  const paramsValidation = getPostParamsSchema.safeParse(c.req.param());
-  if (!paramsValidation.success) {
-    return c.json(
-      {
-        error:
-          paramsValidation.error.issues[0]?.message ?? "Invalid path params",
-      },
-      400
-    );
-  }
+contentRoutes.openapi(getPostRoute, async (c) => {
+  const params = c.req.valid("param");
+  const query = c.req.valid("query");
 
-  const keyInfo = c.get("unkey");
-  const keyOrganizationId = getExternalOrganizationId(keyInfo);
-  if (
-    !keyOrganizationId ||
-    keyOrganizationId !== paramsValidation.data.organizationId
-  ) {
+  const auth = c.get("auth");
+  const keyOrganizationId = auth.identity?.externalId;
+  if (!keyOrganizationId || keyOrganizationId !== params.organizationId) {
     return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
+  const db = c.get("db");
+  const { status } = query;
   const post = await db.query.posts.findFirst({
     where: and(
-      eq(posts.id, paramsValidation.data.postId),
-      eq(posts.organizationId, paramsValidation.data.organizationId)
+      eq(posts.id, params.postId),
+      eq(posts.organizationId, params.organizationId),
+      status.length === 2 ? undefined : inArray(posts.status, status)
     ),
     columns: {
       id: true,
@@ -129,10 +211,20 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
       content: true,
       markdown: true,
       contentType: true,
+      sourceMetadata: true,
+      status: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
-  return c.json({ post });
+  return c.json(
+    {
+      post: post ?? null,
+      metadata: {
+        status,
+      },
+    },
+    200
+  );
 });

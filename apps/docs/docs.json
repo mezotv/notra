@@ -53,12 +53,14 @@
       {
         "group": "API",
         "icon": "book-open",
+        "openapi": {
+          "source": "openapi.json",
+          "directory": "api-reference"
+        },
         "pages": [
-          {
-            "group": "Routes",
-            "expanded": false,
-            "pages": ["api/routes/posts", "api/routes/post"]
-          },
+          "GET /v1/{organizationId}/posts",
+          "GET /v1/{organizationId}/posts/{postId}",
+          "api/authentication",
           "api/pagination",
           "api/types"
         ]
@@ -75,8 +77,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "favicon.svg",
+    "dark": "favicon.svg"
   },
   "footer": {
     "socials": {

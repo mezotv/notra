@@ -73,9 +73,7 @@ export function Navbar() {
                   }}
                   render={<Link href="/" />}
                 >
-                  <div className="flex items-center justify-center text-[#8E51FF]">
-                    <NotraMark className="h-7 w-7 shrink-0" strokeWidth={40} />
-                  </div>
+                  <NotraMark className="h-7 w-7 shrink-0" />
                   <div className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-lg lg:text-xl">
                     Notra
                   </div>
@@ -87,10 +85,7 @@ export function Navbar() {
                   sideOffset={8}
                 >
                   <DropdownMenuItem onClick={handleCopySvg}>
-                    <NotraMark
-                      className="size-4 text-[#8E51FF]"
-                      strokeWidth={40}
-                    />
+                    <NotraMark className="size-4" />
                     Copy Logo as SVG
                   </DropdownMenuItem>
                 </DropdownMenuContent>

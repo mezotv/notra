@@ -73,6 +73,11 @@ export async function generateChangelog(
 
   const agent = new ToolLoopAgent({
     model,
+    providerOptions: {
+      anthropic: {
+        thinking: { type: "enabled", budgetTokens: 2500 },
+      },
+    },
     tools: {
       getPullRequests: createGetPullRequestsTool({
         organizationId,

@@ -18,6 +18,8 @@ export const lookbackWindowEnum = pgEnum("lookback_window", [
   "last_30_days",
 ]);
 
+export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -313,6 +315,7 @@ export const posts = pgTable(
     contentType: text("content_type").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
+    status: postStatusEnum("status").default("draft").notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())

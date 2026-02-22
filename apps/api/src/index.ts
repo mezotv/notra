@@ -1,20 +1,32 @@
-import { type UnkeyContext, unkey } from "@unkey/hono";
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";
+import { authMiddleware } from "./middleware/auth";
 import { contentRoutes } from "./routes/content";
 
-const app = new Hono<{ Variables: { unkey: UnkeyContext } }>({ strict: true });
-
-if (!process.env.UNKEY_ROOT_KEY) {
-  throw new Error("UNKEY_ROOT_KEY is not set");
+interface Bindings {
+  UNKEY_ROOT_KEY: string;
+  DATABASE_URL: string;
 }
 
+interface AppEnv {
+  Bindings: Bindings;
+  Variables: {
+    db: ReturnType<typeof createDb>;
+  };
+}
+
+const app = new OpenAPIHono<AppEnv>({ strict: true });
+
 app.use(trimTrailingSlash({ alwaysRedirect: true }));
-app.use(
-  "/v1/*",
-  unkey({
-    rootKey: process.env.UNKEY_ROOT_KEY,
-  })
+
+app.use("/v1/*", async (c, next) => {
+  c.set("db", createDb(c.env.DATABASE_URL));
+  await next();
+});
+
+app.use("/v1/*", (c, next) =>
+  authMiddleware({ permissions: "api.read" })(c, next)
 );
 
 app.get("/", (c) => {
@@ -23,7 +35,34 @@ app.get("/", (c) => {
 
 app.route("/v1", contentRoutes);
 
-export default {
-  port: 3004,
-  fetch: app.fetch,
-};
+app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
+  type: "http",
+  scheme: "bearer",
+  bearerFormat: "API Key",
+  description:
+    "Send your API key in the Authorization header as Bearer API_KEY.",
+});
+
+app.doc31("/openapi.json", (_c) => ({
+  openapi: "3.1.1",
+  info: {
+    title: "Notra API",
+    version: "1.0.0",
+    description: "OpenAPI schema for authenticated content endpoints.",
+  },
+  servers: [
+    {
+      url: "https://api.usenotra.com",
+      description: "Production",
+    },
+  ],
+  security: [{ BearerAuth: [] }],
+  tags: [
+    {
+      name: "Content",
+      description: "Read content for the authenticated organization",
+    },
+  ],
+}));
+
+export default app;

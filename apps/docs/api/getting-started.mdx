@@ -5,7 +5,7 @@ description: "Get started with the Notra API."
 
 ## Quick Start
 
-Run your first API request:
+Run your first authenticated API request:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
@@ -17,27 +17,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
   organization ID.
 </Tip>
 
-## Creating an API Key
-
-<Steps>
-<Step title="Open your workspace settings">
-  Open your workspace dashboard, then click **Settings** in the sidebar.
-</Step>
-
-<Step title="Go to API Keys">Click on **API Keys** at the bottom of the sidebar.</Step>
-
-<Step title="Create a new key">
-  Click **Create API Key**, give it a descriptive name (e.g., "Production
-  Website"), and select the appropriate permissions. You can also set an
-  expiration date.
-</Step>
-
-<Step title="Copy your key">
-  Your API key will only be shown once. Copy it and store it securely.
-</Step>
-</Steps>
-
-API keys are powered by [Unkey](https://unkey.com/).
+Create and manage API keys in [Authentication](/api/authentication).
 
 <Warning>
   Keep API keys private. Even read-only keys can be abused and burn through your
@@ -45,42 +25,14 @@ API keys are powered by [Unkey](https://unkey.com/).
   requests whenever possible.
 </Warning>
 
-## Authentication
-
-Include your API key in the `Authorization` header using the `Bearer` scheme:
-
-<Tabs>
-<Tab title="cURL">
-```bash
-curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
-```
-</Tab>
-
-<Tab title="JavaScript">
-```javascript
-const response = await fetch(
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/",
-  {
-  headers: {
-      Authorization: "Bearer YOUR_API_KEY",
-    },
-  },
-);
-const data = await response.json();
-console.log(data);
-```
-</Tab>
-</Tabs>
-
 ## Available Endpoints
 
 <CardGroup cols={2}>
-<Card title="Posts" icon="file-text" href="/api/routes/posts">
-  Retrieve paginated posts with `sort`, `limit`, and `page`.
+<Card title="Posts" icon="file-text" href="/api-reference/content/list-posts">
+  Retrieve paginated posts with `sort`, `limit`, `page`, and `status`.
 </Card>
 
-<Card title="Single Post" icon="file" href="/api/routes/post">
+<Card title="Single Post" icon="file" href="/api-reference/content/get-a-single-post">
   Get a specific post by ID.
 </Card>
 </CardGroup>

@@ -2,15 +2,18 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.2.2",
     "@notra/db": "workspace:*",
-    "@unkey/hono": "^2.0.0",
+    "@unkey/api": "^2.3.0",
     "hono": "^4.12.0",
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "wrangler": "^4.4.0"
   }
 }

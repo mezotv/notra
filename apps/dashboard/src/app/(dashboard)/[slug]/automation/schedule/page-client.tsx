@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
   Delete02Icon,
   Edit02Icon,
   MoreVerticalIcon,
@@ -97,6 +99,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [activeTab, setActiveTab] = useState<"active" | "paused">("active");
   const [deleteTriggerId, setDeleteTriggerId] = useState<string | null>(null);
   const [editTrigger, setEditTrigger] = useState<Trigger | null>(null);
+  const [createdSortOrder, setCreatedSortOrder] = useState<"asc" | "desc">(
+    "desc"
+  );
 
   const { data, isPending } = useQuery({
     queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
@@ -445,12 +450,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="active">
               <ScheduleTable
+                createdSortOrder={createdSortOrder}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
+                onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 repositoryMap={repositoryMap}
                 runningTriggerId={
@@ -469,12 +476,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="paused">
               <ScheduleTable
+                createdSortOrder={createdSortOrder}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
+                onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 repositoryMap={repositoryMap}
                 runningTriggerId={
@@ -583,6 +592,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 function ScheduleTable({
   triggers,
   repositoryMap,
+  createdSortOrder,
+  onSortCreatedChange,
   onToggle,
   onDelete,
   onEdit,
@@ -595,6 +606,8 @@ function ScheduleTable({
 }: {
   triggers: Trigger[];
   repositoryMap: Record<string, string>;
+  createdSortOrder: "asc" | "desc";
+  onSortCreatedChange: (next: "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
   onEdit: (trigger: Trigger) => void;
@@ -605,6 +618,17 @@ function ScheduleTable({
   updatingTriggerId?: string;
   runningTriggerId?: string;
 }) {
+  const sortedTriggers = useMemo(() => {
+    return [...triggers].sort((a, b) => {
+      const createdAtA = new Date(a.createdAt).getTime();
+      const createdAtB = new Date(b.createdAt).getTime();
+
+      return createdSortOrder === "desc"
+        ? createdAtB - createdAtA
+        : createdAtA - createdAtB;
+    });
+  }, [triggers, createdSortOrder]);
+
   if (triggers.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
@@ -623,12 +647,31 @@ function ScheduleTable({
             <TableHead>Output</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead
+              className="cursor-pointer select-none transition-colors hover:text-foreground"
+              onClick={() =>
+                onSortCreatedChange(
+                  createdSortOrder === "desc" ? "asc" : "desc"
+                )
+              }
+            >
+              <span className="inline-flex items-center gap-1">
+                Created
+                <HugeiconsIcon
+                  className="size-3.5"
+                  icon={
+                    createdSortOrder === "desc"
+                      ? ArrowDown01Icon
+                      : ArrowUp01Icon
+                  }
+                />
+              </span>
+            </TableHead>
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {triggers.map((trigger) => {
+          {sortedTriggers.map((trigger) => {
             const isThisUpdating =
               isUpdating && updatingTriggerId === trigger.id;
             const isThisRunning = isRunning && runningTriggerId === trigger.id;

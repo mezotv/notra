@@ -62,6 +62,15 @@ export const CHANGELOG_COMPANIES = [
     url: "https://neon.tech",
     accentColor: "#37C38F",
   },
+  {
+    slug: "unkey",
+    name: "Unkey",
+    domain: "unkey.com",
+    description:
+      "Easily integrate necessary API features like API keys, rate limiting, and usage analytics, ensuring your API is ready to scale.",
+    url: "https://unkey.com",
+    accentColor: "#000000",
+  },
 ] as const;
 
 export function getCompany(slug: string) {

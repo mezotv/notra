@@ -5,7 +5,7 @@ import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "../utils/constants";
-import { NotraMark, NotraWordmark } from "./notra-mark";
+import { NotraMark } from "./notra-mark";
 
 export default function FooterSection() {
   const year = new Date().getFullYear();
@@ -15,9 +15,7 @@ export default function FooterSection() {
       <div className="flex h-auto flex-col items-stretch justify-between self-stretch pt-0 pr-0 pb-8 md:flex-row">
         <div className="flex h-auto flex-col items-start justify-start gap-8 p-4 md:p-8">
           <div className="flex items-center justify-start gap-3 self-stretch">
-            <div className="text-[#8E51FF]">
-              <NotraMark className="h-6 w-6 shrink-0" strokeWidth={40} />
-            </div>
+            <NotraMark className="h-6 w-6 shrink-0" />
             <div className="text-center font-sans font-semibold text-foreground text-xl leading-4">
               Notra
             </div>
@@ -137,10 +135,6 @@ export default function FooterSection() {
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="w-full px-4 md:px-8">
-        <NotraWordmark className="-my-3 mx-auto max-w-130" />
       </div>
     </div>
   );

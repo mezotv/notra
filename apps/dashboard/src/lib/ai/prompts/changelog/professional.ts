@@ -20,6 +20,10 @@ export function getProfessionalChangelogPrompt(): string {
     - If <target-audience> is developer-oriented (for example: developers, engineers, technical teams), include verified PR links for referenced changes whenever available.
     - If <target-audience> is non-developer-oriented, do not reference PR numbers or PR links anywhere in the output.
     - For both developer-oriented and non-developer-oriented posts, keep author attribution when available using this format: (Author: [@\${author}](https://github.com/\${author}/)). Author links are allowed for non-developer posts.
+    - For every candidate item, evaluate whether it is internal-only or meaningfully relevant to <target-audience>.
+    - CRITICAL: If an item is not worth mentioning for <target-audience>, omit it entirely. Do not include it in Highlights or More Updates.
+    - Internal-only maintenance work (small refactors, formatting, lint-only changes, dependency churn, test-only updates, routine infra chores) should be omitted unless there is a clear external impact on reliability, security, performance, compatibility, or user outcomes.
+    - When relevance is uncertain, prefer omission over weak filler.
     - Treat the provided lookback window as the source of truth.
     - Do not invent an alternative default window.
     - If you call commit tools, align retrieval to this exact window.
@@ -60,6 +64,7 @@ export function getProfessionalChangelogPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
+    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
     - Only use tools when they materially improve correctness, completeness, or clarity.

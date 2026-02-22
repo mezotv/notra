@@ -9,6 +9,9 @@ export const contentTypeSchema = z.enum([
   "investor_update",
 ]);
 
+export const postStatusSchema = z.enum(["draft", "published"]);
+export type PostStatus = z.infer<typeof postStatusSchema>;
+
 export type ContentType = z.infer<typeof contentTypeSchema>;
 
 export const sourceMetadataSchema = z
@@ -30,6 +33,7 @@ export const contentSchema = z.object({
   content: z.string(),
   markdown: z.string(),
   contentType: contentTypeSchema,
+  status: postStatusSchema,
   date: z.string(),
   sourceMetadata: sourceMetadataSchema,
 });
@@ -42,6 +46,7 @@ export const postSchema = z.object({
   content: z.string(),
   markdown: z.string(),
   contentType: contentTypeSchema,
+  status: postStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -91,8 +96,20 @@ export const chatRequestSchema = z.object({
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
-export const updateContentSchema = z.object({
-  markdown: z.string(),
-});
+export const updateContentSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    markdown: z.string().min(1).optional(),
+    status: postStatusSchema.optional(),
+  })
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.markdown !== undefined ||
+      data.status !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
 
 export type UpdateContentInput = z.infer<typeof updateContentSchema>;

@@ -24,11 +24,6 @@ export const metadata: Metadata = {
     default: SITE_CONFIG.title,
   },
   description: SITE_CONFIG.description,
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/icon.svg",
-    apple: "/apple-icon.png",
-  },
   appleWebApp: {
     title: SITE_CONFIG.title,
   },

@@ -39,6 +39,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const keysData = result.data ?? [];
     const keys = keysData.map((key) => {
       const meta = key.meta ?? {};
+      const permissions = Array.isArray(key.permissions)
+        ? key.permissions.filter(
+            (permission): permission is string => typeof permission === "string"
+          )
+        : [];
+
+      const normalizedPermission =
+        permissions[0] ??
+        (typeof meta.permission === "string" ? meta.permission : "api.read");
+
       return {
         keyId: key.keyId,
         name: key.name ?? "Unnamed",
@@ -46,7 +56,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         createdAt: key.createdAt,
         expires: key.expires ?? null,
         enabled: key.enabled,
-        permission: meta.permission ?? "api.read",
+        permission: normalizedPermission,
+        permissions,
         createdBy: meta.createdBy ?? null,
       };
     });
