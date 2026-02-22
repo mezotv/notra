@@ -103,7 +103,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     "desc"
   );
 
-  const { data, isPending } = useQuery({
+  const { data, isPending } = useQuery<{
+    triggers: Trigger[];
+    repositoryMap: Record<string, string>;
+  }>({
     queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
     queryFn: async () => {
       if (!organizationId) {
@@ -117,10 +120,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Failed to fetch triggers");
       }
 
-      return response.json() as Promise<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>;
+      return response.json();
     },
     enabled: !!organizationId,
   });
@@ -151,46 +151,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to update schedule");
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(
+          errorData.code || "Failed to update schedule"
+        );
+        (error as Error & { code?: string }).code = errorData.code;
+        throw error;
       }
 
       return response.json();
     },
-    onMutate: async (trigger) => {
-      await queryClient.cancelQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-      });
-
-      const previousData = queryClient.getQueryData<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""));
-
-      queryClient.setQueryData<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          triggers: old.triggers.map((t) =>
-            t.id === trigger.id ? { ...t, enabled: !t.enabled } : t
-          ),
-          repositoryMap: old.repositoryMap,
-        };
-      });
-
-      return { previousData };
-    },
-    onError: (_error, _trigger, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-          context.previousData
+    onError: (error) => {
+      const errorWithCode = error as Error & { code?: string };
+      if (errorWithCode.code === "INTEGRATION_NOT_FOUND") {
+        toast.error(
+          "Cannot enable schedule: The integration has been deleted. Please edit the schedule and select a different integration."
         );
+      } else {
+        toast.error("Failed to update schedule");
       }
-      toast.error("Failed to update schedule");
     },
     onSettled: () => {
       queryClient.invalidateQueries({

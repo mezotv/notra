@@ -239,3 +239,35 @@ export const getSchedulesQuerySchema = z.object({
   repositoryIds: z.array(z.string().min(1)).optional(),
 });
 export type GetSchedulesQuery = z.infer<typeof getSchedulesQuerySchema>;
+
+// Affected schedule info (returned when checking integration dependencies)
+export const affectedScheduleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  enabled: z.boolean(),
+});
+export type AffectedSchedule = z.infer<typeof affectedScheduleSchema>;
+
+// Response schema for GET integration with checkSchedules=true
+export const integrationWithAffectedSchedulesSchema = z.object({
+  affectedSchedules: z.array(affectedScheduleSchema).optional(),
+});
+export type IntegrationWithAffectedSchedules = z.infer<
+  typeof integrationWithAffectedSchedulesSchema
+>;
+
+// Response schema for DELETE integration
+export const deleteIntegrationResponseSchema = z.object({
+  success: z.boolean(),
+  disabledSchedules: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      })
+    )
+    .optional(),
+});
+export type DeleteIntegrationResponse = z.infer<
+  typeof deleteIntegrationResponseSchema
+>;

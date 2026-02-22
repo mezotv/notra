@@ -1,3 +1,6 @@
+import { db } from "@notra/db/drizzle";
+import { contentTriggers } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
@@ -8,8 +11,10 @@ import {
   updateRepository,
   validateRepositoryBranchExists,
 } from "@/lib/services/github-integration";
+import { deleteQstashSchedule } from "@/lib/triggers/qstash";
 import {
   integrationIdParamSchema,
+  triggerTargetsSchema,
   updateIntegrationBodySchema,
 } from "@/schemas/integrations";
 
@@ -54,6 +59,34 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         { error: "Integration not found" },
         { status: 404 }
       );
+    }
+
+    // Check if caller wants to know about affected schedules
+    const { searchParams } = new URL(request.url);
+    const checkSchedules = searchParams.get("checkSchedules") === "true";
+
+    if (checkSchedules) {
+      const allSchedules = await db.query.contentTriggers.findMany({
+        where: and(
+          eq(contentTriggers.organizationId, organizationId),
+          eq(contentTriggers.sourceType, "cron")
+        ),
+      });
+
+      const affectedSchedules = allSchedules.filter((schedule) => {
+        const parsed = triggerTargetsSchema.safeParse(schedule.targets);
+        if (!parsed.success) return false;
+        return parsed.data.repositoryIds.includes(integrationId);
+      });
+
+      return NextResponse.json({
+        ...integration,
+        affectedSchedules: affectedSchedules.map((s) => ({
+          id: s.id,
+          name: s.name,
+          enabled: s.enabled,
+        })),
+      });
     }
 
     return NextResponse.json(integration);
@@ -226,9 +259,50 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    // Find all schedules that use this integration
+    const allSchedules = await db.query.contentTriggers.findMany({
+      where: and(
+        eq(contentTriggers.organizationId, organizationId),
+        eq(contentTriggers.sourceType, "cron")
+      ),
+    });
+
+    const affectedSchedules = allSchedules.filter((schedule) => {
+      const parsed = triggerTargetsSchema.safeParse(schedule.targets);
+      if (!parsed.success) return false;
+      return parsed.data.repositoryIds.includes(integrationId);
+    });
+
+    // Disable affected schedules and delete their qstash schedules
+    for (const schedule of affectedSchedules) {
+      if (schedule.qstashScheduleId) {
+        await deleteQstashSchedule(schedule.qstashScheduleId).catch((err) => {
+          console.error(
+            `Failed to delete qstash schedule ${schedule.qstashScheduleId}:`,
+            err
+          );
+        });
+      }
+
+      await db
+        .update(contentTriggers)
+        .set({
+          enabled: false,
+          qstashScheduleId: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(contentTriggers.id, schedule.id));
+    }
+
     await deleteGitHubIntegration(integrationId);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      disabledSchedules: affectedSchedules.map((s) => ({
+        id: s.id,
+        name: s.name,
+      })),
+    });
   } catch (error) {
     console.error("Error deleting integration:", error);
     return NextResponse.json(

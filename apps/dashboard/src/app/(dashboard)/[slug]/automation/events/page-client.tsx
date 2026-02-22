@@ -66,7 +66,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"active" | "paused">("active");
 
-  const { data, isPending } = useQuery({
+  const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
     queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
     queryFn: async () => {
       if (!organizationId) {
@@ -80,7 +80,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Failed to fetch triggers");
       }
 
-      return response.json() as Promise<{ triggers: Trigger[] }>;
+      return response.json();
     },
     enabled: !!organizationId,
   });

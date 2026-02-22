@@ -78,7 +78,7 @@ export function WebhookSetupDialog({
     data: webhookConfig,
     isLoading: loadingConfig,
     isFetched,
-  } = useQuery({
+  } = useQuery<WebhookConfig | null>({
     queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repositoryId),
     queryFn: async () => {
       const response = await fetch(
@@ -90,12 +90,12 @@ export function WebhookSetupDialog({
         }
         throw new Error("Failed to fetch webhook config");
       }
-      return response.json() as Promise<WebhookConfig>;
+      return response.json();
     },
     enabled: open,
   });
 
-  const generateMutation = useMutation({
+  const generateMutation = useMutation<WebhookConfig, Error, void>({
     mutationFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/repositories/${repositoryId}/webhook`,
@@ -108,7 +108,7 @@ export function WebhookSetupDialog({
         const data = await response.json();
         throw new Error(data.error || "Failed to generate webhook secret");
       }
-      return response.json() as Promise<WebhookConfig>;
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

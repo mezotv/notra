@@ -15,7 +15,9 @@ export function RepositoryList({
 }: RepositoryListProps) {
   const queryClient = useQueryClient();
 
-  const { data: integration, isLoading } = useQuery({
+  const { data: integration, isLoading } = useQuery<{
+    repositories: Repository[];
+  }>({
     queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
     queryFn: async () => {
       const response = await fetch(
@@ -24,9 +26,7 @@ export function RepositoryList({
       if (!response.ok) {
         throw new Error("Failed to fetch repositories");
       }
-      return response.json() as Promise<{
-        repositories: Repository[];
-      }>;
+      return response.json();
     },
     enabled: !!organizationId,
   });

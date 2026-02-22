@@ -32,6 +32,7 @@ export const QUERY_KEYS = {
     list: (organizationId: string) => ["triggers", organizationId] as const,
   },
   AUTOMATION: {
+    base: ["automation"] as const,
     events: (organizationId: string) =>
       ["automation", "events", organizationId] as const,
     schedules: (organizationId: string) =>

@@ -1,15 +1,5 @@
 "use client";
 
-import {
-  ResponsiveAlertDialog,
-  ResponsiveAlertDialogAction,
-  ResponsiveAlertDialogCancel,
-  ResponsiveAlertDialogContent,
-  ResponsiveAlertDialogDescription,
-  ResponsiveAlertDialogFooter,
-  ResponsiveAlertDialogHeader,
-  ResponsiveAlertDialogTitle,
-} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
@@ -26,12 +16,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { Input } from "@notra/ui/components/ui/input";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
+import type {
+  DeleteIntegrationResponse,
+  IntegrationWithAffectedSchedules,
+} from "@/schemas/integrations";
 import type { IntegrationCardProps } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
@@ -44,10 +38,28 @@ export function IntegrationCard({
   const queryClient = useQueryClient();
   const router = useRouter();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const deleteConfirmationText = integration.displayName;
-  const isDeleteConfirmMatch =
-    deleteConfirmation.trim() === deleteConfirmationText;
+
+  // Fetch affected schedules when delete dialog opens
+  const { data: affectedSchedulesData, isLoading: isLoadingSchedules } =
+    useQuery<IntegrationWithAffectedSchedules>({
+      queryKey: [
+        "integration-affected-schedules",
+        organizationId,
+        integration.id,
+      ],
+      queryFn: async () => {
+        const response = await fetch(
+          `/api/organizations/${organizationId}/integrations/${integration.id}?checkSchedules=true`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to check affected schedules");
+        }
+        return response.json();
+      },
+      enabled: isDeleteDialogOpen,
+    });
+
+  const affectedSchedules = affectedSchedulesData?.affectedSchedules ?? [];
 
   const toggleMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -78,7 +90,7 @@ export function IntegrationCard({
     },
   });
 
-  const deleteMutation = useMutation({
+  const deleteMutation = useMutation<DeleteIntegrationResponse, Error, void>({
     mutationFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/integrations/${integration.id}`,
@@ -93,11 +105,22 @@ export function IntegrationCard({
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.INTEGRATIONS.base,
       });
-      toast.success("Integration deleted");
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.AUTOMATION.base,
+      });
+
+      const disabledCount = data.disabledSchedules?.length ?? 0;
+      if (disabledCount > 0) {
+        toast.success(
+          `Integration deleted. ${disabledCount} schedule${disabledCount === 1 ? " was" : "s were"} disabled.`
+        );
+      } else {
+        toast.success("Integration deleted");
+      }
       onUpdate?.();
     },
     onError: () => {
@@ -106,26 +129,16 @@ export function IntegrationCard({
   });
 
   const handleToggle = () => {
-    console.log("handleToggle called", {
-      integrationId: integration.id,
-      currentEnabled: integration.enabled,
-    });
     toggleMutation.mutate(!integration.enabled);
   };
 
   const handleDelete = () => {
-    console.log("handleDelete called", { integrationId: integration.id });
     deleteMutation.mutate();
+    setIsDeleteDialogOpen(false);
   };
 
   const handleDeleteClick = () => {
-    setDeleteConfirmation("");
     setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    handleDelete();
-    setIsDeleteDialogOpen(false);
   };
 
   const isLoading = toggleMutation.isPending || deleteMutation.isPending;
@@ -239,55 +252,15 @@ export function IntegrationCard({
           </div>
         </CardContent>
       </Card>
-      <ResponsiveAlertDialog
+      <DeleteIntegrationDialog
+        affectedSchedules={affectedSchedules}
+        integrationName={integration.displayName}
+        isDeleting={deleteMutation.isPending}
+        isLoadingSchedules={isLoadingSchedules}
+        onConfirm={handleDelete}
         onOpenChange={setIsDeleteDialogOpen}
         open={isDeleteDialogOpen}
-      >
-        <ResponsiveAlertDialogContent className="sm:max-w-[520px]">
-          <ResponsiveAlertDialogHeader>
-            <ResponsiveAlertDialogTitle className="text-lg">
-              Delete {integration.displayName}?
-            </ResponsiveAlertDialogTitle>
-            <ResponsiveAlertDialogDescription>
-              This action permanently removes the integration and all connected
-              metadata. Type{" "}
-              <span className="font-semibold">{deleteConfirmationText}</span> to
-              confirm.
-            </ResponsiveAlertDialogDescription>
-          </ResponsiveAlertDialogHeader>
-          <div className="space-y-2">
-            <Input
-              aria-label="Confirm integration deletion"
-              autoComplete="off"
-              onChange={(event) => setDeleteConfirmation(event.target.value)}
-              placeholder={deleteConfirmationText}
-              value={deleteConfirmation}
-            />
-            <p className="text-muted-foreground text-xs">
-              Deletion is permanent and cannot be undone.
-            </p>
-          </div>
-          <ResponsiveAlertDialogFooter>
-            <ResponsiveAlertDialogCancel
-              disabled={deleteMutation.isPending}
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancel
-            </ResponsiveAlertDialogCancel>
-            <ResponsiveAlertDialogAction
-              disabled={deleteMutation.isPending || !isDeleteConfirmMatch}
-              onClick={(event) => {
-                event.preventDefault();
-                handleDeleteConfirm();
-              }}
-              type="button"
-              variant="destructive"
-            >
-              {deleteMutation.isPending ? "Deleting..." : "Delete integration"}
-            </ResponsiveAlertDialogAction>
-          </ResponsiveAlertDialogFooter>
-        </ResponsiveAlertDialogContent>
-      </ResponsiveAlertDialog>
+      />
     </>
   );
 }
