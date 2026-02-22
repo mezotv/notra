@@ -272,42 +272,44 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
 
-  const { data: integration, isLoading: isLoadingIntegration } = useQuery<GitHubIntegration>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-      organizationId ?? "",
-      integrationId
-    ),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}`
-      );
+  const { data: integration, isLoading: isLoadingIntegration } =
+    useQuery<GitHubIntegration>({
+      queryKey: QUERY_KEYS.INTEGRATIONS.detail(
+        organizationId ?? "",
+        integrationId
+      ),
+      queryFn: async () => {
+        if (!organizationId) {
+          throw new Error("Organization ID is required");
+        }
+        const response = await fetch(
+          `/api/organizations/${organizationId}/integrations/${integrationId}`
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch integration");
-      }
+        if (!response.ok) {
+          throw new Error("Failed to fetch integration");
+        }
 
-      return response.json();
-    },
-    enabled: !!organizationId,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
-    initialData: () => {
-      if (!organizationId) {
-        return undefined;
-      }
+        return response.json();
+      },
+      enabled: !!organizationId,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
+      initialData: () => {
+        if (!organizationId) {
+          return undefined;
+        }
 
-      const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
-        QUERY_KEYS.INTEGRATIONS.all(organizationId)
-      );
+        const cachedIntegrations =
+          queryClient.getQueryData<IntegrationsResponse>(
+            QUERY_KEYS.INTEGRATIONS.all(organizationId)
+          );
 
-      return cachedIntegrations?.integrations.find(
-        (cachedIntegration) => cachedIntegration.id === integrationId
-      );
-    },
-  });
+        return cachedIntegrations?.integrations.find(
+          (cachedIntegration) => cachedIntegration.id === integrationId
+        );
+      },
+    });
 
   if (!organizationId) {
     return null;

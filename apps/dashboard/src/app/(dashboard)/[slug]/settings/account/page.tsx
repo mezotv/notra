@@ -248,7 +248,7 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
                 </span>
               )}
               <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80 opacity-0 transition-opacity group-hover/avatar:opacity-100">
-                <HugeiconsIcon icon={Upload01Icon} className="size-6" />
+                <HugeiconsIcon className="size-6" icon={Upload01Icon} />
               </span>
             </Avatar>
           </button>

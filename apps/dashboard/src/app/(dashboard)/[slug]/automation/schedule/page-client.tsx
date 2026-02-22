@@ -152,9 +152,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const error = new Error(
-          errorData.code || "Failed to update schedule"
-        );
+        const error = new Error(errorData.code || "Failed to update schedule");
         (error as Error & { code?: string }).code = errorData.code;
         throw error;
       }
