@@ -152,7 +152,12 @@ export function OrganizationsSection() {
         },
       });
 
-      let activeOrgId: string | null = null;\n      if (activeOrganization) {\n        activeOrgId = activeOrganization.id;\n      }
+      const activeOrgId: string | null = null;
+      \n
+      if (activeOrganization) {
+        \n        activeOrgId = activeOrganization.id
+        \n
+      }
       if (activeOrgId === org.id) {
         const firstOrg = freshOrgs[0];
         if (firstOrg) {

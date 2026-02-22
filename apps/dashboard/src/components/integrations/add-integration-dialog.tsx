@@ -150,10 +150,8 @@ export function AddIntegrationDialog({
 
         return data;
       } catch (error) {
-        if (error instanceof DOMException) {
-          if (error.name === "AbortError") {
-            return null;
-          }
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return null;
         }
         setProbeStatus("error");
         return null;
@@ -289,7 +287,7 @@ export function AddIntegrationDialog({
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <div>
-          >
+            >
             <div className="space-y-4 py-4">
               <form.Field
                 name="repoUrl"

@@ -101,9 +101,13 @@ export function ResetPasswordForm() {
         const errorMsg = result.error.message;
         if (errorMsg) {
           if (errorMsg.includes("expired")) {
-            toast.error("This reset link has expired. Please request a new one.");
+            toast.error(
+              "This reset link has expired. Please request a new one."
+            );
           } else if (errorMsg.includes("invalid")) {
-            toast.error("This reset link is invalid. Please request a new one.");
+            toast.error(
+              "This reset link is invalid. Please request a new one."
+            );
           } else {
             toast.error(errorMsg);
           }

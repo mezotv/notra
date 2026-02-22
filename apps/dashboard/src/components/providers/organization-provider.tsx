@@ -38,7 +38,8 @@ const FALLBACK_ORGANIZATIONS_CONTEXT: OrganizationsContextValue = {
   getOrganization: () => undefined,
 };
 
-export function OrganizationsProvider({ children }: { children: ReactNode }) {\n  \"use no memo\";
+export function OrganizationsProvider({ children }: { children: ReactNode }) {
+  \n  \"use no memo\";
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const { refetch: refetchCustomer } = useCustomer();

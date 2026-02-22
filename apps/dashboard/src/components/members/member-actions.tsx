@@ -80,7 +80,13 @@ export function MemberActions({ member }: MemberActionsProps) {
     }
   );
 
-  const { isRemoving, isChangingRole, showRemoveDialog, showChangeRoleDialog, newRole } = state;
+  const {
+    isRemoving,
+    isChangingRole,
+    showRemoveDialog,
+    showChangeRoleDialog,
+    newRole,
+  } = state;
 
   // Don't show actions for the current user or if no organization
   if (!activeOrganization || member.userId === currentUser?.id) {

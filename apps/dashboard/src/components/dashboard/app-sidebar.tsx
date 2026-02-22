@@ -12,7 +12,13 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
-import { AnimatePresence, LazyMotion, domAnimation, m, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type * as React from "react";
@@ -70,107 +76,107 @@ export function DashboardSidebar({
       className="overflow-hidden border-none"
     >
       <LazyMotion features={domAnimation}>
-      <SidebarHeader>
-        <OrgSelector />
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSettingsRoute && (
-            <m.div
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              key="back-button"
-              transition={TRANSITION}
-              variants={settingsVariants}
-            >
-              <SidebarMenu>
-                <SidebarMenuButton
-                  className="border border-transparent transition-colors duration-200 hover:bg-sidebar-accent"
-                  render={
-                    <Link href={`/${slug}`}>
-                      <HugeiconsIcon icon={ArrowLeft01Icon} />
-                      <span>Back</span>
-                    </Link>
-                  }
-                  tooltip="Back"
-                />
-              </SidebarMenu>
-            </m.div>
-          )}
-        </AnimatePresence>
-      </SidebarHeader>
-      <SidebarContent>
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSettingsRoute ? (
-            <m.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="settings"
-              transition={TRANSITION}
-              variants={settingsVariants}
-            >
-              <NavSettings slug={slug} />
-            </m.div>
-          ) : (
-            <m.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="main"
-              transition={TRANSITION}
-              variants={mainVariants}
-            >
-              <NavMain />
-              <NavSecondary className="mt-auto" />
-            </m.div>
-          )}
-        </AnimatePresence>
-      </SidebarContent>
-      <SidebarFooter className="gap-0">
-        <AnimatePresence initial={false} mode="popLayout">
-          {!isSettingsRoute && (
-            <m.div
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              key="onboarding"
-              transition={TRANSITION}
-              variants={mainVariants}
-            >
-              <SidebarOnboarding />
-            </m.div>
-          )}
-        </AnimatePresence>
-        <SidebarGroup className={cn(open ? "px-2" : "px-0")}>
-          <SidebarMenu>
-            <AnimatePresence initial={false} mode="popLayout">
-              {!isSettingsRoute && (
-                <m.div
-                  animate="animate"
-                  exit="exit"
-                  initial="initial"
-                  key="settings-button"
-                  transition={TRANSITION}
-                  variants={mainVariants}
-                >
+        <SidebarHeader>
+          <OrgSelector />
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSettingsRoute && (
+              <m.div
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                key="back-button"
+                transition={TRANSITION}
+                variants={settingsVariants}
+              >
+                <SidebarMenu>
                   <SidebarMenuButton
+                    className="border border-transparent transition-colors duration-200 hover:bg-sidebar-accent"
                     render={
-                      <Link href={`/${slug}/settings/account`}>
-                        <HugeiconsIcon icon={Settings01Icon} />
-                        <span>Settings</span>
+                      <Link href={`/${slug}`}>
+                        <HugeiconsIcon icon={ArrowLeft01Icon} />
+                        <span>Back</span>
                       </Link>
                     }
-                    tooltip="Settings"
+                    tooltip="Back"
                   />
-                </m.div>
-              )}
-            </AnimatePresence>
-          </SidebarMenu>
-          <NavUser />
-        </SidebarGroup>
-      </SidebarFooter>
+                </SidebarMenu>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarHeader>
+        <SidebarContent>
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSettingsRoute ? (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="settings"
+                transition={TRANSITION}
+                variants={settingsVariants}
+              >
+                <NavSettings slug={slug} />
+              </m.div>
+            ) : (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="main"
+                transition={TRANSITION}
+                variants={mainVariants}
+              >
+                <NavMain />
+                <NavSecondary className="mt-auto" />
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarContent>
+        <SidebarFooter className="gap-0">
+          <AnimatePresence initial={false} mode="popLayout">
+            {!isSettingsRoute && (
+              <m.div
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                key="onboarding"
+                transition={TRANSITION}
+                variants={mainVariants}
+              >
+                <SidebarOnboarding />
+              </m.div>
+            )}
+          </AnimatePresence>
+          <SidebarGroup className={cn(open ? "px-2" : "px-0")}>
+            <SidebarMenu>
+              <AnimatePresence initial={false} mode="popLayout">
+                {!isSettingsRoute && (
+                  <m.div
+                    animate="animate"
+                    exit="exit"
+                    initial="initial"
+                    key="settings-button"
+                    transition={TRANSITION}
+                    variants={mainVariants}
+                  >
+                    <SidebarMenuButton
+                      render={
+                        <Link href={`/${slug}/settings/account`}>
+                          <HugeiconsIcon icon={Settings01Icon} />
+                          <span>Settings</span>
+                        </Link>
+                      }
+                      tooltip="Settings"
+                    />
+                  </m.div>
+                )}
+              </AnimatePresence>
+            </SidebarMenu>
+            <NavUser />
+          </SidebarGroup>
+        </SidebarFooter>
       </LazyMotion>
     </Sidebar>
   );

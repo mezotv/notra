@@ -59,7 +59,8 @@ export function AiEditInput({
     <div
       className="fixed inset-x-0 bottom-6 z-40 md:left-64"
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") handleMouseDown(e as unknown as React.MouseEvent);
+        if (e.key === "Enter" || e.key === " ")
+          handleMouseDown(e as unknown as React.MouseEvent);
       }}
       onMouseDown={handleMouseDown}
       role="group"

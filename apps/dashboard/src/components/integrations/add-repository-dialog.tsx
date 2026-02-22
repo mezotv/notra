@@ -264,7 +264,7 @@ export function AddRepositoryDialog({
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <div>
-        >
+          >
           <div className="space-y-4 py-4">
             <form.Field
               name="repository"

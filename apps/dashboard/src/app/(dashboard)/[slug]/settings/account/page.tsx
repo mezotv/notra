@@ -282,7 +282,12 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
                     placeholder="Your name"
                     value={field.state.value}
                   />
-                  <Button disabled={isUpdating} onClick={() => form.handleSubmit()} size="default" type="button">
+                  <Button
+                    disabled={isUpdating}
+                    onClick={() => form.handleSubmit()}
+                    size="default"
+                    type="button"
+                  >
                     {isUpdating ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (
@@ -376,9 +381,7 @@ function LoginDetailsSection({
         </div>
 
         {hasPasswordAccount && (
-          <div
-            className="space-y-4"
-          >
+          <div className="space-y-4">
             <div className="border-t pt-4">
               <p className="mb-4 font-medium text-sm">Update your password</p>
 

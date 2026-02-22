@@ -562,11 +562,11 @@ export default function BillingPage() {
                         </div>
 
                         <ProPlanButton
-                          proProduct={proProduct}
                           isPro={isPro}
                           isTrialing={isTrialing}
                           loading={loading}
                           onCheckout={handleCheckout}
+                          proProduct={proProduct}
                         />
 
                         <ul className="space-y-2.5 pt-2">

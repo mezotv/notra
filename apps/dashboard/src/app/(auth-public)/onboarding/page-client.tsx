@@ -224,7 +224,12 @@ export function OnboardingClient() {
           </form.Field>
         </div>
 
-        <Button className="mt-6 w-full" disabled={isCreating} onClick={() => form.handleSubmit()} type="button">
+        <Button
+          className="mt-6 w-full"
+          disabled={isCreating}
+          onClick={() => form.handleSubmit()}
+          type="button"
+        >
           {isCreating ? "Creating..." : "Create Organization"}
         </Button>
       </div>

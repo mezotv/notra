@@ -252,7 +252,11 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
             >
               Cancel
             </Button>
-            <Button disabled={isCreating} onClick={() => form.handleSubmit()} type="button">
+            <Button
+              disabled={isCreating}
+              onClick={() => form.handleSubmit()}
+              type="button"
+            >
               {isCreating ? "Creating..." : "Create Organization"}
             </Button>
           </DialogFooter>

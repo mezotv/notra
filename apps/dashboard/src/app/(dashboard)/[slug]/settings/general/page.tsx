@@ -264,10 +264,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         ]);
 
         let updatedSlug = value.slug;
-        if (result.data) {
-          if (result.data.slug) {
-            updatedSlug = result.data.slug;
-          }
+        if (result.data && result.data.slug) {
+          updatedSlug = result.data.slug;
         }
 
         await setLastVisitedOrganization(updatedSlug);
@@ -327,9 +325,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         </div>
 
         <TitleCard heading="Organization Details">
-          <div
-            className="space-y-6"
-          >
+          <div className="space-y-6">
             <div className="flex items-center gap-4">
               <input
                 accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
@@ -428,7 +424,11 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               <Input disabled id="organization-id" value={organization.id} />
             </div>
 
-            <Button disabled={isUpdating} onClick={() => form.handleSubmit()} type="button">
+            <Button
+              disabled={isUpdating}
+              onClick={() => form.handleSubmit()}
+              type="button"
+            >
               {isUpdating ? (
                 <>
                   <Loader2Icon className="size-4 animate-spin" />

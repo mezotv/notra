@@ -143,69 +143,70 @@ function FloatingToolbar({
     }
     setTimeout(() => linkInputRef.current?.focus(), 0);
     }
-  }, [editor, isLink, existingLinkUrl, setIsLinkEditMode]);
+}
+, [editor, isLink, existingLinkUrl, setIsLinkEditMode])
 
-  const submitLink = useCallback(() => {
-    const trimmedUrl = linkUrl.trim();
-    if (trimmedUrl !== "" && trimmedUrl !== "https://") {
-      // Validate URL format
-      let isValidUrl = false;
-      try {
-        new URL(trimmedUrl);
-        isValidUrl = true;
-      } catch {
-        // Check if it's a relative URL
-        isValidUrl =
-          trimmedUrl.startsWith("/") ||
-          trimmedUrl.startsWith("./") ||
-          trimmedUrl.startsWith("../") ||
-          trimmedUrl.startsWith("#") ||
-          trimmedUrl.startsWith("?");
-      }
+const submitLink = useCallback(() => {
+  const trimmedUrl = linkUrl.trim();
+  if (trimmedUrl !== "" && trimmedUrl !== "https://") {
+    // Validate URL format
+    let isValidUrl = false;
+    try {
+      new URL(trimmedUrl);
+      isValidUrl = true;
+    } catch {
+      // Check if it's a relative URL
+      isValidUrl =
+        trimmedUrl.startsWith("/") ||
+        trimmedUrl.startsWith("./") ||
+        trimmedUrl.startsWith("../") ||
+        trimmedUrl.startsWith("#") ||
+        trimmedUrl.startsWith("?");
+    }
 
-      if (isValidUrl) {
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, trimmedUrl);
-      } else {
-        // Invalid URL format, remove the link
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
-      }
+    if (isValidUrl) {
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, trimmedUrl);
     } else {
-      // Remove the link if URL is empty
+      // Invalid URL format, remove the link
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
     }
-    setIsLinkEditMode(false);
-    setLinkUrl("https://");
-    setIsEditingExistingLink(false);
-  }, [editor, linkUrl, setIsLinkEditMode]);
+  } else {
+    // Remove the link if URL is empty
+    editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+  }
+  setIsLinkEditMode(false);
+  setLinkUrl("https://");
+  setIsEditingExistingLink(false);
+}, [editor, linkUrl, setIsLinkEditMode]);
 
-  const cancelLinkEdit = useCallback(() => {
-    // Only remove the link if we're canceling a new link creation
-    // If editing an existing link, keep the original URL
-    if (!isEditingExistingLink) {
-      editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+const cancelLinkEdit = useCallback(() => {
+  // Only remove the link if we're canceling a new link creation
+  // If editing an existing link, keep the original URL
+  if (!isEditingExistingLink) {
+    editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+  }
+  setIsLinkEditMode(false);
+  setLinkUrl("https://");
+  setIsEditingExistingLink(false);
+}, [editor, isEditingExistingLink, setIsLinkEditMode]);
+
+const handleLinkKeyDown = useCallback(
+  (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submitLink();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelLinkEdit();
     }
-    setIsLinkEditMode(false);
-    setLinkUrl("https://");
-    setIsEditingExistingLink(false);
-  }, [editor, isEditingExistingLink, setIsLinkEditMode]);
+  },
+  [submitLink, cancelLinkEdit]
+);
 
-  const handleLinkKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitLink();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        cancelLinkEdit();
-      }
-    },
-    [submitLink, cancelLinkEdit]
-  );
+const buttonClass = (active: boolean) =>
+  `p-1.5 rounded hover:bg-muted transition-colors ${active ? "bg-muted text-primary" : "text-muted-foreground"}`;
 
-  const buttonClass = (active: boolean) =>
-    `p-1.5 rounded hover:bg-muted transition-colors ${active ? "bg-muted text-primary" : "text-muted-foreground"}`;
-
-  return (
+return (
     <div
       className="absolute z-50 flex items-center gap-0.5 rounded-lg border bg-popover p-1 opacity-0 shadow-lg transition-opacity"
       ref={toolbarRef}
