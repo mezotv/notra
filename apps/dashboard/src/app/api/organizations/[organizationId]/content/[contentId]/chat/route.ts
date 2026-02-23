@@ -82,7 +82,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { messages, currentMarkdown, contentType, selection, context } = parseResult.data;
+    const { messages, currentMarkdown, contentType, selection, context } =
+      parseResult.data;
 
     let tracked = false;
     if (autumn) {

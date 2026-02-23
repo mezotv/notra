@@ -28,7 +28,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import Image from "next/image";
 import type * as React from "react";
-import { useCallback, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TextSelection } from "@/components/chat-input";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
@@ -85,7 +85,8 @@ function ReactionDot({ type }: { type: string }) {
 }
 
 function generateMockLinkedInUrl(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let hash = "";
   for (let i = 0; i < 8; i++) {
     hash += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -114,10 +115,12 @@ function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
       const mockUrl = generateMockLinkedInUrl();
       return (
         <Tooltip key={index}>
-          <TooltipTrigger asChild>
-            <span className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2">
-              {mockUrl}
-            </span>
+          <TooltipTrigger
+            render={
+              <span className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2" />
+            }
+          >
+            {mockUrl}
           </TooltipTrigger>
           <TooltipContent>
             <p className="text-xs">Mock link (actual: {part})</p>
@@ -143,47 +146,74 @@ function PostContent({
   onSelectionChange?: (selection: TextSelection | null) => void;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const contentRef = useRef<HTMLDivElement>(null);
   const canTruncate = truncate && content.length > truncationLimit;
   const isCollapsed = canTruncate && !expanded;
   const displayContent = isCollapsed
     ? content.slice(0, truncationLimit).trimEnd()
     : content;
 
-  const handleSelection = useCallback(() => {
-    if (!onSelectionChange) return;
-
-    const selection = window.getSelection();
-    const selectedText = selection?.toString().trim();
-
-    if (selectedText && selectedText.length > 0) {
-      // Find position in original content
-      const startIndex = content.indexOf(selectedText);
-      if (startIndex !== -1) {
-        const beforeText = content.substring(0, startIndex);
-        const lines = beforeText.split("\n");
-        const startLine = lines.length;
-        const startChar = (lines.at(-1)?.length ?? 0) + 1;
-
-        const selectedLines = selectedText.split("\n");
-        const endLine = startLine + selectedLines.length - 1;
-        const endChar =
-          selectedLines.length === 1
-            ? startChar + selectedText.length
-            : (selectedLines.at(-1)?.length ?? 0) + 1;
-
-        onSelectionChange({
-          text: selectedText,
-          startLine,
-          startChar,
-          endLine,
-          endChar,
-        });
-      }
+  useEffect(() => {
+    if (!onSelectionChange) {
+      return;
     }
+
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      const container = contentRef.current;
+      if (!selection || !container) {
+        return;
+      }
+
+      const anchorNode = selection.anchorNode;
+      const focusNode = selection.focusNode;
+      if (!anchorNode || !focusNode) {
+        return;
+      }
+
+      if (!container.contains(anchorNode) || !container.contains(focusNode)) {
+        return;
+      }
+
+      const selectedText = selection.toString().trim();
+      if (!selectedText) {
+        return;
+      }
+
+      const startIndex = content.indexOf(selectedText);
+      if (startIndex === -1) {
+        return;
+      }
+
+      const beforeText = content.substring(0, startIndex);
+      const lines = beforeText.split("\n");
+      const startLine = lines.length;
+      const startChar = (lines.at(-1)?.length ?? 0) + 1;
+
+      const selectedLines = selectedText.split("\n");
+      const endLine = startLine + selectedLines.length - 1;
+      const endChar =
+        selectedLines.length === 1
+          ? startChar + selectedText.length
+          : (selectedLines.at(-1)?.length ?? 0) + 1;
+
+      onSelectionChange({
+        text: selectedText,
+        startLine,
+        startChar,
+        endLine,
+        endChar,
+      });
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
   }, [content, onSelectionChange]);
 
   return (
-    <div className="text-sm" onMouseUp={handleSelection}>
+    <div className="text-sm" ref={contentRef}>
       <span className="whitespace-pre-wrap">
         {formatContentWithHashtagsAndLinks(displayContent)}
       </span>

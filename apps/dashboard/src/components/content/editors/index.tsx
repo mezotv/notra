@@ -24,7 +24,6 @@ export function ContentEditorSwitch({
     case "linkedin_post":
       return <LinkedInEditor {...props} />;
 
-    case "changelog":
     default:
       return <ChangelogEditor {...props} />;
   }
