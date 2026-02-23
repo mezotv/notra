@@ -23,7 +23,6 @@ interface SeedPost {
 }
 
 const SEED_POSTS: SeedPost[] = [
-  // Changelogs
   {
     title: "Version 2.5.0 Release Notes",
     content: `<h1>Version 2.5.0 Release Notes</h1>
@@ -222,7 +221,6 @@ V2 will be deprecated on March 1, 2025. Please migrate before then.`,
     status: "published",
   },
 
-  // LinkedIn Posts
   {
     title: "Scaling Our Engineering Team",
     content: `<p>We're thrilled to share how our engineering organization has grown from 5 to 50 engineers while maintaining our culture of innovation and quality.</p>
