@@ -280,4 +280,5 @@ function LinkedInPost({
   );
 }
 
-export { LinkedInPost, type LinkedInPostProps, LINKEDIN_TRUNCATION_LIMIT };
+export { LinkedInPost, type LinkedInPostProps };
+export { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
