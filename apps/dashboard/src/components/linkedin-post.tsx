@@ -84,14 +84,23 @@ function ReactionDot({ type }: { type: string }) {
   );
 }
 
-function generateMockLinkedInUrl(): string {
+function generateMockLinkedInUrl(originalUrl: string): string {
   const chars =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let hash = "";
-  for (let i = 0; i < 8; i++) {
-    hash += chars.charAt(Math.floor(Math.random() * chars.length));
+
+  let hash = 0;
+  for (let i = 0; i < originalUrl.length; i++) {
+    hash = (hash * 31 + originalUrl.charCodeAt(i)) % 2_147_483_647;
   }
-  return `https://lnkd.in/${hash}`;
+
+  let id = "";
+  let value = Math.abs(hash);
+  for (let i = 0; i < 8; i++) {
+    id += chars.charAt(value % chars.length);
+    value = Math.floor(value / chars.length);
+  }
+
+  return `https://lnkd.in/${id}`;
 }
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -112,7 +121,7 @@ function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
       );
     }
     if (part.match(URL_REGEX)) {
-      const mockUrl = generateMockLinkedInUrl();
+      const mockUrl = generateMockLinkedInUrl(part);
       return (
         <Tooltip key={index}>
           <TooltipTrigger
