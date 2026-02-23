@@ -12,6 +12,7 @@ import {
 import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { cookies } from "next/headers";
+import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { autumn } from "@/lib/billing/autumn";
 import {
   sendInviteEmailAction,
@@ -22,7 +23,6 @@ import {
 import { redis } from "@/lib/redis";
 import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/utils/constants";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 

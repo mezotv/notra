@@ -41,10 +41,10 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { FEATURES } from "@/constants/features";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import type { GitHubRepository } from "@/types/integrations";
 import type { IntegrationsResponse } from "@/types/lib/services/integrations";
-import { FEATURES } from "@/utils/constants";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export interface TextSelection {

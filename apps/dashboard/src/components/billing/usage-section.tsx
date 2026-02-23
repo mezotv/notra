@@ -19,7 +19,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import { useMemo, useState } from "react";
-import { FEATURES } from "@/utils/constants";
+import { FEATURES } from "@/constants/features";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
 type RangeOption = (typeof ranges)[number];

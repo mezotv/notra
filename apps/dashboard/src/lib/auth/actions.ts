@@ -5,9 +5,9 @@ import { invitations, members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { auth } from "@/lib/auth/server";
 import type { InvitationResponse } from "@/types/lib/auth/actions";
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/utils/constants";
 
 export async function validateOrganizationAccess(slug: string) {
   const session = await auth.api.getSession({

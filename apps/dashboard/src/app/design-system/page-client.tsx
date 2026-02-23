@@ -1444,9 +1444,11 @@ export default function DesignSystemClientPage() {
             content={
               "We just shipped our biggest update yet — and it changes everything about how teams run automations.\n\nAfter months of working closely with power users, we rebuilt the scheduling engine from the ground up. The result? 3x faster execution, smarter retry logic, and a brand-new visual timeline.\n\nHere's what's new:\n• Enum-based lookback windows for precise control\n• Real-time status indicators across all workflows\n• One-click duplication for complex automations\n\nThis is just the beginning. We're building the future of workflow automation, and your feedback is what drives us forward."
             }
+            defaultExpanded={false}
             reactions={{ count: 128, types: ["like", "love", "celebrate"] }}
             reposts={12}
             timestamp="2d"
+            truncate
           />
           <LinkedInPost
             author={{
@@ -1455,10 +1457,13 @@ export default function DesignSystemClientPage() {
               headline: "Product Designer at Notra",
             }}
             comments={8}
-            content="Excited to share our new dashboard design system — built for consistency, speed, and dark mode from day one."
+            content={
+              "Excited to share our new dashboard design system — built for consistency, speed, and dark mode from day one.\n\nWe focused on three core principles:\n• Accessibility first — every component tested with screen readers\n• Performance obsessed — zero layout shift, minimal JS\n• Developer experience — copy-paste ready with full TypeScript support\n\nCheck it out and let me know what you think!"
+            }
             reactions={{ count: 56, types: ["like", "celebrate"] }}
             reposts={3}
             timestamp="5h"
+            truncate
           />
         </div>
       </section>

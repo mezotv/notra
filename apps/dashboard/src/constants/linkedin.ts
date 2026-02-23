@@ -1,0 +1,1 @@
+export const LINKEDIN_TRUNCATION_LIMIT = 210;

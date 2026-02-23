@@ -15,6 +15,7 @@ import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { FEATURES } from "@/constants/features";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
 import { autumn } from "@/lib/billing/autumn";
@@ -27,7 +28,6 @@ import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
-import { FEATURES } from "@/utils/constants";
 
 const schedulePayloadSchema = z.object({
   triggerId: z.string().min(1),

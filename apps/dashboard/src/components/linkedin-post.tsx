@@ -1,4 +1,7 @@
+"use client";
+
 import {
+  Cancel01Icon,
   Clapping02Icon,
   Comment01Icon,
   FavouriteIcon,
@@ -20,6 +23,8 @@ import { Separator } from "@notra/ui/components/ui/separator";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import Image from "next/image";
 import type * as React from "react";
+import { useState } from "react";
+import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
 
 interface LinkedInPostProps extends React.ComponentProps<"div"> {
@@ -40,6 +45,10 @@ interface LinkedInPostProps extends React.ComponentProps<"div"> {
   onComment?: () => void;
   onRepost?: () => void;
   onSend?: () => void;
+  onClose?: () => void;
+  truncate?: boolean;
+  truncationLimit?: number;
+  defaultExpanded?: boolean;
 }
 
 const reactionColors: Record<string, string> = {
@@ -68,6 +77,40 @@ function ReactionDot({ type }: { type: string }) {
   );
 }
 
+function PostContent({
+  content,
+  truncate,
+  truncationLimit = LINKEDIN_TRUNCATION_LIMIT,
+  defaultExpanded = true,
+}: {
+  content: string;
+  truncate?: boolean;
+  truncationLimit?: number;
+  defaultExpanded?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const canTruncate = truncate && content.length > truncationLimit;
+  const isCollapsed = canTruncate && !expanded;
+  const displayContent = isCollapsed
+    ? content.slice(0, truncationLimit).trimEnd()
+    : content;
+
+  return (
+    <div className="text-sm">
+      <span className="whitespace-pre-wrap">{displayContent}</span>
+      {isCollapsed && (
+        <button
+          className="ml-2 cursor-pointer font-medium text-muted-foreground hover:text-foreground hover:underline"
+          onClick={() => setExpanded(true)}
+          type="button"
+        >
+          …more
+        </button>
+      )}
+    </div>
+  );
+}
+
 function LinkedInPost({
   author,
   content,
@@ -81,12 +124,17 @@ function LinkedInPost({
   onComment,
   onRepost,
   onSend,
+  onClose,
+  truncate,
+  truncationLimit,
+  defaultExpanded,
   className,
   ...props
 }: LinkedInPostProps) {
   const reactionTypes = reactions?.types ?? ["like"];
   const hasEngagement =
     (reactions?.count ?? 0) > 0 || (comments ?? 0) > 0 || (reposts ?? 0) > 0;
+  const isEditable = Boolean(onContentChange);
 
   return (
     <Card className={cn("grid h-fit gap-0 py-0", className)} {...props}>
@@ -110,22 +158,41 @@ function LinkedInPost({
             <HugeiconsIcon className="size-3" icon={GlobalIcon} />
           </div>
         </div>
-        <Button
-          className="shrink-0 text-muted-foreground"
-          size="icon-sm"
-          variant="ghost"
-        >
-          <HugeiconsIcon className="size-5" icon={MoreHorizontalIcon} />
-        </Button>
+        <div className="flex shrink-0 items-center">
+          <Button
+            className="text-muted-foreground"
+            size="icon-sm"
+            variant="ghost"
+          >
+            <HugeiconsIcon className="size-5" icon={MoreHorizontalIcon} />
+          </Button>
+          <Button
+            className="text-muted-foreground"
+            onClick={onClose}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <HugeiconsIcon className="size-5" icon={Cancel01Icon} />
+          </Button>
+        </div>
       </div>
 
       <div className="px-4 pb-2">
-        <Textarea
-          className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-          defaultValue={content}
-          onChange={(e) => onContentChange?.(e.target.value)}
-          placeholder="What do you want to talk about?"
-        />
+        {isEditable ? (
+          <Textarea
+            className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            defaultValue={content}
+            onChange={(e) => onContentChange?.(e.target.value)}
+            placeholder="What do you want to talk about?"
+          />
+        ) : content ? (
+          <PostContent
+            content={content}
+            defaultExpanded={defaultExpanded}
+            truncate={truncate}
+            truncationLimit={truncationLimit}
+          />
+        ) : null}
       </div>
 
       {image && (
@@ -213,4 +280,4 @@ function LinkedInPost({
   );
 }
 
-export { LinkedInPost, type LinkedInPostProps };
+export { LinkedInPost, type LinkedInPostProps, LINKEDIN_TRUNCATION_LIMIT };

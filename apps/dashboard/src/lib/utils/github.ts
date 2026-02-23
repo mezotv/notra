@@ -1,5 +1,5 @@
+import { GITHUB_URL_PATTERNS } from "@/constants/github";
 import type { GitHubRepoInfo } from "@/types/integrations";
-import { GITHUB_URL_PATTERNS } from "@/utils/constants";
 
 export function parseGitHubUrl(url: string): GitHubRepoInfo | null {
   const trimmed = url.trim();
