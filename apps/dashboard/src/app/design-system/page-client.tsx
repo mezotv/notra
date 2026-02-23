@@ -218,6 +218,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import ChatInput from "@/components/chat-input";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
+
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
 
@@ -373,17 +374,17 @@ export default function DesignSystemClientPage() {
   return (
     <main className="container mx-auto flex flex-col gap-12 py-10">
       <header className="space-y-3">
-        <h1 className="font-semibold text-3xl tracking-tight">
-          Notra UI Preview
-        </h1>
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="font-semibold text-3xl tracking-tight">
+            Notra UI Preview
+          </h1>
+          <SidebarProvider className="!min-h-0 w-auto" defaultOpen={false}>
+            <ThemeToggle />
+          </SidebarProvider>
+        </div>
         <p className="max-w-2xl text-muted-foreground text-sm">
           Component and token showcase for the dashboard UI kit.
         </p>
-        <SidebarProvider defaultOpen={false}>
-          <div className="w-fit">
-            <ThemeToggle />
-          </div>
-        </SidebarProvider>
       </header>
 
       <section className="space-y-6">
