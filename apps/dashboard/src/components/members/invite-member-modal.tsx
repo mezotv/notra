@@ -1,14 +1,15 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@notra/ui/components/ui/dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@notra/ui/components/shared/responsive-dialog";
+import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import {
@@ -70,9 +71,7 @@ export function InviteMemberModal({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = () => {
     if (!organizationId) {
       toast.error("Organization ID is missing. Please try again.");
       return;
@@ -87,17 +86,19 @@ export function InviteMemberModal({
     inviteMember();
   };
 
+  const canSubmit = !!organizationId && email.trim().length > 0;
+
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Invite Member</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Invite Member</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Invite a new member to your organization. They will receive an email
             invitation.
-          </DialogDescription>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        <form className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
             <Input
@@ -118,7 +119,10 @@ export function InviteMemberModal({
               value={role}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a role" />
+                <SelectValue
+                  className="capitalize"
+                  placeholder="Select a role"
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="member">Member</SelectItem>
@@ -126,21 +130,32 @@ export function InviteMemberModal({
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose
               disabled={isPending}
-              onClick={() => onOpenChange(false)}
-              type="button"
-              variant="outline"
+              render={
+                <Button
+                  className="w-full justify-center sm:w-auto"
+                  variant="outline"
+                />
+              }
             >
               Cancel
-            </Button>
-            <Button disabled={isPending} type="submit">
+            </ResponsiveDialogClose>
+            <Button
+              className="w-full justify-center sm:w-auto"
+              disabled={!canSubmit || isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSubmit();
+              }}
+              type="button"
+            >
               {isPending ? "Sending..." : "Send Invitation"}
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

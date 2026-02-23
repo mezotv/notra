@@ -44,6 +44,33 @@ export const CHANGELOG_COMPANIES = [
     url: "https://useautumn.com",
     accentColor: "#9c5bff",
   },
+  {
+    slug: "marble",
+    name: "Marble",
+    domain: "marblecms.com",
+    description:
+      "Marble is a simple way to manage your blog and media. Write, upload, and publish with a clean interface and simple API.",
+    url: "https://marblecms.com",
+    accentColor: "#202027",
+  },
+  {
+    slug: "neon",
+    name: "Neon",
+    domain: "neon.tech",
+    description:
+      "Serverless Postgres built for developers, with instant branching, autoscaling, and modern workflows for database-backed applications.",
+    url: "https://neon.tech",
+    accentColor: "#37C38F",
+  },
+  {
+    slug: "unkey",
+    name: "Unkey",
+    domain: "unkey.com",
+    description:
+      "Easily integrate necessary API features like API keys, rate limiting, and usage analytics, ensuring your API is ready to scale.",
+    url: "https://unkey.com",
+    accentColor: "#000000",
+  },
 ] as const;
 
 export function getCompany(slug: string) {

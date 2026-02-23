@@ -27,11 +27,12 @@ import ChatInput, {
   type ContextItem,
   type TextSelection,
 } from "@/components/chat-input";
-import { CONTENT_TYPE_LABELS } from "@/components/content/content-card";
+import { getContentTypeLabel } from "@/components/content/content-card";
 import { DiffView } from "@/components/content/diff-view";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
-import { sourceMetadataSchema } from "@/utils/schemas/content";
+import { sourceMetadataSchema } from "@/schemas/content";
+import { formatSnakeCaseLabel } from "@/utils/format";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -65,22 +66,8 @@ function extractTitleFromMarkdown(markdown: string): string {
   return match?.[1] ?? "Untitled";
 }
 
-const LOOKBACK_LABELS: Record<string, string> = {
-  current_day: "Current day",
-  yesterday: "Yesterday",
-  last_7_days: "Last 7 days",
-  last_14_days: "Last 14 days",
-  last_30_days: "Last 30 days",
-};
-
-const TRIGGER_TYPE_LABELS: Record<string, string> = {
-  cron: "Scheduled",
-  github_webhook: "Webhook",
-  manual: "Manual",
-};
-
 function formatLookbackWindow(window: string): string {
-  return LOOKBACK_LABELS[window] ?? window;
+  return formatSnakeCaseLabel(window);
 }
 
 function formatDateRange(start: string, end: string): string {
@@ -93,7 +80,7 @@ function formatDateRange(start: string, end: string): string {
 }
 
 function formatTriggerType(type: string): string {
-  return TRIGGER_TYPE_LABELS[type] ?? type;
+  return formatSnakeCaseLabel(type);
 }
 
 function formatRepos(repos: { owner: string; repo: string }[]): string {
@@ -119,6 +106,7 @@ export default function PageClient({
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
   const [originalMarkdown, setOriginalMarkdown] = useState("");
+  const [persistedTitle, setPersistedTitle] = useState<string | null>(null);
   const [selection, setSelection] = useState<TextSelection | null>(null);
   const [editorKey, setEditorKey] = useState(0);
   const [context, setContext] = useState<ContextItem[]>([]);
@@ -144,10 +132,22 @@ export default function PageClient({
   }, [data, editedMarkdown]);
 
   const currentMarkdown = editedMarkdown ?? data?.content?.markdown ?? "";
-  const hasChanges =
+  useEffect(() => {
+    setPersistedTitle(data?.content?.title ?? null);
+  }, [contentId, data?.content?.title]);
+
+  const serverTitle =
+    persistedTitle ??
+    data?.content?.title ??
+    extractTitleFromMarkdown(currentMarkdown);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const title = editingTitle ?? serverTitle;
+  const hasTitleChanges =
+    editingTitle !== null && editingTitle.trim() !== serverTitle;
+  const hasMarkdownChanges =
     editedMarkdown !== null && editedMarkdown !== originalMarkdown;
-  const title =
-    data?.content?.title || extractTitleFromMarkdown(currentMarkdown);
+  const hasChanges = hasMarkdownChanges || hasTitleChanges;
 
   const [, setIsSaving] = useState(false);
 
@@ -156,7 +156,6 @@ export default function PageClient({
       return;
     }
 
-    // TODO: add client-side route change confirmation for unsaved edits.
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
@@ -170,18 +169,26 @@ export default function PageClient({
   }, [hasChanges]);
 
   const handleSave = useCallback(async () => {
-    if (!editedMarkdown) {
+    if (!hasChanges) {
       return;
     }
 
     setIsSaving(true);
     try {
+      const body: Record<string, string> = {};
+      if (hasTitleChanges) {
+        body.title = title.trim();
+      }
+      if (editedMarkdown) {
+        body.markdown = editedMarkdown;
+      }
+
       const response = await fetch(
         `/api/organizations/${organizationId}/content/${contentId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ markdown: editedMarkdown }),
+          body: JSON.stringify(body),
         }
       );
 
@@ -189,30 +196,43 @@ export default function PageClient({
         throw new Error("Failed to save");
       }
 
-      setOriginalMarkdown(editedMarkdown);
-      originalMarkdownRef.current = editedMarkdown;
+      const responseData = (await response.json()) as {
+        content?: { title?: string };
+      };
+
+      if (editedMarkdown) {
+        setOriginalMarkdown(editedMarkdown);
+        originalMarkdownRef.current = editedMarkdown;
+      }
+      setPersistedTitle(responseData.content?.title ?? title.trim());
+      setEditingTitle(null);
       toast.success("Content saved");
-    } catch (err) {
-      console.error("Error saving content:", err);
+    } catch {
       toast.error("Failed to save content");
     } finally {
       setIsSaving(false);
     }
-  }, [editedMarkdown, organizationId, contentId]);
+  }, [
+    hasChanges,
+    hasTitleChanges,
+    title,
+    editedMarkdown,
+    organizationId,
+    contentId,
+  ]);
 
   const handleDiscard = useCallback(() => {
     setEditedMarkdown(originalMarkdown);
     editedMarkdownRef.current = originalMarkdown;
     editorRef.current?.setMarkdown(originalMarkdown);
+    setEditingTitle(null);
   }, [originalMarkdown]);
 
-  // Keep refs updated with latest callbacks
   useEffect(() => {
     handleSaveRef.current = handleSave;
     handleDiscardRef.current = handleDiscard;
   }, [handleSave, handleDiscard]);
 
-  // Persistent save toast - only create/dismiss based on hasChanges
   useEffect(() => {
     if (hasChanges && !saveToastIdRef.current) {
       saveToastIdRef.current = toast.custom(
@@ -252,7 +272,6 @@ export default function PageClient({
     }
   }, [hasChanges]);
 
-  // Cleanup toast on unmount
   useEffect(() => {
     return () => {
       if (saveToastIdRef.current) {
@@ -268,7 +287,6 @@ export default function PageClient({
 
   const handleAddContext = useCallback((item: ContextItem) => {
     setContext((prev) => {
-      // Check if already in context
       if (
         prev.some(
           (c) =>
@@ -296,7 +314,6 @@ export default function PageClient({
     );
   }, []);
 
-  // Handle Lexical editor changes
   const handleEditorChange = useCallback((markdown: string) => {
     if (
       needsNormalizationRef.current &&
@@ -311,14 +328,12 @@ export default function PageClient({
     editedMarkdownRef.current = markdown;
   }, []);
 
-  // Handle Lexical selection
   const handleSelectionChange = useCallback((sel: TextSelection | null) => {
     if (sel && sel.text.length > 0) {
       setSelection(sel);
     }
   }, []);
 
-  // Handle textarea selection
   const handleTextareaSelect = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) {
@@ -330,7 +345,6 @@ export default function PageClient({
     if (startOffset !== endOffset) {
       const text = textarea.value.substring(startOffset, endOffset).trim();
       if (text) {
-        // Calculate line and character positions
         const getLineAndChar = (offset: number) => {
           const lines = textarea.value.substring(0, offset).split("\n");
           return {
@@ -396,15 +410,12 @@ export default function PageClient({
           );
           return;
         }
-      } catch {
-        // Not a JSON error, fall through
-      }
+      } catch {}
 
       toast.error("Failed to edit content");
     },
   });
 
-  // Get current status for display - shows AI text or tool status
   const currentToolStatus = (() => {
     const toolNames: Record<string, string> = {
       getMarkdown: "Reading document...",
@@ -426,7 +437,6 @@ export default function PageClient({
           }
           if (part.type.startsWith("tool-")) {
             const toolPart = part as { state: string };
-            // Extract tool name from type like "tool-getMarkdown" -> "getMarkdown"
             const toolName = part.type.replace("tool-", "");
             if (
               toolPart.state === "input-streaming" ||
@@ -441,10 +451,8 @@ export default function PageClient({
     return undefined;
   })();
 
-  // Track processed tool calls to avoid duplicate updates
   const processedToolCallsRef = useRef<Set<string>>(new Set());
 
-  // Watch for tool results and update the editor
   useEffect(() => {
     for (const message of messages) {
       if (message.role === "assistant" && message.parts) {
@@ -456,7 +464,6 @@ export default function PageClient({
               output?: { updatedMarkdown?: string };
             };
 
-            // Skip if already processed
             if (processedToolCallsRef.current.has(toolPart.toolCallId)) {
               continue;
             }
@@ -466,7 +473,6 @@ export default function PageClient({
               toolPart.output?.updatedMarkdown
             ) {
               processedToolCallsRef.current.add(toolPart.toolCallId);
-              // Use remend to fix any incomplete markdown syntax
               const fixedMarkdown = remend(toolPart.output.updatedMarkdown);
               console.log(
                 `[Tool] editMarkdown result applied, toolCallId=${toolPart.toolCallId}`
@@ -551,8 +557,8 @@ export default function PageClient({
               >
                 {formatDate(new Date(content.date))}
               </time>
-              <Badge variant="secondary">
-                {CONTENT_TYPE_LABELS[content.contentType]}
+              <Badge className="capitalize" variant="secondary">
+                {getContentTypeLabel(content.contentType)}
               </Badge>
             </div>
             {content.sourceMetadata &&
@@ -568,7 +574,9 @@ export default function PageClient({
                 const needsTooltip = meta.repositories.length > 1;
                 return (
                   <p className="text-muted-foreground text-xs">
-                    {formatTriggerType(meta.triggerSourceType)}
+                    <span className="capitalize">
+                      {formatTriggerType(meta.triggerSourceType)}
+                    </span>
                     {" \u00B7 "}
                     {needsTooltip ? (
                       <Tooltip>
@@ -593,7 +601,10 @@ export default function PageClient({
                       repoLabel
                     )}
                     {" \u00B7 "}
-                    {formatLookbackWindow(meta.lookbackWindow)} (
+                    <span className="capitalize">
+                      {formatLookbackWindow(meta.lookbackWindow)}
+                    </span>{" "}
+                    (
                     {formatDateRange(
                       meta.lookbackRange.start,
                       meta.lookbackRange.end
@@ -627,7 +638,31 @@ export default function PageClient({
                 </TabsTrigger>
               </TabsList>
             }
-            heading={title}
+            heading={
+              <input
+                aria-label="Post title"
+                className="w-full bg-transparent outline-none focus:ring-0"
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onFocus={(e) => {
+                  if (editingTitle === null) {
+                    setEditingTitle(e.target.value);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    titleInputRef.current?.blur();
+                  }
+                  if (e.key === "Escape") {
+                    setEditingTitle(null);
+                    titleInputRef.current?.blur();
+                  }
+                }}
+                ref={titleInputRef}
+                type="text"
+                value={title}
+              />
+            }
           >
             <TabsContent
               className="prose prose-neutral dark:prose-invert mt-0 max-w-none"
@@ -657,11 +692,41 @@ export default function PageClient({
                 value={currentMarkdown}
               />
             </TabsContent>
-            <TabsContent className="mt-0" value="diff">
-              <DiffView
-                currentMarkdown={currentMarkdown}
-                originalMarkdown={originalMarkdown}
-              />
+            <TabsContent className="mt-0 space-y-4" value="diff">
+              {hasTitleChanges && (
+                <div className="space-y-2">
+                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Title
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 rounded-lg border p-3 text-sm">
+                    <div className="min-w-0">
+                      <p className="mb-1 text-muted-foreground text-xs">
+                        Original
+                      </p>
+                      <p className="wrap-break-word rounded bg-red-500/10 px-2 py-1">
+                        {serverTitle}
+                      </p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="mb-1 text-muted-foreground text-xs">
+                        Current
+                      </p>
+                      <p className="wrap-break-word rounded bg-green-500/10 px-2 py-1">
+                        {title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                  Content
+                </p>
+                <DiffView
+                  currentMarkdown={currentMarkdown}
+                  originalMarkdown={originalMarkdown}
+                />
+              </div>
             </TabsContent>
           </TitleCard>
         </Tabs>
@@ -670,7 +735,7 @@ export default function PageClient({
       </div>
 
       <div
-        className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"}`}
+        className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"}`}
       >
         <ChatInput
           context={context}

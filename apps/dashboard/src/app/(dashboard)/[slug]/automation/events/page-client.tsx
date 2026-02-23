@@ -26,15 +26,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
+import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
+import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
+import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { Trigger, TriggerSourceType } from "@/types/triggers";
+import type { Trigger, TriggerSourceType } from "@/types/lib/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import { AddTriggerDialog } from "../../triggers/trigger-dialog";
-import { TriggerRowActions } from "../_components/trigger-row-actions";
-import { TriggerStatusBadge } from "../_components/trigger-status-badge";
-import { EventsPageSkeleton } from "./skeleton";
 
 const COMING_SOON = true;
 
@@ -66,7 +66,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"active" | "paused">("active");
 
-  const { data, isPending } = useQuery({
+  const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
     queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
     queryFn: async () => {
       if (!organizationId) {
@@ -80,7 +80,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Failed to fetch triggers");
       }
 
-      return response.json() as Promise<{ triggers: Trigger[] }>;
+      return response.json();
     },
     enabled: !!organizationId,
   });
@@ -261,9 +261,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           />
         </div>
 
-        {isPending ? (
-          <EventsPageSkeleton />
-        ) : eventTriggers.length === 0 ? (
+        {isPending && <EventsPageSkeleton />}
+
+        {!isPending && eventTriggers.length === 0 && (
           <div className="rounded-2xl border border-dashed p-12 text-center">
             <h3 className="font-semibold text-lg">No event triggers yet</h3>
             <p className="mt-1 text-muted-foreground text-sm">
@@ -295,7 +295,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               />
             </div>
           </div>
-        ) : (
+        )}
+
+        {!isPending && eventTriggers.length > 0 && (
           <Tabs
             defaultValue="active"
             onValueChange={(value) =>
@@ -378,7 +380,7 @@ function EventTable({
               <TableCell className="text-muted-foreground">
                 {formatEventList(trigger.sourceConfig.eventTypes)}
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground capitalize">
                 {getOutputTypeLabel(trigger.outputType)}
               </TableCell>
               <TableCell className="text-muted-foreground">

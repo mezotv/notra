@@ -2,21 +2,24 @@ import {
   EMAIL_CONFIG,
   InviteUserEmail,
   ResetPasswordEmail,
+  ScheduledContentCreatedEmail,
+  ScheduledContentFailedEmail,
   VerifyUserEmail,
   WelcomeEmail,
 } from "@notra/email";
 import type { Resend } from "resend";
+import type {
+  EmailResult,
+  SendInviteEmailProps,
+  SendScheduledContentCreatedEmailProps,
+  SendScheduledContentFailedEmailProps,
+} from "@/types/lib/email/send";
 
 // --- Retry & Idempotency ---
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30_000;
-
-interface EmailResult {
-  data: { id: string } | null;
-  error: { name: string; message: string } | null;
-}
 
 function isRetryable(error: { name: string; message: string }): boolean {
   const name = error.name.toLowerCase();
@@ -98,15 +101,6 @@ async function sendWithRetry(
 
 // --- Send Functions ---
 
-interface SendInviteEmailProps {
-  inviteeEmail: string;
-  inviteeUsername?: string;
-  inviterName: string;
-  inviterEmail: string;
-  organizationName: string;
-  inviteLink: string;
-}
-
 export async function sendInviteEmail(
   resend: Resend,
   {
@@ -137,9 +131,7 @@ export async function sendInviteEmail(
   );
 }
 
-function getVerificationSubject(
-  type: "sign-in" | "email-verification"
-): string {
+function getVerificationSubject(type: "sign-in" | "email-verification") {
   switch (type) {
     case "sign-in":
       return "Your sign-in code";
@@ -231,5 +223,73 @@ export async function sendWelcomeEmail(
       tags: [{ name: "category", value: "welcome" }],
     },
     `notra:welcome:${userEmail}`
+  );
+}
+
+export async function sendScheduledContentFailedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    scheduleName,
+    reason,
+    organizationSlug,
+    subject,
+  }: SendScheduledContentFailedEmailProps
+) {
+  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject:
+        subject ?? `Your ${scheduleName} schedule failed to generate content`,
+      react: ScheduledContentFailedEmail({
+        organizationName,
+        organizationSlug,
+        scheduleName,
+        reason,
+        settingsLink,
+      }),
+      tags: [{ name: "category", value: "schedule-content-failed" }],
+    },
+    `notra:schedule-content-failed:${recipientEmail}:${scheduleName}:${Date.now()}`
+  );
+}
+
+export async function sendScheduledContentCreatedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    scheduleName,
+    contentTitle,
+    contentType,
+    contentLink,
+    organizationSlug,
+    subject,
+  }: SendScheduledContentCreatedEmailProps
+) {
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject: subject ?? `Your ${scheduleName} schedule created new content`,
+      react: ScheduledContentCreatedEmail({
+        organizationName,
+        organizationSlug,
+        scheduleName,
+        contentTitle,
+        contentType,
+        contentLink,
+      }),
+      tags: [{ name: "category", value: "schedule-content-created" }],
+    },
+    `notra:schedule-content-created:${recipientEmail}:${contentLink}`
   );
 }

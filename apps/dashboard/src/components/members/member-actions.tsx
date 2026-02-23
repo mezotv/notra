@@ -7,15 +7,15 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Dialog,
@@ -241,7 +241,7 @@ export function MemberActions({ member }: MemberActionsProps) {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <ResponsiveAlertDialog
         onOpenChange={(open) => {
           if (!isRemoving) {
             setShowRemoveDialog(open);
@@ -249,27 +249,31 @@ export function MemberActions({ member }: MemberActionsProps) {
         }}
         open={showRemoveDialog}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove {member.user.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Remove {member.user.name}?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
               This will remove {member.user.name} from {activeOrganization.name}
               . They will lose access to all organization content and will need
               to be invited again to rejoin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={isRemoving}>
+              Cancel
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isRemoving}
               onClick={handleRemoveMember}
             >
               {isRemoving ? "Removing..." : "Remove Member"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
     </>
   );
 }

@@ -3,6 +3,7 @@
 import {
   Cancel01Icon,
   CheckmarkCircle02Icon,
+  Upload01Icon,
   ViewIcon,
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
@@ -22,7 +23,7 @@ import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -30,6 +31,7 @@ import { PageContainer } from "@/components/layout/container";
 import { DeleteAccountSection } from "@/components/settings/delete-account";
 import { OrganizationsSection } from "@/components/settings/organizations-section";
 import { authClient } from "@/lib/auth/client";
+import { uploadFile } from "@/lib/upload/client";
 import { AccountPageSkeleton } from "./skeleton";
 
 const nameSchema = z.string().trim().min(1, "Name cannot be empty");
@@ -58,8 +60,11 @@ interface Account {
 
 export default function SettingsAccountPage() {
   const router = useRouter();
-  const { data: session, isPending: isSessionPending } =
-    authClient.useSession();
+  const {
+    data: session,
+    isPending: isSessionPending,
+    refetch: refetchSession,
+  } = authClient.useSession();
   const user = session?.user;
 
   const {
@@ -104,7 +109,7 @@ export default function SettingsAccountPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <ProfileSection user={user} />
+          <ProfileSection onSessionRefetch={refetchSession} user={user} />
           <LoginDetailsSection
             email={user.email}
             hasPasswordAccount={hasPasswordAccount ?? false}
@@ -131,10 +136,44 @@ interface ProfileSectionProps {
     email: string;
     image?: string | null;
   };
+  onSessionRefetch?: () => void | Promise<void>;
 }
 
-function ProfileSection({ user }: ProfileSectionProps) {
+function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    e.target.value = "";
+
+    setIsUploadingAvatar(true);
+    try {
+      const { url } = await uploadFile({ file, type: "avatar" });
+      const result = await authClient.updateUser({ image: url });
+
+      if (result.error) {
+        toast.error(result.error.message ?? "Failed to update profile picture");
+        return;
+      }
+
+      toast.success("Profile picture updated");
+      await onSessionRefetch?.();
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to upload profile picture"
+      );
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
 
   const form = useForm({
     defaultValues: {
@@ -177,20 +216,48 @@ function ProfileSection({ user }: ProfileSectionProps) {
     <TitleCard heading="Your Profile">
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Avatar className="size-16 rounded-lg after:rounded-lg">
-            <AvatarImage
-              alt={user.name}
-              className="rounded-lg"
-              src={user.image ?? undefined}
-            />
-            <AvatarFallback className="rounded-lg text-xl">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <input
+            accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+            className="hidden"
+            disabled={isUploadingAvatar}
+            onChange={handleAvatarChange}
+            ref={fileInputRef}
+            type="file"
+          />
+          <button
+            aria-label="Upload profile picture"
+            className="group group/avatar relative cursor-pointer disabled:cursor-not-allowed"
+            disabled={isUploadingAvatar}
+            onClick={() => fileInputRef.current?.click()}
+            onMouseEnter={(e) => e.stopPropagation()}
+            onMouseLeave={(e) => e.stopPropagation()}
+            type="button"
+          >
+            <Avatar className="size-16 rounded-lg ring-2 ring-transparent transition-shadow after:rounded-lg group-hover/avatar:ring-muted-foreground/20 group-focus-visible:ring-ring">
+              <AvatarImage
+                alt={user.name}
+                className="rounded-lg"
+                src={user.image ?? undefined}
+              />
+              <AvatarFallback className="rounded-lg text-xl">
+                {user.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+              {isUploadingAvatar && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80">
+                  <Loader2Icon className="size-6 animate-spin" />
+                </span>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80 opacity-0 transition-opacity group-hover/avatar:opacity-100">
+                <HugeiconsIcon className="size-6" icon={Upload01Icon} />
+              </span>
+            </Avatar>
+          </button>
           <div className="space-y-1">
             <p className="font-medium text-sm">Profile picture</p>
             <p className="text-muted-foreground text-xs">
-              Your profile picture is synced from your connected accounts
+              {isUploadingAvatar
+                ? "Uploading..."
+                : "Click to upload a new profile picture"}
             </p>
           </div>
         </div>

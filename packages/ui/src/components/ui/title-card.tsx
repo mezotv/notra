@@ -46,13 +46,13 @@ function TitleCard({
           icon ? "pl-3" : "pl-2"
         )}
       >
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {icon && (
             <div className="flex size-8 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-5">
               {icon}
             </div>
           )}
-          <p className="min-w-0 truncate font-medium text-lg">{heading}</p>
+          <p className="min-w-0 flex-1 truncate font-medium text-lg">{heading}</p>
         </div>
         {action && (
           <div className="flex shrink-0 items-center gap-2">{action}</div>

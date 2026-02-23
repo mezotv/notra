@@ -1,7 +1,7 @@
 # Notra
 
 <p align="center">
-  <img src="apps/dashboard/src/app/icon.svg" alt="Notra logo" width="96" height="96" />
+  <img src="apps/web/src/app/icon0.svg" alt="Notra logo" width="96" height="96" />
 </p>
 
 Notra helps teams turn their daily work, such as merged PRs, closed issues, and Slack conversations, into ready-to-publish content.

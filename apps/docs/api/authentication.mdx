@@ -1,0 +1,55 @@
+---
+title: "Authentication"
+description: "Authenticate requests to the Notra API using API keys."
+---
+
+Notra API requests are authenticated with API keys.
+
+## How It Works
+
+Include your key in the `Authorization` header using the `Bearer` scheme:
+
+<CodeGroup>
+```bash cURL
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/",
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
+    },
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+</CodeGroup>
+
+## Create an API Key
+
+1. Open your workspace dashboard.
+2. Go to **API Keys** under **Developer**.
+3. Click **Create API Key**.
+4. Choose a name, permission, and optional expiration.
+5. Copy the key and store it securely.
+
+API keys are powered by [Unkey](https://unkey.dev).
+
+## Security Best Practices
+
+<Warning>
+  Treat API keys as secrets. Do not expose them in client-side code, public
+  repositories, or logs.
+</Warning>
+
+<Tip>
+  Store your key in a server-side environment variable such as `NOTRA_API_KEY`
+  and make requests from your backend whenever possible.
+</Tip>
+
+If a key is exposed, delete it immediately by going to **API Keys** under the **Developer** section of your dashboard sidebar.

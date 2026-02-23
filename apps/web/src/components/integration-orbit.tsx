@@ -62,8 +62,8 @@ const items = [
 ];
 
 const centerLogo = (
-  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#37322f] text-[#8E51FF] shadow-md">
-    <NotraMark className="h-7 w-7 shrink-0" strokeWidth={42} />
+  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-background text-primary shadow-md">
+    <NotraMark className="h-7 w-7 shrink-0" />
   </div>
 );
 

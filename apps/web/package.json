@@ -13,6 +13,7 @@
     "@hugeicons/react": "^1.1.5",
     "@notra/ui": "workspace:*",
     "fumadocs-mdx": "^14.2.7",
+    "motion": "^12.34.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

@@ -2,44 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import type { UpdateBrandSettingsInput } from "@/schemas/brand";
+import type {
+  BrandSettingsResponse,
+  Progress,
+  ProgressResponse,
+} from "@/types/lib/hooks/brand-analysis";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import type { UpdateBrandSettingsInput } from "@/utils/schemas/brand";
-
-interface BrandSettings {
-  id: string;
-  organizationId: string;
-  companyName: string | null;
-  companyDescription: string | null;
-  toneProfile: string | null;
-  customTone: string | null;
-  customInstructions: string | null;
-  audience: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface BrandSettingsResponse {
-  settings: BrandSettings | null;
-}
-
-type ProgressStatus =
-  | "idle"
-  | "scraping"
-  | "extracting"
-  | "saving"
-  | "completed"
-  | "failed";
-
-interface Progress {
-  status: ProgressStatus;
-  currentStep: number;
-  totalSteps: number;
-  error?: string;
-}
-
-interface ProgressResponse {
-  progress: Progress;
-}
 
 export function useBrandSettings(organizationId: string) {
   return useQuery({

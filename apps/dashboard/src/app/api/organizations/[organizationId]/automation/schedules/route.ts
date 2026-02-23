@@ -3,7 +3,7 @@ import { db } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
   contentTriggers,
-  githubRepositories,
+  githubIntegrations,
 } from "@notra/db/schema";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -15,16 +15,17 @@ import {
   createQstashSchedule,
   deleteQstashSchedule,
 } from "@/lib/triggers/qstash";
-import type { Trigger } from "@/types/triggers";
 import {
   configureScheduleBodySchema,
   getSchedulesQuerySchema,
   type LookbackWindow,
   triggerTargetsSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
+import type { Trigger } from "@/types/lib/triggers/triggers";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
+const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
 
 function toEffectiveLookbackWindow(
   lookbackWindow?: LookbackWindow | null
@@ -168,16 +169,24 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       allRepositoryIds.length > 0
         ? await db
             .select({
-              id: githubRepositories.id,
-              owner: githubRepositories.owner,
-              repo: githubRepositories.repo,
+              id: githubIntegrations.id,
+              owner: githubIntegrations.owner,
+              repo: githubIntegrations.repo,
+              defaultBranch: githubIntegrations.defaultBranch,
             })
-            .from(githubRepositories)
-            .where(inArray(githubRepositories.id, allRepositoryIds))
+            .from(githubIntegrations)
+            .where(inArray(githubIntegrations.id, allRepositoryIds))
         : [];
 
     const repositoryMap = Object.fromEntries(
-      repositories.map((r) => [r.id, `${r.owner}/${r.repo}`])
+      repositories
+        .filter((repository) => repository.owner && repository.repo)
+        .map((repository) => [
+          repository.id,
+          repository.defaultBranch?.trim()
+            ? `${repository.owner}/${repository.repo} · ${repository.defaultBranch.trim()}`
+            : `${repository.owner}/${repository.repo}`,
+        ])
     );
 
     return NextResponse.json({
@@ -216,6 +225,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const {
+      name,
       sourceType,
       sourceConfig,
       targets,
@@ -248,16 +258,66 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    // Verify all target integrations exist
+    if (enabled === true && normalized.targets.repositoryIds.length > 0) {
+      const targetIntegrations = await db.query.githubIntegrations.findMany({
+        where: and(
+          eq(githubIntegrations.organizationId, organizationId),
+          inArray(githubIntegrations.id, normalized.targets.repositoryIds)
+        ),
+        columns: { id: true },
+      });
+
+      const existingIds = new Set(targetIntegrations.map((i) => i.id));
+      const missingIds = normalized.targets.repositoryIds.filter(
+        (id) => !existingIds.has(id)
+      );
+
+      if (missingIds.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot create enabled schedule: one or more integrations not found",
+            code: "INTEGRATION_NOT_FOUND",
+            missingIntegrationIds: missingIds,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const triggerId = nanoid();
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
     const persistedLookbackWindow = lookbackWindow;
+    const persistedName = name?.trim() || DEFAULT_SCHEDULE_NAME;
 
     if (cronExpression) {
-      qstashScheduleId = await createQstashSchedule({
-        triggerId,
-        cron: cronExpression,
-      });
+      try {
+        qstashScheduleId = await createQstashSchedule({
+          triggerId,
+          cron: cronExpression,
+        });
+      } catch (qstashError) {
+        const errorMessage =
+          qstashError instanceof Error ? qstashError.message : "Unknown error";
+
+        // Check for invalid destination URL (common when APP_URL is not configured or unreachable)
+        if (
+          errorMessage.includes("invalid destination") ||
+          errorMessage.includes("unable to resolve host")
+        ) {
+          return NextResponse.json(
+            {
+              error: "External URL not configured",
+              code: "INVALID_DESTINATION_URL",
+            },
+            { status: 400 }
+          );
+        }
+
+        throw qstashError;
+      }
     }
 
     try {
@@ -267,6 +327,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           .values({
             id: triggerId,
             organizationId,
+            name: persistedName,
             sourceType,
             sourceConfig: normalized.sourceConfig,
             targets: normalized.targets,
@@ -352,6 +413,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const {
+      name,
       sourceType,
       sourceConfig,
       targets,
@@ -399,10 +461,40 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    // If trying to enable, verify all target integrations exist
+    if (enabled === true) {
+      const targetIntegrations = await db.query.githubIntegrations.findMany({
+        where: and(
+          eq(githubIntegrations.organizationId, organizationId),
+          inArray(githubIntegrations.id, normalized.targets.repositoryIds)
+        ),
+        columns: { id: true },
+      });
+
+      const existingIds = new Set(targetIntegrations.map((i) => i.id));
+      const missingIds = normalized.targets.repositoryIds.filter(
+        (id) => !existingIds.has(id)
+      );
+
+      if (missingIds.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot enable schedule: one or more integrations have been deleted",
+            code: "INTEGRATION_NOT_FOUND",
+            missingIntegrationIds: missingIds,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const existingScheduleId = existing.qstashScheduleId ?? null;
     const cronExpression = buildCronExpression(sourceConfig.cron);
     let qstashScheduleId: string | null = null;
     const persistedLookbackWindow = lookbackWindow;
+    const persistedName =
+      name?.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
 
     if (cronExpression) {
       qstashScheduleId = await createQstashSchedule({
@@ -417,6 +509,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         const [updatedTrigger] = await tx
           .update(contentTriggers)
           .set({
+            name: persistedName,
             sourceType,
             sourceConfig: normalized.sourceConfig,
             targets: normalized.targets,

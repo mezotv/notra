@@ -1,26 +1,16 @@
 import { type Tool, tool } from "ai";
 import * as z from "zod";
-import { getAICachedTools } from "@/lib/ai/tool-cache";
 import { createOctokit } from "@/lib/octokit";
-import { getTokenForRepository } from "@/lib/services/github-integration";
-import { toolDescription } from "../utils/description";
-
-interface GitHubToolsAccessConfig {
-  organizationId?: string;
-  allowedRepositories?: Array<{ owner: string; repo: string }>;
-}
+import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
+import type {
+  ErrorWithStatus,
+  GitHubToolsAccessConfig,
+} from "@/types/lib/ai/tools";
+import { toolDescription } from "@/utils/ai/description";
+import { getAICachedTools } from "./tool-cache";
 
 const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
   "GitHub API rate limit reached. Please retry later.";
-
-interface ErrorWithStatus {
-  status?: number;
-  message?: string;
-  response?: {
-    headers?: Record<string, string | number | undefined>;
-    data?: unknown;
-  };
-}
 
 function parseRetryAfterSeconds(value?: string | number) {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -147,34 +137,58 @@ async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
   }
 }
 
-function isRepositoryAllowed(
-  owner: string,
-  repo: string,
-  allowedRepositories?: Array<{ owner: string; repo: string }>
-) {
-  if (!allowedRepositories?.length) {
-    return true;
-  }
+function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
+  const cache = new Map<
+    string,
+    Promise<
+      Awaited<ReturnType<typeof getGitHubToolRepositoryContextByIntegrationId>>
+    >
+  >();
 
-  const normalizedOwner = owner.toLowerCase();
-  const normalizedRepo = repo.toLowerCase();
+  return async (integrationId: string) => {
+    if (
+      config?.allowedIntegrationIds !== undefined &&
+      !config.allowedIntegrationIds.includes(integrationId)
+    ) {
+      throw new Error(
+        `Repository access denied. Integration ID ${integrationId} is not in the allowed list.`
+      );
+    }
 
-  return allowedRepositories.some(
-    (allowedRepo) =>
-      allowedRepo.owner.toLowerCase() === normalizedOwner &&
-      allowedRepo.repo.toLowerCase() === normalizedRepo
-  );
+    let cached = cache.get(integrationId);
+    if (!cached) {
+      cached = getGitHubToolRepositoryContextByIntegrationId(integrationId, {
+        organizationId: config?.organizationId,
+      });
+      cache.set(integrationId, cached);
+      cached.catch(() => {
+        cache.delete(integrationId);
+      });
+    }
+    return cached;
+  };
 }
 
-function assertRepositoryAccess(
-  owner: string,
-  repo: string,
-  config?: GitHubToolsAccessConfig
-) {
-  if (!isRepositoryAllowed(owner, repo, config?.allowedRepositories)) {
-    throw new Error(
-      `Repository access denied for ${owner}/${repo}. This repository is not available in your current integration context.`
-    );
+function getNextPageFromLinkHeader(
+  linkHeader?: string | number
+): number | undefined {
+  if (typeof linkHeader !== "string" || !linkHeader.trim()) {
+    return undefined;
+  }
+  const nextMatch = linkHeader.match(/<([^>]+)>\s*;\s*rel="next"/i);
+  if (!nextMatch?.[1]) {
+    return undefined;
+  }
+  try {
+    const url = new URL(nextMatch[1]);
+    const pageValue = url.searchParams.get("page");
+    if (!pageValue) {
+      return undefined;
+    }
+    const parsed = Number.parseInt(pageValue, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  } catch {
+    return undefined;
   }
 }
 
@@ -185,6 +199,7 @@ export function createGetPullRequestsTool(
     organizationId: config?.organizationId,
     namespace: "github",
   });
+  const resolveIntegrationContext = createIntegrationContextResolver(config);
 
   return cached(
     tool({
@@ -194,29 +209,24 @@ export function createGetPullRequestsTool(
           "Gets the full details of a specific pull request from a GitHub repository including title, description, status, author, reviewers, and merge info.",
         whenToUse:
           "When user asks about a specific PR, wants to see PR details, needs to check PR status, or references a pull request by number.",
-        usageNotes: `Requires the repository owner, repo name, and PR number.
+        usageNotes: `Requires integrationId and PR number.
 Returns comprehensive PR data including diff stats, labels, and review state.`,
       }),
       inputSchema: z.object({
-        repo: z
+        integrationId: z
           .string()
-          .describe("The name of the repository to get the pull requests for"),
-        owner: z.string().describe("The owner of the repository"),
+          .describe("The integration ID for the configured repository"),
         pull_number: z
           .number()
           .describe("The number of the pull request to get the details for"),
       }),
-      execute: async ({ repo, owner, pull_number }) => {
-        assertRepositoryAccess(owner, repo, config);
-
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
-        const octokit = createOctokit(token);
+      execute: async ({ integrationId, pull_number }) => {
+        const resolved = await resolveIntegrationContext(integrationId);
+        const octokit = createOctokit(resolved.token);
         const pullRequest = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             pull_number,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -231,12 +241,11 @@ Returns comprehensive PR data including diff stats, labels, and review state.`,
       // mostly re-request the same PR within a short time window.
       ttl: 10 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, pull_number } = params as {
-          owner: string;
-          repo: string;
+        const { integrationId, pull_number } = params as {
+          integrationId: string;
           pull_number: number;
         };
-        return `get_pull_requests:${owner.toLowerCase()}/${repo.toLowerCase()}#${String(pull_number)}`;
+        return `get_pull_requests:integration=${integrationId}#${String(pull_number)}`;
       },
     }
   );
@@ -249,6 +258,7 @@ export function createGetReleaseByTagTool(
     organizationId: config?.organizationId,
     namespace: "github",
   });
+  const resolveIntegrationContext = createIntegrationContextResolver(config);
 
   return cached(
     tool({
@@ -262,10 +272,9 @@ export function createGetReleaseByTagTool(
 Returns release body (changelog), assets list, author, and timestamps.`,
       }),
       inputSchema: z.object({
-        repo: z
+        integrationId: z
           .string()
-          .describe("The name of the repository to get the releases for"),
-        owner: z.string().describe("The owner of the repository"),
+          .describe("The integration ID for the configured repository"),
         tag: z
           .string()
           .default("latest")
@@ -273,17 +282,13 @@ Returns release body (changelog), assets list, author, and timestamps.`,
             "The tag of the release to get the details for. Use 'latest' if you don't know the tag"
           ),
       }),
-      execute: async ({ repo, owner, tag }) => {
-        assertRepositoryAccess(owner, repo, config);
-
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
-        const octokit = createOctokit(token);
+      execute: async ({ integrationId, tag }) => {
+        const resolved = await resolveIntegrationContext(integrationId);
+        const octokit = createOctokit(resolved.token);
         const releases = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             tag,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -296,18 +301,17 @@ Returns release body (changelog), assets list, author, and timestamps.`,
     {
       ttl: 30 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, tag } = params as {
-          owner: string;
-          repo: string;
+        const { integrationId, tag } = params as {
+          integrationId: string;
           tag?: string;
         };
-        return `get_release_by_tag:${owner.toLowerCase()}/${repo.toLowerCase()}@${String(tag ?? "latest").toLowerCase()}`;
+        return `get_release_by_tag:integration=${integrationId}@${String(tag ?? "latest").toLowerCase()}`;
       },
     }
   );
 }
 
-export const getISODateFromDaysAgo = (days: number): string => {
+export const getISODateFromDaysAgo = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() - days);
   return date.toISOString();
@@ -320,46 +324,67 @@ export function createGetCommitsByTimeframeTool(
     organizationId: config?.organizationId,
     namespace: "github",
   });
+  const resolveIntegrationContext = createIntegrationContextResolver(config);
 
   return cached(
     tool({
       description: toolDescription({
         toolName: "get_commits_by_timeframe",
         intro:
-          "Gets all commits from the default branch within a specified number of days. Returns commit messages, authors, dates, and SHAs.",
+          "Gets one paginated batch of commits from a repository within a specified number of days. Returns commit details plus pagination metadata.",
         whenToUse:
           "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
         usageNotes: `Use the timeframe requested in the prompt or user request.
 Use this for activity summaries, changelog generation, or understanding recent changes.`,
       }),
       inputSchema: z.object({
-        owner: z.string().describe("The owner of the repository"),
-        repo: z.string().describe("The name of the repository"),
+        integrationId: z
+          .string()
+          .describe("The integration ID for the configured repository"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .default(1)
+          .describe("The page number to retrieve (starts at 1)"),
         days: z
           .number()
           .default(7)
           .describe("How many days of commit history to retrieve"),
       }),
-      execute: async ({ owner, repo, days }) => {
-        assertRepositoryAccess(owner, repo, config);
+      execute: async ({ integrationId, days, page }) => {
+        const resolved = await resolveIntegrationContext(integrationId);
 
-        const token = await getTokenForRepository(owner, repo, {
-          organizationId: config?.organizationId,
-        });
-        const octokit = createOctokit(token);
+        const octokit = createOctokit(resolved.token);
         const since = getISODateFromDaysAgo(days);
+        // TODO: We need an actual todo date in the future to allow for more flexible timeframes
+        const until = new Date().toISOString();
         const response = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/commits", {
-            owner,
-            repo,
+            owner: resolved.owner,
+            repo: resolved.repo,
             since,
+            page,
+            ...(resolved.defaultBranch ? { sha: resolved.defaultBranch } : {}),
+            until,
+            per_page: 100,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
           })
         );
 
-        return response.data;
+        const nextPage = getNextPageFromLinkHeader(response.headers?.link);
+
+        return {
+          commits: response.data,
+          pagination: {
+            page,
+            perPage: 100,
+            hasNextPage: nextPage !== undefined,
+            nextPage: nextPage ?? null,
+          },
+        };
       },
     }),
     {
@@ -367,12 +392,13 @@ Use this for activity summaries, changelog generation, or understanding recent c
       // still eliminating duplicate calls within a single agent run.
       ttl: 2 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { owner, repo, days } = params as {
-          owner: string;
-          repo: string;
+        const { integrationId, days, page } = params as {
+          integrationId: string;
           days: number;
+          page?: number;
         };
-        return `get_commits_by_timeframe:${owner.toLowerCase()}/${repo.toLowerCase()}:days=${String(days)}`;
+
+        return `get_commits_by_timeframe:integration=${integrationId}:days=${String(days)}:page=${String(page ?? 1)}`;
       },
     }
   );

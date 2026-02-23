@@ -1,0 +1,1 @@
+ALTER TABLE "github_repositories" ADD COLUMN "default_branch" text;

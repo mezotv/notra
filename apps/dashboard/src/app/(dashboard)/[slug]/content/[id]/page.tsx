@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
-import { getContentById } from "./content-data";
 import PageClient from "./page-client";
 
 interface PageProps {
@@ -11,16 +10,10 @@ interface PageProps {
   }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const content = getContentById(id);
-
-  return {
-    title: content?.title ?? "Content Detail",
-  };
-}
+export const metadata: Metadata = {
+  title: "Content Detail",
+  description: "View the details of a specific content item.",
+};
 
 async function Page({ params }: PageProps) {
   const { slug, id } = await params;

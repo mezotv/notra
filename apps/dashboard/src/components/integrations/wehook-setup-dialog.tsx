@@ -1,15 +1,15 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -78,7 +78,7 @@ export function WebhookSetupDialog({
     data: webhookConfig,
     isLoading: loadingConfig,
     isFetched,
-  } = useQuery({
+  } = useQuery<WebhookConfig | null>({
     queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repositoryId),
     queryFn: async () => {
       const response = await fetch(
@@ -90,12 +90,12 @@ export function WebhookSetupDialog({
         }
         throw new Error("Failed to fetch webhook config");
       }
-      return response.json() as Promise<WebhookConfig>;
+      return response.json();
     },
     enabled: open,
   });
 
-  const generateMutation = useMutation({
+  const generateMutation = useMutation<WebhookConfig, Error, void>({
     mutationFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/repositories/${repositoryId}/webhook`,
@@ -108,7 +108,7 @@ export function WebhookSetupDialog({
         const data = await response.json();
         throw new Error(data.error || "Failed to generate webhook secret");
       }
-      return response.json() as Promise<WebhookConfig>;
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -139,27 +139,27 @@ export function WebhookSetupDialog({
 
   const triggerElement =
     trigger !== undefined && isValidElement(trigger) ? (
-      <AlertDialogTrigger render={trigger as React.ReactElement} />
+      <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
     ) : trigger === undefined ? null : (
-      <AlertDialogTrigger>
+      <ResponsiveDialogTrigger>
         <Button size="sm" variant="outline">
           Setup Webhook
         </Button>
-      </AlertDialogTrigger>
+      </ResponsiveDialogTrigger>
     );
 
   return (
-    <AlertDialog onOpenChange={setOpen} open={open}>
+    <ResponsiveDialog onOpenChange={setOpen} open={open}>
       {triggerElement}
-      <AlertDialogContent className="overflow-hidden sm:max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-2xl">
+      <ResponsiveDialogContent className="overflow-hidden sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="text-2xl">
             Setup Webhook
-          </AlertDialogTitle>
-          <AlertDialogDescription>
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Add these values in GitHub, then confirm once saved.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="space-y-4">
           {loadingConfig || isPending ? (
@@ -258,8 +258,13 @@ export function WebhookSetupDialog({
           )}
         </div>
 
-        <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel className="h-9">Skip for now</AlertDialogCancel>
+        <ResponsiveDialogFooter className="gap-2">
+          <ResponsiveDialogClose
+            className="h-9"
+            render={<Button variant="outline" />}
+          >
+            Skip for now
+          </ResponsiveDialogClose>
           <Button
             className="h-9"
             disabled={!webhookConfig}
@@ -268,8 +273,8 @@ export function WebhookSetupDialog({
           >
             I've added the webhook
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

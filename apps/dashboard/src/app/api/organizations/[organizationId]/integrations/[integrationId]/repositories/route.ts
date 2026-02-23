@@ -8,7 +8,7 @@ import {
 import {
   addRepositoryRequestSchema,
   integrationIdParamSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; integrationId: string }>;
@@ -141,6 +141,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       error.message === "Repository already connected"
     ) {
       return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
+    if (
+      error instanceof Error &&
+      error.message.includes("exactly one repository")
+    ) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(

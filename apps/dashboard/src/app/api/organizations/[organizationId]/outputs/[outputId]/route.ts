@@ -4,7 +4,7 @@ import { getOutputById, toggleOutput } from "@/lib/services/github-integration";
 import {
   outputIdParamSchema,
   updateOutputBodySchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; outputId: string }>;

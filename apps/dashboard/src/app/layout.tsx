@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import "@/styles/globals.css";
 
 import { Providers } from "@/utils/providers";
+import { SITE_CONFIG } from "../utils/site";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
 
@@ -17,13 +18,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_CONFIG.url),
   title: {
-    template: "%s - Notra",
-    default: "Notra",
+    template: `%s - ${SITE_CONFIG.title}`,
+    default: SITE_CONFIG.title,
   },
-  description: "Notra - Content Management",
+  description: SITE_CONFIG.description,
   appleWebApp: {
-    title: "Notra",
+    title: SITE_CONFIG.title,
   },
 };
 

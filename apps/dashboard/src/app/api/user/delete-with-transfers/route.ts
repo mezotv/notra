@@ -3,17 +3,10 @@ import { members, organizations } from "@notra/db/schema";
 import { and, eq, ne } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
+import { deleteOrganizationFiles, deleteUserFiles } from "@/lib/upload/cleanup";
+import { deleteWithTransfersSchema } from "@/schemas/api-params";
 
 export const dynamic = "force-dynamic";
-
-interface TransferAction {
-  orgId: string;
-  action: "transfer" | "delete";
-}
-
-interface DeleteWithTransfersRequest {
-  transfers: TransferAction[];
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,23 +16,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = (await request.json()) as DeleteWithTransfersRequest;
-    const { transfers } = body;
+    const body = await request.json();
+    const validationResult = deleteWithTransfersSchema.safeParse(body);
 
-    if (!(transfers && Array.isArray(transfers))) {
+    if (!validationResult.success) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Validation failed", details: validationResult.error.issues },
         { status: 400 }
       );
     }
 
-    // Process each organization
+    const { transfers } = validationResult.data;
+
+    const organizationsToCleanup: string[] = [];
+
     for (const transfer of transfers) {
       const { orgId, action } = transfer;
 
-      // Wrap ownership transfer logic in a transaction to prevent race conditions
       await db.transaction(async (tx) => {
-        // Re-verify ownership within the transaction to ensure atomicity
         const membership = await tx.query.members.findFirst({
           where: and(
             eq(members.organizationId, orgId),
@@ -53,7 +47,6 @@ export async function POST(request: NextRequest) {
         }
 
         if (action === "transfer") {
-          // Find the next owner candidate (prefer admin, then any member)
           let newOwner = await tx.query.members.findFirst({
             where: and(
               eq(members.organizationId, orgId),
@@ -77,13 +70,11 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          // Transfer ownership: update the new owner's role to owner
           await tx
             .update(members)
             .set({ role: "owner" })
             .where(eq(members.id, newOwner.id));
 
-          // Remove the current user from the organization
           await tx
             .delete(members)
             .where(
@@ -93,15 +84,30 @@ export async function POST(request: NextRequest) {
               )
             );
         } else if (action === "delete") {
-          // Delete the organization (cascades will handle members, integrations, etc.)
           await tx.delete(organizations).where(eq(organizations.id, orgId));
+          organizationsToCleanup.push(orgId);
         }
       });
     }
 
-    // Now delete the user account
-    // The actual deletion will be handled by Better Auth's deleteUser
-    // We just return success and let the client call deleteUser
+    await Promise.all(
+      organizationsToCleanup.map(async (orgId) => {
+        await deleteOrganizationFiles(orgId).catch((err) => {
+          console.error(
+            `[Delete Org] Failed to cleanup R2 files for ${orgId}:`,
+            err
+          );
+        });
+      })
+    );
+
+    await deleteUserFiles(user.id).catch((err) => {
+      console.error(
+        `[Delete User] Failed to cleanup R2 files for user ${user.id}:`,
+        err
+      );
+    });
+
     return NextResponse.json({
       success: true,
       message: "Organizations processed. You can now delete your account.",
@@ -109,7 +115,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error processing delete with transfers:", error);
 
-    // Handle transaction errors with appropriate status codes
     if (error instanceof Error) {
       const errorMessage = error.message;
 

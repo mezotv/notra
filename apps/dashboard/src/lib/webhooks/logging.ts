@@ -1,27 +1,17 @@
 import { redis } from "@/lib/redis";
-import type { IntegrationType, Log } from "@/types/webhook-logs";
+import type {
+  IntegrationType,
+  Log,
+  LogRetentionDays,
+  WebhookLogInput,
+} from "@/types/lib/webhooks/webhooks";
 
 const LOG_TTL_7_DAYS = 60 * 60 * 24 * 7;
 const LOG_TTL_30_DAYS = 60 * 60 * 24 * 30;
 const LOG_LIMIT = 200;
 
-export type LogRetentionDays = 7 | 30;
-
-export function getLogTtlSeconds(retentionDays: LogRetentionDays): number {
+export function getLogTtlSeconds(retentionDays: LogRetentionDays) {
   return retentionDays === 30 ? LOG_TTL_30_DAYS : LOG_TTL_7_DAYS;
-}
-
-export interface WebhookLogInput {
-  organizationId: string;
-  integrationId: string;
-  integrationType: IntegrationType;
-  title: string;
-  status: "success" | "failed" | "pending";
-  statusCode: number | null;
-  referenceId?: string | null;
-  errorMessage?: string | null;
-  payload?: Record<string, unknown> | null;
-  retentionDays?: LogRetentionDays;
 }
 
 function getLogKey(

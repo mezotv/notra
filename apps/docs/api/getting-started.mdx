@@ -1,0 +1,50 @@
+---
+title: "Getting Started"
+description: "Get started with the Notra API."
+---
+
+## Quick Start
+
+Run your first authenticated API request:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
+```
+
+<Tip>
+  Replace `YOUR_API_KEY` with your API key and `YOUR_ORGANIZATION_ID` with your
+  organization ID.
+</Tip>
+
+Create and manage API keys in [Authentication](/api/authentication).
+
+<Warning>
+  Keep API keys private. Even read-only keys can be abused and burn through your
+  [rate limits](/api/rate-limits) if exposed in client-side code. Use server-side
+  requests whenever possible.
+</Warning>
+
+## Available Endpoints
+
+<CardGroup cols={2}>
+<Card title="Posts" icon="file-text" href="/api-reference/content/list-posts">
+  Retrieve paginated posts with `sort`, `limit`, `page`, and `status`.
+</Card>
+
+<Card title="Single Post" icon="file" href="/api-reference/content/get-a-single-post">
+  Get a specific post by ID.
+</Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup>
+<Card title="Pagination" icon="book-open" href="/api/pagination">
+  Learn how to paginate through large result sets.
+</Card>
+
+<Card title="TypeScript Types" icon="code" href="/api/types">
+  Use our TypeScript definitions for type-safe development.
+</Card>
+</CardGroup>

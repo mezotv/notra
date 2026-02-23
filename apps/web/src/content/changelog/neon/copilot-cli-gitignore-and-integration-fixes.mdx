@@ -1,0 +1,36 @@
+---
+title: "Neon Add MCP Changelog - February 13-18, 2026"
+date: "2026-02-18"
+description: "GitHub Copilot CLI target with scoped local/global config, a new --gitignore safety flag, and fixes for Codex headers plus OpenCode MCP command generation."
+---
+
+Over the past week, we shipped three minor versions (1.2.0, 1.2.1) with critical fixes and new features. The 1.2.1 patch fixes Codex header mapping, while 1.2.0 added a gitignore flag to prevent accidental API key exposure. We've also delivered GitHub Copilot CLI support as a dedicated agent target, enabling separate local and global configuration paths. Earlier this week, fixes addressed OpenCode config detection, correcting file locations and MCP command generation. These updates enhance tool compatibility, improve security workflows, and expand agent support across multiple platforms.
+
+## Highlights
+
+### GitHub Copilot CLI agent with scoped configuration
+
+Added dedicated github-copilot-cli target that writes VS Code-compatible local config to `.vscode/mcp.json` and Copilot CLI global config to `~/.copilot/mcp-config.json`, preventing conflicts and enabling flexible integration. (Author: [@andrelandgraf](https://github.com/andrelandgraf/))
+
+### Gitignore flag prevents accidental API key leaks
+
+Implemented --gitignore flag to automatically add generated files to .gitignore with proper messaging about what the flag does and warnings when combined with global installs. (Author: [@mezotv](https://github.com/mezotv/))
+
+### Fixed Codex integration header field mapping
+
+Corrected MCP config generation for Codex to use http\_headers instead of headers, verified against official Codex source code. (Author: [@RhysSullivan](https://github.com/RhysSullivan/))
+
+### OpenCode config detection and MCP command structure
+
+Fixed OpenCode integration by correcting config filename detection (opencode.json not .opencode.json) and adjusting MCP command generation to match OpenCode's expected format. (Author: [@IdrisGit](https://github.com/IdrisGit/))
+
+## More Updates
+
+### Features & Enhancements
+
+- **Add gitignore flag to CLI** [#6](https://github.com/neondatabase/add-mcp/pull/6) - Enables automatic .gitignore updates with clear messaging and global scope warnings. (Author: [@mezotv](https://github.com/mezotv/))
+
+### Bug Fixes
+
+- **Fix Codex header mapping to http\_headers** [#7](https://github.com/neondatabase/add-mcp/pull/7) - Resolves header field incompatibility by using correct field name. (Author: [@RhysSullivan](https://github.com/RhysSullivan/))
+- **Fix OpenCode config detection and mcp command generation** [#3](https://github.com/neondatabase/add-mcp/pull/3) - Corrects config file path and command generation structure. (Author: [@IdrisGit](https://github.com/IdrisGit/))

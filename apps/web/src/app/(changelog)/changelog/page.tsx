@@ -2,6 +2,8 @@ import { BetterAuthLight } from "@notra/ui/components/ui/svgs/betterAuthLight";
 import { Cal } from "@notra/ui/components/ui/svgs/cal";
 import { Databuddy } from "@notra/ui/components/ui/svgs/databuddy";
 import { Langfuse } from "@notra/ui/components/ui/svgs/langfuse";
+import { Marble } from "@notra/ui/components/ui/svgs/marble";
+import { Neon } from "@notra/ui/components/ui/svgs/neon";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -24,6 +26,17 @@ const COMPANY_ICONS: Record<string, ReactNode> = {
       width="53"
     />
   ),
+  marble: <Marble className="size-5 rounded" />,
+  neon: <Neon className="size-5 rounded" />,
+  unkey: (
+    <Image
+      alt="Unkey"
+      className="h-5 w-auto rounded"
+      height="85"
+      src="/logos/brands/unkey.webp"
+      width="53"
+    />
+  ),
 };
 
 const title = "Example Changelogs | Notra";
@@ -33,7 +46,6 @@ const description =
 export const metadata: Metadata = {
   title,
   description,
-  alternates: { canonical: "https://usenotra.com/changelog" },
   openGraph: {
     title,
     description,
@@ -53,7 +65,7 @@ export default function ChangelogOverviewPage() {
     <>
       <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4 self-center">
         <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-          Example Changelogs<span className="text-primary">.</span>
+          Example <span className="text-primary">Changelogs</span>
         </h1>
         <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
           See how Notra transforms GitHub activity into professional

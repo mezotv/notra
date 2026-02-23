@@ -24,7 +24,7 @@ import type {
   Log,
   LogDirection,
   StatusWithCode,
-} from "@/types/webhook-logs";
+} from "@/types/lib/webhooks/webhooks";
 
 const columnHelper = createColumnHelper<Log>();
 
@@ -48,7 +48,11 @@ function StatusBadge({ status }: { status: StatusWithCode }) {
     pending: "secondary",
   };
 
-  return <Badge variant={variants[status.label]}>{status.label}</Badge>;
+  return (
+    <Badge className="capitalize" variant={variants[status.label]}>
+      {status.label}
+    </Badge>
+  );
 }
 
 function getSortIcon(isSorted: false | "asc" | "desc") {

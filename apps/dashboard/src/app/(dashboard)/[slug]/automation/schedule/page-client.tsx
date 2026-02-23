@@ -1,7 +1,8 @@
 "use client";
 
 import {
-  Calendar03Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
   Delete02Icon,
   Edit02Icon,
   MoreVerticalIcon,
@@ -11,15 +12,15 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -51,14 +52,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
+import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { Trigger, TriggerSourceType } from "@/types/triggers";
+import type { Trigger, TriggerSourceType } from "@/types/lib/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import { AddTriggerDialog } from "../../triggers/trigger-dialog";
-import { TriggerStatusBadge } from "../_components/trigger-status-badge";
 import { SchedulePageSkeleton } from "./skeleton";
 
 const CRON_SOURCE_TYPES: TriggerSourceType[] = ["cron"];
@@ -98,8 +99,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [activeTab, setActiveTab] = useState<"active" | "paused">("active");
   const [deleteTriggerId, setDeleteTriggerId] = useState<string | null>(null);
   const [editTrigger, setEditTrigger] = useState<Trigger | null>(null);
+  const [createdSortOrder, setCreatedSortOrder] = useState<"asc" | "desc">(
+    "desc"
+  );
 
-  const { data, isPending } = useQuery({
+  const { data, isPending } = useQuery<{
+    triggers: Trigger[];
+    repositoryMap: Record<string, string>;
+  }>({
     queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
     queryFn: async () => {
       if (!organizationId) {
@@ -113,10 +120,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Failed to fetch triggers");
       }
 
-      return response.json() as Promise<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>;
+      return response.json();
     },
     enabled: !!organizationId,
   });
@@ -134,6 +138,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            name: trigger.name,
             sourceType: trigger.sourceType,
             sourceConfig: trigger.sourceConfig,
             targets: trigger.targets,
@@ -146,46 +151,23 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to update schedule");
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.code || "Failed to update schedule");
+        (error as Error & { code?: string }).code = errorData.code;
+        throw error;
       }
 
       return response.json();
     },
-    onMutate: async (trigger) => {
-      await queryClient.cancelQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-      });
-
-      const previousData = queryClient.getQueryData<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""));
-
-      queryClient.setQueryData<{
-        triggers: Trigger[];
-        repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          triggers: old.triggers.map((t) =>
-            t.id === trigger.id ? { ...t, enabled: !t.enabled } : t
-          ),
-          repositoryMap: old.repositoryMap,
-        };
-      });
-
-      return { previousData };
-    },
-    onError: (_error, _trigger, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-          context.previousData
+    onError: (error) => {
+      const errorWithCode = error as Error & { code?: string };
+      if (errorWithCode.code === "INTEGRATION_NOT_FOUND") {
+        toast.error(
+          "Cannot enable schedule: The integration has been deleted. Please edit the schedule and select a different integration."
         );
+      } else {
+        toast.error("Failed to update schedule");
       }
-      toast.error("Failed to update schedule");
     },
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -344,6 +326,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const triggerToDelete = deleteTriggerId
     ? triggers.find((t) => t.id === deleteTriggerId)
     : null;
+  const deleteTriggerRepositoryNames = triggerToDelete
+    ? triggerToDelete.targets.repositoryIds.map((id) => repositoryMap[id] ?? id)
+    : [];
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -385,9 +370,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           />
         </div>
 
-        {isPending ? (
-          <SchedulePageSkeleton />
-        ) : scheduleTriggers.length === 0 ? (
+        {isPending && <SchedulePageSkeleton />}
+
+        {!isPending && scheduleTriggers.length === 0 && (
           <EmptyState
             action={
               <AddTriggerDialog
@@ -422,7 +407,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             description="Create your first schedule to automate recurring content."
             title="No schedules yet"
           />
-        ) : (
+        )}
+
+        {!isPending && scheduleTriggers.length > 0 && (
           <Tabs
             defaultValue="active"
             onValueChange={(value) =>
@@ -440,12 +427,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="active">
               <ScheduleTable
+                createdSortOrder={createdSortOrder}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
+                onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 repositoryMap={repositoryMap}
                 runningTriggerId={
@@ -464,12 +453,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="paused">
               <ScheduleTable
+                createdSortOrder={createdSortOrder}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
                 onDelete={handleDelete}
                 onEdit={handleEdit}
                 onRunNow={handleRunNow}
+                onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 repositoryMap={repositoryMap}
                 runningTriggerId={
@@ -489,28 +480,45 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         )}
       </div>
 
-      <AlertDialog
+      <ResponsiveAlertDialog
         onOpenChange={(open) => !open && setDeleteTriggerId(null)}
         open={!!deleteTriggerId}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete schedule?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete this{" "}
-              {triggerToDelete
-                ? formatFrequency(
-                    triggerToDelete.sourceConfig.cron
-                  ).toLowerCase()
-                : ""}{" "}
-              schedule. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Delete schedule?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
+              This will permanently delete{" "}
+              {triggerToDelete ? (
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help font-medium text-foreground underline decoration-dotted underline-offset-2">
+                    {triggerToDelete.name}
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs" side="top">
+                    <div className="space-y-1 text-xs">
+                      <p>
+                        Runs:{" "}
+                        {formatFrequency(triggerToDelete.sourceConfig.cron)}
+                      </p>
+                      <p>
+                        Repositories: {deleteTriggerRepositoryNames.join(", ")}
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                "this schedule"
+              )}
+              . This action cannot be undone.
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={deleteMutation.isPending}>
               Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               disabled={deleteMutation.isPending}
               onClick={confirmDelete}
               variant="destructive"
@@ -523,10 +531,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               ) : (
                 "Delete"
               )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
 
       {editTrigger && (
         <AddTriggerDialog
@@ -561,6 +569,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 function ScheduleTable({
   triggers,
   repositoryMap,
+  createdSortOrder,
+  onSortCreatedChange,
   onToggle,
   onDelete,
   onEdit,
@@ -573,6 +583,8 @@ function ScheduleTable({
 }: {
   triggers: Trigger[];
   repositoryMap: Record<string, string>;
+  createdSortOrder: "asc" | "desc";
+  onSortCreatedChange: (next: "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
   onEdit: (trigger: Trigger) => void;
@@ -583,6 +595,17 @@ function ScheduleTable({
   updatingTriggerId?: string;
   runningTriggerId?: string;
 }) {
+  const sortedTriggers = useMemo(() => {
+    return [...triggers].sort((a, b) => {
+      const createdAtA = new Date(a.createdAt).getTime();
+      const createdAtB = new Date(b.createdAt).getTime();
+
+      return createdSortOrder === "desc"
+        ? createdAtB - createdAtA
+        : createdAtA - createdAtB;
+    });
+  }, [triggers, createdSortOrder]);
+
   if (triggers.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
@@ -596,17 +619,36 @@ function ScheduleTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Frequency</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Schedule</TableHead>
             <TableHead>Output</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
+            <TableHead
+              className="cursor-pointer select-none transition-colors hover:text-foreground"
+              onClick={() =>
+                onSortCreatedChange(
+                  createdSortOrder === "desc" ? "asc" : "desc"
+                )
+              }
+            >
+              <span className="inline-flex items-center gap-1">
+                Created
+                <HugeiconsIcon
+                  className="size-3.5"
+                  icon={
+                    createdSortOrder === "desc"
+                      ? ArrowDown01Icon
+                      : ArrowUp01Icon
+                  }
+                />
+              </span>
+            </TableHead>
             <TableHead className="w-12" />
           </TableRow>
         </TableHeader>
         <TableBody>
-          {triggers.map((trigger) => {
+          {sortedTriggers.map((trigger) => {
             const isThisUpdating =
               isUpdating && updatingTriggerId === trigger.id;
             const isThisRunning = isRunning && runningTriggerId === trigger.id;
@@ -614,20 +656,16 @@ function ScheduleTable({
             return (
               <TableRow key={trigger.id}>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
-                      <HugeiconsIcon
-                        className="size-4 text-muted-foreground"
-                        icon={Calendar03Icon}
-                      />
-                    </span>
-                    <span className="text-sm">Scheduled run</span>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-sm">
+                      {trigger.name ?? "Untitled Schedule"}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatFrequency(trigger.sourceConfig.cron)}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="text-muted-foreground capitalize">
                   {getOutputTypeLabel(trigger.outputType)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -653,7 +691,7 @@ function ScheduleTable({
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      className="flex size-8 items-center justify-center rounded-md hover:bg-accent disabled:opacity-50"
+                      className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isThisUpdating || isThisRunning}
                     >
                       {isThisUpdating || isThisRunning ? (

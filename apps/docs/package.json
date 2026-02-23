@@ -1,0 +1,12 @@
+{
+  "name": "docs",
+  "type": "module",
+  "scripts": {
+    "dev": "mint dev --port 3005",
+    "openapi:check": "mint openapi-check openapi/openapi.json"
+  },
+
+  "devDependencies": {
+    "mint": "^4.2.367"
+  }
+}

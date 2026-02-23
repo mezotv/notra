@@ -1,8 +1,8 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
+import type { PostsResponse } from "@/schemas/content";
 import { QUERY_KEYS } from "@/utils/query-keys";
-import type { PostsResponse } from "@/utils/schemas/content";
 
 const DEFAULT_LIMIT = 12;
 

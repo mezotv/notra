@@ -1,0 +1,136 @@
+---
+title: "TypeScript Types"
+description: "TypeScript type definitions for Notra API responses."
+---
+
+If you call the API with `fetch`, these types are a good starting point.
+
+```typescript
+// Multiple posts
+const listResponse = await fetch(
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/",
+  {
+    headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
+  }
+);
+const listData: NotraPostListResponse = await listResponse.json();
+
+// Single post
+const postResponse = await fetch(
+  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/YOUR_POST_ID",
+  {
+    headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
+  }
+);
+const postData: NotraPostResponse = await postResponse.json();
+```
+
+---
+
+## Type Definitions
+
+You can copy these types into your project:
+
+```typescript
+export type SourceMetadata = {
+  triggerId: string;
+  repositories: Array<{
+    owner: string;
+    repo: string;
+  }>;
+  lookbackRange: {
+    start: string; // ISO datetime
+    end: string; // ISO datetime
+  };
+  lookbackWindow: string;
+  triggerSourceType: string;
+};
+
+export type Post = {
+  id: string;
+  title: string;
+  content: string; // HTML string
+  markdown: string;
+  contentType: string;
+  sourceMetadata: SourceMetadata | null;
+  status: "draft" | "published";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Pagination = {
+  limit: number;
+  currentPage: number;
+  nextPage: number | null;
+  previousPage: number | null;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type NotraPostListResponse = {
+  posts: Post[];
+  pagination: Pagination;
+};
+
+export type NotraPostResponse = {
+  post: Post | null;
+};
+```
+
+<Tip>
+  Copy these type definitions into a `types/notra.ts` file in your project.
+</Tip>
+
+### Zod Schemas
+
+For runtime validation, you can use these Zod schemas:
+
+```typescript
+import { z } from "zod";
+
+export const SourceMetadataSchema = z.object({
+  triggerId: z.string(),
+  repositories: z.array(
+    z.object({
+      owner: z.string(),
+      repo: z.string(),
+    })
+  ),
+  lookbackRange: z.object({
+    start: z.string().datetime(),
+    end: z.string().datetime(),
+  }),
+  lookbackWindow: z.string(),
+  triggerSourceType: z.string(),
+});
+
+export const PostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  content: z.string(), // HTML string
+  markdown: z.string(),
+  contentType: z.string(),
+  sourceMetadata: SourceMetadataSchema.nullable(),
+  status: z.enum(["draft", "published"]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const PaginationSchema = z.object({
+  limit: z.number(),
+  currentPage: z.number(),
+  nextPage: z.number().nullable(),
+  previousPage: z.number().nullable(),
+  totalItems: z.number(),
+  totalPages: z.number(),
+});
+
+export const PostListResponseSchema = z.object({
+  posts: z.array(PostSchema),
+  pagination: PaginationSchema,
+});
+
+export const PostResponseSchema = z.object({
+  post: PostSchema.nullable(),
+});
+```

@@ -25,7 +25,6 @@ import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
 import { SidebarOnboarding } from "./sidebar-onboarding";
 
-// Animation variants hoisted outside component to prevent recreation on each render
 const createMainVariants = (shouldReduceMotion: boolean | null) => ({
   initial: shouldReduceMotion
     ? { opacity: 1, x: 0 }
@@ -51,12 +50,11 @@ export function DashboardSidebar({
   const { activeOrganization } = useOrganizationsContext();
   const { open } = useSidebar();
   const shouldReduceMotion = useReducedMotion();
-  const slug = activeOrganization?.slug ?? "";
+  const pathnameSegments = pathname.split("/").filter(Boolean);
+  const slug = pathnameSegments[0] ?? activeOrganization?.slug ?? "";
 
-  // Check if we're on a settings page (billing or other settings)
-  const isSettingsRoute =
-    pathname.startsWith(`/${slug}/settings`) ||
-    pathname.startsWith(`/${slug}/billing`);
+  const section = pathnameSegments[1];
+  const isSettingsRoute = section === "settings" || section === "billing";
 
   const mainVariants = shouldReduceMotion
     ? createMainVariants(true)

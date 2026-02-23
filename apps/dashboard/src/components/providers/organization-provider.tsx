@@ -31,6 +31,13 @@ const OrganizationsContext = createContext<OrganizationsContextValue | null>(
   null
 );
 
+const FALLBACK_ORGANIZATIONS_CONTEXT: OrganizationsContextValue = {
+  organizations: [],
+  activeOrganization: null,
+  isLoading: true,
+  getOrganization: () => undefined,
+};
+
 export function OrganizationsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
@@ -234,9 +241,7 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
 export function useOrganizationsContext() {
   const context = useContext(OrganizationsContext);
   if (!context) {
-    throw new Error(
-      "useOrganizationsContext must be used within OrganizationsProvider"
-    );
+    return FALLBACK_ORGANIZATIONS_CONTEXT;
   }
   return context;
 }

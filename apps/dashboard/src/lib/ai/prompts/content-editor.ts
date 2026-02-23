@@ -1,19 +1,5 @@
 import dedent from "dedent";
-
-interface TextSelection {
-  text: string;
-  startLine: number;
-  startChar: number;
-  endLine: number;
-  endChar: number;
-}
-
-interface ContentEditorChatPromptParams {
-  selection?: TextSelection;
-  repoContext?: { owner: string; repo: string }[];
-  toolDescriptions?: string[];
-  hasGitHubEnabled?: boolean;
-}
+import type { ContentEditorChatPromptParams } from "@/types/lib/ai/prompts";
 
 export function getContentEditorChatPrompt(
   params: ContentEditorChatPromptParams
@@ -30,7 +16,7 @@ export function getContentEditorChatPrompt(
 
   const githubSection =
     hasGitHubEnabled && repoContext?.length
-      ? `\n\n## GitHub Repositories\nThe user has added the following GitHub repositories as context:\n${repoContext.map((c) => `- ${c.owner}/${c.repo}`).join("\n")}\n\nWhen working with GitHub data, use the available GitHub tools to fetch PRs, releases, or commits.`
+      ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
       : "";
 
   return dedent`

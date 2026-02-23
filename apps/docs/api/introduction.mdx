@@ -1,0 +1,44 @@
+---
+title: "Introduction"
+description: "Welcome to the Notra API."
+---
+
+<Warning>
+  The API and these docs are a work in progress. Endpoints and response shapes
+  may change as we keep improving Notra.
+</Warning>
+
+The Notra API follows standard REST conventions. Endpoints are resource-based,
+responses are JSON, and HTTP status codes indicate success or failure.
+
+## Base URL
+
+All API access is over HTTPS. All data is sent and received as JSON.
+
+```bash
+https://api.usenotra.com/v1/:organizationId/:resource
+```
+
+Where `:organizationId` is your organization ID and `:resource` is the specific
+resource you want to interact with (e.g., `posts`, `categories`, `tags`,
+`authors`).
+
+## Response Format
+
+All responses are JSON. Successful responses return data objects. Error responses
+return an `error` field.
+
+<Note>All timestamps are in UTC ISO 8601 format: `YYYY-MM-DDTHH:MM:SSZ`</Note>
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+
+| Code  | Description                               |
+| ----- | ----------------------------------------- |
+| `200` | Success                                   |
+| `400` | Bad Request - Invalid parameters          |
+| `401` | Unauthorized - Invalid or missing API key |
+| `404` | Not Found - Resource doesn't exist        |
+| `429` | Too Many Requests - Rate limit exceeded   |
+| `500` | Internal Server Error                     |

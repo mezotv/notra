@@ -187,6 +187,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body,
+  [data-slot="sidebar-inset"] {
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
   }

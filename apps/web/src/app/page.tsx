@@ -1,6 +1,5 @@
-"use client";
-
 import { Button } from "@notra/ui/components/ui/button";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ActivityFeed } from "../components/activity-feed";
@@ -13,6 +12,12 @@ import PricingSection from "../components/pricing-section";
 import TestimonialsSection from "../components/testimonials-section";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
 
+export const metadata: Metadata = {
+  title: "Notra - Turn your daily work into publish-ready content",
+  description:
+    "Notra connects to GitHub, Linear and Slack to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+};
+
 export default function LandingPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
@@ -24,10 +29,9 @@ export default function LandingPage() {
               <br />
               into publish-ready content
             </div>
-            <div className="flex w-full max-w-[31.63rem] flex-col justify-center px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Now in public beta. Notra connects to GitHub, Linear
-              <br className="hidden sm:block" />
-              and Slack to turn shipped work into ready-to-publish content.
+            <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
+              Notra connects to GitHub, Linear and Slack to turn shipped work
+              into ready-to-publish content.
             </div>
           </div>
         </div>
@@ -87,11 +91,11 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-4 py-8 sm:px-6 sm:py-12 md:px-24 md:py-16">
             <div className="flex w-full max-w-146.5 flex-col items-center justify-start gap-3 sm:gap-4">
               <div className="w-full max-w-[29.53rem] text-balance text-center font-sans font-semibold text-foreground text-xl leading-tight tracking-tight sm:text-2xl md:text-3xl md:leading-15 lg:text-5xl">
-                Teams that ship faster, write less
-                <span className="text-primary">.</span>
+                Teams that ship faster,{" "}
+                <span className="text-primary">write less</span>
               </div>
               <div className="self-stretch text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
-                People at these companies use Notra to keep their
+                People at these companies use Notra to keep their{" "}
                 <br className="hidden sm:block" />
                 audience in the loop without slowing down development.
               </div>
@@ -235,9 +239,8 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
             <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
               <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-                Your team ships<span className="text-primary">.</span> Notra
-                writes it up
-                <span className="text-primary">.</span>
+                Your team ships. Notra{" "}
+                <span className="text-primary">writes it up</span>
               </div>
               <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
                 Notra watches your team's activity in the background

@@ -1,8 +1,7 @@
 import { tool } from "ai";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
+import z from "zod";
 import { getFirecrawlClient } from "@/lib/firecrawl";
-import { toolDescription } from "../utils/description";
+import { toolDescription } from "@/utils/ai/description";
 
 export const scrapeWebsiteTool = tool({
   description: toolDescription({
@@ -16,7 +15,6 @@ Returns markdown-formatted content which preserves structure and is easy to read
   }),
   inputSchema: z.object({
     url: z
-      .string()
       .url({ message: "Please enter a valid URL" })
       .describe("The URL of the website to scrape"),
   }),

@@ -8,6 +8,12 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { Input } from "@notra/ui/components/ui/input";
+import { Github } from "@notra/ui/components/ui/svgs/github";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRightIcon,
@@ -21,7 +27,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
-import type { Trigger } from "@/types/triggers";
+import type { Trigger } from "@/types/lib/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { getConfiguredAppUrl, normalizeUrl } from "@/utils/url";
@@ -165,7 +171,7 @@ function SchedulesSection({
     .join("&");
   const hasRepositories = normalizedRepositoryIds.length > 0;
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
     queryKey: [
       ...QUERY_KEYS.AUTOMATION.schedules(organizationId),
       "repositoryIds",
@@ -180,7 +186,7 @@ function SchedulesSection({
       if (!response.ok) {
         throw new Error("Failed to fetch schedules");
       }
-      return response.json() as Promise<{ triggers: Trigger[] }>;
+      return response.json();
     },
     enabled: !!organizationId && hasRepositories,
   });
@@ -233,7 +239,7 @@ function SchedulesSection({
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="truncate font-medium text-sm">
-                  {getOutputTypeLabel(schedule.outputType)}
+                  {schedule.name}
                 </span>
                 <span className="shrink-0 text-muted-foreground text-xs">
                   {formatFrequency(schedule.sourceConfig.cron)}
@@ -266,42 +272,44 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
 
-  const { data: integration, isLoading: isLoadingIntegration } = useQuery({
-    queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-      organizationId ?? "",
-      integrationId
-    ),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}`
-      );
+  const { data: integration, isLoading: isLoadingIntegration } =
+    useQuery<GitHubIntegration>({
+      queryKey: QUERY_KEYS.INTEGRATIONS.detail(
+        organizationId ?? "",
+        integrationId
+      ),
+      queryFn: async () => {
+        if (!organizationId) {
+          throw new Error("Organization ID is required");
+        }
+        const response = await fetch(
+          `/api/organizations/${organizationId}/integrations/${integrationId}`
+        );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch integration");
-      }
+        if (!response.ok) {
+          throw new Error("Failed to fetch integration");
+        }
 
-      return response.json() as Promise<GitHubIntegration>;
-    },
-    enabled: !!organizationId,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
-    initialData: () => {
-      if (!organizationId) {
-        return undefined;
-      }
+        return response.json();
+      },
+      enabled: !!organizationId,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 10,
+      initialData: () => {
+        if (!organizationId) {
+          return undefined;
+        }
 
-      const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
-        QUERY_KEYS.INTEGRATIONS.all(organizationId)
-      );
+        const cachedIntegrations =
+          queryClient.getQueryData<IntegrationsResponse>(
+            QUERY_KEYS.INTEGRATIONS.all(organizationId)
+          );
 
-      return cachedIntegrations?.integrations.find(
-        (cachedIntegration) => cachedIntegration.id === integrationId
-      );
-    },
-  });
+        return cachedIntegrations?.integrations.find(
+          (cachedIntegration) => cachedIntegration.id === integrationId
+        );
+      },
+    });
 
   if (!organizationId) {
     return null;
@@ -327,14 +335,57 @@ export default function PageClient({ integrationId }: PageClientProps) {
     );
   }
 
+  const primaryRepository = integration.repositories[0];
+  const repositoryFullName =
+    integration.repositories.length === 1 && primaryRepository
+      ? `${primaryRepository.owner}/${primaryRepository.repo}`
+      : null;
+  const repositoryDefaultBranch =
+    integration.repositories.length === 1
+      ? (primaryRepository?.defaultBranch ?? null)
+      : null;
+  const createdLabel = integration.createdByUser
+    ? `Added by ${integration.createdByUser.name} on ${new Date(integration.createdAt).toLocaleDateString()}`
+    : `Created on ${new Date(integration.createdAt).toLocaleDateString()}`;
+  const statusLabel = integration.enabled ? "Enabled" : "Disabled";
+
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">
-              {integration.displayName}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <h1 className="font-bold text-3xl tracking-tight">
+                      <span className="cursor-help">
+                        {integration.displayName}
+                      </span>
+                    </h1>
+                  }
+                />
+                <TooltipContent>{createdLabel}</TooltipContent>
+              </Tooltip>
+              <Badge variant={integration.enabled ? "default" : "secondary"}>
+                {statusLabel}
+              </Badge>
+            </div>
+            {repositoryFullName ? (
+              <p className="flex items-center gap-2 text-muted-foreground text-sm">
+                <Github className="size-4 shrink-0" />
+                <span>{repositoryFullName}</span>
+                {repositoryDefaultBranch ? (
+                  <>
+                    <span
+                      aria-hidden="true"
+                      className="size-1 rounded-full bg-muted-foreground/70"
+                    />
+                    <span>{repositoryDefaultBranch}</span>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
             <p className="text-muted-foreground">
               Configure your GitHub integration and manage repositories
             </p>
@@ -370,30 +421,6 @@ export default function PageClient({ integrationId }: PageClientProps) {
         />
 
         <div className="space-y-6">
-          <div className="rounded-lg border p-6">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <h2 className="font-semibold text-lg">Integration Details</h2>
-                <p className="text-muted-foreground text-sm">
-                  {integration.createdByUser ? (
-                    <>
-                      Added by {integration.createdByUser.name} on{" "}
-                      {new Date(integration.createdAt).toLocaleDateString()}
-                    </>
-                  ) : (
-                    <>
-                      Created on{" "}
-                      {new Date(integration.createdAt).toLocaleDateString()}
-                    </>
-                  )}
-                </p>
-              </div>
-              <Badge variant={integration.enabled ? "default" : "secondary"}>
-                {integration.enabled ? "Enabled" : "Disabled"}
-              </Badge>
-            </div>
-          </div>
-
           <SchedulesSection
             organizationId={organizationId ?? ""}
             repositoryIds={integration.repositories.map((repo) => repo.id)}

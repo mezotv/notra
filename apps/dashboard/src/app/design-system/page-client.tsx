@@ -1,21 +1,21 @@
 "use client";
 
 import {
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+  ResponsiveAlertDialogTrigger,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
+import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@notra/ui/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
 import {
   Avatar,
   AvatarBadge,
@@ -312,12 +312,14 @@ const mockIntegration = {
       id: "repo_1",
       owner: "notra",
       repo: "dashboard",
+      defaultBranch: "main",
       enabled: true,
     },
     {
       id: "repo_2",
       owner: "notra",
       repo: "webhooks",
+      defaultBranch: "main",
       enabled: true,
     },
   ],
@@ -730,26 +732,34 @@ export default function DesignSystemClientPage() {
                 </DialogContent>
               </Dialog>
 
-              <AlertDialog
+              <ResponsiveAlertDialog
                 onOpenChange={setAlertDialogOpen}
                 open={alertDialogOpen}
               >
-                <AlertDialogTrigger render={<Button variant="destructive" />}>
+                <ResponsiveAlertDialogTrigger
+                  render={<Button variant="destructive" />}
+                >
                   Delete item
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete automation?</AlertDialogTitle>
-                    <AlertDialogDescription>
+                </ResponsiveAlertDialogTrigger>
+                <ResponsiveAlertDialogContent>
+                  <ResponsiveAlertDialogHeader>
+                    <ResponsiveAlertDialogTitle>
+                      Delete automation?
+                    </ResponsiveAlertDialogTitle>
+                    <ResponsiveAlertDialogDescription>
                       This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction>Delete</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </ResponsiveAlertDialogDescription>
+                  </ResponsiveAlertDialogHeader>
+                  <ResponsiveAlertDialogFooter>
+                    <ResponsiveAlertDialogCancel>
+                      Cancel
+                    </ResponsiveAlertDialogCancel>
+                    <ResponsiveAlertDialogAction>
+                      Delete
+                    </ResponsiveAlertDialogAction>
+                  </ResponsiveAlertDialogFooter>
+                </ResponsiveAlertDialogContent>
+              </ResponsiveAlertDialog>
             </CardContent>
           </Card>
 

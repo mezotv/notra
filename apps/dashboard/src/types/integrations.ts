@@ -1,5 +1,5 @@
 import type React from "react";
-import type { IntegrationType } from "@/utils/schemas/integrations";
+import type { IntegrationType } from "@/schemas/integrations";
 
 export interface RepositoryOutput {
   id: string;
@@ -11,6 +11,7 @@ export interface GitHubRepository {
   id: string;
   owner: string;
   repo: string;
+  defaultBranch: string | null;
   enabled: boolean;
   hasWebhook?: boolean;
   outputs?: RepositoryOutput[];

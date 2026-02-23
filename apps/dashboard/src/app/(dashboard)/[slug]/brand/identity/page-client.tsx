@@ -39,7 +39,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { ToneProfile } from "@/utils/schemas/brand";
+import type { ToneProfile } from "@/schemas/brand";
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
@@ -216,7 +216,7 @@ function ModalContent({
             className="h-10 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
             disabled={isPending}
             id="brand-url-input"
-            onChange={(e) => setUrl(sanitizeBrandUrlInput(e.target.value))}
+            onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !isPending) {
                 handleAnalyze();
@@ -615,7 +615,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const progressError =
     progress.status === "failed" ? progress.error : undefined;
 
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(() => {
+    if (organization?.websiteUrl) {
+      return sanitizeBrandUrlInput(organization.websiteUrl);
+    }
+    return "";
+  });
   const effectiveUrl = url.trim() || organization?.websiteUrl || "";
 
   const handleAnalyze = async () => {
@@ -725,7 +730,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                     isPendingSettings={false}
                     progress={effectiveProgress}
                     setUrl={setUrl}
-                    url={effectiveUrl}
+                    url={url}
                   />
                 </CardContent>
               </Card>

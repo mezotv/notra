@@ -2,13 +2,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteRepository,
+  GitHubBranchNotFoundError,
   getRepositoryById,
-  toggleRepository,
+  updateRepository,
+  validateRepositoryBranchExists,
 } from "@/lib/services/github-integration";
 import {
   repositoryIdParamSchema,
   updateRepositoryBodySchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; repositoryId: string }>;
@@ -111,8 +113,33 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { enabled } = bodyValidation.data;
-    const updated = await toggleRepository(repositoryId, enabled);
+    const { enabled, defaultBranch } = bodyValidation.data;
+    const normalizedDefaultBranch =
+      defaultBranch !== undefined ? defaultBranch || null : undefined;
+
+    if (normalizedDefaultBranch) {
+      try {
+        await validateRepositoryBranchExists({
+          owner: repository.owner,
+          repo: repository.repo,
+          branch: normalizedDefaultBranch,
+          encryptedToken: repository.integration.encryptedToken,
+        });
+      } catch (error) {
+        if (error instanceof GitHubBranchNotFoundError) {
+          return NextResponse.json({ error: error.message }, { status: 400 });
+        }
+
+        throw error;
+      }
+    }
+
+    const updated = await updateRepository(repositoryId, {
+      ...(enabled !== undefined ? { enabled } : {}),
+      ...(normalizedDefaultBranch !== undefined
+        ? { defaultBranch: normalizedDefaultBranch }
+        : {}),
+    });
 
     return NextResponse.json(updated);
   } catch (error) {

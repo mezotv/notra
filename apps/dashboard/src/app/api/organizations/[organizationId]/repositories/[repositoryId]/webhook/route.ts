@@ -5,7 +5,7 @@ import {
   getRepositoryById,
   getWebhookConfigForRepository,
 } from "@/lib/services/github-integration";
-import { repositoryIdParamSchema } from "@/utils/schemas/integrations";
+import { repositoryIdParamSchema } from "@/schemas/integrations";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; repositoryId: string }>;

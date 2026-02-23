@@ -1,16 +1,16 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
+import { Button } from "@notra/ui/components/ui/button";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -20,12 +20,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
-import type { GitHubIntegration } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import {
   type EditGitHubIntegrationFormValues,
   editGitHubIntegrationFormSchema,
-} from "@/utils/schemas/integrations";
+} from "@/schemas/integrations";
+import type { GitHubIntegration } from "@/types/integrations";
+import { QUERY_KEYS } from "@/utils/query-keys";
 
 interface EditIntegrationDialogProps {
   integration: GitHubIntegration;
@@ -42,6 +42,8 @@ export function EditIntegrationDialog({
   onOpenChange: controlledOnOpenChange,
   trigger,
 }: EditIntegrationDialogProps) {
+  const primaryRepository =
+    integration.repositories.length === 1 ? integration.repositories[0] : null;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
@@ -54,7 +56,13 @@ export function EditIntegrationDialog({
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
+          body: JSON.stringify({
+            displayName: values.displayName,
+            enabled: values.enabled,
+            ...(primaryRepository
+              ? { branch: values.branch?.trim() || null }
+              : {}),
+          }),
         }
       );
 
@@ -88,6 +96,7 @@ export function EditIntegrationDialog({
     defaultValues: {
       displayName: integration.displayName,
       enabled: integration.enabled,
+      branch: primaryRepository?.defaultBranch ?? "",
     },
     onSubmit: ({ value }) => {
       const validationResult = editGitHubIntegrationFormSchema.safeParse(value);
@@ -100,22 +109,22 @@ export function EditIntegrationDialog({
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (
-      <AlertDialogTrigger render={trigger as React.ReactElement} />
+      <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
 
   return (
     <>
       {triggerElement}
-      <AlertDialog onOpenChange={setOpen} open={open}>
-        <AlertDialogContent className="sm:max-w-[500px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl">
+      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+        <ResponsiveDialogContent className="sm:max-w-[500px]">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="text-2xl">
               Edit Integration
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+            </ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Update your GitHub integration settings
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -124,6 +133,24 @@ export function EditIntegrationDialog({
             }}
           >
             <div className="space-y-4 py-4">
+              <form.Field name="enabled">
+                {(field) => (
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="space-y-0.5">
+                      <Label>Enable Integration</Label>
+                      <p className="text-muted-foreground text-sm">
+                        When disabled, no outputs will be generated
+                      </p>
+                    </div>
+                    <Switch
+                      checked={field.state.value}
+                      disabled={mutation.isPending}
+                      onCheckedChange={(checked) => field.handleChange(checked)}
+                    />
+                  </div>
+                )}
+              </form.Field>
+
               <form.Field
                 name="displayName"
                 validators={{
@@ -153,31 +180,33 @@ export function EditIntegrationDialog({
                 )}
               </form.Field>
 
-              <form.Field name="enabled">
-                {(field) => (
-                  <div className="flex items-center justify-between space-x-2">
-                    <div className="space-y-0.5">
-                      <Label>Enable Integration</Label>
-                      <p className="text-muted-foreground text-sm">
-                        When disabled, no outputs will be generated
-                      </p>
-                    </div>
-                    <Switch
-                      checked={field.state.value}
-                      disabled={mutation.isPending}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                  </div>
-                )}
-              </form.Field>
+              {primaryRepository ? (
+                <form.Field name="branch">
+                  {(field) => (
+                    <Field>
+                      <FieldLabel>Default Branch</FieldLabel>
+                      <Input
+                        disabled={mutation.isPending}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="main"
+                        value={field.state.value ?? ""}
+                      />
+                    </Field>
+                  )}
+                </form.Field>
+              ) : null}
             </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={mutation.isPending}>
+            <ResponsiveDialogFooter>
+              <ResponsiveDialogClose
+                disabled={mutation.isPending}
+                render={<Button variant="outline" />}
+              >
                 Cancel
-              </AlertDialogCancel>
+              </ResponsiveDialogClose>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <AlertDialogAction
+                  <Button
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -186,13 +215,13 @@ export function EditIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Saving..." : "Save Changes"}
-                  </AlertDialogAction>
+                  </Button>
                 )}
               </form.Subscribe>
-            </AlertDialogFooter>
+            </ResponsiveDialogFooter>
           </form>
-        </AlertDialogContent>
-      </AlertDialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </>
   );
 }

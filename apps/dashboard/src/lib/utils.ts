@@ -5,11 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function generateOrganizationAvatar(slug: string): string {
+export function generateOrganizationAvatar(slug: string) {
   return `https://api.dicebear.com/9.x/glass/svg?seed=${slug}&backgroundType=gradientLinear,solid`;
 }
 
-export function slugify(text: string): string {
+export function slugify(text: string) {
   return text
     .toLowerCase()
     .trim()

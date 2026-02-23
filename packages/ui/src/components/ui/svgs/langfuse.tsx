@@ -2,6 +2,7 @@ import type { SVGProps } from "react";
 
 const Langfuse = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} fill="none" viewBox="0 0 316 316">
+    <title>Langfuse</title>
     <g clipPath="url(#langfuse-a)">
       <mask
         id="langfuse-b"

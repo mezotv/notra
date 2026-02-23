@@ -32,6 +32,7 @@ export const QUERY_KEYS = {
     list: (organizationId: string) => ["triggers", organizationId] as const,
   },
   AUTOMATION: {
+    base: ["automation"] as const,
     events: (organizationId: string) =>
       ["automation", "events", organizationId] as const,
     schedules: (organizationId: string) =>
@@ -48,7 +49,15 @@ export const QUERY_KEYS = {
     today: (organizationId: string) =>
       ["posts", organizationId, "today"] as const,
   },
+  NOTIFICATION_SETTINGS: {
+    settings: (organizationId: string) =>
+      ["notification-settings", organizationId] as const,
+  },
   ONBOARDING: {
     status: (organizationId: string) => ["onboarding", organizationId] as const,
+  },
+  API_KEYS: {
+    base: ["api-keys"] as const,
+    list: (organizationId: string) => ["api-keys", organizationId] as const,
   },
 } as const;

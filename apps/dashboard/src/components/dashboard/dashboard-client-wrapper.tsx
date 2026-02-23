@@ -16,9 +16,9 @@ export function DashboardClientWrapper({
     <OrganizationsProvider>
       <SidebarProvider>
         <DashboardSidebar variant="inset" />
-        <SidebarInset>
+        <SidebarInset className="min-w-0 overflow-x-hidden">
           <SiteHeader />
-          <div className="@container/main flex flex-1 flex-col gap-2">
+          <div className="@container/main flex min-w-0 flex-1 flex-col gap-2">
             {children}
           </div>
         </SidebarInset>

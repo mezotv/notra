@@ -7,15 +7,24 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@notra/ui/components/shared/responsive-dialog";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -142,7 +151,7 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertDialog
+      <ResponsiveDialog
         onOpenChange={(open) => {
           if (!isResending) {
             setShowResendDialog(open);
@@ -150,30 +159,32 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
         }}
         open={showResendDialog}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Resend invitation?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <ResponsiveDialogContent>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Resend invitation?</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               This will resend the invitation email to{" "}
               <span className="font-semibold underline">
                 {invitation.email}
               </span>
               . They will receive a new invitation link.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isResending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose
               disabled={isResending}
-              onClick={handleResendInvitation}
+              render={<Button variant="outline" />}
             >
+              Cancel
+            </ResponsiveDialogClose>
+            <Button disabled={isResending} onClick={handleResendInvitation}>
               {isResending ? "Resending..." : "Resend Invitation"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
-      <AlertDialog
+      <ResponsiveAlertDialog
         onOpenChange={(open) => {
           if (!isCanceling) {
             setShowCancelDialog(open);
@@ -181,26 +192,30 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
         }}
         open={showCancelDialog}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel invitation?</AlertDialogTitle>
-            <AlertDialogDescription>
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Cancel invitation?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
               This will cancel the invitation sent to {invitation.email}. They
               will no longer be able to accept this invitation.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCanceling}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={isCanceling}>
+              Cancel
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isCanceling}
               onClick={handleCancelInvitation}
             >
               {isCanceling ? "Canceling..." : "Cancel Invitation"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
     </>
   );
 }
