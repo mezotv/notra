@@ -214,7 +214,10 @@ export const configureTriggerBodySchema = z.object({
 });
 export type ConfigureTriggerBody = z.infer<typeof configureTriggerBodySchema>;
 
-export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = ["changelog"] as const;
+export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = [
+  "changelog",
+  "linkedin_post",
+] as const;
 export type ScheduleOutputType =
   (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
 

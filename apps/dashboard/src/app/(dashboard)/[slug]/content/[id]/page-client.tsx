@@ -4,13 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@notra/ui/components/ui/tabs";
-import { TitleCard } from "@notra/ui/components/ui/title-card";
+
 import {
   Tooltip,
   TooltipContent,
@@ -19,7 +13,7 @@ import {
 import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import remend from "remend";
 import { toast } from "sonner";
@@ -28,23 +22,15 @@ import ChatInput, {
   type TextSelection,
 } from "@/components/chat-input";
 import { getContentTypeLabel } from "@/components/content/content-card";
-import { DiffView } from "@/components/content/diff-view";
-import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
+import { ContentEditorSwitch } from "@/components/content/editors";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { sourceMetadataSchema } from "@/schemas/content";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
-const VIEW_OPTIONS = ["rendered", "markdown", "diff"] as const;
-type ViewOption = (typeof VIEW_OPTIONS)[number];
-
 const TITLE_REGEX = /^#\s+(.+)$/m;
-const VIEW_OPTIONS_SET = new Set<string>(VIEW_OPTIONS);
-
-function isViewOption(value: string): value is ViewOption {
-  return VIEW_OPTIONS_SET.has(value);
-}
 
 interface PageClientProps {
   contentId: string;
@@ -95,14 +81,10 @@ export default function PageClient({
   organizationSlug,
   organizationId,
 }: PageClientProps) {
-  const [view, setView] = useQueryState(
-    "view",
-    parseAsStringLiteral(VIEW_OPTIONS).withDefault("rendered")
-  );
-
   const { state: sidebarState } = useSidebar();
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
+  const { activeOrganization } = useOrganizationsContext();
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
   const [originalMarkdown, setOriginalMarkdown] = useState("");
@@ -112,7 +94,6 @@ export default function PageClient({
   const [context, setContext] = useState<ContextItem[]>([]);
 
   const saveToastIdRef = useRef<string | number | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
   const handleSaveRef = useRef<() => void>(() => {});
   const handleDiscardRef = useRef<() => void>(() => {});
@@ -141,7 +122,6 @@ export default function PageClient({
     data?.content?.title ??
     extractTitleFromMarkdown(currentMarkdown);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const titleInputRef = useRef<HTMLInputElement>(null);
   const title = editingTitle ?? serverTitle;
   const hasTitleChanges =
     editingTitle !== null && editingTitle.trim() !== serverTitle;
@@ -334,43 +314,14 @@ export default function PageClient({
     }
   }, []);
 
-  const handleTextareaSelect = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      return;
-    }
-
-    const startOffset = textarea.selectionStart;
-    const endOffset = textarea.selectionEnd;
-    if (startOffset !== endOffset) {
-      const text = textarea.value.substring(startOffset, endOffset).trim();
-      if (text) {
-        const getLineAndChar = (offset: number) => {
-          const lines = textarea.value.substring(0, offset).split("\n");
-          return {
-            line: lines.length,
-            char: (lines.at(-1)?.length ?? 0) + 1,
-          };
-        };
-        const start = getLineAndChar(startOffset);
-        const end = getLineAndChar(endOffset);
-        setSelection({
-          text,
-          startLine: start.line,
-          startChar: start.char,
-          endLine: end.line,
-          endChar: end.char,
-        });
-      }
-    }
-  }, []);
-
   const currentMarkdownRef = useRef(currentMarkdown);
   const selectionRef = useRef(selection);
   const contextRef = useRef(context);
+  const contentTypeRef = useRef(data?.content?.contentType);
   currentMarkdownRef.current = currentMarkdown;
   selectionRef.current = selection;
   contextRef.current = context;
+  contentTypeRef.current = data?.content?.contentType;
 
   const [chatError, setChatError] = useState<string | null>(null);
 
@@ -379,6 +330,7 @@ export default function PageClient({
       api: `/api/organizations/${organizationId}/content/${contentId}/chat`,
       body: () => ({
         currentMarkdown: currentMarkdownRef.current,
+        contentType: contentTypeRef.current,
         selection: selectionRef.current ?? undefined,
         context: contextRef.current,
       }),
@@ -616,120 +568,44 @@ export default function PageClient({
           </div>
         </div>
 
-        <Tabs
-          className="w-full"
-          onValueChange={(value) => {
-            if (isViewOption(value)) {
-              setView(value);
-            }
+        <ContentEditorSwitch
+          actions={{
+            setEditedMarkdown: (markdown) => {
+              setEditedMarkdown(markdown);
+              if (markdown !== null) {
+                editedMarkdownRef.current = markdown;
+              }
+            },
+            setOriginalMarkdown,
+            setEditingTitle,
+            onEditorChange: handleEditorChange,
+            onSelectionChange: handleSelectionChange,
           }}
-          value={view}
-        >
-          <TitleCard
-            action={
-              <TabsList variant="line">
-                <TabsTrigger value="rendered">Rendered</TabsTrigger>
-                <TabsTrigger value="markdown">Markdown</TabsTrigger>
-                <TabsTrigger value="diff">
-                  Diff
-                  {hasChanges && (
-                    <span className="ml-1.5 size-2 rounded-full bg-primary" />
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            }
-            heading={
-              <input
-                aria-label="Post title"
-                className="w-full bg-transparent outline-none focus:ring-0"
-                onChange={(e) => setEditingTitle(e.target.value)}
-                onFocus={(e) => {
-                  if (editingTitle === null) {
-                    setEditingTitle(e.target.value);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    titleInputRef.current?.blur();
-                  }
-                  if (e.key === "Escape") {
-                    setEditingTitle(null);
-                    titleInputRef.current?.blur();
-                  }
-                }}
-                ref={titleInputRef}
-                type="text"
-                value={title}
-              />
-            }
-          >
-            <TabsContent
-              className="prose prose-neutral dark:prose-invert mt-0 max-w-none"
-              value="rendered"
-            >
-              {currentMarkdown && (
-                <LexicalEditor
-                  editorRef={editorRef}
-                  initialMarkdown={currentMarkdown}
-                  key={editorKey}
-                  onChange={handleEditorChange}
-                  onSelectionChange={handleSelectionChange}
-                />
-              )}
-            </TabsContent>
-            <TabsContent className="mt-0" value="markdown">
-              <textarea
-                aria-label="Markdown content editor"
-                className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
-                onChange={(e) => {
-                  setEditedMarkdown(e.target.value);
-                  editedMarkdownRef.current = e.target.value;
-                }}
-                onMouseUp={handleTextareaSelect}
-                onSelect={handleTextareaSelect}
-                ref={textareaRef}
-                value={currentMarkdown}
-              />
-            </TabsContent>
-            <TabsContent className="mt-0 space-y-4" value="diff">
-              {hasTitleChanges && (
-                <div className="space-y-2">
-                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                    Title
-                  </p>
-                  <div className="grid grid-cols-2 gap-4 rounded-lg border p-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="mb-1 text-muted-foreground text-xs">
-                        Original
-                      </p>
-                      <p className="wrap-break-word rounded bg-red-500/10 px-2 py-1">
-                        {serverTitle}
-                      </p>
-                    </div>
-                    <div className="min-w-0">
-                      <p className="mb-1 text-muted-foreground text-xs">
-                        Current
-                      </p>
-                      <p className="wrap-break-word rounded bg-green-500/10 px-2 py-1">
-                        {title}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-2">
-                <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                  Content
-                </p>
-                <DiffView
-                  currentMarkdown={currentMarkdown}
-                  originalMarkdown={originalMarkdown}
-                />
-              </div>
-            </TabsContent>
-          </TitleCard>
-        </Tabs>
+          content={{
+            id: content.id,
+            title: content.title,
+            markdown: content.markdown,
+            contentType: content.contentType,
+            date: content.date,
+            sourceMetadata: content.sourceMetadata,
+          }}
+          contentType={content.contentType}
+          editorKey={editorKey}
+          editorRef={editorRef}
+          organization={{
+            name: activeOrganization?.name ?? "Your Organization",
+            logo: activeOrganization?.logo ?? null,
+          }}
+          state={{
+            editedMarkdown,
+            originalMarkdown,
+            editingTitle,
+            serverTitle,
+            hasChanges,
+            hasMarkdownChanges,
+            hasTitleChanges,
+          }}
+        />
 
         <div className="h-24" />
       </div>

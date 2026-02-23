@@ -1,6 +1,9 @@
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { ToneProfile } from "@/schemas/brand";
-import type { ChangelogTonePromptInput } from "./prompts";
+import type {
+  ChangelogTonePromptInput,
+  LinkedInTonePromptInput,
+} from "./prompts";
 
 export interface ChangelogAgentResult {
   postId: string;
@@ -17,6 +20,24 @@ export interface ChangelogAgentOptions {
   }>;
   tone?: ToneProfile;
   promptInput: ChangelogTonePromptInput;
+  sourceMetadata?: PostSourceMetadata;
+}
+
+export interface LinkedInAgentResult {
+  postId: string;
+  title: string;
+}
+
+export interface LinkedInAgentOptions {
+  organizationId: string;
+  repositories: Array<{
+    integrationId: string;
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+  }>;
+  tone?: ToneProfile;
+  promptInput: LinkedInTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
 }
 

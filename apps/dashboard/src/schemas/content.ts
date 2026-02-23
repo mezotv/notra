@@ -90,6 +90,7 @@ export type TextSelection = z.infer<typeof textSelectionSchema>;
 export const chatRequestSchema = z.object({
   messages: z.array(z.any()), // UIMessage from ai sdk
   currentMarkdown: z.string(),
+  contentType: z.string().optional(),
   selection: textSelectionSchema.optional(),
   context: z.array(contextItemSchema).optional(),
 });

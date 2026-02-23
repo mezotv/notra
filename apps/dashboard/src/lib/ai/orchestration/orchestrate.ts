@@ -25,6 +25,7 @@ export async function orchestrateChat(
     organizationId,
     messages,
     currentMarkdown,
+    contentType,
     selection,
     context = [],
     maxSteps = 1,
@@ -63,6 +64,7 @@ export async function orchestrateChat(
 
   const systemPrompt = getContentEditorChatPrompt({
     selection,
+    contentType,
     repoContext,
     toolDescriptions: descriptions,
     hasGitHubEnabled: hasGitHub,

@@ -21,9 +21,15 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import Image from "next/image";
 import type * as React from "react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import type { TextSelection } from "@/components/chat-input";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +42,7 @@ interface LinkedInPostProps extends React.ComponentProps<"div"> {
   };
   content?: string;
   onContentChange?: (value: string) => void;
+  onSelectionChange?: (selection: TextSelection | null) => void;
   image?: { src: string; alt: string };
   reactions?: { count: number; types?: Array<"like" | "love" | "celebrate"> };
   comments?: number;
@@ -77,16 +84,63 @@ function ReactionDot({ type }: { type: string }) {
   );
 }
 
+function generateMockLinkedInUrl(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let hash = "";
+  for (let i = 0; i < 8; i++) {
+    hash += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `https://lnkd.in/${hash}`;
+}
+
+const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+const HASHTAG_REGEX = /(#\w+)/g;
+const COMBINED_REGEX = /(https?:\/\/[^\s]+|#\w+)/g;
+
+function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
+  const parts = text.split(COMBINED_REGEX);
+  return parts.map((part, index) => {
+    if (part.startsWith("#")) {
+      return (
+        <span
+          className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2"
+          key={index}
+        >
+          {part}
+        </span>
+      );
+    }
+    if (part.match(URL_REGEX)) {
+      const mockUrl = generateMockLinkedInUrl();
+      return (
+        <Tooltip key={index}>
+          <TooltipTrigger asChild>
+            <span className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2">
+              {mockUrl}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Mock link (actual: {part})</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return part;
+  });
+}
+
 function PostContent({
   content,
   truncate,
   truncationLimit = LINKEDIN_TRUNCATION_LIMIT,
   defaultExpanded = true,
+  onSelectionChange,
 }: {
   content: string;
   truncate?: boolean;
   truncationLimit?: number;
   defaultExpanded?: boolean;
+  onSelectionChange?: (selection: TextSelection | null) => void;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const canTruncate = truncate && content.length > truncationLimit;
@@ -95,9 +149,44 @@ function PostContent({
     ? content.slice(0, truncationLimit).trimEnd()
     : content;
 
+  const handleSelection = useCallback(() => {
+    if (!onSelectionChange) return;
+
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
+
+    if (selectedText && selectedText.length > 0) {
+      // Find position in original content
+      const startIndex = content.indexOf(selectedText);
+      if (startIndex !== -1) {
+        const beforeText = content.substring(0, startIndex);
+        const lines = beforeText.split("\n");
+        const startLine = lines.length;
+        const startChar = (lines.at(-1)?.length ?? 0) + 1;
+
+        const selectedLines = selectedText.split("\n");
+        const endLine = startLine + selectedLines.length - 1;
+        const endChar =
+          selectedLines.length === 1
+            ? startChar + selectedText.length
+            : (selectedLines.at(-1)?.length ?? 0) + 1;
+
+        onSelectionChange({
+          text: selectedText,
+          startLine,
+          startChar,
+          endLine,
+          endChar,
+        });
+      }
+    }
+  }, [content, onSelectionChange]);
+
   return (
-    <div className="text-sm">
-      <span className="whitespace-pre-wrap">{displayContent}</span>
+    <div className="text-sm" onMouseUp={handleSelection}>
+      <span className="whitespace-pre-wrap">
+        {formatContentWithHashtagsAndLinks(displayContent)}
+      </span>
       {isCollapsed && (
         <button
           className="ml-2 cursor-pointer font-medium text-muted-foreground hover:text-foreground hover:underline"
@@ -115,6 +204,7 @@ function LinkedInPost({
   author,
   content,
   onContentChange,
+  onSelectionChange,
   image,
   reactions,
   comments,
@@ -189,6 +279,7 @@ function LinkedInPost({
           <PostContent
             content={content}
             defaultExpanded={defaultExpanded}
+            onSelectionChange={onSelectionChange}
             truncate={truncate}
             truncationLimit={truncationLimit}
           />

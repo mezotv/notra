@@ -16,8 +16,6 @@ import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { FEATURES } from "@/constants/features";
-import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
 import { autumn } from "@/lib/billing/autumn";
 import { trackScheduledContentCreated } from "@/lib/databuddy";
 import {
@@ -26,6 +24,8 @@ import {
 } from "@/lib/email/send";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
+import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
+import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 
@@ -54,12 +54,6 @@ interface RepositoryData {
   repo: string;
   defaultBranch: string | null;
 }
-
-type ContentGenerationResult =
-  | { status: "ok"; postId: string; title: string }
-  | { status: "rate_limited"; retryAfterSeconds?: number }
-  | { status: "unsupported_output_type"; outputType: string }
-  | { status: "generation_failed"; reason: string };
 
 type BrandSettingsData = {
   toneProfile: string | null;
@@ -298,80 +292,57 @@ export const { POST } = serve<SchedulePayload>(
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
         async () => {
-          if (trigger.outputType === "changelog") {
-            const lookbackRange = resolveLookbackRange(lookbackWindow);
-            const todayUtc = formatUtcTodayContext(lookbackRange.end);
-            const repoList = repositories
-              .map((r) => `integrationId: ${r.id}`)
-              .join(", ");
+          const lookbackRange = resolveLookbackRange(lookbackWindow);
+          const todayUtc = formatUtcTodayContext(lookbackRange.end);
+          const repoList = repositories
+            .map((r) => `integrationId: ${r.id}`)
+            .join(", ");
 
-            const sourceMetadata: PostSourceMetadata = {
-              triggerId: trigger.id,
-              triggerSourceType: trigger.sourceType,
-              repositories: repositories.map((r) => ({
-                owner: r.owner,
-                repo: r.repo,
-              })),
-              lookbackWindow,
-              lookbackRange: {
-                start: lookbackRange.start.toISOString(),
-                end: lookbackRange.end.toISOString(),
-              },
-            };
-
-            try {
-              const { postId, title } = await generateChangelog({
-                organizationId: trigger.organizationId,
-                repositories: repositories.map((repository) => ({
-                  integrationId: repository.id,
-                  owner: repository.owner,
-                  repo: repository.repo,
-                  defaultBranch: repository.defaultBranch,
-                })),
-                tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
-                promptInput: {
-                  sourceTargets: repoList,
-                  todayUtc,
-                  lookbackLabel: lookbackRange.label,
-                  lookbackStartIso: lookbackRange.start.toISOString(),
-                  lookbackEndIso: lookbackRange.end.toISOString(),
-                  companyName: brand?.companyName ?? undefined,
-                  companyDescription: brand?.companyDescription ?? undefined,
-                  audience: brand?.audience ?? undefined,
-                  customInstructions: brand?.customInstructions ?? null,
-                },
-                sourceMetadata,
-              });
-
-              return {
-                status: "ok",
-                postId,
-                title,
-              };
-            } catch (error) {
-              if (isGitHubRateLimitError(error)) {
-                return {
-                  status: "rate_limited",
-                  retryAfterSeconds: error.retryAfterSeconds,
-                };
-              }
-
-              return {
-                status: "generation_failed",
-                reason: error instanceof Error ? error.message : String(error),
-              };
-            }
-          }
-
-          // For other output types, return a distinct status so we do not
-          // enter rate-limit retry flow.
-          console.log(
-            `[Schedule] Output type ${trigger.outputType} not fully implemented yet`
-          );
-          return {
-            status: "unsupported_output_type",
-            outputType: trigger.outputType,
+          const sourceMetadata: PostSourceMetadata = {
+            triggerId: trigger.id,
+            triggerSourceType: trigger.sourceType,
+            repositories: repositories.map((r) => ({
+              owner: r.owner,
+              repo: r.repo,
+            })),
+            lookbackWindow,
+            lookbackRange: {
+              start: lookbackRange.start.toISOString(),
+              end: lookbackRange.end.toISOString(),
+            },
           };
+
+          const promptInput = {
+            sourceTargets: repoList,
+            todayUtc,
+            lookbackLabel: lookbackRange.label,
+            lookbackStartIso: lookbackRange.start.toISOString(),
+            lookbackEndIso: lookbackRange.end.toISOString(),
+            companyName: brand?.companyName ?? undefined,
+            companyDescription: brand?.companyDescription ?? undefined,
+            audience: brand?.audience ?? undefined,
+            customInstructions: brand?.customInstructions ?? null,
+          };
+
+          const repositoryParams = repositories.map((repository) => ({
+            integrationId: repository.id,
+            owner: repository.owner,
+            repo: repository.repo,
+            defaultBranch: repository.defaultBranch,
+          }));
+
+          const tone = getValidToneProfile(
+            brand?.toneProfile,
+            "Conversational"
+          );
+
+          return generateScheduledContent(trigger.outputType, {
+            organizationId: trigger.organizationId,
+            repositories: repositoryParams,
+            tone,
+            promptInput,
+            sourceMetadata,
+          });
         }
       );
 

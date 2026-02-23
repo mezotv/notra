@@ -63,9 +63,9 @@ const OUTPUT_OPTIONS: Array<{
   disabled?: boolean;
 }> = [
   { value: "changelog", label: "Changelog" },
+  { value: "linkedin_post", label: "LinkedIn Post" },
   { value: "blog_post", label: "Blog Post", disabled: true },
   { value: "twitter_post", label: "Twitter Post", disabled: true },
-  { value: "linkedin_post", label: "LinkedIn Post", disabled: true },
   { value: "investor_update", label: "Investor Update", disabled: true },
 ];
 

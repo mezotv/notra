@@ -82,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { messages, currentMarkdown, selection, context } = parseResult.data;
+    const { messages, currentMarkdown, contentType, selection, context } = parseResult.data;
 
     let tracked = false;
     if (autumn) {
@@ -107,6 +107,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         organizationId,
         messages,
         currentMarkdown,
+        contentType,
         selection,
         context,
         maxSteps: 5,

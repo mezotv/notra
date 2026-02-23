@@ -62,6 +62,7 @@ export interface OrchestrateInput {
   organizationId: string;
   messages: UIMessage[];
   currentMarkdown: string;
+  contentType?: string;
   selection?: TextSelection;
   context?: ContextItem[];
   maxSteps?: number;

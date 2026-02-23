@@ -4,7 +4,7 @@ import type { ContentEditorChatPromptParams } from "@/types/lib/ai/prompts";
 export function getContentEditorChatPrompt(
   params: ContentEditorChatPromptParams
 ) {
-  const { selection, repoContext, toolDescriptions, hasGitHubEnabled } = params;
+  const { selection, contentType, repoContext, toolDescriptions, hasGitHubEnabled } = params;
 
   const selectionContext = selection
     ? `\n\n## User Selection\nThe user selected lines ${selection.startLine}:${selection.startChar}–${selection.endLine}:${selection.endChar}:\n"""\n${selection.text}\n"""\nCONSTRAINT: Edit only within lines ${selection.startLine}–${selection.endLine}.`
@@ -12,6 +12,10 @@ export function getContentEditorChatPrompt(
 
   const capabilitiesSection = toolDescriptions?.length
     ? `\n\n## Available Capabilities\n${toolDescriptions.map((d) => `- ${d}`).join("\n")}`
+    : "";
+
+  const linkedInSection = contentType === "linkedin_post"
+    ? `\n\n## LinkedIn Post Constraints\nThis is a LinkedIn post. LinkedIn does NOT support markdown formatting.\n- Do NOT use markdown syntax (bold **, italic *, headers #, etc.)\n- Use plain text, line breaks, and bullet points (• or -) only\n- Do NOT use em dashes (—) or en dashes (–)\n- Keep hashtags at the end of the post\n- Maximum 3-5 hashtags`
     : "";
 
   const githubSection =
@@ -40,6 +44,6 @@ export function getContentEditorChatPrompt(
     - When user selects text, focus only on that section
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
     - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
-    ${capabilitiesSection}${githubSection}${selectionContext}
+    ${capabilitiesSection}${linkedInSection}${githubSection}${selectionContext}
   `;
 }
