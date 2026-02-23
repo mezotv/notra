@@ -220,7 +220,6 @@ import ChatInput from "@/components/chat-input";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
-import { TitleCard } from "@/components/title-card";
 
 const colorGroups = [
   {
@@ -1461,6 +1460,13 @@ export default function DesignSystemClientPage() {
             reposts={3}
             timestamp="5h"
           />
+        </div>
+      </section>
+
+      <Separator />
+
+      <section className="space-y-6">
+        <SectionHeader
           description="Guided setup checklist for onboarding flows."
           title="Onboarding Checklist"
         />
