@@ -1,5 +1,6 @@
 import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
+import type { EventWorkflowPayload } from "@/schemas/workflows";
 import type {
   CreateQstashScheduleProps,
   WorkflowDelay,
@@ -92,6 +93,24 @@ export async function triggerScheduleNow(
   const result = await client.trigger({
     url: destination,
     body: { triggerId, ...(options?.manual && { manual: true }) },
+    ...(options?.delay && { delay: options.delay }),
+  });
+
+  return result.workflowRunId;
+}
+
+export async function triggerEventNow(
+  payload: EventWorkflowPayload,
+  options?: { delay?: WorkflowDelay }
+) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/event`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: payload,
     ...(options?.delay && { delay: options.delay }),
   });
 

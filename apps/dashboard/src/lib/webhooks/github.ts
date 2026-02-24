@@ -1,7 +1,11 @@
 import crypto from "node:crypto";
+import { db } from "@notra/db/drizzle";
+import { contentTriggers } from "@notra/db/schema";
+import { and, eq, sql } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { redis } from "@/lib/redis";
 import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
+import { triggerEventNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
   type GitHubEventType,
@@ -463,6 +467,44 @@ export async function handleGitHubWebhook(
     await markDeliveryProcessed(delivery);
   }
 
+  // Find and trigger matching event triggers
+  const matchingTriggers = await db
+    .select({
+      id: contentTriggers.id,
+      sourceConfig: contentTriggers.sourceConfig,
+    })
+    .from(contentTriggers)
+    .where(
+      and(
+        eq(contentTriggers.organizationId, organizationId),
+        eq(contentTriggers.sourceType, "github_webhook"),
+        eq(contentTriggers.enabled, true),
+        sql`${contentTriggers.targets}->>'repositoryIds' @> ${JSON.stringify([repositoryId])}`
+      )
+    );
+
+  const triggeredWorkflows: string[] = [];
+  for (const trigger of matchingTriggers) {
+    const config = trigger.sourceConfig as { eventTypes?: string[] };
+    const eventTypes = config.eventTypes ?? [];
+
+    if (eventTypes.length === 0 || eventTypes.includes(processedEvent.type)) {
+      try {
+        const workflowRunId = await triggerEventNow({
+          triggerId: trigger.id,
+          eventType: processedEvent.type,
+          eventAction: processedEvent.action,
+          eventData: processedEvent.data as Record<string, unknown>,
+          repositoryId,
+          deliveryId: delivery ?? undefined,
+        });
+        triggeredWorkflows.push(workflowRunId);
+      } catch (error) {
+        console.error(`Failed to trigger event workflow for trigger ${trigger.id}:`, error);
+      }
+    }
+  }
+
   return {
     success: true,
     message: `Processed ${processedEvent.type} event (${processedEvent.action})`,
@@ -474,6 +516,7 @@ export async function handleGitHubWebhook(
         id: payload.repository?.id,
         fullName: payload.repository?.full_name,
       },
+      triggeredWorkflows,
     },
   };
 }

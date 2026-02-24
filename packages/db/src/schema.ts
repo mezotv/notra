@@ -334,8 +334,10 @@ export interface PostSourceMetadata {
   triggerId: string;
   triggerSourceType: string;
   repositories: { owner: string; repo: string }[];
-  lookbackWindow: string;
-  lookbackRange: { start: string; end: string };
+  lookbackWindow?: string;
+  lookbackRange?: { start: string; end: string };
+  eventType?: string;
+  eventAction?: string;
 }
 
 export const usersRelations = relations(users, ({ many }) => ({

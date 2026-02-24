@@ -156,6 +156,116 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   return `Daily @ ${time}`;
 }
 
+function EventsSection({
+  organizationId,
+  slug,
+  repositoryIds,
+}: {
+  organizationId: string;
+  slug: string;
+  repositoryIds: string[];
+}) {
+  const normalizedRepositoryIds = [...repositoryIds].sort();
+  const repositoryQueryString = normalizedRepositoryIds
+    .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
+    .join("&");
+  const hasRepositories = normalizedRepositoryIds.length > 0;
+
+  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
+    queryKey: [
+      ...QUERY_KEYS.AUTOMATION.events(organizationId),
+      "repositoryIds",
+      ...normalizedRepositoryIds,
+    ],
+    queryFn: async () => {
+      const response = await fetch(
+        repositoryQueryString
+          ? `/api/organizations/${organizationId}/automation/events?${repositoryQueryString}`
+          : `/api/organizations/${organizationId}/automation/events`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch events");
+      }
+      return response.json();
+    },
+    enabled: !!organizationId && hasRepositories,
+  });
+
+  const events = data?.triggers ?? [];
+  const displayEvents = events.slice(0, 5);
+  const isLoadingEvents = isPending && hasRepositories;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="font-semibold text-lg">Events</h2>
+          <p className="text-muted-foreground text-sm">
+            React to repository events like releases, pushes, and stars.
+          </p>
+        </div>
+        {slug && (
+          <Link href={`/${slug}/automation/events`}>
+            <Button size="sm" variant="outline">
+              View all
+              <ArrowRightIcon className="ml-1 size-3.5" />
+            </Button>
+          </Link>
+        )}
+      </div>
+      {isLoadingEvents ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              className="h-12 animate-pulse rounded-lg border bg-muted/30"
+              key={i}
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
+          Failed to load event triggers.
+        </div>
+      ) : displayEvents.length === 0 ? (
+        <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
+          No event triggers configured yet.
+        </div>
+      ) : (
+        <div className="divide-y rounded-lg border">
+          {displayEvents.map((event) => (
+            <div
+              className="flex items-center justify-between gap-4 px-4 py-3"
+              key={event.id}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="truncate font-medium text-sm">
+                  {event.name}
+                </span>
+                <span className="shrink-0 text-muted-foreground text-xs">
+                  {getOutputTypeLabel(event.outputType)}
+                </span>
+              </div>
+              <Badge variant={event.enabled ? "default" : "secondary"}>
+                {event.enabled ? "Active" : "Paused"}
+              </Badge>
+            </div>
+          ))}
+          {events.length > 5 && (
+            <div className="px-4 py-2 text-center">
+              <Link
+                className="text-muted-foreground text-xs hover:underline"
+                href={`/${slug}/automation/events`}
+              >
+                +{events.length - 5} more event triggers
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SchedulesSection({
   organizationId,
   slug,
@@ -427,18 +537,11 @@ export default function PageClient({ integrationId }: PageClientProps) {
             slug={activeOrganization?.slug ?? ""}
           />
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-lg">Events</h2>
-              <Badge variant="secondary">Coming soon</Badge>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              React to repository events like releases, pushes, and stars.
-            </p>
-            <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
-              Event-based triggers are coming soon.
-            </div>
-          </div>
+          <EventsSection
+            organizationId={organizationId ?? ""}
+            repositoryIds={integration.repositories.map((repo) => repo.id)}
+            slug={activeOrganization?.slug ?? ""}
+          />
 
           {process.env.NODE_ENV !== "production" &&
           organizationId &&

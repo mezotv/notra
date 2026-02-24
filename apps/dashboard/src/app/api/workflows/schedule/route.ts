@@ -14,7 +14,7 @@ import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
-import { z } from "zod";
+
 import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
 import { trackScheduledContentCreated } from "@/lib/databuddy";
@@ -29,12 +29,10 @@ import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 
-const schedulePayloadSchema = z.object({
-  triggerId: z.string().min(1),
-  manual: z.boolean().optional().default(false),
-});
-
-type SchedulePayload = z.infer<typeof schedulePayloadSchema>;
+import {
+  scheduleWorkflowPayloadSchema,
+  type ScheduleWorkflowPayload,
+} from "@/schemas/workflows";
 
 interface TriggerData {
   id: string;
@@ -131,9 +129,11 @@ function formatUtcTodayContext(now: Date) {
   return `${weekday}, ${date} (UTC)`;
 }
 
-export const { POST } = serve<SchedulePayload>(
-  async (context: WorkflowContext<SchedulePayload>) => {
-    const parseResult = schedulePayloadSchema.safeParse(context.requestPayload);
+export const { POST } = serve<ScheduleWorkflowPayload>(
+  async (context: WorkflowContext<ScheduleWorkflowPayload>) => {
+    const parseResult = scheduleWorkflowPayloadSchema.safeParse(
+      context.requestPayload
+    );
     if (!parseResult.success) {
       console.error("[Schedule] Invalid payload:", parseResult.error.flatten());
       await context.cancel();
