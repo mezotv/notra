@@ -236,7 +236,7 @@ contentRoutes.openapi(getPostRoute, async (c) => {
 
   return c.json(
     {
-      post,
+      post: post ?? null,
     },
     200
   );
