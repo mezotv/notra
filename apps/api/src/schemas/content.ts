@@ -26,17 +26,12 @@ function normalizeFilterValues<T extends string>(
   values: T | T[] | undefined,
   defaultValues: readonly T[]
 ): T[] {
-function normalizeFilterValues<T extends string>(
-  values: T | T[] | undefined,
-  defaultValues: readonly T[]
-): T[] {
   if (!values) {
     return [...defaultValues];
   }
 
   const normalized = Array.isArray(values) ? values : [values];
-  const result = Array.from(new Set(normalized));
-  return result.length > 0 ? result : [...defaultValues];
+  return Array.from(new Set(normalized));
 }
 
 function createQueryEnumFilterSchema<T extends string>(
