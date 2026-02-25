@@ -31,6 +31,10 @@ function normalizeFilterValues<T extends string>(
   }
 
   const normalized = Array.isArray(values) ? values : [values];
+  if (normalized.length === 0) {
+    return [...defaultValues];
+  }
+
   return Array.from(new Set(normalized));
 }
 
