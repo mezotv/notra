@@ -51,7 +51,6 @@
         /* Needs more work to fix */
         "noExcessiveCognitiveComplexity": "off",
 
-        "noForEach": "warn",
         "useOptionalChain": "warn"
       },
       "performance": {

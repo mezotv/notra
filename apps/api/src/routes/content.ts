@@ -2,6 +2,8 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { and, count, eq, inArray } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
 import {
+  ALL_POST_CONTENT_TYPES,
+  ALL_POST_STATUSES,
   errorResponseSchema,
   getPostParamsSchema,
   getPostQuerySchema,
@@ -9,9 +11,16 @@ import {
   getPostsOpenApiQuerySchema,
   getPostsParamsSchema,
   getPostsResponseSchema,
-} from "../schemas/post";
+} from "../schemas/content";
 
 export const contentRoutes = new OpenAPIHono();
+
+function shouldApplyFilter(
+  selectedValues: readonly string[],
+  allValues: readonly string[]
+) {
+  return selectedValues.length < allValues.length;
+}
 
 const getPostsRoute = createRoute({
   method: "get",
@@ -132,11 +141,16 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
   }
 
   const db = c.get("db");
-  const { limit, page, sort, status } = query;
+  const { limit, page, sort, status, contentType } = query;
   const offset = (page - 1) * limit;
   const whereClause = and(
     eq(posts.organizationId, params.organizationId),
-    status.length === 2 ? undefined : inArray(posts.status, status)
+    shouldApplyFilter(status, ALL_POST_STATUSES)
+      ? inArray(posts.status, status)
+      : undefined,
+    shouldApplyFilter(contentType, ALL_POST_CONTENT_TYPES)
+      ? inArray(posts.contentType, contentType)
+      : undefined
   );
 
   const [countResult] = await db
@@ -179,9 +193,6 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
         totalPages,
         totalItems,
       },
-      metadata: {
-        status,
-      },
     },
     200
   );
@@ -198,12 +209,17 @@ contentRoutes.openapi(getPostRoute, async (c) => {
   }
 
   const db = c.get("db");
-  const { status } = query;
+  const { status, contentType } = query;
   const post = await db.query.posts.findFirst({
     where: and(
       eq(posts.id, params.postId),
       eq(posts.organizationId, params.organizationId),
-      status.length === 2 ? undefined : inArray(posts.status, status)
+      shouldApplyFilter(status, ALL_POST_STATUSES)
+        ? inArray(posts.status, status)
+        : undefined,
+      shouldApplyFilter(contentType, ALL_POST_CONTENT_TYPES)
+        ? inArray(posts.contentType, contentType)
+        : undefined
     ),
     columns: {
       id: true,
@@ -221,9 +237,6 @@ contentRoutes.openapi(getPostRoute, async (c) => {
   return c.json(
     {
       post: post ?? null,
-      metadata: {
-        status,
-      },
     },
     200
   );
