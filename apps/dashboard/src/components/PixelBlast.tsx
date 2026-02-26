@@ -592,10 +592,10 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
         const noisePass = new EffectPass(camera, noiseEffect);
         noisePass.renderToScreen = true;
         if (composer && composer.passes.length > 0) {
-          composer.passes.forEach((p) => {
+          for (const p of composer.passes) {
             const pass = p as { renderToScreen?: boolean };
             pass.renderToScreen = false;
-          });
+          }
         }
         composer.addPass(noisePass);
       }
@@ -663,21 +663,21 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
           if (touch) {
             touch.update();
           }
-          composer.passes.forEach((p) => {
+          for (const p of composer.passes) {
             const pass = p as {
               effects?: Array<
                 Effect & { uniforms: Map<string, THREE.Uniform> }
               >;
             };
             if (pass.effects) {
-              pass.effects.forEach((eff) => {
+              for (const eff of pass.effects) {
                 const timeUniform = eff.uniforms?.get("uTime");
                 if (timeUniform) {
                   timeUniform.value = uniforms.uTime.value;
                 }
-              });
+              }
             }
-          });
+          }
           composer.render();
         } else {
           renderer.render(scene, camera);
