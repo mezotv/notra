@@ -69,7 +69,7 @@ export async function generateLinkedInPost(
     organizationId,
     contentType: "linkedin_post",
     sourceMetadata,
-  };
+  } as const;
 
   const agent = new ToolLoopAgent({
     model,

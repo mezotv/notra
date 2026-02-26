@@ -201,7 +201,7 @@ function EventsSection({
         <div className="space-y-1">
           <h2 className="font-semibold text-lg">Events</h2>
           <p className="text-muted-foreground text-sm">
-            React to repository events like releases, pushes, and stars.
+            React to repository events like releases and pushes.
           </p>
         </div>
         {slug && (

@@ -7,13 +7,14 @@ import { marked } from "marked";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { type ContentType, contentTypeSchema } from "@/schemas/content";
 import { toolDescription } from "@/utils/ai/description";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
 export interface PostToolsConfig {
   organizationId: string;
-  contentType: string;
+  contentType: ContentType;
   sourceMetadata?: PostSourceMetadata;
 }
 
@@ -26,6 +27,8 @@ export function createCreatePostTool(
   config: PostToolsConfig,
   result: PostToolsResult
 ): Tool {
+  const contentType = contentTypeSchema.parse(config.contentType);
+
   return tool({
     description: toolDescription({
       toolName: "create_post",
@@ -63,7 +66,7 @@ export function createCreatePostTool(
         title,
         content,
         markdown,
-        contentType: config.contentType,
+        contentType,
         sourceMetadata: config.sourceMetadata ?? null,
       });
       result.postId = id;

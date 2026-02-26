@@ -54,7 +54,6 @@ import { SchedulePicker } from "./trigger-schedule-picker";
 const EVENT_OPTIONS: Array<{ value: WebhookEventType; label: string }> = [
   { value: "release", label: "Release published" },
   { value: "push", label: "Push to default branch" },
-  { value: "star", label: "New star" },
 ];
 
 const OUTPUT_OPTIONS: Array<{
@@ -215,7 +214,10 @@ export function AddTriggerDialog({
   const mutation = useMutation<{ trigger: Trigger }, Error, TriggerFormValues>({
     mutationFn: async (value) => {
       const basePath =
-        apiPath ?? `/api/organizations/${organizationId}/triggers`;
+        apiPath ??
+        (value.sourceType === "cron"
+          ? `/api/organizations/${organizationId}/automation/schedules`
+          : `/api/organizations/${organizationId}/automation/events`);
       const targetPath = isEditMode
         ? `${basePath}?triggerId=${editTrigger.id}`
         : basePath;
@@ -315,7 +317,7 @@ export function AddTriggerDialog({
           <SheetTitle className="text-2xl">
             {isEditMode && "Edit Schedule"}
             {!isEditMode &&
-              (isScheduleContext ? "Add Schedule" : "Add Trigger")}
+              (isScheduleContext ? "Add Schedule" : "Add Event Trigger")}
           </SheetTitle>
           <SheetDescription>
             {isEditMode && "Update the schedule configuration."}

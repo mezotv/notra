@@ -20,7 +20,7 @@ export const eventWorkflowPayloadSchema = z.object({
   triggerId: z.string().min(1),
   eventType: z.string().min(1),
   eventAction: z.string(),
-  eventData: z.record(z.unknown()),
+  eventData: z.record(z.string(), z.unknown()),
   repositoryId: z.string().min(1),
   deliveryId: z.string().optional(),
 });

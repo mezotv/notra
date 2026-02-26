@@ -41,7 +41,7 @@ export interface ContentEditorChatPromptParams {
 }
 
 export interface GithubWebhookMemoryPromptParams {
-  eventType: "release" | "push" | "star";
+  eventType: "release" | "push";
   repository: string;
   action: string;
   data: Record<string, unknown>;

@@ -62,7 +62,7 @@ export const githubWebhookPayloadSchema = z.object({
 
 export type GitHubWebhookPayload = z.infer<typeof githubWebhookPayloadSchema>;
 
-export const GITHUB_EVENT_TYPES = ["release", "push", "star", "ping"] as const;
+export const GITHUB_EVENT_TYPES = ["release", "push", "ping"] as const;
 export type GitHubEventType = (typeof GITHUB_EVENT_TYPES)[number];
 
 export function isGitHubEventType(event: string): event is GitHubEventType {

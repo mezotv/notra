@@ -33,7 +33,7 @@ export interface GitHubIntegration {
   repositories: GitHubRepository[];
 }
 
-export type WebhookLogType = "release" | "push" | "star" | "ping";
+export type WebhookLogType = "release" | "push" | "ping";
 
 export interface IntegrationWebhookLog {
   id: string;

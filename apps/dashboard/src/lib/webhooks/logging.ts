@@ -41,6 +41,12 @@ export async function appendWebhookLog(input: WebhookLogInput) {
   };
 
   if (!redis) {
+    const payloadSummary = input.payload
+      ? ` payload=${JSON.stringify(input.payload)}`
+      : "";
+    console.info(
+      `[WebhookLog] ${input.integrationType} ${input.status} ${input.title}${payloadSummary}`
+    );
     return log;
   }
 

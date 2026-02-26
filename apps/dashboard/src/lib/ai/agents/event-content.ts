@@ -1,13 +1,15 @@
 import { db } from "@notra/db/drizzle";
-import { posts } from "@notra/db/schema";
+import { type PostSourceMetadata, posts } from "@notra/db/schema";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { generateText } from "ai";
 import { marked } from "marked";
 import { customAlphabet } from "nanoid";
+import { z } from "zod";
 import { gateway } from "@/lib/ai/gateway";
 import type { ToneProfile } from "@/schemas/brand";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+const eventGeneratedContentTypeSchema = z.enum(["changelog", "linkedin_post"]);
 
 interface EventContentOptions {
   organizationId: string;
@@ -26,7 +28,7 @@ interface EventContentOptions {
     audience?: string;
     customInstructions?: string | null;
   };
-  sourceMetadata: Record<string, unknown>;
+  sourceMetadata: PostSourceMetadata;
 }
 
 interface EventContentResult {
@@ -121,7 +123,6 @@ export async function generateEventContent(
   const { text } = await generateText({
     model,
     prompt,
-    maxTokens: 2000,
   });
 
   if (!text || text.trim().length === 0) {
@@ -135,7 +136,7 @@ export async function generateEventContent(
     title = `${title.slice(0, 97)}...`;
   }
 
-  const contentType = outputType === "linkedin_post" ? "linkedin_post" : "post";
+  const contentType = eventGeneratedContentTypeSchema.parse(outputType);
   const id = nanoid();
   const content = await marked.parse(text.trim());
 

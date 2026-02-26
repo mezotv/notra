@@ -10,8 +10,6 @@ export function getWebhookEventLabel(eventType: string): string {
       return "Release published";
     case "push":
       return "Push to default branch";
-    case "star":
-      return "New star";
     case "ping":
       return "Webhook ping";
     default:

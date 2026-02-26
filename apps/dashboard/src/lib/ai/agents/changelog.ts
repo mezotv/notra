@@ -69,7 +69,7 @@ export async function generateChangelog(
     organizationId,
     contentType: "changelog",
     sourceMetadata,
-  };
+  } as const;
 
   const agent = new ToolLoopAgent({
     model,

@@ -75,6 +75,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   try {
+    console.log("[Webhook] Incoming request", {
+      provider,
+      organizationId,
+      integrationId,
+      repositoryId,
+    });
+
     const integration = await fetcher(integrationId);
 
     if (!integration) {
@@ -134,6 +141,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     };
 
     const result = await handler(context);
+
+    console.log("[Webhook] Handler result", {
+      provider,
+      organizationId,
+      integrationId,
+      repositoryId,
+      success: result.success,
+      message: result.message,
+    });
 
     if (!result.success) {
       return NextResponse.json(

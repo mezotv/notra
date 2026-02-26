@@ -25,6 +25,7 @@ import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
 import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
+import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { Trigger, TriggerSourceType } from "@/types/lib/triggers/triggers";
@@ -216,12 +217,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         {isPending && <EventsPageSkeleton />}
 
         {!isPending && eventTriggers.length === 0 && (
-          <div className="rounded-2xl border border-dashed p-12 text-center">
-            <h3 className="font-semibold text-lg">No event triggers yet</h3>
-            <p className="mt-1 text-muted-foreground text-sm">
-              Create your first event trigger to react to GitHub activity.
-            </p>
-            <div className="mt-4">
+          <EmptyState
+            action={
               <AddTriggerDialog
                 allowedSourceTypes={EVENT_SOURCE_TYPES}
                 apiPath={
@@ -241,12 +238,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 trigger={
                   <Button size="sm" variant="outline">
                     <PlusIcon className="size-4" />
-                    <span className="ml-1">Add event trigger</span>
+                    <span className="ml-1">New Event Trigger</span>
                   </Button>
                 }
               />
-            </div>
-          </div>
+            }
+            description="Create your first event trigger to react to GitHub activity."
+            title="No event triggers yet"
+          />
         )}
 
         {!isPending && eventTriggers.length > 0 && (

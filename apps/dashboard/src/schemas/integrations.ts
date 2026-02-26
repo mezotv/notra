@@ -157,7 +157,7 @@ export const configureOutputBodySchema = z.object({
 });
 export type ConfigureOutputBody = z.infer<typeof configureOutputBodySchema>;
 
-export const WEBHOOK_EVENT_TYPES = ["release", "push", "star"] as const;
+export const WEBHOOK_EVENT_TYPES = ["release", "push"] as const;
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 
 export const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;

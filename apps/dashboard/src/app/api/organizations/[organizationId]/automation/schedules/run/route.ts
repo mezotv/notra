@@ -1,12 +1,10 @@
-import { db } from "@notra/db/drizzle";
-import { contentTriggers } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { checkLogRetention } from "@/lib/billing/check-log-retention";
-import { triggerScheduleNow } from "@/lib/triggers/qstash";
-import { appendWebhookLog } from "@/lib/webhooks/logging";
+import {
+  ManualTriggerRunError,
+  triggerManualAutomationRun,
+} from "@/lib/triggers/manual-run";
 import { triggerIdQuerySchema } from "@/schemas/api-params";
 
 interface RouteContext {
@@ -36,46 +34,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const { triggerId } = queryResult.data;
 
-    const trigger = await db.query.contentTriggers.findFirst({
-      where: and(
-        eq(contentTriggers.id, triggerId),
-        eq(contentTriggers.organizationId, organizationId)
-      ),
-    });
-
-    if (!trigger) {
-      return NextResponse.json({ error: "Trigger not found" }, { status: 404 });
-    }
-
-    if (!trigger.enabled) {
-      return NextResponse.json(
-        { error: "Cannot run a disabled schedule" },
-        { status: 400 }
-      );
-    }
-
-    const workflowRunId = await triggerScheduleNow(triggerId, { manual: true });
-    const logRetentionDays = await checkLogRetention(organizationId);
-
-    const scheduleName = trigger.name.trim() || trigger.outputType;
-
-    await appendWebhookLog({
+    const { workflowRunId } = await triggerManualAutomationRun({
       organizationId,
-      integrationId: triggerId,
-      integrationType: "manual",
-      title: scheduleName,
-      status: "success",
-      statusCode: 200,
-      referenceId: workflowRunId,
-      payload: {
-        triggerId,
-        scheduleName,
-        sourceType: trigger.sourceType,
-        outputType: trigger.outputType,
-        workflowRunId,
-        triggeredBy: auth.context.user.id,
-      },
-      retentionDays: logRetentionDays,
+      triggerId,
+      triggeredBy: auth.context.user.id,
     });
 
     return NextResponse.json({
@@ -84,6 +46,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       message: "Schedule triggered successfully",
     });
   } catch (error) {
+    if (error instanceof ManualTriggerRunError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.status }
+      );
+    }
+
     console.error("Error triggering schedule:", error);
     return NextResponse.json(
       { error: "Failed to trigger schedule" },

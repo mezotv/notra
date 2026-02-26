@@ -3,7 +3,7 @@ import type { PostSourceMetadata } from "@notra/db/schema";
 import {
   brandSettings,
   contentTriggers,
-  githubRepositories,
+  githubIntegrations,
   members,
   organizationNotificationSettings,
   organizations,
@@ -21,8 +21,8 @@ import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
 import { getValidToneProfile } from "@/schemas/brand";
 import {
-  eventWorkflowPayloadSchema,
   type EventWorkflowPayload,
+  eventWorkflowPayloadSchema,
 } from "@/schemas/workflows";
 import type {
   EventGenerationResult,
@@ -81,18 +81,22 @@ export const { POST } = serve<EventWorkflowPayload>(
     const repository = await context.run<WorkflowRepositoryData | null>(
       "fetch-repository",
       async () => {
-        const repo = await db.query.githubRepositories.findFirst({
-          where: eq(githubRepositories.id, repositoryId),
+        const repo = await db.query.githubIntegrations.findFirst({
+          where: eq(githubIntegrations.id, repositoryId),
         });
 
         if (!repo) {
           return null;
         }
 
+        if (!(repo.owner && repo.repo)) {
+          return null;
+        }
+
         return {
           id: repo.id,
           owner: repo.owner,
-          name: repo.name,
+          name: repo.repo,
         };
       }
     );
@@ -241,7 +245,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           await appendWebhookLog({
             organizationId: trigger.organizationId,
             integrationId: triggerId,
-            integrationType: "event",
+            integrationType: "webhook",
             title: `Event "${trigger.name.trim() || eventType}" failed to generate content`,
             status: "failed",
             statusCode: null,
@@ -262,7 +266,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         await appendWebhookLog({
           organizationId: trigger.organizationId,
           integrationId: triggerId,
-          integrationType: "event",
+          integrationType: "webhook",
           title: `Event "${trigger.name.trim() || eventType}" created "${contentTitle}"`,
           status: "success",
           statusCode: null,
