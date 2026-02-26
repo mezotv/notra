@@ -82,7 +82,10 @@ export const { POST } = serve<EventWorkflowPayload>(
       "fetch-repository",
       async () => {
         const repo = await db.query.githubIntegrations.findFirst({
-          where: eq(githubIntegrations.id, repositoryId),
+          where: and(
+            eq(githubIntegrations.id, repositoryId),
+            eq(githubIntegrations.organizationId, trigger.organizationId)
+          ),
         });
 
         if (!repo) {
