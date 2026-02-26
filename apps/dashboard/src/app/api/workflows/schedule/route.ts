@@ -30,8 +30,8 @@ import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 
 import {
-  scheduleWorkflowPayloadSchema,
   type ScheduleWorkflowPayload,
+  scheduleWorkflowPayloadSchema,
 } from "@/schemas/workflows";
 
 interface TriggerData {
