@@ -99,9 +99,6 @@ function resolveEventRange(eventData: Record<string, unknown>) {
   if ("triggeredAt" in eventData) {
     candidates.push(eventData.triggeredAt);
   }
-  if ("starredAt" in eventData) {
-    candidates.push(eventData.starredAt);
-  }
   if ("commits" in eventData && Array.isArray(eventData.commits)) {
     for (const commit of eventData.commits) {
       if (commit && typeof commit === "object" && "timestamp" in commit) {

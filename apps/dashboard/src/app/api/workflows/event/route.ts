@@ -15,6 +15,7 @@ import { serve } from "@upstash/workflow/nextjs";
 import { and, eq } from "drizzle-orm";
 import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
+import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { sendScheduledContentCreatedEmail } from "@/lib/email/send";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
@@ -24,6 +25,7 @@ import {
   type EventWorkflowPayload,
   eventWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import type { LogRetentionDays } from "@/types/lib/webhooks/webhooks";
 import type {
   EventGenerationResult,
   WorkflowBrandSettings,
@@ -168,6 +170,11 @@ export const { POST } = serve<EventWorkflowPayload>(
       return;
     }
 
+    const logRetentionDays = await context.run<LogRetentionDays>(
+      "fetch-retention",
+      async () => checkLogRetention(trigger.organizationId)
+    );
+
     try {
       const sourceMetadata: PostSourceMetadata = {
         triggerId: trigger.id,
@@ -212,7 +219,7 @@ export const { POST } = serve<EventWorkflowPayload>(
             const { error } = await autumnClient.track({
               customer_id: trigger.organizationId,
               feature_id: FEATURES.AI_CREDITS,
-              value: 0,
+              value: -1,
             });
 
             if (error) {
@@ -235,7 +242,7 @@ export const { POST } = serve<EventWorkflowPayload>(
             const { error } = await autumnClient.track({
               customer_id: trigger.organizationId,
               feature_id: FEATURES.AI_CREDITS,
-              value: 0,
+              value: -1,
             });
 
             if (error) {
@@ -253,6 +260,7 @@ export const { POST } = serve<EventWorkflowPayload>(
             status: "failed",
             statusCode: null,
             errorMessage: contentResult.reason,
+            retentionDays: logRetentionDays,
           });
         });
 
@@ -274,6 +282,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           status: "success",
           statusCode: null,
           referenceId: postId,
+          retentionDays: logRetentionDays,
         });
       });
 
@@ -369,7 +378,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           const { error: refundError } = await autumnClient.track({
             customer_id: trigger.organizationId,
             feature_id: FEATURES.AI_CREDITS,
-            value: 0,
+            value: -1,
           });
 
           if (refundError) {

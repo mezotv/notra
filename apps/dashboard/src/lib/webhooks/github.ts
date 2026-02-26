@@ -194,14 +194,6 @@ export async function handleGitHubWebhook(
   const signature = request.headers.get("x-hub-signature-256");
   const delivery = request.headers.get("x-github-delivery");
 
-  console.log("[GitHub Webhook] Received", {
-    organizationId,
-    integrationId,
-    repositoryId,
-    eventHeader,
-    delivery,
-  });
-
   if (!(eventHeader && isGitHubEventType(eventHeader))) {
     await appendWebhookLog({
       organizationId,
@@ -227,11 +219,6 @@ export async function handleGitHubWebhook(
     delivery &&
     (await isDeliveryProcessed(delivery))
   ) {
-    console.log("[GitHub Webhook] Duplicate delivery ignored", {
-      delivery,
-      event: eventHeader,
-      repositoryId,
-    });
     return {
       success: true,
       message: "Webhook already processed (duplicate delivery)",
@@ -442,10 +429,6 @@ export async function handleGitHubWebhook(
     retentionDays: logRetentionDays,
   });
 
-  if (SHOULD_DEDUPE_DELIVERIES && delivery) {
-    await markDeliveryProcessed(delivery);
-  }
-
   // Find and trigger matching event triggers
   const matchingTriggers = await db
     .select({
@@ -462,21 +445,13 @@ export async function handleGitHubWebhook(
       )
     );
 
-  const triggeredWorkflows: string[] = [];
-  console.log("[GitHub Webhook] Matching triggers", {
-    repositoryId,
-    eventType: processedEvent.type,
-    action: processedEvent.action,
-    count: matchingTriggers.length,
-  });
-
   for (const trigger of matchingTriggers) {
     const config = trigger.sourceConfig as { eventTypes?: string[] };
     const eventTypes = config.eventTypes ?? [];
 
     if (eventTypes.length === 0 || eventTypes.includes(processedEvent.type)) {
       try {
-        const workflowRunId = await triggerEventNow({
+        await triggerEventNow({
           triggerId: trigger.id,
           eventType: processedEvent.type,
           eventAction: processedEvent.action,
@@ -484,7 +459,6 @@ export async function handleGitHubWebhook(
           repositoryId,
           deliveryId: delivery ?? undefined,
         });
-        triggeredWorkflows.push(workflowRunId);
       } catch (error) {
         console.error(
           `Failed to trigger event workflow for trigger ${trigger.id}:`,
@@ -494,13 +468,9 @@ export async function handleGitHubWebhook(
     }
   }
 
-  console.log("[GitHub Webhook] Trigger dispatch complete", {
-    repositoryId,
-    eventType: processedEvent.type,
-    action: processedEvent.action,
-    triggeredWorkflowCount: triggeredWorkflows.length,
-    triggeredWorkflows,
-  });
+  if (SHOULD_DEDUPE_DELIVERIES && delivery) {
+    await markDeliveryProcessed(delivery);
+  }
 
   return {
     success: true,
@@ -513,7 +483,6 @@ export async function handleGitHubWebhook(
         id: payload.repository?.id,
         fullName: payload.repository?.full_name,
       },
-      triggeredWorkflows,
     },
   };
 }
