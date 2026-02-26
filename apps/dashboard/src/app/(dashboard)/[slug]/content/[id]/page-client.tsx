@@ -95,8 +95,12 @@ export default function PageClient({
 
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
-  const handleSaveRef = useRef<() => void>(() => {});
-  const handleDiscardRef = useRef<() => void>(() => {});
+  const handleSaveRef = useRef<() => void>(() => {
+    // Handler will be set in useEffect
+  });
+  const handleDiscardRef = useRef<() => void>(() => {
+    // Handler will be set in useEffect
+  });
   const needsNormalizationRef = useRef(false);
   const originalMarkdownRef = useRef("");
   const editedMarkdownRef = useRef<string | null>(null);
@@ -362,7 +366,9 @@ export default function PageClient({
           );
           return;
         }
-      } catch {}
+      } catch {
+        // Error handling for chat API call, will show generic error below
+      }
 
       toast.error("Failed to edit content");
     },

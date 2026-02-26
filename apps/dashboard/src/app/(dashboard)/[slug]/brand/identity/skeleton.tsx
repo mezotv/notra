@@ -13,19 +13,19 @@ export function BrandIdentityPageSkeleton() {
           <Skeleton className="h-5 w-80" />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
+          {Array.from({ length: 2 }).map((_item) => (
             <div
               className="rounded-[20px] border border-border/80 bg-muted/80 p-2"
-              key={`${id}-card-${i}`}
+              key={`${id}-card-${crypto.randomUUID()}`}
             >
               <div className="px-2 py-1.5">
                 <Skeleton className="h-6 w-32" />
               </div>
               <div className="space-y-3 rounded-[12px] border border-border/80 bg-background px-4 py-3">
-                {Array.from({ length: 5 }).map((_, j) => (
+                {Array.from({ length: 5 }).map((_, lineIdx) => (
                   <Skeleton
-                    className={`h-4 ${j === 4 ? "w-2/3" : "w-full"}`}
-                    key={`${id}-line-${i}-${j}`}
+                    className={`h-4 ${lineIdx === 4 ? "w-2/3" : "w-full"}`}
+                    key={`${id}-line-${crypto.randomUUID()}`}
                   />
                 ))}
               </div>

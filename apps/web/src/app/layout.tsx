@@ -86,7 +86,7 @@ export default function RootLayout({
         </div>
         <Toaster position="bottom-right" />
         <Databuddy
-          clientId={process.env.NEXT_PUBLIC_DATABUDDY_ID!}
+          clientId={process.env.NEXT_PUBLIC_DATABUDDY_ID ?? ""}
           trackAttributes={true}
           trackErrors={true}
           trackHashChanges={true}

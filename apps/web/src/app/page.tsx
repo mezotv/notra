@@ -51,10 +51,10 @@ export default function LandingPage() {
         <div className="mt-8 hidden items-stretch justify-center self-stretch border-border border-y sm:mt-10 md:mt-12 md:flex lg:mt-14">
           <div className="relative w-4 overflow-hidden sm:w-6 md:w-8 lg:w-12">
             <div className="-top-30 -left-10 sm:-left-12.5 md:-left-14.5 absolute flex w-30 flex-col items-start justify-start sm:w-35 md:w-40.5">
-              {Array.from({ length: 50 }).map((_, i) => (
+              {Array.from({ length: 50 }).map(() => (
                 <div
                   className="h-3 origin-top-right rotate-45 self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px] sm:h-4"
-                  key={i}
+                  key={crypto.randomUUID()}
                 />
               ))}
             </div>
@@ -74,10 +74,10 @@ export default function LandingPage() {
 
           <div className="relative w-4 overflow-hidden sm:w-6 md:w-8 lg:w-12">
             <div className="-right-10 sm:-right-12.5 -top-30 md:-right-14.5 absolute flex w-30 flex-col items-start justify-start sm:w-35 md:w-40.5">
-              {Array.from({ length: 50 }).map((_, i) => (
+              {Array.from({ length: 50 }).map(() => (
                 <div
                   className="h-3 origin-top-right rotate-45 self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px] sm:h-4"
-                  key={i}
+                  key={crypto.randomUUID()}
                 />
               ))}
             </div>
@@ -105,10 +105,10 @@ export default function LandingPage() {
           <div className="flex items-start justify-center self-stretch sm:hidden">
             <div className="relative w-4 self-stretch overflow-hidden">
               <div className="-top-30 -left-10 absolute flex w-30 flex-col items-start justify-start">
-                {Array.from({ length: 50 }).map((_, i) => (
+                {Array.from({ length: 50 }).map(() => (
                   <div
                     className="-rotate-45 h-3 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -155,10 +155,10 @@ export default function LandingPage() {
 
             <div className="relative w-4 self-stretch overflow-hidden">
               <div className="-left-10 -top-30 absolute flex w-30 flex-col items-start justify-start">
-                {Array.from({ length: 50 }).map((_, i) => (
+                {Array.from({ length: 50 }).map(() => (
                   <div
                     className="-rotate-45 h-3 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -168,10 +168,10 @@ export default function LandingPage() {
           <div className="hidden items-start justify-center self-stretch sm:flex">
             <div className="relative w-6 self-stretch overflow-hidden md:w-8 lg:w-12">
               <div className="-top-30 -left-12.5 md:-left-14.5 absolute flex w-35 flex-col items-start justify-start md:w-40.5">
-                {Array.from({ length: 50 }).map((_, i) => (
+                {Array.from({ length: 50 }).map(() => (
                   <div
                     className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -221,10 +221,10 @@ export default function LandingPage() {
 
             <div className="relative w-6 self-stretch overflow-hidden md:w-8 lg:w-12">
               <div className="-left-12.5 -top-30 md:-left-14.5 absolute flex w-35 flex-col items-start justify-start md:w-40.5">
-                {Array.from({ length: 50 }).map((_, i) => (
+                {Array.from({ length: 50 }).map(() => (
                   <div
                     className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -253,10 +253,10 @@ export default function LandingPage() {
           <div className="flex items-start justify-center self-stretch">
             <div className="relative w-4 self-stretch overflow-hidden sm:w-6 md:w-8 lg:w-12">
               <div className="-top-30 -left-10 sm:-left-12.5 md:-left-14.5 absolute flex w-30 flex-col items-start justify-start sm:w-35 md:w-40.5">
-                {Array.from({ length: 200 }).map((_, i) => (
+                {Array.from({ length: 200 }).map(() => (
                   <div
                     className="-rotate-45 h-3 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px] sm:h-4"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -329,10 +329,10 @@ export default function LandingPage() {
 
             <div className="relative w-4 self-stretch overflow-hidden sm:w-6 md:w-8 lg:w-12">
               <div className="-top-30 -left-10 sm:-left-12.5 md:-left-14.5 absolute flex w-30 flex-col items-start justify-start sm:w-35 md:w-40.5">
-                {Array.from({ length: 200 }).map((_, i) => (
+                {Array.from({ length: 200 }).map(() => (
                   <div
                     className="-rotate-45 h-3 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px] sm:h-4"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>

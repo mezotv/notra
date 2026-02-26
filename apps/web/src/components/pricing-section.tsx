@@ -175,10 +175,10 @@ export default function PricingSection() {
         <div className="flex w-full items-start justify-center">
           <div className="relative hidden w-12 self-stretch overflow-hidden md:block">
             <div className="absolute top-[-120px] left-[-58px] flex w-[162px] flex-col items-start justify-start">
-              {Array.from({ length: 200 }).map((_, i) => (
+              {Array.from({ length: 200 }).map(() => (
                 <div
                   className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                  key={i}
+                  key={crypto.randomUUID()}
                 />
               ))}
             </div>
@@ -204,10 +204,10 @@ export default function PricingSection() {
 
             <div className="relative hidden w-6 self-stretch overflow-hidden md:row-span-4 md:block lg:w-8">
               <div className="-top-30 -left-12.5 absolute flex w-35 flex-col items-start justify-start">
-                {Array.from({ length: 200 }).map((_, i) => (
+                {Array.from({ length: 200 }).map(() => (
                   <div
                     className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -236,10 +236,10 @@ export default function PricingSection() {
 
             <div className="relative hidden w-6 self-stretch overflow-hidden md:row-span-4 md:block lg:w-8">
               <div className="-top-30 -left-12.5 absolute flex w-35 flex-col items-start justify-start">
-                {Array.from({ length: 200 }).map((_, i) => (
+                {Array.from({ length: 200 }).map(() => (
                   <div
                     className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                    key={i}
+                    key={crypto.randomUUID()}
                   />
                 ))}
               </div>
@@ -265,10 +265,10 @@ export default function PricingSection() {
 
           <div className="relative hidden w-12 self-stretch overflow-hidden md:block">
             <div className="absolute top-[-120px] left-[-58px] flex w-[162px] flex-col items-start justify-start">
-              {Array.from({ length: 200 }).map((_, i) => (
+              {Array.from({ length: 200 }).map(() => (
                 <div
                   className="-rotate-45 h-4 origin-top-left self-stretch outline outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                  key={i}
+                  key={crypto.randomUUID()}
                 />
               ))}
             </div>

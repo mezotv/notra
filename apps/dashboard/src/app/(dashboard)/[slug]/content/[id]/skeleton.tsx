@@ -17,10 +17,10 @@ export function ContentDetailSkeleton() {
             <Skeleton className="h-6 w-32" />
           </div>
           <div className="space-y-3 rounded-[12px] border border-border/80 bg-background px-4 py-3">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, lineIdx) => (
               <Skeleton
-                className={`h-4 ${i === 7 ? "w-2/3" : "w-full"}`}
-                key={`${id}-line-${i}`}
+                className={`h-4 ${lineIdx === 7 ? "w-2/3" : "w-full"}`}
+                key={`${id}-line-${crypto.randomUUID()}`}
               />
             ))}
           </div>
