@@ -8,8 +8,7 @@
   "exports": {
     "./drizzle": "./src/drizzle.ts",
     "./drizzle-http": "./src/drizzle-http.ts",
-    "./schema": "./src/schema.ts",
-    "./operators": "./src/operators.ts"
+    "./schema": "./src/schema.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

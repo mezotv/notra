@@ -1,6 +1,8 @@
 "use server";
 
-import { EMAIL_CONFIG, getResend, sendDevEmail } from "@notra/email";
+import { EMAIL_CONFIG } from "@notra/email/utils/config";
+import { sendDevEmail } from "@notra/email/utils/dev";
+import { getResend } from "@notra/email/utils/resend";
 import { headers } from "next/headers";
 import type {
   SendInviteEmailProps,

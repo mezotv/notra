@@ -55,8 +55,7 @@
       },
       "performance": {
         /* Needs more work to fix */
-        "noNamespaceImport": "warn",
-        "noBarrelFile": "warn"
+        "noNamespaceImport": "warn"
       },
       "correctness": {
         /* Doesn't work with Astro */

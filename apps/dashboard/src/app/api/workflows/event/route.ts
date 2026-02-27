@@ -8,7 +8,7 @@ import {
   organizationNotificationSettings,
   organizations,
 } from "@notra/db/schema";
-import { getResend } from "@notra/email";
+import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";

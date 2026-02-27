@@ -1,12 +1,10 @@
-import {
-  EMAIL_CONFIG,
-  InviteUserEmail,
-  ResetPasswordEmail,
-  ScheduledContentCreatedEmail,
-  ScheduledContentFailedEmail,
-  VerifyUserEmail,
-  WelcomeEmail,
-} from "@notra/email";
+import { InviteUserEmail } from "@notra/email/emails/invite";
+import { ResetPasswordEmail } from "@notra/email/emails/reset";
+import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
+import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
+import { VerifyUserEmail } from "@notra/email/emails/verify";
+import { WelcomeEmail } from "@notra/email/emails/welcome";
+import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import type { Resend } from "resend";
 import type {
   EmailResult,

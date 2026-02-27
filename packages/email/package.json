@@ -2,7 +2,15 @@
   "name": "@notra/email",
   "version": "0.0.0",
   "exports": {
-    ".": "./src/index.ts"
+    "./emails/invite": "./src/emails/invite.tsx",
+    "./emails/reset": "./src/emails/reset.tsx",
+    "./emails/schedule-content-created": "./src/emails/schedule-content-created.tsx",
+    "./emails/schedule-content-failed": "./src/emails/schedule-content-failed.tsx",
+    "./emails/verify": "./src/emails/verify.tsx",
+    "./emails/welcome": "./src/emails/welcome.tsx",
+    "./utils/config": "./src/utils/config.ts",
+    "./utils/dev": "./src/utils/dev.ts",
+    "./utils/resend": "./src/utils/resend.ts"
   },
   "scripts": {
     "dev": "email dev --dir ./src/emails --port 3002"

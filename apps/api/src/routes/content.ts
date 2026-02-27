@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { and, count, eq, inArray } from "@notra/db/operators";
 import { posts } from "@notra/db/schema";
+import { and, count, eq, inArray } from "drizzle-orm";
 import {
   ALL_POST_CONTENT_TYPES,
   ALL_POST_STATUSES,
