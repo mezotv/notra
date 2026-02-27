@@ -1,3 +1,4 @@
+// biome-ignore lint/performance/noNamespaceImport: zod recommends namespace import style
 import * as z from "zod";
 
 export const API_KEY_PERMISSIONS = ["api.read", "api.write"] as const;

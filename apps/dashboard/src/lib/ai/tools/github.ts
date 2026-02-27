@@ -1,4 +1,5 @@
 import { type Tool, tool } from "ai";
+// biome-ignore lint/performance/noNamespaceImport: zod recommends namespace import style
 import * as z from "zod";
 import { createOctokit } from "@/lib/octokit";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
