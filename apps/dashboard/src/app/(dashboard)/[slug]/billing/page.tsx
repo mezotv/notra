@@ -35,6 +35,8 @@ import { PageContainer } from "@/components/layout/container";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
+const PRICE_REGEX = /^\d+([.,]\d+)?$/;
+
 const SCENARIO_TEXT: Record<string, string> = {
   scheduled: "Plan Scheduled",
   active: "Current Plan",
@@ -179,7 +181,7 @@ function getProductFeatures(product: Product | undefined): string[] {
     .map((item) => {
       const displayText = item.display?.primary_text ?? "";
       // Remove later: skip price-like display text until Autumn SDK fix
-      if (displayText.startsWith("$") || /^\d+([.,]\d+)?$/.test(displayText)) {
+      if (displayText.startsWith("$") || PRICE_REGEX.test(displayText)) {
         return "";
       }
       if (displayText) {
@@ -617,7 +619,7 @@ export default function BillingPage() {
                                     ).toLocaleDateString()
                                   : "-"}
                               </TableCell>
-                              <TableCell className="whitespace-normal break-words">
+                              <TableCell className="wrap-break-word whitespace-normal">
                                 {getInvoiceDescription(invoice.product_ids)}
                               </TableCell>
                               <TableCell className="w-[120px] tabular-nums">

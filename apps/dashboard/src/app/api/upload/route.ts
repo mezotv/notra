@@ -7,6 +7,8 @@ import { getFileExtension } from "@/lib/upload/mime";
 import { R2_BUCKET_NAME, R2_PUBLIC_URL, r2 } from "@/lib/upload/r2";
 import { uploadSchema, validateUpload } from "@/schemas/upload";
 
+const TRAILING_SLASH_REGEX = /\/$/;
+
 export async function POST(request: Request) {
   const sessionData = await getServerSession({
     headers: request.headers,
@@ -93,7 +95,7 @@ export async function POST(request: Request) {
     { expiresIn: 3600 }
   );
 
-  const baseUrl = R2_PUBLIC_URL.replace(/\/$/, "");
+  const baseUrl = R2_PUBLIC_URL.replace(TRAILING_SLASH_REGEX, "");
   const publicUrl = `${baseUrl}/${key}`;
 
   return NextResponse.json({

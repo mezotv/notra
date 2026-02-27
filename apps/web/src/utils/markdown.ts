@@ -1,3 +1,5 @@
+const FRONTMATTER_REGEX = /^---\n[\s\S]*?\n---\n?/;
+
 export function markdownResponse(content: string, status = 200) {
   return new Response(content, {
     status,
@@ -13,7 +15,7 @@ export function markdownSection(title: string, lines: string[]) {
 }
 
 export function stripFrontmatter(source: string) {
-  return source.replace(/^---\n[\s\S]*?\n---\n?/, "").trim();
+  return source.replace(FRONTMATTER_REGEX, "").trim();
 }
 
 export function decodeHtmlEntities(source: string) {

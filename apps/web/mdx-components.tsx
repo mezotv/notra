@@ -1,14 +1,19 @@
 import type { MDXComponents } from "mdx/types";
 
+const REL_TOKENS_SPLIT_REGEX = /\s+/;
+const EXTERNAL_HREF_REGEX = /^(https?:)?\/\//;
+
 function withSafeExternalRel(rel?: string) {
-  const tokens = new Set((rel ?? "").split(/\s+/).filter(Boolean));
+  const tokens = new Set(
+    (rel ?? "").split(REL_TOKENS_SPLIT_REGEX).filter(Boolean)
+  );
   tokens.add("noopener");
   tokens.add("noreferrer");
   return [...tokens].join(" ");
 }
 
 function isExternalHref(href?: string) {
-  return typeof href === "string" && /^(https?:)?\/\//.test(href);
+  return typeof href === "string" && EXTERNAL_HREF_REGEX.test(href);
 }
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {

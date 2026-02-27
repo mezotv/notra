@@ -73,15 +73,12 @@ export const CHANGELOG_COMPANIES = [
   },
 ] as const;
 
+const MDX_EXTENSION_REGEX = /\.mdx$/;
+
 export function getCompany(slug: string) {
   return CHANGELOG_COMPANIES.find((c) => c.slug === slug);
 }
 
 export function getEntrySlug(infoPath: string) {
-  return (
-    infoPath
-      .split("/")
-      .pop()
-      ?.replace(/\.mdx$/, "") ?? ""
-  );
+  return infoPath.split("/").pop()?.replace(MDX_EXTENSION_REGEX, "") ?? "";
 }

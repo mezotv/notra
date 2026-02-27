@@ -100,12 +100,16 @@ export const KIBO_CODE_BLOCK: MultilineElementTransformer = {
 
 const TABLE_ROW_REGEX = /^\|(.*)\|\s*$/;
 const TABLE_SEPARATOR_REGEX = /^\|(\s*:?-+:?\s*\|)+\s*$/;
+const LEADING_PIPE_REGEX = /^\|/;
+const TRAILING_PIPE_REGEX = /\|\s*$/;
 
 function parsePipeCells(row: string): string[] {
   const cells: string[] = [];
   let current = "";
   let escaped = false;
-  const inner = row.replace(/^\|/, "").replace(/\|\s*$/, "");
+  const inner = row
+    .replace(LEADING_PIPE_REGEX, "")
+    .replace(TRAILING_PIPE_REGEX, "");
 
   for (const char of inner) {
     if (escaped) {

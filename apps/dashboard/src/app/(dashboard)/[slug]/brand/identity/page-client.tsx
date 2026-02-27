@@ -124,8 +124,10 @@ interface ModalContentProps {
   inlineError?: string;
 }
 
+const FULL_URL_REGEX = /^https?:\/\//i;
+
 const sanitizeBrandUrlInput = (value: string) =>
-  value.trim().replace(/^https?:\/\//i, "");
+  value.trim().replace(FULL_URL_REGEX, "");
 
 type StepIconState = "pending" | "active" | "completed";
 

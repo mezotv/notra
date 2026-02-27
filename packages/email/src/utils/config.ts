@@ -1,5 +1,7 @@
+const URL_REGEX = /\/+$/;
+
 function normalizeUrl(url: string): string {
-  return url.replace(/\/+$/, "");
+  return url.replace(URL_REGEX, "");
 }
 
 export const EMAIL_CONFIG = {

@@ -1,5 +1,7 @@
+const TRAILING_SLASHES_REGEX = /\/+$/;
+
 export function normalizeUrl(url: string): string {
-  return url.replace(/\/+$/, "");
+  return url.replace(TRAILING_SLASHES_REGEX, "");
 }
 
 export function getConfiguredAppUrl(): string | undefined {

@@ -11,6 +11,7 @@ import { getAICachedTools } from "./tool-cache";
 
 const GITHUB_PRIMARY_RATE_LIMIT_MESSAGE =
   "GitHub API rate limit reached. Please retry later.";
+const LINK_HEADER_NEXT_PAGE_REGEX = /<([^>]+)>\s*;\s*rel="next"/i;
 
 function parseRetryAfterSeconds(value?: string | number) {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) {
@@ -175,7 +176,7 @@ function getNextPageFromLinkHeader(
   if (typeof linkHeader !== "string" || !linkHeader.trim()) {
     return undefined;
   }
-  const nextMatch = linkHeader.match(/<([^>]+)>\s*;\s*rel="next"/i);
+  const nextMatch = linkHeader.match(LINK_HEADER_NEXT_PAGE_REGEX);
   if (!nextMatch?.[1]) {
     return undefined;
   }

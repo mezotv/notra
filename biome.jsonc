@@ -55,7 +55,6 @@
       },
       "performance": {
         /* Needs more work to fix */
-        "useTopLevelRegex": "off",
         "noNamespaceImport": "warn",
         "noBarrelFile": "warn"
       },
