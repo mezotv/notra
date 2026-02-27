@@ -1,14 +1,47 @@
 "use client";
 
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  ArrowUpDownIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
+import { Button } from "@notra/ui/components/ui/button";
+import { ButtonGroup } from "@notra/ui/components/ui/button-group";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { useEffect, useMemo, useRef } from "react";
-import { ContentCard } from "@/components/content/content-card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@notra/ui/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { LayoutGrid, List, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ContentCard,
+  getContentTypeLabel,
+} from "@/components/content/content-card";
+import { ContentRowActions } from "@/components/content/content-row-actions";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useLocalStorage } from "@/lib/utils/local-storage";
 import type { ContentType, Post, PostStatus } from "@/schemas/content";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
+
+const CONTENT_VIEW_STORAGE_KEY = "notra:content-view";
+
+type ViewMode = "grid" | "table";
 
 interface PageClientProps {
   organizationSlug: string;
@@ -57,6 +90,14 @@ function getPreview(markdown: string): string {
     .slice(0, 200);
 }
 
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(dateString));
+}
+
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
@@ -65,6 +106,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
+  const router = useRouter();
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>(
+    CONTENT_VIEW_STORAGE_KEY,
+    "grid"
+  );
+  const [createdSortOrder, setCreatedSortOrder] = useState<
+    false | "asc" | "desc"
+  >(false);
+  const [updatedSortOrder, setUpdatedSortOrder] = useState<
+    false | "asc" | "desc"
+  >(false);
 
   const { data, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
     usePosts(organizationId);
@@ -108,18 +160,94 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     return map;
   }, [allPosts]);
 
+  const sortedPosts = useMemo(() => {
+    const posts = viewMode === "table" ? allPosts : [];
+    if (viewMode !== "table" || posts.length === 0) {
+      return posts;
+    }
+
+    if (createdSortOrder !== false) {
+      return [...posts].sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return createdSortOrder === "desc" ? bTime - aTime : aTime - bTime;
+      });
+    }
+    if (updatedSortOrder !== false) {
+      return [...posts].sort((a, b) => {
+        const aTime = new Date(a.updatedAt).getTime();
+        const bTime = new Date(b.updatedAt).getTime();
+        return updatedSortOrder === "desc" ? bTime - aTime : aTime - bTime;
+      });
+    }
+    return posts;
+  }, [allPosts, viewMode, createdSortOrder, updatedSortOrder]);
+
+  function getSortIcon(isSorted: false | "asc" | "desc") {
+    if (isSorted === "asc") {
+      return ArrowUp01Icon;
+    }
+    if (isSorted === "desc") {
+      return ArrowDown01Icon;
+    }
+    return ArrowUpDownIcon;
+  }
+
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Content</h1>
-          <p className="text-muted-foreground">
-            View and manage your generated content
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="font-bold text-3xl tracking-tight">Content</h1>
+            <p className="text-muted-foreground">
+              View and manage your generated content
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <ButtonGroup>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      onClick={() => setViewMode("grid")}
+                      size="icon-sm"
+                      variant={viewMode === "grid" ? "secondary" : "outline"}
+                    >
+                      <LayoutGrid className="size-4" />
+                    </Button>
+                  }
+                />
+                <TooltipContent>Grid view</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      onClick={() => setViewMode("table")}
+                      size="icon-sm"
+                      variant={viewMode === "table" ? "secondary" : "outline"}
+                    >
+                      <List className="size-4" />
+                    </Button>
+                  }
+                />
+                <TooltipContent>Table view</TooltipContent>
+              </Tooltip>
+            </ButtonGroup>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button disabled size="sm">
+                    <Plus className="size-4" />
+                    Create Content
+                  </Button>
+                }
+              />
+              <TooltipContent>Coming Soon</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
-
         {isPending && <ContentPageSkeleton />}
-
         {!isPending && allPosts.length === 0 && (
           <EmptyState
             className="p-8"
@@ -127,29 +255,131 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             title="No content yet"
           />
         )}
-
-        {Array.from(groupedPosts.entries()).map(([dateKey, posts]) => (
-          <section className="space-y-4" key={dateKey}>
-            <h2 className="font-semibold text-lg">
-              {formatDateHeading(dateKey)}
-            </h2>
-            <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {posts.map((post) => (
-                <ContentCard
-                  contentType={post.contentType as ContentType}
-                  href={`/${organizationSlug}/content/${post.id}`}
-                  id={post.id}
-                  key={post.id}
-                  organizationId={organizationId}
-                  preview={previewsByPostId.get(post.id) ?? ""}
-                  status={post.status as PostStatus}
-                  title={post.title}
-                />
-              ))}
-            </div>
-          </section>
-        ))}
-
+        {!isPending &&
+          allPosts.length > 0 &&
+          viewMode === "grid" &&
+          Array.from(groupedPosts.entries()).map(([dateKey, posts]) => (
+            <section className="space-y-4" key={dateKey}>
+              <h2 className="font-semibold text-lg">
+                {formatDateHeading(dateKey)}
+              </h2>
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {posts.map((post) => (
+                  <ContentCard
+                    contentType={post.contentType as ContentType}
+                    href={`/${organizationSlug}/content/${post.id}`}
+                    id={post.id}
+                    key={post.id}
+                    organizationId={organizationId}
+                    preview={previewsByPostId.get(post.id) ?? ""}
+                    status={post.status as PostStatus}
+                    title={post.title}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        {!isPending && allPosts.length > 0 && viewMode === "table" && (
+          <div className="overflow-x-auto rounded-xl border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[200px] min-w-[180px]">
+                    Title
+                  </TableHead>
+                  <TableHead className="w-[100px]">Type</TableHead>
+                  <TableHead className="w-[90px]">Status</TableHead>
+                  <TableHead className="w-[110px]">
+                    <Button
+                      className="-ml-4"
+                      onClick={() => {
+                        setUpdatedSortOrder(false);
+                        setCreatedSortOrder(
+                          createdSortOrder === "desc" ? "asc" : "desc"
+                        );
+                      }}
+                      variant="ghost"
+                    >
+                      Created At
+                      <HugeiconsIcon
+                        className="ml-2 size-4"
+                        icon={getSortIcon(createdSortOrder)}
+                      />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-[110px]">
+                    <Button
+                      className="-ml-4"
+                      onClick={() => {
+                        setCreatedSortOrder(false);
+                        setUpdatedSortOrder(
+                          updatedSortOrder === "desc" ? "asc" : "desc"
+                        );
+                      }}
+                      variant="ghost"
+                    >
+                      Updated At
+                      <HugeiconsIcon
+                        className="ml-2 size-4"
+                        icon={getSortIcon(updatedSortOrder)}
+                      />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedPosts.map((post) => {
+                  const href = `/${organizationSlug}/content/${post.id}`;
+                  return (
+                    <TableRow
+                      className="cursor-pointer hover:bg-muted/50"
+                      key={post.id}
+                      onClick={() => router.push(href)}
+                      onMouseEnter={() => router.prefetch(href)}
+                    >
+                      <TableCell>
+                        <span className="font-medium">{post.title}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="capitalize" variant="secondary">
+                          {getContentTypeLabel(post.contentType as ContentType)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className="capitalize"
+                          variant={
+                            post.status === "published" ? "default" : "outline"
+                          }
+                        >
+                          {post.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="w-[110px] whitespace-nowrap text-muted-foreground text-sm tabular-nums">
+                        {formatDate(post.createdAt)}
+                      </TableCell>
+                      <TableCell className="w-[110px] whitespace-nowrap text-muted-foreground text-sm tabular-nums">
+                        {formatDate(post.updatedAt)}
+                      </TableCell>
+                      <TableCell
+                        className="w-12"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ContentRowActions
+                          id={post.id}
+                          organizationId={organizationId}
+                          status={post.status as PostStatus}
+                          title={post.title}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
         <div className="h-10" ref={loadMoreRef}>
           {isFetchingNextPage && (
             <div className="flex items-center justify-center">
