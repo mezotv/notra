@@ -34,6 +34,7 @@ import { useEffect, useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { authClient } from "@/lib/auth/client";
+import { mapInviteLimitErrorMessage } from "@/lib/billing/limits";
 
 interface InvitationData {
   id: string;
@@ -98,7 +99,12 @@ function PageClient({
       });
 
       if (res.error) {
-        setError(res.error.message || "Failed to accept invitation");
+        setError(
+          mapInviteLimitErrorMessage(
+            res.error.message,
+            "Failed to accept invitation"
+          )
+        );
         return;
       }
 

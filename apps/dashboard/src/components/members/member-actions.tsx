@@ -40,10 +40,15 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import {
+  isTeamMemberLimitError,
+  mapInviteLimitErrorMessage,
+} from "@/lib/billing/limits";
 import type { Member } from "./columns";
 
 interface MemberActionsProps {
@@ -53,6 +58,7 @@ interface MemberActionsProps {
 export function MemberActions({ member }: MemberActionsProps) {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
 
@@ -94,7 +100,22 @@ export function MemberActions({ member }: MemberActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to update member role");
+        const message = mapInviteLimitErrorMessage(
+          error.message,
+          "Failed to update member role"
+        );
+
+        if (isTeamMemberLimitError(error.message)) {
+          toast.error(message, {
+            action: {
+              label: "View plans",
+              onClick: () => router.push(`/${activeOrganization.slug}/billing`),
+            },
+          });
+          return;
+        }
+
+        toast.error(message);
         return;
       }
 

@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
   emailOTP,
@@ -13,6 +14,7 @@ import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
 import {
   sendInviteEmailAction,
@@ -25,6 +27,33 @@ import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
+
+async function enforceTeamMembersLimit(organizationId?: string | null) {
+  if (!organizationId || !autumn) {
+    return;
+  }
+
+  const { data, error } = await autumn.check({
+    customer_id: organizationId,
+    feature_id: FEATURES.TEAM_MEMBERS,
+    required_balance: 1,
+  });
+
+  if (error) {
+    console.warn("[Autumn] Failed to check team member limits", {
+      organizationId,
+      error,
+    });
+    return;
+  }
+
+  if (data?.allowed === false) {
+    throw new APIError("BAD_REQUEST", {
+      message:
+        "You have reached your team member limit for this plan. Upgrade to invite more members.",
+    });
+  }
+}
 
 function validateAndNormalizeOrganizationSlug(org: {
   slug?: unknown;
@@ -195,6 +224,12 @@ export const auth = betterAuth({
       organizationHooks: {
         beforeCreateOrganization: async ({ organization }) => {
           return validateAndNormalizeOrganizationSlug(organization);
+        },
+        beforeCreateInvitation: async ({ organization }) => {
+          await enforceTeamMembersLimit(organization.id);
+        },
+        beforeAddMember: async ({ organization }) => {
+          await enforceTeamMembersLimit(organization.id);
         },
         beforeUpdateOrganization: async ({ organization }) => {
           if (!organization.slug) {

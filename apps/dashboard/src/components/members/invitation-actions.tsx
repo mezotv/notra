@@ -34,10 +34,15 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Invitation } from "better-auth/plugins/organization";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import {
+  isTeamMemberLimitError,
+  mapInviteLimitErrorMessage,
+} from "@/lib/billing/limits";
 
 interface InvitationActionsProps {
   invitation: Invitation;
@@ -46,6 +51,7 @@ interface InvitationActionsProps {
 export function InvitationActions({ invitation }: InvitationActionsProps) {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
+  const router = useRouter();
 
   const [isResending, setIsResending] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
@@ -71,7 +77,22 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to resend invitation");
+        const message = mapInviteLimitErrorMessage(
+          error.message,
+          "Failed to resend invitation"
+        );
+
+        if (isTeamMemberLimitError(error.message)) {
+          toast.error(message, {
+            action: {
+              label: "View plans",
+              onClick: () => router.push(`/${activeOrganization.slug}/billing`),
+            },
+          });
+          return;
+        }
+
+        toast.error(message);
         return;
       }
 
