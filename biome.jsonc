@@ -35,6 +35,9 @@
         /* Doesn't work with Astro */
         "useFilenamingConvention": "off",
 
+        /* CSS Modules specificity is handled by module scoping */
+        "noDescendingSpecificity": "warn",
+
         "useBlockStatements": "warn",
         "noNonNullAssertion": "warn",
         "useConsistentTypeDefinitions": "warn",
@@ -71,7 +74,8 @@
   },
   "css": {
     "parser": {
-      "tailwindDirectives": true
+      "tailwindDirectives": true,
+      "cssModules": true
     }
   }
 }

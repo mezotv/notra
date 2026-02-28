@@ -4,6 +4,7 @@ import {
   Calendar03Icon,
   CorporateIcon,
   Home01Icon,
+  Image02Icon,
   Key01Icon,
   NoteIcon,
   Notification03Icon,
@@ -27,6 +28,7 @@ type NavMainCategory =
   | "none"
   | "workspace"
   | "automation"
+  | "tools"
   | "utility"
   | "developer";
 
@@ -40,6 +42,7 @@ interface NavMainItem {
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
   workspace: "Workspace",
   automation: "Automation",
+  tools: "Tools",
   developer: "Developer",
   utility: "Utility",
 };
@@ -76,6 +79,12 @@ const navMainItems: NavMainItem[] = [
     category: "automation",
   },
   {
+    link: "/image-studio",
+    icon: Image02Icon,
+    label: "Image Studio",
+    category: "tools",
+  },
+  {
     link: "/api-keys",
     icon: Key01Icon,
     label: "API Keys",
@@ -99,6 +108,7 @@ const itemsByCategory: Record<NavMainCategory, NavMainItem[]> = {
   none: [],
   workspace: [],
   automation: [],
+  tools: [],
   utility: [],
   developer: [],
 };

@@ -303,3 +303,7 @@
 @utility scrollbar-stable {
   scrollbar-gutter: stable;
 }
+
+:root {
+  --panel-background: #191919;
+}
