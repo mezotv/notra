@@ -29,7 +29,7 @@ export const PRICING_PLANS = {
       "Unlimited workflows",
       "Unlimited integrations",
       "30 Days Log Retention",
-      "250 AI Credits (then $0.01/credit)",
+      "200 AI Credits (then $0.01/credit)",
     ],
   },
   enterprise: {
@@ -72,7 +72,7 @@ export const COMPARISON_FEATURES = [
       {
         name: "AI Credits per month",
         free: "15",
-        pro: "250 (then $0.01/credit)",
+        pro: "200 (then $0.01/credit)",
         enterprise: "Custom limits",
       },
       {

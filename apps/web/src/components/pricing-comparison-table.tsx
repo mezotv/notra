@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+import { Fragment } from "react";
 import { COMPARISON_FEATURES, PRICING_PLANS } from "../utils/constants";
 
 const plans = [
@@ -21,10 +22,7 @@ const plans = [
 function CellValue({ value }: { value: boolean | string }) {
   if (typeof value === "boolean") {
     return value ? (
-      <HugeiconsIcon
-        className="size-4 text-primary"
-        icon={Tick02Icon}
-      />
+      <HugeiconsIcon className="size-4 text-primary" icon={Tick02Icon} />
     ) : (
       <HugeiconsIcon
         className="size-4 text-muted-foreground/40"
@@ -33,7 +31,9 @@ function CellValue({ value }: { value: boolean | string }) {
     );
   }
   return (
-    <span className="font-sans text-foreground/80 text-sm">{value}</span>
+    <span className="block w-full text-right font-normal font-sans text-foreground/80 text-sm">
+      {value}
+    </span>
   );
 }
 
@@ -46,14 +46,14 @@ function MobileComparisonCards() {
           key={plan.key}
         >
           <div className="border-border border-b bg-muted/30 px-4 py-3">
-            <h3 className="font-sans font-semibold text-foreground text-base">
+            <h3 className="font-sans font-semibold text-base text-foreground">
               {plan.name}
             </h3>
           </div>
           {COMPARISON_FEATURES.map((category) => (
             <div className="flex flex-col" key={category.category}>
               <div className="border-border border-b bg-muted/10 px-4 py-2">
-                <span className="font-sans font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                <span className="font-bold font-sans text-muted-foreground text-xs uppercase tracking-wider">
                   {category.category}
                 </span>
               </div>
@@ -64,7 +64,7 @@ function MobileComparisonCards() {
                     className="flex items-center justify-between border-border border-b px-4 py-3 last:border-b-0"
                     key={feature.name}
                   >
-                    <span className="font-sans text-foreground/70 text-sm">
+                    <span className="font-medium font-sans text-foreground/90 text-sm">
                       {feature.name}
                     </span>
                     <CellValue value={value} />
@@ -85,12 +85,12 @@ function DesktopComparisonTable() {
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">
-            <TableHead className="w-[240px] font-sans text-muted-foreground text-sm lg:w-[300px]">
+            <TableHead className="w-[240px] font-sans font-semibold text-muted-foreground text-sm lg:w-[300px]">
               Feature
             </TableHead>
             {plans.map((plan) => (
               <TableHead
-                className="font-sans font-semibold text-center text-foreground text-sm"
+                className="text-center font-bold font-sans text-foreground text-sm"
                 key={plan.key}
               >
                 {plan.name}
@@ -100,39 +100,33 @@ function DesktopComparisonTable() {
         </TableHeader>
         <TableBody>
           {COMPARISON_FEATURES.map((category) => (
-            <>
-              <TableRow
-                className="border-border hover:bg-transparent"
-                key={`category-${category.category}`}
-              >
+            <Fragment key={`category-${category.category}`}>
+              <TableRow className="border-border hover:bg-transparent">
                 <TableCell
-                  className="bg-muted/20 pt-4 pb-2 font-sans font-medium text-muted-foreground text-xs uppercase tracking-wider"
+                  className="bg-muted/20 pt-4 pb-2 font-bold font-sans text-muted-foreground text-xs uppercase tracking-wider"
                   colSpan={4}
                 >
                   {category.category}
                 </TableCell>
               </TableRow>
               {category.features.map((feature) => (
-                <TableRow
-                  className="border-border"
-                  key={feature.name}
-                >
-                  <TableCell className="font-sans text-foreground/80 text-sm">
+                <TableRow className="border-border" key={feature.name}>
+                  <TableCell className="font-medium font-sans text-foreground/90 text-sm">
                     {feature.name}
                   </TableCell>
                   {plans.map((plan) => (
                     <TableCell
-                      className="text-center"
+                      className="text-right"
                       key={`${feature.name}-${plan.key}`}
                     >
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-end">
                         <CellValue value={feature[plan.key]} />
                       </div>
                     </TableCell>
                   ))}
                 </TableRow>
               ))}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>
