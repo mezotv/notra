@@ -24,6 +24,7 @@ import { NavSettings } from "./nav-settings";
 import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
 import { SidebarOnboarding } from "./sidebar-onboarding";
+import { SidebarUpgrade } from "./sidebar-upgrade";
 
 const createMainVariants = (shouldReduceMotion: boolean | null) => ({
   initial: shouldReduceMotion
@@ -139,6 +140,7 @@ export function DashboardSidebar({
               variants={mainVariants}
             >
               <SidebarOnboarding />
+              <SidebarUpgrade />
             </motion.div>
           )}
         </AnimatePresence>
