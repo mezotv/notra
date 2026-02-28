@@ -17,6 +17,10 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
 import {
+  TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
+  TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
+} from "@/lib/billing/limits";
+import {
   sendInviteEmailAction,
   sendResetPasswordAction,
   sendVerificationEmailAction,
@@ -44,13 +48,15 @@ async function enforceTeamMembersLimit(organizationId?: string | null) {
       organizationId,
       error,
     });
-    return;
+
+    throw new APIError("INTERNAL_SERVER_ERROR", {
+      message: TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
+    });
   }
 
   if (data?.allowed === false) {
     throw new APIError("BAD_REQUEST", {
-      message:
-        "You have reached your team member limit for this plan. Upgrade to invite more members.",
+      message: TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
     });
   }
 }

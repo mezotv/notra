@@ -34,7 +34,10 @@ import { useEffect, useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { authClient } from "@/lib/auth/client";
-import { mapInviteLimitErrorMessage } from "@/lib/billing/limits";
+import {
+  isTeamMemberLimitError,
+  mapBillingLimitErrorMessage,
+} from "@/lib/billing/limits";
 
 interface InvitationData {
   id: string;
@@ -100,7 +103,7 @@ function PageClient({
 
       if (res.error) {
         setError(
-          mapInviteLimitErrorMessage(
+          mapBillingLimitErrorMessage(
             res.error.message,
             "Failed to accept invitation"
           )
@@ -196,7 +199,20 @@ function PageClient({
           </Tabs>
           {error && (
             <div className="mt-4 rounded-sm border border-destructive bg-destructive/10 p-3">
-              <p className="text-center text-destructive text-sm">{error}</p>
+              <p className="text-center text-destructive text-sm">
+                {error}
+                {isTeamMemberLimitError(error) && (
+                  <>
+                    {" "}
+                    <Link
+                      className="font-medium underline underline-offset-2"
+                      href={`/${invitation.organizationSlug}/billing`}
+                    >
+                      View plans
+                    </Link>
+                  </>
+                )}
+              </p>
             </div>
           )}
         </CardContent>
@@ -307,7 +323,20 @@ function PageClient({
       </CardContent>
       {error && inviteStatus === "pending" && (
         <div className="mt-4 rounded-sm border border-destructive bg-destructive/10 p-3">
-          <p className="text-center text-destructive text-sm">{error}</p>
+          <p className="text-center text-destructive text-sm">
+            {error}
+            {isTeamMemberLimitError(error) && (
+              <>
+                {" "}
+                <Link
+                  className="font-medium underline underline-offset-2"
+                  href={`/${invitation.organizationSlug}/billing`}
+                >
+                  View plans
+                </Link>
+              </>
+            )}
+          </p>
         </div>
       )}
       {inviteStatus === "pending" && (

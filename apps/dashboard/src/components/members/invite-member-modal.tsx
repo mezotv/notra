@@ -27,7 +27,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import {
   isTeamMemberLimitError,
-  mapInviteLimitErrorMessage,
+  mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
 
 interface InviteMemberModalProps {
@@ -75,7 +75,10 @@ export function InviteMemberModal({
       });
     },
     onError: (error) => {
-      const message = mapInviteLimitErrorMessage(error.message);
+      const message = mapBillingLimitErrorMessage(
+        error.message,
+        "Failed to send invitation"
+      );
 
       if (isTeamMemberLimitError(error.message) && activeOrganization?.slug) {
         toast.error(message, {

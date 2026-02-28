@@ -47,7 +47,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import {
   isTeamMemberLimitError,
-  mapInviteLimitErrorMessage,
+  mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
 import type { Member } from "./columns";
 
@@ -100,7 +100,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       });
 
       if (error) {
-        const message = mapInviteLimitErrorMessage(
+        const message = mapBillingLimitErrorMessage(
           error.message,
           "Failed to update member role"
         );
