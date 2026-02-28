@@ -18,6 +18,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
     },
     {
+      url: "https://www.usenotra.com/pricing",
+      lastModified: new Date(),
+    },
+    {
       url: "https://www.usenotra.com/privacy",
       lastModified: new Date(),
     },

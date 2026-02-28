@@ -101,7 +101,7 @@ export function Navbar() {
                 </Link>
                 <Link
                   className="flex items-center justify-start"
-                  href="/#pricing"
+                  href="/pricing"
                 >
                   <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
                     Pricing
@@ -175,7 +175,7 @@ export function Navbar() {
             </Link>
             <Link
               className="font-medium font-sans text-foreground text-lg"
-              href="/#pricing"
+              href="/pricing"
               onClick={() => setIsOpen(false)}
             >
               Pricing

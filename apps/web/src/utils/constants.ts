@@ -47,6 +47,67 @@ export const PRICING_PLANS = {
   },
 } as const;
 
+export const COMPARISON_FEATURES = [
+  {
+    category: "Usage",
+    features: [
+      {
+        name: "Team members",
+        free: "2",
+        pro: "5",
+        enterprise: "Unlimited",
+      },
+      {
+        name: "Workflows",
+        free: "3",
+        pro: "Unlimited",
+        enterprise: "Unlimited",
+      },
+      {
+        name: "Integrations",
+        free: "2",
+        pro: "Unlimited",
+        enterprise: "Custom",
+      },
+      {
+        name: "AI Credits per month",
+        free: "15",
+        pro: "250 (then $0.01/credit)",
+        enterprise: "Custom limits",
+      },
+      {
+        name: "Log retention",
+        free: "7 days",
+        pro: "30 days",
+        enterprise: "Unlimited",
+      },
+    ],
+  },
+  {
+    category: "Support",
+    features: [
+      {
+        name: "Community support",
+        free: true,
+        pro: true,
+        enterprise: true,
+      },
+      {
+        name: "Priority support",
+        free: false,
+        pro: true,
+        enterprise: true,
+      },
+      {
+        name: "Dedicated support",
+        free: false,
+        pro: false,
+        enterprise: true,
+      },
+    ],
+  },
+] as const;
+
 export const SOCIAL_PROOF_LOGOS = [
   {
     name: "Consent",
