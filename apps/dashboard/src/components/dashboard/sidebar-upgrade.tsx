@@ -4,6 +4,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer, usePricingTable } from "autumn-js/react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 
@@ -38,11 +39,20 @@ export function SidebarUpgrade() {
     try {
       const { data, error } = await checkout({ productId });
       if (error) {
+        toast.error(
+          error.message || "Could not start checkout. Please try again."
+        );
         return;
       }
       if (data?.url) {
         window.location.href = data.url;
       }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not start checkout. Please try again."
+      );
     } finally {
       setLoading(false);
     }

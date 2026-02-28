@@ -517,11 +517,7 @@ function BrandForm({
                                 </svg>
                               )}
                             </div>
-                            <span
-                              className="text-sm"
-                            >
-                              Custom Tone
-                            </span>
+                            <span className="text-sm">Custom Tone</span>
                           </label>
                           <Input
                             autoComplete="off"

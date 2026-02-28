@@ -30,6 +30,7 @@ import type { CheckoutResult, Product } from "autumn-js";
 import { useCustomer, usePricingTable } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useId, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
 
@@ -265,6 +266,9 @@ export default function BillingPage() {
 
       if (error) {
         console.error("Checkout error:", error);
+        toast.error(
+          error.message || "Could not start checkout. Please try again."
+        );
         return;
       }
 
@@ -275,6 +279,11 @@ export default function BillingPage() {
       }
     } catch (err) {
       console.error("Checkout error:", err);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not start checkout. Please try again."
+      );
     } finally {
       setLoading(null);
     }
