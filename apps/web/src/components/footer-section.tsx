@@ -87,6 +87,14 @@ export default function FooterSection() {
               >
                 Showcase
               </Link>
+              <Link
+                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
+                href="https://docs.usenotra.com"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Docs
+              </Link>
             </div>
           </div>
 
