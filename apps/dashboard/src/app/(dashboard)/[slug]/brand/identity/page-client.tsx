@@ -518,11 +518,7 @@ function BrandForm({
                               )}
                             </div>
                             <span
-                              className={
-                                useCustomToneField.state.value
-                                  ? "text-sm"
-                                  : "text-muted-foreground text-sm"
-                              }
+                              className="text-sm"
                             >
                               Custom Tone
                             </span>
