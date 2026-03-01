@@ -1,5 +1,5 @@
 import dedent from "dedent";
-import type { ContentEditorChatPromptParams } from "@/types/lib/ai/prompts";
+import type { ContentEditorChatPromptParams } from "@/types/ai/prompts";
 
 export function getContentEditorChatPrompt(
   params: ContentEditorChatPromptParams

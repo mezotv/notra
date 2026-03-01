@@ -1,5 +1,5 @@
 import dedent from "dedent";
-import type { LinkedInTonePromptInput } from "@/types/lib/ai/prompts";
+import type { LinkedInTonePromptInput } from "@/types/ai/prompts";
 
 export function getLinkedInUserPrompt(params: LinkedInTonePromptInput): string {
   const companyContext = params.companyName

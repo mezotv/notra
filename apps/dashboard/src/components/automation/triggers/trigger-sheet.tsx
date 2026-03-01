@@ -46,7 +46,7 @@ import {
   MAX_SCHEDULE_NAME_LENGTH,
 } from "@/schemas/integrations";
 import type { GitHubIntegration } from "@/types/integrations";
-import type { Trigger } from "@/types/lib/triggers/triggers";
+import type { Trigger } from "@/types/triggers/triggers";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePicker } from "./trigger-schedule-picker";

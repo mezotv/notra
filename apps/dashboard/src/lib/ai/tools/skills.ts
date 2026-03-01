@@ -3,7 +3,7 @@ import path from "node:path";
 import { type Tool, tool } from "ai";
 import matter from "gray-matter";
 import z from "zod";
-import type { Skill, SkillMetadata } from "@/types/lib/ai/tools";
+import type { Skill, SkillMetadata } from "@/types/ai/tools";
 import { toolDescription } from "@/utils/ai/description";
 
 function parseSkillFrontmatter(content: string): Partial<SkillMetadata> {

@@ -1,9 +1,6 @@
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
-import type {
-  WebhookContext,
-  WebhookResult,
-} from "@/types/lib/webhooks/webhooks";
+import type { WebhookContext, WebhookResult } from "@/types/webhooks/webhooks";
 
 export async function handleLinearWebhook(
   context: WebhookContext

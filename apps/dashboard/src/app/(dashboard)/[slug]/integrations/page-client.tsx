@@ -30,8 +30,8 @@ import {
   OUTPUT_SOURCES,
 } from "@/lib/integrations/catalog";
 import type { IntegrationType } from "@/schemas/integrations";
-import type { IntegrationConfig } from "@/types/lib/integrations/catalog";
-import type { IntegrationsResponse } from "@/types/lib/services/integrations";
+import type { IntegrationConfig } from "@/types/integrations/catalog";
+import type { IntegrationsResponse } from "@/types/services/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { IntegrationsPageSkeleton } from "./skeleton";
 

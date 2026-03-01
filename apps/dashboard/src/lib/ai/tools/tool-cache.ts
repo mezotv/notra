@@ -1,6 +1,6 @@
 import { createCached } from "@ai-sdk-tools/cache";
 import { redis } from "@/lib/redis";
-import type { CachedWrapper } from "@/types/lib/ai/tools";
+import type { CachedWrapper } from "@/types/ai/tools";
 
 function normalizeKeyPart(value: string) {
   return value

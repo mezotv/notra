@@ -4,7 +4,7 @@ import type {
   Log,
   LogRetentionDays,
   WebhookLogInput,
-} from "@/types/lib/webhooks/webhooks";
+} from "@/types/webhooks/webhooks";
 
 const LOG_TTL_7_DAYS = 60 * 60 * 24 * 7;
 const LOG_TTL_30_DAYS = 60 * 60 * 24 * 30;

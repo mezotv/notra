@@ -25,7 +25,7 @@ import type {
   IntegrationType,
   Log,
   StatusWithCode,
-} from "@/types/lib/webhooks/webhooks";
+} from "@/types/webhooks/webhooks";
 
 const columnHelper = createColumnHelper<Log>();
 

@@ -11,13 +11,13 @@ import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
 import type {
   ErrorWithStatus,
   ValidateRepositoryBranchExistsParams,
-} from "@/types/lib/services/github";
+} from "@/types/services/github";
 import type {
   AddRepositoryParams,
   ConfigureOutputParams,
   CreateGitHubIntegrationParams,
   WebhookConfig,
-} from "@/types/lib/services/integrations";
+} from "@/types/services/integrations";
 import { getConfiguredAppUrl } from "@/utils/url";
 import { createOctokit } from "../octokit";
 

@@ -46,6 +46,8 @@ export const QUERY_KEYS = {
   POSTS: {
     base: ["posts"] as const,
     list: (organizationId: string) => ["posts", organizationId] as const,
+    metrics: (organizationId: string) =>
+      ["posts", organizationId, "metrics"] as const,
     today: (organizationId: string) =>
       ["posts", organizationId, "today"] as const,
   },

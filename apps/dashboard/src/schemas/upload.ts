@@ -8,7 +8,7 @@ import {
   MAX_CONTENT_FILE_SIZE,
   MAX_LOGO_FILE_SIZE,
 } from "@/constants/upload";
-import type { UploadType } from "@/types/lib/upload/client";
+import type { UploadType } from "@/types/upload/client";
 
 export const uploadAvatarSchema = z.object({
   type: z.literal("avatar"),

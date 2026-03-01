@@ -4,7 +4,7 @@ import type {
   UploadFileResponse,
   UploadPresignedResponse,
   UploadType,
-} from "@/types/lib/upload/client";
+} from "@/types/upload/client";
 
 async function getPresignedUrl(
   file: File,

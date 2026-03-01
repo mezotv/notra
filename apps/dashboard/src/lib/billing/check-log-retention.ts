@@ -1,5 +1,5 @@
 import { FEATURES } from "@/constants/features";
-import type { LogRetentionDays } from "@/types/lib/webhooks/webhooks";
+import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import { autumn } from "./autumn";
 
 export async function checkLogRetention(

@@ -21,7 +21,7 @@ import {
   type LookbackWindow,
   triggerTargetsSchema,
 } from "@/schemas/integrations";
-import type { Trigger } from "@/types/lib/triggers/triggers";
+import type { Trigger } from "@/types/triggers/triggers";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
