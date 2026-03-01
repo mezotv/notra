@@ -56,10 +56,12 @@ function CopyButton({
   value,
   label,
   className,
+  onCopy,
 }: {
   value: string;
   label: string;
   className?: string;
+  onCopy?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -71,6 +73,7 @@ function CopyButton({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
+      onCopy?.();
       toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -109,6 +112,7 @@ function WebhookSection({
     data: webhookConfig,
     isLoading,
     isFetched,
+    isError,
   } = useQuery<WebhookConfig | null>({
     queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
     queryFn: async () => {
@@ -164,6 +168,16 @@ function WebhookSection({
         <Skeleton className="h-9 w-full" />
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-9 w-full" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-lg border border-destructive/50 p-5">
+        <p className="font-medium text-destructive text-sm">
+          Failed to load webhook configuration
+        </p>
       </div>
     );
   }
@@ -226,6 +240,10 @@ function WebhookSection({
           <CopyButton
             className="shrink-0"
             label="Secret"
+            onCopy={() => {
+              setSecretRevealed(true);
+              setTimeout(() => setSecretRevealed(false), 2000);
+            }}
             value={webhookConfig.webhookSecret}
           />
           <Tooltip>
