@@ -1,13 +1,37 @@
 ---
 title: "Featul Integration (Community)"
-description: "Integrate Featul with Notra to pull changelogs into Featul."
+description: "Import Notra changelog posts into Featul."
 ---
 
 <Warning>
   This integration is community-supported. We are not affiliated with Featul and do not provide official support for this integration.
 </Warning>
 
-<Note>
-  This is a stub for the Featul integration.
-</Note>
+This guide explains how to connect Notra to Featul and import changelog content.
 
+## Prerequisites
+
+- Access to a Featul workspace.
+- A Notra Organization ID.
+- A Notra API key.
+
+## Connect Notra to Featul
+
+1. In Featul, open the **Changelog** page.
+2. At the top of the page, click **Import from Notra**.
+3. In the import dialog, enter your **Organization ID** and **API key** from Notra.
+4. Optional: enable **Save encrypted connection** if you want Featul to reuse these credentials.
+5. Click **Sync Now** to start the import.
+
+![Featul Import from Notra dialog](./featul-import-modal.png)
+
+## Where to find your Notra credentials
+
+1. Open Notra and select your organization.
+2. Copy the **Organization ID** and **API key**.
+3. Return to Featul and paste both values into the **Import from Notra** dialog.
+
+## Notes
+
+- You can import both draft and published content by enabling **Include drafts**.
+- You can update previously imported entries by enabling **Update existing imports**.
