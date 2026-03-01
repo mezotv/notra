@@ -18,6 +18,15 @@ import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { Loader2 } from "lucide-react";
 import type { ContentPublishingMetricsData } from "@/types/dashboard";
+
+interface ActivityEntry {
+  date: string;
+  count: number;
+  drafts: number;
+  published: number;
+  level: number;
+}
+
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { useOrganizationsContext } from "../providers/organization-provider";
 
@@ -64,13 +73,7 @@ export const ContentActivityCard = () => {
         >
           <ContributionGraphCalendar>
             {({ activity, dayIndex, weekIndex }) => {
-              const entry = activity as unknown as {
-                date: string;
-                count: number;
-                drafts: number;
-                published: number;
-                level: number;
-              };
+              const entry = activity as unknown as ActivityEntry;
 
               return (
                 <Tooltip>
@@ -134,24 +137,23 @@ export const ContentActivityCard = () => {
             </ContributionGraphTotalCount>
             <ContributionGraphLegend>
               {({ level }) => (
-                <div
-                  className="group relative flex h-3 w-3 items-center justify-center"
-                  data-level={level}
-                >
-                  <div
-                    className={cn(
-                      "h-full w-full rounded-sm border border-border",
-                      level === 0 && "bg-muted dark:bg-white/5",
-                      level === 1 && "bg-primary/20 dark:bg-primary/30",
-                      level === 2 && "bg-primary/40 dark:bg-primary/50",
-                      level === 3 && "bg-primary/60 dark:bg-primary/70",
-                      level === 4 && "bg-primary/80 dark:bg-primary/90"
-                    )}
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <div
+                        className={cn(
+                          "h-3 w-3 rounded-sm border border-border",
+                          level === 0 && "bg-muted dark:bg-white/5",
+                          level === 1 && "bg-primary/20 dark:bg-primary/30",
+                          level === 2 && "bg-primary/40 dark:bg-primary/50",
+                          level === 3 && "bg-primary/60 dark:bg-primary/70",
+                          level === 4 && "bg-primary/80 dark:bg-primary/90"
+                        )}
+                      />
+                    }
                   />
-                  <span className="-top-8 absolute hidden rounded bg-popover px-2 py-1 text-popover-foreground text-xs shadow-md group-hover:block">
-                    Level {level}
-                  </span>
-                </div>
+                  <TooltipContent>Level {level}</TooltipContent>
+                </Tooltip>
               )}
             </ContributionGraphLegend>
           </ContributionGraphFooter>
