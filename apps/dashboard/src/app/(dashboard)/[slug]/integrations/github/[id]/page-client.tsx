@@ -125,31 +125,11 @@ function WebhookSection({
     },
   });
 
-  const regenerateMutation = useMutation<WebhookConfig, Error, void>({
-    mutationFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/repositories/${repo.id}/webhook`,
-        { method: "POST", headers: { "Content-Type": "application/json" } }
-      );
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to regenerate webhook secret");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
-      });
-      setSecretRevealed(false);
-      toast.success("Webhook secret regenerated");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const generateMutation = useMutation<WebhookConfig, Error, void>({
+  const secretMutation = useMutation<
+    WebhookConfig,
+    Error,
+    { regenerate: boolean }
+  >({
     mutationFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/repositories/${repo.id}/webhook`,
@@ -161,10 +141,14 @@ function WebhookSection({
       }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, { regenerate }) => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
       });
+      if (regenerate) {
+        setSecretRevealed(false);
+        toast.success("Webhook secret regenerated");
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -195,12 +179,12 @@ function WebhookSection({
             </p>
           </div>
           <Button
-            disabled={generateMutation.isPending}
-            onClick={() => generateMutation.mutate()}
+            disabled={secretMutation.isPending}
+            onClick={() => secretMutation.mutate({ regenerate: false })}
             size="sm"
             variant="outline"
           >
-            {generateMutation.isPending ? (
+            {secretMutation.isPending ? (
               <LoaderIcon className="size-3.5 animate-spin" />
             ) : null}
             Generate Secret
@@ -249,15 +233,15 @@ function WebhookSection({
               render={
                 <Button
                   className="shrink-0"
-                  disabled={regenerateMutation.isPending}
-                  onClick={() => regenerateMutation.mutate()}
+                  disabled={secretMutation.isPending}
+                  onClick={() => secretMutation.mutate({ regenerate: true })}
                   size="icon"
                   type="button"
                   variant="outline"
                 />
               }
             >
-              {regenerateMutation.isPending ? (
+              {secretMutation.isPending ? (
                 <LoaderIcon className="size-4 animate-spin" />
               ) : (
                 <RefreshCwIcon className="size-4" />
