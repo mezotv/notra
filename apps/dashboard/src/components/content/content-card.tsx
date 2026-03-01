@@ -209,7 +209,7 @@ const ContentCard = memo(function ContentCard({
     <>
       {href ? (
         <Link
-          className="block w-full rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block h-full w-full rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={href}
         >
           {cardContent}
