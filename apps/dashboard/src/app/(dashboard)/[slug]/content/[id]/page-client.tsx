@@ -218,7 +218,7 @@ export default function PageClient({
       saveToastIdRef.current = toast.custom(
         (t) => (
           <div className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm">
-            <div className="flex items-center gap-3 rounded-[12px] bg-background px-4 py-3">
+            <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
               <span className="text-muted-foreground text-sm">
                 Unsaved changes
               </span>

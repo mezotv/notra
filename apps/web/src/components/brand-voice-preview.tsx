@@ -31,13 +31,13 @@ export default function BrandVoicePreview({
     <div className={`relative overflow-hidden ${className}`}>
       <div className="flex flex-col gap-3 pt-4">
         <div className="mr-[-30%]">
-          <div className="flex flex-col rounded-[20px] border border-border/80 bg-muted/80 p-2">
+          <div className="flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2">
             <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
               <p className="min-w-0 truncate font-medium text-lg">
                 Company Profile
               </p>
             </div>
-            <div className="flex-1 rounded-[12px] border border-border/80 bg-background px-4 py-3">
+            <div className="flex-1 rounded-lg border border-border/80 bg-background px-4 py-3">
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Textarea
@@ -51,13 +51,13 @@ export default function BrandVoicePreview({
         </div>
 
         <div className="-mr-6 ml-[20%]">
-          <div className="flex flex-col rounded-[20px] border border-border/80 bg-muted/80 p-2">
+          <div className="flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2">
             <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
               <p className="min-w-0 truncate font-medium text-lg">
                 Tone & Language
               </p>
             </div>
-            <div className="flex-1 rounded-[12px] border border-border/80 bg-background px-4 py-3">
+            <div className="flex-1 rounded-lg border border-border/80 bg-background px-4 py-3">
               <div className="space-y-3">
                 <span className="flex cursor-pointer items-center gap-2">
                   <div className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">

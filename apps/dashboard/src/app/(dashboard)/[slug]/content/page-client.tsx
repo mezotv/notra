@@ -280,7 +280,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </section>
           ))}
         {!isPending && allPosts.length > 0 && viewMode === "table" && (
-          <div className="overflow-x-auto rounded-xl border">
+          <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>

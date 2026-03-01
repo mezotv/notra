@@ -16,7 +16,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import type { ContentPublishingMetricsData } from "@/types/dashboard";
 
 interface ActivityEntry {
@@ -54,16 +54,15 @@ export const ContentActivityCard = () => {
 
   if (isPending) {
     return (
-      <div className="w-fit rounded-[12px] border border-border/80 bg-background px-4 py-3">
-        <div className="flex h-40 items-center justify-center">
-          <Loader2 className="size-4 animate-spin" />
-        </div>
-      </div>
+      <Skeleton
+        className="rounded-lg"
+        style={{ width: 848, height: 160 }}
+      />
     );
   }
 
   return (
-    <div className="w-fit rounded-[12px] border border-border/80 bg-background px-4 py-3">
+    <div className="w-fit rounded-lg border border-border/80 bg-background px-4 py-3">
       {data?.graph?.activity ? (
         <ContributionGraph
           blockMargin={3}

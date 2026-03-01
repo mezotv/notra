@@ -29,14 +29,14 @@ function TitleCard({
   return (
     <div
       className={cn(
-        "group relative flex flex-col rounded-[20px] border border-border/80 bg-muted/80 p-2",
+        "group relative flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2",
         className
       )}
       {...props}
     >
       {accentColor && (
         <div
-          className="pointer-events-none absolute inset-0 rounded-[20px] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100"
           style={gradientStyle}
         />
       )}
@@ -60,7 +60,7 @@ function TitleCard({
       </div>
       <div
         className={cn(
-          "flex-1 rounded-[12px] border border-border/80 bg-background px-4 py-3",
+          "flex-1 rounded-lg border border-border/80 bg-background px-4 py-3",
           contentClassName
         )}
       >

@@ -46,7 +46,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <div className="grid auto-rows-[1fr] justify-items-center gap-3 sm:grid-cols-2 sm:justify-items-stretch lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
-              className="h-[170px] w-full max-w-[340px] rounded-[20px] border border-border/60 bg-muted/30 sm:h-[140px] sm:max-w-none"
+              className="h-[170px] w-full max-w-[340px] rounded-lg border border-border/60 bg-muted/30 sm:h-[140px] sm:max-w-none"
               key={`${skeletonId}-${index + 1}`}
             />
           ))}

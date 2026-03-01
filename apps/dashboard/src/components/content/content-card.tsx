@@ -136,7 +136,7 @@ const ContentCard = memo(function ContentCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex flex-col rounded-[1.25rem] border border-border/80 bg-muted/80 p-2",
+        "group relative flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2",
         "h-full transition-colors",
         href && "cursor-pointer hover:bg-muted/80",
         className
@@ -209,7 +209,7 @@ const ContentCard = memo(function ContentCard({
     <>
       {href ? (
         <Link
-          className="block h-full w-full rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block h-full w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={href}
         >
           {cardContent}

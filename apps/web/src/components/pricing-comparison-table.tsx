@@ -81,7 +81,7 @@ function MobileComparisonCards() {
 
 function DesktopComparisonTable() {
   return (
-    <div className="hidden md:block">
+    <div className="hidden rounded-lg md:block">
       <Table>
         <TableHeader>
           <TableRow className="border-border hover:bg-transparent">

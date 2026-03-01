@@ -286,7 +286,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
             <Skeleton className="h-9 w-48" />
             <Skeleton className="h-5 w-72" />
           </div>
-          <Skeleton className="h-64 rounded-[20px]" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
       </PageContainer>
     );

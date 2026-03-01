@@ -621,14 +621,14 @@ function ScheduleTable({
 
   if (triggers.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
         No schedules in this category.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>

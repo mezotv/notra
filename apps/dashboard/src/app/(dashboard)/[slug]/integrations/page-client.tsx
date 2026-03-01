@@ -149,7 +149,7 @@ const IntegrationCard = memo(function IntegrationCard({
     <>
       {integration.available ? (
         <Link
-          className="rounded-[20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={`/${organizationSlug}/integrations/${integration.href}`}
         >
           {cardContent}

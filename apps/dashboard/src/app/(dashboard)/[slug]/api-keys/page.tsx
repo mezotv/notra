@@ -540,7 +540,7 @@ export default function ApiKeysPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>

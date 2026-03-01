@@ -406,8 +406,8 @@ export default function BillingPage() {
             {isBillingLoading ? (
               <div className="space-y-6">
                 <div className="grid gap-6 lg:grid-cols-2">
-                  <Skeleton className="h-96 rounded-[20px]" />
-                  <Skeleton className="h-96 rounded-[20px]" />
+                  <Skeleton className="h-96 rounded-lg" />
+                  <Skeleton className="h-96 rounded-lg" />
                 </div>
                 <Skeleton className="h-64 rounded-xl" />
               </div>
@@ -565,7 +565,7 @@ export default function BillingPage() {
 
                 <div className="space-y-3">
                   <h2 className="font-semibold text-lg">Invoices</h2>
-                  <div className="overflow-hidden rounded-md border">
+                  <div className="overflow-hidden rounded-lg border">
                     <Table>
                       <TableHeader>
                         <TableRow>

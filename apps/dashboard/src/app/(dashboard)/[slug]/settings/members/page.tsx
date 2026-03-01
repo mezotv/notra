@@ -90,7 +90,7 @@ export default function MembersPage({ params }: PageProps) {
             <Skeleton className="h-9 w-32" />
             <Skeleton className="h-5 w-64" />
           </div>
-          <Skeleton className="h-64 rounded-[20px]" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
       </PageContainer>
     );
