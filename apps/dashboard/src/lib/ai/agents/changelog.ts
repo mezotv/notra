@@ -22,7 +22,7 @@ import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
 import type {
   ChangelogAgentOptions,
   ChangelogAgentResult,
-} from "@/types/lib/ai/agents";
+} from "@/types/ai/agents";
 
 const changelogPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalChangelogPrompt,

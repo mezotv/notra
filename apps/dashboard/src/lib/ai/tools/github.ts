@@ -6,7 +6,7 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/gi
 import type {
   ErrorWithStatus,
   GitHubToolsAccessConfig,
-} from "@/types/lib/ai/tools";
+} from "@/types/ai/tools";
 import { toolDescription } from "@/utils/ai/description";
 import { getAICachedTools } from "./tool-cache";
 

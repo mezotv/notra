@@ -3,7 +3,7 @@ import { members } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { organizationIdSchema } from "@/schemas/auth/organization";
-import type { OrganizationAuth } from "@/types/lib/auth/organization";
+import type { OrganizationAuth } from "@/types/auth/organization";
 import { getServerSession } from "./session";
 
 export async function withOrganizationAuth(

@@ -44,7 +44,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { FEATURES } from "@/constants/features";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import type { GitHubRepository } from "@/types/integrations";
-import type { IntegrationsResponse } from "@/types/lib/services/integrations";
+import type { IntegrationsResponse } from "@/types/services/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export interface TextSelection {

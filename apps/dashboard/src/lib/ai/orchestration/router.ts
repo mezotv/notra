@@ -2,10 +2,7 @@ import { generateText, Output } from "ai";
 import { gateway } from "@/lib/ai/gateway";
 import { ROUTING_PROMPT } from "@/lib/ai/prompts/router";
 import { routingDecisionSchema } from "@/schemas/ai/orchestration";
-import type {
-  RoutingDecision,
-  RoutingResult,
-} from "@/types/lib/ai/orchestration";
+import type { RoutingDecision, RoutingResult } from "@/types/ai/orchestration";
 
 const MODELS = {
   router: "openai/gpt-oss-120b", // Only for routing decisions, no supermemory

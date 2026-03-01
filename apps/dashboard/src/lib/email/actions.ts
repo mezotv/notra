@@ -9,7 +9,7 @@ import type {
   SendResetPasswordProps,
   SendVerificationEmailProps,
   SendWelcomeEmailProps,
-} from "@/types/lib/email/actions";
+} from "@/types/email/actions";
 import { getServerSession } from "../auth/session";
 import {
   sendInviteEmail,

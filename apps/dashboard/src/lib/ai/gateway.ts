@@ -3,7 +3,7 @@ import type {
   GatewayArgs,
   GatewayClient,
   GatewayResult,
-} from "@/types/lib/ai/gateway";
+} from "@/types/ai/gateway";
 
 const headers = {
   "http-referer": "https://www.usenotra.com",

@@ -4,8 +4,8 @@ import type { EventWorkflowPayload } from "@/schemas/workflows";
 import type {
   CreateQstashScheduleProps,
   WorkflowDelay,
-} from "@/types/lib/triggers/qstash";
-import type { TriggerSourceConfig } from "@/types/lib/triggers/triggers";
+} from "@/types/triggers/qstash";
+import type { TriggerSourceConfig } from "@/types/triggers/triggers";
 import { getConfiguredAppUrl, requireConfiguredAppUrl } from "@/utils/url";
 
 function getQstashToken() {

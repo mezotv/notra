@@ -3,7 +3,7 @@ import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
 import type {
   EventGenerationContext,
   EventGenerationResult,
-} from "@/types/lib/workflows/workflows";
+} from "@/types/workflows/workflows";
 
 const MAX_LISTED_COMMITS = 10;
 

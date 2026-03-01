@@ -9,7 +9,7 @@ import { parseAsInteger, useQueryState } from "nuqs";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEATURES } from "@/constants/features";
-import type { LogsResponse } from "@/types/lib/webhooks/webhooks";
+import type { LogsResponse } from "@/types/webhooks/webhooks";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";

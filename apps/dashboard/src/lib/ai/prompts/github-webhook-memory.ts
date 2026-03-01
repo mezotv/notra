@@ -1,4 +1,4 @@
-import type { GithubWebhookMemoryPromptParams } from "@/types/lib/ai/prompts";
+import type { GithubWebhookMemoryPromptParams } from "@/types/ai/prompts";
 
 export function getGithubWebhookMemoryPrompt(
   params: GithubWebhookMemoryPromptParams

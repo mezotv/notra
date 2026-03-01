@@ -7,7 +7,7 @@ import type {
   BrandSettingsResponse,
   Progress,
   ProgressResponse,
-} from "@/types/lib/hooks/brand-analysis";
+} from "@/types/hooks/brand-analysis";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function useBrandSettings(organizationId: string) {

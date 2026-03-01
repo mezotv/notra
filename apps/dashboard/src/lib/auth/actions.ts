@@ -7,7 +7,7 @@ import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { auth } from "@/lib/auth/server";
-import type { InvitationResponse } from "@/types/lib/auth/actions";
+import type { InvitationResponse } from "@/types/auth/actions";
 
 export async function validateOrganizationAccess(slug: string) {
   const session = await auth.api.getSession({

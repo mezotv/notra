@@ -25,13 +25,13 @@ import {
   type EventWorkflowPayload,
   eventWorkflowPayloadSchema,
 } from "@/schemas/workflows";
-import type { LogRetentionDays } from "@/types/lib/webhooks/webhooks";
+import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import type {
   EventGenerationResult,
   WorkflowBrandSettings,
   WorkflowRepositoryData,
   WorkflowTriggerData,
-} from "@/types/lib/workflows/workflows";
+} from "@/types/workflows/workflows";
 
 export const { POST } = serve<EventWorkflowPayload>(
   async (context: WorkflowContext<EventWorkflowPayload>) => {

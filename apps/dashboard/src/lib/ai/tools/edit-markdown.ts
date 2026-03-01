@@ -1,7 +1,7 @@
 import { tool } from "ai";
 import z from "zod";
 import { type EditOperation, editOperationSchema } from "@/schemas/ai/tools";
-import type { EditMarkdownContext } from "@/types/lib/ai/tools";
+import type { EditMarkdownContext } from "@/types/ai/tools";
 
 function getOperationLineNumber(op: EditOperation) {
   if ("line" in op && op.line !== undefined) {

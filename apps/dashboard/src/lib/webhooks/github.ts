@@ -19,7 +19,7 @@ import type {
   GithubProcessedEvent,
   WebhookContext,
   WebhookResult,
-} from "@/types/lib/webhooks/webhooks";
+} from "@/types/webhooks/webhooks";
 
 const DELIVERY_TTL_SECONDS = 60 * 60 * 24;
 const SHOULD_DEDUPE_DELIVERIES = process.env.NODE_ENV !== "development";

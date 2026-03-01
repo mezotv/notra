@@ -4,7 +4,7 @@ import { gateway } from "@/lib/ai/gateway";
 import { routeMessage, selectModel } from "@/lib/ai/orchestration/router";
 import { createMarkdownTools } from "@/lib/ai/tools/edit-markdown";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
-import type { ChatAgentContext } from "@/types/lib/ai/agents";
+import type { ChatAgentContext } from "@/types/ai/agents";
 
 export async function createChatAgent(
   context: ChatAgentContext,

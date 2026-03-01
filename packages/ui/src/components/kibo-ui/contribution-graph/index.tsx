@@ -258,9 +258,10 @@ export const ContributionGraph = ({
   const labels = { ...DEFAULT_LABELS, ...labelsProp };
   const labelHeight = fontSize + LABEL_MARGIN;
 
+  const firstActivity = data[0];
   const year =
-    data.length > 0
-      ? getYear(parseISO(data[0].date))
+    firstActivity !== undefined
+      ? getYear(parseISO(firstActivity.date))
       : new Date().getFullYear();
 
   const totalCount =

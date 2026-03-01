@@ -22,7 +22,7 @@ import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
 import type {
   LinkedInAgentOptions,
   LinkedInAgentResult,
-} from "@/types/lib/ai/agents";
+} from "@/types/ai/agents";
 
 const linkedInPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalLinkedInPrompt,

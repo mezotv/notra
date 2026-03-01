@@ -11,7 +11,7 @@ import type {
   SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
-} from "@/types/lib/email/send";
+} from "@/types/email/send";
 
 // --- Retry & Idempotency ---
 
