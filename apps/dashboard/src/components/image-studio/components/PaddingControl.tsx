@@ -1,40 +1,33 @@
 "use client";
 
-import classNames from "classnames";
+import { Button } from "@notra/ui/components/ui/button";
+import { ButtonGroup } from "@notra/ui/components/ui/button-group";
 import { useAtom } from "jotai";
 import { isPadding, PADDING_OPTIONS, paddingAtom } from "../store/padding";
 import ControlContainer from "./ControlContainer";
-import styles from "./PaddingControl.module.css";
 
 const PaddingControl = () => {
   const [padding, setPadding] = useAtom(paddingAtom);
 
   return (
     <ControlContainer title="Padding">
-      <div
-        aria-label="Frame Padding"
-        className={styles.toggleGroup}
-        role="group"
-      >
+      <ButtonGroup aria-label="Frame Padding">
         {PADDING_OPTIONS.map((paddingOption) => (
-          <button
+          <Button
             aria-pressed={padding === paddingOption}
-            className={classNames(
-              styles.toggleGroupItem,
-              padding === paddingOption && styles.active
-            )}
             key={paddingOption}
             onClick={() => {
               if (isPadding(paddingOption)) {
                 setPadding(paddingOption);
               }
             }}
-            type="button"
+            size="xs"
+            variant={padding === paddingOption ? "secondary" : "ghost"}
           >
             {paddingOption}
-          </button>
+          </Button>
         ))}
-      </div>
+      </ButtonGroup>
     </ControlContainer>
   );
 };

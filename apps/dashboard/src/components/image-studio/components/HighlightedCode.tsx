@@ -1,6 +1,6 @@
 "use client";
 
-import classNames from "classnames";
+import { cn } from "@notra/ui/lib/utils";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useState } from "react";
 import {
@@ -9,7 +9,6 @@ import {
   loadingLanguageAtom,
 } from "../store";
 import { LANGUAGES, type Language } from "../util/languages";
-import styles from "./Editor.module.css";
 
 interface PropTypes {
   selectedLanguage: Language | null;
@@ -42,7 +41,9 @@ const HighlightedCode = ({ selectedLanguage, code }: PropTypes) => {
 
       if (!hasLoadedLanguage && selectedLanguage.src) {
         setIsLoadingLanguage(true);
-        await highlighter.loadLanguage(selectedLanguage.src as Parameters<typeof highlighter.loadLanguage>[0]);
+        await highlighter.loadLanguage(
+          selectedLanguage.src as Parameters<typeof highlighter.loadLanguage>[0]
+        );
         setIsLoadingLanguage(false);
       }
 
@@ -80,13 +81,14 @@ const HighlightedCode = ({ selectedLanguage, code }: PropTypes) => {
 
   return (
     <div
-      className={classNames(
-        styles.formatted,
-        selectedLanguage === LANGUAGES.plaintext && styles.plainText
+      className={cn(
+        selectedLanguage === LANGUAGES.plaintext &&
+          "text-[color:var(--ray-foreground)]"
       )}
       dangerouslySetInnerHTML={{
         __html: highlightedHtml,
       }}
+      data-studio-formatted=""
     />
   );
 };

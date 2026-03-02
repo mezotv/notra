@@ -71,9 +71,7 @@ const userInputtedLanguageAtom = atomWithHash<Language | null>(
   null,
   {
     serialize(language) {
-      const key = Object.keys(LANGUAGES).find(
-        (k) => LANGUAGES[k] === language
-      );
+      const key = Object.keys(LANGUAGES).find((k) => LANGUAGES[k] === language);
 
       if (key) {
         return key;

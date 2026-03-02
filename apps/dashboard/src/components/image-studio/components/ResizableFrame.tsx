@@ -1,6 +1,6 @@
 "use client";
 
-import classNames from "classnames";
+import { cn } from "@notra/ui/lib/utils";
 import { useAtom } from "jotai";
 import {
   type MouseEventHandler,
@@ -10,12 +10,14 @@ import {
   useState,
 } from "react";
 import { windowWidthAtom } from "../store";
-import styles from "./ResizableFrame.module.css";
 
 type Handle = "right" | "left";
 
-const maxWidth = 920;
-const minWidth = 520;
+const maxWidth = 640;
+const minWidth = 360;
+
+const dragPointBase =
+  "absolute z-2 top-1/2 h-6 w-6 cursor-col-resize select-none after:absolute after:top-1/2 after:left-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-foreground after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']";
 
 const ResizableFrame = ({ children }: PropsWithChildren) => {
   const currentHandleRef = useRef<Handle>(undefined);
@@ -77,18 +79,19 @@ const ResizableFrame = ({ children }: PropsWithChildren) => {
   );
 
   return (
-    <div
-      className={classNames(
-        styles.resizableFrame,
-        isResizing && styles.isResizing
-      )}
-    >
+    <div className={cn("relative inline-block", isResizing && "select-none")}>
       <div
-        className={classNames(styles.windowSizeDragPoint, styles.left)}
+        className={cn(
+          dragPointBase,
+          "-translate-x-1/2 -translate-y-1/2 left-0"
+        )}
         onMouseDown={handleResizeFrameX("left")}
       />
       <div
-        className={classNames(styles.windowSizeDragPoint, styles.right)}
+        className={cn(
+          dragPointBase,
+          "-translate-y-1/2 right-0 translate-x-1/2"
+        )}
         onMouseDown={handleResizeFrameX("right")}
       />
       <div ref={windowRef} style={{ width: windowWidth || "auto" }}>
@@ -96,9 +99,9 @@ const ResizableFrame = ({ children }: PropsWithChildren) => {
       </div>
 
       {windowWidth && !isResizing && (
-        <div className={styles.resetWidthContainer}>
+        <div className="absolute inset-x-0 flex justify-center">
           <a
-            className={styles.resetWidth}
+            className="m-4 inline-flex cursor-pointer flex-col items-center gap-2 text-muted-foreground text-xs transition-colors hover:text-foreground"
             onClick={(event) => {
               event.preventDefault();
               setWindowWidth(null);
@@ -110,8 +113,8 @@ const ResizableFrame = ({ children }: PropsWithChildren) => {
       )}
 
       {isResizing && (
-        <div className={styles.ruler}>
-          <span>{windowWidth} px</span>
+        <div className="before:-z-1 absolute inset-x-0 my-4 border-muted-foreground/50 border-x text-center text-muted-foreground/50 text-xs before:absolute before:inset-x-0 before:top-1/2 before:border-muted-foreground/50 before:border-t before:content-['']">
+          <span className="bg-background px-4">{windowWidth} px</span>
         </div>
       )}
     </div>

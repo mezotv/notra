@@ -1,6 +1,5 @@
 "use client";
 
-import classNames from "classnames";
 import { useAtom, useAtomValue } from "jotai";
 
 import { fileNameAtom, showBackgroundAtom } from "../../store";
@@ -12,7 +11,6 @@ import {
 } from "../../store/themes";
 import useIsSafari from "../../util/useIsSafari";
 import Editor from "../Editor";
-import styles from "./DefaultFrame.module.css";
 
 const DefaultFrame = () => {
   const [padding] = useAtom(paddingAtom);
@@ -25,34 +23,39 @@ const DefaultFrame = () => {
 
   return (
     <div
-      className={classNames(
-        styles.frame,
-        styles[theme.id as keyof typeof styles],
-        darkMode ? styles.darkMode : styles.lightMode,
-        showBackground && styles.withBackground
-      )}
+      data-mode={darkMode ? "dark" : "light"}
+      data-show-background={showBackground || undefined}
+      data-studio-frame=""
+      data-theme-id={theme.id}
       style={{
         padding,
         backgroundImage: showBackground ? themeBackground : "",
       }}
     >
       {!showBackground && (
-        <div className={styles.transparentPattern} data-ignore-in-export />
+        <div data-ignore-in-export data-studio-transparent-pattern="" />
       )}
       <div
-        className={classNames(
-          styles.window,
-          !isSafari && styles.withBorder,
-          !isSafari && showBackground && styles.withShadow
-        )}
+        data-studio-window=""
+        data-with-border={!isSafari || undefined}
+        data-with-shadow={(!isSafari && showBackground) || undefined}
       >
-        <div className={styles.header}>
-          <div className={styles.controls}>
-            <div className={styles.control} />
-            <div className={styles.control} />
-            <div className={styles.control} />
+        <div className="grid h-6 items-center gap-3 px-4 [grid-template-columns:3.75rem_1fr_3.75rem]">
+          <div className="flex gap-2">
+            <div
+              className="size-3.5 rounded-full"
+              style={{ backgroundColor: "var(--frame-control-color)" }}
+            />
+            <div
+              className="size-3.5 rounded-full"
+              style={{ backgroundColor: "var(--frame-control-color)" }}
+            />
+            <div
+              className="size-3.5 rounded-full"
+              style={{ backgroundColor: "var(--frame-control-color)" }}
+            />
           </div>
-          <div className={styles.fileName}>
+          <div data-studio-file-name="">
             <input
               onChange={(event) => setFileName(event.target.value)}
               spellCheck={false}

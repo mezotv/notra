@@ -6,20 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function ImageStudioPage() {
-  return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: "#0d0d0d",
-        color: "white",
-        overflow: "hidden",
-        position: "fixed",
-        inset: 0,
-        zIndex: 50,
-      }}
-    >
-      <ImageStudioClient />
-    </div>
-  );
+  return <ImageStudioClient />;
 }

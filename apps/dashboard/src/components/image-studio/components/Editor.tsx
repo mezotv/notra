@@ -1,6 +1,6 @@
 "use client";
 
-import classNames from "classnames";
+import { cn } from "@notra/ui/lib/utils";
 import { useAtom, useSetAtom } from "jotai";
 import {
   type ChangeEventHandler,
@@ -24,7 +24,6 @@ import {
   themeLineNumbersAtom,
 } from "../store/themes";
 import { LANGUAGES } from "../util/languages";
-import styles from "./Editor.module.css";
 import HighlightedCode from "./HighlightedCode";
 
 const DEDENT_REGEX = /^\s\s/;
@@ -52,13 +51,15 @@ function getCurrentlySelectedLine(textarea: HTMLTextAreaElement) {
   const selectionStart = textarea.selectionStart;
   const beforeStart = original.slice(0, selectionStart);
 
-  return original
-    .slice(
-      beforeStart.lastIndexOf("\n") !== -1
-        ? beforeStart.lastIndexOf("\n") + 1
-        : 0
-    )
-    .split("\n")[0] ?? "";
+  return (
+    original
+      .slice(
+        beforeStart.lastIndexOf("\n") !== -1
+          ? beforeStart.lastIndexOf("\n") + 1
+          : 0
+      )
+      .split("\n")[0] ?? ""
+  );
 }
 
 function handleTab(textarea: HTMLTextAreaElement, shiftKey: boolean) {
@@ -127,16 +128,6 @@ function handleBracketClose(textarea: HTMLTextAreaElement) {
 
   document.execCommand("insertText", false, "}");
 }
-
-const fontMap = {
-  "jetbrains-mono": styles.jetBrainsMono,
-  "geist-mono": styles.geistMono,
-  "ibm-plex-mono": styles.ibmPlexMono,
-  "fira-code": styles.firaCode,
-  "roboto-mono": styles.robotoMono,
-  "space-mono": styles.spaceMono,
-  "source-code-pro": styles.sourceCodePro,
-} as const;
 
 function Editor() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -237,20 +228,15 @@ function Editor() {
     };
   }, []);
 
+  const showLines = showLineNumbers && selectedLanguage !== LANGUAGES.plaintext;
+
   return (
     <div
-      className={classNames(
-        styles.editor,
-        themeFont
-          ? fontMap[themeFont as keyof typeof fontMap]
-          : styles.jetBrainsMono,
-        isHighlightingLines && styles.isHighlightingLines,
-        showLineNumbers &&
-          selectedLanguage !== LANGUAGES.plaintext && [
-            styles.showLineNumbers,
-            numberOfLines > 8 && styles.showLineNumbersLarge,
-          ]
-      )}
+      data-highlighting-lines={isHighlightingLines || undefined}
+      data-line-numbers-large={(showLines && numberOfLines > 8) || undefined}
+      data-show-line-numbers={showLines || undefined}
+      data-studio-editor=""
+      data-studio-font={themeFont || "jetbrains-mono"}
       data-value={code}
       style={{ "--editor-padding": "16px", ...themeCSS } as CSSProperties}
     >
@@ -258,8 +244,8 @@ function Editor() {
         autoCapitalize="off"
         autoComplete="off"
         autoCorrect="off"
-        className={styles.textarea}
         data-enable-grammarly="false"
+        data-studio-textarea=""
         onChange={handleChange}
         onFocus={handleFocus}
         onKeyDown={handleKeyDown}

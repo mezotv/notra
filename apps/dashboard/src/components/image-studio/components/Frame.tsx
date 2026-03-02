@@ -6,7 +6,6 @@ import { FrameContext } from "../store/FrameContextStore";
 import { themeAtom, themeDarkModeAtom } from "../store/themes";
 
 import FlashMessage from "./FlashMessage";
-import styles from "./Frame.module.css";
 import DefaultFrame from "./frames/DefaultFrame";
 import ResizableFrame from "./ResizableFrame";
 
@@ -17,12 +16,16 @@ const Frame = () => {
 
   return (
     <div
-      className={styles.frameContainer}
+      className="flex origin-top justify-center"
       data-theme={darkMode ? "dark" : "light"}
     >
       <ResizableFrame>
         <FlashMessage />
-        <div className={styles.outerFrame} id="frame" ref={frameContext}>
+        <div
+          className="relative max-w-[40rem] overflow-hidden"
+          id="frame"
+          ref={frameContext}
+        >
           <DefaultFrame />
         </div>
       </ResizableFrame>

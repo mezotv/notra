@@ -13,8 +13,9 @@ export const showBackgroundAtom: HashAtom<boolean> = atomWithHash<boolean>(
   true
 );
 
-export const showLineNumbersAtom: HashAtom<boolean | undefined> =
-  atomWithHash<boolean | undefined>("lineNumbers", undefined);
+export const showLineNumbersAtom: HashAtom<boolean | undefined> = atomWithHash<
+  boolean | undefined
+>("lineNumbers", undefined);
 
 export const fileNameAtom: HashAtom<string> = atomWithHash<string>(
   "title",

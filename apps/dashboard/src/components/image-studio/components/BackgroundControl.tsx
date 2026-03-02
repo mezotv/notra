@@ -10,7 +10,10 @@ const BackgroundControl = () => {
 
   return (
     <ControlContainer title="Background">
-      <Switch checked={showBackground} onCheckedChange={(checked) => setShowBackground(checked)} />
+      <Switch
+        checked={showBackground}
+        onCheckedChange={(checked) => setShowBackground(checked)}
+      />
     </ControlContainer>
   );
 };
