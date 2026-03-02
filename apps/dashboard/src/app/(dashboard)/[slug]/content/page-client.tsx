@@ -6,6 +6,7 @@ import {
   ArrowUpDownIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { ButtonGroup } from "@notra/ui/components/ui/button-group";
@@ -237,10 +238,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <Tooltip>
               <TooltipTrigger
                 render={
-                  <Button disabled size="sm">
+                  <SmoothButton disabled size="sm">
                     <Plus className="size-4" />
                     Create Content
-                  </Button>
+                  </SmoothButton>
                 }
               />
               <TooltipContent>Coming Soon</TooltipContent>

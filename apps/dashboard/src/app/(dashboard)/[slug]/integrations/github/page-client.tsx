@@ -1,5 +1,6 @@
 "use client";
 
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { EmptyState } from "@/components/empty-state";
@@ -72,9 +73,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             organizationId={organization?.id ?? ""}
             organizationSlug={organizationSlug}
             trigger={
-              <Button size="sm" variant="default">
-                Add Github Integration
-              </Button>
+              <SmoothButton size="sm">Add Github Integration</SmoothButton>
             }
           />
         </div>

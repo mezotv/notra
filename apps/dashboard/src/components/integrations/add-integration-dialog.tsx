@@ -10,6 +10,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
@@ -487,7 +488,7 @@ export function AddIntegrationDialog({
               </ResponsiveDialogClose>
               <form.Subscribe selector={(state) => [state.canSubmit]}>
                 {([canSubmit]) => (
-                  <Button
+                  <SmoothButton
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
@@ -496,7 +497,7 @@ export function AddIntegrationDialog({
                     type="button"
                   >
                     {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </Button>
+                  </SmoothButton>
                 )}
               </form.Subscribe>
             </ResponsiveDialogFooter>

@@ -2,6 +2,7 @@
 
 import { Upload01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import {
   Avatar,
   AvatarFallback,
@@ -413,7 +414,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               <Input id="organization-id" value={organization.id} />
             </div>
 
-            <Button disabled={isUpdating} type="submit">
+            <SmoothButton disabled={isUpdating} type="submit">
               {isUpdating ? (
                 <>
                   <Loader2Icon className="size-4 animate-spin" />
@@ -422,7 +423,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
               ) : (
                 "Save Changes"
               )}
-            </Button>
+            </SmoothButton>
           </form>
         </TitleCard>
 

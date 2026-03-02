@@ -25,6 +25,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -198,9 +199,12 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
             >
               Cancel
             </ResponsiveDialogClose>
-            <Button disabled={isResending} onClick={handleResendInvitation}>
+            <SmoothButton
+              disabled={isResending}
+              onClick={handleResendInvitation}
+            >
               {isResending ? "Resending..." : "Resend Invitation"}
-            </Button>
+            </SmoothButton>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>

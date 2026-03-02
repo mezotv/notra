@@ -2,7 +2,7 @@
 
 import { PaintBoardIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useState } from "react";
@@ -125,13 +125,13 @@ export function AiChatSidebar({ contentTitle }: AiChatSidebarProps) {
             placeholder="Ask about this content..."
             value={input}
           />
-          <Button
+          <SmoothButton
             className="w-full"
             disabled={isLoading || !input.trim()}
             type="submit"
           >
             {isLoading ? "Sending..." : "Send"}
-          </Button>
+          </SmoothButton>
         </form>
       </div>
     </TitleCard>

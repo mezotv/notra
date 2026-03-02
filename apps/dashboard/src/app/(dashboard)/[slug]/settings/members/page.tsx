@@ -2,8 +2,8 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tabs,
@@ -106,10 +106,10 @@ export default function MembersPage({ params }: PageProps) {
               Manage who has access to this organization
             </p>
           </div>
-          <Button onClick={() => setIsInviteModalOpen(true)} size="sm">
+          <SmoothButton onClick={() => setIsInviteModalOpen(true)} size="sm">
             <HugeiconsIcon className="size-4" icon={Add01Icon} />
             Invite Member
-          </Button>
+          </SmoothButton>
         </div>
 
         <Tabs onValueChange={setActiveTab} value={activeTab}>

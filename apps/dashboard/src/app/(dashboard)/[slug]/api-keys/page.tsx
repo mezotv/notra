@@ -29,6 +29,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -514,7 +515,9 @@ export default function ApiKeysPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={() => setDialogOpen(true)}>Create API Key</Button>
+            <SmoothButton onClick={() => setDialogOpen(true)}>
+              Create API Key
+            </SmoothButton>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger
@@ -735,7 +738,7 @@ export default function ApiKeysPage() {
                   </ResponsiveAlertDialogCancel>
                   <form.Subscribe selector={(state) => [state.canSubmit]}>
                     {([canSubmit]) => (
-                      <Button
+                      <SmoothButton
                         disabled={!canSubmit || mutation.isPending}
                         onClick={(e) => {
                           e.preventDefault();
@@ -744,7 +747,7 @@ export default function ApiKeysPage() {
                         type="button"
                       >
                         {mutation.isPending ? "Creating…" : "Create Key"}
-                      </Button>
+                      </SmoothButton>
                     )}
                   </form.Subscribe>
                 </ResponsiveAlertDialogFooter>
@@ -867,9 +870,9 @@ export default function ApiKeysPage() {
                 disabled={editMutation.isPending}
                 render={<Button variant="outline">Cancel</Button>}
               />
-              <Button disabled={editMutation.isPending} type="submit">
+              <SmoothButton disabled={editMutation.isPending} type="submit">
                 {editMutation.isPending ? "Saving…" : "Save Changes"}
-              </Button>
+              </SmoothButton>
             </ResponsiveDialogFooter>
           </form>
         </ResponsiveDialogContent>

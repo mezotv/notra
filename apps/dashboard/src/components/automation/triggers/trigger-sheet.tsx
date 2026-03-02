@@ -1,5 +1,6 @@
 "use client";
 
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Combobox,
@@ -623,7 +624,10 @@ export function AddTriggerDialog({
               })}
             >
               {({ canSubmit, isSubmitting }) => (
-                <Button disabled={isSubmitting || !canSubmit} type="submit">
+                <SmoothButton
+                  disabled={isSubmitting || !canSubmit}
+                  type="submit"
+                >
                   {(() => {
                     if (isSubmitting) {
                       return isEditMode ? "Saving..." : "Adding...";
@@ -639,7 +643,7 @@ export function AddTriggerDialog({
 
                     return "Add trigger";
                   })()}
-                </Button>
+                </SmoothButton>
               )}
             </form.Subscribe>
           </SheetFooter>

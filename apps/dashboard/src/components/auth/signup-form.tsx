@@ -2,6 +2,7 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -201,13 +202,13 @@ export function SignupForm({
               </div>
             </div>
           </div>
-          <Button
+          <SmoothButton
             className="mt-4 w-full"
             disabled={isAuthLoading}
             type="submit"
           >
             {isAuthLoading ? "Loading…" : "Continue"}
-          </Button>
+          </SmoothButton>
         </form>
       </div>
 

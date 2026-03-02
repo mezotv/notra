@@ -1,5 +1,6 @@
 "use client";
 
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Dialog,
@@ -250,9 +251,9 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
             >
               Cancel
             </Button>
-            <Button disabled={isCreating} type="submit">
+            <SmoothButton disabled={isCreating} type="submit">
               {isCreating ? "Creating..." : "Create Organization"}
-            </Button>
+            </SmoothButton>
           </DialogFooter>
         </form>
       </DialogContent>

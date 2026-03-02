@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useForm } from "@tanstack/react-form";
@@ -222,9 +222,13 @@ export function OnboardingClient() {
           </form.Field>
         </div>
 
-        <Button className="mt-6 w-full" disabled={isCreating} type="submit">
+        <SmoothButton
+          className="mt-6 w-full"
+          disabled={isCreating}
+          type="submit"
+        >
           {isCreating ? "Creating..." : "Create Organization"}
-        </Button>
+        </SmoothButton>
       </form>
     </div>
   );

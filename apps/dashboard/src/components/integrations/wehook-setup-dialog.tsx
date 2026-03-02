@@ -10,6 +10,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -265,14 +266,14 @@ export function WebhookSetupDialog({
           >
             Skip for now
           </ResponsiveDialogClose>
-          <Button
+          <SmoothButton
             className="h-9"
             disabled={!webhookConfig}
             onClick={() => setOpen(false)}
             type="button"
           >
             I've added the webhook
-          </Button>
+          </SmoothButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

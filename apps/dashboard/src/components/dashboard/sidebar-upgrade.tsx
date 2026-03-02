@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer, usePricingTable } from "autumn-js/react";
 import { useState } from "react";
@@ -79,14 +79,14 @@ export function SidebarUpgrade() {
             Get more team seats, unlimited integrations, and higher usage
             limits.
           </p>
-          <Button
+          <SmoothButton
             className="w-full"
             disabled={loading}
             onClick={handleUpgrade}
             size="sm"
           >
             {buttonLabel}
-          </Button>
+          </SmoothButton>
         </div>
       </div>
     </SidebarGroup>

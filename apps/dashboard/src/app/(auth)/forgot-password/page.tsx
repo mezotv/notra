@@ -1,5 +1,6 @@
 "use client";
 
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -109,9 +110,13 @@ export default function ForgotPassword() {
             />
           </div>
         </div>
-        <Button className="mt-4 w-full" disabled={isLoading} type="submit">
+        <SmoothButton
+          className="mt-4 w-full"
+          disabled={isLoading}
+          type="submit"
+        >
           {isLoading ? "Sending…" : "Send Reset Link"}
-        </Button>
+        </SmoothButton>
       </form>
 
       <div className="px-8 text-center text-muted-foreground text-xs">

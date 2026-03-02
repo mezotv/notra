@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Counter from "@notra/ui/components/Counter";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -364,15 +365,15 @@ export default function BillingPage() {
   function renderProPlanButton() {
     if (proProduct && isPro) {
       return (
-        <Button className="w-full" disabled>
+        <SmoothButton className="w-full" disabled>
           {isTrialing ? "Trial Active" : "Current Plan"}
-        </Button>
+        </SmoothButton>
       );
     }
 
     if (proProduct) {
       return (
-        <Button
+        <SmoothButton
           className="w-full"
           disabled={loading !== null}
           onClick={() => handleCheckout(proProduct.id)}
@@ -380,14 +381,14 @@ export default function BillingPage() {
           {loading === proProduct.id
             ? "Loading..."
             : getPricingButtonText(proProduct)}
-        </Button>
+        </SmoothButton>
       );
     }
 
     return (
-      <Button className="w-full" disabled>
+      <SmoothButton className="w-full" disabled>
         Upgrade to Pro
-      </Button>
+      </SmoothButton>
     );
   }
 
@@ -698,13 +699,13 @@ export default function BillingPage() {
               >
                 Cancel
               </Button>
-              <Button
+              <SmoothButton
                 className="flex-1"
                 disabled={loading === "confirm"}
                 onClick={handleConfirm}
               >
                 {loading === "confirm" ? "Processing..." : "Confirm"}
-              </Button>
+              </SmoothButton>
             </div>
           </div>
         </div>

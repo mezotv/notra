@@ -16,6 +16,7 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Dialog,
@@ -251,13 +252,13 @@ export function MemberActions({ member }: MemberActionsProps) {
             >
               Cancel
             </Button>
-            <Button
+            <SmoothButton
               disabled={isChangingRole || newRole === member.role}
               onClick={handleChangeRole}
               type="button"
             >
               {isChangingRole ? "Updating..." : "Update Role"}
-            </Button>
+            </SmoothButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -2,7 +2,7 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import Link from "next/link";
@@ -31,7 +31,7 @@ function ResetPasswordForm() {
           </p>
         </div>
         <Link href="/forgot-password">
-          <Button className="w-full">Request a new link</Button>
+          <SmoothButton className="w-full">Request a new link</SmoothButton>
         </Link>
         <div className="px-8 text-center text-muted-foreground text-xs">
           <Link
@@ -55,7 +55,7 @@ function ResetPasswordForm() {
           </p>
         </div>
         <Link href="/forgot-password">
-          <Button className="w-full">Request a new link</Button>
+          <SmoothButton className="w-full">Request a new link</SmoothButton>
         </Link>
         <div className="px-8 text-center text-muted-foreground text-xs">
           <Link
@@ -200,9 +200,13 @@ function ResetPasswordForm() {
         <p className="mt-2 text-muted-foreground text-xs">
           Password must be at least 8 characters long.
         </p>
-        <Button className="mt-4 w-full" disabled={isLoading} type="submit">
+        <SmoothButton
+          className="mt-4 w-full"
+          disabled={isLoading}
+          type="submit"
+        >
           {isLoading ? "Resetting…" : "Reset Password"}
-        </Button>
+        </SmoothButton>
       </form>
 
       <div className="px-8 text-center text-muted-foreground text-xs">

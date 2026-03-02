@@ -2,6 +2,7 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -213,9 +214,13 @@ export function LoginForm({
                 Last Used
               </Badge>
             )}
-            <Button className="w-full" disabled={isAuthLoading} type="submit">
+            <SmoothButton
+              className="w-full"
+              disabled={isAuthLoading}
+              type="submit"
+            >
               {isAuthLoading ? "Loading…" : "Continue"}
-            </Button>
+            </SmoothButton>
           </div>
         </form>
       </div>

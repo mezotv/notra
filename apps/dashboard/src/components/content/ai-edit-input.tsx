@@ -2,6 +2,7 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useEffect, useRef, useState } from "react";
@@ -95,13 +96,13 @@ export function AiEditInput({
             rows={1}
             value={input}
           />
-          <Button
+          <SmoothButton
             className="h-10 shrink-0 rounded-xl"
             disabled={isLoading || !input.trim()}
             type="submit"
           >
             {isLoading ? "Editing..." : "Edit"}
-          </Button>
+          </SmoothButton>
         </form>
       </div>
     </div>

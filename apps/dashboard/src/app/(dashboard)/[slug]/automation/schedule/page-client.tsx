@@ -22,6 +22,7 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -361,10 +362,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }}
             organizationId={organizationId ?? ""}
             trigger={
-              <Button size="sm" variant="default">
+              <SmoothButton size="sm">
                 <PlusIcon className="size-4" />
                 <span className="ml-1">New Schedule</span>
-              </Button>
+              </SmoothButton>
             }
           />
         </div>

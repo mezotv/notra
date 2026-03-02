@@ -10,6 +10,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
@@ -336,7 +337,7 @@ export function AddRepositoryDialog({
             </ResponsiveDialogClose>
             <form.Subscribe selector={(state) => [state.canSubmit]}>
               {([canSubmit]) => (
-                <Button
+                <SmoothButton
                   disabled={!canSubmit || mutation.isPending || loadingRepos}
                   onClick={(e) => {
                     e.preventDefault();
@@ -345,7 +346,7 @@ export function AddRepositoryDialog({
                   type="button"
                 >
                   {mutation.isPending ? "Adding..." : "Add Repository"}
-                </Button>
+                </SmoothButton>
               )}
             </form.Subscribe>
           </ResponsiveDialogFooter>

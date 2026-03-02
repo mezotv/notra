@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
@@ -232,7 +233,7 @@ export default function PageClient({
               >
                 Discard
               </Button>
-              <Button
+              <SmoothButton
                 onClick={() => {
                   handleSaveRef.current();
                   toast.dismiss(t);
@@ -240,7 +241,7 @@ export default function PageClient({
                 size="sm"
               >
                 Save
-              </Button>
+              </SmoothButton>
             </div>
           </div>
         ),

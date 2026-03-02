@@ -8,6 +8,7 @@ import {
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import {
   Avatar,
   AvatarFallback,
@@ -281,13 +282,17 @@ function ProfileSection({ user, onSessionRefetch }: ProfileSectionProps) {
                     placeholder="Your name"
                     value={field.state.value}
                   />
-                  <Button disabled={isUpdating} size="default" type="submit">
+                  <SmoothButton
+                    disabled={isUpdating}
+                    size="default"
+                    type="submit"
+                  >
                     {isUpdating ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : (
                       "Save"
                     )}
-                  </Button>
+                  </SmoothButton>
                 </div>
               </div>
             )}
@@ -473,7 +478,7 @@ function LoginDetailsSection({
                 </form.Field>
               </div>
 
-              <Button
+              <SmoothButton
                 className="mt-4"
                 disabled={isChangingPassword}
                 type="submit"
@@ -486,7 +491,7 @@ function LoginDetailsSection({
                 ) : (
                   "Change password"
                 )}
-              </Button>
+              </SmoothButton>
             </div>
           </form>
         )}

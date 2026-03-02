@@ -6,6 +6,7 @@ import {
   ArrowUpDownIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import {
@@ -212,10 +213,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
             organizationId={organizationId ?? ""}
             trigger={
-              <Button size="sm" variant="default">
+              <SmoothButton size="sm">
                 <PlusIcon className="size-4" />
                 <span className="ml-1">New Event Trigger</span>
-              </Button>
+              </SmoothButton>
             }
           />
         </div>

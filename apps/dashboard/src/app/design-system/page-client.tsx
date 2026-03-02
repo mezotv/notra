@@ -11,6 +11,7 @@ import {
   ResponsiveAlertDialogTitle,
   ResponsiveAlertDialogTrigger,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import {
   Alert,
   AlertDescription,
@@ -214,11 +215,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import ChatInput from "@/components/chat-input";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
 
@@ -431,10 +432,18 @@ export default function DesignSystemClientPage() {
               <Button size="sm">SM</Button>
               <Button>Default</Button>
               <Button size="lg">LG</Button>
-              <Button size="icon">◎</Button>
-              <Button size="icon-xs">◎</Button>
-              <Button size="icon-sm">◎</Button>
-              <Button size="icon-lg">◎</Button>
+              <Button size="icon">
+                <Loader2 />
+              </Button>
+              <Button size="icon-xs">
+                <Loader2 />
+              </Button>
+              <Button size="icon-sm">
+                <Loader2 />
+              </Button>
+              <Button size="icon-lg">
+                <Loader2 />
+              </Button>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <ButtonGroup>
@@ -447,6 +456,37 @@ export default function DesignSystemClientPage() {
                 <ButtonGroupSeparator />
                 <Button variant="outline">Recent</Button>
               </ButtonGroup>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Smooth Buttons</CardTitle>
+            <CardDescription>
+              Gradient buttons with inset glow and shadow depth.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-wrap gap-3">
+              <SmoothButton>Default</SmoothButton>
+              <SmoothButton variant="destructive">Destructive</SmoothButton>
+              <SmoothButton variant="success">Success</SmoothButton>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <SmoothButton size="xs">XS</SmoothButton>
+              <SmoothButton size="sm">SM</SmoothButton>
+              <SmoothButton>Default</SmoothButton>
+              <SmoothButton size="lg">LG</SmoothButton>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <SmoothButton disabled>Disabled</SmoothButton>
+              <SmoothButton disabled variant="destructive">
+                Disabled
+              </SmoothButton>
+              <SmoothButton disabled variant="success">
+                Disabled
+              </SmoothButton>
             </div>
           </CardContent>
         </Card>

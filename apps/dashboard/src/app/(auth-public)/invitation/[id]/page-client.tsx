@@ -6,6 +6,7 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import {
   Avatar,
   AvatarFallback,
@@ -352,17 +353,16 @@ function PageClient({
               "Reject"
             )}
           </Button>
-          <Button
+          <SmoothButton
             disabled={accepting || rejecting}
             onClick={handleAccept}
-            variant="default"
           >
             {accepting ? (
               <Loader2Icon className="size-4 animate-spin" />
             ) : (
               "Accept"
             )}
-          </Button>
+          </SmoothButton>
         </CardFooter>
       )}
     </Card>

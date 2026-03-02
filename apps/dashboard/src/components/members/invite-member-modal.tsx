@@ -9,6 +9,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { SmoothButton } from "@notra/ui/components/shared/smooth-button";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -165,7 +166,7 @@ export function InviteMemberModal({
             >
               Cancel
             </ResponsiveDialogClose>
-            <Button
+            <SmoothButton
               className="w-full justify-center sm:w-auto"
               disabled={!canSubmit || isPending}
               onClick={(e) => {
@@ -175,7 +176,7 @@ export function InviteMemberModal({
               type="button"
             >
               {isPending ? "Sending..." : "Send Invitation"}
-            </Button>
+            </SmoothButton>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>
