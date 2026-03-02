@@ -1,8 +1,10 @@
 "use client";
 
+import { Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Confetti } from "@neoconfetti/react";
 import { buttonVariants } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
-import { Confetti } from "@neoconfetti/react";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -19,7 +21,7 @@ export default function BillingSuccessPage() {
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4">
-      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
+      <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
         <Confetti
           colors={[
             "var(--primary)",
@@ -40,17 +42,7 @@ export default function BillingSuccessPage() {
       </div>
 
       <div className="flex max-w-md flex-col items-center text-center">
-        <svg
-          className="size-12 text-emerald-500"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path d="M5 13l4 4L19 7" />
-        </svg>
+        <HugeiconsIcon className="size-12 text-emerald-500" icon={Tick02Icon} />
 
         <h1 className="mt-6 font-bold text-4xl text-foreground tracking-tight">
           Payment Successful!
