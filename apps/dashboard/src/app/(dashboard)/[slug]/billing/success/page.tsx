@@ -8,6 +8,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function BillingSuccessPage() {
   const { slug } = useParams<{ slug: string }>();
