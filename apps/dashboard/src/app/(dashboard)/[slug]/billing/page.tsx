@@ -33,6 +33,7 @@ import { useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
@@ -219,6 +220,7 @@ function getProductFeatures(product: Product | undefined): string[] {
 }
 
 export default function BillingPage() {
+  const { activeOrganization } = useOrganizationsContext();
   const { products, isLoading: productsLoading } = usePricingTable();
   const {
     checkout,
@@ -262,7 +264,10 @@ export default function BillingPage() {
   async function handleCheckout(productId: string) {
     setLoading(productId);
     try {
-      const { data, error } = await checkout({ productId });
+      const successUrl = activeOrganization?.slug
+        ? `${window.location.origin}/${activeOrganization.slug}/billing/success`
+        : undefined;
+      const { data, error } = await checkout({ productId, successUrl });
 
       if (error) {
         console.error("Checkout error:", error);

@@ -33,6 +33,7 @@
     "@lexical/table": "^0.39.0",
     "@lexical/utils": "^0.39.0",
     "@mendable/firecrawl-js": "^4.10.0",
+    "@neoconfetti/react": "^1.0.0",
     "@notra/db": "workspace:*",
     "@notra/email": "workspace:*",
     "@notra/ui": "workspace:*",

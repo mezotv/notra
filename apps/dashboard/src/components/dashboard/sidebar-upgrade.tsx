@@ -44,7 +44,10 @@ export function SidebarUpgrade() {
     const productId = proProduct?.id ?? "pro";
     setLoading(true);
     try {
-      const { data, error } = await checkout({ productId });
+      const successUrl = activeOrganization?.slug
+        ? `${window.location.origin}/${activeOrganization.slug}/billing/success`
+        : undefined;
+      const { data, error } = await checkout({ productId, successUrl });
       if (error) {
         toast.error(
           error.message || "Could not start checkout. Please try again."
