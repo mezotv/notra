@@ -14,9 +14,17 @@ export default function BillingSuccessPage() {
   const { openBillingPortal } = useCustomer();
 
   async function handleManageBilling() {
-    await openBillingPortal({
-      returnUrl: `${window.location.origin}/${slug}/billing`,
-    });
+    try {
+      await openBillingPortal({
+        returnUrl: `${window.location.origin}/${slug}/billing`,
+      });
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Could not open billing portal. Please try again."
+      );
+    }
   }
 
   return (
