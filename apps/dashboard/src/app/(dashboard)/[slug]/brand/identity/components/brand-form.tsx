@@ -255,7 +255,12 @@ export function BrandForm({
               )}
             </form.Subscribe>
             <ResponsiveDialog
-              onOpenChange={setEditIdentityDialogOpen}
+              onOpenChange={(open) => {
+                setEditIdentityDialogOpen(open);
+                if (!open) {
+                  setIdentityName(form.state.values.name);
+                }
+              }}
               open={isEditIdentityDialogOpen}
             >
               <ResponsiveDialogContent className="sm:max-w-md">

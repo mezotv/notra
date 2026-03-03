@@ -12,6 +12,8 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useState } from "react";
 import { toast } from "sonner";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 import {
   useAnalyzeBrand,
   useCreateBrandVoice,
@@ -52,9 +54,8 @@ export function AddIdentityDialog({
       websiteUrl = `https://${trimmedUrl}`;
     }
 
-    try {
-      new URL(websiteUrl);
-    } catch {
+    const parseRes = z.url().safeParse(websiteUrl);
+    if (!parseRes.success) {
       toast.error("Please enter a valid website URL");
       return;
     }
