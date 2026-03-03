@@ -547,6 +547,7 @@ function BrandForm({
 }: BrandFormProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
   const lastSavedData = useRef<string>(JSON.stringify(initialData));
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const debouncedSave = useAsyncDebouncedCallback(
     async (values: typeof initialData) => {
@@ -610,13 +611,53 @@ function BrandForm({
                 </Button>
                 <Button
                   disabled={isDeleting}
-                  onClick={onDelete}
+                  onClick={() => setDeleteDialogOpen(true)}
                   size="sm"
                   variant="outline"
                 >
                   <HugeiconsIcon icon={Delete02Icon} size={14} />
                   Delete
                 </Button>
+                <ResponsiveDialog
+                  onOpenChange={setDeleteDialogOpen}
+                  open={isDeleteDialogOpen}
+                >
+                  <ResponsiveDialogContent className="sm:max-w-md">
+                    <ResponsiveDialogHeader>
+                      <ResponsiveDialogTitle>
+                        Delete voice?
+                      </ResponsiveDialogTitle>
+                      <ResponsiveDialogDescription>
+                        This removes this brand voice and its saved profile
+                        settings. This action cannot be undone.
+                      </ResponsiveDialogDescription>
+                    </ResponsiveDialogHeader>
+                    <ResponsiveDialogFooter>
+                      <ResponsiveDialogClose
+                        disabled={isDeleting}
+                        render={
+                          <Button
+                            className="w-full justify-center sm:w-auto"
+                            variant="outline"
+                          />
+                        }
+                      >
+                        Cancel
+                      </ResponsiveDialogClose>
+                      <Button
+                        className="w-full justify-center sm:w-auto"
+                        disabled={isDeleting}
+                        onClick={() => {
+                          onDelete();
+                          setDeleteDialogOpen(false);
+                        }}
+                        variant="destructive"
+                      >
+                        {isDeleting ? "Deleting..." : "Delete voice"}
+                      </Button>
+                    </ResponsiveDialogFooter>
+                  </ResponsiveDialogContent>
+                </ResponsiveDialog>
               </>
             )}
             <form.Subscribe selector={(s) => s.values.websiteUrl}>

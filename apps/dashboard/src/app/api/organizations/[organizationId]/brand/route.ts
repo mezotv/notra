@@ -106,6 +106,18 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ voices });
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return NextResponse.json(
+        { error: "A brand voice with this name already exists" },
+        { status: 409 }
+      );
+    }
+
     console.error("Error updating brand settings:", error);
     return NextResponse.json(
       { error: "Failed to update brand settings" },

@@ -271,6 +271,28 @@ Extract the following information:
             .update(brandSettings)
             .set(brandData)
             .where(eq(brandSettings.id, voiceId));
+        } else {
+          const defaultVoice = await db.query.brandSettings.findFirst({
+            where: and(
+              eq(brandSettings.organizationId, organizationId),
+              eq(brandSettings.isDefault, true)
+            ),
+          });
+
+          if (defaultVoice) {
+            await db
+              .update(brandSettings)
+              .set(brandData)
+              .where(eq(brandSettings.id, defaultVoice.id));
+          } else {
+            await db.insert(brandSettings).values({
+              id: crypto.randomUUID(),
+              organizationId,
+              name: "Default",
+              isDefault: true,
+              ...brandData,
+            });
+          }
         }
       } else {
         const existing = await db.query.brandSettings.findFirst({
