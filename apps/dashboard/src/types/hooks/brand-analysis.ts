@@ -3,7 +3,7 @@ export interface BrandSettings {
   organizationId: string;
   name: string;
   isDefault: boolean;
-  websiteUrl: string;
+  websiteUrl: string | null;
   companyName: string | null;
   companyDescription: string | null;
   toneProfile: string | null;

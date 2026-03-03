@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { updateBrandSettingsSchema } from "@/schemas/brand";
 
@@ -140,6 +141,27 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       ? rawUrl
       : `https://${rawUrl}`;
 
+    const parseResult = z.url().safeParse(websiteUrl);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid website URL" },
+        { status: 400 }
+      );
+    }
+
+    const existingVoice = await db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.organizationId, organizationId),
+        eq(brandSettings.name, name)
+      ),
+    });
+    if (existingVoice) {
+      return NextResponse.json(
+        { error: "A brand voice with this name already exists" },
+        { status: 409 }
+      );
+    }
+
     const voice = await db
       .insert(brandSettings)
       .values({
@@ -153,6 +175,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ voice: voice[0] }, { status: 201 });
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return NextResponse.json(
+        { error: "A brand voice with this name already exists" },
+        { status: 409 }
+      );
+    }
+
     console.error("Error creating brand voice:", error);
     return NextResponse.json(
       { error: "Failed to create brand voice" },

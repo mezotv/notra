@@ -413,15 +413,23 @@ function AddVoiceDialog({
       });
       const voice = result.voice;
       onCreated(voice);
-
-      await analyzeMutation.mutateAsync({ url: websiteUrl, voiceId: voice.id });
-      toast.success("Voice created, analysis started");
-
       onOpenChange(false);
       setTimeout(() => {
         setName("");
         setUrl("");
       }, 300);
+
+      try {
+        await analyzeMutation.mutateAsync({
+          url: websiteUrl,
+          voiceId: voice.id,
+        });
+        toast.success("Voice created, analysis started");
+      } catch {
+        toast.error(
+          "Voice created, but failed to start analysis. You can re-analyze from the voice settings."
+        );
+      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to create voice"
