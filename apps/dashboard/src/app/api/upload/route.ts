@@ -1,5 +1,8 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { db } from "@notra/db/drizzle";
+import { members } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
@@ -30,28 +33,41 @@ export async function POST(request: Request) {
 
   const { type, fileType, fileSize } = parsedBody.data;
 
-  if (
-    (type === "logo" || type === "content") &&
-    !sessionData.session?.activeOrganizationId
-  ) {
+  const orgId = sessionData.session?.activeOrganizationId;
+
+  if ((type === "logo" || type === "content") && !orgId) {
     return NextResponse.json(
       { error: "Active organization required for this upload type" },
       { status: 401 }
     );
   }
 
+  if (orgId) {
+    const membership = await db.query.members.findFirst({
+      where: and(
+        eq(members.userId, sessionData.user.id),
+        eq(members.organizationId, orgId)
+      ),
+      columns: { id: true },
+    });
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You do not have access to this organization" },
+        { status: 403 }
+      );
+    }
+  }
+
   try {
     validateUpload({ type, fileType, fileSize });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid file type";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
   }
 
   const id = nanoid();
   const extension = getFileExtension(fileType);
   const userId = sessionData.user.id;
-  const orgId = sessionData.session?.activeOrganizationId;
 
   let key: string;
 

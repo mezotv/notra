@@ -7,6 +7,7 @@ import { marked } from "marked";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { sanitizeMarkdownHtml } from "@/lib/sanitize";
 import { type ContentType, contentTypeSchema } from "@/schemas/content";
 import { toolDescription } from "@/utils/ai/description";
 
@@ -59,7 +60,7 @@ export function createCreatePostTool(
         };
       }
       const id = nanoid();
-      const content = await marked.parse(markdown);
+      const content = sanitizeMarkdownHtml(await marked.parse(markdown));
       await db.insert(posts).values({
         id,
         organizationId: config.organizationId,
@@ -104,7 +105,7 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
         updates.title = title;
       }
       if (markdown !== undefined) {
-        updates.content = await marked.parse(markdown);
+        updates.content = sanitizeMarkdownHtml(await marked.parse(markdown));
         updates.markdown = markdown;
       }
 

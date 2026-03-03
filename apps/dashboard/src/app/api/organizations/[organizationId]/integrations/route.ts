@@ -73,12 +73,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       error instanceof Error &&
       error.message === "Repository already connected"
     ) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
+      return NextResponse.json(
+        { error: "Repository already connected" },
+        { status: 409 }
+      );
     }
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
+      { error: "Failed to create integration" },
       { status: 500 }
     );
   }

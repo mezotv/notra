@@ -63,9 +63,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(webhookConfig);
   } catch (error) {
     console.error("Error fetching webhook config:", error);
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch webhook config" },
+      { status: 500 }
+    );
   }
 }
 
@@ -114,8 +115,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(webhookConfig);
   } catch (error) {
     console.error("Error generating webhook secret:", error);
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate webhook secret" },
+      { status: 500 }
+    );
   }
 }
