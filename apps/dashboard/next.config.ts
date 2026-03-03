@@ -1,10 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
-const DUCKDUCKGO_ICON_URL = new URL(
-  "https://icons.duckduckgo.com/ip3/wouldyoubot.gg.ico"
-);
-
 const nextConfig: NextConfig = {
   reactStrictMode: true, // enabled by default but I like to be explicit
   reactCompiler: true,
@@ -42,7 +38,7 @@ const nextConfig: NextConfig = {
       [
         "img-src 'self' data: blob:",
         "api.dicebear.com",
-        DUCKDUCKGO_ICON_URL.hostname,
+        "icons.duckduckgo.com",
         process.env.CLOUDFLARE_PUBLIC_URL
           ? new URL(process.env.CLOUDFLARE_PUBLIC_URL).hostname
           : "",
@@ -98,10 +94,8 @@ const nextConfig: NextConfig = {
     unoptimized: true,
     remotePatterns: [
       {
-        protocol: DUCKDUCKGO_ICON_URL.protocol.replace(":", "") as
-          | "https"
-          | "http",
-        hostname: DUCKDUCKGO_ICON_URL.hostname,
+        protocol: "https",
+        hostname: "icons.duckduckgo.com",
       },
       ...(process.env.CLOUDFLARE_PUBLIC_URL
         ? [
