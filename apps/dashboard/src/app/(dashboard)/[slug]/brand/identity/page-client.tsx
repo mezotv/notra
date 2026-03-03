@@ -65,8 +65,11 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { SUPPORTED_LANGUAGES } from "@/constants/languages";
-import type { ToneProfile } from "@/schemas/brand";
+import {
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from "@/constants/languages";
+import { getValidLanguage, type ToneProfile } from "@/schemas/brand";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import {
   useAnalyzeBrand,
@@ -511,7 +514,7 @@ interface BrandFormProps {
     customInstructions: string;
     useCustomTone: boolean;
     audience: string;
-    language: string;
+    language: SupportedLanguage;
   };
   isDefault: boolean;
   onReanalyze: (url: string) => void;
@@ -1119,7 +1122,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     customInstructions: selectedVoice.customInstructions ?? "",
     useCustomTone: Boolean(selectedVoice.customTone),
     audience: selectedVoice.audience ?? "",
-    language: selectedVoice.language ?? "English",
+    language: getValidLanguage(selectedVoice.language),
   };
 
   return (

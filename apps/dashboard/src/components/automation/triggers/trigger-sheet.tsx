@@ -483,9 +483,11 @@ export function AddTriggerDialog({
                               <Label htmlFor={field.name}>Brand Voice</Label>
                               <Select
                                 onValueChange={(value) => {
-                                  field.handleChange(
-                                    value === "__default__" ? "" : value
-                                  );
+                                  const nextValue =
+                                    value && value !== "__default__"
+                                      ? value
+                                      : "";
+                                  field.handleChange(nextValue);
                                 }}
                                 value={field.state.value || "__default__"}
                               >
