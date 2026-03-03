@@ -53,7 +53,7 @@ jobs:
         run: bun run --cwd apps/dashboard build
 
       - name: notify vercel
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: vercel/repository-dispatch/actions/status@v1
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: vercel/repository-dispatch/actions/status@30f760c6640485cd92f8c785ef361382555fb712 # v1
         with:
           name: "Vercel - notra: build"
