@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 import { getServerSession } from "@/lib/auth/session";
 import { createOctokit } from "@/lib/octokit";
 

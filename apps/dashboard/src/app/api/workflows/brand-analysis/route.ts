@@ -5,7 +5,8 @@ import type { WorkflowContext } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
-import { z } from "zod";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 import { SUPPORTED_LANGUAGES } from "@/constants/languages";
 import { gateway } from "@/lib/ai/gateway";
 import { getFirecrawlClient } from "@/lib/firecrawl";

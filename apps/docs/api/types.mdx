@@ -86,7 +86,7 @@ export type NotraPostResponse = {
 For runtime validation, you can use these Zod schemas:
 
 ```typescript
-import { z } from "zod";
+import * as z from "zod";
 
 export const SourceMetadataSchema = z.object({
   triggerId: z.string(),

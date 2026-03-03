@@ -2,7 +2,8 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { updateBrandSettingsSchema } from "@/schemas/brand";
 
