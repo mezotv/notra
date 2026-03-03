@@ -174,13 +174,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const hasAnyVoice = await db.query.brandSettings.findFirst({
+      where: eq(brandSettings.organizationId, organizationId),
+      columns: { id: true },
+    });
+    const isDefault = !hasAnyVoice;
+
     const voice = await db
       .insert(brandSettings)
       .values({
         id: crypto.randomUUID(),
         organizationId,
         name,
-        isDefault: false,
+        isDefault,
         websiteUrl,
       })
       .returning();
