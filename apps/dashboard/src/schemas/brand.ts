@@ -52,7 +52,7 @@ export const updateBrandSettingsSchema = brandSettingsSchema
   .extend({
     id: z.string().optional(),
     name: z.string().min(1).optional(),
-    websiteUrl: z.url().optional(),
+    websiteUrl: z.url().nullable().optional(),
   })
   .partial();
 

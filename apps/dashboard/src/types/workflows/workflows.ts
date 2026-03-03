@@ -6,6 +6,7 @@ export interface WorkflowTriggerData {
   name: string;
   organizationId: string;
   outputType: string;
+  outputConfig: unknown;
   enabled: boolean;
 }
 

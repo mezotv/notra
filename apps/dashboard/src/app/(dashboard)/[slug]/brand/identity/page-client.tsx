@@ -57,7 +57,6 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -358,26 +357,7 @@ function AddVoiceDialog({
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const createMutation = useCreateBrandVoice(organizationId);
-  const analyzeMutation = useMutation({
-    mutationFn: async (params: { url: string; voiceId: string }) => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/brand/analyze`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(params),
-        }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to start analysis");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      startPolling();
-    },
-  });
+  const analyzeMutation = useAnalyzeBrand(organizationId, startPolling);
 
   const isSubmitting = createMutation.isPending || analyzeMutation.isPending;
 
@@ -556,11 +536,11 @@ function BrandForm({
       const websiteUrl =
         trimmedUrl && !trimmedUrl.startsWith("https://")
           ? `https://${trimmedUrl}`
-          : trimmedUrl || undefined;
+          : trimmedUrl || null;
       await updateMutation.mutateAsync({
         ...valuesToSave,
         id: voiceId,
-        ...(websiteUrl !== undefined && { websiteUrl }),
+        websiteUrl,
       });
       lastSavedData.current = JSON.stringify(values);
       toast.success("Changes saved");

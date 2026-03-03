@@ -63,6 +63,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           name: result.name,
           organizationId: result.organizationId,
           outputType: result.outputType,
+          outputConfig: result.outputConfig,
           enabled: result.enabled,
         };
       }
@@ -117,12 +118,28 @@ export const { POST } = serve<EventWorkflowPayload>(
     const brand = await context.run<WorkflowBrandSettings | null>(
       "fetch-brand-settings",
       async () => {
-        const result = await db.query.brandSettings.findFirst({
-          where: and(
-            eq(brandSettings.organizationId, trigger.organizationId),
-            eq(brandSettings.isDefault, true)
-          ),
-        });
+        const outputConfig = trigger.outputConfig as {
+          brandVoiceId?: string;
+        } | null;
+        const voiceId = outputConfig?.brandVoiceId;
+
+        let result = voiceId
+          ? await db.query.brandSettings.findFirst({
+              where: and(
+                eq(brandSettings.id, voiceId),
+                eq(brandSettings.organizationId, trigger.organizationId)
+              ),
+            })
+          : null;
+
+        if (!result) {
+          result = await db.query.brandSettings.findFirst({
+            where: and(
+              eq(brandSettings.organizationId, trigger.organizationId),
+              eq(brandSettings.isDefault, true)
+            ),
+          });
+        }
 
         if (!result) {
           return null;
