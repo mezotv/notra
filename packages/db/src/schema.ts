@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -280,6 +280,9 @@ export const brandSettings = pgTable(
       table.organizationId,
       table.name
     ),
+    uniqueIndex("brandSettings_org_default_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.isDefault} = true`),
     index("brandSettings_organizationId_idx").on(table.organizationId),
   ]
 );
