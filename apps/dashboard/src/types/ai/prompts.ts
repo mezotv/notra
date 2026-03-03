@@ -8,6 +8,7 @@ export interface ChangelogTonePromptInput {
   companyDescription?: string;
   audience?: string;
   customInstructions?: string | null;
+  language?: string;
 }
 
 export interface LinkedInTonePromptInput {
@@ -20,6 +21,7 @@ export interface LinkedInTonePromptInput {
   companyDescription?: string;
   audience?: string;
   customInstructions?: string | null;
+  language?: string;
 }
 
 export interface TextSelection {

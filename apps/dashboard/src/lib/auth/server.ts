@@ -206,18 +206,6 @@ export const auth = betterAuth({
       },
     }),
     organization({
-      schema: {
-        organization: {
-          additionalFields: {
-            websiteUrl: {
-              type: "string",
-              required: false,
-              input: true,
-              fieldName: "websiteUrl",
-            },
-          },
-        },
-      },
       sendInvitationEmail: async (data) => {
         const inviteLink = `${process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
         await sendInviteEmailAction({

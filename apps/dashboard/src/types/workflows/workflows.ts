@@ -21,6 +21,7 @@ export interface WorkflowBrandSettings {
   companyDescription: string | null;
   audience: string | null;
   customInstructions: string | null;
+  language: string | null;
 }
 
 export interface EventGenerationContext {

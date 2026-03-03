@@ -1,7 +1,24 @@
 "use client";
 
-import { Refresh01Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  Delete02Icon,
+  MinusSignIcon,
+  Refresh01Icon,
+  StarIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@notra/ui/components/shared/responsive-dialog";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
@@ -10,6 +27,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@notra/ui/components/ui/combobox";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import {
@@ -32,18 +57,24 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncedCallback } from "@tanstack/react-pacer";
-import { Check, Loader2Icon, Minus } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2Icon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SUPPORTED_LANGUAGES } from "@/constants/languages";
 import type { ToneProfile } from "@/schemas/brand";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
   useBrandSettings,
+  useCreateBrandVoice,
+  useDeleteBrandVoice,
+  useSetDefaultBrandVoice,
   useUpdateBrandSettings,
 } from "../../../../../lib/hooks/use-brand-analysis";
 import { BrandIdentityPageSkeleton } from "./skeleton";
@@ -66,6 +97,8 @@ const TONE_OPTIONS: { value: ToneProfile; label: string }[] = [
   { value: "Casual", label: "Casual" },
   { value: "Formal", label: "Formal" },
 ];
+
+const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
 
 function getStepperValue(status: string, currentStep: number): string {
   if (status === "idle" || status === "failed") {
@@ -132,10 +165,13 @@ const sanitizeBrandUrlInput = (value: string) =>
 type StepIconState = "pending" | "active" | "completed";
 
 const STEP_ICONS: Record<StepIconState, () => React.ReactNode> = {
-  completed: () => <Check className="size-4" strokeWidth={3} />,
+  completed: () => <HugeiconsIcon className="size-4" icon={Tick02Icon} />,
   active: () => <Loader2Icon className="size-4 animate-spin" />,
   pending: () => (
-    <Minus className="size-4 text-muted-foreground" strokeWidth={2} />
+    <HugeiconsIcon
+      className="size-4 text-muted-foreground"
+      icon={MinusSignIcon}
+    />
   ),
 };
 
@@ -225,7 +261,7 @@ function ModalContent({
               }
             }}
             placeholder="example.com"
-            type="url"
+            type="text"
             value={url}
           />
         </div>
@@ -256,9 +292,218 @@ function ModalContent({
   );
 }
 
+interface VoiceSelectorProps {
+  voices: BrandSettings[];
+  activeVoiceId: string;
+  onSelect: (id: string) => void;
+}
+
+function VoiceSelector({
+  voices,
+  activeVoiceId,
+  onSelect,
+}: VoiceSelectorProps) {
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-1">
+      {voices.map((voice) => (
+        <button
+          className={`flex min-w-[10rem] shrink-0 flex-col gap-1.5 rounded-lg border px-4 py-3 text-left transition-colors ${
+            voice.id === activeVoiceId
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/40"
+          }`}
+          key={voice.id}
+          onClick={() => onSelect(voice.id)}
+          type="button"
+        >
+          <span className="font-medium text-sm leading-tight">
+            {voice.name}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {voice.toneProfile && (
+              <Badge className="text-xs" variant="secondary">
+                {voice.toneProfile}
+              </Badge>
+            )}
+            {voice.isDefault && (
+              <Badge className="text-xs" variant="outline">
+                Default
+              </Badge>
+            )}
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+interface AddVoiceDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  onCreated: (voice: BrandSettings) => void;
+  startPolling: () => void;
+}
+
+function AddVoiceDialog({
+  open,
+  onOpenChange,
+  organizationId,
+  onCreated,
+  startPolling,
+}: AddVoiceDialogProps) {
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+  const createMutation = useCreateBrandVoice(organizationId);
+  const analyzeMutation = useMutation({
+    mutationFn: async (params: { url: string; voiceId: string }) => {
+      const res = await fetch(
+        `/api/organizations/${organizationId}/brand/analyze`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        }
+      );
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to start analysis");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      startPolling();
+    },
+  });
+
+  const isSubmitting = createMutation.isPending || analyzeMutation.isPending;
+
+  const handleSubmit = async () => {
+    const trimmedName = name.trim();
+    const trimmedUrl = url.trim();
+
+    if (!trimmedName) {
+      toast.error("Please enter a voice name");
+      return;
+    }
+
+    if (!trimmedUrl) {
+      toast.error("Please enter a website URL");
+      return;
+    }
+
+    let websiteUrl = trimmedUrl;
+    if (!trimmedUrl.startsWith("https://")) {
+      websiteUrl = `https://${trimmedUrl}`;
+    }
+
+    const parseRes = z.url().safeParse(websiteUrl);
+    if (!parseRes.success) {
+      toast.error("Please enter a valid website URL");
+      return;
+    }
+
+    try {
+      const result = await createMutation.mutateAsync({
+        name: trimmedName,
+        websiteUrl,
+      });
+      const voice = result.voice;
+      onCreated(voice);
+
+      await analyzeMutation.mutateAsync({ url: websiteUrl, voiceId: voice.id });
+      toast.success("Voice created, analysis started");
+
+      onOpenChange(false);
+      setTimeout(() => {
+        setName("");
+        setUrl("");
+      }, 300);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to create voice"
+      );
+    }
+  };
+
+  return (
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Add Brand Voice</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            Create a new brand voice with a different tone, audience, or
+            language for your content.
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="voice-name">Name</Label>
+            <Input
+              autoFocus
+              id="voice-name"
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Marketing, Technical, Internal"
+              value={name}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="voice-url">Website</Label>
+            <div className="flex w-full flex-row items-center overflow-hidden rounded-lg border border-input bg-background transition-all focus-within:ring-2 focus-within:ring-ring/20">
+              <span className="flex h-10 items-center border-input border-r bg-muted/50 px-3 text-muted-foreground text-sm">
+                https://
+              </span>
+              <input
+                className="h-10 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
+                id="voice-url"
+                onChange={(e) => setUrl(sanitizeBrandUrlInput(e.target.value))}
+                placeholder="example.com"
+                type="text"
+                value={url}
+              />
+            </div>
+            <p className="text-muted-foreground text-xs">
+              We'll analyze this website to extract your brand identity.
+            </p>
+          </div>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose
+              disabled={isSubmitting}
+              render={
+                <Button
+                  className="w-full justify-center sm:w-auto"
+                  variant="outline"
+                />
+              }
+            >
+              Cancel
+            </ResponsiveDialogClose>
+            <Button
+              className="w-full justify-center sm:w-auto"
+              disabled={!name.trim() || !url.trim() || isSubmitting}
+              type="submit"
+            >
+              {isSubmitting ? "Creating..." : "Create Voice"}
+            </Button>
+          </ResponsiveDialogFooter>
+        </form>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
 interface BrandFormProps {
   organizationId: string;
+  voiceId: string;
   initialData: {
+    name: string;
+    websiteUrl: string;
     companyName: string;
     companyDescription: string;
     toneProfile: ToneProfile;
@@ -266,26 +511,45 @@ interface BrandFormProps {
     customInstructions: string;
     useCustomTone: boolean;
     audience: string;
+    language: string;
   };
-  websiteUrl: string | null | undefined;
-  onReanalyze: () => void;
+  isDefault: boolean;
+  onReanalyze: (url: string) => void;
   isReanalyzing: boolean;
+  onDelete: () => void;
+  isDeleting: boolean;
+  onSetDefault: () => void;
+  isSettingDefault: boolean;
 }
 
 function BrandForm({
   organizationId,
+  voiceId,
   initialData,
-  websiteUrl,
+  isDefault,
   onReanalyze,
   isReanalyzing,
+  onDelete,
+  isDeleting,
+  onSetDefault,
+  isSettingDefault,
 }: BrandFormProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
   const lastSavedData = useRef<string>(JSON.stringify(initialData));
 
   const debouncedSave = useAsyncDebouncedCallback(
     async (values: typeof initialData) => {
-      const { useCustomTone: _, ...valuesToSave } = values;
-      await updateMutation.mutateAsync(valuesToSave);
+      const { useCustomTone: _, websiteUrl: rawUrl, ...valuesToSave } = values;
+      const trimmedUrl = rawUrl.trim();
+      const websiteUrl =
+        trimmedUrl && !trimmedUrl.startsWith("https://")
+          ? `https://${trimmedUrl}`
+          : trimmedUrl;
+      await updateMutation.mutateAsync({
+        ...valuesToSave,
+        id: voiceId,
+        websiteUrl,
+      });
       lastSavedData.current = JSON.stringify(values);
       toast.success("Changes saved");
     },
@@ -294,9 +558,7 @@ function BrandForm({
 
   const form = useForm({
     defaultValues: initialData,
-    onSubmit: async () => {
-      // No-op: we use auto-save via onChange listener
-    },
+    onSubmit: async () => {},
     listeners: {
       onChange: ({ formApi }) => {
         const currentValues = formApi.state.values;
@@ -320,263 +582,329 @@ function BrandForm({
   });
 
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Brand Identity</h1>
-          <p className="text-muted-foreground">
-            Configure your brand identity and tone of voice
-          </p>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <TitleCard
-            action={
-              <Button
-                disabled={isReanalyzing || !websiteUrl}
-                onClick={onReanalyze}
-                size="sm"
-                variant="outline"
-              >
-                <HugeiconsIcon
-                  className={isReanalyzing ? "animate-spin" : ""}
-                  icon={Refresh01Icon}
-                  size={16}
-                />
-                Re-analyze
-              </Button>
-            }
-            heading="Company Profile"
-          >
-            <div className="space-y-6">
-              <form.Field name="companyName">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Company name</Label>
-                    <Input
-                      id={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Your company name"
-                      value={field.state.value}
-                    />
-                  </div>
-                )}
-              </form.Field>
-
-              <div className="space-y-2">
-                <Label>Website</Label>
-                <div className="rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                  {websiteUrl ? (
-                    websiteUrl
-                  ) : (
-                    <span className="text-muted-foreground">
-                      No website configured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <form.Field name="companyDescription">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Description</Label>
-                    <Textarea
-                      className="min-h-[120px]"
-                      id={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="A short overview of your company"
-                      value={field.state.value}
-                    />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-          </TitleCard>
-
-          <TitleCard heading="Tone & Language">
-            <form.Field name="useCustomTone">
-              {(useCustomToneField) => (
-                <fieldset className="space-y-4">
-                  <legend className="sr-only">Tone selection</legend>
-                  <form.Field name="toneProfile">
-                    {(toneProfileField) => (
-                      <div className="space-y-3">
-                        <label className="flex cursor-pointer items-center gap-2">
-                          <input
-                            checked={!useCustomToneField.state.value}
-                            className="peer sr-only"
-                            name="toneType"
-                            onChange={() => {
-                              useCustomToneField.handleChange(false);
-                              form.setFieldValue("customTone", "");
-                            }}
-                            type="radio"
-                            value="preset"
-                          />
-                          <div
-                            className={`flex size-5 items-center justify-center rounded-full ${
-                              useCustomToneField.state.value
-                                ? "border-2 border-muted-foreground/30"
-                                : "bg-primary text-primary-foreground"
-                            }`}
-                          >
-                            {!useCustomToneField.state.value && (
-                              <svg
-                                aria-hidden="true"
-                                className="size-3"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={3}
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M5 13l4 4L19 7"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            )}
-                          </div>
-                          <span
-                            className={
-                              useCustomToneField.state.value
-                                ? "text-muted-foreground text-sm"
-                                : "text-sm"
-                            }
-                          >
-                            Tone Profile
-                          </span>
-                        </label>
-                        <Select
-                          disabled={useCustomToneField.state.value}
-                          onValueChange={(value) => {
-                            if (value) {
-                              toneProfileField.handleChange(
-                                value as ToneProfile
-                              );
-                            }
-                          }}
-                          value={toneProfileField.state.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TONE_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </form.Field>
-
-                  <div className="pt-4">
-                    <form.Field name="customTone">
-                      {(customToneField) => (
-                        <div className="space-y-3">
-                          <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                              checked={useCustomToneField.state.value}
-                              className="peer sr-only"
-                              name="toneType"
-                              onChange={() =>
-                                useCustomToneField.handleChange(true)
-                              }
-                              type="radio"
-                              value="custom"
-                            />
-                            <div
-                              className={`flex size-5 items-center justify-center rounded-full ${
-                                useCustomToneField.state.value
-                                  ? "bg-primary text-primary-foreground"
-                                  : "border-2 border-muted-foreground/30"
-                              }`}
-                            >
-                              {useCustomToneField.state.value && (
-                                <svg
-                                  aria-hidden="true"
-                                  className="size-3"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth={3}
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    d="M5 13l4 4L19 7"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm">Custom Tone</span>
-                          </label>
-                          <Input
-                            autoComplete="off"
-                            disabled={!useCustomToneField.state.value}
-                            id={customToneField.name}
-                            onBlur={customToneField.handleBlur}
-                            onChange={(e) =>
-                              customToneField.handleChange(e.target.value)
-                            }
-                            placeholder="Add custom tone notes…"
-                            value={customToneField.state.value}
-                          />
-                        </div>
-                      )}
-                    </form.Field>
-                  </div>
-                </fieldset>
+    <div className="grid gap-6 lg:grid-cols-2">
+      <TitleCard
+        action={
+          <div className="flex items-center gap-2">
+            {!isDefault && (
+              <>
+                <Button
+                  disabled={isSettingDefault}
+                  onClick={onSetDefault}
+                  size="sm"
+                  variant="outline"
+                >
+                  <HugeiconsIcon icon={StarIcon} size={14} />
+                  Set as default
+                </Button>
+                <Button
+                  disabled={isDeleting}
+                  onClick={onDelete}
+                  size="sm"
+                  variant="outline"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} size={14} />
+                  Delete
+                </Button>
+              </>
+            )}
+            <form.Subscribe selector={(s) => s.values.websiteUrl}>
+              {(websiteUrl) => (
+                <Button
+                  disabled={isReanalyzing || !websiteUrl.trim()}
+                  onClick={() => onReanalyze(websiteUrl)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <HugeiconsIcon
+                    className={isReanalyzing ? "animate-spin" : ""}
+                    icon={Refresh01Icon}
+                    size={16}
+                  />
+                  Re-analyze
+                </Button>
               )}
-            </form.Field>
+            </form.Subscribe>
+          </div>
+        }
+        heading="Company Profile"
+      >
+        <div className="space-y-6">
+          <form.Field name="name">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Voice name</Label>
+                <Input
+                  id={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="e.g. Default, Marketing, Technical"
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
 
-            <div className="pt-4">
-              <form.Field name="customInstructions">
-                {(field) => (
-                  <div className="space-y-2">
-                    <Label htmlFor={field.name}>Custom Instructions</Label>
-                    <Textarea
-                      className="min-h-[100px]"
-                      id={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="Add any specific instructions for AI-generated content (e.g., avoid certain phrases, always mention specific features, etc.)"
-                      value={field.state.value}
-                    />
-                  </div>
-                )}
-              </form.Field>
-            </div>
-          </TitleCard>
+          <form.Field name="companyName">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Company name</Label>
+                <Input
+                  id={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Your company name"
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
 
-          <TitleCard className="lg:col-span-2" heading="Target Audience">
-            <form.Field name="audience">
-              {(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor={field.name}>Who are you writing for?</Label>
-                  <Textarea
-                    className="min-h-[120px]"
+          <form.Field name="websiteUrl">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Website</Label>
+                <div className="flex w-full flex-row items-center overflow-hidden rounded-lg border border-input bg-background transition-all focus-within:ring-2 focus-within:ring-ring/20">
+                  <span className="flex h-10 items-center border-input border-r bg-muted/50 px-3 text-muted-foreground text-sm">
+                    https://
+                  </span>
+                  <input
+                    className="h-10 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
                     id={field.name}
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="Describe your target audience - their interests, pain points, and what matters to them"
+                    onChange={(e) =>
+                      field.handleChange(sanitizeBrandUrlInput(e.target.value))
+                    }
+                    placeholder="example.com"
+                    type="text"
                     value={field.state.value}
                   />
                 </div>
-              )}
-            </form.Field>
-          </TitleCard>
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="companyDescription">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Description</Label>
+                <Textarea
+                  className="min-h-[7.5rem]"
+                  id={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="A short overview of your company"
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
         </div>
-      </div>
-    </PageContainer>
+      </TitleCard>
+
+      <TitleCard heading="Tone & Language">
+        <form.Field name="useCustomTone">
+          {(useCustomToneField) => (
+            <fieldset className="space-y-4">
+              <legend className="sr-only">Tone selection</legend>
+              <form.Field name="toneProfile">
+                {(toneProfileField) => (
+                  <div className="space-y-3">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        checked={!useCustomToneField.state.value}
+                        className="peer sr-only"
+                        name="toneType"
+                        onChange={() => {
+                          useCustomToneField.handleChange(false);
+                          form.setFieldValue("customTone", "");
+                        }}
+                        type="radio"
+                        value="preset"
+                      />
+                      <div
+                        className={`flex size-5 items-center justify-center rounded-full ${
+                          useCustomToneField.state.value
+                            ? "border-2 border-muted-foreground/30"
+                            : "bg-primary text-primary-foreground"
+                        }`}
+                      >
+                        {!useCustomToneField.state.value && (
+                          <svg
+                            aria-hidden="true"
+                            className="size-3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              d="M5 13l4 4L19 7"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <span
+                        className={
+                          useCustomToneField.state.value
+                            ? "text-muted-foreground text-sm"
+                            : "text-sm"
+                        }
+                      >
+                        Tone Profile
+                      </span>
+                    </label>
+                    <Select
+                      disabled={useCustomToneField.state.value}
+                      onValueChange={(value) => {
+                        if (value) {
+                          toneProfileField.handleChange(value as ToneProfile);
+                        }
+                      }}
+                      value={toneProfileField.state.value}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TONE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </form.Field>
+
+              <div className="pt-4">
+                <form.Field name="customTone">
+                  {(customToneField) => (
+                    <div className="space-y-3">
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          checked={useCustomToneField.state.value}
+                          className="peer sr-only"
+                          name="toneType"
+                          onChange={() => useCustomToneField.handleChange(true)}
+                          type="radio"
+                          value="custom"
+                        />
+                        <div
+                          className={`flex size-5 items-center justify-center rounded-full ${
+                            useCustomToneField.state.value
+                              ? "bg-primary text-primary-foreground"
+                              : "border-2 border-muted-foreground/30"
+                          }`}
+                        >
+                          {useCustomToneField.state.value && (
+                            <svg
+                              aria-hidden="true"
+                              className="size-3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={3}
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                d="M5 13l4 4L19 7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-sm">Custom Tone</span>
+                      </label>
+                      <Input
+                        autoComplete="off"
+                        disabled={!useCustomToneField.state.value}
+                        id={customToneField.name}
+                        onBlur={customToneField.handleBlur}
+                        onChange={(e) =>
+                          customToneField.handleChange(e.target.value)
+                        }
+                        placeholder="Add custom tone notes…"
+                        value={customToneField.state.value}
+                      />
+                    </div>
+                  )}
+                </form.Field>
+              </div>
+            </fieldset>
+          )}
+        </form.Field>
+
+        <div className="pt-4">
+          <form.Field name="language">
+            {(field) => (
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <Combobox
+                  onValueChange={(value) => {
+                    if (value) {
+                      field.handleChange(value);
+                    }
+                  }}
+                  value={field.state.value}
+                >
+                  <ComboboxInput placeholder="Select language..." />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      {LANGUAGE_OPTIONS.map((lang) => (
+                        <ComboboxItem key={lang} value={lang}>
+                          {lang}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                    <ComboboxEmpty>No language found</ComboboxEmpty>
+                  </ComboboxContent>
+                </Combobox>
+              </div>
+            )}
+          </form.Field>
+        </div>
+
+        <div className="pt-4">
+          <form.Field name="customInstructions">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor={field.name}>Custom Instructions</Label>
+                <Textarea
+                  className="min-h-[6.25rem]"
+                  id={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Add any specific instructions for AI-generated content (e.g., avoid certain phrases, always mention specific features, etc.)"
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+        </div>
+      </TitleCard>
+
+      <TitleCard className="lg:col-span-2" heading="Target Audience">
+        <form.Field name="audience">
+          {(field) => (
+            <div className="space-y-2">
+              <Label htmlFor={field.name}>Who are you writing for?</Label>
+              <Textarea
+                className="min-h-[7.5rem]"
+                id={field.name}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="Describe your target audience - their interests, pain points, and what matters to them"
+                value={field.state.value}
+              />
+            </div>
+          )}
+        </form.Field>
+      </TitleCard>
+    </div>
   );
 }
 
@@ -606,26 +934,32 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     }
   );
   const analyzeMutation = useAnalyzeBrand(organizationId, startPolling);
+  const deleteVoiceMutation = useDeleteBrandVoice(organizationId);
+  const setDefaultMutation = useSetDefaultBrandVoice(organizationId);
   const progressError =
     progress.status === "failed" ? progress.error : undefined;
 
-  const [url, setUrl] = useState(() => {
-    if (organization?.websiteUrl) {
-      return sanitizeBrandUrlInput(organization.websiteUrl);
-    }
-    return "";
-  });
-  const effectiveUrl = url.trim() || organization?.websiteUrl || "";
+  const voices = data?.voices ?? [];
+  const [activeVoiceId, setActiveVoiceId] = useState<string | null>(null);
+  const [addVoiceOpen, setAddVoiceOpen] = useState(false);
 
-  const handleAnalyze = async () => {
-    if (!effectiveUrl) {
+  const selectedVoice =
+    voices.find((v) => v.id === activeVoiceId) ??
+    voices.find((v) => v.isDefault) ??
+    voices[0];
+
+  const [url, setUrl] = useState("");
+  const effectiveUrl = url.trim();
+
+  const triggerAnalysis = async (rawUrl: string, voiceId?: string) => {
+    let urlToAnalyze = rawUrl.trim();
+    if (!urlToAnalyze) {
       toast.error("Please enter a website URL");
       return;
     }
 
-    let urlToAnalyze = effectiveUrl;
-    if (!effectiveUrl.startsWith("https://")) {
-      urlToAnalyze = `https://${effectiveUrl}`;
+    if (!urlToAnalyze.startsWith("https://")) {
+      urlToAnalyze = `https://${urlToAnalyze}`;
     }
 
     const parseRes = z.url().safeParse(urlToAnalyze);
@@ -636,7 +970,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
     try {
       lastToastError.current = null;
-      await analyzeMutation.mutateAsync(urlToAnalyze);
+      await analyzeMutation.mutateAsync({ url: urlToAnalyze, voiceId });
       toast.success("Analysis started");
     } catch (error) {
       const message =
@@ -645,6 +979,42 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         lastToastError.current = message;
         toast.error(message);
       }
+    }
+  };
+
+  const handleInitialAnalyze = () => triggerAnalysis(effectiveUrl);
+
+  const handleReanalyze = (voiceUrl: string) =>
+    triggerAnalysis(voiceUrl, selectedVoice?.id);
+
+  const handleDeleteVoice = async () => {
+    if (!selectedVoice || selectedVoice.isDefault) {
+      return;
+    }
+
+    try {
+      await deleteVoiceMutation.mutateAsync(selectedVoice.id);
+      setActiveVoiceId(null);
+      toast.success("Voice deleted");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete voice"
+      );
+    }
+  };
+
+  const handleSetDefault = async () => {
+    if (!selectedVoice || selectedVoice.isDefault) {
+      return;
+    }
+
+    try {
+      await setDefaultMutation.mutateAsync(selectedVoice.id);
+      toast.success("Default voice updated");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to set default"
+      );
     }
   };
 
@@ -663,15 +1033,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     progress.status === "extracting" ||
     progress.status === "saving";
 
-  const hasSettings = !!data?.settings;
+  const hasVoices = voices.length > 0;
 
-  // Show skeleton during initial loading
   if (!organizationId || (isPendingSettings && !data)) {
     return <BrandIdentityPageSkeleton />;
   }
 
-  // Show setup modal when no settings or analyzing
-  if (!hasSettings || isAnalyzing) {
+  if (!hasVoices) {
     return (
       <PageContainer
         className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
@@ -717,7 +1085,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ModalContent
-                    handleAnalyze={handleAnalyze}
+                    handleAnalyze={handleInitialAnalyze}
                     inlineError={progressError}
                     isAnalyzing={isAnalyzing}
                     isPending={analyzeMutation.isPending}
@@ -735,30 +1103,71 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     );
   }
 
-  // Render form with data from query - form is only rendered when data exists
-  const settings = data.settings;
-  if (!settings) {
+  if (!selectedVoice) {
     return null;
   }
 
   const initialData = {
-    companyName: settings.companyName ?? "",
-    companyDescription: settings.companyDescription ?? "",
-    toneProfile: (settings.toneProfile as ToneProfile) ?? "Professional",
-    customTone: settings.customTone ?? "",
-    customInstructions: settings.customInstructions ?? "",
-    useCustomTone: Boolean(settings.customTone),
-    audience: settings.audience ?? "",
+    name: selectedVoice.name,
+    websiteUrl: selectedVoice.websiteUrl
+      ? sanitizeBrandUrlInput(selectedVoice.websiteUrl)
+      : "",
+    companyName: selectedVoice.companyName ?? "",
+    companyDescription: selectedVoice.companyDescription ?? "",
+    toneProfile: (selectedVoice.toneProfile as ToneProfile) ?? "Professional",
+    customTone: selectedVoice.customTone ?? "",
+    customInstructions: selectedVoice.customInstructions ?? "",
+    useCustomTone: Boolean(selectedVoice.customTone),
+    audience: selectedVoice.audience ?? "",
+    language: selectedVoice.language ?? "English",
   };
 
   return (
-    <BrandForm
-      initialData={initialData}
-      isReanalyzing={analyzeMutation.isPending}
-      key={organizationId}
-      onReanalyze={handleAnalyze}
-      organizationId={organizationId}
-      websiteUrl={organization?.websiteUrl}
-    />
+    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="w-full space-y-6 px-4 lg:px-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h1 className="font-bold text-3xl tracking-tight">
+              Brand Identity
+            </h1>
+            <p className="text-muted-foreground">
+              Configure your brand identity and tone of voice
+            </p>
+          </div>
+          <Button onClick={() => setAddVoiceOpen(true)} size="sm">
+            <HugeiconsIcon className="size-4" icon={Add01Icon} />
+            Add Voice
+          </Button>
+        </div>
+
+        <VoiceSelector
+          activeVoiceId={selectedVoice.id}
+          onSelect={setActiveVoiceId}
+          voices={voices}
+        />
+
+        <AddVoiceDialog
+          onCreated={(voice) => setActiveVoiceId(voice.id)}
+          onOpenChange={setAddVoiceOpen}
+          open={addVoiceOpen}
+          organizationId={organizationId}
+          startPolling={startPolling}
+        />
+
+        <BrandForm
+          initialData={initialData}
+          isDefault={selectedVoice.isDefault}
+          isDeleting={deleteVoiceMutation.isPending}
+          isReanalyzing={analyzeMutation.isPending}
+          isSettingDefault={setDefaultMutation.isPending}
+          key={selectedVoice.id}
+          onDelete={handleDeleteVoice}
+          onReanalyze={handleReanalyze}
+          onSetDefault={handleSetDefault}
+          organizationId={organizationId}
+          voiceId={selectedVoice.id}
+        />
+      </div>
+    </PageContainer>
   );
 }

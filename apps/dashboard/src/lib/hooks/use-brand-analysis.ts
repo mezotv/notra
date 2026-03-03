@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { UpdateBrandSettingsInput } from "@/schemas/brand";
 import type {
+  BrandSettings,
   BrandSettingsResponse,
   Progress,
   ProgressResponse,
@@ -65,9 +66,6 @@ export function useBrandAnalysisProgress(
         lastFailureMessage.current = null;
       }
 
-      // If the backend is momentarily still "idle" right after starting
-      // an analysis, keep any optimistic non-idle state (e.g. "scraping")
-      // so the UI can show the stepper immediately.
       if (progress.status === "idle" && shouldForcePoll()) {
         const cached = queryClient.getQueryData<Progress>(
           QUERY_KEYS.BRAND.progress(organizationId)
@@ -152,13 +150,16 @@ export function useAnalyzeBrand(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (url: string) => {
+    mutationFn: async (params: { url: string; voiceId?: string }) => {
       const res = await fetch(
         `/api/organizations/${organizationId}/brand/analyze`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
+          body: JSON.stringify({
+            url: params.url,
+            voiceId: params.voiceId,
+          }),
         }
       );
       if (!res.ok) {
@@ -212,6 +213,80 @@ export function useUpdateBrandSettings(organizationId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+      });
+    },
+  });
+}
+
+export function useCreateBrandVoice(organizationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      name: string;
+      websiteUrl: string;
+    }): Promise<{ voice: BrandSettings }> => {
+      const res = await fetch(`/api/organizations/${organizationId}/brand`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create brand voice");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+    },
+  });
+}
+
+export function useDeleteBrandVoice(organizationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (voiceId: string) => {
+      const res = await fetch(
+        `/api/organizations/${organizationId}/brand?id=${voiceId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete brand voice");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+    },
+  });
+}
+
+export function useSetDefaultBrandVoice(organizationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (voiceId: string) => {
+      const res = await fetch(`/api/organizations/${organizationId}/brand`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: voiceId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to set default voice");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
       });
     },
   });

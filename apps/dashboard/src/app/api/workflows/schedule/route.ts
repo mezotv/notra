@@ -59,6 +59,7 @@ type BrandSettingsData = {
   companyDescription: string | null;
   audience: string | null;
   customInstructions: string | null;
+  language: string | null;
 } | null;
 
 const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
@@ -232,9 +233,28 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
     const brand = await context.run<BrandSettingsData>(
       "fetch-brand-settings",
       async () => {
-        const result = await db.query.brandSettings.findFirst({
-          where: eq(brandSettings.organizationId, trigger.organizationId),
-        });
+        const outputConfig = trigger.outputConfig as {
+          brandVoiceId?: string;
+        } | null;
+        const voiceId = outputConfig?.brandVoiceId;
+
+        let result = voiceId
+          ? await db.query.brandSettings.findFirst({
+              where: and(
+                eq(brandSettings.id, voiceId),
+                eq(brandSettings.organizationId, trigger.organizationId)
+              ),
+            })
+          : null;
+
+        if (!result) {
+          result = await db.query.brandSettings.findFirst({
+            where: and(
+              eq(brandSettings.organizationId, trigger.organizationId),
+              eq(brandSettings.isDefault, true)
+            ),
+          });
+        }
 
         if (!result) {
           return null;
@@ -246,6 +266,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           companyDescription: result.companyDescription,
           audience: result.audience,
           customInstructions: result.customInstructions,
+          language: result.language,
         };
       }
     );
@@ -322,6 +343,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             companyDescription: brand?.companyDescription ?? undefined,
             audience: brand?.audience ?? undefined,
             customInstructions: brand?.customInstructions ?? null,
+            language: brand?.language ?? undefined,
           };
 
           const repositoryParams = repositories.map((repository) => ({

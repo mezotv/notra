@@ -29,14 +29,10 @@ export function OnboardingClient() {
       setIsCreating(true);
 
       try {
-        const websiteUrl = value.website
-          ? `https://${value.website}`
-          : undefined;
         const { data, error } = await authClient.organization.create({
           name: value.name,
           slug: value.slug,
           logo: generateOrganizationAvatar(value.slug),
-          websiteUrl,
         });
 
         if (error) {

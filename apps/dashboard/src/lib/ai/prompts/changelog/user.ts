@@ -12,6 +12,10 @@ export function getChangelogUserPrompt(
     ? `\n<target-audience>${params.audience}</target-audience>`
     : "";
 
+  const languageContext = params.language
+    ? `\n<language>${params.language}</language>`
+    : "";
+
   const customContext = params.customInstructions
     ? `\n<custom-instructions>\n${params.customInstructions}\n</custom-instructions>`
     : "";
@@ -24,7 +28,7 @@ export function getChangelogUserPrompt(
     <today-utc>${params.todayUtc}</today-utc>
     <lookback-window label="${params.lookbackLabel}">
     ${params.lookbackStartIso} to ${params.lookbackEndIso} (UTC)
-    </lookback-window>${companyContext}${audienceContext}
+    </lookback-window>${companyContext}${audienceContext}${languageContext}
     </background-data>${customContext}
   `;
 }

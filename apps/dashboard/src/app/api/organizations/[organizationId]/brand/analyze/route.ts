@@ -31,12 +31,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { url } = validationResult.data;
+    const voiceId =
+      typeof body.voiceId === "string" && body.voiceId
+        ? body.voiceId
+        : undefined;
 
     const appUrl = getAppUrl();
 
     await workflowClient.trigger({
       url: `${appUrl}/api/workflows/brand-analysis`,
-      body: { organizationId, url },
+      body: { organizationId, url, voiceId },
     });
 
     return NextResponse.json({

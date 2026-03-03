@@ -14,6 +14,7 @@
     "db:seed:automation": "dotenv -- bun packages/db/scripts/seed-automation.ts",
     "db:seed:posts": "dotenv -- bun packages/db/scripts/seed-posts.ts",
     "db:seed": "bun run db:seed:posts && bun run db:seed:automation",
+    "db:backfill:voice-urls": "dotenv -- bun packages/db/scripts/backfill-voice-urls.ts",
     "email:dev": "dotenv -- bun run --filter=@notra/email dev",
     "check": "ultracite check",
     "format": "ultracite fix",

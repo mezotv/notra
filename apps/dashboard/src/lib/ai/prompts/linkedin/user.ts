@@ -10,6 +10,10 @@ export function getLinkedInUserPrompt(params: LinkedInTonePromptInput): string {
     ? `\n<target-audience>${params.audience}</target-audience>`
     : "";
 
+  const languageContext = params.language
+    ? `\n<language>${params.language}</language>`
+    : "";
+
   const customContext = params.customInstructions
     ? `\n<custom-instructions>\n${params.customInstructions}\n</custom-instructions>`
     : "";
@@ -22,7 +26,7 @@ export function getLinkedInUserPrompt(params: LinkedInTonePromptInput): string {
     <today-utc>${params.todayUtc}</today-utc>
     <lookback-window label="${params.lookbackLabel}">
     ${params.lookbackStartIso} to ${params.lookbackEndIso} (UTC)
-    </lookback-window>${companyContext}${audienceContext}
+    </lookback-window>${companyContext}${audienceContext}${languageContext}
     </background-data>${customContext}
   `;
 }

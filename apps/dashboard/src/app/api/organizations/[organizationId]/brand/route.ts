@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { updateBrandSettingsSchema } from "@/schemas/brand";
@@ -18,11 +18,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return auth.response;
     }
 
-    const settings = await db.query.brandSettings.findFirst({
+    const voices = await db.query.brandSettings.findMany({
       where: eq(brandSettings.organizationId, organizationId),
+      orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
     });
 
-    return NextResponse.json({ settings });
+    return NextResponse.json({ voices });
   } catch (error) {
     console.error("Error fetching brand settings:", error);
     return NextResponse.json(
@@ -54,37 +55,224 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const data = validationResult.data;
+    const { id, ...data } = validationResult.data;
 
-    const existing = await db.query.brandSettings.findFirst({
-      where: eq(brandSettings.organizationId, organizationId),
-    });
+    if (id) {
+      const existing = await db.query.brandSettings.findFirst({
+        where: and(
+          eq(brandSettings.id, id),
+          eq(brandSettings.organizationId, organizationId)
+        ),
+      });
 
-    if (existing) {
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Brand voice not found" },
+          { status: 404 }
+        );
+      }
+
       await db
         .update(brandSettings)
-        .set({
-          ...data,
-          updatedAt: new Date(),
-        })
-        .where(eq(brandSettings.organizationId, organizationId));
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(brandSettings.id, id));
     } else {
-      await db.insert(brandSettings).values({
-        id: crypto.randomUUID(),
-        organizationId,
-        ...data,
+      const existing = await db.query.brandSettings.findFirst({
+        where: and(
+          eq(brandSettings.organizationId, organizationId),
+          eq(brandSettings.isDefault, true)
+        ),
       });
+
+      if (existing) {
+        await db
+          .update(brandSettings)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(brandSettings.id, existing.id));
+      } else {
+        await db.insert(brandSettings).values({
+          id: crypto.randomUUID(),
+          organizationId,
+          ...data,
+        });
+      }
     }
 
-    const updated = await db.query.brandSettings.findFirst({
+    const voices = await db.query.brandSettings.findMany({
       where: eq(brandSettings.organizationId, organizationId),
+      orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
     });
 
-    return NextResponse.json({ settings: updated });
+    return NextResponse.json({ voices });
   } catch (error) {
     console.error("Error updating brand settings:", error);
     return NextResponse.json(
       { error: "Failed to update brand settings" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
+    }
+
+    const body = await request.json();
+    const name =
+      typeof body.name === "string" && body.name.trim()
+        ? body.name.trim()
+        : "Untitled Brand Voice";
+
+    const rawUrl =
+      typeof body.websiteUrl === "string" ? body.websiteUrl.trim() : "";
+    if (!rawUrl) {
+      return NextResponse.json(
+        { error: "Website URL is required" },
+        { status: 400 }
+      );
+    }
+    const websiteUrl = rawUrl.startsWith("https://")
+      ? rawUrl
+      : `https://${rawUrl}`;
+
+    const voice = await db
+      .insert(brandSettings)
+      .values({
+        id: crypto.randomUUID(),
+        organizationId,
+        name,
+        isDefault: false,
+        websiteUrl,
+      })
+      .returning();
+
+    return NextResponse.json({ voice: voice[0] }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating brand voice:", error);
+    return NextResponse.json(
+      { error: "Failed to create brand voice" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const voiceId = searchParams.get("id");
+
+    if (!voiceId) {
+      return NextResponse.json(
+        { error: "Voice ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const voice = await db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.id, voiceId),
+        eq(brandSettings.organizationId, organizationId)
+      ),
+    });
+
+    if (!voice) {
+      return NextResponse.json(
+        { error: "Brand voice not found" },
+        { status: 404 }
+      );
+    }
+
+    if (voice.isDefault) {
+      return NextResponse.json(
+        { error: "Cannot delete the default voice" },
+        { status: 400 }
+      );
+    }
+
+    await db.delete(brandSettings).where(eq(brandSettings.id, voiceId));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting brand voice:", error);
+    return NextResponse.json(
+      { error: "Failed to delete brand voice" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+
+    if (!auth.success) {
+      return auth.response;
+    }
+
+    const body = await request.json();
+    const voiceId = body.id;
+
+    if (!voiceId || typeof voiceId !== "string") {
+      return NextResponse.json(
+        { error: "Voice ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const voice = await db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.id, voiceId),
+        eq(brandSettings.organizationId, organizationId)
+      ),
+    });
+
+    if (!voice) {
+      return NextResponse.json(
+        { error: "Brand voice not found" },
+        { status: 404 }
+      );
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(brandSettings)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(brandSettings.organizationId, organizationId),
+            eq(brandSettings.isDefault, true)
+          )
+        );
+
+      await tx
+        .update(brandSettings)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(brandSettings.id, voiceId));
+    });
+
+    const voices = await db.query.brandSettings.findMany({
+      where: eq(brandSettings.organizationId, organizationId),
+      orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+    });
+
+    return NextResponse.json({ voices });
+  } catch (error) {
+    console.error("Error setting default voice:", error);
+    return NextResponse.json(
+      { error: "Failed to set default voice" },
       { status: 500 }
     );
   }

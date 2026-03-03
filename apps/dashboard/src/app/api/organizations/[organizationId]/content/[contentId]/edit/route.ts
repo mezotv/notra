@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { createChatAgent } from "@/lib/ai/agents/chat";
 import { withOrganizationAuth } from "@/lib/auth/organization";
@@ -40,11 +40,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     let updatedMarkdown = currentMarkdown;
 
     const brand = await db.query.brandSettings.findFirst({
-      where: eq(brandSettings.organizationId, organizationId),
+      where: and(
+        eq(brandSettings.organizationId, organizationId),
+        eq(brandSettings.isDefault, true)
+      ),
     });
 
     const brandContext = brand
-      ? `Company: ${brand.companyName ?? ""}\nDescription: ${brand.companyDescription ?? ""}\nAudience: ${brand.audience ?? ""}\nTone: ${brand.customTone ?? brand.toneProfile ?? ""}\nCustom instructions: ${brand.customInstructions ?? ""}`
+      ? `Company: ${brand.companyName ?? ""}\nDescription: ${brand.companyDescription ?? ""}\nAudience: ${brand.audience ?? ""}\nTone: ${brand.customTone ?? brand.toneProfile ?? ""}\nLanguage: ${brand.language ?? "English"}\nCustom instructions: ${brand.customInstructions ?? ""}`
       : undefined;
 
     const agent = await createChatAgent(

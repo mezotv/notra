@@ -45,6 +45,7 @@ import {
   LOOKBACK_WINDOWS,
   MAX_SCHEDULE_NAME_LENGTH,
 } from "@/schemas/integrations";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { GitHubIntegration } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { formatSnakeCaseLabel } from "@/utils/format";
@@ -76,6 +77,7 @@ interface TriggerFormValues {
   repositoryIds: string[];
   schedule: Trigger["sourceConfig"]["cron"];
   lookbackWindow: LookbackWindow;
+  brandVoiceId: string;
 }
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
@@ -156,6 +158,7 @@ export function AddTriggerDialog({
           minute: 0,
         },
         lookbackWindow: editTrigger.lookbackWindow ?? "last_7_days",
+        brandVoiceId: editTrigger.outputConfig?.brandVoiceId ?? "",
       };
     }
     return {
@@ -166,6 +169,7 @@ export function AddTriggerDialog({
       repositoryIds: [],
       schedule: { frequency: "daily", hour: 9, minute: 0 },
       lookbackWindow: "last_7_days",
+      brandVoiceId: "",
     };
   }, [defaultSourceType, editTrigger]);
 
@@ -193,6 +197,22 @@ export function AddTriggerDialog({
     },
     enabled: !!organizationId,
   });
+
+  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
+    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/organizations/${organizationId}/brand`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand voices");
+      }
+      return response.json();
+    },
+    enabled: !!organizationId,
+  });
+
+  const brandVoices = brandResponse?.voices ?? [];
 
   const repositories = useMemo(
     () =>
@@ -236,7 +256,9 @@ export function AddTriggerDialog({
           ...(value.sourceType === "cron"
             ? { lookbackWindow: value.lookbackWindow }
             : {}),
-          outputConfig: {},
+          outputConfig: {
+            ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
+          },
           enabled: isEditMode ? editTrigger.enabled : true,
         }),
       });
@@ -453,6 +475,50 @@ export function AddTriggerDialog({
                           </div>
                         )}
                       </form.Field>
+
+                      {brandVoices.length > 1 && (
+                        <form.Field name="brandVoiceId">
+                          {(field) => (
+                            <div className="space-y-2">
+                              <Label htmlFor={field.name}>Brand Voice</Label>
+                              <Select
+                                onValueChange={(value) => {
+                                  field.handleChange(
+                                    value === "__default__" ? "" : value
+                                  );
+                                }}
+                                value={field.state.value || "__default__"}
+                              >
+                                <SelectTrigger
+                                  className="w-full"
+                                  id={field.name}
+                                >
+                                  <SelectValue placeholder="Default voice" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__default__">
+                                    Default voice
+                                  </SelectItem>
+                                  {brandVoices
+                                    .filter((v) => !v.isDefault)
+                                    .map((voice) => (
+                                      <SelectItem
+                                        key={voice.id}
+                                        value={voice.id}
+                                      >
+                                        {voice.name}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              <p className="text-muted-foreground text-xs">
+                                Choose which brand voice to use for generated
+                                content.
+                              </p>
+                            </div>
+                          )}
+                        </form.Field>
+                      )}
                     </>
                   ) : (
                     <form.Field name="eventType">

@@ -1,16 +1,17 @@
 import { SdkError } from "@mendable/firecrawl-js";
 import { db } from "@notra/db/drizzle";
-import { brandSettings, organizations } from "@notra/db/schema";
+import { brandSettings } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { SUPPORTED_LANGUAGES } from "@/constants/languages";
 import { gateway } from "@/lib/ai/gateway";
 import { getFirecrawlClient } from "@/lib/firecrawl";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
-import { brandSettingsSchema } from "@/schemas/brand";
+import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 
 const PROGRESS_TTL = 300;
 
@@ -41,11 +42,13 @@ interface BrandInfo {
   toneProfile: string;
   customTone?: string | null;
   audience: string;
+  language?: string;
 }
 
 const brandAnalysisPayloadSchema = z.object({
   organizationId: z.string().min(1),
   url: z.string().url(),
+  voiceId: z.string().optional(),
 });
 
 type BrandAnalysisPayload = z.infer<typeof brandAnalysisPayloadSchema>;
@@ -95,7 +98,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
       await context.cancel();
       return;
     }
-    const { organizationId, url } = parseResult.data;
+    const { organizationId, url, voiceId } = parseResult.data;
 
     // Step 1: Scrape website
     await context.run("set-progress-scraping", async () => {
@@ -200,7 +203,8 @@ Extract the following information:
 1. companyName: The name of the company
 2. companyDescription: A comprehensive description of what the company does, their mission, and what makes them unique (2-4 sentences)
 3. toneProfile: The tone of their communication - choose one of: "Conversational", "Professional", "Casual", "Formal"
-4. audience: A description of their target audience (1-2 sentences)`,
+4. audience: A description of their target audience (1-2 sentences)
+5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
             system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
           });
 
@@ -243,36 +247,53 @@ Extract the following information:
     await context.run("save-to-database", async () => {
       const brandInfo = extractionResult.brandInfo;
 
-      await db
-        .update(organizations)
-        .set({ websiteUrl: url })
-        .where(eq(organizations.id, organizationId));
+      const validatedLanguage = getValidLanguage(brandInfo.language);
+      const brandData = {
+        websiteUrl: url,
+        companyName: brandInfo.companyName,
+        companyDescription: brandInfo.companyDescription,
+        toneProfile: brandInfo.toneProfile,
+        customTone: brandInfo.customTone ?? null,
+        audience: brandInfo.audience,
+        language: validatedLanguage,
+      };
 
-      const existing = await db.query.brandSettings.findFirst({
-        where: eq(brandSettings.organizationId, organizationId),
-      });
-
-      if (existing) {
-        await db
-          .update(brandSettings)
-          .set({
-            companyName: brandInfo.companyName,
-            companyDescription: brandInfo.companyDescription,
-            toneProfile: brandInfo.toneProfile,
-            customTone: brandInfo.customTone ?? null,
-            audience: brandInfo.audience,
-          })
-          .where(eq(brandSettings.organizationId, organizationId));
-      } else {
-        await db.insert(brandSettings).values({
-          id: crypto.randomUUID(),
-          organizationId,
-          companyName: brandInfo.companyName,
-          companyDescription: brandInfo.companyDescription,
-          toneProfile: brandInfo.toneProfile,
-          customTone: brandInfo.customTone ?? null,
-          audience: brandInfo.audience,
+      if (voiceId) {
+        const target = await db.query.brandSettings.findFirst({
+          where: and(
+            eq(brandSettings.id, voiceId),
+            eq(brandSettings.organizationId, organizationId)
+          ),
         });
+
+        if (target) {
+          await db
+            .update(brandSettings)
+            .set(brandData)
+            .where(eq(brandSettings.id, voiceId));
+        }
+      } else {
+        const existing = await db.query.brandSettings.findFirst({
+          where: and(
+            eq(brandSettings.organizationId, organizationId),
+            eq(brandSettings.isDefault, true)
+          ),
+        });
+
+        if (existing) {
+          await db
+            .update(brandSettings)
+            .set(brandData)
+            .where(eq(brandSettings.id, existing.id));
+        } else {
+          await db.insert(brandSettings).values({
+            id: crypto.randomUUID(),
+            organizationId,
+            name: "Default",
+            isDefault: true,
+            ...brandData,
+          });
+        }
       }
     });
 

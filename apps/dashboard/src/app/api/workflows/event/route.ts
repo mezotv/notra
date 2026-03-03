@@ -118,7 +118,10 @@ export const { POST } = serve<EventWorkflowPayload>(
       "fetch-brand-settings",
       async () => {
         const result = await db.query.brandSettings.findFirst({
-          where: eq(brandSettings.organizationId, trigger.organizationId),
+          where: and(
+            eq(brandSettings.organizationId, trigger.organizationId),
+            eq(brandSettings.isDefault, true)
+          ),
         });
 
         if (!result) {
@@ -131,6 +134,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           companyDescription: result.companyDescription,
           audience: result.audience,
           customInstructions: result.customInstructions,
+          language: result.language,
         };
       }
     );

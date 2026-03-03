@@ -78,6 +78,20 @@
       "when": 1771624868413,
       "tag": "0010_cool_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772563998650,
+      "tag": "0011_free_excalibur",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772564032463,
+      "tag": "0012_chilly_metal_master",
+      "breakpoints": true
     }
   ]
 }

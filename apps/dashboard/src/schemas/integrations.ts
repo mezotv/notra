@@ -201,6 +201,7 @@ export const triggerTargetsSchema = z.object({
 export const triggerOutputConfigSchema = z
   .object({
     publishDestination: z.enum(["webflow", "framer", "custom"]).optional(),
+    brandVoiceId: z.string().optional(),
   })
   .optional();
 
