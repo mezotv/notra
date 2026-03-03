@@ -20,3 +20,35 @@ jobs:
 
       - name: Run ultracite check
         run: bun check
+
+  dashboard-build:
+    runs-on: tenki-standard-autoscale
+    env:
+      DATABASE_URL: ${{ secrets.CI_DATABASE_URL || 'postgresql://ci:ci@localhost:5432/notra' }}
+      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN || 'ci-token' }}
+      CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_ACCESS_KEY_ID || 'ci-access-key' }}
+      CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY || 'ci-secret-key' }}
+      CLOUDFLARE_BUCKET_NAME: ${{ vars.CLOUDFLARE_BUCKET_NAME || 'ci-bucket' }}
+      CLOUDFLARE_S3_ENDPOINT: ${{ vars.CLOUDFLARE_S3_ENDPOINT || 'https://example.com' }}
+      CLOUDFLARE_PUBLIC_URL: ${{ vars.CLOUDFLARE_PUBLIC_URL || 'https://cdn.example.com' }}
+      BETTER_AUTH_URL: ${{ vars.BETTER_AUTH_URL || 'https://app.example.com' }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET || 'ci-better-auth-secret-32-chars-min' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build dashboard
+        run: bun run --cwd apps/dashboard build
+
+      - name: notify vercel
+        uses: vercel/repository-dispatch/actions/status@v1
+        with:
+          name: "Vercel - notra: build"
