@@ -14,6 +14,7 @@ import {
   buildCronExpression,
   createQstashSchedule,
   deleteQstashSchedule,
+  normalizeCronConfig,
 } from "@/lib/triggers/qstash";
 import {
   configureScheduleBodySchema,
@@ -49,11 +50,13 @@ function normalizeTriggerConfig({
     : sourceConfig.eventTypes;
 
   const repositoryIds = [...targets.repositoryIds].sort();
+  const cron = normalizeCronConfig(sourceConfig.cron);
 
   return {
     sourceConfig: {
       ...sourceConfig,
       eventTypes,
+      cron,
     },
     targets: {
       repositoryIds,

@@ -33,24 +33,56 @@ function getWorkflowClient() {
 }
 
 export function buildCronExpression(config?: TriggerSourceConfig["cron"]) {
-  if (!config) {
+  const normalizedConfig = normalizeCronConfig(config);
+
+  if (!normalizedConfig) {
     return null;
   }
 
-  const minute = config.minute ?? 0;
-  const hour = config.hour ?? 0;
+  const minute = normalizedConfig.minute;
+  const hour = normalizedConfig.hour;
 
-  if (config.frequency === "weekly") {
-    const dayOfWeek = config.dayOfWeek ?? 1;
+  if (normalizedConfig.frequency === "weekly") {
+    const dayOfWeek =
+      "dayOfWeek" in normalizedConfig ? normalizedConfig.dayOfWeek : 1;
     return `${minute} ${hour} * * ${dayOfWeek}`;
   }
 
-  if (config.frequency === "monthly") {
-    const dayOfMonth = config.dayOfMonth ?? 1;
+  if (normalizedConfig.frequency === "monthly") {
+    const dayOfMonth =
+      "dayOfMonth" in normalizedConfig ? normalizedConfig.dayOfMonth : 1;
     return `${minute} ${hour} ${dayOfMonth} * *`;
   }
 
   return `${minute} ${hour} * * *`;
+}
+
+export function normalizeCronConfig(config?: TriggerSourceConfig["cron"]) {
+  if (!config) {
+    return undefined;
+  }
+
+  const base = {
+    frequency: config.frequency,
+    hour: config.hour ?? 0,
+    minute: config.minute ?? 0,
+  } as const;
+
+  if (config.frequency === "weekly") {
+    return {
+      ...base,
+      dayOfWeek: config.dayOfWeek ?? 1,
+    };
+  }
+
+  if (config.frequency === "monthly") {
+    return {
+      ...base,
+      dayOfMonth: config.dayOfMonth ?? 1,
+    };
+  }
+
+  return base;
 }
 
 export async function createQstashSchedule({
@@ -73,7 +105,13 @@ export async function createQstashSchedule({
     },
   });
 
-  return result.scheduleId;
+  const resolvedScheduleId = result.scheduleId ?? scheduleId;
+
+  if (!resolvedScheduleId) {
+    throw new Error("QStash schedule id was not returned");
+  }
+
+  return resolvedScheduleId;
 }
 
 export async function deleteQstashSchedule(scheduleId: string) {

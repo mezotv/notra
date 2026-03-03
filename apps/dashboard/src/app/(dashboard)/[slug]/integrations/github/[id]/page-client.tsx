@@ -300,7 +300,7 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
     return `Weekly - ${days[cron.dayOfWeek ?? 0]} @ ${time}`;
   }
   if (cron.frequency === "monthly") {
-    return `Monthly - Day ${cron.dayOfMonth} @ ${time}`;
+    return `Monthly - Day ${cron.dayOfMonth ?? 1} @ ${time}`;
   }
   return `Daily @ ${time}`;
 }

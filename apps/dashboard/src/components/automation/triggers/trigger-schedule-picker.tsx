@@ -65,7 +65,31 @@ export function SchedulePicker({ value, onChange }: SchedulePickerProps) {
         <Select
           onValueChange={(val) => {
             if (val) {
-              update({ frequency: val as CronFrequency });
+              const frequency = val as CronFrequency;
+
+              if (frequency === "weekly") {
+                update({
+                  frequency,
+                  dayOfWeek: current.dayOfWeek ?? 1,
+                  dayOfMonth: undefined,
+                });
+                return;
+              }
+
+              if (frequency === "monthly") {
+                update({
+                  frequency,
+                  dayOfMonth: current.dayOfMonth ?? 1,
+                  dayOfWeek: undefined,
+                });
+                return;
+              }
+
+              update({
+                frequency,
+                dayOfWeek: undefined,
+                dayOfMonth: undefined,
+              });
             }
           }}
           value={current.frequency}
