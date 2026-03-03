@@ -43,5 +43,13 @@ export function sanitizeMarkdownHtml(html: string): string {
       th: ["align"],
     },
     allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      a: (tagName, attribs) => {
+        if (attribs.target === "_blank") {
+          attribs.rel = "noopener noreferrer";
+        }
+        return { tagName, attribs };
+      },
+    },
   });
 }

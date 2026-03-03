@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (orgId) {
+  if ((type === "logo" || type === "content") && orgId) {
     const membership = await db.query.members.findFirst({
       where: and(
         eq(members.userId, sessionData.user.id),
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   try {
     validateUpload({ type, fileType, fileSize });
   } catch {
-    return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid file" }, { status: 400 });
   }
 
   const id = nanoid();
