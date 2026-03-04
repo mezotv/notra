@@ -22,11 +22,6 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -58,6 +53,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
@@ -65,57 +61,11 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
-import { getBrandFaviconUrl } from "@/utils/brand";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePageSkeleton } from "./skeleton";
 
 const CRON_SOURCE_TYPES: TriggerSourceType[] = ["cron"];
-
-function BrandVoiceCell({
-  voice,
-  isDefault,
-}: {
-  voice?: BrandSettings;
-  isDefault?: boolean;
-}) {
-  if (!voice) {
-    return <span className="text-muted-foreground/50">—</span>;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger className="cursor-help truncate text-sm">
-        {voice.name}
-        {isDefault && (
-          <span className="ml-1 text-muted-foreground/60 text-xs">
-            (Default)
-          </span>
-        )}
-      </TooltipTrigger>
-      <TooltipContent className="flex items-start gap-3" side="top">
-        <Avatar
-          className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
-          size="sm"
-        >
-          <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
-          <AvatarFallback className="text-xs">
-            {voice.name.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="space-y-0.5">
-          <p className="font-medium">{voice.name}</p>
-          {voice.toneProfile && <p>Tone: {voice.toneProfile}</p>}
-          {voice.language && <p>Language: {voice.language}</p>}
-          {voice.companyName && <p>Company: {voice.companyName}</p>}
-          {isDefault && (
-            <p className="text-muted-foreground">Default identity</p>
-          )}
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
 
 function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   if (!cron) {

@@ -169,6 +169,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         }
 
         return {
+          id: result.id,
           name: result.name,
           toneProfile: result.toneProfile,
           companyName: result.companyName,
@@ -228,6 +229,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         eventAction,
         repositories: [{ owner: repository.owner, repo: repository.name }],
         brandVoiceName: brand?.name,
+        brandVoiceId: brand?.id,
       };
 
       const tone = getValidToneProfile(brand?.toneProfile, "Conversational");

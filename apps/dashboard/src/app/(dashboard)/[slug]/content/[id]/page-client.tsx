@@ -598,9 +598,13 @@ export default function PageClient({
                     )
                     {meta.brandVoiceName &&
                       (() => {
-                        const voice = brandResponse?.voices.find(
-                          (v) => v.name === meta.brandVoiceName
-                        );
+                        const voice = meta.brandVoiceId
+                          ? brandResponse?.voices.find(
+                              (v) => v.id === meta.brandVoiceId
+                            )
+                          : brandResponse?.voices.find(
+                              (v) => v.name === meta.brandVoiceName
+                            );
                         return (
                           <>
                             {" \u00B7 "}

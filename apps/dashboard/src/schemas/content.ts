@@ -22,6 +22,7 @@ export const sourceMetadataSchema = z
     lookbackWindow: z.string(),
     lookbackRange: z.object({ start: z.string(), end: z.string() }),
     brandVoiceName: z.string().optional(),
+    brandVoiceId: z.string().optional(),
   })
   .nullable()
   .optional();
