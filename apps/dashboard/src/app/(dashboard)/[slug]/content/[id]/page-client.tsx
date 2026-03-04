@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
+import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 
 import {
   Tooltip,
@@ -25,8 +26,10 @@ import { getContentTypeLabel } from "@/components/content/content-card";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { sourceMetadataSchema } from "@/schemas/content";
 import { formatSnakeCaseLabel } from "@/utils/format";
+import { createLinkedInPostUrl } from "@/utils/linkedin";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -478,7 +481,7 @@ export default function PageClient({
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Link
             className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             href={`/${organizationSlug}/content`}
@@ -501,7 +504,7 @@ export default function PageClient({
               Back to Content
             </Button>
           </Link>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-1 flex-col gap-1">
             <div className="flex items-center gap-3">
               <time
                 className="text-muted-foreground text-sm"
@@ -566,6 +569,23 @@ export default function PageClient({
                 );
               })()}
           </div>
+          {content.contentType === "linkedin_post" && (
+            <Button
+              className="ml-auto shrink-0 text-white hover:opacity-90"
+              render={
+                <a
+                  href={createLinkedInPostUrl(currentMarkdown)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <Linkedin className="size-4" />
+                  Post to LinkedIn
+                </a>
+              }
+              size="sm"
+              style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+            />
+          )}
         </div>
 
         <ContentEditorSwitch

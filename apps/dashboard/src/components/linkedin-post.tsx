@@ -310,9 +310,9 @@ function LinkedInPost({
         {isEditable ? (
           <Textarea
             className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-            defaultValue={content}
             onChange={(e) => onContentChange?.(e.target.value)}
             placeholder="What do you want to talk about?"
+            value={content ?? ""}
           />
         ) : content ? (
           <PostContent
