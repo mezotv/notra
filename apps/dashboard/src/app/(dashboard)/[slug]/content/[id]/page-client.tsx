@@ -17,8 +17,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { DefaultChatTransport } from "ai";
 import { useQuery } from "@tanstack/react-query";
+import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 
@@ -596,57 +596,58 @@ export default function PageClient({
                       meta.lookbackRange.end
                     )}
                     )
-                    {meta.brandVoiceName && (() => {
-                      const voice = brandResponse?.voices.find(
-                        (v) => v.name === meta.brandVoiceName
-                      );
-                      return (
-                        <>
-                          {" \u00B7 "}
-                          {voice ? (
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <span className="cursor-help underline decoration-dotted underline-offset-2">
-                                    {meta.brandVoiceName}
-                                  </span>
-                                }
-                              />
-                              <TooltipContent
-                                className="flex items-start gap-3"
-                                side="top"
-                              >
-                                <Avatar
-                                  className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
-                                  size="sm"
+                    {meta.brandVoiceName &&
+                      (() => {
+                        const voice = brandResponse?.voices.find(
+                          (v) => v.name === meta.brandVoiceName
+                        );
+                        return (
+                          <>
+                            {" \u00B7 "}
+                            {voice ? (
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                      {meta.brandVoiceName}
+                                    </span>
+                                  }
+                                />
+                                <TooltipContent
+                                  className="flex items-start gap-3"
+                                  side="top"
                                 >
-                                  <AvatarImage
-                                    src={getBrandFaviconUrl(voice.websiteUrl)}
-                                  />
-                                  <AvatarFallback className="text-xs">
-                                    {voice.name.slice(0, 2).toUpperCase()}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-0.5">
-                                  <p className="font-medium">{voice.name}</p>
-                                  {voice.toneProfile && (
-                                    <p>Tone: {voice.toneProfile}</p>
-                                  )}
-                                  {voice.language && (
-                                    <p>Language: {voice.language}</p>
-                                  )}
-                                  {voice.companyName && (
-                                    <p>Company: {voice.companyName}</p>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ) : (
-                            meta.brandVoiceName
-                          )}
-                        </>
-                      );
-                    })()}
+                                  <Avatar
+                                    className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
+                                    size="sm"
+                                  >
+                                    <AvatarImage
+                                      src={getBrandFaviconUrl(voice.websiteUrl)}
+                                    />
+                                    <AvatarFallback className="text-xs">
+                                      {voice.name.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="space-y-0.5">
+                                    <p className="font-medium">{voice.name}</p>
+                                    {voice.toneProfile && (
+                                      <p>Tone: {voice.toneProfile}</p>
+                                    )}
+                                    {voice.language && (
+                                      <p>Language: {voice.language}</p>
+                                    )}
+                                    {voice.companyName && (
+                                      <p>Company: {voice.companyName}</p>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              meta.brandVoiceName
+                            )}
+                          </>
+                        );
+                      })()}
                   </p>
                 );
               })()}

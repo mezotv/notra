@@ -50,7 +50,6 @@ export function getModalDescription(
 export const sanitizeBrandUrlInput = (value: string) =>
   value.trim().replace(FULL_URL_REGEX, "");
 
-
 export const getWebsiteDisplayText = (websiteUrl: string | null) => {
   if (!websiteUrl) {
     return "";

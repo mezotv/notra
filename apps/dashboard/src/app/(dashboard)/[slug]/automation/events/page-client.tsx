@@ -44,8 +44,8 @@ import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
-import { getBrandFaviconUrl } from "@/utils/brand";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
@@ -54,7 +54,10 @@ const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
 function BrandVoiceCell({
   voice,
   isDefault,
-}: { voice?: BrandSettings; isDefault?: boolean }) {
+}: {
+  voice?: BrandSettings;
+  isDefault?: boolean;
+}) {
   if (!voice) {
     return <span className="text-muted-foreground/50">—</span>;
   }
@@ -70,7 +73,10 @@ function BrandVoiceCell({
         )}
       </TooltipTrigger>
       <TooltipContent className="flex items-start gap-3" side="top">
-        <Avatar className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full" size="sm">
+        <Avatar
+          className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
+          size="sm"
+        >
           <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
           <AvatarFallback className="text-xs">
             {voice.name.slice(0, 2).toUpperCase()}
@@ -81,7 +87,9 @@ function BrandVoiceCell({
           {voice.toneProfile && <p>Tone: {voice.toneProfile}</p>}
           {voice.language && <p>Language: {voice.language}</p>}
           {voice.companyName && <p>Company: {voice.companyName}</p>}
-          {isDefault && <p className="text-muted-foreground">Default identity</p>}
+          {isDefault && (
+            <p className="text-muted-foreground">Default identity</p>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
@@ -473,7 +481,10 @@ function EventTable({
                   {formatEventList(trigger.sourceConfig.eventTypes)}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  <BrandVoiceCell isDefault={!hasExplicitVoice} voice={brandVoice} />
+                  <BrandVoiceCell
+                    isDefault={!hasExplicitVoice}
+                    voice={brandVoice}
+                  />
                 </TableCell>
                 <TableCell className="text-muted-foreground capitalize">
                   {getOutputTypeLabel(trigger.outputType)}
