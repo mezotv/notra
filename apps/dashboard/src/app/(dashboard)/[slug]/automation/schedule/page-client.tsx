@@ -22,6 +22,11 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -58,12 +63,51 @@ import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-sta
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePageSkeleton } from "./skeleton";
 
 const CRON_SOURCE_TYPES: TriggerSourceType[] = ["cron"];
+
+function BrandVoiceCell({
+  voice,
+  isDefault,
+}: { voice?: BrandSettings; isDefault?: boolean }) {
+  if (!voice) {
+    return <span className="text-muted-foreground/50">—</span>;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger className="cursor-help truncate text-sm">
+        {voice.name}
+        {isDefault && (
+          <span className="ml-1 text-muted-foreground/60 text-xs">
+            (Default)
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent className="flex items-start gap-3" side="top">
+        <Avatar className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full" size="sm">
+          <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
+          <AvatarFallback className="text-xs">
+            {voice.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="space-y-0.5">
+          <p className="font-medium">{voice.name}</p>
+          {voice.toneProfile && <p>Tone: {voice.toneProfile}</p>}
+          {voice.language && <p>Language: {voice.language}</p>}
+          {voice.companyName && <p>Company: {voice.companyName}</p>}
+          {isDefault && <p className="text-muted-foreground">Default identity</p>}
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   if (!cron) {
@@ -127,6 +171,32 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const repositoryMap = data?.repositoryMap ?? {};
+
+  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
+    queryKey: QUERY_KEYS.BRAND.settings(organizationId ?? ""),
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/organizations/${organizationId}/brand`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand voices");
+      }
+      return response.json();
+    },
+    enabled: !!organizationId,
+  });
+
+  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
+    const map: Record<string, BrandSettings> = {};
+    let defaultVoice: BrandSettings | undefined;
+    for (const voice of brandResponse?.voices ?? []) {
+      map[voice.id] = voice;
+      if (voice.isDefault) {
+        defaultVoice = voice;
+      }
+    }
+    return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
+  }, [brandResponse]);
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
@@ -426,7 +496,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="active">
               <ScheduleTable
+                brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
+                defaultBrandVoice={defaultBrandVoice}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
@@ -452,7 +524,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="paused">
               <ScheduleTable
+                brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
+                defaultBrandVoice={defaultBrandVoice}
                 isDeleting={deleteMutation.isPending}
                 isRunning={runNowMutation.isPending}
                 isUpdating={updateMutation.isPending}
@@ -568,7 +642,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 function ScheduleTable({
   triggers,
   repositoryMap,
+  brandVoiceMap,
   createdSortOrder,
+  defaultBrandVoice,
   onSortCreatedChange,
   onToggle,
   onDelete,
@@ -582,7 +658,9 @@ function ScheduleTable({
 }: {
   triggers: Trigger[];
   repositoryMap: Record<string, string>;
+  brandVoiceMap: Record<string, BrandSettings>;
   createdSortOrder: false | "asc" | "desc";
+  defaultBrandVoice?: BrandSettings;
   onSortCreatedChange: (next: false | "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
@@ -634,6 +712,7 @@ function ScheduleTable({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Schedule</TableHead>
+            <TableHead>Brand</TableHead>
             <TableHead>Output</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
@@ -660,6 +739,11 @@ function ScheduleTable({
               isUpdating && updatingTriggerId === trigger.id;
             const isThisRunning = isRunning && runningTriggerId === trigger.id;
 
+            const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
+            const brandVoice = hasExplicitVoice
+              ? brandVoiceMap[trigger.outputConfig!.brandVoiceId!]
+              : defaultBrandVoice;
+
             return (
               <TableRow key={trigger.id}>
                 <TableCell>
@@ -671,6 +755,9 @@ function ScheduleTable({
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatFrequency(trigger.sourceConfig.cron)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  <BrandVoiceCell isDefault={!hasExplicitVoice} voice={brandVoice} />
                 </TableCell>
                 <TableCell className="text-muted-foreground capitalize">
                   {getOutputTypeLabel(trigger.outputType)}

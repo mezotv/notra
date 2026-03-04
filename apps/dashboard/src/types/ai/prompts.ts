@@ -24,6 +24,19 @@ export interface LinkedInTonePromptInput {
   language?: string;
 }
 
+export interface TwitterTonePromptInput {
+  sourceTargets: string;
+  todayUtc: string;
+  lookbackLabel: string;
+  lookbackStartIso: string;
+  lookbackEndIso: string;
+  companyName?: string;
+  companyDescription?: string;
+  audience?: string;
+  customInstructions?: string | null;
+  language?: string;
+}
+
 export interface TextSelection {
   text: string;
   startLine: number;

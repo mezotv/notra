@@ -6,10 +6,12 @@ import type {
 } from "../types";
 import { handleChangelog } from "./changelog";
 import { handleLinkedIn } from "./linkedin";
+import { handleTwitter } from "./twitter";
 
 const handlers: Record<ScheduleOutputType, ContentHandler> = {
   changelog: handleChangelog,
   linkedin_post: handleLinkedIn,
+  twitter_post: handleTwitter,
 };
 
 export async function generateScheduledContent(

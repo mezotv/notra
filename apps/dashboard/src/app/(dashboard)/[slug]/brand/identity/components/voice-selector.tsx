@@ -10,13 +10,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import { truncateText } from "@/utils/format";
 import { IDENTITY_NAME_MAX_LENGTH } from "../constants/brand-identity";
 import type { VoiceSelectorProps } from "../types/brand-identity";
-import {
-  getBrandFaviconUrl,
-  getWebsiteDisplayText,
-} from "../utils/brand-identity";
+import { getWebsiteDisplayText } from "../utils/brand-identity";
 
 export function VoiceSelector({
   voices,

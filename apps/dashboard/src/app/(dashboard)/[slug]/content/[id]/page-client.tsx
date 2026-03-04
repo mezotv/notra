@@ -1,10 +1,16 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
+import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 
 import {
   Tooltip,
@@ -12,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { DefaultChatTransport } from "ai";
+import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 
@@ -27,9 +34,14 @@ import type { EditorRefHandle } from "@/components/content/editor/plugins/editor
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
+import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { sourceMetadataSchema } from "@/schemas/content";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { createLinkedInPostUrl } from "@/utils/linkedin";
+import { QUERY_KEYS } from "@/utils/query-keys";
+import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -69,6 +81,12 @@ function formatDateRange(start: string, end: string): string {
 }
 
 function formatTriggerType(type: string): string {
+  if (type === "cron") {
+    return "Schedule";
+  }
+  if (type === "github_webhook") {
+    return "GitHub Webhook";
+  }
   return formatSnakeCaseLabel(type);
 }
 
@@ -87,6 +105,19 @@ export default function PageClient({
   const { state: sidebarState } = useSidebar();
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
+  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
+    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/organizations/${organizationId}/brand`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch brand voices");
+      }
+      return response.json();
+    },
+    enabled: !!organizationId,
+  });
   const { activeOrganization } = useOrganizationsContext();
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
@@ -565,6 +596,57 @@ export default function PageClient({
                       meta.lookbackRange.end
                     )}
                     )
+                    {meta.brandVoiceName && (() => {
+                      const voice = brandResponse?.voices.find(
+                        (v) => v.name === meta.brandVoiceName
+                      );
+                      return (
+                        <>
+                          {" \u00B7 "}
+                          {voice ? (
+                            <Tooltip>
+                              <TooltipTrigger
+                                render={
+                                  <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                    {meta.brandVoiceName}
+                                  </span>
+                                }
+                              />
+                              <TooltipContent
+                                className="flex items-start gap-3"
+                                side="top"
+                              >
+                                <Avatar
+                                  className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
+                                  size="sm"
+                                >
+                                  <AvatarImage
+                                    src={getBrandFaviconUrl(voice.websiteUrl)}
+                                  />
+                                  <AvatarFallback className="text-xs">
+                                    {voice.name.slice(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-0.5">
+                                  <p className="font-medium">{voice.name}</p>
+                                  {voice.toneProfile && (
+                                    <p>Tone: {voice.toneProfile}</p>
+                                  )}
+                                  {voice.language && (
+                                    <p>Language: {voice.language}</p>
+                                  )}
+                                  {voice.companyName && (
+                                    <p>Company: {voice.companyName}</p>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            meta.brandVoiceName
+                          )}
+                        </>
+                      );
+                    })()}
                   </p>
                 );
               })()}
@@ -584,6 +666,24 @@ export default function PageClient({
               }
               size="sm"
               style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+            />
+          )}
+          {content.contentType === "twitter_post" && (
+            <Button
+              className="ml-auto shrink-0 text-white hover:opacity-90"
+              nativeButton={false}
+              render={
+                <a
+                  href={createTwitterPostUrl(currentMarkdown)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <XTwitter className="size-4" />
+                  Post to X
+                </a>
+              }
+              size="sm"
+              style={{ backgroundColor: TWITTER_BRAND_COLOR }}
             />
           )}
         </div>

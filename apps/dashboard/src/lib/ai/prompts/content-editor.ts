@@ -25,6 +25,11 @@ export function getContentEditorChatPrompt(
       ? "\n\n## LinkedIn Post Constraints\nThis is a LinkedIn post. LinkedIn does NOT support markdown formatting.\n- Do NOT use markdown syntax (bold **, italic *, headers #, etc.)\n- Use plain text, line breaks, and bullet points (• or -) only\n- Do NOT use em dashes (—) or en dashes (–)\n- Do not use hashtags unless absolutely necessary"
       : "";
 
+  const twitterSection =
+    contentType === "twitter_post"
+      ? "\n\n## Twitter Post Constraints\nThis is a Twitter/X post.\n- Plain text only, no markdown syntax\n- The tweet MUST be 280 characters or fewer. Aim for 100-250 characters.\n- Do NOT use em dashes or en dashes\n- No hashtags\n- Vary sentence length, mix short and long\n- Use contractions naturally (we've, it's, don't)\n- Never use: game-changer, next-level, revolutionary, incredibly, innovative, cutting-edge, leverage, robust, seamless, delighted\n- Never open with Excited to/Thrilled to/Just shipped\n- Lead with what users get, not what was built\n- Take a clear position, don't hedge"
+      : "";
+
   const githubSection =
     hasGitHubEnabled && repoContext?.length
       ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
@@ -51,6 +56,6 @@ export function getContentEditorChatPrompt(
     - When user selects text, focus only on that section
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
     - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
-    ${capabilitiesSection}${linkedInSection}${githubSection}${selectionContext}
+    ${capabilitiesSection}${linkedInSection}${twitterSection}${githubSection}${selectionContext}
   `;
 }

@@ -1,5 +1,6 @@
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
+import { generateTwitterPost } from "@/lib/ai/agents/twitter";
 import type {
   EventGenerationContext,
   EventGenerationResult,
@@ -149,7 +150,7 @@ export async function generateEventBasedContent(
 ): Promise<EventGenerationResult> {
   const { outputType } = ctx;
 
-  const supportedTypes = ["changelog", "linkedin_post"];
+  const supportedTypes = ["changelog", "linkedin_post", "twitter_post"];
   if (!supportedTypes.includes(outputType)) {
     return {
       status: "unsupported_output_type",
@@ -169,22 +170,22 @@ export async function generateEventBasedContent(
 
     const promptInput = buildEventPromptInput(ctx);
 
-    const result =
+    const agentOptions = {
+      organizationId: ctx.organizationId,
+      repositories,
+      tone: ctx.tone,
+      promptInput,
+      sourceMetadata: ctx.sourceMetadata,
+    };
+
+    const generateFn =
       outputType === "changelog"
-        ? await generateChangelog({
-            organizationId: ctx.organizationId,
-            repositories,
-            tone: ctx.tone,
-            promptInput,
-            sourceMetadata: ctx.sourceMetadata,
-          })
-        : await generateLinkedInPost({
-            organizationId: ctx.organizationId,
-            repositories,
-            tone: ctx.tone,
-            promptInput,
-            sourceMetadata: ctx.sourceMetadata,
-          });
+        ? generateChangelog
+        : outputType === "twitter_post"
+          ? generateTwitterPost
+          : generateLinkedInPost;
+
+    const result = await generateFn(agentOptions);
 
     return { status: "ok", postId: result.postId, title: result.title };
   } catch (error) {

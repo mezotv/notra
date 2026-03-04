@@ -3,6 +3,7 @@ import type { ToneProfile } from "@/schemas/brand";
 import type {
   ChangelogTonePromptInput,
   LinkedInTonePromptInput,
+  TwitterTonePromptInput,
 } from "./prompts";
 
 export interface ChangelogAgentResult {
@@ -38,6 +39,24 @@ export interface LinkedInAgentOptions {
   }>;
   tone?: ToneProfile;
   promptInput: LinkedInTonePromptInput;
+  sourceMetadata?: PostSourceMetadata;
+}
+
+export interface TwitterAgentResult {
+  postId: string;
+  title: string;
+}
+
+export interface TwitterAgentOptions {
+  organizationId: string;
+  repositories: Array<{
+    integrationId: string;
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+  }>;
+  tone?: ToneProfile;
+  promptInput: TwitterTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
 }
 

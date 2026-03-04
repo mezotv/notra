@@ -50,22 +50,6 @@ export function getModalDescription(
 export const sanitizeBrandUrlInput = (value: string) =>
   value.trim().replace(FULL_URL_REGEX, "");
 
-export const getBrandFaviconUrl = (websiteUrl: string | null) => {
-  if (!websiteUrl) {
-    return undefined;
-  }
-
-  const normalizedUrl = websiteUrl.startsWith("http")
-    ? websiteUrl
-    : `https://${websiteUrl}`;
-
-  try {
-    const hostname = new URL(normalizedUrl).hostname;
-    return `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
-  } catch {
-    return undefined;
-  }
-};
 
 export const getWebsiteDisplayText = (websiteUrl: string | null) => {
   if (!websiteUrl) {
