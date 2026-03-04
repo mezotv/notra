@@ -245,8 +245,9 @@ const ChatInput = ({
     },
     {
       enableOnFormTags: ["TEXTAREA"],
+      enabled: isFocused,
     },
-    [handleSend]
+    [handleSend, isFocused]
   );
 
   return (
