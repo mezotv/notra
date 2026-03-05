@@ -55,6 +55,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
+    "@vercel/analytics": "^1.6.1",
     "ai": "^6.0.78",
     "autumn-js": "^0.1.71",
     "better-auth": "^1.4.18",
