@@ -10,6 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@notra/ui/components/ui/tabs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
@@ -27,6 +34,7 @@ import {
 import { AddIdentityDialog } from "./components/add-identity-dialog";
 import { BrandForm } from "./components/brand-form";
 import { ModalContent } from "./components/modal-content";
+import { ReferencesList } from "./components/references-list";
 import { VoiceSelector } from "./components/voice-selector";
 import { BrandIdentityPageSkeleton } from "./skeleton";
 import type {
@@ -38,6 +46,8 @@ import {
   getModalTitle,
   sanitizeBrandUrlInput,
 } from "./utils/brand-identity";
+
+const TAB_VALUES = ["identity", "references"] as const;
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
@@ -71,8 +81,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     progress.status === "failed" ? progress.error : undefined;
 
   const voices = data?.voices ?? [];
-  const [activeVoiceId, setActiveVoiceId] = useState<string | null>(null);
+  const [activeVoiceId, setActiveVoiceId] = useQueryState(
+    "voice",
+    parseAsString
+  );
   const [addIdentityOpen, setAddIdentityOpen] = useState(false);
+  const [addReferenceOpen, setAddReferenceOpen] = useState(false);
+  const [activeTab, setActiveTab] = useQueryState(
+    "view",
+    parseAsStringLiteral(TAB_VALUES).withDefault("identity")
+  );
 
   const selectedVoice =
     voices.find((v) => v.id === activeVoiceId) ??
@@ -261,21 +279,29 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">
-              Brand Identity
+              {activeTab === "identity" ? "Brand Identity" : "References"}
             </h1>
             <p className="text-muted-foreground">
-              Configure your brand identity and tone
+              {activeTab === "identity"
+                ? "Configure your brand identity and tone"
+                : "Real posts the AI can learn your writing style from"}
             </p>
           </div>
-          <Button onClick={() => setAddIdentityOpen(true)} size="sm">
-            <HugeiconsIcon className="size-4" icon={Add01Icon} />
-            Add Identity
-          </Button>
+          {activeTab === "identity" ? (
+            <Button onClick={() => setAddIdentityOpen(true)} size="sm">
+              <HugeiconsIcon className="size-4" icon={Add01Icon} />
+              Add Identity
+            </Button>
+          ) : (
+            <Button onClick={() => setAddReferenceOpen(true)} size="sm">
+              <HugeiconsIcon className="size-4" icon={Add01Icon} />
+              Add Reference
+            </Button>
+          )}
         </div>
 
         <VoiceSelector
           activeVoiceId={selectedVoice.id}
-          isDefault={selectedVoice.isDefault}
           isDeleting={deleteVoiceMutation.isPending}
           isReanalyzing={analyzeMutation.isPending}
           isSettingDefault={setDefaultMutation.isPending}
@@ -295,12 +321,36 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           startPolling={startPolling}
         />
 
-        <BrandForm
-          initialData={initialData}
-          key={selectedVoice.id}
-          organizationId={organizationId}
-          voiceId={selectedVoice.id}
-        />
+        <Tabs
+          onValueChange={(v) => {
+            setActiveTab(v as "identity" | "references");
+          }}
+          value={activeTab}
+        >
+          <TabsList variant="line">
+            <TabsTrigger value="identity">Identity</TabsTrigger>
+            <TabsTrigger value="references">References</TabsTrigger>
+          </TabsList>
+
+          <TabsContent className="mt-6" value="identity">
+            <BrandForm
+              initialData={initialData}
+              key={selectedVoice.id}
+              organizationId={organizationId}
+              voiceId={selectedVoice.id}
+            />
+          </TabsContent>
+
+          <TabsContent className="mt-6" value="references">
+            <ReferencesList
+              dialogOpen={addReferenceOpen}
+              key={`refs-${selectedVoice.id}`}
+              onDialogOpenChange={setAddReferenceOpen}
+              organizationId={organizationId}
+              voiceId={selectedVoice.id}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageContainer>
   );

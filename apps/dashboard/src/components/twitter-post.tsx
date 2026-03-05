@@ -16,6 +16,12 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
 import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
@@ -24,17 +30,26 @@ import type { TextSelection } from "@/components/chat-input";
 import { TWITTER_CHAR_LIMIT } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
 
+interface TwitterPostMenuItem {
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+  variant?: "destructive";
+}
+
 interface TwitterPostProps extends React.ComponentProps<"div"> {
   author: {
     name: string;
     avatar?: string;
     fallback?: string;
     handle?: string;
+    verified?: boolean;
   };
   content?: string;
   onContentChange?: (value: string) => void;
   onSelectionChange?: (selection: TextSelection | null) => void;
   timestamp?: string;
+  menuItems?: TwitterPostMenuItem[];
 }
 
 function TweetContent({
@@ -137,6 +152,7 @@ function TwitterPost({
   onContentChange,
   onSelectionChange,
   timestamp,
+  menuItems,
   className,
   ...props
 }: TwitterPostProps) {
@@ -148,8 +164,11 @@ function TwitterPost({
   }
 
   return (
-    <Card className={cn("grid h-fit gap-0 py-0", className)} {...props}>
-      <div className="flex gap-3 px-4 pt-3">
+    <Card
+      className={cn("flex h-full flex-col gap-0 py-0", className)}
+      {...props}
+    >
+      <div className="flex flex-1 gap-3 px-4 pt-3">
         <Avatar className="size-10">
           {author.avatar && <AvatarImage src={author.avatar} />}
           <AvatarFallback>
@@ -157,12 +176,14 @@ function TwitterPost({
           </AvatarFallback>
         </Avatar>
 
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-1">
             <span className="truncate font-bold text-[0.9375rem] leading-tight">
               {author.name}
             </span>
-            <XVerifiedBadge className="size-[1.125rem] shrink-0" />
+            {author.verified !== false && (
+              <XVerifiedBadge className="size-[1.125rem] shrink-0" />
+            )}
             {author.handle && (
               <span className="truncate text-[0.9375rem] text-muted-foreground">
                 @{author.handle}
@@ -176,16 +197,36 @@ function TwitterPost({
                 </span>
               </>
             )}
-            <Button
-              className="ml-auto text-muted-foreground"
-              size="icon-sm"
-              variant="ghost"
-            >
-              <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
-            </Button>
+            {menuItems && menuItems.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-accent">
+                  <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {menuItems.map((item) => (
+                    <DropdownMenuItem
+                      key={item.label}
+                      onClick={item.onClick}
+                      variant={item.variant}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                className="ml-auto text-muted-foreground"
+                size="icon-sm"
+                variant="ghost"
+              >
+                <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
+              </Button>
+            )}
           </div>
 
-          <div className="pb-3">
+          <div className="flex flex-1 flex-col pb-3">
             {isEditable ? (
               <div className="space-y-1">
                 <Textarea
@@ -209,7 +250,7 @@ function TwitterPost({
               />
             ) : null}
 
-            <div className="mt-2 flex items-center justify-between">
+            <div className="mt-auto flex items-center justify-between pt-2">
               <Button
                 className="gap-1.5 text-muted-foreground"
                 size="icon-sm"
@@ -255,4 +296,4 @@ function TwitterPost({
   );
 }
 
-export { TwitterPost, type TwitterPostProps };
+export { TwitterPost, type TwitterPostProps, type TwitterPostMenuItem };

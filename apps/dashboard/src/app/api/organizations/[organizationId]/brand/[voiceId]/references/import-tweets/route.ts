@@ -1,0 +1,262 @@
+import { db } from "@notra/db/drizzle";
+import {
+  brandReferences,
+  brandSettings,
+  connectedSocialAccounts,
+} from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
+import { withOrganizationAuth } from "@/lib/auth/organization";
+import { importTweetsSchema } from "@/schemas/brand";
+
+interface RouteContext {
+  params: Promise<{ organizationId: string; voiceId: string }>;
+}
+
+async function verifyVoiceOwnership(organizationId: string, voiceId: string) {
+  return db.query.brandSettings.findFirst({
+    where: and(
+      eq(brandSettings.id, voiceId),
+      eq(brandSettings.organizationId, organizationId)
+    ),
+    columns: { id: true },
+  });
+}
+
+interface TwitterTweet {
+  id: string;
+  text: string;
+  created_at?: string;
+  public_metrics?: {
+    like_count?: number;
+    retweet_count?: number;
+    reply_count?: number;
+  };
+  author_id?: string;
+  referenced_tweets?: Array<{ type: string; id: string }>;
+}
+
+interface TwitterUser {
+  id: string;
+  username: string;
+  name: string;
+  profile_image_url?: string;
+  verified?: boolean;
+}
+
+interface TwitterTimelineResponse {
+  data?: TwitterTweet[];
+  includes?: { users?: TwitterUser[] };
+  meta?: { next_token?: string };
+}
+
+async function fetchPinnedTweet(
+  userId: string,
+  accessToken: string
+): Promise<TwitterTweet | null> {
+  const params = new URLSearchParams({
+    "user.fields": "pinned_tweet_id",
+    expansions: "pinned_tweet_id",
+    "tweet.fields": "text,created_at,public_metrics,author_id",
+  });
+
+  const res = await fetch(
+    `https://api.x.com/2/users/${userId}?${params.toString()}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    return null;
+  }
+
+  const data = await res.json();
+  return (data.includes?.tweets?.[0] as TwitterTweet | undefined) ?? null;
+}
+
+export async function POST(request: NextRequest, { params }: RouteContext) {
+  try {
+    const { organizationId, voiceId } = await params;
+    const auth = await withOrganizationAuth(request, organizationId);
+    if (!auth.success) {
+      return auth.response;
+    }
+
+    const voice = await verifyVoiceOwnership(organizationId, voiceId);
+    if (!voice) {
+      return NextResponse.json(
+        { error: "Brand voice not found" },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    const parsed = importTweetsSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? "Invalid input" },
+        { status: 400 }
+      );
+    }
+
+    const { accountId, maxResults } = parsed.data;
+
+    const socialAccount = await db.query.connectedSocialAccounts.findFirst({
+      where: and(
+        eq(connectedSocialAccounts.id, accountId),
+        eq(connectedSocialAccounts.organizationId, organizationId),
+        eq(connectedSocialAccounts.provider, "twitter")
+      ),
+    });
+
+    if (!socialAccount) {
+      return NextResponse.json(
+        { error: "Connected X account not found" },
+        { status: 404 }
+      );
+    }
+
+    const pinnedTweet = await fetchPinnedTweet(
+      socialAccount.providerAccountId,
+      socialAccount.accessToken
+    );
+
+    const originalTweets: TwitterTweet[] = [];
+    let author: TwitterUser | undefined;
+    let paginationToken: string | undefined;
+    const maxPages = 5;
+
+    for (let page = 0; page < maxPages; page++) {
+      const tweetParams = new URLSearchParams({
+        max_results: "20",
+        exclude: "replies,retweets",
+        "tweet.fields":
+          "text,created_at,public_metrics,author_id,referenced_tweets",
+        "user.fields": "username,name,profile_image_url,verified",
+        expansions: "author_id",
+      });
+
+      if (paginationToken) {
+        tweetParams.set("pagination_token", paginationToken);
+      }
+
+      const tweetsRes = await fetch(
+        `https://api.x.com/2/users/${socialAccount.providerAccountId}/tweets?${tweetParams.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${socialAccount.accessToken}`,
+          },
+        }
+      );
+
+      if (!tweetsRes.ok) {
+        if (page === 0) {
+          const errorBody = await tweetsRes.json().catch(() => ({}));
+          const message =
+            (errorBody as Record<string, string>)?.detail ||
+            (errorBody as Record<string, string>)?.title ||
+            "Failed to fetch tweets from X";
+          return NextResponse.json({ error: message }, { status: 400 });
+        }
+        break;
+      }
+
+      const timeline: TwitterTimelineResponse = await tweetsRes.json();
+
+      if (!author && timeline.includes?.users?.[0]) {
+        author = timeline.includes.users[0];
+      }
+
+      const filtered = (timeline.data ?? []).filter(
+        (t) =>
+          !t.referenced_tweets?.some(
+            (ref) => ref.type === "quoted" || ref.type === "replied_to"
+          )
+      );
+
+      for (const tweet of filtered) {
+        originalTweets.push(tweet);
+        if (originalTweets.length >= maxResults) {
+          break;
+        }
+      }
+
+      if (originalTweets.length >= maxResults || !timeline.meta?.next_token) {
+        break;
+      }
+
+      paginationToken = timeline.meta.next_token;
+    }
+
+    let tweets = originalTweets;
+
+    if (pinnedTweet) {
+      tweets = tweets.filter((t) => t.id !== pinnedTweet.id);
+      tweets.unshift(pinnedTweet);
+    }
+
+    tweets = tweets.slice(0, maxResults);
+
+    if (tweets.length === 0) {
+      return NextResponse.json({ count: 0, references: [] });
+    }
+
+    const authorHandle = author?.username ?? socialAccount.username;
+    const authorName = author?.name ?? socialAccount.displayName;
+    const authorVerified = author?.verified ?? socialAccount.verified;
+    const profileImageUrl = author?.profile_image_url
+      ? normalizeTwitterProfileImageUrl(author.profile_image_url)
+      : socialAccount.profileImageUrl;
+
+    const existingRefs = await db.query.brandReferences.findMany({
+      where: eq(brandReferences.brandSettingsId, voiceId),
+      columns: { metadata: true },
+    });
+
+    const existingTweetIds = new Set(
+      existingRefs
+        .map((r) => (r.metadata as Record<string, unknown> | null)?.tweetId)
+        .filter(Boolean)
+    );
+
+    const newTweets = tweets.filter((t) => !existingTweetIds.has(t.id));
+
+    if (newTweets.length === 0) {
+      return NextResponse.json({ count: 0, references: [] });
+    }
+
+    const values = newTweets.map((tweet) => ({
+      id: crypto.randomUUID(),
+      brandSettingsId: voiceId,
+      type: "twitter_post" as const,
+      content: tweet.text,
+      metadata: {
+        tweetId: tweet.id,
+        authorHandle,
+        authorName,
+        verified: authorVerified,
+        url: `https://x.com/${authorHandle}/status/${tweet.id}`,
+        likes: tweet.public_metrics?.like_count ?? 0,
+        retweets: tweet.public_metrics?.retweet_count ?? 0,
+        replies: tweet.public_metrics?.reply_count ?? 0,
+        profileImageUrl,
+        createdAt: tweet.created_at ?? new Date().toISOString(),
+      },
+      note: null,
+    }));
+
+    const inserted = await db
+      .insert(brandReferences)
+      .values(values)
+      .returning();
+
+    return NextResponse.json(
+      { count: inserted.length, references: inserted },
+      { status: 201 }
+    );
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to import tweets";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}

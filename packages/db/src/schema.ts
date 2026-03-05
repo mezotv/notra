@@ -286,6 +286,63 @@ export const brandSettings = pgTable(
   ]
 );
 
+export const brandReferences = pgTable(
+  "brand_references",
+  {
+    id: text("id").primaryKey(),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    content: text("content").notNull(),
+    metadata: jsonb("metadata"),
+    note: text("note"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+  ]
+);
+
+export const connectedSocialAccounts = pgTable(
+  "connected_social_accounts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    username: text("username").notNull(),
+    displayName: text("display_name").notNull(),
+    profileImageUrl: text("profile_image_url"),
+    verified: boolean("verified").default(false).notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token"),
+    scope: text("scope"),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("connectedSocialAccounts_organizationId_idx").on(
+      table.organizationId
+    ),
+    uniqueIndex("connectedSocialAccounts_org_provider_account_uidx").on(
+      table.organizationId,
+      table.provider,
+      table.providerAccountId
+    ),
+  ]
+);
+
 export const organizationNotificationSettings = pgTable(
   "organization_notification_settings",
   {
@@ -382,6 +439,7 @@ export const organizationsRelations = relations(
     githubIntegrations: many(githubIntegrations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
+    connectedSocialAccounts: many(connectedSocialAccounts),
     posts: many(posts),
   })
 );
@@ -457,12 +515,36 @@ export const repositoryOutputsRelations = relations(
   })
 );
 
-export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [brandSettings.organizationId],
-    references: [organizations.id],
-  }),
-}));
+export const brandSettingsRelations = relations(
+  brandSettings,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [brandSettings.organizationId],
+      references: [organizations.id],
+    }),
+    references: many(brandReferences),
+  })
+);
+
+export const brandReferencesRelations = relations(
+  brandReferences,
+  ({ one }) => ({
+    brandSettings: one(brandSettings, {
+      fields: [brandReferences.brandSettingsId],
+      references: [brandSettings.id],
+    }),
+  })
+);
+
+export const connectedSocialAccountsRelations = relations(
+  connectedSocialAccounts,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [connectedSocialAccounts.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
 
 export const organizationNotificationSettingsRelations = relations(
   organizationNotificationSettings,

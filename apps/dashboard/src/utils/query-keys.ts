@@ -16,11 +16,17 @@ export const QUERY_KEYS = {
     webhookConfig: (repositoryId: string) =>
       ["integrations", "webhook", repositoryId] as const,
   },
+  CONNECTED_ACCOUNTS: {
+    list: (organizationId: string) =>
+      ["connected-accounts", organizationId] as const,
+  },
   BRAND: {
     settings: (organizationId: string) =>
       ["brand", "settings", organizationId] as const,
     progress: (organizationId: string) =>
       ["brand", "progress", organizationId] as const,
+    references: (organizationId: string, voiceId: string) =>
+      ["brand", "references", organizationId, voiceId] as const,
   },
   WEBHOOK_LOGS: {
     base: ["webhook-logs"] as const,

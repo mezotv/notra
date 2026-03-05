@@ -106,6 +106,20 @@
       "when": 1772568837533,
       "tag": "0014_flat_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1772726260067,
+      "tag": "0015_lazy_mad_thinker",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1772746452885,
+      "tag": "0016_rare_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

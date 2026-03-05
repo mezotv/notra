@@ -59,3 +59,39 @@ export const updateBrandSettingsSchema = brandSettingsSchema
 export type UpdateBrandSettingsInput = z.infer<
   typeof updateBrandSettingsSchema
 >;
+
+export const referenceTypeSchema = z.enum([
+  "twitter_post",
+  "linkedin_post",
+  "blog_post",
+  "custom",
+]);
+
+export type ReferenceType = z.infer<typeof referenceTypeSchema>;
+
+export const createReferenceSchema = z.object({
+  type: referenceTypeSchema,
+  content: z.string().min(1),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+  note: z.string().nullable().optional(),
+});
+
+export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;
+
+export const updateReferenceSchema = z.object({
+  note: z.string().nullable().optional(),
+  content: z.string().min(1).optional(),
+});
+
+export type UpdateReferenceInput = z.infer<typeof updateReferenceSchema>;
+
+export const fetchTweetSchema = z.object({
+  url: z.string().min(1),
+});
+
+export const importTweetsSchema = z.object({
+  accountId: z.string().min(1),
+  maxResults: z.number().int().min(5).max(20).default(20),
+});
+
+export type ImportTweetsInput = z.infer<typeof importTweetsSchema>;

@@ -22,7 +22,6 @@ export interface VoiceSelectorProps {
   activeVoiceId: string;
   onSelect: (id: string) => void;
   organizationId: string;
-  isDefault: boolean;
   onReanalyze: (url: string) => void;
   isReanalyzing: boolean;
   onDelete: () => void;

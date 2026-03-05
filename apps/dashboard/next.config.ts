@@ -39,6 +39,7 @@ const nextConfig: NextConfig = {
         "img-src 'self' data: blob:",
         "api.dicebear.com",
         "icons.duckduckgo.com",
+        "pbs.twimg.com",
         "databuddy.cc",
         "*.databuddy.cc",
         process.env.CLOUDFLARE_PUBLIC_URL
@@ -98,6 +99,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "icons.duckduckgo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "pbs.twimg.com",
       },
       ...(process.env.CLOUDFLARE_PUBLIC_URL
         ? [
