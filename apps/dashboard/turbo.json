@@ -1,0 +1,40 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "$TURBO_ROOT$/.env*"],
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": [
+        "APP_URL",
+        "AUTUMN_SECRET_KEY",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "CLOUDFLARE_ACCESS_KEY_ID",
+        "CLOUDFLARE_BUCKET_NAME",
+        "CLOUDFLARE_PUBLIC_URL",
+        "CLOUDFLARE_S3_ENDPOINT",
+        "CLOUDFLARE_SECRET_ACCESS_KEY",
+        "DATABASE_URL",
+        "DATABUDDY_API_KEY",
+        "DATABUDDY_DASHBOARD_WEBSITE_ID",
+        "FIRECRAWL_API_KEY",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "INTEGRATION_ENCRYPTION_KEY",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_DATABUDDY_CLIENT_ID",
+        "NEXT_PUBLIC_SHOW_UPGRADE_BUTTON",
+        "QSTASH_TOKEN",
+        "SUPERMEMORY_API_KEY",
+        "UNKEY_API_ID",
+        "UNKEY_ROOT_KEY",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "UPSTASH_REDIS_REST_URL",
+        "VERCEL_GIT_COMMIT_SHA",
+        "VERCEL_URL"
+      ]
+    }
+  }
+}
