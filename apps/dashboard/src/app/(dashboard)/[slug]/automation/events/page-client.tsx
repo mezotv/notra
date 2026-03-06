@@ -7,6 +7,14 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
+import { Input } from "@notra/ui/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@notra/ui/components/ui/select";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import {
   Table,
@@ -34,9 +42,14 @@ import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-sta
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import type { WebhookEventType } from "@/schemas/integrations";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
-import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
+import {
+  getOutputTypeLabel,
+  getWebhookEventLabel,
+  OutputTypeIcon,
+} from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
@@ -69,6 +82,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [createdSortOrder, setCreatedSortOrder] = useState<
     false | "asc" | "desc"
   >(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [eventTypeFilter, setEventTypeFilter] = useState<WebhookEventType | "">(
+    ""
+  );
+  const [outputTypeFilter, setOutputTypeFilter] = useState("");
 
   const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
     queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
@@ -185,11 +203,59 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     [triggers]
   );
 
+  const distinctEventTypes = useMemo(() => {
+    const seen = new Set<string>();
+    for (const t of eventTriggers) {
+      for (const et of t.sourceConfig.eventTypes ?? []) {
+        seen.add(et);
+      }
+    }
+    return Array.from(seen).sort();
+  }, [eventTriggers]);
+
+  const distinctOutputTypes = useMemo(() => {
+    const seen = new Set<string>();
+    for (const t of eventTriggers) {
+      seen.add(t.outputType);
+    }
+    return Array.from(seen).sort();
+  }, [eventTriggers]);
+
   const filteredTriggers = useMemo(() => {
-    return eventTriggers.filter((t) =>
-      activeTab === "active" ? t.enabled : !t.enabled
-    );
-  }, [eventTriggers, activeTab]);
+    const lowerQuery = searchQuery.toLowerCase().trim();
+    return eventTriggers.filter((t) => {
+      if (activeTab === "active" ? !t.enabled : t.enabled) {
+        return false;
+      }
+      if (lowerQuery !== "") {
+        const matchesEventType = (t.sourceConfig.eventTypes ?? []).some((et) =>
+          et.toLowerCase().includes(lowerQuery)
+        );
+        const matchesOutputLabel = getOutputTypeLabel(t.outputType)
+          .toLowerCase()
+          .includes(lowerQuery);
+        if (!matchesEventType && !matchesOutputLabel) {
+          return false;
+        }
+      }
+      if (
+        eventTypeFilter !== "" &&
+        !(t.sourceConfig.eventTypes ?? []).includes(eventTypeFilter)
+      ) {
+        return false;
+      }
+      if (outputTypeFilter !== "" && t.outputType !== outputTypeFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [
+    eventTriggers,
+    activeTab,
+    searchQuery,
+    eventTypeFilter,
+    outputTypeFilter,
+  ]);
 
   const activeCounts = useMemo(() => {
     let active = 0;
@@ -203,6 +269,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     }
     return { active, paused };
   }, [eventTriggers]);
+
+  const hasActiveFilters =
+    searchQuery !== "" || eventTypeFilter !== "" || outputTypeFilter !== "";
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery("");
+    setEventTypeFilter("");
+    setOutputTypeFilter("");
+  }, []);
 
   const handleToggle = useCallback(
     (trigger: Trigger) => updateMutation.mutate(trigger),
@@ -289,20 +364,105 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               setActiveTab(value as "active" | "paused")
             }
           >
-            <TabsList variant="line">
-              <TabsTrigger value="active">
-                Active ({activeCounts.active})
-              </TabsTrigger>
-              <TabsTrigger value="paused">
-                Paused ({activeCounts.paused})
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <TabsList variant="line">
+                <TabsTrigger value="active">
+                  Active ({activeCounts.active})
+                </TabsTrigger>
+                <TabsTrigger value="paused">
+                  Paused ({activeCounts.paused})
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="sr-only" htmlFor="event-search">
+                  Search event triggers
+                </label>
+                <Input
+                  className="h-8 w-48"
+                  id="event-search"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  type="search"
+                  value={searchQuery}
+                />
+
+                {distinctEventTypes.length > 0 && (
+                  <>
+                    <label className="sr-only" htmlFor="event-type-filter">
+                      Filter by event type
+                    </label>
+                    <Select
+                      onValueChange={(value) =>
+                        setEventTypeFilter((value as WebhookEventType) ?? "")
+                      }
+                      value={eventTypeFilter}
+                    >
+                      <SelectTrigger
+                        className="h-8 w-40"
+                        id="event-type-filter"
+                        size="sm"
+                      >
+                        <SelectValue placeholder="Event type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {distinctEventTypes.map((et) => (
+                          <SelectItem key={et} value={et}>
+                            {getWebhookEventLabel(et)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+
+                {distinctOutputTypes.length > 0 && (
+                  <>
+                    <label className="sr-only" htmlFor="output-type-filter">
+                      Filter by output type
+                    </label>
+                    <Select
+                      onValueChange={(value) =>
+                        setOutputTypeFilter(value ?? "")
+                      }
+                      value={outputTypeFilter}
+                    >
+                      <SelectTrigger
+                        className="h-8 w-40"
+                        id="output-type-filter"
+                        size="sm"
+                      >
+                        <SelectValue placeholder="Output type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {distinctOutputTypes.map((ot) => (
+                          <SelectItem key={ot} value={ot}>
+                            {getOutputTypeLabel(ot)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+
+                {hasActiveFilters && (
+                  <Button
+                    onClick={handleClearFilters}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            </div>
 
             <TabsContent className="mt-4" value="active">
               <EventTable
                 brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
                 defaultBrandVoice={defaultBrandVoice}
+                hasActiveFilters={hasActiveFilters}
                 onDelete={handleDelete}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
@@ -315,6 +475,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
                 defaultBrandVoice={defaultBrandVoice}
+                hasActiveFilters={hasActiveFilters}
                 onDelete={handleDelete}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
@@ -333,6 +494,7 @@ function EventTable({
   brandVoiceMap,
   createdSortOrder,
   defaultBrandVoice,
+  hasActiveFilters,
   onSortCreatedChange,
   onToggle,
   onDelete,
@@ -341,6 +503,7 @@ function EventTable({
   brandVoiceMap: Record<string, BrandSettings>;
   createdSortOrder: false | "asc" | "desc";
   defaultBrandVoice?: BrandSettings;
+  hasActiveFilters: boolean;
   onSortCreatedChange: (next: false | "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
@@ -372,7 +535,9 @@ function EventTable({
   if (triggers.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-        No event triggers in this category.
+        {hasActiveFilters
+          ? "No event triggers match your filters."
+          : "No event triggers in this category."}
       </div>
     );
   }
@@ -409,7 +574,7 @@ function EventTable({
           {sortedTriggers.map((trigger) => {
             const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
             const brandVoice = hasExplicitVoice
-              ? brandVoiceMap[trigger.outputConfig!.brandVoiceId!]
+              ? brandVoiceMap[trigger.outputConfig?.brandVoiceId ?? ""]
               : defaultBrandVoice;
 
             return (
