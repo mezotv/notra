@@ -124,7 +124,7 @@ function NoteInput({
     }
   };
 
-  const handleNoteKeyDown = (e: React.KeyboardEvent) => {
+  const handleNoteKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Escape") {
       e.currentTarget.blur();
     }
