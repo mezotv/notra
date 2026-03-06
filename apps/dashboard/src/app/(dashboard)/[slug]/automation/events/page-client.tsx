@@ -1,37 +1,38 @@
 "use client";
 
 import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  ArrowUpDownIcon,
+	ArrowDown01Icon,
+	ArrowUp01Icon,
+	ArrowUpDownIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@notra/ui/components/ui/select";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
 } from "@notra/ui/components/ui/table";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
@@ -46,586 +47,609 @@ import type { WebhookEventType } from "@/schemas/integrations";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
 import {
-  getOutputTypeLabel,
-  getWebhookEventLabel,
-  OutputTypeIcon,
+	getOutputTypeLabel,
+	getWebhookEventLabel,
+	OutputTypeIcon,
 } from "@/utils/output-types";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
+const TAB_VALUES = ["active", "paused"] as const;
 
 function formatEventList(events?: string[]) {
-  if (!events || events.length === 0) {
-    return "All events";
-  }
-  return events.map((event) => event.replace("_", " ")).join(", ");
+	if (!events || events.length === 0) {
+		return "All events";
+	}
+	return events.map((event) => event.replace("_", " ")).join(", ");
 }
 
 function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(dateString));
+	return new Intl.DateTimeFormat(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(new Date(dateString));
 }
 
 interface PageClientProps {
-  organizationSlug: string;
+	organizationSlug: string;
 }
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
-  const { getOrganization } = useOrganizationsContext();
-  const organization = getOrganization(organizationSlug);
-  const organizationId = organization?.id;
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"active" | "paused">("active");
-  const [createdSortOrder, setCreatedSortOrder] = useState<
-    false | "asc" | "desc"
-  >(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [eventTypeFilter, setEventTypeFilter] = useState<WebhookEventType | "">(
-    ""
-  );
-  const [outputTypeFilter, setOutputTypeFilter] = useState("");
+	const { getOrganization } = useOrganizationsContext();
+	const organization = getOrganization(organizationSlug);
+	const organizationId = organization?.id;
+	const queryClient = useQueryClient();
 
-  const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events`
-      );
+	// URL-persisted state via nuqs — filters survive navigation and can be shared
+	const [activeTab, setActiveTab] = useQueryState(
+		"tab",
+		parseAsStringLiteral(TAB_VALUES).withDefault("active"),
+	);
+	const [searchQuery, setSearchQuery] = useQueryState(
+		"search",
+		parseAsString.withDefault(""),
+	);
+	const [eventTypeFilter, setEventTypeFilter] = useQueryState(
+		"event",
+		parseAsString.withDefault(""),
+	);
+	const [outputTypeFilter, setOutputTypeFilter] = useQueryState(
+		"output",
+		parseAsString.withDefault(""),
+	);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch triggers");
-      }
+	// Sort order is ephemeral UI state — no benefit to URL persistence
+	const [createdSortOrder, setCreatedSortOrder] = useState<
+		false | "asc" | "desc"
+	>(false);
 
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+	const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
+		queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+		queryFn: async () => {
+			if (!organizationId) {
+				throw new Error("Organization ID is required");
+			}
+			const response = await fetch(
+				`/api/organizations/${organizationId}/automation/events`,
+			);
 
-  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId ?? ""),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/brand`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+			if (!response.ok) {
+				throw new Error("Failed to fetch triggers");
+			}
 
-  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
-    const map: Record<string, BrandSettings> = {};
-    let defaultVoice: BrandSettings | undefined;
-    for (const voice of brandResponse?.voices ?? []) {
-      map[voice.id] = voice;
-      if (voice.isDefault) {
-        defaultVoice = voice;
-      }
-    }
-    return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
-  }, [brandResponse]);
+			return response.json();
+		},
+		enabled: !!organizationId,
+	});
 
-  const updateMutation = useMutation({
-    mutationFn: async (trigger: Trigger) => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${trigger.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sourceType: trigger.sourceType,
-            sourceConfig: trigger.sourceConfig,
-            targets: trigger.targets,
-            outputType: trigger.outputType,
-            outputConfig: trigger.outputConfig,
-            enabled: !trigger.enabled,
-          }),
-        }
-      );
+	const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
+		queryKey: QUERY_KEYS.BRAND.settings(organizationId ?? ""),
+		queryFn: async () => {
+			const response = await fetch(
+				`/api/organizations/${organizationId}/brand`,
+			);
+			if (!response.ok) {
+				throw new Error("Failed to fetch brand voices");
+			}
+			return response.json();
+		},
+		enabled: !!organizationId,
+	});
 
-      if (!response.ok) {
-        throw new Error("Failed to update trigger");
-      }
+	const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
+		const map: Record<string, BrandSettings> = {};
+		let defaultVoice: BrandSettings | undefined;
+		for (const voice of brandResponse?.voices ?? []) {
+			map[voice.id] = voice;
+			if (voice.isDefault) {
+				defaultVoice = voice;
+			}
+		}
+		return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
+	}, [brandResponse]);
 
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-      });
-    },
-    onError: () => {
-      toast.error("Failed to update trigger");
-    },
-  });
+	const updateMutation = useMutation({
+		mutationFn: async (trigger: Trigger) => {
+			if (!organizationId) {
+				throw new Error("Organization ID is required");
+			}
+			const response = await fetch(
+				`/api/organizations/${organizationId}/automation/events?triggerId=${trigger.id}`,
+				{
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						sourceType: trigger.sourceType,
+						sourceConfig: trigger.sourceConfig,
+						targets: trigger.targets,
+						outputType: trigger.outputType,
+						outputConfig: trigger.outputConfig,
+						enabled: !trigger.enabled,
+					}),
+				},
+			);
 
-  const deleteMutation = useMutation({
-    mutationFn: async (triggerId: string) => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${triggerId}`,
-        { method: "DELETE" }
-      );
+			if (!response.ok) {
+				throw new Error("Failed to update trigger");
+			}
 
-      if (!response.ok) {
-        throw new Error("Failed to delete trigger");
-      }
+			return response.json();
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+			});
+		},
+		onError: () => {
+			toast.error("Failed to update trigger");
+		},
+	});
 
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-      });
-      toast.success("Event trigger removed");
-    },
-    onError: () => {
-      toast.error("Failed to delete trigger");
-    },
-  });
+	const deleteMutation = useMutation({
+		mutationFn: async (triggerId: string) => {
+			if (!organizationId) {
+				throw new Error("Organization ID is required");
+			}
+			const response = await fetch(
+				`/api/organizations/${organizationId}/automation/events?triggerId=${triggerId}`,
+				{ method: "DELETE" },
+			);
 
-  const triggers = data?.triggers ?? [];
-  const eventTriggers = useMemo(
-    () => triggers.filter((trigger) => trigger.sourceType === "github_webhook"),
-    [triggers]
-  );
+			if (!response.ok) {
+				throw new Error("Failed to delete trigger");
+			}
 
-  const distinctEventTypes = useMemo(() => {
-    const seen = new Set<string>();
-    for (const t of eventTriggers) {
-      for (const et of t.sourceConfig.eventTypes ?? []) {
-        seen.add(et);
-      }
-    }
-    return Array.from(seen).sort();
-  }, [eventTriggers]);
+			return response.json();
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+			});
+			toast.success("Event trigger removed");
+		},
+		onError: () => {
+			toast.error("Failed to delete trigger");
+		},
+	});
 
-  const distinctOutputTypes = useMemo(() => {
-    const seen = new Set<string>();
-    for (const t of eventTriggers) {
-      seen.add(t.outputType);
-    }
-    return Array.from(seen).sort();
-  }, [eventTriggers]);
+	const triggers = data?.triggers ?? [];
+	const eventTriggers = useMemo(
+		() => triggers.filter((trigger) => trigger.sourceType === "github_webhook"),
+		[triggers],
+	);
 
-  const filteredTriggers = useMemo(() => {
-    const lowerQuery = searchQuery.toLowerCase().trim();
-    return eventTriggers.filter((t) => {
-      if (activeTab === "active" ? !t.enabled : t.enabled) {
-        return false;
-      }
-      if (lowerQuery !== "") {
-        const matchesEventType = (t.sourceConfig.eventTypes ?? []).some((et) =>
-          et.toLowerCase().includes(lowerQuery)
-        );
-        const matchesOutputLabel = getOutputTypeLabel(t.outputType)
-          .toLowerCase()
-          .includes(lowerQuery);
-        if (!matchesEventType && !matchesOutputLabel) {
-          return false;
-        }
-      }
-      if (
-        eventTypeFilter !== "" &&
-        !(t.sourceConfig.eventTypes ?? []).includes(eventTypeFilter)
-      ) {
-        return false;
-      }
-      if (outputTypeFilter !== "" && t.outputType !== outputTypeFilter) {
-        return false;
-      }
-      return true;
-    });
-  }, [
-    eventTriggers,
-    activeTab,
-    searchQuery,
-    eventTypeFilter,
-    outputTypeFilter,
-  ]);
+	// Tab-scoped base: only triggers belonging to the current active/paused tab.
+	// Dropdown options derive from this so they only surface relevant choices.
+	const tabFilteredTriggers = useMemo(
+		() =>
+			eventTriggers.filter((t) =>
+				activeTab === "active" ? t.enabled : !t.enabled,
+			),
+		[eventTriggers, activeTab],
+	);
 
-  const activeCounts = useMemo(() => {
-    let active = 0;
-    let paused = 0;
-    for (const t of eventTriggers) {
-      if (t.enabled) {
-        active++;
-      } else {
-        paused++;
-      }
-    }
-    return { active, paused };
-  }, [eventTriggers]);
+	const distinctEventTypes = useMemo(() => {
+		const seen = new Set<string>();
+		for (const t of tabFilteredTriggers) {
+			for (const et of t.sourceConfig.eventTypes ?? []) {
+				seen.add(et);
+			}
+		}
+		return Array.from(seen).sort();
+	}, [tabFilteredTriggers]);
 
-  const hasActiveFilters =
-    searchQuery !== "" || eventTypeFilter !== "" || outputTypeFilter !== "";
+	const distinctOutputTypes = useMemo(() => {
+		const seen = new Set<string>();
+		for (const t of tabFilteredTriggers) {
+			seen.add(t.outputType);
+		}
+		return Array.from(seen).sort();
+	}, [tabFilteredTriggers]);
 
-  const handleClearFilters = useCallback(() => {
-    setSearchQuery("");
-    setEventTypeFilter("");
-    setOutputTypeFilter("");
-  }, []);
+	// Apply text search + dropdown filters on top of the tab-filtered base
+	const filteredTriggers = useMemo(() => {
+		const lowerQuery = searchQuery.toLowerCase().trim();
+		return tabFilteredTriggers.filter((t) => {
+			if (lowerQuery !== "") {
+				const matchesEventType = (t.sourceConfig.eventTypes ?? []).some((et) =>
+					et.toLowerCase().includes(lowerQuery),
+				);
+				const matchesOutputLabel = getOutputTypeLabel(t.outputType)
+					.toLowerCase()
+					.includes(lowerQuery);
+				if (!matchesEventType && !matchesOutputLabel) {
+					return false;
+				}
+			}
+			if (
+				eventTypeFilter !== "" &&
+				!(t.sourceConfig.eventTypes ?? []).includes(
+					eventTypeFilter as WebhookEventType,
+				)
+			) {
+				return false;
+			}
+			if (outputTypeFilter !== "" && t.outputType !== outputTypeFilter) {
+				return false;
+			}
+			return true;
+		});
+	}, [tabFilteredTriggers, searchQuery, eventTypeFilter, outputTypeFilter]);
 
-  const handleToggle = useCallback(
-    (trigger: Trigger) => updateMutation.mutate(trigger),
-    [updateMutation]
-  );
+	const activeCounts = useMemo(() => {
+		let active = 0;
+		let paused = 0;
+		for (const t of eventTriggers) {
+			if (t.enabled) {
+				active++;
+			} else {
+				paused++;
+			}
+		}
+		return { active, paused };
+	}, [eventTriggers]);
 
-  const handleDelete = useCallback(
-    (id: string) => deleteMutation.mutate(id),
-    [deleteMutation]
-  );
+	const hasActiveFilters =
+		searchQuery !== "" || eventTypeFilter !== "" || outputTypeFilter !== "";
 
-  return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Events</h1>
-            <p className="text-muted-foreground">
-              React to GitHub activity and trigger content generation
-              automatically.
-            </p>
-          </div>
-          <AddTriggerDialog
-            allowedSourceTypes={EVENT_SOURCE_TYPES}
-            apiPath={
-              organizationId
-                ? `/api/organizations/${organizationId}/automation/events`
-                : undefined
-            }
-            initialSourceType="github_webhook"
-            onSuccess={() =>
-              queryClient.invalidateQueries({
-                queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-              })
-            }
-            organizationId={organizationId ?? ""}
-            trigger={
-              <Button size="sm" variant="default">
-                <PlusIcon className="size-4" />
-                <span className="ml-1">New Event Trigger</span>
-              </Button>
-            }
-          />
-        </div>
+	const handleClearFilters = useCallback(() => {
+		void setSearchQuery("");
+		void setEventTypeFilter("");
+		void setOutputTypeFilter("");
+	}, [setSearchQuery, setEventTypeFilter, setOutputTypeFilter]);
 
-        {isPending && <EventsPageSkeleton />}
+	const handleToggle = useCallback(
+		(trigger: Trigger) => updateMutation.mutate(trigger),
+		[updateMutation],
+	);
 
-        {!isPending && eventTriggers.length === 0 && (
-          <EmptyState
-            action={
-              <AddTriggerDialog
-                allowedSourceTypes={EVENT_SOURCE_TYPES}
-                apiPath={
-                  organizationId
-                    ? `/api/organizations/${organizationId}/automation/events`
-                    : undefined
-                }
-                initialSourceType="github_webhook"
-                onSuccess={() =>
-                  queryClient.invalidateQueries({
-                    queryKey: QUERY_KEYS.AUTOMATION.events(
-                      organizationId ?? ""
-                    ),
-                  })
-                }
-                organizationId={organizationId ?? ""}
-                trigger={
-                  <Button size="sm" variant="outline">
-                    <PlusIcon className="size-4" />
-                    <span className="ml-1">New Event Trigger</span>
-                  </Button>
-                }
-              />
-            }
-            description="Create your first event trigger to react to GitHub activity."
-            title="No event triggers yet"
-          />
-        )}
+	const handleDelete = useCallback(
+		(id: string) => deleteMutation.mutate(id),
+		[deleteMutation],
+	);
 
-        {!isPending && eventTriggers.length > 0 && (
-          <Tabs
-            defaultValue="active"
-            onValueChange={(value) =>
-              setActiveTab(value as "active" | "paused")
-            }
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <TabsList variant="line">
-                <TabsTrigger value="active">
-                  Active ({activeCounts.active})
-                </TabsTrigger>
-                <TabsTrigger value="paused">
-                  Paused ({activeCounts.paused})
-                </TabsTrigger>
-              </TabsList>
+	return (
+		<PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+			<div className="w-full space-y-6 px-4 lg:px-6">
+				<div className="flex items-start justify-between">
+					<div className="space-y-1">
+						<h1 className="font-bold text-3xl tracking-tight">Events</h1>
+						<p className="text-muted-foreground">
+							React to GitHub activity and trigger content generation
+							automatically.
+						</p>
+					</div>
+					<AddTriggerDialog
+						allowedSourceTypes={EVENT_SOURCE_TYPES}
+						apiPath={
+							organizationId
+								? `/api/organizations/${organizationId}/automation/events`
+								: undefined
+						}
+						initialSourceType="github_webhook"
+						onSuccess={() =>
+							queryClient.invalidateQueries({
+								queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+							})
+						}
+						organizationId={organizationId ?? ""}
+						trigger={
+							<Button size="sm" variant="default">
+								<PlusIcon className="size-4" />
+								<span className="ml-1">New Event Trigger</span>
+							</Button>
+						}
+					/>
+				</div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="sr-only" htmlFor="event-search">
-                  Search event triggers
-                </label>
-                <Input
-                  className="h-8 w-48"
-                  id="event-search"
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  type="search"
-                  value={searchQuery}
-                />
+				{isPending && <EventsPageSkeleton />}
 
-                {distinctEventTypes.length > 0 && (
-                  <>
-                    <label className="sr-only" htmlFor="event-type-filter">
-                      Filter by event type
-                    </label>
-                    <Select
-                      onValueChange={(value) =>
-                        setEventTypeFilter((value as WebhookEventType) ?? "")
-                      }
-                      value={eventTypeFilter}
-                    >
-                      <SelectTrigger
-                        className="h-8 w-40"
-                        id="event-type-filter"
-                        size="sm"
-                      >
-                        <SelectValue placeholder="Event type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {distinctEventTypes.map((et) => (
-                          <SelectItem key={et} value={et}>
-                            {getWebhookEventLabel(et)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
+				{!isPending && eventTriggers.length === 0 && (
+					<EmptyState
+						action={
+							<AddTriggerDialog
+								allowedSourceTypes={EVENT_SOURCE_TYPES}
+								apiPath={
+									organizationId
+										? `/api/organizations/${organizationId}/automation/events`
+										: undefined
+								}
+								initialSourceType="github_webhook"
+								onSuccess={() =>
+									queryClient.invalidateQueries({
+										queryKey: QUERY_KEYS.AUTOMATION.events(
+											organizationId ?? "",
+										),
+									})
+								}
+								organizationId={organizationId ?? ""}
+								trigger={
+									<Button size="sm" variant="outline">
+										<PlusIcon className="size-4" />
+										<span className="ml-1">New Event Trigger</span>
+									</Button>
+								}
+							/>
+						}
+						description="Create your first event trigger to react to GitHub activity."
+						title="No event triggers yet"
+					/>
+				)}
 
-                {distinctOutputTypes.length > 0 && (
-                  <>
-                    <label className="sr-only" htmlFor="output-type-filter">
-                      Filter by output type
-                    </label>
-                    <Select
-                      onValueChange={(value) =>
-                        setOutputTypeFilter(value ?? "")
-                      }
-                      value={outputTypeFilter}
-                    >
-                      <SelectTrigger
-                        className="h-8 w-40"
-                        id="output-type-filter"
-                        size="sm"
-                      >
-                        <SelectValue placeholder="Output type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {distinctOutputTypes.map((ot) => (
-                          <SelectItem key={ot} value={ot}>
-                            {getOutputTypeLabel(ot)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
+				{!isPending && eventTriggers.length > 0 && (
+					<Tabs
+						value={activeTab}
+						onValueChange={(value) => {
+							if (value === "active" || value === "paused") {
+								void setActiveTab(value);
+							}
+						}}
+					>
+						<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+							<TabsList variant="line">
+								<TabsTrigger value="active">
+									Active ({activeCounts.active})
+								</TabsTrigger>
+								<TabsTrigger value="paused">
+									Paused ({activeCounts.paused})
+								</TabsTrigger>
+							</TabsList>
 
-                {hasActiveFilters && (
-                  <Button
-                    onClick={handleClearFilters}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Clear filters
-                  </Button>
-                )}
-              </div>
-            </div>
+							<div className="flex flex-wrap items-center gap-2">
+								<label className="sr-only" htmlFor="event-search">
+									Search event triggers
+								</label>
+								<Input
+									className="h-8 w-48"
+									id="event-search"
+									onChange={(e) => void setSearchQuery(e.target.value)}
+									placeholder="Search..."
+									type="search"
+									value={searchQuery}
+								/>
 
-            <TabsContent className="mt-4" value="active">
-              <EventTable
-                brandVoiceMap={brandVoiceMap}
-                createdSortOrder={createdSortOrder}
-                defaultBrandVoice={defaultBrandVoice}
-                hasActiveFilters={hasActiveFilters}
-                onDelete={handleDelete}
-                onSortCreatedChange={setCreatedSortOrder}
-                onToggle={handleToggle}
-                triggers={filteredTriggers}
-              />
-            </TabsContent>
+								{distinctEventTypes.length > 0 && (
+									<>
+										<label className="sr-only" htmlFor="event-type-filter">
+											Filter by event type
+										</label>
+										<Select
+											onValueChange={(value) =>
+												void setEventTypeFilter(value ?? "")
+											}
+											value={eventTypeFilter}
+										>
+											<SelectTrigger
+												className="h-8 w-40"
+												id="event-type-filter"
+												size="sm"
+											>
+												<SelectValue placeholder="Event type" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="">All event types</SelectItem>
+												{distinctEventTypes.map((et) => (
+													<SelectItem key={et} value={et}>
+														{getWebhookEventLabel(et)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</>
+								)}
 
-            <TabsContent className="mt-4" value="paused">
-              <EventTable
-                brandVoiceMap={brandVoiceMap}
-                createdSortOrder={createdSortOrder}
-                defaultBrandVoice={defaultBrandVoice}
-                hasActiveFilters={hasActiveFilters}
-                onDelete={handleDelete}
-                onSortCreatedChange={setCreatedSortOrder}
-                onToggle={handleToggle}
-                triggers={filteredTriggers}
-              />
-            </TabsContent>
-          </Tabs>
-        )}
-      </div>
-    </PageContainer>
-  );
+								{distinctOutputTypes.length > 0 && (
+									<>
+										<label className="sr-only" htmlFor="output-type-filter">
+											Filter by output type
+										</label>
+										<Select
+											onValueChange={(value) =>
+												void setOutputTypeFilter(value ?? "")
+											}
+											value={outputTypeFilter}
+										>
+											<SelectTrigger
+												className="h-8 w-40"
+												id="output-type-filter"
+												size="sm"
+											>
+												<SelectValue placeholder="Output type" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="">All output types</SelectItem>
+												{distinctOutputTypes.map((ot) => (
+													<SelectItem key={ot} value={ot}>
+														{getOutputTypeLabel(ot)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</>
+								)}
+
+								{hasActiveFilters && (
+									<Button
+										onClick={handleClearFilters}
+										size="sm"
+										variant="ghost"
+									>
+										Clear filters
+									</Button>
+								)}
+							</div>
+						</div>
+
+						<TabsContent className="mt-4" value="active">
+							<EventTable
+								brandVoiceMap={brandVoiceMap}
+								createdSortOrder={createdSortOrder}
+								defaultBrandVoice={defaultBrandVoice}
+								hasActiveFilters={hasActiveFilters}
+								onDelete={handleDelete}
+								onSortCreatedChange={setCreatedSortOrder}
+								onToggle={handleToggle}
+								triggers={filteredTriggers}
+							/>
+						</TabsContent>
+
+						<TabsContent className="mt-4" value="paused">
+							<EventTable
+								brandVoiceMap={brandVoiceMap}
+								createdSortOrder={createdSortOrder}
+								defaultBrandVoice={defaultBrandVoice}
+								hasActiveFilters={hasActiveFilters}
+								onDelete={handleDelete}
+								onSortCreatedChange={setCreatedSortOrder}
+								onToggle={handleToggle}
+								triggers={filteredTriggers}
+							/>
+						</TabsContent>
+					</Tabs>
+				)}
+			</div>
+		</PageContainer>
+	);
 }
 
 function EventTable({
-  triggers,
-  brandVoiceMap,
-  createdSortOrder,
-  defaultBrandVoice,
-  hasActiveFilters,
-  onSortCreatedChange,
-  onToggle,
-  onDelete,
+	triggers,
+	brandVoiceMap,
+	createdSortOrder,
+	defaultBrandVoice,
+	hasActiveFilters,
+	onSortCreatedChange,
+	onToggle,
+	onDelete,
 }: {
-  triggers: Trigger[];
-  brandVoiceMap: Record<string, BrandSettings>;
-  createdSortOrder: false | "asc" | "desc";
-  defaultBrandVoice?: BrandSettings;
-  hasActiveFilters: boolean;
-  onSortCreatedChange: (next: false | "asc" | "desc") => void;
-  onToggle: (trigger: Trigger) => void;
-  onDelete: (triggerId: string) => void;
+	triggers: Trigger[];
+	brandVoiceMap: Record<string, BrandSettings>;
+	createdSortOrder: false | "asc" | "desc";
+	defaultBrandVoice?: BrandSettings;
+	hasActiveFilters: boolean;
+	onSortCreatedChange: (next: false | "asc" | "desc") => void;
+	onToggle: (trigger: Trigger) => void;
+	onDelete: (triggerId: string) => void;
 }) {
-  const sortedTriggers = useMemo(() => {
-    if (createdSortOrder === false) {
-      return triggers;
-    }
-    return [...triggers].sort((a, b) => {
-      const createdAtA = new Date(a.createdAt).getTime();
-      const createdAtB = new Date(b.createdAt).getTime();
-      return createdSortOrder === "desc"
-        ? createdAtB - createdAtA
-        : createdAtA - createdAtB;
-    });
-  }, [triggers, createdSortOrder]);
+	const sortedTriggers = useMemo(() => {
+		if (createdSortOrder === false) {
+			return triggers;
+		}
+		return [...triggers].sort((a, b) => {
+			const createdAtA = new Date(a.createdAt).getTime();
+			const createdAtB = new Date(b.createdAt).getTime();
+			return createdSortOrder === "desc"
+				? createdAtB - createdAtA
+				: createdAtA - createdAtB;
+		});
+	}, [triggers, createdSortOrder]);
 
-  function getSortIcon(isSorted: false | "asc" | "desc") {
-    if (isSorted === "asc") {
-      return ArrowUp01Icon;
-    }
-    if (isSorted === "desc") {
-      return ArrowDown01Icon;
-    }
-    return ArrowUpDownIcon;
-  }
-  const sortIcon = getSortIcon(createdSortOrder);
+	function getSortIcon(isSorted: false | "asc" | "desc") {
+		if (isSorted === "asc") {
+			return ArrowUp01Icon;
+		}
+		if (isSorted === "desc") {
+			return ArrowDown01Icon;
+		}
+		return ArrowUpDownIcon;
+	}
+	const sortIcon = getSortIcon(createdSortOrder);
 
-  if (triggers.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-        {hasActiveFilters
-          ? "No event triggers match your filters."
-          : "No event triggers in this category."}
-      </div>
-    );
-  }
+	if (triggers.length === 0) {
+		return (
+			<div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
+				{hasActiveFilters
+					? "No event triggers match your filters."
+					: "No event triggers in this category."}
+			</div>
+		);
+	}
 
-  return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Events</TableHead>
-            <TableHead>Brand</TableHead>
-            <TableHead>Output</TableHead>
-            <TableHead>Targets</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>
-              <Button
-                className="-ml-4"
-                onClick={() =>
-                  onSortCreatedChange(
-                    createdSortOrder === "asc" ? "desc" : "asc"
-                  )
-                }
-                variant="ghost"
-              >
-                Created At
-                <HugeiconsIcon className="ml-2 size-4" icon={sortIcon} />
-              </Button>
-            </TableHead>
-            <TableHead className="w-12" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedTriggers.map((trigger) => {
-            const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
-            const brandVoice = hasExplicitVoice
-              ? brandVoiceMap[trigger.outputConfig?.brandVoiceId ?? ""]
-              : defaultBrandVoice;
+	return (
+		<div className="rounded-lg border">
+			<Table>
+				<TableHeader>
+					<TableRow>
+						<TableHead>Type</TableHead>
+						<TableHead>Events</TableHead>
+						<TableHead>Brand</TableHead>
+						<TableHead>Output</TableHead>
+						<TableHead>Targets</TableHead>
+						<TableHead>Status</TableHead>
+						<TableHead>
+							<Button
+								className="-ml-4"
+								onClick={() =>
+									onSortCreatedChange(
+										createdSortOrder === "asc" ? "desc" : "asc",
+									)
+								}
+								variant="ghost"
+							>
+								Created At
+								<HugeiconsIcon className="ml-2 size-4" icon={sortIcon} />
+							</Button>
+						</TableHead>
+						<TableHead className="w-12" />
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{sortedTriggers.map((trigger) => {
+						const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
+						const brandVoice = hasExplicitVoice
+							? brandVoiceMap[trigger.outputConfig?.brandVoiceId ?? ""]
+							: defaultBrandVoice;
 
-            return (
-              <TableRow key={trigger.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
-                      <Github className="size-4" />
-                    </span>
-                    <span className="text-sm">GitHub webhook</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatEventList(trigger.sourceConfig.eventTypes)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  <BrandVoiceCell
-                    isDefault={!hasExplicitVoice}
-                    voice={brandVoice}
-                  />
-                </TableCell>
-                <TableCell className="text-muted-foreground capitalize">
-                  <span className="flex items-center gap-1.5">
-                    <OutputTypeIcon
-                      className="size-3.5"
-                      outputType={trigger.outputType}
-                    />
-                    {getOutputTypeLabel(trigger.outputType)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {trigger.targets.repositoryIds.length} repositories
-                </TableCell>
-                <TableCell>
-                  <TriggerStatusBadge enabled={trigger.enabled} />
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(trigger.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <TriggerRowActions
-                    onDelete={onDelete}
-                    onToggle={onToggle}
-                    trigger={trigger}
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
+						return (
+							<TableRow key={trigger.id}>
+								<TableCell>
+									<div className="flex items-center gap-2">
+										<span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
+											<Github className="size-4" />
+										</span>
+										<span className="text-sm">GitHub webhook</span>
+									</div>
+								</TableCell>
+								<TableCell className="text-muted-foreground">
+									{formatEventList(trigger.sourceConfig.eventTypes)}
+								</TableCell>
+								<TableCell className="text-muted-foreground">
+									<BrandVoiceCell
+										isDefault={!hasExplicitVoice}
+										voice={brandVoice}
+									/>
+								</TableCell>
+								<TableCell className="text-muted-foreground capitalize">
+									<span className="flex items-center gap-1.5">
+										<OutputTypeIcon
+											className="size-3.5"
+											outputType={trigger.outputType}
+										/>
+										{getOutputTypeLabel(trigger.outputType)}
+									</span>
+								</TableCell>
+								<TableCell className="text-muted-foreground">
+									{trigger.targets.repositoryIds.length} repositories
+								</TableCell>
+								<TableCell>
+									<TriggerStatusBadge enabled={trigger.enabled} />
+								</TableCell>
+								<TableCell className="text-muted-foreground">
+									{formatDate(trigger.createdAt)}
+								</TableCell>
+								<TableCell>
+									<TriggerRowActions
+										onDelete={onDelete}
+										onToggle={onToggle}
+										trigger={trigger}
+									/>
+								</TableCell>
+							</TableRow>
+						);
+					})}
+				</TableBody>
+			</Table>
+		</div>
+	);
 }
