@@ -4,9 +4,6 @@
   "workspaces": {
     "": {
       "name": "turbo",
-      "dependencies": {
-        "@vercel/analytics": "^1.6.1",
-      },
       "devDependencies": {
         "@biomejs/biome": "2.3.2",
         "dotenv-cli": "^10.0.0",
