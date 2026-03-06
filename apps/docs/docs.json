@@ -31,6 +31,9 @@
       "destination": "/api/getting-started"
     }
   ],
+  "api": {
+    "url": "full"
+  },
   "contextual": {
     "options": [
       "copy",
