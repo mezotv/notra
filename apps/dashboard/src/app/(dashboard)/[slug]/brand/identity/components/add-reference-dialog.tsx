@@ -276,7 +276,9 @@ function ImportXStep({
 
   const handleConnect = async () => {
     try {
-      const result = await connectTwitter.mutateAsync(window.location.pathname);
+      const result = await connectTwitter.mutateAsync(
+        window.location.pathname + window.location.search
+      );
       window.location.href = result.url;
     } catch (error) {
       toast.error(

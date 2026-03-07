@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { fetchTweetSchema } from "@/schemas/brand";
+import { ratelimit } from "@/utils/ratelimit";
 import { fetchTweet } from "@/utils/twitter-fetcher";
 
 interface RouteContext {
@@ -16,6 +17,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const auth = await withOrganizationAuth(request, organizationId);
     if (!auth.success) {
       return auth.response;
+    }
+
+    const { success: withinLimit } =
+      await ratelimit.importTweets.limit(organizationId);
+    if (!withinLimit) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     const voice = await db.query.brandSettings.findFirst({
