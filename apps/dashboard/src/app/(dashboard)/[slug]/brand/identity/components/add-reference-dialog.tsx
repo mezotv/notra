@@ -35,6 +35,7 @@ import {
   useConnectTwitter,
   useDisconnectAccount,
 } from "@/lib/hooks/use-connected-accounts";
+import type { ApplicablePlatform } from "@/types/hooks/brand-references";
 import {
   useCreateReference,
   useFetchTweet,
@@ -485,16 +486,20 @@ function CustomTextStep({
 }) {
   const [content, setContent] = useState("");
   const [note, setNote] = useState("");
-  const [applicableTo, setApplicableTo] = useState<string[]>(["all"]);
+  const [applicableTo, setApplicableTo] = useState<ApplicablePlatform[]>([
+    "all",
+  ]);
 
   const createReference = useCreateReference(organizationId, voiceId);
 
-  const togglePlatform = (value: string) => {
+  const togglePlatform = (value: ApplicablePlatform) => {
     if (value === "all") {
       setApplicableTo(["all"]);
       return;
     }
-    const withoutAll = applicableTo.filter((v) => v !== "all");
+    const withoutAll = applicableTo.filter(
+      (v): v is Exclude<ApplicablePlatform, "all"> => v !== "all"
+    );
     const updated = withoutAll.includes(value)
       ? withoutAll.filter((v) => v !== value)
       : [...withoutAll, value];

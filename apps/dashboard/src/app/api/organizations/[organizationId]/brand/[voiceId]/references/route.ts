@@ -4,6 +4,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { createReferenceSchema, updateReferenceSchema } from "@/schemas/brand";
+import type { ApplicablePlatform } from "@/types/hooks/brand-references";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; voiceId: string }>;
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       const existing = await db.query.brandReferences.findFirst({
         where: and(
           eq(brandReferences.brandSettingsId, voiceId),
-          sql`${brandReferences.metadata}->>'tweetId' = ${tweetId}`
+          sql`${brandReferences.metadata}->>'tweetId' = ${String(tweetId)}`
         ),
         columns: { id: true },
       });
@@ -95,13 +96,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       }
     }
 
-    const typeDefaults: Record<string, string[]> = {
+    const typeDefaults: Record<string, ApplicablePlatform[]> = {
       twitter_post: ["twitter"],
       linkedin_post: ["linkedin"],
       blog_post: ["blog"],
     };
 
-    const applicableTo = result.data.applicableTo ??
+    const applicableTo: ApplicablePlatform[] = result.data.applicableTo ??
       typeDefaults[result.data.type] ?? ["all"];
 
     const reference = await db

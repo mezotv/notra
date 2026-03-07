@@ -1,3 +1,5 @@
+export type ApplicablePlatform = "all" | "twitter" | "linkedin" | "blog";
+
 export interface BrandReference {
   id: string;
   brandSettingsId: string;
@@ -5,7 +7,7 @@ export interface BrandReference {
   content: string;
   metadata: Record<string, unknown> | null;
   note: string | null;
-  applicableTo: string[];
+  applicableTo: ApplicablePlatform[];
   createdAt: string;
   updatedAt: string;
 }

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { success: withinLimit } =
-      await ratelimit.importTweets.limit(organizationId);
+      await ratelimit.fetchTweet.limit(organizationId);
     if (!withinLimit) {
       return NextResponse.json(
         { error: "Too many requests. Please try again shortly." },

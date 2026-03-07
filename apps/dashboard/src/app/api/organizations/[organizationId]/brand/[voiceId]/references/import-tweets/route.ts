@@ -9,6 +9,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { importTweetsSchema } from "@/schemas/brand";
+import type { ApplicablePlatform } from "@/types/hooks/brand-references";
 import { ratelimit } from "@/utils/ratelimit";
 import { twitterFetch } from "@/utils/twitter-auth";
 
@@ -269,7 +270,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         createdAt: tweet.created_at ?? new Date().toISOString(),
       },
       note: null,
-      applicableTo: ["twitter"],
+      applicableTo: ["twitter"] as ApplicablePlatform[],
     }));
 
     const inserted = await db
