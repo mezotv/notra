@@ -46,7 +46,9 @@ export function ReferencesList({
       toast.success("X account connected");
       setInitialStep("import-x");
       onDialogOpenChange(true);
-      window.history.replaceState({}, "", window.location.pathname);
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete("twitterConnected");
+      window.history.replaceState({}, "", cleanUrl.toString());
     }
   }, [searchParams, queryClient, organizationId, onDialogOpenChange]);
 
