@@ -69,20 +69,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    if (autumn) {
-      const { data, error } = await autumn.check({
-        customer_id: organizationId,
-        feature_id: FEATURES.REFERENCES,
-        required_balance: 1,
-      });
-      if (error || !data?.allowed) {
-        return NextResponse.json(
-          { error: "Reference limit reached. Upgrade your plan to add more." },
-          { status: 403 }
-        );
-      }
-    }
-
     const body = await request.json();
     const result = createReferenceSchema.safeParse(body);
     if (!result.success) {
@@ -120,6 +106,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const applicableTo: ApplicablePlatform[] = result.data.applicableTo ??
       typeDefaults[result.data.type] ?? ["all"];
+
+    if (autumn) {
+      const { data, error } = await autumn.check({
+        customer_id: organizationId,
+        feature_id: FEATURES.REFERENCES,
+        required_balance: 1,
+        send_event: true,
+      });
+      if (error || !data?.allowed) {
+        return NextResponse.json(
+          { error: "Reference limit reached. Upgrade your plan to add more." },
+          { status: 403 }
+        );
+      }
+    }
 
     const reference = await db
       .insert(brandReferences)

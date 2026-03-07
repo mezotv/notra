@@ -296,6 +296,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .values(values)
       .returning();
 
+    if (autumn && inserted.length > 0) {
+      await autumn.track({
+        customer_id: organizationId,
+        feature_id: FEATURES.REFERENCES,
+        value: inserted.length,
+      });
+    }
+
     return NextResponse.json(
       { count: inserted.length, references: inserted },
       { status: 201 }
