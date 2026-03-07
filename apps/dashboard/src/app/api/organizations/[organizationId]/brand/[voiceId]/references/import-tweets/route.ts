@@ -133,8 +133,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const maxPages = 5;
 
     for (let page = 0; page < maxPages; page++) {
+      const remaining = maxResults - originalTweets.length;
+      const perPage = Math.min(20, Math.max(5, remaining));
+
       const tweetParams = new URLSearchParams({
-        max_results: "20",
+        max_results: String(perPage),
         exclude: "replies,retweets",
         "tweet.fields":
           "text,created_at,public_metrics,author_id,referenced_tweets",

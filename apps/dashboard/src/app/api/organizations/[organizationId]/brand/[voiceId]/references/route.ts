@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandReferences, brandSettings } from "@notra/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { createReferenceSchema, updateReferenceSchema } from "@/schemas/brand";
@@ -79,17 +79,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const tweetId = (metadata as Record<string, unknown> | null)?.tweetId;
 
     if (tweetId) {
-      const existingRefs = await db.query.brandReferences.findMany({
-        where: eq(brandReferences.brandSettingsId, voiceId),
-        columns: { metadata: true },
+      const existing = await db.query.brandReferences.findFirst({
+        where: and(
+          eq(brandReferences.brandSettingsId, voiceId),
+          sql`${brandReferences.metadata}->>'tweetId' = ${tweetId}`
+        ),
+        columns: { id: true },
       });
 
-      const isDuplicate = existingRefs.some(
-        (r) =>
-          (r.metadata as Record<string, unknown> | null)?.tweetId === tweetId
-      );
-
-      if (isDuplicate) {
+      if (existing) {
         return NextResponse.json(
           { error: "This tweet has already been added as a reference" },
           { status: 409 }

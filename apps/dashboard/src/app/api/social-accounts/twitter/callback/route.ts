@@ -148,7 +148,8 @@ export async function GET(request: NextRequest) {
     }
 
     const rawPath = oauthState.callbackPath || "/";
-    const callbackPath = rawPath.startsWith("/") ? rawPath : "/";
+    const callbackPath =
+      rawPath.startsWith("/") && !rawPath.startsWith("//") ? rawPath : "/";
     const separator = callbackPath.includes("?") ? "&" : "?";
     return NextResponse.redirect(
       `${baseUrl}${callbackPath}${separator}twitterConnected=true`
