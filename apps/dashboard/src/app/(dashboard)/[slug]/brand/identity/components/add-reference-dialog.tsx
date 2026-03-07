@@ -463,6 +463,13 @@ function ImportXStep({
   );
 }
 
+const PLATFORM_OPTIONS = [
+  { value: "all", label: "All platforms" },
+  { value: "twitter", label: "Twitter / X" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "changelog", label: "Changelog" },
+] as const;
+
 function CustomTextStep({
   organizationId,
   voiceId,
@@ -476,8 +483,21 @@ function CustomTextStep({
 }) {
   const [content, setContent] = useState("");
   const [note, setNote] = useState("");
+  const [applicableTo, setApplicableTo] = useState<string[]>(["all"]);
 
   const createReference = useCreateReference(organizationId, voiceId);
+
+  const togglePlatform = (value: string) => {
+    if (value === "all") {
+      setApplicableTo(["all"]);
+      return;
+    }
+    const withoutAll = applicableTo.filter((v) => v !== "all");
+    const updated = withoutAll.includes(value)
+      ? withoutAll.filter((v) => v !== value)
+      : [...withoutAll, value];
+    setApplicableTo(updated.length === 0 ? ["all"] : updated);
+  };
 
   const handleSave = async () => {
     const trimmed = content.trim();
@@ -492,6 +512,7 @@ function CustomTextStep({
         content: trimmed,
         metadata: null,
         note: note.trim() || null,
+        applicableTo,
       });
       toast.success("Reference added");
       onClose();
@@ -521,6 +542,26 @@ function CustomTextStep({
             rows={5}
             value={content}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Use for</Label>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_OPTIONS.map((option) => (
+              <button
+                className={`cursor-pointer rounded-full border px-3 py-1 text-xs transition-colors ${
+                  applicableTo.includes(option.value)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border hover:bg-muted"
+                }`}
+                key={option.value}
+                onClick={() => togglePlatform(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">

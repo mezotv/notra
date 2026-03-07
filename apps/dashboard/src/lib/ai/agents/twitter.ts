@@ -80,7 +80,10 @@ export async function generateTwitterPost(
       },
     },
     tools: {
-      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
+      getBrandReferences: createGetBrandReferencesTool({
+        organizationId,
+        agentType: "twitter",
+      }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,

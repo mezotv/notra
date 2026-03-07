@@ -120,6 +120,13 @@
       "when": 1772746452885,
       "tag": "0016_rare_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1772901754636,
+      "tag": "0017_spooky_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

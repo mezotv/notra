@@ -97,6 +97,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       }
     }
 
+    const applicableTo =
+      result.data.applicableTo ??
+      (result.data.type === "twitter_post" ? ["twitter"] : ["all"]);
+
     const reference = await db
       .insert(brandReferences)
       .values({
@@ -106,6 +110,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         content: result.data.content,
         metadata,
         note: result.data.note ?? null,
+        applicableTo,
       })
       .returning();
 

@@ -5,6 +5,7 @@ export interface BrandReference {
   content: string;
   metadata: Record<string, unknown> | null;
   note: string | null;
+  applicableTo: string[];
   createdAt: string;
   updatedAt: string;
 }

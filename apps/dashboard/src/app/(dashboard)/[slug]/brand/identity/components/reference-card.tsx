@@ -44,6 +44,13 @@ interface TweetMetadata {
   createdAt?: string;
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+  all: "All",
+  twitter: "Twitter",
+  linkedin: "LinkedIn",
+  changelog: "Changelog",
+};
+
 const TRAILING_ZERO_REGEX = /\.0$/;
 
 function formatCompactNumber(num: number): string {
@@ -244,6 +251,8 @@ function TwitterReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
+        <PlatformBadges applicableTo={reference.applicableTo} />
+
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
             {(metadata?.replies ?? 0) > 0 && (
@@ -314,6 +323,8 @@ function CustomReferenceCard({
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
+
+        <PlatformBadges applicableTo={reference.applicableTo} />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
@@ -323,6 +334,25 @@ function CustomReferenceCard({
           referenceId={reference.id}
         />
       </div>
+    </div>
+  );
+}
+
+function PlatformBadges({ applicableTo }: { applicableTo: string[] }) {
+  if (!applicableTo || applicableTo.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {applicableTo.map((platform) => (
+        <span
+          className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
+          key={platform}
+        >
+          {PLATFORM_LABELS[platform] ?? platform}
+        </span>
+      ))}
     </div>
   );
 }

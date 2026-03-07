@@ -80,7 +80,10 @@ export async function generateChangelog(
       },
     },
     tools: {
-      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
+      getBrandReferences: createGetBrandReferencesTool({
+        organizationId,
+        agentType: "changelog",
+      }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,

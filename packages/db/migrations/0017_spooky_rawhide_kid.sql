@@ -1,0 +1,1 @@
+ALTER TABLE "brand_references" ADD COLUMN "applicable_to" jsonb DEFAULT '["all"]'::jsonb NOT NULL;

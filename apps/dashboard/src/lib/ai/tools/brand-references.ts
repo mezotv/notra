@@ -7,9 +7,12 @@ import * as z from "zod";
 import { toolDescription } from "@/utils/ai/description";
 import { getAICachedTools } from "./tool-cache";
 
+type AgentType = "twitter" | "linkedin" | "changelog";
+
 interface BrandReferencesConfig {
   organizationId: string;
   voiceId?: string;
+  agentType?: AgentType;
 }
 
 export function createGetBrandReferencesTool(
@@ -58,23 +61,32 @@ export function createGetBrandReferencesTool(
             type: true,
             content: true,
             note: true,
+            applicableTo: true,
           },
         });
 
+        const agentType = config.agentType;
+        const filtered = agentType
+          ? refs.filter((r) => {
+              const targets = r.applicableTo as string[];
+              return targets.includes("all") || targets.includes(agentType);
+            })
+          : refs;
+
         return {
-          references: refs.map((r) => ({
+          references: filtered.map((r) => ({
             type: r.type,
             content: r.content,
             note: r.note,
           })),
-          count: refs.length,
+          count: filtered.length,
         };
       },
     }),
     {
       ttl: 5 * 60 * 1000,
       keyGenerator: () =>
-        `get_brand_references:org=${config.organizationId}:voice=${config.voiceId ?? "default"}`,
+        `get_brand_references:org=${config.organizationId}:voice=${config.voiceId ?? "default"}:agent=${config.agentType ?? "all"}`,
     }
   );
 }

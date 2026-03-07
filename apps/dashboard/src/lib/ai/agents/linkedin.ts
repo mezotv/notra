@@ -80,7 +80,10 @@ export async function generateLinkedInPost(
       },
     },
     tools: {
-      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
+      getBrandReferences: createGetBrandReferencesTool({
+        organizationId,
+        agentType: "linkedin",
+      }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,

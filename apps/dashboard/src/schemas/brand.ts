@@ -69,11 +69,19 @@ export const referenceTypeSchema = z.enum([
 
 export type ReferenceType = z.infer<typeof referenceTypeSchema>;
 
+export const applicableToSchema = z
+  .array(z.enum(["all", "twitter", "linkedin", "changelog"]))
+  .min(1)
+  .default(["all"]);
+
+export type ApplicableTo = z.infer<typeof applicableToSchema>;
+
 export const createReferenceSchema = z.object({
   type: referenceTypeSchema,
   content: z.string().min(1).max(10_000),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   note: z.string().nullable().optional(),
+  applicableTo: applicableToSchema.optional(),
 });
 
 export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;

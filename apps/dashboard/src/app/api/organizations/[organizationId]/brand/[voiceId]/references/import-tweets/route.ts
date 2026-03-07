@@ -249,6 +249,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         createdAt: tweet.created_at ?? new Date().toISOString(),
       },
       note: null,
+      applicableTo: ["twitter"],
     }));
 
     const inserted = await db
