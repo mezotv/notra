@@ -3,6 +3,7 @@ export const FEATURES = {
   AI_CREDITS: "ai_credits",
   WORKFLOWS: "workflows",
   INTEGRATIONS: "integrations",
+  REFERENCES: "references",
   LOG_RETENTION_7_DAYS: "log_retention_7_days",
   LOG_RETENTION_30_DAYS: "log_retention_30_days",
 } as const;

@@ -2,7 +2,9 @@ import { db } from "@notra/db/drizzle";
 import { brandReferences, brandSettings } from "@notra/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
+import { FEATURES } from "@/constants/features";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { autumn } from "@/lib/billing/autumn";
 import { createReferenceSchema, updateReferenceSchema } from "@/schemas/brand";
 import type { ApplicablePlatform } from "@/types/hooks/brand-references";
 
@@ -65,6 +67,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         { error: "Brand voice not found" },
         { status: 404 }
       );
+    }
+
+    if (autumn) {
+      const { data, error } = await autumn.check({
+        customer_id: organizationId,
+        feature_id: FEATURES.REFERENCES,
+        required_balance: 1,
+      });
+      if (error || !data?.allowed) {
+        return NextResponse.json(
+          { error: "Reference limit reached. Upgrade your plan to add more." },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await request.json();

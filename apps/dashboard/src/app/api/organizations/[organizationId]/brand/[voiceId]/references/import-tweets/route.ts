@@ -6,8 +6,10 @@ import {
 } from "@notra/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
+import { FEATURES } from "@/constants/features";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { autumn } from "@/lib/billing/autumn";
 import { importTweetsSchema } from "@/schemas/brand";
 import type { ApplicablePlatform } from "@/types/hooks/brand-references";
 import { ratelimit } from "@/utils/ratelimit";
@@ -117,6 +119,22 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { accountId, maxResults } = parsed.data;
+
+    if (autumn) {
+      const { data, error } = await autumn.check({
+        customer_id: organizationId,
+        feature_id: FEATURES.REFERENCES,
+        required_balance: 1,
+      });
+      if (error || !data?.allowed) {
+        return NextResponse.json(
+          {
+            error: "Reference limit reached. Upgrade your plan to import more.",
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     const socialAccount = await db.query.connectedSocialAccounts.findFirst({
       where: and(
