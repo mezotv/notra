@@ -122,7 +122,7 @@ const IntegrationCard = memo(function IntegrationCard({
                     size="sm"
                     variant="outline"
                   >
-                    Soon
+                    Coming Soon
                   </Button>
                 }
               />
@@ -134,8 +134,9 @@ const IntegrationCard = memo(function IntegrationCard({
       className={
         integration.available
           ? "cursor-pointer transition-colors hover:bg-muted/80"
-          : ""
+          : undefined
       }
+      disabled={!integration.available}
       heading={integration.name}
       icon={integration.icon}
     >

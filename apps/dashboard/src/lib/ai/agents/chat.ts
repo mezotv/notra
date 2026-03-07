@@ -16,11 +16,7 @@ export async function createChatAgent(
 
   const modelWithMemory = withSupermemory(
     gateway(model),
-    context.organizationId,
-    {
-      mode: "full",
-      addMemory: "always",
-    }
+    context.organizationId
   );
 
   const { getMarkdown, editMarkdown } = createMarkdownTools({

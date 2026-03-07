@@ -27,6 +27,16 @@ const nextConfig: NextConfig = {
         destination: "/:slug/settings/general",
         permanent: true,
       },
+      {
+        source: "/:slug/schedules",
+        destination: "/:slug/automation/schedules",
+        permanent: true,
+      },
+      {
+        source: "/:slug/automation/schedule",
+        destination: "/:slug/automation/schedules",
+        permanent: true,
+      },
     ];
   },
   async headers() {

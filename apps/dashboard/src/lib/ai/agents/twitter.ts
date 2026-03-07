@@ -51,11 +51,7 @@ export async function generateTwitterPost(
 
   const model = withSupermemory(
     gateway("anthropic/claude-haiku-4.5"),
-    organizationId,
-    {
-      mode: "full",
-      addMemory: "always",
-    }
+    organizationId
   );
 
   const resolvedTone = getValidToneProfile(tone, "Conversational");

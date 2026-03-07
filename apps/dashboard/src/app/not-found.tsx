@@ -9,7 +9,7 @@ export default function NotFound() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4">
+    <div className="flex min-h-[100svh] w-full flex-col items-center justify-center px-4">
       <div className="text-center">
         <p className="font-medium text-muted-foreground text-sm">404</p>
         <h1 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl">
