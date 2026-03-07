@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
 
 interface TokenResponse {
   access_token: string;
@@ -17,7 +18,7 @@ interface SocialAccount {
   tokenExpiresAt: Date | null;
 }
 
-async function refreshToken(account: SocialAccount): Promise<string> {
+async function refreshAccessToken(account: SocialAccount): Promise<string> {
   if (!account.refreshToken) {
     throw new Error(
       "Token expired and no refresh token available. Please reconnect your X account."
@@ -30,6 +31,8 @@ async function refreshToken(account: SocialAccount): Promise<string> {
     throw new Error("Twitter OAuth is not configured");
   }
 
+  const decryptedRefreshToken = decryptToken(account.refreshToken);
+
   const res = await fetch("https://api.x.com/2/oauth2/token", {
     method: "POST",
     headers: {
@@ -38,7 +41,7 @@ async function refreshToken(account: SocialAccount): Promise<string> {
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
-      refresh_token: account.refreshToken,
+      refresh_token: decryptedRefreshToken,
     }),
   });
 
@@ -53,8 +56,10 @@ async function refreshToken(account: SocialAccount): Promise<string> {
   await db
     .update(connectedSocialAccounts)
     .set({
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token ?? account.refreshToken,
+      accessToken: encryptToken(tokens.access_token),
+      refreshToken: tokens.refresh_token
+        ? encryptToken(tokens.refresh_token)
+        : account.refreshToken,
       tokenExpiresAt: tokens.expires_in
         ? new Date(Date.now() + tokens.expires_in * 1000)
         : null,
@@ -72,10 +77,10 @@ export async function getValidAccessToken(
     account.tokenExpiresAt.getTime() - TOKEN_EXPIRY_BUFFER_MS < Date.now();
 
   if (isExpired) {
-    return refreshToken(account);
+    return refreshAccessToken(account);
   }
 
-  return account.accessToken;
+  return decryptToken(account.accessToken);
 }
 
 export async function twitterFetch(
@@ -90,7 +95,7 @@ export async function twitterFetch(
   });
 
   if (res.status === 401 && account.refreshToken) {
-    const newToken = await refreshToken(account);
+    const newToken = await refreshAccessToken(account);
     return fetch(url, {
       ...init,
       headers: { ...init?.headers, Authorization: `Bearer ${newToken}` },

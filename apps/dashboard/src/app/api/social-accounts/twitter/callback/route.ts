@@ -3,6 +3,7 @@ import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
+import { encryptToken } from "@/lib/crypto/token-encryption";
 import { redis } from "@/lib/redis";
 
 interface TwitterTokenResponse {
@@ -114,12 +115,17 @@ export async function GET(request: NextRequest) {
       ? normalizeTwitterProfileImageUrl(twitterUser.profile_image_url)
       : null;
 
+    const encryptedAccessToken = encryptToken(tokens.access_token);
+    const encryptedRefreshToken = tokens.refresh_token
+      ? encryptToken(tokens.refresh_token)
+      : null;
+
     if (existing) {
       await db
         .update(connectedSocialAccounts)
         .set({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token ?? null,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
           scope: tokens.scope ?? null,
           tokenExpiresAt: tokens.expires_in
             ? new Date(Date.now() + tokens.expires_in * 1000)
@@ -138,8 +144,8 @@ export async function GET(request: NextRequest) {
         username: twitterUser.username,
         displayName: twitterUser.name,
         profileImageUrl,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token ?? null,
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
         scope: tokens.scope ?? null,
         tokenExpiresAt: tokens.expires_in
           ? new Date(Date.now() + tokens.expires_in * 1000)
