@@ -25,6 +25,7 @@ import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
 import type { BrandReference } from "@/types/hooks/brand-references";
+import { formatTweetContent } from "@/utils/format-tweet-content";
 
 interface ReferenceCardProps {
   reference: BrandReference;
@@ -245,7 +246,7 @@ function TwitterReferenceCard({
         </div>
 
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
-          {reference.content}
+          {formatTweetContent(reference.content)}
         </p>
 
         {hasStats && (
@@ -316,7 +317,7 @@ function CustomReferenceCard({
         </div>
 
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
-          {reference.content}
+          {formatTweetContent(reference.content)}
         </p>
       </div>
 

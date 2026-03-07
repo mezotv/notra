@@ -29,6 +29,7 @@ import { useEffect, useRef, useState } from "react";
 import type { TextSelection } from "@/components/chat-input";
 import { TWITTER_CHAR_LIMIT } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
+import { formatTweetContent } from "@/utils/format-tweet-content";
 
 interface TwitterPostMenuItem {
   label: string;
@@ -121,8 +122,11 @@ function TweetContent({
   }, [content, onSelectionChange]);
 
   return (
-    <div className="text-[0.9375rem] leading-snug" ref={contentRef}>
-      <span className="whitespace-pre-wrap">{content}</span>
+    <div
+      className="whitespace-pre-wrap text-[0.9375rem] leading-snug"
+      ref={contentRef}
+    >
+      {formatTweetContent(content)}
     </div>
   );
 }

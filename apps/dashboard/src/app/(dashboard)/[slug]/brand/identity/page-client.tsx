@@ -31,6 +31,7 @@ import {
   useDeleteBrandVoice,
   useSetDefaultBrandVoice,
 } from "../../../../../lib/hooks/use-brand-analysis";
+import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { AddIdentityDialog } from "./components/add-identity-dialog";
 import { BrandForm } from "./components/brand-form";
 import { ModalContent } from "./components/modal-content";
@@ -96,6 +97,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     voices.find((v) => v.id === activeVoiceId) ??
     voices.find((v) => v.isDefault) ??
     voices[0];
+
+  const { data: referencesData } = useReferences(
+    organizationId,
+    selectedVoice?.id ?? ""
+  );
+  const referenceCount = referencesData?.references.length ?? 0;
 
   const [url, setUrl] = useState("");
   const effectiveUrl = url.trim();
@@ -329,7 +336,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         >
           <TabsList variant="line">
             <TabsTrigger value="identity">Identity</TabsTrigger>
-            <TabsTrigger value="references">References</TabsTrigger>
+            <TabsTrigger value="references">
+              References
+              {referenceCount > 0 && (
+                <span className="text-muted-foreground">
+                  ({referenceCount})
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent className="mt-6" value="identity">
