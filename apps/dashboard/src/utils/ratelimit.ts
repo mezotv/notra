@@ -15,7 +15,7 @@ export const ratelimit = {
     redis,
     analytics: true,
     prefix: "ratelimit:import-tweets",
-    limiter: Ratelimit.slidingWindow(5, "1m"),
+    limiter: Ratelimit.slidingWindow(20, "1m"),
   }),
 };
 
