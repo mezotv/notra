@@ -1,3 +1,6 @@
+import { db } from "@notra/db/drizzle";
+import { brandSettings } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { fetchTweetSchema } from "@/schemas/brand";
@@ -9,10 +12,24 @@ interface RouteContext {
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
-    const { organizationId } = await params;
+    const { organizationId, voiceId } = await params;
     const auth = await withOrganizationAuth(request, organizationId);
     if (!auth.success) {
       return auth.response;
+    }
+
+    const voice = await db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.id, voiceId),
+        eq(brandSettings.organizationId, organizationId)
+      ),
+      columns: { id: true },
+    });
+    if (!voice) {
+      return NextResponse.json(
+        { error: "Brand voice not found" },
+        { status: 404 }
+      );
     }
 
     const body = await request.json();

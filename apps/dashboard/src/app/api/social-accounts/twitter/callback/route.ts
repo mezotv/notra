@@ -152,7 +152,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const callbackPath = oauthState.callbackPath || "/";
+    const rawPath = oauthState.callbackPath || "/";
+    const callbackPath = rawPath.startsWith("/") ? rawPath : "/";
     const separator = callbackPath.includes("?") ? "&" : "?";
     return NextResponse.redirect(
       `${baseUrl}${callbackPath}${separator}twitterConnected=true`

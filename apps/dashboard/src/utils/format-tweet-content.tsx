@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   TWEET_MENTION_REGEX,
   TWEET_TOKEN_REGEX,
@@ -17,7 +18,7 @@ function getTweetTokenUrl(token: string): string | undefined {
   return `https://x.com/hashtag/${token.slice(1)}`;
 }
 
-export function formatTweetContent(content: string): React.ReactNode[] {
+export function formatTweetContent(content: string): ReactNode[] {
   TWEET_TOKEN_REGEX.lastIndex = 0;
   const parts = content.split(TWEET_TOKEN_REGEX);
   TWEET_TOKEN_REGEX.lastIndex = 0;

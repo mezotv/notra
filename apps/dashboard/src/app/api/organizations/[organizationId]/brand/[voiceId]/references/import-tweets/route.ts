@@ -64,7 +64,8 @@ async function fetchPinnedTweet(
   const params = new URLSearchParams({
     "user.fields": "pinned_tweet_id",
     expansions: "pinned_tweet_id",
-    "tweet.fields": "text,created_at,public_metrics,author_id",
+    "tweet.fields":
+      "text,created_at,public_metrics,author_id,referenced_tweets",
   });
 
   const res = await twitterFetch(
@@ -192,7 +193,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     let tweets = originalTweets;
 
-    if (pinnedTweet) {
+    const isPinnedOriginal =
+      pinnedTweet &&
+      !pinnedTweet.referenced_tweets?.some(
+        (ref) => ref.type === "quoted" || ref.type === "replied_to"
+      );
+
+    if (isPinnedOriginal) {
       tweets = tweets.filter((t) => t.id !== pinnedTweet.id);
       tweets.unshift(pinnedTweet);
     }
