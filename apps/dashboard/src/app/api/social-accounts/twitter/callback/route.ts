@@ -19,7 +19,6 @@ interface TwitterUserResponse {
     name: string;
     username: string;
     profile_image_url?: string;
-    verified?: boolean;
   };
 }
 
@@ -90,7 +89,7 @@ export async function GET(request: NextRequest) {
     const tokens: TwitterTokenResponse = await tokenRes.json();
 
     const userRes = await fetch(
-      "https://api.x.com/2/users/me?user.fields=profile_image_url,verified",
+      "https://api.x.com/2/users/me?user.fields=profile_image_url",
       { headers: { Authorization: `Bearer ${tokens.access_token}` } }
     );
 
@@ -115,8 +114,6 @@ export async function GET(request: NextRequest) {
       ? normalizeTwitterProfileImageUrl(twitterUser.profile_image_url)
       : null;
 
-    const verified = twitterUser.verified ?? false;
-
     if (existing) {
       await db
         .update(connectedSocialAccounts)
@@ -130,7 +127,6 @@ export async function GET(request: NextRequest) {
           username: twitterUser.username,
           displayName: twitterUser.name,
           profileImageUrl,
-          verified,
         })
         .where(eq(connectedSocialAccounts.id, existing.id));
     } else {
@@ -142,7 +138,6 @@ export async function GET(request: NextRequest) {
         username: twitterUser.username,
         displayName: twitterUser.name,
         profileImageUrl,
-        verified,
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token ?? null,
         scope: tokens.scope ?? null,

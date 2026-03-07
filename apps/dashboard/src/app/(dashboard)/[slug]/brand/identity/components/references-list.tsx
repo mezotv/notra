@@ -51,8 +51,10 @@ export function ReferencesList({
   }, [searchParams, queryClient, organizationId, onDialogOpenChange]);
 
   const references = data?.references ?? [];
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
+    setDeletingId(id);
     try {
       await deleteMutation.mutateAsync(id);
       toast.success("Reference deleted");
@@ -60,6 +62,8 @@ export function ReferencesList({
       toast.error(
         error instanceof Error ? error.message : "Failed to delete reference"
       );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -93,7 +97,7 @@ export function ReferencesList({
         <div className="columns-1 gap-4 space-y-4 sm:columns-2">
           {references.map((ref) => (
             <ReferenceCard
-              isDeleting={deleteMutation.isPending}
+              isDeleting={deletingId === ref.id}
               key={ref.id}
               onDelete={handleDelete}
               onUpdateNote={handleUpdateNote}

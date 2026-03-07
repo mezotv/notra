@@ -10,7 +10,6 @@ interface TweetData {
   retweets: number;
   replies: number;
   profileImageUrl: string | null;
-  verified: boolean;
   createdAt: string;
 }
 
@@ -36,7 +35,7 @@ export async function fetchTweet(tweetUrl: string): Promise<TweetData> {
   const params = new URLSearchParams({
     "tweet.fields": "text,public_metrics,created_at,author_id",
     expansions: "author_id",
-    "user.fields": "username,name,profile_image_url,verified",
+    "user.fields": "username,name,profile_image_url",
   });
 
   const res = await fetch(
@@ -75,7 +74,6 @@ export async function fetchTweet(tweetUrl: string): Promise<TweetData> {
     profileImageUrl: author?.profile_image_url
       ? normalizeTwitterProfileImageUrl(author.profile_image_url)
       : null,
-    verified: author?.verified ?? false,
     createdAt: tweet.created_at ?? new Date().toISOString(),
   };
 }

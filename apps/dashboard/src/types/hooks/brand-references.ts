@@ -19,6 +19,5 @@ export interface FetchedTweetResponse {
   retweets: number;
   replies: number;
   profileImageUrl: string | null;
-  verified: boolean;
   createdAt: string;
 }

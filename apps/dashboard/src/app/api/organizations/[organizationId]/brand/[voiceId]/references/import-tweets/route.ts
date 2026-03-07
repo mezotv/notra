@@ -43,7 +43,6 @@ interface TwitterUser {
   username: string;
   name: string;
   profile_image_url?: string;
-  verified?: boolean;
 }
 
 interface TwitterTimelineResponse {
@@ -139,7 +138,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         exclude: "replies,retweets",
         "tweet.fields":
           "text,created_at,public_metrics,author_id,referenced_tweets",
-        "user.fields": "username,name,profile_image_url,verified",
+        "user.fields": "username,name,profile_image_url",
         expansions: "author_id",
       });
 
@@ -212,7 +211,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const authorHandle = author?.username ?? socialAccount.username;
     const authorName = author?.name ?? socialAccount.displayName;
-    const authorVerified = author?.verified ?? socialAccount.verified;
     const profileImageUrl = author?.profile_image_url
       ? normalizeTwitterProfileImageUrl(author.profile_image_url)
       : socialAccount.profileImageUrl;
@@ -243,7 +241,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         tweetId: tweet.id,
         authorHandle,
         authorName,
-        verified: authorVerified,
         url: `https://x.com/${authorHandle}/status/${tweet.id}`,
         likes: tweet.public_metrics?.like_count ?? 0,
         retweets: tweet.public_metrics?.retweet_count ?? 0,

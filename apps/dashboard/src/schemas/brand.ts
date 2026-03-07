@@ -71,7 +71,7 @@ export type ReferenceType = z.infer<typeof referenceTypeSchema>;
 
 export const createReferenceSchema = z.object({
   type: referenceTypeSchema,
-  content: z.string().min(1),
+  content: z.string().min(1).max(10_000),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
   note: z.string().nullable().optional(),
 });

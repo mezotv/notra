@@ -21,7 +21,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
 import type { BrandReference } from "@/types/hooks/brand-references";
@@ -39,7 +38,6 @@ interface TweetMetadata {
   authorName?: string;
   profileImageUrl?: string;
   url?: string;
-  verified?: boolean;
   likes?: number;
   retweets?: number;
   replies?: number;
@@ -217,9 +215,6 @@ function TwitterReferenceCard({
                 <span className="truncate font-semibold text-sm leading-tight">
                   {metadata?.authorName ?? "Unknown"}
                 </span>
-                {metadata?.verified === true && (
-                  <XVerifiedBadge className="size-3.5 shrink-0" />
-                )}
               </div>
               <div className="flex items-center gap-1">
                 {metadata?.authorHandle && (

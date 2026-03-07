@@ -189,7 +189,6 @@ function TweetUrlStep({
           tweetId: tweet.tweetId,
           authorHandle: tweet.authorHandle,
           authorName: tweet.authorName,
-          verified: tweet.verified,
           url: tweet.url,
           likes: tweet.likes,
           retweets: tweet.retweets,

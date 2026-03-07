@@ -10,7 +10,6 @@ export interface ConnectedAccount {
   username: string;
   displayName: string;
   profileImageUrl: string | null;
-  verified: boolean;
   createdAt: string;
 }
 

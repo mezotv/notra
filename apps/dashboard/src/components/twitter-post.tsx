@@ -22,7 +22,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
@@ -44,7 +43,6 @@ interface TwitterPostProps extends React.ComponentProps<"div"> {
     avatar?: string;
     fallback?: string;
     handle?: string;
-    verified?: boolean;
   };
   content?: string;
   onContentChange?: (value: string) => void;
@@ -185,9 +183,6 @@ function TwitterPost({
             <span className="truncate font-bold text-[0.9375rem] leading-tight">
               {author.name}
             </span>
-            {author.verified === true && (
-              <XVerifiedBadge className="size-[1.125rem] shrink-0" />
-            )}
             {author.handle && (
               <span className="truncate text-[0.9375rem] text-muted-foreground">
                 @{author.handle}
