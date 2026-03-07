@@ -37,6 +37,7 @@ export async function generateLinkedInPost(
 ): Promise<LinkedInAgentResult> {
   const {
     organizationId,
+    voiceId,
     repositories,
     tone = "Conversational",
     promptInput,
@@ -82,6 +83,7 @@ export async function generateLinkedInPost(
     tools: {
       getBrandReferences: createGetBrandReferencesTool({
         organizationId,
+        voiceId,
         agentType: "linkedin",
       }),
       getPullRequests: createGetPullRequestsTool({

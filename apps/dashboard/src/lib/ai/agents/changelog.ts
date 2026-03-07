@@ -37,6 +37,7 @@ export async function generateChangelog(
 ): Promise<ChangelogAgentResult> {
   const {
     organizationId,
+    voiceId,
     repositories,
     tone = "Conversational",
     promptInput,
@@ -82,6 +83,7 @@ export async function generateChangelog(
     tools: {
       getBrandReferences: createGetBrandReferencesTool({
         organizationId,
+        voiceId,
         agentType: "blog",
       }),
       getPullRequests: createGetPullRequestsTool({

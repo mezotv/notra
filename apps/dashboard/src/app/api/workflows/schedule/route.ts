@@ -373,6 +373,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             tone,
             promptInput,
             sourceMetadata,
+            voiceId: brand?.id,
           });
         }
       );

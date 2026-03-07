@@ -22,6 +22,7 @@ export interface ContentGenerationContext {
     customInstructions?: string | null;
   };
   sourceMetadata: PostSourceMetadata;
+  voiceId?: string;
 }
 
 export type ContentGenerationResult =

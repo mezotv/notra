@@ -37,6 +37,7 @@ export async function generateTwitterPost(
 ): Promise<TwitterAgentResult> {
   const {
     organizationId,
+    voiceId,
     repositories,
     tone = "Conversational",
     promptInput,
@@ -82,6 +83,7 @@ export async function generateTwitterPost(
     tools: {
       getBrandReferences: createGetBrandReferencesTool({
         organizationId,
+        voiceId,
         agentType: "twitter",
       }),
       getPullRequests: createGetPullRequestsTool({

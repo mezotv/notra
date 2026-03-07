@@ -11,6 +11,7 @@ export async function handleLinkedIn(
   try {
     const { postId, title } = await generateLinkedInPost({
       organizationId: ctx.organizationId,
+      voiceId: ctx.voiceId,
       repositories: ctx.repositories,
       tone: ctx.tone,
       promptInput: ctx.promptInput,

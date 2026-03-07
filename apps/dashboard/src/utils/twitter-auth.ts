@@ -18,7 +18,23 @@ interface SocialAccount {
   tokenExpiresAt: Date | null;
 }
 
+const refreshLocks = new Map<string, Promise<string>>();
+
 async function refreshAccessToken(account: SocialAccount): Promise<string> {
+  const existing = refreshLocks.get(account.id);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = performRefresh(account).finally(() => {
+    refreshLocks.delete(account.id);
+  });
+
+  refreshLocks.set(account.id, promise);
+  return promise;
+}
+
+async function performRefresh(account: SocialAccount): Promise<string> {
   if (!account.refreshToken) {
     throw new Error(
       "Token expired and no refresh token available. Please reconnect your X account."
