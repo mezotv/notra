@@ -4,7 +4,7 @@ import {
   brandSettings,
   connectedSocialAccounts,
 } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { withOrganizationAuth } from "@/lib/auth/organization";
@@ -168,8 +168,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
       const timeline: TwitterTimelineResponse = await tweetsRes.json();
 
-      if (!author && timeline.includes?.users?.[0]) {
-        author = timeline.includes.users[0];
+      if (!author && timeline.includes?.users) {
+        author =
+          timeline.includes.users.find(
+            (u) => u.id === socialAccount.providerAccountId
+          ) ?? timeline.includes.users[0];
       }
 
       const filtered = (timeline.data ?? []).filter(
@@ -218,8 +221,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       ? normalizeTwitterProfileImageUrl(author.profile_image_url)
       : socialAccount.profileImageUrl;
 
+    const incomingIds = tweets.map((t) => t.id);
     const existingRefs = await db.query.brandReferences.findMany({
-      where: eq(brandReferences.brandSettingsId, voiceId),
+      where: and(
+        eq(brandReferences.brandSettingsId, voiceId),
+        sql`${brandReferences.metadata}->>'tweetId' = ANY(${incomingIds})`
+      ),
       columns: { metadata: true },
     });
 
