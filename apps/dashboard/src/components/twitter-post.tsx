@@ -185,7 +185,7 @@ function TwitterPost({
             <span className="truncate font-bold text-[0.9375rem] leading-tight">
               {author.name}
             </span>
-            {author.verified !== false && (
+            {author.verified === true && (
               <XVerifiedBadge className="size-[1.125rem] shrink-0" />
             )}
             {author.handle && (

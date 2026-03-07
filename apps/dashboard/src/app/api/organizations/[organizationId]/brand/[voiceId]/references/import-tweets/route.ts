@@ -9,6 +9,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { importTweetsSchema } from "@/schemas/brand";
+import { twitterFetch } from "@/utils/twitter-auth";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; voiceId: string }>;
@@ -53,7 +54,12 @@ interface TwitterTimelineResponse {
 
 async function fetchPinnedTweet(
   userId: string,
-  accessToken: string
+  account: {
+    id: string;
+    accessToken: string;
+    refreshToken: string | null;
+    tokenExpiresAt: Date | null;
+  }
 ): Promise<TwitterTweet | null> {
   const params = new URLSearchParams({
     "user.fields": "pinned_tweet_id",
@@ -61,9 +67,9 @@ async function fetchPinnedTweet(
     "tweet.fields": "text,created_at,public_metrics,author_id",
   });
 
-  const res = await fetch(
+  const res = await twitterFetch(
     `https://api.x.com/2/users/${userId}?${params.toString()}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
+    account
   );
 
   if (!res.ok) {
@@ -118,7 +124,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const pinnedTweet = await fetchPinnedTweet(
       socialAccount.providerAccountId,
-      socialAccount.accessToken
+      socialAccount
     );
 
     const originalTweets: TwitterTweet[] = [];
@@ -140,13 +146,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         tweetParams.set("pagination_token", paginationToken);
       }
 
-      const tweetsRes = await fetch(
+      const tweetsRes = await twitterFetch(
         `https://api.x.com/2/users/${socialAccount.providerAccountId}/tweets?${tweetParams.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${socialAccount.accessToken}`,
-          },
-        }
+        socialAccount
       );
 
       if (!tweetsRes.ok) {

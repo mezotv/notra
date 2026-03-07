@@ -217,7 +217,7 @@ function TwitterReferenceCard({
                 <span className="truncate font-semibold text-sm leading-tight">
                   {metadata?.authorName ?? "Unknown"}
                 </span>
-                {metadata?.verified !== false && (
+                {metadata?.verified === true && (
                   <XVerifiedBadge className="size-3.5 shrink-0" />
                 )}
               </div>

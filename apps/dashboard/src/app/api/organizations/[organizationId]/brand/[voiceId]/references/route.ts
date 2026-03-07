@@ -75,6 +75,28 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const metadata = result.data.metadata ?? null;
+    const tweetId = (metadata as Record<string, unknown> | null)?.tweetId;
+
+    if (tweetId) {
+      const existingRefs = await db.query.brandReferences.findMany({
+        where: eq(brandReferences.brandSettingsId, voiceId),
+        columns: { metadata: true },
+      });
+
+      const isDuplicate = existingRefs.some(
+        (r) =>
+          (r.metadata as Record<string, unknown> | null)?.tweetId === tweetId
+      );
+
+      if (isDuplicate) {
+        return NextResponse.json(
+          { error: "This tweet has already been added as a reference" },
+          { status: 409 }
+        );
+      }
+    }
+
     const reference = await db
       .insert(brandReferences)
       .values({
@@ -82,7 +104,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         brandSettingsId: voiceId,
         type: result.data.type,
         content: result.data.content,
-        metadata: result.data.metadata ?? null,
+        metadata,
         note: result.data.note ?? null,
       })
       .returning();

@@ -3,6 +3,7 @@
 import {
   Add01Icon,
   ArrowLeft01Icon,
+  Cancel01Icon,
   Link04Icon,
   NewTwitterIcon,
   TextIcon,
@@ -32,6 +33,7 @@ import {
   type ConnectedAccount,
   useConnectedAccounts,
   useConnectTwitter,
+  useDisconnectAccount,
 } from "@/lib/hooks/use-connected-accounts";
 import {
   useCreateReference,
@@ -264,6 +266,7 @@ function ImportXStep({
 }) {
   const { data, isLoading } = useConnectedAccounts(organizationId);
   const connectTwitter = useConnectTwitter(organizationId);
+  const disconnectAccount = useDisconnectAccount(organizationId);
   const importTweets = useImportTweets(organizationId, voiceId);
   const [selectedAccount, setSelectedAccount] =
     useState<ConnectedAccount | null>(null);
@@ -279,6 +282,17 @@ function ImportXStep({
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to connect X account"
+      );
+    }
+  };
+
+  const handleDisconnect = async (account: ConnectedAccount) => {
+    try {
+      await disconnectAccount.mutateAsync(account.id);
+      toast.success(`Disconnected @${account.username}`);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to disconnect account"
       );
     }
   };
@@ -317,25 +331,27 @@ function ImportXStep({
       </ResponsiveDialogHeader>
 
       <div className="space-y-3 py-4">
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
-          <Label className="whitespace-nowrap text-xs" htmlFor="max-results">
-            Posts to import
-          </Label>
-          <Input
-            className="h-7 w-16 text-center text-xs"
-            id="max-results"
-            max={20}
-            min={5}
-            onChange={(e) => {
-              const val = Number.parseInt(e.target.value, 10);
-              if (!Number.isNaN(val)) {
-                setMaxResults(Math.min(20, Math.max(5, val)));
-              }
-            }}
-            type="number"
-            value={maxResults}
-          />
-        </div>
+        {!isLoading && twitterAccounts.length > 0 && (
+          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
+            <Label className="whitespace-nowrap text-xs" htmlFor="max-results">
+              Posts to import
+            </Label>
+            <Input
+              className="h-7 w-16 text-center text-xs"
+              id="max-results"
+              max={20}
+              min={5}
+              onChange={(e) => {
+                const val = Number.parseInt(e.target.value, 10);
+                if (!Number.isNaN(val)) {
+                  setMaxResults(Math.min(20, Math.max(5, val)));
+                }
+              }}
+              type="number"
+              value={maxResults}
+            />
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex justify-center py-8">
@@ -389,6 +405,7 @@ function ImportXStep({
                   </p>
                 </div>
                 <Button
+                  className="cursor-pointer"
                   disabled={importTweets.isPending}
                   onClick={() => handleImport(account)}
                   size="sm"
@@ -403,13 +420,21 @@ function ImportXStep({
                   {!isImporting && didImport && "Imported"}
                   {!isImporting && !didImport && "Import"}
                 </Button>
+                <button
+                  className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  disabled={disconnectAccount.isPending}
+                  onClick={() => handleDisconnect(account)}
+                  type="button"
+                >
+                  <HugeiconsIcon className="size-3.5" icon={Cancel01Icon} />
+                </button>
               </div>
             );
           })}
 
         {!isLoading && (
           <button
-            className="flex w-full items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/50"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/50"
             disabled={connectTwitter.isPending}
             onClick={handleConnect}
             type="button"
