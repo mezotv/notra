@@ -9,6 +9,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { importTweetsSchema } from "@/schemas/brand";
+import { ratelimit } from "@/utils/ratelimit";
 import { twitterFetch } from "@/utils/twitter-auth";
 
 interface RouteContext {
@@ -86,6 +87,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const auth = await withOrganizationAuth(request, organizationId);
     if (!auth.success) {
       return auth.response;
+    }
+
+    const { success: withinLimit } =
+      await ratelimit.importTweets.limit(organizationId);
+    if (!withinLimit) {
+      return NextResponse.json(
+        { error: "Too many import requests. Please try again shortly." },
+        { status: 429 }
+      );
     }
 
     const voice = await verifyVoiceOwnership(organizationId, voiceId);
