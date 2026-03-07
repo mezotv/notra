@@ -250,6 +250,14 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     await db.delete(brandReferences).where(eq(brandReferences.id, referenceId));
 
+    if (autumn) {
+      await autumn.track({
+        customer_id: organizationId,
+        feature_id: FEATURES.REFERENCES,
+        value: -1,
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting reference:", error);

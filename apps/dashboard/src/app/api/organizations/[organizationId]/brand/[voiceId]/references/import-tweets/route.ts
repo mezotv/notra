@@ -118,7 +118,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const { accountId, maxResults } = parsed.data;
+    const { accountId } = parsed.data;
+    let maxResults = parsed.data.maxResults;
 
     if (autumn) {
       const { data, error } = await autumn.check({
@@ -133,6 +134,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           },
           { status: 403 }
         );
+      }
+      if (!data.unlimited && typeof data.balance === "number") {
+        maxResults = Math.min(maxResults, data.balance);
       }
     }
 
@@ -254,7 +258,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const existingRefs = await db.query.brandReferences.findMany({
       where: and(
         eq(brandReferences.brandSettingsId, voiceId),
-        sql`${brandReferences.metadata}->>'tweetId' = ANY(${incomingIds})`
+        sql`${brandReferences.metadata}->>'tweetId' = ANY(ARRAY[${sql.join(
+          incomingIds.map((id) => sql`${id}`),
+          sql`, `
+        )}]::text[])`
       ),
       columns: { metadata: true },
     });

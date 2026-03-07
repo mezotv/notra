@@ -4,6 +4,7 @@ import {
   Add01Icon,
   ArrowLeft01Icon,
   Cancel01Icon,
+  InformationCircleIcon,
   Link04Icon,
   NewTwitterIcon,
   TextIcon,
@@ -26,9 +27,16 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { FEATURES } from "@/constants/features";
 import {
   type ConnectedAccount,
   useConnectedAccounts,
@@ -43,6 +51,89 @@ import {
 } from "../../../../../../lib/hooks/use-brand-references";
 
 type Step = "source" | "tweet-url" | "import-x" | "custom";
+
+function useReferenceBalance() {
+  const { check, customer } = useCustomer();
+  return useMemo(() => {
+    if (!customer) {
+      return {
+        remaining: null,
+        usage: null,
+        included: null,
+        overageAllowed: false,
+        unlimited: false,
+      };
+    }
+    const data = check({ featureId: FEATURES.REFERENCES }).data;
+    if (!data) {
+      return {
+        remaining: null,
+        usage: null,
+        included: null,
+        overageAllowed: false,
+        unlimited: false,
+      };
+    }
+    if (data.unlimited) {
+      return {
+        remaining: null,
+        usage: null,
+        included: null,
+        overageAllowed: false,
+        unlimited: true,
+      };
+    }
+    const usage = typeof data.usage === "number" ? data.usage : 0;
+    const included =
+      typeof data.included_usage === "number" ? data.included_usage : 0;
+    const overages = Math.max(0, usage - included);
+    return {
+      remaining: typeof data.balance === "number" ? data.balance : null,
+      usage,
+      included,
+      overages,
+      overageAllowed: data.overage_allowed === true,
+      unlimited: false,
+    };
+  }, [check, customer]);
+}
+
+function ReferenceUsageInfo({ afterCount }: { afterCount: number }) {
+  const { remaining, included, overages, overageAllowed, unlimited } =
+    useReferenceBalance();
+
+  if (unlimited || remaining === null) {
+    return null;
+  }
+
+  if (remaining === 0) {
+    return (
+      <p className="text-destructive text-xs">
+        No references remaining. Upgrade your plan to add more.
+      </p>
+    );
+  }
+
+  const afterRemaining = Math.max(0, remaining - afterCount);
+
+  return (
+    <p className="text-muted-foreground text-xs">
+      You have {remaining} remaining · after this you will have {afterRemaining}{" "}
+      left
+      {overageAllowed && included !== null && (
+        <span className="text-muted-foreground/70">
+          {" "}
+          · {included} included
+          {typeof overages === "number" && overages > 0 && (
+            <>
+              , {overages} overage{overages === 1 ? "" : "s"}
+            </>
+          )}
+        </span>
+      )}
+    </p>
+  );
+}
 
 interface AddReferenceDialogProps {
   open: boolean;
@@ -138,7 +229,7 @@ function SourceStep({ onSelect }: { onSelect: (step: Step) => void }) {
       <div className="grid gap-3 py-4">
         {sources.map((source) => (
           <button
-            className="flex items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+            className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
             key={source.step}
             onClick={() => onSelect(source.step)}
             type="button"
@@ -174,6 +265,7 @@ function TweetUrlStep({
   const fetchTweet = useFetchTweet(organizationId, voiceId);
   const createReference = useCreateReference(organizationId, voiceId);
   const isPending = fetchTweet.isPending || createReference.isPending;
+  const { remaining } = useReferenceBalance();
 
   const handleSubmit = async () => {
     const trimmed = url.trim();
@@ -224,13 +316,14 @@ function TweetUrlStep({
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
 
-      <div className="py-4">
+      <div className="space-y-2 py-4">
         <Input
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="https://x.com/user/status/..."
           value={url}
         />
+        <ReferenceUsageInfo afterCount={1} />
       </div>
 
       <ResponsiveDialogFooter>
@@ -238,7 +331,10 @@ function TweetUrlStep({
           <HugeiconsIcon className="size-4" icon={ArrowLeft01Icon} />
           Back
         </Button>
-        <Button disabled={isPending || !url.trim()} onClick={handleSubmit}>
+        <Button
+          disabled={isPending || !url.trim() || remaining === 0}
+          onClick={handleSubmit}
+        >
           {isPending ? (
             <>
               <Loader2Icon className="size-4 animate-spin" />
@@ -271,6 +367,16 @@ function ImportXStep({
   const [selectedAccount, setSelectedAccount] =
     useState<ConnectedAccount | null>(null);
   const [maxResults, setMaxResults] = useState(20);
+  const { remaining } = useReferenceBalance();
+
+  const effectiveMax =
+    remaining !== null ? Math.min(maxResults, remaining) : maxResults;
+
+  useEffect(() => {
+    if (remaining !== null && remaining < maxResults) {
+      setMaxResults(Math.max(1, Math.min(20, remaining)));
+    }
+  }, [remaining, maxResults]);
 
   const twitterAccounts =
     data?.accounts.filter((a) => a.provider === "twitter") ?? [];
@@ -304,12 +410,13 @@ function ImportXStep({
     try {
       const result = await importTweets.mutateAsync({
         accountId: account.id,
-        maxResults,
+        maxResults: effectiveMax,
       });
       if (result.count > 0) {
         toast.success(
           `Imported ${result.count} post${result.count === 1 ? "" : "s"} from @${account.username}`
         );
+        onClose();
       } else {
         toast.info(
           "No new posts to import — all recent posts are already added."
@@ -334,24 +441,45 @@ function ImportXStep({
 
       <div className="space-y-3 py-4">
         {!isLoading && twitterAccounts.length > 0 && (
-          <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
-            <Label className="whitespace-nowrap text-xs" htmlFor="max-results">
-              Posts to import
-            </Label>
-            <Input
-              className="h-7 w-16 text-center text-xs"
-              id="max-results"
-              max={20}
-              min={5}
-              onChange={(e) => {
-                const val = Number.parseInt(e.target.value, 10);
-                if (!Number.isNaN(val)) {
-                  setMaxResults(Math.min(20, Math.max(5, val)));
-                }
-              }}
-              type="number"
-              value={maxResults}
-            />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <Label
+                  className="whitespace-nowrap text-xs"
+                  htmlFor="max-results"
+                >
+                  Amount of posts to import:
+                </Label>
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help text-muted-foreground">
+                    <HugeiconsIcon
+                      className="size-3.5"
+                      icon={InformationCircleIcon}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Maximum 20 posts per import</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Input
+                className="h-7 w-16 text-center text-xs"
+                id="max-results"
+                max={remaining !== null ? Math.min(20, remaining) : 20}
+                min={1}
+                onChange={(e) => {
+                  const val = Number.parseInt(e.target.value, 10);
+                  if (!Number.isNaN(val)) {
+                    const cap =
+                      remaining !== null ? Math.min(20, remaining) : 20;
+                    setMaxResults(Math.min(cap, Math.max(1, val)));
+                  }
+                }}
+                type="number"
+                value={maxResults}
+              />
+            </div>
+            <ReferenceUsageInfo afterCount={maxResults} />
           </div>
         )}
 
@@ -408,7 +536,7 @@ function ImportXStep({
                 </div>
                 <Button
                   className="cursor-pointer"
-                  disabled={importTweets.isPending}
+                  disabled={importTweets.isPending || remaining === 0}
                   onClick={() => handleImport(account)}
                   size="sm"
                   variant={didImport ? "outline" : "default"}
@@ -449,7 +577,9 @@ function ImportXStep({
               )}
             </div>
             <p className="font-medium text-muted-foreground text-sm">
-              Connect another X account
+              {twitterAccounts.length === 0
+                ? "Connect an X account"
+                : "Connect another X account"}
             </p>
           </button>
         )}

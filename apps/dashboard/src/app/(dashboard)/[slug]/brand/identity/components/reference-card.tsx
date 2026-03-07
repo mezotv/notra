@@ -370,21 +370,22 @@ function TwitterReferenceCard({
               </div>
             </div>
           </div>
-          <CardMenu
-            applicableTo={reference.applicableTo}
-            externalUrl={metadata?.url}
-            isDeleting={isDeleting}
-            onDelete={() => onDelete(reference.id)}
-            onUpdateApplicableTo={onUpdateApplicableTo}
-            referenceId={reference.id}
-          />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <PlatformBadges applicableTo={reference.applicableTo} />
+            <CardMenu
+              applicableTo={reference.applicableTo}
+              externalUrl={metadata?.url}
+              isDeleting={isDeleting}
+              onDelete={() => onDelete(reference.id)}
+              onUpdateApplicableTo={onUpdateApplicableTo}
+              referenceId={reference.id}
+            />
+          </div>
         </div>
 
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
-
-        <PlatformBadges applicableTo={reference.applicableTo} />
 
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
@@ -448,20 +449,21 @@ function CustomReferenceCard({
               </p>
             </div>
           </div>
-          <CardMenu
-            applicableTo={reference.applicableTo}
-            isDeleting={isDeleting}
-            onDelete={() => onDelete(reference.id)}
-            onUpdateApplicableTo={onUpdateApplicableTo}
-            referenceId={reference.id}
-          />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <PlatformBadges applicableTo={reference.applicableTo} />
+            <CardMenu
+              applicableTo={reference.applicableTo}
+              isDeleting={isDeleting}
+              onDelete={() => onDelete(reference.id)}
+              onUpdateApplicableTo={onUpdateApplicableTo}
+              referenceId={reference.id}
+            />
+          </div>
         </div>
 
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
-
-        <PlatformBadges applicableTo={reference.applicableTo} />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
