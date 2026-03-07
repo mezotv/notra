@@ -89,6 +89,7 @@ export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;
 export const updateReferenceSchema = z.object({
   note: z.string().nullable().optional(),
   content: z.string().min(1).optional(),
+  applicableTo: applicableToSchema.optional(),
 });
 
 export type UpdateReferenceInput = z.infer<typeof updateReferenceSchema>;

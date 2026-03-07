@@ -97,9 +97,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       }
     }
 
-    const applicableTo =
-      result.data.applicableTo ??
-      (result.data.type === "twitter_post" ? ["twitter"] : ["all"]);
+    const typeDefaults: Record<string, string[]> = {
+      twitter_post: ["twitter"],
+      linkedin_post: ["linkedin"],
+      blog_post: ["changelog"],
+    };
+
+    const applicableTo = result.data.applicableTo ??
+      typeDefaults[result.data.type] ?? ["all"];
 
     const reference = await db
       .insert(brandReferences)

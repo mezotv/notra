@@ -77,6 +77,22 @@ export function ReferencesList({
     }
   };
 
+  const handleUpdateApplicableTo = async (
+    id: string,
+    applicableTo: string[]
+  ) => {
+    try {
+      await updateMutation.mutateAsync({
+        referenceId: id,
+        data: { applicableTo },
+      });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update platforms"
+      );
+    }
+  };
+
   const handleDialogOpenChange = (open: boolean) => {
     if (!open) {
       setInitialStep(undefined);
@@ -100,6 +116,7 @@ export function ReferencesList({
               isDeleting={deletingId === ref.id}
               key={ref.id}
               onDelete={handleDelete}
+              onUpdateApplicableTo={handleUpdateApplicableTo}
               onUpdateNote={handleUpdateNote}
               reference={ref}
             />

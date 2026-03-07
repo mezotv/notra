@@ -82,7 +82,7 @@ export function useUpdateReference(organizationId: string, voiceId: string) {
       data,
     }: {
       referenceId: string;
-      data: { note?: string | null; content?: string };
+      data: { note?: string | null; content?: string; applicableTo?: string[] };
     }) => {
       const res = await fetch(
         `${baseUrl(organizationId, voiceId)}?id=${referenceId}`,

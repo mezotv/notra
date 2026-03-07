@@ -30,6 +30,7 @@ interface ReferenceCardProps {
   reference: BrandReference;
   onDelete: (id: string) => void;
   onUpdateNote: (id: string, note: string | null) => void;
+  onUpdateApplicableTo: (id: string, applicableTo: string[]) => void;
   isDeleting: boolean;
 }
 
@@ -43,13 +44,6 @@ interface TweetMetadata {
   replies?: number;
   createdAt?: string;
 }
-
-const PLATFORM_LABELS: Record<string, string> = {
-  all: "All",
-  twitter: "Twitter",
-  linkedin: "LinkedIn",
-  changelog: "Changelog",
-};
 
 const TRAILING_ZERO_REGEX = /\.0$/;
 
@@ -89,6 +83,7 @@ export function ReferenceCard({
   reference,
   onDelete,
   onUpdateNote,
+  onUpdateApplicableTo,
   isDeleting,
 }: ReferenceCardProps) {
   if (reference.type === "custom") {
@@ -96,6 +91,7 @@ export function ReferenceCard({
       <CustomReferenceCard
         isDeleting={isDeleting}
         onDelete={onDelete}
+        onUpdateApplicableTo={onUpdateApplicableTo}
         onUpdateNote={onUpdateNote}
         reference={reference}
       />
@@ -106,6 +102,7 @@ export function ReferenceCard({
     <TwitterReferenceCard
       isDeleting={isDeleting}
       onDelete={onDelete}
+      onUpdateApplicableTo={onUpdateApplicableTo}
       onUpdateNote={onUpdateNote}
       reference={reference}
     />
@@ -193,6 +190,7 @@ function TwitterReferenceCard({
   reference,
   onDelete,
   onUpdateNote,
+  onUpdateApplicableTo,
   isDeleting,
 }: ReferenceCardProps) {
   const metadata = reference.metadata as TweetMetadata | null;
@@ -251,7 +249,11 @@ function TwitterReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
-        <PlatformBadges applicableTo={reference.applicableTo} />
+        <PlatformBadges
+          applicableTo={reference.applicableTo}
+          onUpdate={onUpdateApplicableTo}
+          referenceId={reference.id}
+        />
 
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
@@ -292,6 +294,7 @@ function CustomReferenceCard({
   reference,
   onDelete,
   onUpdateNote,
+  onUpdateApplicableTo,
   isDeleting,
 }: ReferenceCardProps) {
   return (
@@ -324,7 +327,11 @@ function CustomReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
-        <PlatformBadges applicableTo={reference.applicableTo} />
+        <PlatformBadges
+          applicableTo={reference.applicableTo}
+          onUpdate={onUpdateApplicableTo}
+          referenceId={reference.id}
+        />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
@@ -338,21 +345,50 @@ function CustomReferenceCard({
   );
 }
 
-function PlatformBadges({ applicableTo }: { applicableTo: string[] }) {
-  if (!applicableTo || applicableTo.length === 0) {
-    return null;
-  }
+function PlatformBadges({
+  referenceId,
+  applicableTo,
+  onUpdate,
+}: {
+  referenceId: string;
+  applicableTo: string[];
+  onUpdate: (id: string, applicableTo: string[]) => void;
+}) {
+  const togglePlatform = (value: string) => {
+    if (value === "all") {
+      onUpdate(referenceId, ["all"]);
+      return;
+    }
+    const withoutAll = applicableTo.filter((v) => v !== "all");
+    const updated = withoutAll.includes(value)
+      ? withoutAll.filter((v) => v !== value)
+      : [...withoutAll, value];
+    onUpdate(referenceId, updated.length === 0 ? ["all"] : updated);
+  };
 
   return (
     <div className="flex flex-wrap gap-1">
-      {applicableTo.map((platform) => (
-        <span
-          className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
-          key={platform}
+      {PLATFORM_OPTIONS.map((option) => (
+        <button
+          className={`cursor-pointer rounded-full px-2 py-0.5 text-[0.6875rem] transition-colors ${
+            applicableTo.includes(option.value)
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground hover:bg-muted/80"
+          }`}
+          key={option.value}
+          onClick={() => togglePlatform(option.value)}
+          type="button"
         >
-          {PLATFORM_LABELS[platform] ?? platform}
-        </span>
+          {option.label}
+        </button>
       ))}
     </div>
   );
 }
+
+const PLATFORM_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "twitter", label: "Twitter" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "changelog", label: "Changelog" },
+] as const;
