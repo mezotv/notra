@@ -54,7 +54,10 @@ export async function fetchTweet(tweetUrl: string): Promise<TweetData> {
 
   const json = await res.json();
   const tweet = json.data;
-  const author = json.includes?.users?.[0];
+  const author =
+    json.includes?.users?.find(
+      (u: { id: string }) => u.id === tweet.author_id
+    ) ?? json.includes?.users?.[0];
 
   if (!tweet) {
     throw new Error("Tweet not found");
