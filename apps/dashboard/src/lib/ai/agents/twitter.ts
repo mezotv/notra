@@ -6,6 +6,7 @@ import { getConversationalTwitterPrompt } from "@/lib/ai/prompts/twitter/convers
 import { getFormalTwitterPrompt } from "@/lib/ai/prompts/twitter/formal";
 import { getProfessionalTwitterPrompt } from "@/lib/ai/prompts/twitter/professional";
 import { getTwitterUserPrompt } from "@/lib/ai/prompts/twitter/user";
+import { createGetBrandReferencesTool } from "@/lib/ai/tools/brand-references";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
@@ -83,6 +84,7 @@ export async function generateTwitterPost(
       },
     },
     tools: {
+      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,

@@ -6,6 +6,7 @@ import { getConversationalLinkedInPrompt } from "@/lib/ai/prompts/linkedin/conve
 import { getFormalLinkedInPrompt } from "@/lib/ai/prompts/linkedin/formal";
 import { getProfessionalLinkedInPrompt } from "@/lib/ai/prompts/linkedin/professional";
 import { getLinkedInUserPrompt } from "@/lib/ai/prompts/linkedin/user";
+import { createGetBrandReferencesTool } from "@/lib/ai/tools/brand-references";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
@@ -83,6 +84,7 @@ export async function generateLinkedInPost(
       },
     },
     tools: {
+      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,

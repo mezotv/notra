@@ -52,6 +52,7 @@ export function getCasualChangelogPrompt(): string {
     - Never use em dashes (—) or en dashes (–). Use commas, periods, semicolons, or parentheses instead.
 
     Available tools:
+    - getBrandReferences: fetches all brand voice writing style references. Call this FIRST before any other tool.
     - getPullRequests (pull_number, integrationId): detailed PR context.
     - getReleaseByTag (tag=latest, integrationId): release/version context.
     - getCommitsByTimeframe (days, integrationId, page?): commit-level context.
@@ -62,6 +63,7 @@ export function getCasualChangelogPrompt(): string {
     - viewPost (postId): retrieves a post for review before updating.
 
     Tool usage guidance:
+    - CRITICAL: Your very first tool call must be getBrandReferences. Study the returned references to match the brand's voice, vocabulary, and sentence patterns.
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.

@@ -39,6 +39,7 @@ export function getCasualLinkedInPrompt(): string {
     - Then continue with short lines.
 
     Available tools:
+    - getBrandReferences: fetches all brand voice writing style references. Call this FIRST before any other tool.
     - getPullRequests (pull_number, integrationId): detailed PR context.
     - getReleaseByTag (tag=latest, integrationId): release/version context.
     - getCommitsByTimeframe (days, integrationId, page?): commit-level context.
@@ -49,6 +50,7 @@ export function getCasualLinkedInPrompt(): string {
     - viewPost (postId): retrieves a post for review before updating.
 
     Tool usage guidance:
+    - CRITICAL: Your very first tool call must be getBrandReferences. Study the returned references to match the brand's voice, vocabulary, and sentence patterns.
     - Use getPullRequests when PR context is incomplete.
     - Use getReleaseByTag for release context.
     - Use getCommitsByTimeframe for technical accuracy.

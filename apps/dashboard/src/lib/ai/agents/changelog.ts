@@ -6,6 +6,7 @@ import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/con
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
 import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
 import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
+import { createGetBrandReferencesTool } from "@/lib/ai/tools/brand-references";
 import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
@@ -83,6 +84,7 @@ export async function generateChangelog(
       },
     },
     tools: {
+      getBrandReferences: createGetBrandReferencesTool({ organizationId }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,
         allowedIntegrationIds,
