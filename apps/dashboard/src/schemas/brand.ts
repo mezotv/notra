@@ -70,7 +70,7 @@ export const referenceTypeSchema = z.enum([
 export type ReferenceType = z.infer<typeof referenceTypeSchema>;
 
 export const applicableToSchema = z
-  .array(z.enum(["all", "twitter", "linkedin", "changelog"]))
+  .array(z.enum(["all", "twitter", "linkedin", "blog"]))
   .min(1)
   .default(["all"]);
 

@@ -1,5 +1,5 @@
 {
-  "id": "8368d64c-a12f-479d-b5bd-1c201d5a0d8b",
+  "id": "2e116a5e-e265-4cc9-8819-9153a180b6f8",
   "prevId": "badb1394-ad61-4184-8848-66e8d49c94f9",
   "version": "7",
   "dialect": "postgresql",
@@ -144,7 +144,8 @@
         },
         "type": {
           "name": "type",
-          "type": "text",
+          "type": "reference_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -168,10 +169,11 @@
         },
         "applicable_to": {
           "name": "applicable_to",
-          "type": "jsonb",
+          "type": "applicable_platform[]",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'[\"all\"]'::jsonb"
+          "default": "ARRAY['all']::applicable_platform[]"
         },
         "created_at": {
           "name": "created_at",
@@ -1773,6 +1775,16 @@
     }
   },
   "enums": {
+    "public.applicable_platform": {
+      "name": "applicable_platform",
+      "schema": "public",
+      "values": [
+        "all",
+        "twitter",
+        "linkedin",
+        "blog"
+      ]
+    },
     "public.lookback_window": {
       "name": "lookback_window",
       "schema": "public",
@@ -1790,6 +1802,16 @@
       "values": [
         "draft",
         "published"
+      ]
+    },
+    "public.reference_type": {
+      "name": "reference_type",
+      "schema": "public",
+      "values": [
+        "twitter_post",
+        "linkedin_post",
+        "blog_post",
+        "custom"
       ]
     }
   },

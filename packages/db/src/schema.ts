@@ -286,6 +286,20 @@ export const brandSettings = pgTable(
   ]
 );
 
+export const referenceTypeEnum = pgEnum("reference_type", [
+  "twitter_post",
+  "linkedin_post",
+  "blog_post",
+  "custom",
+]);
+
+export const applicablePlatformEnum = pgEnum("applicable_platform", [
+  "all",
+  "twitter",
+  "linkedin",
+  "blog",
+]);
+
 export const brandReferences = pgTable(
   "brand_references",
   {
@@ -293,13 +307,13 @@ export const brandReferences = pgTable(
     brandSettingsId: text("brand_settings_id")
       .notNull()
       .references(() => brandSettings.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: referenceTypeEnum("type").notNull(),
     content: text("content").notNull(),
     metadata: jsonb("metadata"),
     note: text("note"),
-    applicableTo: jsonb("applicable_to")
-      .$type<string[]>()
-      .default(["all"])
+    applicableTo: applicablePlatformEnum("applicable_to")
+      .array()
+      .default(sql`ARRAY['all']::applicable_platform[]`)
       .notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

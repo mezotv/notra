@@ -467,7 +467,7 @@ const PLATFORM_OPTIONS = [
   { value: "all", label: "All platforms" },
   { value: "twitter", label: "Twitter / X" },
   { value: "linkedin", label: "LinkedIn" },
-  { value: "changelog", label: "Changelog" },
+  { value: "blog", label: "Blog & Changelog" },
 ] as const;
 
 function CustomTextStep({

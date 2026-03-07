@@ -100,7 +100,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const typeDefaults: Record<string, string[]> = {
       twitter_post: ["twitter"],
       linkedin_post: ["linkedin"],
-      blog_post: ["changelog"],
+      blog_post: ["blog"],
     };
 
     const applicableTo = result.data.applicableTo ??

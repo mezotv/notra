@@ -3,6 +3,7 @@
 import {
   Comment01Icon,
   Delete02Icon,
+  Edit02Icon,
   FavouriteIcon,
   Link04Icon,
   MoreHorizontalIcon,
@@ -11,16 +12,26 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@notra/ui/components/shared/responsive-dialog";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
 import type { BrandReference } from "@/types/hooks/brand-references";
@@ -44,6 +55,20 @@ interface TweetMetadata {
   replies?: number;
   createdAt?: string;
 }
+
+const PLATFORM_OPTIONS = [
+  { value: "all", label: "All platforms" },
+  { value: "twitter", label: "Twitter / X" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "blog", label: "Blog & Changelog" },
+] as const;
+
+const PLATFORM_LABELS: Record<string, string> = {
+  all: "All",
+  twitter: "Twitter",
+  linkedin: "LinkedIn",
+  blog: "Blog",
+};
 
 const TRAILING_ZERO_REGEX = /\.0$/;
 
@@ -146,43 +171,150 @@ function NoteInput({
   );
 }
 
+function PlatformBadges({ applicableTo }: { applicableTo: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      {applicableTo.map((platform) => (
+        <span
+          className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
+          key={platform}
+        >
+          {PLATFORM_LABELS[platform] ?? platform}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function EditPlatformsDialog({
+  open,
+  onOpenChange,
+  applicableTo,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  applicableTo: string[];
+  onSave: (platforms: string[]) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>(applicableTo);
+
+  const togglePlatform = (value: string) => {
+    if (value === "all") {
+      setSelected(["all"]);
+      return;
+    }
+    const withoutAll = selected.filter((v) => v !== "all");
+    const updated = withoutAll.includes(value)
+      ? withoutAll.filter((v) => v !== value)
+      : [...withoutAll, value];
+    setSelected(updated.length === 0 ? ["all"] : updated);
+  };
+
+  const handleSave = () => {
+    onSave(selected);
+    onOpenChange(false);
+  };
+
+  return (
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Edit platforms</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            Choose which AI agents can use this reference.
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+
+        <div className="space-y-3 py-4">
+          <Label>Use for</Label>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORM_OPTIONS.map((option) => (
+              <button
+                className={`cursor-pointer rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  selected.includes(option.value)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border hover:bg-muted"
+                }`}
+                key={option.value}
+                onClick={() => togglePlatform(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <ResponsiveDialogFooter>
+          <Button onClick={() => onOpenChange(false)} variant="outline">
+            Cancel
+          </Button>
+          <Button onClick={handleSave}>Save</Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
 function CardMenu({
+  referenceId,
+  applicableTo,
   onDelete,
+  onUpdateApplicableTo,
   isDeleting,
   externalUrl,
 }: {
+  referenceId: string;
+  applicableTo: string[];
   onDelete: () => void;
+  onUpdateApplicableTo: (id: string, applicableTo: string[]) => void;
   isDeleting: boolean;
   externalUrl?: string;
 }) {
+  const [editOpen, setEditOpen] = useState(false);
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
-        nativeButton={false}
-        render={<span />}
-      >
-        <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-48">
-        {externalUrl && (
-          <DropdownMenuItem
-            onClick={() => window.open(externalUrl, "_blank", "noopener")}
-          >
-            <HugeiconsIcon className="size-4" icon={Link04Icon} />
-            Visit original post
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuItem
-          disabled={isDeleting}
-          onClick={onDelete}
-          variant="destructive"
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+          nativeButton={false}
+          render={<span />}
         >
-          <HugeiconsIcon className="size-4" icon={Delete02Icon} />
-          {isDeleting ? "Deleting..." : "Delete reference"}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          {externalUrl && (
+            <DropdownMenuItem
+              onClick={() => window.open(externalUrl, "_blank", "noopener")}
+            >
+              <HugeiconsIcon className="size-4" icon={Link04Icon} />
+              Visit original post
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <HugeiconsIcon className="size-4" icon={Edit02Icon} />
+            Edit platforms
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={isDeleting}
+            onClick={onDelete}
+            variant="destructive"
+          >
+            <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+            {isDeleting ? "Deleting..." : "Delete reference"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <EditPlatformsDialog
+        applicableTo={applicableTo}
+        onOpenChange={setEditOpen}
+        onSave={(platforms) => onUpdateApplicableTo(referenceId, platforms)}
+        open={editOpen}
+      />
+    </>
   );
 }
 
@@ -239,9 +371,12 @@ function TwitterReferenceCard({
             </div>
           </div>
           <CardMenu
+            applicableTo={reference.applicableTo}
             externalUrl={metadata?.url}
             isDeleting={isDeleting}
             onDelete={() => onDelete(reference.id)}
+            onUpdateApplicableTo={onUpdateApplicableTo}
+            referenceId={reference.id}
           />
         </div>
 
@@ -249,11 +384,7 @@ function TwitterReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
-        <PlatformBadges
-          applicableTo={reference.applicableTo}
-          onUpdate={onUpdateApplicableTo}
-          referenceId={reference.id}
-        />
+        <PlatformBadges applicableTo={reference.applicableTo} />
 
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
@@ -318,8 +449,11 @@ function CustomReferenceCard({
             </div>
           </div>
           <CardMenu
+            applicableTo={reference.applicableTo}
             isDeleting={isDeleting}
             onDelete={() => onDelete(reference.id)}
+            onUpdateApplicableTo={onUpdateApplicableTo}
+            referenceId={reference.id}
           />
         </div>
 
@@ -327,11 +461,7 @@ function CustomReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
-        <PlatformBadges
-          applicableTo={reference.applicableTo}
-          onUpdate={onUpdateApplicableTo}
-          referenceId={reference.id}
-        />
+        <PlatformBadges applicableTo={reference.applicableTo} />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
@@ -344,51 +474,3 @@ function CustomReferenceCard({
     </div>
   );
 }
-
-function PlatformBadges({
-  referenceId,
-  applicableTo,
-  onUpdate,
-}: {
-  referenceId: string;
-  applicableTo: string[];
-  onUpdate: (id: string, applicableTo: string[]) => void;
-}) {
-  const togglePlatform = (value: string) => {
-    if (value === "all") {
-      onUpdate(referenceId, ["all"]);
-      return;
-    }
-    const withoutAll = applicableTo.filter((v) => v !== "all");
-    const updated = withoutAll.includes(value)
-      ? withoutAll.filter((v) => v !== value)
-      : [...withoutAll, value];
-    onUpdate(referenceId, updated.length === 0 ? ["all"] : updated);
-  };
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {PLATFORM_OPTIONS.map((option) => (
-        <button
-          className={`cursor-pointer rounded-full px-2 py-0.5 text-[0.6875rem] transition-colors ${
-            applicableTo.includes(option.value)
-              ? "bg-primary/10 text-primary"
-              : "bg-muted text-muted-foreground hover:bg-muted/80"
-          }`}
-          key={option.value}
-          onClick={() => togglePlatform(option.value)}
-          type="button"
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-const PLATFORM_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "twitter", label: "Twitter" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "changelog", label: "Changelog" },
-] as const;
