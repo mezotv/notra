@@ -127,6 +127,13 @@
       "when": 1772902653668,
       "tag": "0017_cool_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772981707111,
+      "tag": "0018_simple_jigsaw",
+      "breakpoints": true
     }
   ]
 }

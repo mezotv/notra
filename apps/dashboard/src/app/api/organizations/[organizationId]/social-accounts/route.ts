@@ -25,6 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         username: true,
         displayName: true,
         profileImageUrl: true,
+        verified: true,
         createdAt: true,
       },
     });

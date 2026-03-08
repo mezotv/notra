@@ -15,6 +15,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -566,8 +567,11 @@ function ConnectedAccountsSection({
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">
+                  <p className="flex items-center gap-1 truncate font-medium text-sm">
                     {account.displayName}
+                    {account.verified && (
+                      <XVerifiedBadge className="size-4 shrink-0" />
+                    )}
                   </p>
                   <p className="truncate text-muted-foreground text-xs">
                     @{account.username}

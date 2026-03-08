@@ -338,6 +338,7 @@ export const connectedSocialAccounts = pgTable(
     username: text("username").notNull(),
     displayName: text("display_name").notNull(),
     profileImageUrl: text("profile_image_url"),
+    verified: boolean("verified").default(false).notNull(),
     accessToken: text("access_token").notNull(),
     refreshToken: text("refresh_token"),
     scope: text("scope"),

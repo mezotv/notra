@@ -20,6 +20,8 @@ interface TwitterUserResponse {
     name: string;
     username: string;
     profile_image_url?: string;
+    verified?: boolean;
+    verified_type?: string;
   };
 }
 
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
     const tokens: TwitterTokenResponse = await tokenRes.json();
 
     const userRes = await fetch(
-      "https://api.x.com/2/users/me?user.fields=profile_image_url",
+      "https://api.x.com/2/users/me?user.fields=profile_image_url,verified,verified_type",
       { headers: { Authorization: `Bearer ${tokens.access_token}` } }
     );
 
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
     const profileImageUrl = twitterUser.profile_image_url
       ? normalizeTwitterProfileImageUrl(twitterUser.profile_image_url)
       : null;
+    const verified = twitterUser.verified === true;
 
     const encryptedAccessToken = encryptToken(tokens.access_token);
     const encryptedRefreshToken = tokens.refresh_token
@@ -133,6 +136,7 @@ export async function GET(request: NextRequest) {
           username: twitterUser.username,
           displayName: twitterUser.name,
           profileImageUrl,
+          verified,
         })
         .where(eq(connectedSocialAccounts.id, existing.id));
     } else {
@@ -144,6 +148,7 @@ export async function GET(request: NextRequest) {
         username: twitterUser.username,
         displayName: twitterUser.name,
         profileImageUrl,
+        verified,
         accessToken: encryptedAccessToken,
         refreshToken: encryptedRefreshToken,
         scope: tokens.scope ?? null,
