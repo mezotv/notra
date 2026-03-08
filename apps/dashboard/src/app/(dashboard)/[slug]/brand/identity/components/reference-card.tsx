@@ -5,7 +5,6 @@ import {
   Delete02Icon,
   Edit02Icon,
   FavouriteIcon,
-  Link04Icon,
   MoreHorizontalIcon,
   RepeatIcon,
   TextIcon,
@@ -29,6 +28,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Label } from "@notra/ui/components/ui/label";
@@ -263,14 +263,12 @@ function CardMenu({
   onDelete,
   onUpdateApplicableTo,
   isDeleting,
-  externalUrl,
 }: {
   referenceId: string;
   applicableTo: string[];
   onDelete: () => void;
   onUpdateApplicableTo: (id: string, applicableTo: string[]) => void;
   isDeleting: boolean;
-  externalUrl?: string;
 }) {
   const [editOpen, setEditOpen] = useState(false);
 
@@ -284,19 +282,12 @@ function CardMenu({
         >
           <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-48">
-          {externalUrl && (
-            <DropdownMenuItem
-              onClick={() => window.open(externalUrl, "_blank", "noopener")}
-            >
-              <HugeiconsIcon className="size-4" icon={Link04Icon} />
-              Visit original post
-            </DropdownMenuItem>
-          )}
+        <DropdownMenuContent align="end" className="min-w-44">
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             <HugeiconsIcon className="size-4" icon={Edit02Icon} />
-            Edit platforms
+            Edit reference
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={isDeleting}
             onClick={onDelete}
@@ -374,7 +365,6 @@ function TwitterReferenceCard({
             <PlatformBadges applicableTo={reference.applicableTo} />
             <CardMenu
               applicableTo={reference.applicableTo}
-              externalUrl={metadata?.url}
               isDeleting={isDeleting}
               onDelete={() => onDelete(reference.id)}
               onUpdateApplicableTo={onUpdateApplicableTo}
