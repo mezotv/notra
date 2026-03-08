@@ -40,8 +40,8 @@ import { FEATURES } from "@/constants/features";
 import {
   type ConnectedAccount,
   useConnectedAccounts,
-  useConnectTwitter,
   useDisconnectAccount,
+  useHandleConnectTwitter,
 } from "@/lib/hooks/use-connected-accounts";
 import type {
   AddReferenceDialogProps,
@@ -357,7 +357,8 @@ function ImportXStep({
   onClose: () => void;
 }) {
   const { data, isLoading } = useConnectedAccounts(organizationId);
-  const connectTwitter = useConnectTwitter(organizationId);
+  const { handleConnect, isPending: isConnecting } =
+    useHandleConnectTwitter(organizationId);
   const disconnectAccount = useDisconnectAccount(organizationId);
   const importTweets = useImportTweets(organizationId, voiceId);
   const [selectedAccount, setSelectedAccount] =
@@ -376,19 +377,6 @@ function ImportXStep({
 
   const twitterAccounts =
     data?.accounts.filter((a) => a.provider === "twitter") ?? [];
-
-  const handleConnect = async () => {
-    try {
-      const result = await connectTwitter.mutateAsync(
-        window.location.pathname + window.location.search
-      );
-      window.location.href = result.url;
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to connect X account"
-      );
-    }
-  };
 
   const handleDisconnect = async (account: ConnectedAccount) => {
     try {
@@ -561,12 +549,12 @@ function ImportXStep({
         {!isLoading && (
           <button
             className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/50"
-            disabled={connectTwitter.isPending}
+            disabled={isConnecting}
             onClick={handleConnect}
             type="button"
           >
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
-              {connectTwitter.isPending ? (
+              {isConnecting ? (
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
                 <HugeiconsIcon className="size-4" icon={Add01Icon} />

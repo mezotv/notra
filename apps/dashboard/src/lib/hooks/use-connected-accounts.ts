@@ -1,6 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
+import { toast } from "sonner";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export interface ConnectedAccount {
@@ -45,6 +47,25 @@ export function useConnectTwitter(organizationId: string) {
       return res.json();
     },
   });
+}
+
+export function useHandleConnectTwitter(organizationId: string) {
+  const connectTwitter = useConnectTwitter(organizationId);
+
+  const handleConnect = useCallback(async () => {
+    try {
+      const result = await connectTwitter.mutateAsync(
+        window.location.pathname + window.location.search
+      );
+      window.location.href = result.url;
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to connect X account"
+      );
+    }
+  }, [connectTwitter]);
+
+  return { handleConnect, isPending: connectTwitter.isPending };
 }
 
 export function useDisconnectAccount(organizationId: string) {

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Add01Icon,
   Cancel01Icon,
   NewTwitterIcon,
   Upload01Icon,
@@ -30,6 +31,7 @@ import { authClient } from "@/lib/auth/client";
 import {
   useConnectedAccounts,
   useDisconnectAccount,
+  useHandleConnectTwitter,
 } from "@/lib/hooks/use-connected-accounts";
 import {
   getOrganizationMembershipActionLabel,
@@ -501,6 +503,8 @@ function ConnectedAccountsSection({
   organizationId: string;
 }) {
   const { data, isLoading, isError } = useConnectedAccounts(organizationId);
+  const { handleConnect, isPending: isConnecting } =
+    useHandleConnectTwitter(organizationId);
   const disconnectMutation = useDisconnectAccount(organizationId);
 
   const twitterAccounts = (data?.accounts ?? []).filter(
@@ -530,13 +534,33 @@ function ConnectedAccountsSection({
         )}
 
         {!isLoading && !isError && twitterAccounts.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-8">
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-8">
             <div className="flex size-10 items-center justify-center rounded-full bg-muted">
               <HugeiconsIcon className="size-5" icon={NewTwitterIcon} />
             </div>
-            <p className="text-muted-foreground text-sm">
-              No X accounts connected
-            </p>
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm">
+                No X accounts connected
+              </p>
+            </div>
+            <Button
+              disabled={isConnecting}
+              onClick={handleConnect}
+              size="sm"
+              variant="outline"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+                  Connect X Account
+                </>
+              )}
+            </Button>
           </div>
         )}
 
@@ -604,6 +628,27 @@ function ConnectedAccountsSection({
               </div>
             );
           })}
+
+        {!isLoading && !isError && twitterAccounts.length > 0 && (
+          <Button
+            className="w-full"
+            disabled={isConnecting}
+            onClick={handleConnect}
+            variant="outline"
+          >
+            {isConnecting ? (
+              <>
+                <Loader2Icon className="size-3.5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+                Connect Another X Account
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </TitleCard>
   );
