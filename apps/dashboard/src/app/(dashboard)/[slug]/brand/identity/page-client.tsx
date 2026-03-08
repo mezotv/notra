@@ -89,7 +89,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const [addIdentityOpen, setAddIdentityOpen] = useState(false);
   const [addReferenceOpen, setAddReferenceOpen] = useState(false);
-  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTargetVoiceId, setDeleteTargetVoiceId] = useState<string | null>(
+    null
+  );
   const [activeTab, setActiveTab] = useQueryState(
     "view",
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
@@ -100,11 +102,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     voices.find((v) => v.isDefault) ??
     voices[0];
 
+  const deleteTargetVoice = deleteTargetVoiceId
+    ? voices.find((v) => v.id === deleteTargetVoiceId)
+    : null;
+
   const { data: affectedData, isLoading: isLoadingAffected } =
     useBrandVoiceAffectedTriggers(
       organizationId,
-      selectedVoice?.id ?? "",
-      isDeleteDialogOpen && !!selectedVoice && !selectedVoice.isDefault
+      deleteTargetVoiceId ?? "",
+      !!deleteTargetVoiceId &&
+        !!deleteTargetVoice &&
+        !deleteTargetVoice.isDefault
     );
 
   const { data: referencesData } = useReferences(
@@ -153,14 +161,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     triggerAnalysis(voiceUrl, selectedVoice?.id);
 
   const handleDeleteVoice = async () => {
-    if (!selectedVoice || selectedVoice.isDefault) {
+    if (!deleteTargetVoice || deleteTargetVoice.isDefault) {
       return;
     }
 
     try {
-      const result = await deleteVoiceMutation.mutateAsync(selectedVoice.id);
-      setActiveVoiceId(null);
-      setDeleteDialogOpen(false);
+      const result = await deleteVoiceMutation.mutateAsync(
+        deleteTargetVoice.id
+      );
+      if (activeVoiceId === deleteTargetVoice.id) {
+        setActiveVoiceId(null);
+      }
+      setDeleteTargetVoiceId(null);
 
       const disabledCount =
         (result.disabledSchedules?.length ?? 0) +
@@ -332,14 +344,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           activeVoiceId={selectedVoice.id}
           affectedEvents={affectedData?.affectedEvents ?? []}
           affectedSchedules={affectedData?.affectedSchedules ?? []}
-          isDeleteDialogOpen={isDeleteDialogOpen}
+          isDeleteDialogOpen={!!deleteTargetVoiceId}
           isDeleting={deleteVoiceMutation.isPending}
           isLoadingAffected={isLoadingAffected}
           isReanalyzing={analyzeMutation.isPending}
           isSettingDefault={setDefaultMutation.isPending}
           onDelete={handleDeleteVoice}
-          onDeleteDialogChange={setDeleteDialogOpen}
+          onDeleteDialogChange={(open) => {
+            if (!open) {
+              setDeleteTargetVoiceId(null);
+            }
+          }}
           onReanalyze={handleReanalyze}
+          onRequestDelete={setDeleteTargetVoiceId}
           onSelect={setActiveVoiceId}
           onSetDefault={handleSetDefault}
           organizationId={organizationId}

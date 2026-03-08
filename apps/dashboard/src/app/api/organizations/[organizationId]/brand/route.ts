@@ -12,6 +12,22 @@ interface RouteContext {
   params: Promise<{ organizationId: string }>;
 }
 
+async function getTriggersForBrandVoice(
+  organizationId: string,
+  voiceId: string
+) {
+  const allTriggers = await db.query.contentTriggers.findMany({
+    where: eq(contentTriggers.organizationId, organizationId),
+  });
+
+  return allTriggers.filter((trigger) => {
+    const config = trigger.outputConfig as {
+      brandVoiceId?: string;
+    } | null;
+    return config?.brandVoiceId === voiceId;
+  });
+}
+
 export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const { organizationId } = await params;
@@ -26,16 +42,25 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const voiceId = searchParams.get("voiceId");
 
     if (checkAffected && voiceId) {
-      const allTriggers = await db.query.contentTriggers.findMany({
-        where: eq(contentTriggers.organizationId, organizationId),
+      const voiceRecord = await db.query.brandSettings.findFirst({
+        where: and(
+          eq(brandSettings.id, voiceId),
+          eq(brandSettings.organizationId, organizationId)
+        ),
+        columns: { id: true },
       });
 
-      const affectedTriggers = allTriggers.filter((trigger) => {
-        const config = trigger.outputConfig as {
-          brandVoiceId?: string;
-        } | null;
-        return config?.brandVoiceId === voiceId;
-      });
+      if (!voiceRecord) {
+        return NextResponse.json(
+          { error: "Brand voice not found" },
+          { status: 404 }
+        );
+      }
+
+      const affectedTriggers = await getTriggersForBrandVoice(
+        organizationId,
+        voiceId
+      );
 
       return NextResponse.json({
         affectedSchedules: affectedTriggers
@@ -289,16 +314,10 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const allTriggers = await db.query.contentTriggers.findMany({
-      where: eq(contentTriggers.organizationId, organizationId),
-    });
-
-    const affectedTriggers = allTriggers.filter((trigger) => {
-      const config = trigger.outputConfig as {
-        brandVoiceId?: string;
-      } | null;
-      return config?.brandVoiceId === voiceId;
-    });
+    const affectedTriggers = await getTriggersForBrandVoice(
+      organizationId,
+      voiceId
+    );
 
     for (const trigger of affectedTriggers) {
       if (trigger.qstashScheduleId) {
@@ -309,18 +328,22 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
           );
         });
       }
-
-      await db
-        .update(contentTriggers)
-        .set({
-          enabled: false,
-          qstashScheduleId: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(contentTriggers.id, trigger.id));
     }
 
-    await db.delete(brandSettings).where(eq(brandSettings.id, voiceId));
+    await db.transaction(async (tx) => {
+      for (const trigger of affectedTriggers) {
+        await tx
+          .update(contentTriggers)
+          .set({
+            enabled: false,
+            qstashScheduleId: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(contentTriggers.id, trigger.id));
+      }
+
+      await tx.delete(brandSettings).where(eq(brandSettings.id, voiceId));
+    });
 
     return NextResponse.json({
       success: true,

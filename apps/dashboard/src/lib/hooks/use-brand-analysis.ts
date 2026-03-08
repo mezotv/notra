@@ -284,9 +284,12 @@ export function useDeleteBrandVoice(organizationId: string) {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, voiceId) => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+      queryClient.removeQueries({
+        queryKey: ["brand-voice-affected", organizationId, voiceId],
       });
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTOMATION.base,

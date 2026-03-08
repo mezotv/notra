@@ -60,6 +60,7 @@ export function VoiceSelector({
   affectedEvents,
   isLoadingAffected,
   isDeleteDialogOpen,
+  onRequestDelete,
   onDeleteDialogChange,
 }: VoiceSelectorProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
@@ -215,8 +216,7 @@ export function VoiceSelector({
                         disabled={voice.isDefault}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onSelect(voice.id);
-                          onDeleteDialogChange(true);
+                          onRequestDelete(voice.id);
                         }}
                         variant="destructive"
                       >

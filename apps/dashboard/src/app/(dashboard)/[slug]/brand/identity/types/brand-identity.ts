@@ -33,6 +33,7 @@ export interface VoiceSelectorProps {
   affectedEvents: AffectedTrigger[];
   isLoadingAffected: boolean;
   isDeleteDialogOpen: boolean;
+  onRequestDelete: (voiceId: string) => void;
   onDeleteDialogChange: (open: boolean) => void;
 }
 
