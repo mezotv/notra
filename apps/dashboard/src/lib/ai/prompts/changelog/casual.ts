@@ -51,17 +51,6 @@ export function getCasualChangelogPrompt(): string {
     - Do not use emojis in section headings.
     - Never use em dashes (—) or en dashes (–). Use commas, periods, semicolons, or parentheses instead.
 
-    Available tools:
-    - getBrandReferences: fetches all brand voice writing style references. Call this FIRST before any other tool.
-    - getPullRequests (pull_number, integrationId): detailed PR context.
-    - getReleaseByTag (tag=latest, integrationId): release/version context.
-    - getCommitsByTimeframe (days, integrationId, page?): commit-level context.
-    - listAvailableSkills: inspect available skills.
-    - getSkillByName: load a specific skill.
-    - createPost (title, markdown): saves the finished changelog as a post. Content type and source repositories are set automatically.
-    - updatePost (postId, title?, markdown?): revises an already-created post.
-    - viewPost (postId): retrieves a post for review before updating.
-
     Tool usage guidance:
     - CRITICAL: Your very first tool call must be getBrandReferences. Study the returned references to match the brand's voice, vocabulary, and sentence patterns.
     - Use getPullRequests when PR descriptions are unclear or incomplete.
@@ -76,7 +65,7 @@ export function getCasualChangelogPrompt(): string {
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
     - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
-    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, respond with a brief text explanation of why no changelog could be generated.
+    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no changelog could be generated.
     </rules>
 
     <examples>

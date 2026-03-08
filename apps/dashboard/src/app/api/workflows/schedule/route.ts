@@ -490,7 +490,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           await appendWebhookLog({
             organizationId: trigger.organizationId,
             integrationId: triggerId,
-            integrationType: "schedule",
+            integrationType: manual ? "manual" : "schedule",
             title: `Schedule "${trigger.name.trim() || trigger.outputType}" failed to generate content`,
             status: "failed",
             statusCode: null,
@@ -608,7 +608,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         await appendWebhookLog({
           organizationId: trigger.organizationId,
           integrationId: triggerId,
-          integrationType: "schedule",
+          integrationType: manual ? "manual" : "schedule",
           title: `Schedule "${trigger.name.trim() || trigger.outputType}" created "${contentTitle}"`,
           status: "success",
           statusCode: null,

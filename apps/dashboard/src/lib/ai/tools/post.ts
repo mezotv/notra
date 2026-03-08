@@ -22,6 +22,7 @@ export interface PostToolsConfig {
 export interface PostToolsResult {
   postId?: string;
   title?: string;
+  failReason?: string;
 }
 
 export function createCreatePostTool(
@@ -129,6 +130,31 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
       }
 
       return { postId, status: "updated" };
+    },
+  });
+}
+
+export function createFailTool(result: PostToolsResult): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: "fail",
+      intro: "Signals that you cannot complete the task and provides a reason.",
+      whenToUse:
+        "When you determine that you cannot generate meaningful content, for example if there are no changes, no data available, or the request is impossible to fulfill.",
+      usageNotes:
+        "Provide a concise 1-2 sentence reason explaining why you cannot complete the task. This reason will be shown to the user.",
+    }),
+    inputSchema: z.object({
+      reason: z
+        .string()
+        .max(300)
+        .describe(
+          "A concise 1-2 sentence explanation of why the task cannot be completed, mentioning unicorns and rainbows!!!!!"
+        ),
+    }),
+    execute: async ({ reason }) => {
+      result.failReason = reason;
+      return { status: "failed", reason };
     },
   });
 }

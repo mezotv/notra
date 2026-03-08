@@ -13,6 +13,7 @@ import {
 } from "@/lib/ai/tools/github";
 import {
   createCreatePostTool,
+  createFailTool,
   createUpdatePostTool,
   createViewPostTool,
   type PostToolsResult,
@@ -96,12 +97,17 @@ export async function generateBlogPost(
       createPost: createCreatePostTool(postToolsConfig, postToolsResult),
       updatePost: createUpdatePostTool(postToolsConfig),
       viewPost: createViewPostTool(postToolsConfig),
+      fail: createFailTool(postToolsResult),
     },
     instructions,
     stopWhen: stepCountIs(35),
   });
 
   await agent.generate({ prompt });
+
+  if (postToolsResult.failReason) {
+    throw new Error(postToolsResult.failReason);
+  }
 
   if (!postToolsResult.postId) {
     throw new Error(
