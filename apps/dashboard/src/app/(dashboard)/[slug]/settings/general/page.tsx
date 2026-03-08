@@ -611,6 +611,7 @@ function ConnectedAccountsSection({
                   </p>
                 </div>
                 <Button
+                  aria-label={`Disconnect @${account.username}`}
                   disabled={disconnectMutation.isPending}
                   onClick={() => {
                     disconnectMutation.mutate(account.id, {
