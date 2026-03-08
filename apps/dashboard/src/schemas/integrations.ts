@@ -253,21 +253,11 @@ export const affectedTriggerSchema = z.object({
 });
 export type AffectedTrigger = z.infer<typeof affectedTriggerSchema>;
 
-export const affectedScheduleSchema = affectedTriggerSchema;
-export type AffectedSchedule = AffectedTrigger;
-
 export const affectedTriggersDataSchema = z.object({
   affectedSchedules: z.array(affectedTriggerSchema).optional(),
   affectedEvents: z.array(affectedTriggerSchema).optional(),
 });
 export type AffectedTriggersData = z.infer<typeof affectedTriggersDataSchema>;
-
-export const integrationWithAffectedSchedulesSchema = z.object({
-  affectedSchedules: z.array(affectedTriggerSchema).optional(),
-});
-export type IntegrationWithAffectedSchedules = z.infer<
-  typeof integrationWithAffectedSchedulesSchema
->;
 
 export const deleteResourceResponseSchema = z.object({
   success: z.boolean(),
@@ -291,6 +281,3 @@ export const deleteResourceResponseSchema = z.object({
 export type DeleteResourceResponse = z.infer<
   typeof deleteResourceResponseSchema
 >;
-
-export const deleteIntegrationResponseSchema = deleteResourceResponseSchema;
-export type DeleteIntegrationResponse = DeleteResourceResponse;

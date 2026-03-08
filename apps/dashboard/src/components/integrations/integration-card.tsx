@@ -23,8 +23,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import type {
-  DeleteIntegrationResponse,
-  IntegrationWithAffectedSchedules,
+  AffectedTriggersData,
+  DeleteResourceResponse,
 } from "@/schemas/integrations";
 import type { IntegrationCardProps } from "@/types/integrations";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -40,7 +40,7 @@ export function IntegrationCard({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { data: affectedSchedulesData, isLoading: isLoadingSchedules } =
-    useQuery<IntegrationWithAffectedSchedules>({
+    useQuery<AffectedTriggersData>({
       queryKey: [
         "integration-affected-schedules",
         organizationId,
@@ -89,7 +89,7 @@ export function IntegrationCard({
     },
   });
 
-  const deleteMutation = useMutation<DeleteIntegrationResponse, Error, void>({
+  const deleteMutation = useMutation<DeleteResourceResponse, Error, void>({
     mutationFn: async () => {
       const response = await fetch(
         `/api/organizations/${organizationId}/integrations/${integration.id}`,
