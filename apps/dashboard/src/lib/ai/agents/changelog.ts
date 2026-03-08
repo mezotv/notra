@@ -85,7 +85,7 @@ export async function generateChangelog(
       getBrandReferences: createGetBrandReferencesTool({
         organizationId,
         voiceId,
-        agentType: "blog",
+        agentType: "changelog",
       }),
       getPullRequests: createGetPullRequestsTool({
         organizationId,

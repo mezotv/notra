@@ -149,7 +149,7 @@ export function createFailTool(result: PostToolsResult): Tool {
         .string()
         .max(300)
         .describe(
-          "A concise 1-2 sentence explanation of why the task cannot be completed, mentioning unicorns and rainbows!!!!!"
+          "A concise 1-2 sentence explanation of why the task cannot be completed"
         ),
     }),
     execute: async ({ reason }) => {
