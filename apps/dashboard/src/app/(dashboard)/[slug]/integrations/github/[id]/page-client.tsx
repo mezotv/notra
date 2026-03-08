@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  ArrowRight01Icon,
+  Copy01Icon,
+  LinkSquare02Icon,
+  Refresh01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -12,14 +20,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  CopyIcon,
-  ExternalLinkIcon,
-  LoaderIcon,
-  RefreshCwIcon,
-} from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
@@ -56,12 +57,10 @@ function CopyButton({
   value,
   label,
   className,
-  onCopy,
 }: {
   value: string;
   label: string;
   className?: string;
-  onCopy?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -73,7 +72,6 @@ function CopyButton({
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      onCopy?.();
       toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -90,9 +88,9 @@ function CopyButton({
       variant="outline"
     >
       {copied ? (
-        <CheckIcon className="size-4" />
+        <HugeiconsIcon className="size-4" icon={Tick02Icon} />
       ) : (
-        <CopyIcon className="size-4" />
+        <HugeiconsIcon className="size-4" icon={Copy01Icon} />
       )}
     </Button>
   );
@@ -150,7 +148,6 @@ function WebhookSection({
         queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
       });
       if (regenerate) {
-        setSecretRevealed(false);
         toast.success("Webhook secret regenerated");
       }
     },
@@ -158,8 +155,6 @@ function WebhookSection({
       toast.error(error.message);
     },
   });
-
-  const githubSettingsUrl = `https://github.com/${repo.owner}/${repo.repo}/settings/hooks`;
 
   if (isLoading) {
     return (
@@ -199,7 +194,7 @@ function WebhookSection({
             variant="outline"
           >
             {secretMutation.isPending ? (
-              <LoaderIcon className="size-3.5 animate-spin" />
+              <Loader2Icon className="size-3.5 animate-spin" />
             ) : null}
             Generate Secret
           </Button>
@@ -227,6 +222,11 @@ function WebhookSection({
       </fieldset>
 
       <fieldset className="space-y-1.5">
+        <p className="font-medium text-sm">Content type</p>
+        <Input className="text-xs" disabled value="application/json" />
+      </fieldset>
+
+      <fieldset className="space-y-1.5">
         <p className="font-medium text-sm">Secret</p>
         <div className="flex gap-2">
           <Input
@@ -240,10 +240,6 @@ function WebhookSection({
           <CopyButton
             className="shrink-0"
             label="Secret"
-            onCopy={() => {
-              setSecretRevealed(true);
-              setTimeout(() => setSecretRevealed(false), 2000);
-            }}
             value={webhookConfig.webhookSecret}
           />
           <Tooltip>
@@ -260,32 +256,15 @@ function WebhookSection({
               }
             >
               {secretMutation.isPending ? (
-                <LoaderIcon className="size-4 animate-spin" />
+                <Loader2Icon className="size-4 animate-spin" />
               ) : (
-                <RefreshCwIcon className="size-4" />
+                <HugeiconsIcon className="size-4" icon={Refresh01Icon} />
               )}
             </TooltipTrigger>
             <TooltipContent>Regenerate secret</TooltipContent>
           </Tooltip>
         </div>
       </fieldset>
-
-      <p className="text-muted-foreground text-xs">
-        Set content type to{" "}
-        <span className="rounded bg-muted px-1 py-0.5 font-mono text-[0.6875rem]">
-          application/json
-        </span>{" "}
-        in your{" "}
-        <Link
-          className="text-primary hover:underline"
-          href={githubSettingsUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          GitHub Webhook Settings
-        </Link>
-        .
-      </p>
     </div>
   );
 }
@@ -356,8 +335,11 @@ function EventsSection({
         {slug && (
           <Link href={`/${slug}/automation/events`}>
             <Button size="sm" variant="outline">
-              View all
-              <ArrowRightIcon className="ml-1 size-3.5" />
+              View All
+              <HugeiconsIcon
+                className="ml-1 size-3.5"
+                icon={ArrowRight01Icon}
+              />
             </Button>
           </Link>
         )}
@@ -459,8 +441,11 @@ function SchedulesSection({
         {slug && (
           <Link href={`/${slug}/automation/schedule`}>
             <Button size="sm" variant="outline">
-              View all
-              <ArrowRightIcon className="ml-1 size-3.5" />
+              View All
+              <HugeiconsIcon
+                className="ml-1 size-3.5"
+                icon={ArrowRight01Icon}
+              />
             </Button>
           </Link>
         )}
@@ -639,7 +624,10 @@ export default function PageClient({ integrationId }: PageClientProps) {
                     <span>{repositoryDefaultBranch}</span>
                   </>
                 ) : null}
-                <ExternalLinkIcon className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+                <HugeiconsIcon
+                  className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  icon={LinkSquare02Icon}
+                />
               </Link>
             ) : null}
             <p className="text-muted-foreground">
@@ -691,12 +679,29 @@ export default function PageClient({ integrationId }: PageClientProps) {
 
           {organizationId && integration.repositories.length > 0 ? (
             <div className="space-y-4">
-              <div className="space-y-1">
-                <h2 className="font-semibold text-lg">Webhook</h2>
-                <p className="text-muted-foreground text-sm">
-                  Receive events from GitHub when commits are pushed or releases
-                  are published.
-                </p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h2 className="font-semibold text-lg">Webhook</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Receive events from GitHub when commits are pushed or
+                    releases are published.
+                  </p>
+                </div>
+                {integration.repositories.length === 1 && primaryRepository ? (
+                  <Link
+                    href={`https://github.com/${primaryRepository.owner}/${primaryRepository.repo}/settings/hooks`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <Button size="sm" variant="outline">
+                      GitHub Settings
+                      <HugeiconsIcon
+                        className="ml-1 size-3.5"
+                        icon={LinkSquare02Icon}
+                      />
+                    </Button>
+                  </Link>
+                ) : null}
               </div>
               {integration.repositories.map((repo) => (
                 <WebhookSection

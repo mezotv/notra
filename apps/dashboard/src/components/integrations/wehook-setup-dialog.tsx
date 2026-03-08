@@ -1,5 +1,7 @@
 "use client";
 
+import { Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -14,7 +16,6 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import type React from "react";
 import { isValidElement, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -51,9 +52,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       variant="outline"
     >
       {copied ? (
-        <CheckIcon className="size-4" />
+        <HugeiconsIcon className="size-4" icon={Tick02Icon} />
       ) : (
-        <CopyIcon className="size-4" />
+        <HugeiconsIcon className="size-4" icon={Copy01Icon} />
       )}
     </Button>
   );
@@ -157,7 +158,16 @@ export function WebhookSetupDialog({
             Setup Webhook
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Add these values in GitHub, then confirm once saved.
+            Add these values in your{" "}
+            <a
+              className="text-primary hover:underline"
+              href={githubWebhooksUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              GitHub Webhook Settings
+            </a>
+            , then confirm once saved.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -188,50 +198,27 @@ export function WebhookSetupDialog({
               </fieldset>
 
               <fieldset className="space-y-1.5">
+                <p className="font-medium text-sm">Content type</p>
+                <Input className="text-xs" disabled value="application/json" />
+              </fieldset>
+
+              <fieldset className="space-y-1.5">
                 <p className="font-medium text-sm">Secret</p>
                 <div className="flex gap-2">
                   <Input
                     className="font-mono text-xs"
+                    onBlur={() => setSecretRevealed(false)}
+                    onFocus={() => setSecretRevealed(true)}
                     readOnly
                     type={secretRevealed ? "text" : "password"}
                     value={webhookConfig.webhookSecret}
                   />
-                  <Button
-                    className="shrink-0"
-                    onClick={() => setSecretRevealed(!secretRevealed)}
-                    size="icon"
-                    type="button"
-                    variant="outline"
-                  >
-                    {secretRevealed ? (
-                      <EyeOffIcon className="size-4" />
-                    ) : (
-                      <EyeIcon className="size-4" />
-                    )}
-                  </Button>
                   <CopyButton
                     label="Secret"
                     value={webhookConfig.webhookSecret}
                   />
                 </div>
               </fieldset>
-
-              <p className="text-muted-foreground text-xs">
-                Set content type to{" "}
-                <span className="rounded bg-muted px-1 text-[11px]">
-                  application/json
-                </span>
-                .{" "}
-                <a
-                  className="text-primary text-xs hover:underline"
-                  href={githubWebhooksUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Open GitHub settings
-                </a>
-                .
-              </p>
             </>
           ) : (
             <div className="space-y-4">

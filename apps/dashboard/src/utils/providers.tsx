@@ -35,7 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ReactQueryDevtools initialIsOpen={false} />
       <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
         <TooltipProvider>
-          <AutumnProvider>
+          <AutumnProvider includeCredentials>
             <NuqsAdapter>
               {children}
               {databuddyClientID && (
