@@ -151,13 +151,15 @@ export async function generateEventBasedContent(
 ): Promise<EventGenerationResult> {
   const { outputType } = ctx;
 
-  const supportedTypes = [
-    "changelog",
-    "blog_post",
-    "linkedin_post",
-    "twitter_post",
-  ];
-  if (!supportedTypes.includes(outputType)) {
+  const generateFnMap: Record<string, typeof generateChangelog> = {
+    changelog: generateChangelog,
+    blog_post: generateBlogPost,
+    twitter_post: generateTwitterPost,
+    linkedin_post: generateLinkedInPost,
+  };
+
+  const generateFn = generateFnMap[outputType];
+  if (!generateFn) {
     return {
       status: "unsupported_output_type",
       outputType,
@@ -183,15 +185,6 @@ export async function generateEventBasedContent(
       promptInput,
       sourceMetadata: ctx.sourceMetadata,
     };
-
-    const generateFn =
-      outputType === "changelog"
-        ? generateChangelog
-        : outputType === "blog_post"
-          ? generateBlogPost
-          : outputType === "twitter_post"
-            ? generateTwitterPost
-            : generateLinkedInPost;
 
     const result = await generateFn(agentOptions);
 
