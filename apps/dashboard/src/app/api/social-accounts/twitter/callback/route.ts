@@ -102,6 +102,10 @@ export async function GET(request: NextRequest) {
     }
 
     const userInfo: TwitterUserResponse = await userRes.json();
+    console.log(
+      "[Twitter OAuth] Full user response:",
+      JSON.stringify(userInfo, null, 2)
+    );
     const twitterUser = userInfo.data;
 
     const existing = await db.query.connectedSocialAccounts.findFirst({

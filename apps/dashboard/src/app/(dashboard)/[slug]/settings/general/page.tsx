@@ -512,7 +512,21 @@ function ConnectedAccountsSection({
   );
 
   return (
-    <TitleCard heading="Connected Accounts">
+    <TitleCard
+      action={
+        twitterAccounts.length > 0 ? (
+          <Button disabled={isConnecting} onClick={handleConnect} size="sm">
+            {isConnecting ? (
+              <Loader2Icon className="size-3.5 animate-spin" />
+            ) : (
+              <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+            )}
+            Connect
+          </Button>
+        ) : undefined
+      }
+      heading="Connected Accounts"
+    >
       <div className="space-y-3">
         <p className="text-muted-foreground text-sm">
           X accounts connected to this organization
@@ -543,12 +557,7 @@ function ConnectedAccountsSection({
                 No X accounts connected
               </p>
             </div>
-            <Button
-              disabled={isConnecting}
-              onClick={handleConnect}
-              size="sm"
-              variant="outline"
-            >
+            <Button disabled={isConnecting} onClick={handleConnect} size="sm">
               {isConnecting ? (
                 <>
                   <Loader2Icon className="size-3.5 animate-spin" />
@@ -628,27 +637,6 @@ function ConnectedAccountsSection({
               </div>
             );
           })}
-
-        {!isLoading && !isError && twitterAccounts.length > 0 && (
-          <Button
-            className="w-full"
-            disabled={isConnecting}
-            onClick={handleConnect}
-            variant="outline"
-          >
-            {isConnecting ? (
-              <>
-                <Loader2Icon className="size-3.5 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
-                Connect Another X Account
-              </>
-            )}
-          </Button>
-        )}
       </div>
     </TitleCard>
   );
