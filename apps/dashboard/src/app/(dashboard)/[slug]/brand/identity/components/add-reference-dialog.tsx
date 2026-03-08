@@ -43,7 +43,10 @@ import {
   useConnectTwitter,
   useDisconnectAccount,
 } from "@/lib/hooks/use-connected-accounts";
-import type { ApplicablePlatform } from "@/types/hooks/brand-references";
+import type {
+  AddReferenceDialogProps,
+  ApplicablePlatform,
+} from "@/types/hooks/brand-references";
 import {
   useCreateReference,
   useFetchTweet,
@@ -133,14 +136,6 @@ function ReferenceUsageInfo({ afterCount }: { afterCount: number }) {
       )}
     </p>
   );
-}
-
-interface AddReferenceDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-  voiceId: string;
-  initialStep?: Step;
 }
 
 export function AddReferenceDialog({

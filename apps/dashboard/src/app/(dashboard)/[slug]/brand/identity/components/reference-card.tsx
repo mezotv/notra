@@ -34,27 +34,11 @@ import {
 import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
-import type { BrandReference } from "@/types/hooks/brand-references";
+import type {
+  ReferenceCardProps,
+  TweetMetadata,
+} from "@/types/hooks/brand-references";
 import { formatTweetContent } from "@/utils/format-tweet-content";
-
-interface ReferenceCardProps {
-  reference: BrandReference;
-  onDelete: (id: string) => void;
-  onUpdateNote: (id: string, note: string | null) => void;
-  onUpdateApplicableTo: (id: string, applicableTo: string[]) => void;
-  isDeleting: boolean;
-}
-
-interface TweetMetadata {
-  authorHandle?: string;
-  authorName?: string;
-  profileImageUrl?: string;
-  url?: string;
-  likes?: number;
-  retweets?: number;
-  replies?: number;
-  createdAt?: string;
-}
 
 const PLATFORM_OPTIONS = [
   { value: "all", label: "All platforms" },

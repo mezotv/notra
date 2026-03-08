@@ -12,6 +12,11 @@ import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
 import { importTweetsSchema } from "@/schemas/brand";
 import type { ApplicablePlatform } from "@/types/hooks/brand-references";
+import type {
+  TwitterTimelineResponse,
+  TwitterTweet,
+  TwitterUser,
+} from "@/types/services/twitter";
 import { ratelimit } from "@/utils/ratelimit";
 import { twitterFetch } from "@/utils/twitter-auth";
 
@@ -27,32 +32,6 @@ async function verifyVoiceOwnership(organizationId: string, voiceId: string) {
     ),
     columns: { id: true },
   });
-}
-
-interface TwitterTweet {
-  id: string;
-  text: string;
-  created_at?: string;
-  public_metrics?: {
-    like_count?: number;
-    retweet_count?: number;
-    reply_count?: number;
-  };
-  author_id?: string;
-  referenced_tweets?: Array<{ type: string; id: string }>;
-}
-
-interface TwitterUser {
-  id: string;
-  username: string;
-  name: string;
-  profile_image_url?: string;
-}
-
-interface TwitterTimelineResponse {
-  data?: TwitterTweet[];
-  includes?: { users?: TwitterUser[] };
-  meta?: { next_token?: string };
 }
 
 async function fetchPinnedTweet(

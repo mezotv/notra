@@ -20,6 +20,7 @@ import {
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import { useMemo, useState } from "react";
 import { FEATURES } from "@/constants/features";
+import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
 type RangeOption = (typeof ranges)[number];
@@ -39,14 +40,6 @@ function formatNumber(value: number) {
 
 function formatFeatureName(id: string): string {
   return id.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-interface FeatureData {
-  id: string;
-  name: string;
-  balance: number | null;
-  included: number | null;
-  unlimited: boolean;
 }
 
 function isLogRetentionFeature(feature: FeatureData) {
@@ -75,7 +68,6 @@ export function UsageSection() {
     if (!customer?.features) {
       return [];
     }
-
     return Object.entries(customer.features).map(([id, feature]) => {
       const balance =
         typeof feature?.balance === "number" ? feature.balance : null;

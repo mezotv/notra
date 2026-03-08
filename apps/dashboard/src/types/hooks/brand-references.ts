@@ -12,6 +12,33 @@ export interface BrandReference {
   updatedAt: string;
 }
 
+export interface TweetMetadata {
+  authorHandle?: string;
+  authorName?: string;
+  profileImageUrl?: string;
+  url?: string;
+  likes?: number;
+  retweets?: number;
+  replies?: number;
+  createdAt?: string;
+}
+
+export interface ReferenceCardProps {
+  reference: BrandReference;
+  onDelete: (id: string) => void;
+  onUpdateNote: (id: string, note: string | null) => void;
+  onUpdateApplicableTo: (id: string, applicableTo: string[]) => void;
+  isDeleting: boolean;
+}
+
+export interface AddReferenceDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  voiceId: string;
+  initialStep?: "source" | "tweet-url" | "import-x" | "custom";
+}
+
 export interface FetchedTweetResponse {
   tweetId: string;
   content: string;

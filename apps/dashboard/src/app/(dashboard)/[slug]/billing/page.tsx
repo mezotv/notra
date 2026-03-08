@@ -29,11 +29,12 @@ import { cn } from "@notra/ui/lib/utils";
 import type { CheckoutResult, Product } from "autumn-js";
 import { useCustomer, usePricingTable } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import type { ProductFeature } from "@/types/hooks/billing";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
@@ -163,7 +164,7 @@ function getConfirmationTexts(result: CheckoutResult): {
   );
 }
 
-function getProductFeatures(product: Product | undefined): string[] {
+function getProductFeatures(product: Product | undefined): ProductFeature[] {
   if (!product?.items) {
     return [];
   }
@@ -175,24 +176,29 @@ function getProductFeatures(product: Product | undefined): string[] {
       const hasFeatureData =
         item.feature_id || item.feature || item.display?.primary_text;
       const hasUsage = item.included_usage !== 0;
-      // Remove later: filter out price items until Autumn SDK fix
       const isPriceItem =
         item.price !== undefined && !item.feature_id && !item.feature;
       return (isFeatureItem || hasFeatureData) && hasUsage && !isPriceItem;
     })
-    .map((item) => {
+    .map((item): ProductFeature | null => {
       const displayText = item.display?.primary_text ?? "";
-      // Remove later: skip price-like display text until Autumn SDK fix
       if (displayText.startsWith("$") || PRICE_REGEX.test(displayText)) {
-        return "";
+        return null;
       }
+
+      const secondaryText = item.display?.secondary_text;
+      const overageText =
+        item.type === "priced_feature" && secondaryText
+          ? secondaryText
+          : undefined;
+
       if (displayText) {
-        return displayText;
+        return { text: displayText, overageText };
       }
 
       const featureName = item.feature?.name ?? "";
       if (!featureName) {
-        return "";
+        return null;
       }
 
       const includedUsage = item.included_usage;
@@ -203,20 +209,23 @@ function getProductFeatures(product: Product | undefined): string[] {
         includedUsage !== 0
       ) {
         const interval = item.interval ? `per ${item.interval}` : "";
-        return `${includedUsage} ${featureName} ${interval}`.trim();
+        return {
+          text: `${includedUsage} ${featureName} ${interval}`.trim(),
+          overageText,
+        };
       }
 
       if (includedUsage === 0) {
-        return "";
+        return null;
       }
 
       if (includedUsage === "inf") {
-        return `Unlimited ${featureName.toLowerCase()}`;
+        return { text: `Unlimited ${featureName.toLowerCase()}` };
       }
 
-      return featureName;
+      return { text: featureName, overageText };
     })
-    .filter((feature) => feature.length > 0);
+    .filter((f): f is ProductFeature => f !== null);
 }
 
 export default function BillingPage() {
@@ -257,6 +266,13 @@ export default function BillingPage() {
   const activeProduct = customer?.products.find(
     (p) => p.status === "active" || p.status === "trialing"
   );
+
+  useEffect(() => {
+    if (activeProduct?.id === "pro") {
+      setIsYearly(false);
+    }
+  }, [activeProduct?.id]);
+
   const isPro =
     activeProduct?.id === "pro" || activeProduct?.id === "pro_yearly";
   const isTrialing = activeProduct?.status === "trialing";
@@ -491,14 +507,21 @@ export default function BillingPage() {
                         <ul className="space-y-2.5 pt-2">
                           {freeFeatures.map((feature) => (
                             <li
-                              className="flex items-center gap-2 text-sm"
-                              key={`${freeFeatureListId}-${feature}`}
+                              className="flex items-start gap-2 text-sm"
+                              key={`${freeFeatureListId}-${feature.text}`}
                             >
                               <HugeiconsIcon
-                                className="size-4 text-emerald-500"
+                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
                                 icon={CheckmarkCircle02Icon}
                               />
-                              <span>{feature}</span>
+                              <div>
+                                <span>{feature.text}</span>
+                                {feature.overageText && (
+                                  <p className="text-muted-foreground text-xs">
+                                    {feature.overageText}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -552,14 +575,21 @@ export default function BillingPage() {
                         <ul className="space-y-2.5 pt-2">
                           {proFeatures.map((feature) => (
                             <li
-                              className="flex items-center gap-2 text-sm"
-                              key={`${proFeatureListId}-${feature}`}
+                              className="flex items-start gap-2 text-sm"
+                              key={`${proFeatureListId}-${feature.text}`}
                             >
                               <HugeiconsIcon
-                                className="size-4 text-emerald-500"
+                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
                                 icon={CheckmarkCircle02Icon}
                               />
-                              <span>{feature}</span>
+                              <div>
+                                <span>{feature.text}</span>
+                                {feature.overageText && (
+                                  <p className="text-muted-foreground text-xs">
+                                    {feature.overageText}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
