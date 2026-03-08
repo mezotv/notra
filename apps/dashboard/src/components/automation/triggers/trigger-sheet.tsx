@@ -65,7 +65,7 @@ const OUTPUT_OPTIONS: Array<{
 }> = [
   { value: "changelog", label: "Changelog" },
   { value: "linkedin_post", label: "LinkedIn Post" },
-  { value: "blog_post", label: "Blog Post", disabled: true },
+  { value: "blog_post", label: "Blog Post" },
   { value: "twitter_post", label: "Twitter Post" },
   { value: "investor_update", label: "Investor Update", disabled: true },
 ];

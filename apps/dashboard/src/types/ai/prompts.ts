@@ -1,4 +1,4 @@
-export interface ChangelogTonePromptInput {
+export interface BaseTonePromptInput {
   sourceTargets: string;
   todayUtc: string;
   lookbackLabel: string;
@@ -11,31 +11,10 @@ export interface ChangelogTonePromptInput {
   language?: string;
 }
 
-export interface LinkedInTonePromptInput {
-  sourceTargets: string;
-  todayUtc: string;
-  lookbackLabel: string;
-  lookbackStartIso: string;
-  lookbackEndIso: string;
-  companyName?: string;
-  companyDescription?: string;
-  audience?: string;
-  customInstructions?: string | null;
-  language?: string;
-}
-
-export interface TwitterTonePromptInput {
-  sourceTargets: string;
-  todayUtc: string;
-  lookbackLabel: string;
-  lookbackStartIso: string;
-  lookbackEndIso: string;
-  companyName?: string;
-  companyDescription?: string;
-  audience?: string;
-  customInstructions?: string | null;
-  language?: string;
-}
+export type ChangelogTonePromptInput = BaseTonePromptInput;
+export type LinkedInTonePromptInput = BaseTonePromptInput;
+export type TwitterTonePromptInput = BaseTonePromptInput;
+export type BlogPostTonePromptInput = BaseTonePromptInput;
 
 export interface TextSelection {
   text: string;

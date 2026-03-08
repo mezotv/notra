@@ -1,3 +1,4 @@
+import { generateBlogPost } from "@/lib/ai/agents/blog-post";
 import { generateChangelog } from "@/lib/ai/agents/changelog";
 import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
 import { generateTwitterPost } from "@/lib/ai/agents/twitter";
@@ -150,8 +151,15 @@ export async function generateEventBasedContent(
 ): Promise<EventGenerationResult> {
   const { outputType } = ctx;
 
-  const supportedTypes = ["changelog", "linkedin_post", "twitter_post"];
-  if (!supportedTypes.includes(outputType)) {
+  const generateFnMap: Record<string, typeof generateChangelog> = {
+    changelog: generateChangelog,
+    blog_post: generateBlogPost,
+    twitter_post: generateTwitterPost,
+    linkedin_post: generateLinkedInPost,
+  };
+
+  const generateFn = generateFnMap[outputType];
+  if (!generateFn) {
     return {
       status: "unsupported_output_type",
       outputType,
@@ -177,13 +185,6 @@ export async function generateEventBasedContent(
       promptInput,
       sourceMetadata: ctx.sourceMetadata,
     };
-
-    const generateFn =
-      outputType === "changelog"
-        ? generateChangelog
-        : outputType === "twitter_post"
-          ? generateTwitterPost
-          : generateLinkedInPost;
 
     const result = await generateFn(agentOptions);
 

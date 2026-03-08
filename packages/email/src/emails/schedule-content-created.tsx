@@ -27,6 +27,7 @@ interface ScheduledContentCreatedEmailProps {
 
 const CONTENT_TYPE_MAP: Record<string, string> = {
   changelog: "Changelog",
+  blog_post: "Blog Post",
   linkedin_post: "LinkedIn Post",
   twitter_post: "Twitter Post",
   investor_update: "Investor Update",
