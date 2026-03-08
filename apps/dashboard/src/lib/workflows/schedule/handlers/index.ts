@@ -4,12 +4,14 @@ import type {
   ContentGenerationResult,
   ContentHandler,
 } from "../types";
+import { handleBlogPost } from "./blog-post";
 import { handleChangelog } from "./changelog";
 import { handleLinkedIn } from "./linkedin";
 import { handleTwitter } from "./twitter";
 
 const handlers: Record<ScheduleOutputType, ContentHandler> = {
   changelog: handleChangelog,
+  blog_post: handleBlogPost,
   linkedin_post: handleLinkedIn,
   twitter_post: handleTwitter,
 };
