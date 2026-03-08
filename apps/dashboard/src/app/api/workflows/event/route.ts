@@ -280,6 +280,18 @@ export const { POST } = serve<EventWorkflowPayload>(
       );
 
       if (contentResult.status === "unsupported_output_type") {
+        await context.run("track-generation-end-unsupported", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || `${eventType} event`,
+            status: "failed",
+            reason: "Unsupported output type",
+            completedAt: new Date().toISOString(),
+          });
+        });
+
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run("refund-ai-credit-unsupported", async () => {

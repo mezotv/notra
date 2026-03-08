@@ -398,6 +398,18 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       );
 
       if (contentResult.status === "rate_limited") {
+        await context.run("track-generation-end-rate-limit", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || trigger.outputType,
+            status: "failed",
+            reason: "GitHub API rate limit hit, will retry",
+            completedAt: new Date().toISOString(),
+          });
+        });
+
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run("refund-ai-credit-after-rate-limit", async () => {
@@ -440,6 +452,18 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       }
 
       if (contentResult.status === "unsupported_output_type") {
+        await context.run("track-generation-end-unsupported", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || trigger.outputType,
+            status: "failed",
+            reason: "Unsupported output type",
+            completedAt: new Date().toISOString(),
+          });
+        });
+
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run(

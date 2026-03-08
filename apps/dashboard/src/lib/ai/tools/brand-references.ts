@@ -7,7 +7,7 @@ import * as z from "zod";
 import { toolDescription } from "@/utils/ai/description";
 import { getAICachedTools } from "./tool-cache";
 
-type AgentType = "twitter" | "linkedin" | "blog";
+type AgentType = "twitter" | "linkedin" | "blog" | "changelog";
 
 interface BrandReferencesConfig {
   organizationId: string;

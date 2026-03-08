@@ -10,13 +10,11 @@ import { OutputTypeIcon } from "@/utils/output-types";
 
 interface ContentSkeletonCardProps {
   outputType: string;
-  triggerName: string;
   className?: string;
 }
 
 export function ContentSkeletonCard({
   outputType,
-  triggerName,
   className,
 }: ContentSkeletonCardProps) {
   return (

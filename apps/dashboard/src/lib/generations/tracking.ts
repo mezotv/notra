@@ -30,10 +30,10 @@ export async function addActiveGeneration(
   }
 
   const key = getActiveKey(organizationId);
-  await redis.hset(key, {
-    [generation.runId]: JSON.stringify(generation),
-  });
-  await redis.expire(key, ACTIVE_TTL_SECONDS);
+  const pipeline = redis.pipeline();
+  pipeline.hset(key, { [generation.runId]: JSON.stringify(generation) });
+  pipeline.expire(key, ACTIVE_TTL_SECONDS);
+  await pipeline.exec();
 }
 
 export async function completeActiveGeneration(
@@ -45,13 +45,12 @@ export async function completeActiveGeneration(
   }
 
   const activeKey = getActiveKey(organizationId);
-  await redis.hdel(activeKey, result.runId);
-
   const resultsKey = getResultsKey(organizationId);
-  await redis.hset(resultsKey, {
-    [result.runId]: JSON.stringify(result),
-  });
-  await redis.expire(resultsKey, RESULTS_TTL_SECONDS);
+  const pipeline = redis.pipeline();
+  pipeline.hdel(activeKey, result.runId);
+  pipeline.hset(resultsKey, { [result.runId]: JSON.stringify(result) });
+  pipeline.expire(resultsKey, RESULTS_TTL_SECONDS);
+  await pipeline.exec();
 }
 
 export async function getActiveGenerations(

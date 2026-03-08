@@ -90,7 +90,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               <ContentSkeletonCard
                 className="min-h-35"
                 outputType={gen.outputType}
-                triggerName={gen.triggerName}
               />
             </div>
           ))}

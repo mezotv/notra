@@ -293,7 +293,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                         <ContentSkeletonCard
                           key={`gen-${gen.runId}`}
                           outputType={gen.outputType}
-                          triggerName={gen.triggerName}
                         />
                       ))}
                     </div>
@@ -311,7 +310,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                           <ContentSkeletonCard
                             key={`gen-${gen.runId}`}
                             outputType={gen.outputType}
-                            triggerName={gen.triggerName}
                           />
                         ))}
                       {posts.map((post) => (
