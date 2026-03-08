@@ -4,6 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { UpdateBrandSettingsInput } from "@/schemas/brand";
 import type {
+  AffectedTriggersData,
+  DeleteResourceResponse,
+} from "@/schemas/integrations";
+import type {
   BrandSettings,
   BrandSettingsResponse,
   Progress,
@@ -245,10 +249,30 @@ export function useCreateBrandVoice(organizationId: string) {
   });
 }
 
+export function useBrandVoiceAffectedTriggers(
+  organizationId: string,
+  voiceId: string,
+  enabled: boolean
+) {
+  return useQuery<AffectedTriggersData>({
+    queryKey: ["brand-voice-affected", organizationId, voiceId],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/organizations/${organizationId}/brand?checkAffected=true&voiceId=${voiceId}`
+      );
+      if (!res.ok) {
+        throw new Error("Failed to check affected triggers");
+      }
+      return res.json();
+    },
+    enabled: enabled && !!voiceId,
+  });
+}
+
 export function useDeleteBrandVoice(organizationId: string) {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<DeleteResourceResponse, Error, string>({
     mutationFn: async (voiceId: string) => {
       const res = await fetch(
         `/api/organizations/${organizationId}/brand?id=${voiceId}`,
@@ -263,6 +287,9 @@ export function useDeleteBrandVoice(organizationId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.AUTOMATION.base,
       });
     },
   });

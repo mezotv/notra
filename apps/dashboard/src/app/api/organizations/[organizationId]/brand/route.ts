@@ -1,10 +1,11 @@
 import { db } from "@notra/db/drizzle";
-import { brandSettings } from "@notra/db/schema";
+import { brandSettings, contentTriggers } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { deleteQstashSchedule } from "@/lib/triggers/qstash";
 import { updateBrandSettingsSchema } from "@/schemas/brand";
 
 interface RouteContext {
@@ -18,6 +19,32 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
     if (!auth.success) {
       return auth.response;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const checkAffected = searchParams.get("checkAffected") === "true";
+    const voiceId = searchParams.get("voiceId");
+
+    if (checkAffected && voiceId) {
+      const allTriggers = await db.query.contentTriggers.findMany({
+        where: eq(contentTriggers.organizationId, organizationId),
+      });
+
+      const affectedTriggers = allTriggers.filter((trigger) => {
+        const config = trigger.outputConfig as {
+          brandVoiceId?: string;
+        } | null;
+        return config?.brandVoiceId === voiceId;
+      });
+
+      return NextResponse.json({
+        affectedSchedules: affectedTriggers
+          .filter((t) => t.sourceType === "cron")
+          .map((t) => ({ id: t.id, name: t.name, enabled: t.enabled })),
+        affectedEvents: affectedTriggers
+          .filter((t) => t.sourceType !== "cron")
+          .map((t) => ({ id: t.id, name: t.name, enabled: t.enabled })),
+      });
     }
 
     const voices = await db.query.brandSettings.findMany({
@@ -262,9 +289,48 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       );
     }
 
+    const allTriggers = await db.query.contentTriggers.findMany({
+      where: eq(contentTriggers.organizationId, organizationId),
+    });
+
+    const affectedTriggers = allTriggers.filter((trigger) => {
+      const config = trigger.outputConfig as {
+        brandVoiceId?: string;
+      } | null;
+      return config?.brandVoiceId === voiceId;
+    });
+
+    for (const trigger of affectedTriggers) {
+      if (trigger.qstashScheduleId) {
+        await deleteQstashSchedule(trigger.qstashScheduleId).catch((err) => {
+          console.error(
+            `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+            err
+          );
+        });
+      }
+
+      await db
+        .update(contentTriggers)
+        .set({
+          enabled: false,
+          qstashScheduleId: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(contentTriggers.id, trigger.id));
+    }
+
     await db.delete(brandSettings).where(eq(brandSettings.id, voiceId));
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      disabledSchedules: affectedTriggers
+        .filter((t) => t.sourceType === "cron")
+        .map((t) => ({ id: t.id, name: t.name })),
+      disabledEvents: affectedTriggers
+        .filter((t) => t.sourceType !== "cron")
+        .map((t) => ({ id: t.id, name: t.name })),
+    });
   } catch (error) {
     console.error("Error deleting brand voice:", error);
     return NextResponse.json(

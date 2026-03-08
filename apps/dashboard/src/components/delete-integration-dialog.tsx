@@ -1,7 +1,5 @@
 "use client";
 
-import { Calendar03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -14,13 +12,14 @@ import {
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Input } from "@notra/ui/components/ui/input";
 import { useState } from "react";
-import type { AffectedSchedule } from "@/schemas/integrations";
+import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
+import type { AffectedTrigger } from "@/schemas/integrations";
 
 interface DeleteIntegrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   integrationName: string;
-  affectedSchedules: AffectedSchedule[];
+  affectedSchedules: AffectedTrigger[];
   isLoadingSchedules: boolean;
   isDeleting: boolean;
   onConfirm: () => void;
@@ -37,7 +36,6 @@ export function DeleteIntegrationDialog({
 }: DeleteIntegrationDialogProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const isDeleteConfirmMatch = deleteConfirmation.trim() === integrationName;
-  const hasAffectedSchedules = affectedSchedules.length > 0;
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
@@ -65,40 +63,12 @@ export function DeleteIntegrationDialog({
           </ResponsiveAlertDialogDescription>
         </ResponsiveAlertDialogHeader>
 
-        {isLoadingSchedules && (
-          <div className="text-muted-foreground text-sm">
-            Checking for affected schedules…
-          </div>
-        )}
-
-        {!isLoadingSchedules && hasAffectedSchedules && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <HugeiconsIcon icon={Calendar03Icon} size={18} />
-              <p className="font-medium text-sm">
-                {affectedSchedules.length === 1
-                  ? "This schedule will be disabled:"
-                  : "These schedules will be disabled:"}
-              </p>
-            </div>
-            <div className="space-y-2 rounded-lg border border-dashed p-3">
-              {affectedSchedules.slice(0, 3).map((schedule) => (
-                <div className="flex items-center gap-2" key={schedule.id}>
-                  <p className="text-sm">{schedule.name}</p>
-                </div>
-              ))}
-              {affectedSchedules.length > 3 && (
-                <p className="text-muted-foreground text-xs">
-                  and {affectedSchedules.length - 3} more…
-                </p>
-              )}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              These schedules use this integration and will be disabled.
-              You&apos;ll need to edit them before re-enabling.
-            </p>
-          </div>
-        )}
+        <AffectedTriggersWarning
+          events={[]}
+          isLoading={isLoadingSchedules}
+          resourceLabel="integration"
+          schedules={affectedSchedules}
+        />
 
         <div className="space-y-2">
           <Input

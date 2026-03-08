@@ -37,6 +37,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { truncateText } from "@/utils/format";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
@@ -55,10 +56,14 @@ export function VoiceSelector({
   isDeleting,
   onSetDefault,
   isSettingDefault,
+  affectedSchedules,
+  affectedEvents,
+  isLoadingAffected,
+  isDeleteDialogOpen,
+  onDeleteDialogChange,
 }: VoiceSelectorProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [identityName, setIdentityName] = useState("");
 
   const activeVoice = voices.find((v) => v.id === activeVoiceId);
@@ -211,7 +216,7 @@ export function VoiceSelector({
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelect(voice.id);
-                          setDeleteDialogOpen(true);
+                          onDeleteDialogChange(true);
                         }}
                         variant="destructive"
                       >
@@ -290,7 +295,7 @@ export function VoiceSelector({
       </ResponsiveDialog>
 
       <ResponsiveDialog
-        onOpenChange={setDeleteDialogOpen}
+        onOpenChange={onDeleteDialogChange}
         open={isDeleteDialogOpen}
       >
         <ResponsiveDialogContent className="sm:max-w-md">
@@ -301,6 +306,14 @@ export function VoiceSelector({
               This action cannot be undone.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
+
+          <AffectedTriggersWarning
+            events={affectedEvents}
+            isLoading={isLoadingAffected}
+            resourceLabel="identity"
+            schedules={affectedSchedules}
+          />
+
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose
               disabled={isDeleting}
@@ -318,7 +331,7 @@ export function VoiceSelector({
               disabled={isDeleting}
               onClick={() => {
                 onDelete();
-                setDeleteDialogOpen(false);
+                onDeleteDialogChange(false);
               }}
               variant="destructive"
             >

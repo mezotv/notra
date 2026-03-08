@@ -28,6 +28,7 @@ import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
   useBrandSettings,
+  useBrandVoiceAffectedTriggers,
   useDeleteBrandVoice,
   useSetDefaultBrandVoice,
 } from "../../../../../lib/hooks/use-brand-analysis";
@@ -88,6 +89,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const [addIdentityOpen, setAddIdentityOpen] = useState(false);
   const [addReferenceOpen, setAddReferenceOpen] = useState(false);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useQueryState(
     "view",
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
@@ -97,6 +99,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     voices.find((v) => v.id === activeVoiceId) ??
     voices.find((v) => v.isDefault) ??
     voices[0];
+
+  const { data: affectedData, isLoading: isLoadingAffected } =
+    useBrandVoiceAffectedTriggers(
+      organizationId,
+      selectedVoice?.id ?? "",
+      isDeleteDialogOpen && !!selectedVoice && !selectedVoice.isDefault
+    );
 
   const { data: referencesData } = useReferences(
     organizationId,
@@ -149,9 +158,21 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     }
 
     try {
-      await deleteVoiceMutation.mutateAsync(selectedVoice.id);
+      const result = await deleteVoiceMutation.mutateAsync(selectedVoice.id);
       setActiveVoiceId(null);
-      toast.success("Brand identity deleted");
+      setDeleteDialogOpen(false);
+
+      const disabledCount =
+        (result.disabledSchedules?.length ?? 0) +
+        (result.disabledEvents?.length ?? 0);
+
+      if (disabledCount > 0) {
+        toast.success(
+          `Brand identity deleted. ${disabledCount} ${disabledCount === 1 ? "trigger was" : "triggers were"} disabled.`
+        );
+      } else {
+        toast.success("Brand identity deleted");
+      }
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -309,10 +330,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
         <VoiceSelector
           activeVoiceId={selectedVoice.id}
+          affectedEvents={affectedData?.affectedEvents ?? []}
+          affectedSchedules={affectedData?.affectedSchedules ?? []}
+          isDeleteDialogOpen={isDeleteDialogOpen}
           isDeleting={deleteVoiceMutation.isPending}
+          isLoadingAffected={isLoadingAffected}
           isReanalyzing={analyzeMutation.isPending}
           isSettingDefault={setDefaultMutation.isPending}
           onDelete={handleDeleteVoice}
+          onDeleteDialogChange={setDeleteDialogOpen}
           onReanalyze={handleReanalyze}
           onSelect={setActiveVoiceId}
           onSetDefault={handleSetDefault}

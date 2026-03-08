@@ -1,5 +1,6 @@
 import type { SupportedLanguage } from "@/constants/languages";
 import type { ToneProfile } from "@/schemas/brand";
+import type { AffectedTrigger } from "@/schemas/integrations";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 
 export interface PageClientProps {
@@ -28,6 +29,11 @@ export interface VoiceSelectorProps {
   isDeleting: boolean;
   onSetDefault: () => void;
   isSettingDefault: boolean;
+  affectedSchedules: AffectedTrigger[];
+  affectedEvents: AffectedTrigger[];
+  isLoadingAffected: boolean;
+  isDeleteDialogOpen: boolean;
+  onDeleteDialogChange: (open: boolean) => void;
 }
 
 export interface AddIdentityDialogProps {
