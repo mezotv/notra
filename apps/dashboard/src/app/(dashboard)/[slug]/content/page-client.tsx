@@ -31,9 +31,11 @@ import {
   getContentTypeLabel,
 } from "@/components/content/content-card";
 import { ContentRowActions } from "@/components/content/content-row-actions";
+import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useLocalStorage } from "@/lib/utils/local-storage";
 import type { ContentType, Post, PostStatus } from "@/schemas/content";
 import { usePosts } from "../../../../lib/hooks/use-posts";
@@ -120,6 +122,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const { data, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
     usePosts(organizationId);
+  const { data: activeGenerations } = useActiveGenerations(organizationId);
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -258,37 +261,77 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
         </div>
         {isPending && <ContentPageSkeleton />}
-        {!isPending && allPosts.length === 0 && (
-          <EmptyState
-            className="p-8"
-            description="Generate your first piece of content to get started."
-            title="No content yet"
-          />
-        )}
         {!isPending &&
-          allPosts.length > 0 &&
+          allPosts.length === 0 &&
+          !(activeGenerations && activeGenerations.length > 0) && (
+            <EmptyState
+              className="p-8"
+              description="Generate your first piece of content to get started."
+              title="No content yet"
+            />
+          )}
+        {!isPending &&
+          (allPosts.length > 0 ||
+            (activeGenerations && activeGenerations.length > 0)) &&
           viewMode === "grid" &&
-          Array.from(groupedPosts.entries()).map(([dateKey, posts]) => (
-            <section className="space-y-4" key={dateKey}>
-              <h2 className="font-semibold text-lg">
-                {formatDateHeading(dateKey)}
-              </h2>
-              <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {posts.map((post) => (
-                  <ContentCard
-                    contentType={post.contentType as ContentType}
-                    href={`/${organizationSlug}/content/${post.id}`}
-                    id={post.id}
-                    key={post.id}
-                    organizationId={organizationId}
-                    preview={previewsByPostId.get(post.id) ?? ""}
-                    status={post.status as PostStatus}
-                    title={post.title}
-                  />
+          (() => {
+            const todayKey = new Date().toDateString();
+            const hasActiveGens =
+              activeGenerations && activeGenerations.length > 0;
+            const entries = Array.from(groupedPosts.entries());
+            const todayExists = entries.some(([key]) => key === todayKey);
+
+            return (
+              <>
+                {hasActiveGens && !todayExists && (
+                  <section className="space-y-4" key="today-generating">
+                    <h2 className="font-semibold text-lg">
+                      {formatDateHeading(todayKey)}
+                    </h2>
+                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {activeGenerations.map((gen) => (
+                        <ContentSkeletonCard
+                          key={`gen-${gen.runId}`}
+                          outputType={gen.outputType}
+                          triggerName={gen.triggerName}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {entries.map(([dateKey, posts]) => (
+                  <section className="space-y-4" key={dateKey}>
+                    <h2 className="font-semibold text-lg">
+                      {formatDateHeading(dateKey)}
+                    </h2>
+                    <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {hasActiveGens &&
+                        dateKey === todayKey &&
+                        activeGenerations.map((gen) => (
+                          <ContentSkeletonCard
+                            key={`gen-${gen.runId}`}
+                            outputType={gen.outputType}
+                            triggerName={gen.triggerName}
+                          />
+                        ))}
+                      {posts.map((post) => (
+                        <ContentCard
+                          contentType={post.contentType as ContentType}
+                          href={`/${organizationSlug}/content/${post.id}`}
+                          id={post.id}
+                          key={post.id}
+                          organizationId={organizationId}
+                          preview={previewsByPostId.get(post.id) ?? ""}
+                          status={post.status as PostStatus}
+                          title={post.title}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 ))}
-              </div>
-            </section>
-          ))}
+              </>
+            );
+          })()}
         {!isPending && allPosts.length > 0 && viewMode === "table" && (
           <div className="overflow-x-auto rounded-lg border">
             <Table>

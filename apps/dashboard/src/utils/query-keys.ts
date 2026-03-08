@@ -57,6 +57,10 @@ export const QUERY_KEYS = {
     today: (organizationId: string) =>
       ["posts", organizationId, "today"] as const,
   },
+  ACTIVE_GENERATIONS: {
+    list: (organizationId: string) =>
+      ["active-generations", organizationId] as const,
+  },
   NOTIFICATION_SETTINGS: {
     settings: (organizationId: string) =>
       ["notification-settings", organizationId] as const,
