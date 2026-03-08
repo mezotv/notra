@@ -254,7 +254,7 @@ export function useBrandVoiceAffectedTriggers(
   voiceId: string,
   enabled: boolean
 ) {
-  return useQuery<AffectedTriggersData>({
+  const query = useQuery<AffectedTriggersData>({
     queryKey: ["brand-voice-affected", organizationId, voiceId],
     queryFn: async () => {
       const res = await fetch(
@@ -267,6 +267,7 @@ export function useBrandVoiceAffectedTriggers(
     },
     enabled: enabled && !!voiceId,
   });
+  return { ...query, isLoading: query.isLoading || query.isFetching };
 }
 
 export function useDeleteBrandVoice(organizationId: string) {
