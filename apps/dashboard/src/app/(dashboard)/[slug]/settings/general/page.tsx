@@ -499,7 +499,7 @@ function ConnectedAccountsSection({
 }: {
   organizationId: string;
 }) {
-  const { data, isLoading } = useConnectedAccounts(organizationId);
+  const { data, isLoading, isError } = useConnectedAccounts(organizationId);
   const disconnectMutation = useDisconnectAccount(organizationId);
 
   const twitterAccounts = (data?.accounts ?? []).filter(
@@ -520,7 +520,15 @@ function ConnectedAccountsSection({
           </div>
         )}
 
-        {!isLoading && twitterAccounts.length === 0 && (
+        {!isLoading && isError && (
+          <div className="rounded-lg border border-dashed py-8 text-center">
+            <p className="text-destructive text-sm">
+              Failed to load connected accounts
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && twitterAccounts.length === 0 && (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-8">
             <div className="flex size-10 items-center justify-center rounded-full bg-muted">
               <HugeiconsIcon className="size-5" icon={NewTwitterIcon} />
@@ -532,6 +540,7 @@ function ConnectedAccountsSection({
         )}
 
         {!isLoading &&
+          !isError &&
           twitterAccounts.map((account) => {
             const isDisconnecting =
               disconnectMutation.isPending &&
@@ -547,7 +556,10 @@ function ConnectedAccountsSection({
                   size="sm"
                 >
                   {account.profileImageUrl && (
-                    <AvatarImage src={account.profileImageUrl} />
+                    <AvatarImage
+                      alt={account.displayName}
+                      src={account.profileImageUrl}
+                    />
                   )}
                   <AvatarFallback>
                     {account.username.slice(0, 2).toUpperCase()}
@@ -562,7 +574,7 @@ function ConnectedAccountsSection({
                   </p>
                 </div>
                 <Button
-                  disabled={isDisconnecting}
+                  disabled={disconnectMutation.isPending}
                   onClick={() => {
                     disconnectMutation.mutate(account.id, {
                       onSuccess: () => toast.success("Account disconnected"),
