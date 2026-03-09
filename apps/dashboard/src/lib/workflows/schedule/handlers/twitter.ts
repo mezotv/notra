@@ -9,7 +9,7 @@ export async function handleTwitter(
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
   try {
-    const { postId, title } = await generateTwitterPost({
+    const { postId, title, posts } = await generateTwitterPost({
       organizationId: ctx.organizationId,
       voiceId: ctx.voiceId,
       repositories: ctx.repositories,
@@ -18,7 +18,7 @@ export async function handleTwitter(
       sourceMetadata: ctx.sourceMetadata,
     });
 
-    return { status: "ok", postId, title };
+    return { status: "ok", postId, title, posts };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
       return {

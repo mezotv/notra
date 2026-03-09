@@ -49,8 +49,18 @@ export interface EventGenerationContext {
   sourceMetadata: PostSourceMetadata;
 }
 
+export interface GeneratedEventPost {
+  postId: string;
+  title: string;
+}
+
 export type EventGenerationResult =
-  | { status: "ok"; postId: string; title: string }
+  | {
+      status: "ok";
+      postId: string;
+      title: string;
+      posts: GeneratedEventPost[];
+    }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };
 

@@ -7,6 +7,11 @@ import type {
   TwitterTonePromptInput,
 } from "./prompts";
 
+export interface GeneratedPostSummary {
+  postId: string;
+  title: string;
+}
+
 export interface ChangelogAgentResult {
   postId: string;
   title: string;
@@ -29,6 +34,7 @@ export interface ChangelogAgentOptions {
 export interface LinkedInAgentResult {
   postId: string;
   title: string;
+  posts: GeneratedPostSummary[];
 }
 
 export interface LinkedInAgentOptions {
@@ -48,6 +54,7 @@ export interface LinkedInAgentOptions {
 export interface TwitterAgentResult {
   postId: string;
   title: string;
+  posts: GeneratedPostSummary[];
 }
 
 export interface TwitterAgentOptions {

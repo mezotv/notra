@@ -385,7 +385,16 @@ export const { POST } = serve<EventWorkflowPayload>(
         return;
       }
 
-      const { postId, title: contentTitle } = contentResult;
+      const createdPosts =
+        contentResult.posts.length > 0
+          ? contentResult.posts
+          : [{ postId: contentResult.postId, title: contentResult.title }];
+      const [primaryPost] = createdPosts;
+      const postId = primaryPost.postId;
+      const contentTitle =
+        createdPosts.length === 1
+          ? primaryPost.title
+          : `${createdPosts.length} ${trigger.outputType.replaceAll("_", " ")} drafts`;
 
       await context.run("track-generation-end-success", async () => {
         await completeActiveGeneration(trigger.organizationId, {
@@ -404,7 +413,10 @@ export const { POST } = serve<EventWorkflowPayload>(
           organizationId: trigger.organizationId,
           integrationId: triggerId,
           integrationType: "events",
-          title: `Event "${trigger.name.trim() || eventType}" created "${contentTitle}"`,
+          title:
+            createdPosts.length === 1
+              ? `Event "${trigger.name.trim() || eventType}" created "${contentTitle}"`
+              : `Event "${trigger.name.trim() || eventType}" created ${createdPosts.length} drafts`,
           status: "success",
           statusCode: null,
           referenceId: postId,
@@ -414,20 +426,22 @@ export const { POST } = serve<EventWorkflowPayload>(
 
       await context.run("track-content-created", async () => {
         try {
-          await trackScheduledContentCreated({
-            triggerId: trigger.id,
-            organizationId: trigger.organizationId,
-            postId,
-            outputType: trigger.outputType,
-            lookbackWindow,
-            repositoryCount: 1,
-            source: "event",
-          });
+          for (const createdPost of createdPosts) {
+            await trackScheduledContentCreated({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              postId: createdPost.postId,
+              outputType: trigger.outputType,
+              lookbackWindow,
+              repositoryCount: 1,
+              source: "event",
+            });
+          }
         } catch (trackingError) {
           console.error("[Event] Failed to track content creation", {
             triggerId,
             organizationId: trigger.organizationId,
-            postId,
+            postIds: createdPosts.map((createdPost) => createdPost.postId),
             error: trackingError,
           });
         }
@@ -486,7 +500,11 @@ export const { POST } = serve<EventWorkflowPayload>(
 
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
-          const contentLink = `${baseUrl}/${notificationData.organizationSlug}/content/${postId}`;
+          const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
+          const createdContent = createdPosts.map((createdPost) => ({
+            title: createdPost.title,
+            contentLink: `${contentOverviewLink}/${createdPost.postId}`,
+          }));
           const triggerName = trigger.name.trim() || `${eventType} event`;
 
           await Promise.allSettled(
@@ -495,9 +513,9 @@ export const { POST } = serve<EventWorkflowPayload>(
                 recipientEmail: email,
                 organizationName: notificationData.organizationName,
                 scheduleName: triggerName,
-                contentTitle,
+                createdContent,
                 contentType: trigger.outputType,
-                contentLink,
+                contentOverviewLink,
                 organizationSlug: notificationData.organizationSlug,
                 subject: `New content created from ${eventType} event`,
               }).then((result) => {

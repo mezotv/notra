@@ -188,7 +188,15 @@ export async function generateEventBasedContent(
 
     const result = await generateFn(agentOptions);
 
-    return { status: "ok", postId: result.postId, title: result.title };
+    return {
+      status: "ok",
+      postId: result.postId,
+      title: result.title,
+      posts:
+        "posts" in result
+          ? result.posts
+          : [{ postId: result.postId, title: result.title }],
+    };
   } catch (error) {
     return {
       status: "generation_failed",

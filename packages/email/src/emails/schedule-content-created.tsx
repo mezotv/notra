@@ -14,16 +14,8 @@ import {
 
 import { EmailButton } from "../components/button";
 import { EmailFooter } from "../components/footer";
+import type { ScheduledContentCreatedEmailProps } from "../types/schedule-content-created";
 import { EMAIL_CONFIG } from "../utils/config";
-
-interface ScheduledContentCreatedEmailProps {
-  organizationName: string;
-  scheduleName: string;
-  contentTitle: string;
-  contentType: string;
-  contentLink: string;
-  organizationSlug: string;
-}
 
 const CONTENT_TYPE_MAP: Record<string, string> = {
   changelog: "Changelog",
@@ -36,12 +28,24 @@ const CONTENT_TYPE_MAP: Record<string, string> = {
 export const ScheduledContentCreatedEmail = ({
   organizationName = "Acme Inc",
   scheduleName = "Weekly Product Updates",
-  contentTitle = "This week's product updates are live",
+  createdContent = [
+    {
+      title: "This week's product updates are live",
+      contentLink: "https://app.usenotra.com/acme/content/example-post-id",
+    },
+  ],
   contentType = "changelog",
   organizationSlug = "acme",
-  contentLink = `https://app.usenotra.com/${organizationSlug}/content/example-post-id`,
+  contentOverviewLink = `https://app.usenotra.com/${organizationSlug}/content`,
 }: ScheduledContentCreatedEmailProps) => {
   const logoUrl = EMAIL_CONFIG.getLogoUrl();
+  const contentCount = createdContent.length;
+  const primaryContent = createdContent[0];
+  const contentLabel = CONTENT_TYPE_MAP[contentType] ?? "Content";
+  const summary =
+    contentCount === 1
+      ? `just created a new ${contentLabel} draft.`
+      : `just created ${contentCount} new ${contentLabel} drafts.`;
 
   return (
     <Html>
@@ -66,26 +70,49 @@ export const ScheduledContentCreatedEmail = ({
 
             <Text className="text-center text-[#737373] text-base leading-relaxed">
               Your <strong>{scheduleName}</strong> schedule in{" "}
-              <strong>{organizationName}</strong> just created a new{" "}
-              <strong>{CONTENT_TYPE_MAP[contentType]}</strong> draft.
+              <strong>{organizationName}</strong> {summary}
             </Text>
 
             <Section className="mt-8">
               <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
-                Content title:
+                {contentCount === 1 ? "Content title:" : "Created drafts:"}
               </Text>
-              <Text className="mt-2 mb-0 text-[14px] text-black leading-[22px]">
-                {contentTitle}
-              </Text>
+              {createdContent.map((item) => (
+                <Text
+                  className="mt-2 mb-0 text-[14px] text-black leading-[22px]"
+                  key={item.contentLink}
+                >
+                  <Link href={item.contentLink}>{item.title}</Link>
+                </Text>
+              ))}
             </Section>
 
             <Section className="my-8 text-center">
-              <EmailButton href={contentLink}>Review Content</EmailButton>
+              <EmailButton
+                href={
+                  contentCount === 1
+                    ? (primaryContent?.contentLink ?? contentOverviewLink)
+                    : contentOverviewLink
+                }
+              >
+                {contentCount === 1 ? "Review Content" : "Review All Content"}
+              </EmailButton>
             </Section>
 
             <Text className="text-[14px] text-black leading-[24px]">
               If the button does not work, copy and paste this URL into your
-              browser: <Link href={contentLink}>{contentLink}</Link>
+              browser:{" "}
+              <Link
+                href={
+                  contentCount === 1
+                    ? (primaryContent?.contentLink ?? contentOverviewLink)
+                    : contentOverviewLink
+                }
+              >
+                {contentCount === 1
+                  ? (primaryContent?.contentLink ?? contentOverviewLink)
+                  : contentOverviewLink}
+              </Link>
             </Text>
 
             <Section className="mt-8">

@@ -15,7 +15,6 @@ import {
   createFailTool,
   createUpdatePostTool,
   createViewPostTool,
-  type PostToolsResult,
 } from "@/lib/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
 import { getValidToneProfile, type ToneProfile } from "@/schemas/brand";
@@ -23,6 +22,7 @@ import type {
   BlogPostAgentOptions,
   BlogPostAgentResult,
 } from "@/types/ai/agents";
+import type { PostToolsResult } from "@/types/ai/post-tools";
 
 const blogPostPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalBlogPostPrompt,

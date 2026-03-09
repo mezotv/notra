@@ -18,7 +18,7 @@ export async function handleChangelog(
       sourceMetadata: ctx.sourceMetadata,
     });
 
-    return { status: "ok", postId, title };
+    return { status: "ok", postId, title, posts: [{ postId, title }] };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
       return {

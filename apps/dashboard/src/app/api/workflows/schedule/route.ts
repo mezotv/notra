@@ -657,7 +657,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         return;
       }
 
-      const { postId, title: contentTitle } = contentResult;
+      const createdPosts =
+        contentResult.posts.length > 0
+          ? contentResult.posts
+          : [{ postId: contentResult.postId, title: contentResult.title }];
+      const [primaryPost] = createdPosts;
+      const postId = primaryPost.postId;
+      const contentTitle =
+        createdPosts.length === 1
+          ? primaryPost.title
+          : `${createdPosts.length} ${trigger.outputType.replaceAll("_", " ")} drafts`;
 
       await context.run("track-generation-end-success", async () => {
         await completeActiveGeneration(trigger.organizationId, {
@@ -676,7 +685,10 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           organizationId: trigger.organizationId,
           integrationId: triggerId,
           integrationType: manual ? "manual" : "schedule",
-          title: `Schedule "${trigger.name.trim() || trigger.outputType}" created "${contentTitle}"`,
+          title:
+            createdPosts.length === 1
+              ? `Schedule "${trigger.name.trim() || trigger.outputType}" created "${contentTitle}"`
+              : `Schedule "${trigger.name.trim() || trigger.outputType}" created ${createdPosts.length} drafts`,
           status: "success",
           statusCode: null,
           referenceId: postId,
@@ -685,20 +697,22 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       await context.run("track-content-created", async () => {
         try {
-          await trackScheduledContentCreated({
-            triggerId: trigger.id,
-            organizationId: trigger.organizationId,
-            postId,
-            outputType: trigger.outputType,
-            lookbackWindow,
-            repositoryCount: repositories.length,
-            source: "schedule",
-          });
+          for (const createdPost of createdPosts) {
+            await trackScheduledContentCreated({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              postId: createdPost.postId,
+              outputType: trigger.outputType,
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "schedule",
+            });
+          }
         } catch (trackingError) {
           console.error("[Schedule] Failed to track content creation", {
             triggerId,
             organizationId: trigger.organizationId,
-            postId,
+            postIds: createdPosts.map((createdPost) => createdPost.postId),
             error: trackingError,
           });
         }
@@ -759,7 +773,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           }
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
-          const contentLink = `${baseUrl}/${notificationData.organizationSlug}/content/${postId}`;
+          const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
+          const createdContent = createdPosts.map((createdPost) => ({
+            title: createdPost.title,
+            contentLink: `${contentOverviewLink}/${createdPost.postId}`,
+          }));
           const scheduleName = trigger.name.trim() || trigger.outputType;
           const subject = manual
             ? `New content created from ${scheduleName}`
@@ -771,9 +789,9 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                 recipientEmail: email,
                 organizationName: notificationData.organizationName,
                 scheduleName,
-                contentTitle,
+                createdContent,
                 contentType: trigger.outputType,
-                contentLink,
+                contentOverviewLink,
                 organizationSlug: notificationData.organizationSlug,
                 subject,
               }).then((result) => {
@@ -791,7 +809,9 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       if (process.env.NODE_ENV === "development") {
         console.log(
-          `[Schedule] Created post ${postId} for trigger ${triggerId}`
+          `[Schedule] Created ${createdPosts.length} post(s) for trigger ${triggerId}: ${createdPosts
+            .map((createdPost) => createdPost.postId)
+            .join(", ")}`
         );
       }
 

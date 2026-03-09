@@ -264,13 +264,17 @@ export async function sendScheduledContentCreatedEmail(
     recipientEmail,
     organizationName,
     scheduleName,
-    contentTitle,
+    createdContent,
     contentType,
-    contentLink,
+    contentOverviewLink,
     organizationSlug,
     subject,
   }: SendScheduledContentCreatedEmailProps
 ) {
+  const idempotencySuffix = createdContent
+    .map((item) => item.contentLink)
+    .join(",");
+
   return sendWithRetry(
     resend,
     {
@@ -282,12 +286,12 @@ export async function sendScheduledContentCreatedEmail(
         organizationName,
         organizationSlug,
         scheduleName,
-        contentTitle,
+        createdContent,
         contentType,
-        contentLink,
+        contentOverviewLink,
       }),
       tags: [{ name: "category", value: "schedule-content-created" }],
     },
-    `notra:schedule-content-created:${recipientEmail}:${contentLink}`
+    `notra:schedule-content-created:${recipientEmail}:${idempotencySuffix}`
   );
 }

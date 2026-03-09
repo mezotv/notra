@@ -21,13 +21,18 @@ export interface SendScheduledContentFailedEmailProps {
   subject?: string;
 }
 
+export interface ScheduledCreatedContentItem {
+  title: string;
+  contentLink: string;
+}
+
 export interface SendScheduledContentCreatedEmailProps {
   recipientEmail: string;
   organizationName: string;
   organizationSlug: string;
   scheduleName: string;
-  contentTitle: string;
+  createdContent: ScheduledCreatedContentItem[];
   contentType: string;
-  contentLink: string;
+  contentOverviewLink: string;
   subject?: string;
 }

@@ -25,8 +25,18 @@ export interface ContentGenerationContext {
   voiceId?: string;
 }
 
+export interface GeneratedWorkflowPost {
+  postId: string;
+  title: string;
+}
+
 export type ContentGenerationResult =
-  | { status: "ok"; postId: string; title: string }
+  | {
+      status: "ok";
+      postId: string;
+      title: string;
+      posts: GeneratedWorkflowPost[];
+    }
   | { status: "rate_limited"; retryAfterSeconds?: number }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };
