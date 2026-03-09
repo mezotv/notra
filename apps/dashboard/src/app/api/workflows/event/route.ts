@@ -30,6 +30,10 @@ import {
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
+import {
+  parseLookbackWindow,
+  parseTriggerOutputConfig,
+} from "@/lib/workflows/shared/parsing";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 import {
@@ -43,8 +47,6 @@ import type {
   WorkflowRepositoryData,
   WorkflowTriggerData,
 } from "@/types/workflows/workflows";
-
-const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
 
 export const { POST } = serve<EventWorkflowPayload>(
   async (context: WorkflowContext<EventWorkflowPayload>) => {
@@ -102,10 +104,7 @@ export const { POST } = serve<EventWorkflowPayload>(
             where: eq(contentTriggerLookbackWindows.triggerId, triggerId),
           });
 
-        return (
-          (lookbackResult?.window as LookbackWindow | undefined) ??
-          DEFAULT_LOOKBACK_WINDOW
-        );
+        return parseLookbackWindow(lookbackResult?.window);
       }
     );
 
@@ -146,9 +145,7 @@ export const { POST } = serve<EventWorkflowPayload>(
     const brand = await context.run<WorkflowBrandSettings | null>(
       "fetch-brand-settings",
       async () => {
-        const outputConfig = trigger.outputConfig as {
-          brandVoiceId?: string;
-        } | null;
+        const outputConfig = parseTriggerOutputConfig(trigger.outputConfig);
         const voiceId = outputConfig?.brandVoiceId;
 
         let result = voiceId

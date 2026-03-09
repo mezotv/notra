@@ -9,6 +9,7 @@ import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { DEFAULT_LOOKBACK_WINDOW } from "@/constants/workflows";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   buildCronExpression,
@@ -25,7 +26,6 @@ import {
 import type { Trigger } from "@/types/triggers/triggers";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
-const DEFAULT_LOOKBACK_WINDOW: LookbackWindow = "last_7_days";
 const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
 
 function toEffectiveLookbackWindow(

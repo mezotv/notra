@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { LOOKBACK_WINDOWS, triggerOutputConfigSchema } from "./integrations";
 
 export const generateChangelogBodySchema = z.object({
   prompt: z.string().min(1, "Prompt is required"),
@@ -26,3 +27,10 @@ export const eventWorkflowPayloadSchema = z.object({
 });
 
 export type EventWorkflowPayload = z.infer<typeof eventWorkflowPayloadSchema>;
+
+export const workflowLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
+
+export const nullableTriggerOutputConfigSchema = z.union([
+  triggerOutputConfigSchema,
+  z.null(),
+]);
