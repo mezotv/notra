@@ -98,7 +98,7 @@ export async function generateLinkedInPost(
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),
       createPost: createCreatePostTool(postToolsConfig, postToolsResult),
-      updatePost: createUpdatePostTool(postToolsConfig),
+      updatePost: createUpdatePostTool(postToolsConfig, postToolsResult),
       viewPost: createViewPostTool(postToolsConfig),
       fail: createFailTool(postToolsResult),
     },

@@ -9,7 +9,7 @@ export async function handleChangelog(
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
   try {
-    const { postId, title } = await generateChangelog({
+    const { postId, title, posts } = await generateChangelog({
       organizationId: ctx.organizationId,
       voiceId: ctx.voiceId,
       repositories: ctx.repositories,
@@ -18,7 +18,7 @@ export async function handleChangelog(
       sourceMetadata: ctx.sourceMetadata,
     });
 
-    return { status: "ok", postId, title, posts: [{ postId, title }] };
+    return { status: "ok", postId, title, posts };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
       return {

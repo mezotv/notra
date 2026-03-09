@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
@@ -271,9 +272,13 @@ export async function sendScheduledContentCreatedEmail(
     subject,
   }: SendScheduledContentCreatedEmailProps
 ) {
-  const idempotencySuffix = createdContent
+  const rawIdempotencySuffix = createdContent
     .map((item) => item.contentLink)
     .join(",");
+  const idempotencySuffix = createHash("sha256")
+    .update(rawIdempotencySuffix)
+    .digest("hex")
+    .slice(0, 32);
 
   return sendWithRetry(
     resend,

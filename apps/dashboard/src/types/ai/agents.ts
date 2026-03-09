@@ -1,5 +1,6 @@
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { ToneProfile } from "@/schemas/brand";
+import type { PostSummary } from "@/types/posts";
 import type {
   BlogPostTonePromptInput,
   ChangelogTonePromptInput,
@@ -7,14 +8,10 @@ import type {
   TwitterTonePromptInput,
 } from "./prompts";
 
-export interface GeneratedPostSummary {
-  postId: string;
-  title: string;
-}
-
 export interface ChangelogAgentResult {
   postId: string;
   title: string;
+  posts: PostSummary[];
 }
 
 export interface ChangelogAgentOptions {
@@ -34,7 +31,7 @@ export interface ChangelogAgentOptions {
 export interface LinkedInAgentResult {
   postId: string;
   title: string;
-  posts: GeneratedPostSummary[];
+  posts: PostSummary[];
 }
 
 export interface LinkedInAgentOptions {
@@ -54,7 +51,7 @@ export interface LinkedInAgentOptions {
 export interface TwitterAgentResult {
   postId: string;
   title: string;
-  posts: GeneratedPostSummary[];
+  posts: PostSummary[];
 }
 
 export interface TwitterAgentOptions {
@@ -74,6 +71,7 @@ export interface TwitterAgentOptions {
 export interface BlogPostAgentResult {
   postId: string;
   title: string;
+  posts: PostSummary[];
 }
 
 export interface BlogPostAgentOptions {

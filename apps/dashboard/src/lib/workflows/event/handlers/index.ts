@@ -192,10 +192,7 @@ export async function generateEventBasedContent(
       status: "ok",
       postId: result.postId,
       title: result.title,
-      posts:
-        "posts" in result
-          ? result.posts
-          : [{ postId: result.postId, title: result.title }],
+      posts: result.posts,
     };
   } catch (error) {
     return {

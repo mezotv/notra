@@ -1,5 +1,6 @@
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { ToneProfile } from "@/schemas/brand";
+import type { PostSummary } from "@/types/posts";
 
 export interface ContentGenerationContext {
   organizationId: string;
@@ -25,17 +26,12 @@ export interface ContentGenerationContext {
   voiceId?: string;
 }
 
-export interface GeneratedWorkflowPost {
-  postId: string;
-  title: string;
-}
-
 export type ContentGenerationResult =
   | {
       status: "ok";
       postId: string;
       title: string;
-      posts: GeneratedWorkflowPost[];
+      posts: PostSummary[];
     }
   | { status: "rate_limited"; retryAfterSeconds?: number }
   | { status: "generation_failed"; reason: string }

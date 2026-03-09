@@ -1,5 +1,6 @@
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { ContentType } from "@/schemas/content";
+import type { PostSummary } from "@/types/posts";
 
 export interface PostToolsConfig {
   organizationId: string;
@@ -7,14 +8,9 @@ export interface PostToolsConfig {
   sourceMetadata?: PostSourceMetadata;
 }
 
-export interface CreatedPostSummary {
-  postId: string;
-  title: string;
-}
-
 export interface PostToolsResult {
   postId?: string;
   title?: string;
-  posts?: CreatedPostSummary[];
+  posts?: PostSummary[];
   failReason?: string;
 }

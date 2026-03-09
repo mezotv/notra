@@ -65,7 +65,10 @@ export function createCreatePostTool(
   });
 }
 
-export function createUpdatePostTool(config: PostToolsConfig): Tool {
+export function createUpdatePostTool(
+  config: PostToolsConfig,
+  result: PostToolsResult
+): Tool {
   return tool({
     description: toolDescription({
       toolName: "update_post",
@@ -114,6 +117,19 @@ export function createUpdatePostTool(config: PostToolsConfig): Tool {
 
       if (rows.length === 0) {
         return { postId, status: "not_found" };
+      }
+
+      if (title !== undefined) {
+        const existingPost = result.posts?.find(
+          (entry) => entry.postId === postId
+        );
+        if (existingPost) {
+          existingPost.title = title;
+        }
+
+        if (result.postId === postId) {
+          result.title = title;
+        }
       }
 
       return { postId, status: "updated" };

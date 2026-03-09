@@ -385,11 +385,28 @@ export const { POST } = serve<EventWorkflowPayload>(
         return;
       }
 
-      const createdPosts =
-        contentResult.posts.length > 0
-          ? contentResult.posts
-          : [{ postId: contentResult.postId, title: contentResult.title }];
+      const createdPosts = contentResult.posts;
+
+      if (createdPosts.length === 0) {
+        console.error("[Event] Content generation returned no posts", {
+          triggerId,
+          organizationId: trigger.organizationId,
+        });
+        await context.cancel();
+        return;
+      }
+
       const [primaryPost] = createdPosts;
+
+      if (!primaryPost) {
+        console.error("[Event] Missing primary post after generation", {
+          triggerId,
+          organizationId: trigger.organizationId,
+        });
+        await context.cancel();
+        return;
+      }
+
       const postId = primaryPost.postId;
       const contentTitle =
         createdPosts.length === 1
@@ -425,9 +442,9 @@ export const { POST } = serve<EventWorkflowPayload>(
       });
 
       await context.run("track-content-created", async () => {
-        try {
-          for (const createdPost of createdPosts) {
-            await trackScheduledContentCreated({
+        const trackingResults = await Promise.allSettled(
+          createdPosts.map((createdPost) =>
+            trackScheduledContentCreated({
               triggerId: trigger.id,
               organizationId: trigger.organizationId,
               postId: createdPost.postId,
@@ -435,14 +452,26 @@ export const { POST } = serve<EventWorkflowPayload>(
               lookbackWindow,
               repositoryCount: 1,
               source: "event",
-            });
-          }
-        } catch (trackingError) {
-          console.error("[Event] Failed to track content creation", {
+            })
+          )
+        );
+
+        const failedTracking = trackingResults.flatMap((result, index) =>
+          result.status === "rejected"
+            ? [
+                {
+                  postId: createdPosts[index]?.postId ?? "unknown",
+                  error: result.reason,
+                },
+              ]
+            : []
+        );
+
+        if (failedTracking.length > 0) {
+          console.error("[Event] Failed to track some created posts", {
             triggerId,
             organizationId: trigger.organizationId,
-            postIds: createdPosts.map((createdPost) => createdPost.postId),
-            error: trackingError,
+            failures: failedTracking,
           });
         }
       });
