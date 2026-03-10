@@ -1,16 +1,22 @@
 import type { MetadataRoute } from "next";
 import { changelog } from "@/../.source/server";
-import { CHANGELOG_COMPANIES, getEntrySlug } from "../utils/changelog";
+import { listNotraChangelogPosts } from "@/utils/changelog";
+import { getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "../utils/showcase";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const changelogEntries = CHANGELOG_COMPANIES.flatMap((company) =>
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const showcaseEntries = SHOWCASE_COMPANIES.flatMap((company) =>
     changelog
       .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
       .map((entry) => ({
-        url: `https://www.usenotra.com/changelog/${company.slug}/${getEntrySlug(entry.info.path)}`,
+        url: `https://www.usenotra.com/showcase/${company.slug}/${getShowcaseEntrySlug(entry.info.path)}`,
         lastModified: new Date(entry.date),
       }))
   );
+
+  const notraChangelogEntries = (await listNotraChangelogPosts()).map((post) => ({
+    url: `https://www.usenotra.com/changelog/${post.slug}`,
+    lastModified: new Date(post.updatedAt),
+  }));
 
   return [
     {
@@ -37,10 +43,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: "https://www.usenotra.com/changelog",
       lastModified: new Date(),
     },
-    ...CHANGELOG_COMPANIES.map((company) => ({
-      url: `https://www.usenotra.com/changelog/${company.slug}`,
+    {
+      url: "https://www.usenotra.com/showcase",
+      lastModified: new Date(),
+    },
+    ...SHOWCASE_COMPANIES.map((company) => ({
+      url: `https://www.usenotra.com/showcase/${company.slug}`,
       lastModified: new Date(),
     })),
-    ...changelogEntries,
+    ...showcaseEntries,
+    ...notraChangelogEntries,
   ];
 }

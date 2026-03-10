@@ -1,60 +1,18 @@
-import { BetterAuthLight } from "@notra/ui/components/ui/svgs/betterAuthLight";
-import { Cal } from "@notra/ui/components/ui/svgs/cal";
-import { Databuddy } from "@notra/ui/components/ui/svgs/databuddy";
-import { Langfuse } from "@notra/ui/components/ui/svgs/langfuse";
-import { Marble } from "@notra/ui/components/ui/svgs/marble";
-import { Neon } from "@notra/ui/components/ui/svgs/neon";
-import { TitleCard } from "@notra/ui/components/ui/title-card";
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { changelog } from "@/../.source/server";
-import { CHANGELOG_COMPANIES } from "../../../utils/changelog";
+import { ChangelogPageHeader } from "@/components/changelog-page-header";
+import { ChangelogTimeline } from "@/components/changelog-timeline";
+import { buildChangelogTimelineItems, listNotraChangelogPosts } from "@/utils/changelog";
 
-const COMPANY_ICONS: Record<string, ReactNode> = {
-  "better-auth": <BetterAuthLight className="size-5" />,
-  "cal-com": <Cal className="size-5" />,
-  databuddy: <Databuddy className="size-5 rounded" />,
-  langfuse: <Langfuse className="size-5" />,
-  autumn: (
-    <Image
-      alt="Autumn"
-      className="h-5 w-auto rounded"
-      height="85"
-      src="/logos/brands/autumn.avif"
-      width="53"
-    />
-  ),
-  marble: <Marble className="size-5 rounded" />,
-  neon: <Neon className="size-5 rounded" />,
-  openclaw: (
-    <Image
-      alt="OpenClaw"
-      className="h-5 w-auto rounded"
-      height="85"
-      src="/logos/brands/openclaw.webp"
-      width="53"
-    />
-  ),
-  unkey: (
-    <Image
-      alt="Unkey"
-      className="h-5 w-auto rounded"
-      height="85"
-      src="/logos/brands/unkey.webp"
-      width="53"
-    />
-  ),
-};
-
-const title = "Example Changelogs - Notra";
+const title = "Changelog - Notra";
 const description =
-  "See what Notra-generated changelogs look like for popular open source projects.";
+  "Follow the latest Notra product updates, improvements, and release notes.";
 
 export const metadata: Metadata = {
   title,
   description,
+  alternates: {
+    canonical: "https://usenotra.com/changelog",
+  },
   openGraph: {
     title,
     description,
@@ -69,74 +27,41 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ChangelogOverviewPage() {
-  const postCounts = new Map(
-    CHANGELOG_COMPANIES.map((company) => [
-      company.slug,
-      changelog.filter((entry) =>
-        entry.info.path.startsWith(`${company.slug}/`)
-      ).length,
-    ])
-  );
-
-  const companies = [...CHANGELOG_COMPANIES].sort((a, b) => {
-    const countDiff =
-      (postCounts.get(b.slug) ?? 0) - (postCounts.get(a.slug) ?? 0);
-
-    if (countDiff !== 0) {
-      return countDiff;
-    }
-
-    return a.name.localeCompare(b.name);
-  });
+export default async function ChangelogOverviewPage() {
+  const posts = await listNotraChangelogPosts();
+  const timelineItems = buildChangelogTimelineItems(posts);
 
   return (
     <>
-      <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4 self-center">
-        <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-          Example <span className="text-primary">Changelogs</span>
-        </h1>
-        <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
-          See how Notra transforms GitHub activity into professional
-          <br className="hidden sm:block" />
-          product updates from real open source projects.
-        </p>
+      <ChangelogPageHeader
+        description={
+          <>
+            Every product update, release note, and improvement from the Notra
+            team in one place.
+          </>
+        }
+        eyebrow="What’s New"
+        meta={
+          posts.length > 0 ? (
+            <p className="font-sans text-muted-foreground text-sm">
+              {posts.length} {posts.length === 1 ? "update" : "updates"} published
+            </p>
+          ) : null
+        }
+        title={
+          <>
+            The Notra <span className="text-primary">Changelog</span>
+          </>
+        }
+      />
+
+      <div className="mt-14 w-full max-w-[760px] self-center">
+        <ChangelogTimeline
+          emptyDescription="We’ll share new releases and product improvements here soon."
+          emptyTitle="No changelog entries yet"
+          items={timelineItems}
+        />
       </div>
-
-      <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {companies.map((company) => {
-          const entryCount = postCounts.get(company.slug) ?? 0;
-
-          return (
-            <Link
-              className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              href={`/changelog/${company.slug}`}
-              key={company.slug}
-            >
-              <TitleCard
-                accentColor={company.accentColor}
-                action={
-                  <span className="rounded-full border border-border px-2.5 py-0.5 text-muted-foreground text-xs">
-                    {entryCount} {entryCount === 1 ? "Post" : "Posts"}
-                  </span>
-                }
-                className="h-full cursor-pointer transition-colors hover:bg-muted/80"
-                heading={company.name}
-                icon={COMPANY_ICONS[company.slug]}
-              >
-                <p className="text-muted-foreground text-sm">
-                  {company.description}
-                </p>
-              </TitleCard>
-            </Link>
-          );
-        })}
-      </div>
-
-      <p className="mt-8 text-center font-sans text-muted-foreground text-xs">
-        Notra is not affiliated with any of the companies listed above. These
-        changelogs are generated for demonstration purposes only.
-      </p>
     </>
   );
 }

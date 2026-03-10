@@ -2,6 +2,18 @@ import path from "node:path";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
+const SHOWCASE_COMPANY_SLUGS = [
+  "autumn",
+  "better-auth",
+  "cal-com",
+  "databuddy",
+  "langfuse",
+  "marble",
+  "neon",
+  "openclaw",
+  "unkey",
+];
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {
@@ -26,8 +38,8 @@ const nextConfig: NextConfig = {
         destination: "/markdown",
       },
       {
-        source: "/changelog/:name",
-        destination: "/changelog/:name/markdown",
+        source: "/changelog",
+        destination: "/changelog/markdown",
         has: [
           {
             type: "header",
@@ -37,8 +49,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/changelog/:name/:slug",
-        destination: "/changelog/:name/:slug/markdown",
+        source: "/changelog/:slug",
+        destination: "/changelog/:slug/markdown",
         has: [
           {
             type: "header",
@@ -48,18 +60,28 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/changelog/:name.md",
-        destination: "/changelog/:name/markdown",
+        source: "/changelog.md",
+        destination: "/changelog/markdown",
       },
       {
-        source: "/changelog/:name/:slug.md",
-        destination: "/changelog/:name/:slug/markdown",
+        source: "/changelog/:slug.md",
+        destination: "/changelog/:slug/markdown",
       },
     ],
     afterFiles: [],
     fallback: [],
   }),
   redirects: async () => [
+    ...SHOWCASE_COMPANY_SLUGS.map((slug) => ({
+      source: `/changelog/${slug}`,
+      destination: `/showcase/${slug}`,
+      permanent: true,
+    })),
+    {
+      source: "/changelog/:name/:slug",
+      destination: "/showcase/:name/:slug",
+      permanent: true,
+    },
     {
       source: "/founder-chat",
       destination: "https://cal.com/dominikkoch",

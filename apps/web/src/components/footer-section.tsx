@@ -4,6 +4,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import Link from "next/link";
+import { FOOTER_PRODUCT_LINKS } from "@/utils/navigation";
 import { SOCIAL_LINKS } from "../utils/constants";
 import { NotraMark } from "./notra-mark";
 
@@ -71,32 +72,17 @@ export default function FooterSection() {
               Product
             </div>
             <div className="flex flex-col items-start justify-end gap-2">
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/#features"
-              >
-                Features
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/pricing"
-              >
-                Pricing
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/changelog"
-              >
-                Showcase
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="https://docs.usenotra.com"
-                rel="noreferrer"
-                target="_blank"
-              >
-                Docs
-              </Link>
+              {FOOTER_PRODUCT_LINKS.map((link) => (
+                <Link
+                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
+                  href={link.href}
+                  key={link.href}
+                  rel={"rel" in link ? link.rel : undefined}
+                  target={"target" in link ? link.target : undefined}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
 
