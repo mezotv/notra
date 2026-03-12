@@ -1,0 +1,51 @@
+# Version control
+.git
+.gitignore
+
+# Node modules (reinstalled inside Docker)
+node_modules
+**/node_modules
+
+# Build outputs
+dist
+**/.next
+**/.vercel
+**/.wrangler
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
+**/.dev.vars
+
+# Turbo cache
+.turbo
+**/.turbo
+
+# Test & coverage
+coverage
+**/*.test.ts
+**/*.spec.ts
+
+# Misc dev tooling
+.vscode
+.idea
+.cursor
+.claude
+.agents
+.opencode
+.stagewise
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Docs & non-essential apps (not needed to build the API)
+apps/dashboard
+apps/web
+apps/docs

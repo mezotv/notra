@@ -2,10 +2,11 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
-  },
+     "dev": "tsx watch src/index.ts",
+     "build": "tsup",
+     "start": "node dist/index.mjs",
+     "check-types": "tsc --noEmit"
+   },
   "dependencies": {
     "@hono/zod-openapi": "^1.2.2",
     "@notra/db": "workspace:*",
