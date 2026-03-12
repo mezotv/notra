@@ -18,7 +18,6 @@ import type {
   GithubMemoryEventType,
   GithubProcessedEvent,
   WebhookContext,
-  WebhookResult,
 } from "@/types/webhooks/webhooks";
 
 const DELIVERY_TTL_SECONDS = 60 * 60 * 24;
@@ -186,7 +185,7 @@ function processPushEvent(
 
 export async function handleGitHubWebhook(
   context: WebhookContext
-): Promise<WebhookResult> {
+): Promise<Response> {
   const { request, rawBody, repositoryId, organizationId, integrationId } =
     context;
 
@@ -194,7 +193,7 @@ export async function handleGitHubWebhook(
   const signature = request.headers.get("x-hub-signature-256");
   const delivery = request.headers.get("x-github-delivery");
 
-  if (!(eventHeader && isGitHubEventType(eventHeader))) {
+  if (!eventHeader) {
     await appendWebhookLog({
       organizationId,
       integrationId,
@@ -206,10 +205,29 @@ export async function handleGitHubWebhook(
       errorMessage: "Missing X-GitHub-Event header",
     });
 
-    return {
-      success: false,
-      message: "Missing X-GitHub-Event header",
-    };
+    return Response.json(
+      { error: "Missing X-GitHub-Event header" },
+      { status: 400 }
+    );
+  }
+
+  if (!isGitHubEventType(eventHeader)) {
+    await appendWebhookLog({
+      organizationId,
+      integrationId,
+      integrationType: "github",
+      title: `Unsupported event type: ${eventHeader}`,
+      status: "success",
+      statusCode: 200,
+      referenceId: delivery ?? null,
+      payload: { event: eventHeader, ignored: true },
+    });
+
+    return Response.json({
+      message: `Event type '${eventHeader}' is not supported`,
+      event: eventHeader,
+      ignored: true,
+    });
   }
 
   const event: GitHubEventType = eventHeader;
@@ -219,11 +237,12 @@ export async function handleGitHubWebhook(
     delivery &&
     (await isDeliveryProcessed(delivery))
   ) {
-    return {
-      success: true,
+    return Response.json({
       message: "Webhook already processed (duplicate delivery)",
-      data: { event, delivery, duplicate: true },
-    };
+      event,
+      delivery,
+      duplicate: true,
+    });
   }
 
   const secret = await getWebhookSecretByRepositoryId(repositoryId);
@@ -239,10 +258,10 @@ export async function handleGitHubWebhook(
       errorMessage: "Webhook secret not configured",
     });
 
-    return {
-      success: false,
-      message: "Webhook secret not configured for this repository",
-    };
+    return Response.json(
+      { error: "Webhook secret not configured for this repository" },
+      { status: 400 }
+    );
   }
 
   if (!signature) {
@@ -257,10 +276,10 @@ export async function handleGitHubWebhook(
       errorMessage: "Missing X-Hub-Signature-256 header",
     });
 
-    return {
-      success: false,
-      message: "Missing X-Hub-Signature-256 header",
-    };
+    return Response.json(
+      { error: "Missing X-Hub-Signature-256 header" },
+      { status: 400 }
+    );
   }
 
   if (!verifySignature(rawBody, signature, secret)) {
@@ -275,10 +294,10 @@ export async function handleGitHubWebhook(
       errorMessage: "Invalid webhook signature",
     });
 
-    return {
-      success: false,
-      message: "Invalid webhook signature",
-    };
+    return Response.json(
+      { error: "Invalid webhook signature" },
+      { status: 401 }
+    );
   }
 
   const logRetentionDays = await checkLogRetention(organizationId);
@@ -296,11 +315,11 @@ export async function handleGitHubWebhook(
       retentionDays: logRetentionDays,
     });
 
-    return {
-      success: true,
+    return Response.json({
       message: "Pong! Webhook configured successfully",
-      data: { event: "ping", delivery },
-    };
+      event: "ping",
+      delivery,
+    });
   }
 
   let parsedBody: unknown;
@@ -319,10 +338,7 @@ export async function handleGitHubWebhook(
       retentionDays: logRetentionDays,
     });
 
-    return {
-      success: false,
-      message: "Invalid JSON payload",
-    };
+    return Response.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
 
   const validation = githubWebhookPayloadSchema.safeParse(parsedBody);
@@ -339,10 +355,10 @@ export async function handleGitHubWebhook(
       retentionDays: logRetentionDays,
     });
 
-    return {
-      success: false,
-      message: "Invalid webhook payload structure",
-    };
+    return Response.json(
+      { error: "Invalid webhook payload structure" },
+      { status: 400 }
+    );
   }
 
   const payload = validation.data;
@@ -370,11 +386,12 @@ export async function handleGitHubWebhook(
         retentionDays: logRetentionDays,
       });
 
-      return {
-        success: true,
+      return Response.json({
         message: `Event type '${event}' is not processed`,
-        data: { event, action, ignored: true },
-      };
+        event,
+        action,
+        ignored: true,
+      });
   }
 
   if (!processedEvent) {
@@ -390,11 +407,12 @@ export async function handleGitHubWebhook(
       retentionDays: logRetentionDays,
     });
 
-    return {
-      success: true,
+    return Response.json({
       message: `Event '${event}' with action '${action}' was filtered out`,
-      data: { event, action, filtered: true },
-    };
+      event,
+      action,
+      filtered: true,
+    });
   }
 
   const repositoryName = getRepositoryName(payload);
@@ -429,7 +447,6 @@ export async function handleGitHubWebhook(
     retentionDays: logRetentionDays,
   });
 
-  // Find and trigger matching event triggers
   const matchingTriggers = await db
     .select({
       id: contentTriggers.id,
@@ -472,17 +489,14 @@ export async function handleGitHubWebhook(
     await markDeliveryProcessed(delivery);
   }
 
-  return {
-    success: true,
+  return Response.json({
     message: `Processed ${processedEvent.type} event (${processedEvent.action})`,
-    data: {
-      event,
-      delivery,
-      processed: processedEvent,
-      repository: {
-        id: payload.repository?.id,
-        fullName: payload.repository?.full_name,
-      },
+    event,
+    delivery,
+    processed: processedEvent,
+    repository: {
+      id: payload.repository?.id,
+      fullName: payload.repository?.full_name,
     },
-  };
+  });
 }

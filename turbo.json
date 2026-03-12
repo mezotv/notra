@@ -37,7 +37,8 @@
     "UNKEY_API_ID",
     "TWITTER_BEARER_TOKEN",
     "TWITTER_CLIENT_ID",
-    "TWITTER_CLIENT_SECRET"
+    "TWITTER_CLIENT_SECRET",
+    "RESPAN_API_KEY"
   ],
   "envMode": "strict",
   "tasks": {

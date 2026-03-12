@@ -3,8 +3,11 @@ import { type Tool, tool } from "ai";
 import * as z from "zod";
 import { createOctokit } from "@/lib/octokit";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
+import type { AgentDataPointSettings } from "@/types/ai/agents";
 import type {
+  CommitWindow,
   ErrorWithStatus,
+  GitHubSelectionFilters,
   GitHubToolsAccessConfig,
 } from "@/types/ai/tools";
 import { toolDescription } from "@/utils/ai/description";
@@ -171,6 +174,43 @@ function createIntegrationContextResolver(config?: GitHubToolsAccessConfig) {
   };
 }
 
+function createAllowedNumberLookup(
+  values: Record<string, number[]> | undefined
+) {
+  if (!values) {
+    return undefined;
+  }
+
+  return new Map(
+    Object.entries(values).map(([integrationId, numbers]) => [
+      integrationId,
+      new Set(
+        (numbers ?? []).map((value) => Number(value)).filter(Number.isFinite)
+      ),
+    ])
+  );
+}
+
+function createAllowedStringLookup(
+  values: Record<string, string[]> | undefined
+) {
+  if (!values) {
+    return undefined;
+  }
+
+  return new Map(
+    Object.entries(values).map(([integrationId, tags]) => [
+      integrationId,
+      new Set(
+        (tags ?? [])
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0)
+          .map((value) => value.toLowerCase())
+      ),
+    ])
+  );
+}
+
 function getNextPageFromLinkHeader(
   linkHeader?: string | number
 ): number | undefined {
@@ -202,6 +242,9 @@ export function createGetPullRequestsTool(
     namespace: "github",
   });
   const resolveIntegrationContext = createIntegrationContextResolver(config);
+  const allowedPullRequestNumbersByIntegrationId = createAllowedNumberLookup(
+    config?.allowedPullRequestNumbersByIntegrationId
+  );
 
   return cached(
     tool({
@@ -223,6 +266,17 @@ Returns comprehensive PR data including diff stats, labels, and review state.`,
           .describe("The number of the pull request to get the details for"),
       }),
       execute: async ({ integrationId, pull_number }) => {
+        const allowedPullRequestNumbers =
+          allowedPullRequestNumbersByIntegrationId?.get(integrationId);
+        if (
+          allowedPullRequestNumbers &&
+          !allowedPullRequestNumbers.has(pull_number)
+        ) {
+          throw new Error(
+            `Pull request #${String(pull_number)} is outside the selected item filter for integration ${integrationId}.`
+          );
+        }
+
         const resolved = await resolveIntegrationContext(integrationId);
         const octokit = createOctokit(resolved.token);
         const pullRequest = await withGitHubRateLimitHandling(() =>
@@ -299,6 +353,20 @@ export function createGetReleaseByTagTool(
     namespace: "github",
   });
   const resolveIntegrationContext = createIntegrationContextResolver(config);
+  const allowedReleaseTagsByIntegrationId = createAllowedStringLookup(
+    config?.allowedReleaseTagsByIntegrationId
+  );
+  const hasReleaseSelectionFilter =
+    config?.allowedReleaseTagsByIntegrationId !== undefined ||
+    config?.allowedReleaseTagsGlobal !== undefined;
+  const allowedReleaseTagsGlobal =
+    config?.allowedReleaseTagsGlobal !== undefined
+      ? new Set(
+          config.allowedReleaseTagsGlobal
+            .map((value) => value.trim().toLowerCase())
+            .filter((value) => value.length > 0)
+        )
+      : undefined;
 
   return cached(
     tool({
@@ -323,18 +391,55 @@ Returns release body (changelog), assets list, author, and timestamps.`,
           ),
       }),
       execute: async ({ integrationId, tag }) => {
+        const normalizedTag = tag.trim().toLowerCase();
+        const isLatestRequest = normalizedTag === "latest";
+        const allowedTagsForIntegration =
+          allowedReleaseTagsByIntegrationId?.get(integrationId);
+
+        if (hasReleaseSelectionFilter && !isLatestRequest) {
+          const isAllowedForIntegration =
+            allowedTagsForIntegration?.has(normalizedTag) ?? false;
+          const isAllowedGlobally =
+            allowedReleaseTagsGlobal?.has(normalizedTag) ?? false;
+
+          if (!isAllowedForIntegration && !isAllowedGlobally) {
+            throw new Error(
+              `Release tag "${tag}" is outside the selected item filter for integration ${integrationId}.`
+            );
+          }
+        }
+
         const resolved = await resolveIntegrationContext(integrationId);
         const octokit = createOctokit(resolved.token);
+
+        const endpoint = isLatestRequest
+          ? "GET /repos/{owner}/{repo}/releases/latest"
+          : "GET /repos/{owner}/{repo}/releases/tags/{tag}";
         const releases = await withGitHubRateLimitHandling(() =>
-          octokit.request("GET /repos/{owner}/{repo}/releases/tags/{tag}", {
+          octokit.request(endpoint, {
             owner: resolved.owner,
             repo: resolved.repo,
-            tag,
+            ...(isLatestRequest ? {} : { tag }),
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
             },
           })
         );
+
+        if (isLatestRequest && hasReleaseSelectionFilter) {
+          const resolvedTag = releases.data.tag_name.trim().toLowerCase();
+          const isAllowedForIntegration =
+            allowedTagsForIntegration?.has(resolvedTag) ?? false;
+          const isAllowedGlobally =
+            allowedReleaseTagsGlobal?.has(resolvedTag) ?? false;
+
+          if (!isAllowedForIntegration && !isAllowedGlobally) {
+            throw new Error(
+              `Latest release tag "${releases.data.tag_name}" is outside the selected item filter for integration ${integrationId}.`
+            );
+          }
+        }
+
         return {
           id: releases.data.id,
           tagName: releases.data.tag_name,
@@ -391,13 +496,21 @@ export function createGetCommitsByTimeframeTool(
     namespace: "github",
   });
   const resolveIntegrationContext = createIntegrationContextResolver(config);
+  const allowedCommitShas =
+    config?.allowedCommitShas !== undefined
+      ? new Set(
+          config.allowedCommitShas
+            .map((value) => value.trim().toLowerCase())
+            .filter((value) => value.length > 0)
+        )
+      : undefined;
 
   return cached(
     tool({
       description: toolDescription({
         toolName: "get_commits_by_timeframe",
         intro:
-          "Gets one paginated batch of commits from a repository within a specified number of days. Returns commit details plus pagination metadata.",
+          "Gets one paginated batch of commits from a repository within a specific timeframe. Returns commit details plus pagination metadata.",
         whenToUse:
           "When user asks about recent commits, wants to see what changed in the last week/month, or needs commit history for a time period.",
         usageNotes: `Use the timeframe requested in the prompt or user request.
@@ -413,26 +526,44 @@ Use this for activity summaries, changelog generation, or understanding recent c
           .min(1)
           .default(1)
           .describe("The page number to retrieve (starts at 1)"),
+        since: z
+          .string()
+          .datetime()
+          .optional()
+          .describe("UTC ISO timestamp for the start of the range"),
+        until: z
+          .string()
+          .datetime()
+          .optional()
+          .describe("UTC ISO timestamp for the end of the range"),
         days: z
           .number()
           .default(7)
-          .describe("How many days of commit history to retrieve"),
+          .optional()
+          .describe(
+            "Deprecated fallback. Prefer since/until timestamps for exact windows."
+          ),
       }),
-      execute: async ({ integrationId, days, page }) => {
+      execute: async ({ integrationId, days, page, since, until }) => {
         const resolved = await resolveIntegrationContext(integrationId);
 
         const octokit = createOctokit(resolved.token);
-        const since = getISODateFromDaysAgo(days);
-        // TODO: We need an actual todo date in the future to allow for more flexible timeframes
-        const until = new Date().toISOString();
+        const effectiveSince =
+          since ??
+          config?.enforcedCommitWindow?.since ??
+          getISODateFromDaysAgo(days ?? 7);
+        const effectiveUntil =
+          until ??
+          config?.enforcedCommitWindow?.until ??
+          new Date().toISOString();
         const response = await withGitHubRateLimitHandling(() =>
           octokit.request("GET /repos/{owner}/{repo}/commits", {
             owner: resolved.owner,
             repo: resolved.repo,
-            since,
+            since: effectiveSince,
             page,
             ...(resolved.defaultBranch ? { sha: resolved.defaultBranch } : {}),
-            until,
+            until: effectiveUntil,
             per_page: 100,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
@@ -441,21 +572,32 @@ Use this for activity summaries, changelog generation, or understanding recent c
         );
 
         const nextPage = getNextPageFromLinkHeader(response.headers?.link);
+        const allCommits = response.data.map((commit) => ({
+          sha: commit.sha,
+          message: commit.commit.message,
+          authorName:
+            commit.author?.login ?? commit.commit.author?.name ?? "unknown",
+          authoredAt: commit.commit.author?.date ?? null,
+          url: commit.html_url,
+        }));
+
+        const commits = allowedCommitShas
+          ? allCommits.filter((commit) =>
+              allowedCommitShas.has(commit.sha.trim().toLowerCase())
+            )
+          : allCommits;
+
+        const hasNextPage =
+          nextPage !== undefined &&
+          !(allowedCommitShas && commits.length === 0);
 
         return {
-          commits: response.data.map((commit) => ({
-            sha: commit.sha,
-            message: commit.commit.message,
-            authorName:
-              commit.author?.login ?? commit.commit.author?.name ?? "unknown",
-            authoredAt: commit.commit.author?.date ?? null,
-            url: commit.html_url,
-          })),
+          commits,
           pagination: {
             page,
             perPage: 100,
-            hasNextPage: nextPage !== undefined,
-            nextPage: nextPage ?? null,
+            hasNextPage,
+            nextPage: hasNextPage ? (nextPage ?? null) : null,
           },
         };
       },
@@ -465,14 +607,78 @@ Use this for activity summaries, changelog generation, or understanding recent c
       // still eliminating duplicate calls within a single agent run.
       ttl: 2 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { integrationId, days, page } = params as {
+        const { integrationId, since, until, days, page } = params as {
           integrationId: string;
-          days: number;
+          since?: string;
+          until?: string;
+          days?: number;
           page?: number;
         };
-
-        return `get_commits_by_timeframe:integration=${integrationId}:days=${String(days)}:page=${String(page ?? 1)}`;
+        const cacheSince =
+          since ?? config?.enforcedCommitWindow?.since ?? "auto";
+        const cacheUntil =
+          until ?? config?.enforcedCommitWindow?.until ?? "auto";
+        return `get_commits_by_timeframe:integration=${integrationId}:since=${cacheSince}:until=${cacheUntil}:days=${String(days ?? "none")}:page=${String(page ?? 1)}`;
       },
     }
   );
+}
+
+interface BuildGitHubDataToolsOptions {
+  organizationId: string;
+  allowedIntegrationIds: string[];
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: CommitWindow;
+}
+
+export function buildGitHubDataTools(
+  options: BuildGitHubDataToolsOptions
+): Record<string, Tool> {
+  const {
+    organizationId,
+    allowedIntegrationIds,
+    dataPointSettings,
+    selectionFilters,
+    commitWindow,
+  } = options;
+
+  const includePullRequests = dataPointSettings?.includePullRequests !== false;
+  const includeCommits = dataPointSettings?.includeCommits !== false;
+  const includeReleases = dataPointSettings?.includeReleases !== false;
+
+  return {
+    ...(includePullRequests
+      ? {
+          getPullRequests: createGetPullRequestsTool({
+            organizationId,
+            allowedIntegrationIds,
+            allowedPullRequestNumbersByIntegrationId:
+              selectionFilters?.allowedPullRequestNumbersByIntegrationId,
+          }),
+        }
+      : {}),
+    ...(includeReleases
+      ? {
+          getReleaseByTag: createGetReleaseByTagTool({
+            organizationId,
+            allowedIntegrationIds,
+            allowedReleaseTagsByIntegrationId:
+              selectionFilters?.allowedReleaseTagsByIntegrationId,
+            allowedReleaseTagsGlobal:
+              selectionFilters?.allowedReleaseTagsGlobal,
+          }),
+        }
+      : {}),
+    ...(includeCommits
+      ? {
+          getCommitsByTimeframe: createGetCommitsByTimeframeTool({
+            organizationId,
+            allowedIntegrationIds,
+            allowedCommitShas: selectionFilters?.allowedCommitShas,
+            enforcedCommitWindow: commitWindow,
+          }),
+        }
+      : {}),
+  };
 }

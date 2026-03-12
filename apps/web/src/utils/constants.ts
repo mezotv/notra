@@ -29,19 +29,18 @@ export const PRICING_PLANS = {
   pro: {
     name: "Pro",
     description: "For growing teams that need more power.",
-    pricing: { monthly: 29, annually: 24 },
+    pricing: { monthly: 50, annually: 500 },
     cta: {
-      label: "Start 7-day trial",
+      label: "Get started",
       href: "https://app.usenotra.com/signup",
     },
     features: [
-      "10 team members",
-      "500 AI Credits per month",
-      "10 workflows",
-      "5 integrations",
-      "100 references",
+      "5 team members",
+      "Unlimited workflows",
+      "Unlimited integrations",
       "30 Days Log Retention",
-      "Analytics",
+      { label: "100 references", subtitle: "then $0.05 per reference / mo" },
+      { label: "100 AI Credits", subtitle: "then $0.01 per credit / mo" },
     ],
   },
   enterprise: {
@@ -56,21 +55,25 @@ export const PRICING_PLANS = {
       "Custom integrations",
       "Unlimited references",
       "Unlimited Log Retention",
-      "Advanced Analytics",
       "Dedicated Support",
     ],
   },
 } as const;
 
-export const FEATURES_TABLE = [
+const FEATURES_TABLE = [
   {
     category: "Workflows",
     items: [
-      { name: "Workflows", free: "3", pro: "10", enterprise: "Unlimited" },
+      {
+        name: "Workflows",
+        free: "3",
+        pro: "Unlimited",
+        enterprise: "Unlimited",
+      },
       {
         name: "AI Credits",
         free: "15 / month",
-        pro: "500 / month",
+        pro: "100 / month",
         enterprise: "Unlimited",
       },
     ],
@@ -81,13 +84,13 @@ export const FEATURES_TABLE = [
       {
         name: "Team members",
         free: "2",
-        pro: "10",
+        pro: "5",
         enterprise: "Unlimited",
       },
       {
         name: "Integrations",
         free: "2",
-        pro: "5",
+        pro: "Unlimited",
         enterprise: "Custom",
       },
       {
@@ -106,18 +109,6 @@ export const FEATURES_TABLE = [
         free: "7 Days",
         pro: "30 Days",
         enterprise: "Unlimited",
-      },
-      {
-        name: "Analytics",
-        free: false,
-        pro: true,
-        enterprise: true,
-      },
-      {
-        name: "Advanced analytics",
-        free: false,
-        pro: false,
-        enterprise: true,
       },
     ],
   },

@@ -6,6 +6,7 @@ import {
 } from "ai";
 import { createModel } from "@/lib/ai/model";
 import { getContentEditorChatPrompt } from "@/lib/ai/prompts/content-editor";
+import { getAISDKTelemetry } from "@/lib/ai/telemetry";
 import type {
   OrchestrateInput,
   OrchestrateResult,
@@ -72,6 +73,10 @@ export async function orchestrateChat(
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: stepCountIs(maxSteps),
+    experimental_telemetry: getAISDKTelemetry("orchestrateChat", {
+      agent: "chat",
+      feature: "content_editor",
+    }),
     onError({ error }) {
       console.error("[Chat Stream Error]", {
         organizationId,

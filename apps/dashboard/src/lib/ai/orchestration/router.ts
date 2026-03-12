@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { gateway } from "@/lib/ai/gateway";
 import { ROUTING_PROMPT } from "@/lib/ai/prompts/router";
+import { getAISDKTelemetry } from "@/lib/ai/telemetry";
 import { routingDecisionSchema } from "@/schemas/ai/orchestration";
 import type { RoutingDecision, RoutingResult } from "@/types/ai/orchestration";
 
@@ -24,6 +25,10 @@ export async function routeMessage(
     model: routerModel,
     output: Output.object({ schema: routingDecisionSchema }),
     system: ROUTING_PROMPT,
+    experimental_telemetry: getAISDKTelemetry("routeMessage", {
+      agent: "router",
+      feature: "chat_routing",
+    }),
     prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,

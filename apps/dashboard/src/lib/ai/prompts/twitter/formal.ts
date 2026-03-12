@@ -27,6 +27,7 @@ export function getFormalTwitterPrompt(): string {
     - Never use em or en dashes.
     - Prioritize clarity, consequences, and decisions.
     - Focus on one core insight or announcement.
+    - Meaningful bug fixes can be the core of the tweet when they clearly improve user experience, reliability, security, performance, or developer workflows. Skip bug fixes that feel internal-only.
     - Aim for 100-250 characters. Shorter tweets get more engagement.
 
     Anti-AI writing rules (CRITICAL):

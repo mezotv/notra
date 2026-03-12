@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import {
   getGitHubIntegrationById,
   getRepositoryById,
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const validation = webhookParamsWithRepoSchema.safeParse(rawParams);
   if (!validation.success) {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Invalid webhook parameters",
         details: validation.error.issues,
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
   const fetcher = INTEGRATION_FETCHERS[provider];
   if (!fetcher) {
-    return NextResponse.json(
+    return Response.json(
       { error: `Provider ${provider} is not yet supported` },
       { status: 501 }
     );
@@ -75,21 +75,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const integration = await fetcher(integrationId);
 
     if (!integration) {
-      return NextResponse.json(
-        { error: "Integration not found" },
-        { status: 404 }
-      );
+      return Response.json({ error: "Integration not found" }, { status: 404 });
     }
 
     if (integration.organizationId !== organizationId) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Integration does not belong to this organization" },
         { status: 403 }
       );
     }
 
     if (!integration.enabled) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Integration is disabled" },
         { status: 403 }
       );
@@ -98,14 +95,11 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     // Verify repository belongs to this integration
     const repository = await getRepositoryById(repositoryId);
     if (!repository) {
-      return NextResponse.json(
-        { error: "Repository not found" },
-        { status: 404 }
-      );
+      return Response.json({ error: "Repository not found" }, { status: 404 });
     }
 
     if (repository.integration.id !== integrationId) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Repository does not belong to this integration" },
         { status: 403 }
       );
@@ -113,7 +107,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const handler = WEBHOOK_HANDLERS[provider];
     if (!handler) {
-      return NextResponse.json(
+      return Response.json(
         { error: `Webhook handler for ${provider} is not yet implemented` },
         { status: 501 }
       );
@@ -130,23 +124,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       rawBody,
     };
 
-    const result = await handler(context);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.message ?? "Webhook processing failed" },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      received: true,
-      message: result.message,
-      data: result.data,
-    });
+    return await handler(context);
   } catch (error) {
     console.error("Webhook processing error:", error);
-    return NextResponse.json(
+    return Response.json(
       { error: "Internal server error processing webhook" },
       { status: 500 }
     );

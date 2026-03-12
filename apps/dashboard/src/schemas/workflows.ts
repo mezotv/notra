@@ -1,5 +1,10 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import {
+  contentDataPointSettingsSchema,
+  onDemandContentTypeSchema,
+  selectedItemsSchema,
+} from "./content";
 import { LOOKBACK_WINDOWS, triggerOutputConfigSchema } from "./integrations";
 
 export const generateChangelogBodySchema = z.object({
@@ -12,6 +17,22 @@ export const scheduleWorkflowPayloadSchema = z.object({
   triggerId: z.string().min(1),
   manual: z.boolean().optional().default(false),
 });
+
+export const onDemandContentWorkflowPayloadSchema = z.object({
+  organizationId: z.string().min(1),
+  runId: z.string().min(1),
+  contentType: onDemandContentTypeSchema,
+  lookbackWindow: z.enum(LOOKBACK_WINDOWS),
+  repositoryIds: z.array(z.string().min(1)).optional(),
+  brandVoiceId: z.string().min(1).optional(),
+  dataPoints: contentDataPointSettingsSchema,
+  selectedItems: selectedItemsSchema.optional(),
+  aiCreditReserved: z.boolean(),
+});
+
+export type OnDemandContentWorkflowPayload = z.infer<
+  typeof onDemandContentWorkflowPayloadSchema
+>;
 
 export type ScheduleWorkflowPayload = z.infer<
   typeof scheduleWorkflowPayloadSchema

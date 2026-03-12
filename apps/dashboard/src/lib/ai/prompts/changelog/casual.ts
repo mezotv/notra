@@ -24,6 +24,7 @@ export function getCasualChangelogPrompt(): string {
     - For every candidate item, evaluate whether it is internal-only or meaningfully relevant to <target-audience>.
     - CRITICAL: If an item is not worth mentioning for <target-audience>, omit it entirely. Do not include it in Highlights or More Updates.
     - Internal-only maintenance work (small refactors, formatting, lint-only changes, dependency churn, test-only updates, routine infra chores) should be omitted unless there is a clear external impact on reliability, security, performance, compatibility, or user outcomes.
+    - Meaningful bug fixes are valid changelog content when they clearly improve user experience, reliability, security, performance, compatibility, or developer workflows. Omit bug fixes that seem internal-only.
     - When relevance is uncertain, prefer omission over weak filler.
     - Treat the provided lookback window as the source of truth.
     - Do not invent an alternative default window.
@@ -35,7 +36,7 @@ export function getCasualChangelogPrompt(): string {
     - If there are fewer than five genuinely high-impact changes, include fewer highlights (4, 3, 2, or 1). Do not add low-impact items just to reach five.
     - Do not number highlight items.
     - Do not name the section "Top 5".
-    - Keep each highlight item clean: title + short description only.
+    - Keep each highlight item clean: title + short, concise description only. One sentence is ideal; two sentences maximum. Do not over-explain.
     - Exclude low-signal PRs from Highlights (small refactors, dependency churn, wording tweaks, minor guardrail cleanups without clear external impact).
     - Keep every PR listed exactly once in either Highlights or More Updates.
     - Keep the Summary strictly between 120 and 180 words.
@@ -56,9 +57,9 @@ export function getCasualChangelogPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
-    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
+    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing. Prefer exact since/until timestamps from the provided lookback window.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
-    - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
+    - Call getCommitsByTimeframe for each listed source repository using the exact lookback range before drafting Highlights.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.
@@ -75,19 +76,19 @@ export function getCasualChangelogPrompt(): string {
     ## Highlights
 
     ### Cache component support with actionable error guidance
-    Runtime guardrails now catch unsupported auth calls in cached contexts and provide clear migration guidance with the correct usage pattern.
+    Unsupported auth calls in cached contexts now surface clear migration guidance.
 
     ### Email link verification for signup flows
-    Signup verification now supports secure email-link completion flows with clear status handling for expiration and mismatch cases.
+    Signup verification supports secure email-link flows with expiration and mismatch handling.
 
     ### Async initial state support for modern React apps
-    Initial auth state can resolve asynchronously at hook usage points, reducing root layout complexity and keeping top-level rendering predictable.
+    Auth state resolves asynchronously at hook level, simplifying root layouts.
 
     ### Bulk waitlist creation in one API call
-    Backend workflows can now create multiple waitlist entries in a single request for imports, sync jobs, and replay scenarios.
+    Multiple waitlist entries can be created in a single request for imports and sync jobs.
 
     ### Cross-browser polished scrollbar styling
-    UI scrollbar behavior and visual treatment are now consistent across major browsers with slimmer rails and theme-aware states.
+    Scrollbar visuals are now consistent across browsers with slimmer rails and theme-aware states.
 
     ## More Updates
 
@@ -139,7 +140,7 @@ export function getCasualChangelogPrompt(): string {
     - Do not use a "Top 5" heading
     - For each highlight item, use this exact clean format:
       ### [Short change title]
-      [Short description of what happened and why it matters]
+      [One concise sentence describing what changed and why it matters]
     - A More Updates section
     - Categorize remaining items under: Security, Features & Enhancements, Bug Fixes, Performance Improvements, Infrastructure, Internal Changes, Testing, Documentation
     - Under each category in More Updates, use bullet points only (no paragraphs)

@@ -31,6 +31,7 @@ export function usePosts(organizationId: string) {
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load content" },
   });
 }
 
@@ -60,5 +61,6 @@ export function useTodayPosts(organizationId: string) {
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load today's content" },
   });
 }

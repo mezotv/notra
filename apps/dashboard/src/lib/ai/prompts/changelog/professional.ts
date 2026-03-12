@@ -24,6 +24,7 @@ export function getProfessionalChangelogPrompt(): string {
     - For every candidate item, evaluate whether it is internal-only or meaningfully relevant to <target-audience>.
     - CRITICAL: If an item is not worth mentioning for <target-audience>, omit it entirely. Do not include it in Highlights or More Updates.
     - Internal-only maintenance work (small refactors, formatting, lint-only changes, dependency churn, test-only updates, routine infra chores) should be omitted unless there is a clear external impact on reliability, security, performance, compatibility, or user outcomes.
+    - Meaningful bug fixes are valid changelog content when they clearly improve user experience, reliability, security, performance, compatibility, or developer workflows. Omit bug fixes that seem internal-only.
     - When relevance is uncertain, prefer omission over weak filler.
     - Treat the provided lookback window as the source of truth.
     - Do not invent an alternative default window.
@@ -56,9 +57,9 @@ export function getProfessionalChangelogPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
-    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
+    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing. Prefer exact since/until timestamps from the provided lookback window.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
-    - When the lookback window is 7 days, call getCommitsByTimeframe for each listed source repository before drafting Highlights.
+    - Call getCommitsByTimeframe for each listed source repository using the exact lookback range before drafting Highlights.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.

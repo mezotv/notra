@@ -426,6 +426,9 @@ export interface PostSourceMetadata {
   eventAction?: string;
   brandVoiceName?: string;
   brandVoiceId?: string;
+  selectedCommitShas?: string[];
+  selectedPullRequests?: Array<{ repositoryId: string; number: number }>;
+  selectedReleases?: Array<{ repositoryId: string; tagName: string }>;
 }
 
 export const usersRelations = relations(users, ({ many }) => ({

@@ -7,6 +7,14 @@ import type {
   LinkedInTonePromptInput,
   TwitterTonePromptInput,
 } from "./prompts";
+import type { CommitWindow, GitHubSelectionFilters } from "./tools";
+
+export interface AgentDataPointSettings {
+  includePullRequests?: boolean;
+  includeCommits?: boolean;
+  includeReleases?: boolean;
+  includeLinearIssues?: boolean;
+}
 
 export interface ChangelogAgentResult {
   postId: string;
@@ -26,6 +34,9 @@ export interface ChangelogAgentOptions {
   tone?: ToneProfile;
   promptInput: ChangelogTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: CommitWindow;
 }
 
 export interface LinkedInAgentResult {
@@ -46,6 +57,9 @@ export interface LinkedInAgentOptions {
   tone?: ToneProfile;
   promptInput: LinkedInTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: CommitWindow;
 }
 
 export interface TwitterAgentResult {
@@ -66,6 +80,9 @@ export interface TwitterAgentOptions {
   tone?: ToneProfile;
   promptInput: TwitterTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: CommitWindow;
 }
 
 export interface BlogPostAgentResult {
@@ -85,6 +102,9 @@ export interface BlogPostAgentOptions {
   tone?: ToneProfile;
   promptInput: BlogPostTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: CommitWindow;
 }
 
 export interface ChatAgentContext {

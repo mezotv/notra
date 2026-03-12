@@ -50,6 +50,7 @@ export const ContentActivityCard = () => {
       return response.json();
     },
     enabled: Boolean(organizationId),
+    meta: { errorMessage: "Failed to load content activity" },
   });
 
   if (isPending) {

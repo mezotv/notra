@@ -36,6 +36,7 @@ export function useActiveGenerations(organizationId: string) {
       return res.json();
     },
     enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load active generations" },
     refetchInterval: (query) => {
       const data = query.state.data;
       if (data && data.generations.length > 0) {

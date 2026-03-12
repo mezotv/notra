@@ -1,10 +1,10 @@
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
-import type { WebhookContext, WebhookResult } from "@/types/webhooks/webhooks";
+import type { WebhookContext } from "@/types/webhooks/webhooks";
 
 export async function handleLinearWebhook(
   context: WebhookContext
-): Promise<WebhookResult> {
+): Promise<Response> {
   const { request, rawBody: _rawBody, organizationId, integrationId } = context;
 
   const signature = request.headers.get("linear-signature");
@@ -21,10 +21,10 @@ export async function handleLinearWebhook(
       errorMessage: "Missing Linear-Signature header",
     });
 
-    return {
-      success: false,
-      message: "Missing Linear-Signature header",
-    };
+    return Response.json(
+      { error: "Missing Linear-Signature header" },
+      { status: 400 }
+    );
   }
 
   const logRetentionDays = await checkLogRetention(organizationId);
@@ -41,11 +41,5 @@ export async function handleLinearWebhook(
     retentionDays: logRetentionDays,
   });
 
-  return {
-    success: true,
-    message: "Received Linear webhook",
-    data: {
-      hasSignature: true,
-    },
-  };
+  return Response.json({ message: "Received Linear webhook" });
 }

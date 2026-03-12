@@ -11,15 +11,9 @@ export interface WebhookContext {
   rawBody: string;
 }
 
-export interface WebhookResult {
-  success: boolean;
-  message?: string;
-  data?: unknown;
-}
-
 export type WebhookHandler = (
   context: WebhookContext
-) => WebhookResult | Promise<WebhookResult>;
+) => Response | Promise<Response>;
 
 export type WebhookLogStatus = "success" | "failed" | "pending";
 

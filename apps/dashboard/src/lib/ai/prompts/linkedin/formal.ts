@@ -30,6 +30,7 @@ export function getFormalLinkedInPrompt(): string {
     - Structure: Hook, Insight/Story, Lesson, Takeaway.
     - Keep one core idea, max two supporting updates.
     - Prioritize clarity, consequences, and decisions.
+    - Meaningful bug fixes can be the core of the post when they clearly improve user experience, reliability, security, performance, or developer workflows. Skip bug fixes that feel internal-only.
     - Treat lookback window as source of truth.
     - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no post could be generated.
 
@@ -43,7 +44,7 @@ export function getFormalLinkedInPrompt(): string {
     - Use getPullRequests when PR context is incomplete.
     - Use getReleaseByTag for release context.
     - Use getCommitsByTimeframe for technical accuracy.
-    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
+    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing. Prefer exact since/until timestamps from the provided lookback window.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - Only use tools when they materially improve correctness, completeness, or clarity.
     - Before final output, you MUST call listAvailableSkills.
@@ -72,8 +73,6 @@ export function getFormalLinkedInPrompt(): string {
     This release reflects our continued commitment to developer productivity and platform reliability. We anticipate these improvements will contribute measurably to our customers' development velocity.
 
     Additional platform enhancements are scheduled for the coming quarter.
-
-    #EnterpriseSoftware #DeveloperPlatform #Engineering
     </example>
 
     <bad-example>

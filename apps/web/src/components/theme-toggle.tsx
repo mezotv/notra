@@ -22,7 +22,13 @@ export function ThemeToggle() {
 
   return (
     <Button
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={
+        mounted
+          ? isDark
+            ? "Switch to light mode"
+            : "Switch to dark mode"
+          : "Toggle theme"
+      }
       className="h-9 w-9 rounded-lg p-0 text-foreground"
       onClick={handleToggle}
       type="button"

@@ -46,7 +46,6 @@ import {
 } from "@/lib/workflows/shared/parsing";
 import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
-
 import {
   type ScheduleWorkflowPayload,
   scheduleWorkflowPayloadSchema,
@@ -334,6 +333,10 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             tone,
             promptInput,
             sourceMetadata,
+            commitWindow: {
+              since: lookbackRange.start.toISOString(),
+              until: lookbackRange.end.toISOString(),
+            },
             voiceId: brand?.id,
           });
         }

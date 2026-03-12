@@ -153,7 +153,8 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       })),
       nextCursor,
     });
-  } catch {
+  } catch (err) {
+    console.log(err);
     return NextResponse.json(
       { error: "Failed to fetch posts" },
       { status: 500 }

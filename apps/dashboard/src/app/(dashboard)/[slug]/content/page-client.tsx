@@ -4,6 +4,8 @@ import {
   ArrowDown01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
+  LayoutGridIcon,
+  ListViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
@@ -23,7 +25,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { LayoutGrid, List, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -32,6 +33,7 @@ import {
 } from "@/components/content/content-card";
 import { ContentRowActions } from "@/components/content/content-row-actions";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
+import { CreateContentDialog } from "@/components/content/create-content-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -221,7 +223,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                       size="icon-sm"
                       variant="outline"
                     >
-                      <LayoutGrid className="size-4" />
+                      <HugeiconsIcon className="size-4" icon={LayoutGridIcon} />
                     </Button>
                   }
                 />
@@ -240,24 +242,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                       size="icon-sm"
                       variant="outline"
                     >
-                      <List className="size-4" />
+                      <HugeiconsIcon className="size-4" icon={ListViewIcon} />
                     </Button>
                   }
                 />
                 <TooltipContent>Table view</TooltipContent>
               </Tooltip>
             </ButtonGroup>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button disabled size="sm">
-                    <Plus className="size-4" />
-                    Create Content
-                  </Button>
-                }
-              />
-              <TooltipContent>Coming Soon</TooltipContent>
-            </Tooltip>
+            <CreateContentDialog organizationId={organizationId} />
           </div>
         </div>
         {isPending && <ContentPageSkeleton />}

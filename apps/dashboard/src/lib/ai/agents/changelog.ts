@@ -5,12 +5,9 @@ import { getConversationalChangelogPrompt } from "@/lib/ai/prompts/changelog/con
 import { getFormalChangelogPrompt } from "@/lib/ai/prompts/changelog/formal";
 import { getProfessionalChangelogPrompt } from "@/lib/ai/prompts/changelog/professional";
 import { getChangelogUserPrompt } from "@/lib/ai/prompts/changelog/user";
+import { getAISDKTelemetry } from "@/lib/ai/telemetry";
 import { createGetBrandReferencesTool } from "@/lib/ai/tools/brand-references";
-import {
-  createGetCommitsByTimeframeTool,
-  createGetPullRequestsTool,
-  createGetReleaseByTagTool,
-} from "@/lib/ai/tools/github";
+import { buildGitHubDataTools } from "@/lib/ai/tools/github";
 import {
   createCreatePostTool,
   createFailTool,
@@ -42,6 +39,9 @@ export async function generateChangelog(
     tone = "Conversational",
     promptInput,
     sourceMetadata,
+    dataPointSettings,
+    selectionFilters,
+    commitWindow,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -72,6 +72,10 @@ export async function generateChangelog(
 
   const agent = new ToolLoopAgent({
     model,
+    experimental_telemetry: getAISDKTelemetry("generateChangelog", {
+      agent: "changelog",
+      contentType: "changelog",
+    }),
     providerOptions: {
       anthropic: {
         thinking: { type: "enabled", budgetTokens: 2500 },
@@ -83,17 +87,12 @@ export async function generateChangelog(
         voiceId,
         agentType: "changelog",
       }),
-      getPullRequests: createGetPullRequestsTool({
+      ...buildGitHubDataTools({
         organizationId,
         allowedIntegrationIds,
-      }),
-      getReleaseByTag: createGetReleaseByTagTool({
-        organizationId,
-        allowedIntegrationIds,
-      }),
-      getCommitsByTimeframe: createGetCommitsByTimeframeTool({
-        organizationId,
-        allowedIntegrationIds,
+        dataPointSettings,
+        selectionFilters,
+        commitWindow,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),

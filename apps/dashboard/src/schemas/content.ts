@@ -1,5 +1,9 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import {
+  LOOKBACK_WINDOWS,
+  SUPPORTED_SCHEDULE_OUTPUT_TYPES,
+} from "./integrations";
 
 export const contentTypeSchema = z.enum([
   "changelog",
@@ -23,6 +27,13 @@ export const sourceMetadataSchema = z
     lookbackRange: z.object({ start: z.string(), end: z.string() }),
     brandVoiceName: z.string().optional(),
     brandVoiceId: z.string().optional(),
+    selectedCommitShas: z.array(z.string()).optional(),
+    selectedPullRequests: z
+      .array(z.object({ repositoryId: z.string(), number: z.number() }))
+      .optional(),
+    selectedReleases: z
+      .array(z.object({ repositoryId: z.string(), tagName: z.string() }))
+      .optional(),
   })
   .nullable()
   .optional();
@@ -118,3 +129,57 @@ export const updateContentSchema = z
   );
 
 export type UpdateContentInput = z.infer<typeof updateContentSchema>;
+
+export const onDemandContentTypeSchema = z.enum(
+  SUPPORTED_SCHEDULE_OUTPUT_TYPES
+);
+export type OnDemandContentType = z.infer<typeof onDemandContentTypeSchema>;
+
+export const contentDataPointSettingsSchema = z.object({
+  includePullRequests: z.boolean().default(true),
+  includeCommits: z.boolean().default(true),
+  includeReleases: z.boolean().default(true),
+  includeLinearIssues: z.boolean().default(false),
+});
+
+export type ContentDataPointSettings = z.infer<
+  typeof contentDataPointSettingsSchema
+>;
+
+export const selectedItemsSchema = z.object({
+  commitShas: z.array(z.string()).optional(),
+  pullRequestNumbers: z
+    .array(
+      z.object({
+        repositoryId: z.string(),
+        number: z.number(),
+      })
+    )
+    .optional(),
+  releaseTagNames: z
+    .array(
+      z.union([
+        z.string(),
+        z.object({
+          repositoryId: z.string(),
+          tagName: z.string(),
+        }),
+      ])
+    )
+    .optional(),
+});
+
+export type SelectedItems = z.infer<typeof selectedItemsSchema> | undefined;
+
+export const createOnDemandContentSchema = z.object({
+  contentType: onDemandContentTypeSchema,
+  lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
+  brandVoiceId: z.string().min(1).optional(),
+  repositoryIds: z.array(z.string().min(1)).optional(),
+  dataPoints: contentDataPointSettingsSchema.prefault({}),
+  selectedItems: selectedItemsSchema.optional(),
+});
+
+export type CreateOnDemandContentInput = z.infer<
+  typeof createOnDemandContentSchema
+>;

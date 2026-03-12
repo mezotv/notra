@@ -295,6 +295,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
     onSuccess: () => {
       toast.success("Schedule triggered! Content will be generated shortly.");
+      if (organizationId) {
+        const key = QUERY_KEYS.ACTIVE_GENERATIONS.list(organizationId);
+        queryClient.invalidateQueries({ queryKey: key });
+        setTimeout(
+          () => queryClient.invalidateQueries({ queryKey: key }),
+          5000
+        );
+      }
     },
     onError: (error) => {
       toast.error(

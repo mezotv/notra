@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import * as z from "zod";
 import { SUPPORTED_LANGUAGES } from "@/constants/languages";
 import { gateway } from "@/lib/ai/gateway";
+import { getAISDKTelemetry } from "@/lib/ai/telemetry";
 import { getFirecrawlClient } from "@/lib/firecrawl";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
@@ -195,6 +196,10 @@ export const { POST } = serve<BrandAnalysisPayload>(
           const { output } = await generateText({
             model: gateway("anthropic/claude-haiku-4.5"),
             output: Output.object({ schema: brandSettingsSchema }),
+            experimental_telemetry: getAISDKTelemetry("extractBrandInfo", {
+              workflow: "brand_analysis",
+              route: "api/workflows/brand-analysis",
+            }),
             prompt: `Analyze this website content and extract brand identity information.
 
 Website content:

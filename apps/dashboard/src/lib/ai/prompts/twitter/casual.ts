@@ -26,6 +26,7 @@ export function getCasualTwitterPrompt(): string {
     - Output plain text only.
     - Never use em or en dashes.
     - Keep voice relatable, direct, and clear.
+    - Meaningful bug fixes can be the core of the tweet when they clearly improve user experience, reliability, security, performance, or developer workflows. Skip bug fixes that feel internal-only.
     - Focus on one core insight or announcement.
     - Aim for 100-250 characters. Shorter tweets get more engagement.
 

@@ -3,15 +3,28 @@
 import { Databuddy } from "@databuddy/sdk/react";
 import { Toaster } from "@notra/ui/components/ui/sonner";
 import { TooltipProvider } from "@notra/ui/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AutumnProvider } from "autumn-js/react";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { toast } from "sonner";
 
 const databuddyClientID = process.env.NEXT_PUBLIC_DATABUDDY_CLIENT_ID;
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (_error, query) => {
+      const message = query.meta?.errorMessage;
+      if (typeof message === "string") {
+        toast.error(message);
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,

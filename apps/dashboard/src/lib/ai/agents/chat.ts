@@ -1,6 +1,7 @@
 import { stepCountIs, ToolLoopAgent } from "ai";
 import { createModel } from "@/lib/ai/model";
 import { routeMessage, selectModel } from "@/lib/ai/orchestration/router";
+import { getAISDKTelemetry } from "@/lib/ai/telemetry";
 import { createMarkdownTools } from "@/lib/ai/tools/edit-markdown";
 import { getSkillByName, listAvailableSkills } from "@/lib/ai/tools/skills";
 import type { ChatAgentContext } from "@/types/ai/agents";
@@ -30,6 +31,10 @@ export async function createChatAgent(
 
   return new ToolLoopAgent({
     model: modelWithMemory,
+    experimental_telemetry: getAISDKTelemetry("createChatAgent", {
+      agent: "chat",
+      feature: "markdown_editor",
+    }),
     tools: {
       getMarkdown,
       editMarkdown,
