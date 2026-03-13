@@ -42,8 +42,11 @@ contentRoutes.get("/:organizationId/posts", async (c) => {
   }
 
   const url = new URL(c.req.url);
-  url.pathname = url.pathname.replace(ORGANIZATION_POSTS_PATH_REGEX, "/posts");
-  return c.redirect(url.toString(), 308);
+  const canonicalPath = url.pathname.replace(
+    ORGANIZATION_POSTS_PATH_REGEX,
+    "/posts"
+  );
+  return c.redirect(`${canonicalPath}${url.search}`, 308);
 });
 
 contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
@@ -62,11 +65,11 @@ contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
   }
 
   const url = new URL(c.req.url);
-  url.pathname = url.pathname.replace(
+  const canonicalPath = url.pathname.replace(
     ORGANIZATION_POST_PATH_REGEX,
     `/posts/${postId}`
   );
-  return c.redirect(url.toString(), 308);
+  return c.redirect(`${canonicalPath}${url.search}`, 308);
 });
 
 const getPostsRoute = createRoute({
