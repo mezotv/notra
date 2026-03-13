@@ -16,6 +16,7 @@ const DEFAULT_POST_LIMIT = 100;
 const FALLBACK_EXCERPT =
   "Product updates, fixes, and shipped improvements from the Notra team.";
 const SLUG_DELIMITER = "--";
+const BLOCK_SEPARATOR_REGEX = /\n\s*\n/;
 
 function getNotraChangelogConfig() {
   return {
@@ -50,7 +51,7 @@ function stripMarkdownFormatting(value: string) {
 
 function getPostExcerpt(markdown: string) {
   const blocks = markdown
-    .split(/\n\s*\n/)
+    .split(BLOCK_SEPARATOR_REGEX)
     .map((block) => block.trim())
     .filter(Boolean);
 
