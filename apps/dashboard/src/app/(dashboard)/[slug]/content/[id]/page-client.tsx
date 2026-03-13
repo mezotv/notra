@@ -269,12 +269,17 @@ export default function PageClient({
       toast.success(
         newStatus === "published" ? "Post published" : "Post moved to drafts"
       );
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.CONTENT.detail(organizationId, contentId),
-      });
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.POSTS.list(organizationId),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CONTENT.detail(organizationId, contentId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.POSTS.list(organizationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.POSTS.today(organizationId),
+        }),
+      ]);
     } catch {
       toast.error("Failed to update post status");
     } finally {
@@ -588,9 +593,7 @@ export default function PageClient({
               </Badge>
               <Badge
                 className="capitalize"
-                variant={
-                  content.status === "published" ? "default" : "outline"
-                }
+                variant={content.status === "published" ? "default" : "outline"}
               >
                 {content.status}
               </Badge>
