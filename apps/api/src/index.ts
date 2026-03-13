@@ -69,4 +69,7 @@ app.doc31("/openapi.json", (_c) => ({
   ],
 }));
 
-export default app;
+export default {
+  port: process.env.PORT ?? 3000,
+  fetch: app.fetch,
+};
