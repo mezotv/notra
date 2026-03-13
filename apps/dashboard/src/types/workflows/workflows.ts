@@ -9,7 +9,7 @@ export interface WorkflowTriggerData {
   outputType: string;
   outputConfig: unknown;
   enabled: boolean;
-  autoPublish?: boolean;
+  autoPublish: boolean;
 }
 
 export interface WorkflowRepositoryData {
