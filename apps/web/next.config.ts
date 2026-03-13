@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
         destination: "/markdown",
       },
       {
-        source: "/changelog",
+        source: "/changelog/notra",
         destination: "/changelog/markdown",
         has: [
           {
@@ -49,8 +49,8 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/changelog/:slug",
-        destination: "/changelog/:slug/markdown",
+        source: "/changelog/notra/:slug",
+        destination: "/changelog/notra/:slug/markdown",
         has: [
           {
             type: "header",
@@ -64,8 +64,8 @@ const nextConfig: NextConfig = {
         destination: "/changelog/markdown",
       },
       {
-        source: "/changelog/:slug.md",
-        destination: "/changelog/:slug/markdown",
+        source: "/changelog/notra/:slug.md",
+        destination: "/changelog/notra/:slug/markdown",
       },
     ],
     afterFiles: [],
@@ -73,13 +73,18 @@ const nextConfig: NextConfig = {
   }),
   redirects: async () => [
     ...SHOWCASE_COMPANY_SLUGS.map((slug) => ({
-      source: `/changelog/${slug}`,
-      destination: `/showcase/${slug}`,
+      source: `/showcase/${slug}`,
+      destination: `/changelog/${slug}`,
       permanent: true,
     })),
     {
-      source: "/changelog/:name/:slug",
-      destination: "/showcase/:name/:slug",
+      source: "/showcase/:name/:slug",
+      destination: "/changelog/:name/:slug",
+      permanent: true,
+    },
+    {
+      source: "/showcase",
+      destination: "/changelog",
       permanent: true,
     },
     {

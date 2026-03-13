@@ -8,14 +8,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changelog
       .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
       .map((entry) => ({
-        url: `https://www.usenotra.com/showcase/${company.slug}/${getShowcaseEntrySlug(entry.info.path)}`,
+        url: `https://www.usenotra.com/changelog/${company.slug}/${getShowcaseEntrySlug(entry.info.path)}`,
         lastModified: new Date(entry.date),
       }))
   );
 
   const notraChangelogEntries = (await listNotraChangelogPosts()).map(
     (post) => ({
-      url: `https://www.usenotra.com/changelog/${post.slug}`,
+      url: `https://www.usenotra.com/changelog/notra/${post.slug}`,
       lastModified: new Date(post.updatedAt),
     })
   );
@@ -46,11 +46,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
     },
     {
-      url: "https://www.usenotra.com/showcase",
+      url: "https://www.usenotra.com/changelog/notra",
       lastModified: new Date(),
     },
     ...SHOWCASE_COMPANIES.map((company) => ({
-      url: `https://www.usenotra.com/showcase/${company.slug}`,
+      url: `https://www.usenotra.com/changelog/${company.slug}`,
       lastModified: new Date(),
     })),
     ...showcaseEntries,

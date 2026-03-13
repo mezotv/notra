@@ -29,7 +29,7 @@ export async function generateMetadata({
 
   const title = { absolute: `${company.name} Changelog` };
   const description = `${company.description} See AI-generated changelogs powered by Notra.`;
-  const url = `https://usenotra.com/showcase/${name}`;
+  const url = `https://usenotra.com/changelog/${name}`;
 
   return {
     title,
@@ -70,7 +70,7 @@ export default async function ShowcaseCompanyPage({
       id: entry.info.path,
       title: entry.title,
       description: entry.description,
-      href: `/showcase/${name}/${getShowcaseEntrySlug(entry.info.path)}`,
+      href: `/changelog/${name}/${getShowcaseEntrySlug(entry.info.path)}`,
       date: entry.date,
     }));
 
@@ -78,12 +78,12 @@ export default async function ShowcaseCompanyPage({
     <>
       <Link
         className="inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
-        href="/showcase"
+        href="/changelog"
       >
-        &larr; All companies
+        &larr; All changelogs
       </Link>
 
-      <div className="mt-8">
+      <div className="mt-8 flex flex-col items-center">
         <ChangelogPageHeader
           description={
             <>

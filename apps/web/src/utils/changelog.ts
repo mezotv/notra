@@ -137,7 +137,7 @@ export function createChangelogPostSlug(
 }
 
 export function getChangelogPostHref(slug: string) {
-  return `/changelog/${slug}`;
+  return `/changelog/notra/${slug}`;
 }
 
 export function formatChangelogDate(date: string) {

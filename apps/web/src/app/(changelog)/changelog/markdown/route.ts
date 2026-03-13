@@ -15,7 +15,7 @@ export async function GET() {
     .join("\n");
 
   const markdown = [
-    "# Notra Changelog",
+    "# Changelog",
     "",
     "The latest product updates, release notes, and improvements from the Notra team.",
     "",

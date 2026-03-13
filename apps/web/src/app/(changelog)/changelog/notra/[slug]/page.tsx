@@ -19,7 +19,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const url = `https://usenotra.com/changelog/${slug}`;
+  const url = `https://usenotra.com/changelog/notra/${slug}`;
 
   return {
     title: { absolute: post.title },
@@ -56,7 +56,7 @@ export default async function ChangelogEntryPage({
     <>
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
-        href="/changelog"
+        href="/changelog/notra"
       >
         &larr; All updates
       </Link>

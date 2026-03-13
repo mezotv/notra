@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
+import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
-import { ChangelogTimeline } from "@/components/changelog-timeline";
-import {
-  buildChangelogTimelineItems,
-  listNotraChangelogPosts,
-} from "@/utils/changelog";
+import { ShowcaseOverviewGrid } from "@/components/showcase-overview-grid";
+import { SHOWCASE_COMPANIES } from "@/utils/showcase";
+import { SHOWCASE_COMPANY_ICONS } from "@/utils/showcase-icons";
 
-const title = "Changelog - Notra";
+const title = "Changelog";
 const description =
-  "Follow the latest Notra product updates, improvements, and release notes.";
+  "See how Notra transforms GitHub activity into professional product updates from real open source projects.";
 
 export const metadata: Metadata = {
   title,
@@ -30,33 +29,56 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ChangelogOverviewPage() {
-  const posts = await listNotraChangelogPosts();
-  const timelineItems = buildChangelogTimelineItems(posts);
+export default async function ChangelogHubPage() {
+  const postCounts = new Map(
+    SHOWCASE_COMPANIES.map((company) => [
+      company.slug,
+      changelog.filter((entry) =>
+        entry.info.path.startsWith(`${company.slug}/`)
+      ).length,
+    ])
+  );
+
+  const companies = [...SHOWCASE_COMPANIES]
+    .sort((left, right) => {
+      const countDifference =
+        (postCounts.get(right.slug) ?? 0) - (postCounts.get(left.slug) ?? 0);
+
+      if (countDifference !== 0) {
+        return countDifference;
+      }
+
+      return left.name.localeCompare(right.name);
+    })
+    .map((company) => ({
+      ...company,
+      entryCount: postCounts.get(company.slug) ?? 0,
+      icon: SHOWCASE_COMPANY_ICONS[company.slug],
+    }));
 
   return (
     <>
       <ChangelogPageHeader
         description={
           <>
-            Every product update, release note, and improvement from the Notra
-            team in one place.
+            See how Notra transforms GitHub activity into professional
+            <br className="hidden sm:block" />
+            product updates from real open source projects.
           </>
         }
         title={
           <>
-            The Notra <span className="text-primary">Changelog</span>
+            Example <span className="text-primary">Changelogs</span>
           </>
         }
       />
 
-      <div className="mt-14 w-full max-w-[760px] self-center">
-        <ChangelogTimeline
-          emptyDescription="We’ll share new releases and product improvements here soon."
-          emptyTitle="No changelog entries yet"
-          items={timelineItems}
-        />
-      </div>
+      <ShowcaseOverviewGrid companies={companies} />
+
+      <p className="mt-8 text-center font-sans text-muted-foreground text-xs">
+        Notra is not affiliated with any of the companies listed above. These
+        changelogs are generated for demonstration purposes only.
+      </p>
     </>
   );
 }

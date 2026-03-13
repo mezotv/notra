@@ -8,7 +8,7 @@ export const MARKETING_NAV_LINKS = [
     label: "Pricing",
   },
   {
-    href: "/changelog",
+    href: "/changelog/notra",
     label: "What's New",
   },
 ] as const;
@@ -23,8 +23,8 @@ export const FOOTER_PRODUCT_LINKS = [
     label: "Pricing",
   },
   {
-    href: "/showcase",
-    label: "Showcase",
+    href: "/changelog",
+    label: "Changelog",
   },
   {
     href: "https://docs.usenotra.com",

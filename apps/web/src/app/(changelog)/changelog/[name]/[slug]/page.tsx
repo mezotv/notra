@@ -35,7 +35,7 @@ export async function generateMetadata({
     return {};
   }
 
-  const url = `https://usenotra.com/showcase/${name}/${slug}`;
+  const url = `https://usenotra.com/changelog/${name}/${slug}`;
 
   return {
     title: { absolute: entry.title },
@@ -76,7 +76,7 @@ export default async function ShowcaseEntryPage({
     <div className="w-full max-w-[760px] self-center">
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
-        href={`/showcase/${name}`}
+        href={`/changelog/${name}`}
       >
         &larr; {company.name}
       </Link>

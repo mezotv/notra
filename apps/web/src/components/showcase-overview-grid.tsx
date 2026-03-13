@@ -8,7 +8,7 @@ export function ShowcaseOverviewGrid({ companies }: ShowcaseOverviewGridProps) {
       {companies.map((company) => (
         <Link
           className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href={`/showcase/${company.slug}`}
+          href={`/changelog/${company.slug}`}
           key={company.slug}
         >
           <TitleCard
