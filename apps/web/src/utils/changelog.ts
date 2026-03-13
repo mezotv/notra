@@ -1,5 +1,8 @@
-import type { GetPostPost, ListPostsPost } from "@usenotra/sdk/models/operations";
 import { Notra } from "@usenotra/sdk";
+import type {
+  GetPostPost,
+  ListPostsPost,
+} from "@usenotra/sdk/models/operations";
 import { unstable_cache } from "next/cache";
 import type {
   ChangelogTimelineItem,
@@ -84,7 +87,8 @@ function normalizePost(post: ListPostsPost | GetPostPost): NotraChangelogPost {
     markdown: post.markdown,
     recommendations: post.recommendations ?? null,
     contentType: post.contentType,
-    sourceMetadata: (post.sourceMetadata as NotraSourceMetadata | undefined) ?? null,
+    sourceMetadata:
+      (post.sourceMetadata as NotraSourceMetadata | undefined) ?? null,
     status: post.status,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
@@ -161,13 +165,15 @@ export function isNotraChangelogConfigured() {
   return Boolean(apiKey && organizationId);
 }
 
-export function createChangelogPostSlug(post: Pick<NotraChangelogPost, "id" | "title">) {
+export function createChangelogPostSlug(
+  post: Pick<NotraChangelogPost, "id" | "title">
+) {
   return `${slugifySegment(post.title)}${SLUG_DELIMITER}${post.id}`;
 }
 
 export function getChangelogPostIdFromSlug(slug: string) {
   const segments = slug.split(SLUG_DELIMITER);
-  return segments.length > 1 ? segments.at(-1) ?? null : null;
+  return segments.length > 1 ? (segments.at(-1) ?? null) : null;
 }
 
 export function getChangelogPostHref(slug: string) {
@@ -204,7 +210,9 @@ export async function getNotraChangelogPostBySlug(slug: string) {
   return posts.find((post) => post.slug === slug) ?? null;
 }
 
-export function buildChangelogTimelineItems(posts: NotraChangelogPost[]): ChangelogTimelineItem[] {
+export function buildChangelogTimelineItems(
+  posts: NotraChangelogPost[]
+): ChangelogTimelineItem[] {
   return posts.map((post) => ({
     id: post.id,
     title: post.title,

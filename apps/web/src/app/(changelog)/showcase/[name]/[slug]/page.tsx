@@ -5,7 +5,11 @@ import { changelog } from "@/../.source/server";
 import { NotraMark } from "@/components/notra-mark";
 import { TableOfContents } from "@/components/table-of-contents";
 import { formatChangelogDate } from "@/utils/changelog";
-import { getShowcaseCompany, getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "@/utils/showcase";
+import {
+  getShowcaseCompany,
+  getShowcaseEntrySlug,
+  SHOWCASE_COMPANIES,
+} from "@/utils/showcase";
 import type { ShowcaseEntryPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
@@ -23,7 +27,9 @@ export async function generateMetadata({
   params,
 }: ShowcaseEntryPageProps): Promise<Metadata> {
   const { name, slug } = await params;
-  const entry = changelog.find((item) => item.info.path === `${name}/${slug}.mdx`);
+  const entry = changelog.find(
+    (item) => item.info.path === `${name}/${slug}.mdx`
+  );
 
   if (!entry) {
     return {};
@@ -51,10 +57,14 @@ export async function generateMetadata({
   };
 }
 
-export default async function ShowcaseEntryPage({ params }: ShowcaseEntryPageProps) {
+export default async function ShowcaseEntryPage({
+  params,
+}: ShowcaseEntryPageProps) {
   const { name, slug } = await params;
   const company = getShowcaseCompany(name);
-  const entry = changelog.find((item) => item.info.path === `${name}/${slug}.mdx`);
+  const entry = changelog.find(
+    (item) => item.info.path === `${name}/${slug}.mdx`
+  );
 
   if (!company || !entry) {
     notFound();
@@ -101,7 +111,9 @@ export default async function ShowcaseEntryPage({ params }: ShowcaseEntryPagePro
           <span className="text-primary">
             <NotraMark className="size-4 shrink-0" />
           </span>
-          <span className="font-medium font-sans text-xs">Powered by Notra</span>
+          <span className="font-medium font-sans text-xs">
+            Powered by Notra
+          </span>
         </Link>
       </div>
     </>

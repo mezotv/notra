@@ -9,7 +9,7 @@ export function ChangelogPageHeader({
   return (
     <div className="flex w-full max-w-[680px] flex-col items-center justify-start gap-4 self-center text-center">
       {eyebrow ? (
-        <p className="font-sans font-medium text-muted-foreground text-sm uppercase tracking-[0.2em]">
+        <p className="font-medium font-sans text-muted-foreground text-sm uppercase tracking-[0.2em]">
           {eyebrow}
         </p>
       ) : null}

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ShowcaseOverviewGrid } from "@/components/showcase-overview-grid";
-import { SHOWCASE_COMPANY_ICONS } from "@/utils/showcase-icons";
 import { SHOWCASE_COMPANIES } from "@/utils/showcase";
+import { SHOWCASE_COMPANY_ICONS } from "@/utils/showcase-icons";
 
 const title = "Showcase - Notra";
 const description =
@@ -33,8 +33,9 @@ export default function ShowcaseOverviewPage() {
   const postCounts = new Map(
     SHOWCASE_COMPANIES.map((company) => [
       company.slug,
-      changelog.filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
-        .length,
+      changelog.filter((entry) =>
+        entry.info.path.startsWith(`${company.slug}/`)
+      ).length,
     ])
   );
 

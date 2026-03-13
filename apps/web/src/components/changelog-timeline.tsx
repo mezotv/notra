@@ -9,8 +9,8 @@ export function ChangelogTimeline({
 }: ChangelogTimelineProps) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-12 text-center">
-        <h2 className="font-sans font-semibold text-xl text-foreground">
+      <div className="rounded-2xl border border-border border-dashed bg-muted/30 px-6 py-12 text-center">
+        <h2 className="font-sans font-semibold text-foreground text-xl">
           {emptyTitle}
         </h2>
         <p className="mt-2 font-sans text-muted-foreground text-sm leading-6">

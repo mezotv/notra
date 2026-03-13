@@ -6,7 +6,11 @@ import { notFound } from "next/navigation";
 import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ChangelogTimeline } from "@/components/changelog-timeline";
-import { getShowcaseCompany, getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "@/utils/showcase";
+import {
+  getShowcaseCompany,
+  getShowcaseEntrySlug,
+  SHOWCASE_COMPANIES,
+} from "@/utils/showcase";
 import type { ShowcaseCompanyPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
@@ -58,7 +62,10 @@ export default async function ShowcaseCompanyPage({
 
   const items = changelog
     .filter((entry) => entry.info.path.startsWith(`${name}/`))
-    .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime())
+    .sort(
+      (left, right) =>
+        new Date(right.date).getTime() - new Date(left.date).getTime()
+    )
     .map((entry) => ({
       id: entry.info.path,
       title: entry.title,

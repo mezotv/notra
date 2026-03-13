@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ChangelogTimeline } from "@/components/changelog-timeline";
-import { buildChangelogTimelineItems, listNotraChangelogPosts } from "@/utils/changelog";
+import {
+  buildChangelogTimelineItems,
+  listNotraChangelogPosts,
+} from "@/utils/changelog";
 
 const title = "Changelog - Notra";
 const description =
@@ -44,7 +47,8 @@ export default async function ChangelogOverviewPage() {
         meta={
           posts.length > 0 ? (
             <p className="font-sans text-muted-foreground text-sm">
-              {posts.length} {posts.length === 1 ? "update" : "updates"} published
+              {posts.length} {posts.length === 1 ? "update" : "updates"}{" "}
+              published
             </p>
           ) : null
         }

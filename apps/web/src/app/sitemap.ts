@@ -13,10 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
   );
 
-  const notraChangelogEntries = (await listNotraChangelogPosts()).map((post) => ({
-    url: `https://www.usenotra.com/changelog/${post.slug}`,
-    lastModified: new Date(post.updatedAt),
-  }));
+  const notraChangelogEntries = (await listNotraChangelogPosts()).map(
+    (post) => ({
+      url: `https://www.usenotra.com/changelog/${post.slug}`,
+      lastModified: new Date(post.updatedAt),
+    })
+  );
 
   return [
     {

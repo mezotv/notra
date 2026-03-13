@@ -15,14 +15,17 @@ export function ShowcaseOverviewGrid({ companies }: ShowcaseOverviewGridProps) {
             accentColor={company.accentColor}
             action={
               <span className="rounded-full border border-border px-2.5 py-0.5 text-muted-foreground text-xs">
-                {company.entryCount} {company.entryCount === 1 ? "Post" : "Posts"}
+                {company.entryCount}{" "}
+                {company.entryCount === 1 ? "Post" : "Posts"}
               </span>
             }
             className="h-full cursor-pointer transition-colors hover:bg-muted/80"
             heading={company.name}
             icon={company.icon}
           >
-            <p className="text-muted-foreground text-sm">{company.description}</p>
+            <p className="text-muted-foreground text-sm">
+              {company.description}
+            </p>
           </TitleCard>
         </Link>
       ))}
