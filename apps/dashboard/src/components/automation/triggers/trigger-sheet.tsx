@@ -740,9 +740,9 @@ export function AddTriggerDialog({
                           />
                         </TooltipTrigger>
                         <TooltipContent side="top">
-                          <p className="max-w-[12.5rem] text-xs">
-                            When enabled, generated posts are published
-                            immediately instead of saved as drafts.
+                          <p className="max-w-50 text-xs">
+                            When enabled, generated posts are published to the
+                            API immediately instead of saved as drafts.
                           </p>
                         </TooltipContent>
                       </Tooltip>
