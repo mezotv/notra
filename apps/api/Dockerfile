@@ -37,7 +37,7 @@ FROM oven/bun:1.3.9-alpine AS runner
 
 WORKDIR /app
 
-COPY --from=builder --chown=hono:bun /app/apps/api/dist/index.mjs ./dist/index.mjs
+COPY --from=builder /app/apps/api/dist/index.mjs ./dist/index.mjs
 
 USER bun
 
