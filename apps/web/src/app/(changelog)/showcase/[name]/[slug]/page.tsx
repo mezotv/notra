@@ -73,7 +73,7 @@ export default async function ShowcaseEntryPage({
   const MDX = entry.body;
 
   return (
-    <>
+    <div className="w-full max-w-[760px] self-center">
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
         href={`/showcase/${name}`}
@@ -116,6 +116,6 @@ export default async function ShowcaseEntryPage({
           </span>
         </Link>
       </div>
-    </>
+    </div>
   );
 }

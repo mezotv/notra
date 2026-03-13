@@ -15,13 +15,11 @@ const CHANGELOG_STATUS = "published";
 const DEFAULT_POST_LIMIT = 100;
 const FALLBACK_EXCERPT =
   "Product updates, fixes, and shipped improvements from the Notra team.";
-const SLUG_DELIMITER = "--";
 const BLOCK_SEPARATOR_REGEX = /\n\s*\n/;
 
 function getNotraChangelogConfig() {
   return {
     apiKey: process.env.NOTRA_API_KEY?.trim() ?? "",
-    organizationId: process.env.NOTRA_CHANGELOG_ORGANIZATION_ID?.trim() ?? "",
   };
 }
 
@@ -93,23 +91,22 @@ function normalizePost(post: ListPostsPost | GetPostPost): NotraChangelogPost {
     status: post.status,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
-    slug: createChangelogPostSlug({ id: post.id, title: post.title }),
+    slug: createChangelogPostSlug({ title: post.title }),
     excerpt: getPostExcerpt(post.markdown),
   };
 }
 
 const fetchChangelogPosts = unstable_cache(
   async () => {
-    const { apiKey, organizationId } = getNotraChangelogConfig();
+    const { apiKey } = getNotraChangelogConfig();
 
-    if (!apiKey || !organizationId) {
+    if (!apiKey) {
       return [] satisfies NotraChangelogPost[];
     }
 
     try {
       const client = createNotraClient(apiKey);
       const response = await client.content.listPosts({
-        organizationId,
         contentType: CHANGELOG_CONTENT_TYPE,
         limit: DEFAULT_POST_LIMIT,
         sort: "desc",
@@ -128,53 +125,15 @@ const fetchChangelogPosts = unstable_cache(
   }
 );
 
-const fetchChangelogPostById = unstable_cache(
-  async (postId: string) => {
-    const { apiKey, organizationId } = getNotraChangelogConfig();
-
-    if (!apiKey || !organizationId) {
-      return null;
-    }
-
-    try {
-      const client = createNotraClient(apiKey);
-      const response = await client.content.getPost({
-        organizationId,
-        postId,
-        contentType: CHANGELOG_CONTENT_TYPE,
-        status: CHANGELOG_STATUS,
-      });
-
-      if (!response.post) {
-        return null;
-      }
-
-      return normalizePost(response.post);
-    } catch (error) {
-      console.error(`Failed to load Notra changelog post ${postId}`, error);
-      return null;
-    }
-  },
-  ["notra-changelog-post"],
-  {
-    revalidate: 300,
-  }
-);
-
 export function isNotraChangelogConfigured() {
-  const { apiKey, organizationId } = getNotraChangelogConfig();
-  return Boolean(apiKey && organizationId);
+  const { apiKey } = getNotraChangelogConfig();
+  return Boolean(apiKey);
 }
 
 export function createChangelogPostSlug(
-  post: Pick<NotraChangelogPost, "id" | "title">
+  post: Pick<NotraChangelogPost, "title">
 ) {
-  return `${slugifySegment(post.title)}${SLUG_DELIMITER}${post.id}`;
-}
-
-export function getChangelogPostIdFromSlug(slug: string) {
-  const segments = slug.split(SLUG_DELIMITER);
-  return segments.length > 1 ? (segments.at(-1) ?? null) : null;
+  return slugifySegment(post.title);
 }
 
 export function getChangelogPostHref(slug: string) {
@@ -193,20 +152,7 @@ export async function listNotraChangelogPosts() {
   return fetchChangelogPosts();
 }
 
-export async function getNotraChangelogPostById(postId: string) {
-  return fetchChangelogPostById(postId);
-}
-
 export async function getNotraChangelogPostBySlug(slug: string) {
-  const postId = getChangelogPostIdFromSlug(slug);
-
-  if (postId) {
-    const post = await getNotraChangelogPostById(postId);
-    if (post) {
-      return post;
-    }
-  }
-
   const posts = await listNotraChangelogPosts();
   return posts.find((post) => post.slug === slug) ?? null;
 }

@@ -38,7 +38,8 @@
     "TWITTER_BEARER_TOKEN",
     "TWITTER_CLIENT_ID",
     "TWITTER_CLIENT_SECRET",
-    "RESPAN_API_KEY"
+    "RESPAN_API_KEY",
+    "NOTRA_API_KEY"
   ],
   "envMode": "strict",
   "tasks": {

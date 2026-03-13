@@ -43,15 +43,6 @@ export default async function ChangelogOverviewPage() {
             team in one place.
           </>
         }
-        eyebrow="What’s New"
-        meta={
-          posts.length > 0 ? (
-            <p className="font-sans text-muted-foreground text-sm">
-              {posts.length} {posts.length === 1 ? "update" : "updates"}{" "}
-              published
-            </p>
-          ) : null
-        }
         title={
           <>
             The Notra <span className="text-primary">Changelog</span>
