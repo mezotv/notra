@@ -71,5 +71,7 @@ app.doc31("/openapi.json", (_c) => ({
 
 export default {
   port: process.env.PORT ?? 3000,
-  fetch: app.fetch,
+  // kind of cursed, but necessary to read env vars when not running on cloudflare
+  fetch: (request: Request) => app.fetch(request, process.env),
+
 };
