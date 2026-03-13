@@ -33,20 +33,17 @@ WORKDIR /app/apps/api
 RUN bun run build
 
 # ─── Stage 3: production image ───────────────────────────────────────────────
-FROM node:24-alpine AS runner
-
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 hono
+FROM oven/bun:1.3.9-alpine AS runner
 
 WORKDIR /app
 
-COPY --from=builder --chown=hono:nodejs /app/apps/api/dist/index.mjs ./dist/index.mjs
+COPY --from=builder --chown=hono:bun /app/apps/api/dist/index.mjs ./dist/index.mjs
 
-USER hono
+USER bun
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.mjs"]
+CMD ["bun", "run","dist/index.mjs"]
