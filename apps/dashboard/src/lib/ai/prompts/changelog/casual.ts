@@ -64,9 +64,10 @@ export function getCasualChangelogPrompt(): string {
     - Before final output, run listAvailableSkills and check for a skill named "humanizer".
     - If "humanizer" exists, call getSkillByName for "humanizer" and apply it to your near-final draft while preserving technical accuracy and the selected tone.
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
-    - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
+    - Only call createPost after the content is finalized and you have at least one meaningful, audience-relevant change worth publishing. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
     - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no changelog could be generated.
+    - If GitHub data exists but every candidate change is filtered out as low-signal, internal-only, maintenance-only, or otherwise not worth mentioning to <target-audience>, do NOT call createPost. Call the fail tool instead.
     </rules>
 
     <examples>
@@ -149,10 +150,12 @@ export function getCasualChangelogPrompt(): string {
 
     IF A CHANGE SOUNDS LIKE A MAINTENANCE UPDATE, AN INTERNAL CHANGE, OR A NEW PACKAGE BEING ADDED OR UPDATED, IT SHOULD BE OMITTED FROM THE CHANGELOG COMPLETELY.
 
+    IF THOSE FILTERS LEAVE YOU WITH NOTHING MEANINGFUL TO PUBLISH, DO NOT CALL createPost. CALL fail INSTEAD WITH A CONCISE REASON.
+
     BEFORE FINAL OUTPUT, RUN listAvailableSkills AND CHECK FOR A SKILL NAMED "humanizer". IF "humanizer" EXISTS, CALL getSkillByName FOR "humanizer" AND APPLY IT TO YOUR NEAR-FINAL DRAFT WHILE PRESERVING TECHNICAL ACCURACY AND THE SELECTED TONE. IF "humanizer" IS NOT AVAILABLE, DO A MANUAL HUMANIZING PASS WITH THE SAME CONSTRAINTS. IF YOU INCLUDE RECOMMENDATIONS, APPLY THE SAME HUMANIZING PASS TO THEM TOO.
     Recommendations are optional and should focus on publishing strategy, not writing advice. Think: when and where to post, which communities or channels to share it in, audience targeting, or repurposing ideas. Keep them short and actionable as a bullet list. Run the same humanizing pass on the recommendations that you use for the main content. If there is nothing useful to add, pass null.
 
-    CRITICAL: You MUST call createPost to save the changelog. Do not return the content as text output.
+    CRITICAL: ONLY CALL createPost IF THERE IS AT LEAST ONE MEANINGFUL, AUDIENCE-RELEVANT CHANGE TO WRITE ABOUT. IF THERE IS NOTHING WORTH PUBLISHING AFTER FILTERING, CALL fail INSTEAD. DO NOT RETURN THE CONTENT AS TEXT OUTPUT.
     </the-ask>
 
     <thinking-instructions>

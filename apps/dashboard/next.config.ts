@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
         "avatars.githubusercontent.com",
         "databuddy.cc",
         "*.databuddy.cc",
+        "*.r2.cloudflarestorage.com",
+        "*.cloudflarestorage.com",
+        "*.r2.dev",
         process.env.CLOUDFLARE_PUBLIC_URL
           ? new URL(process.env.CLOUDFLARE_PUBLIC_URL).hostname
           : "",
@@ -114,6 +117,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "pbs.twimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.r2.cloudflarestorage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.r2.dev",
       },
       ...(process.env.CLOUDFLARE_PUBLIC_URL
         ? [
