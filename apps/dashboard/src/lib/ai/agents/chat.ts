@@ -11,7 +11,7 @@ export async function createChatAgent(
   instruction: string
 ) {
   const { organizationId } = context;
-  const decision = await routeMessage(instruction, false);
+  const decision = await routeMessage(instruction, false, organizationId);
   const model = selectModel(decision);
 
   const modelWithMemory = createModel(context.organizationId, model);
@@ -31,9 +31,12 @@ export async function createChatAgent(
 
   return new ToolLoopAgent({
     model: modelWithMemory,
-    experimental_telemetry: getAISDKTelemetry("createChatAgent", {
-      agent: "chat",
-      feature: "markdown_editor",
+    experimental_telemetry: await getAISDKTelemetry("createChatAgent", {
+      organizationId,
+      metadata: {
+        agent: "chat",
+        feature: "markdown_editor",
+      },
     }),
     tools: {
       getMarkdown,

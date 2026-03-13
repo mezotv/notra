@@ -236,6 +236,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       outputConfig,
       enabled,
       lookbackWindow,
+      autoPublish,
     } = bodyValidation.data;
 
     const normalized = normalizeTriggerConfig({ sourceConfig, targets });
@@ -336,6 +337,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
             outputConfig: outputConfig ?? null,
             dedupeHash,
             enabled,
+            autoPublish,
             qstashScheduleId,
           })
           .returning();
@@ -422,6 +424,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       outputConfig,
       enabled,
       lookbackWindow,
+      autoPublish,
     } = bodyValidation.data;
 
     const normalized = normalizeTriggerConfig({ sourceConfig, targets });
@@ -517,6 +520,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
             outputConfig: outputConfig ?? null,
             dedupeHash,
             enabled,
+            autoPublish,
             qstashScheduleId,
             updatedAt: new Date(),
           })

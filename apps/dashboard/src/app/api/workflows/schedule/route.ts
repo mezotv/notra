@@ -61,6 +61,7 @@ interface TriggerData {
   outputType: string;
   outputConfig: unknown;
   enabled: boolean;
+  autoPublish: boolean;
 }
 
 interface RepositoryData {
@@ -120,6 +121,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           outputType: result.outputType,
           outputConfig: result.outputConfig,
           enabled: result.enabled,
+          autoPublish: result.autoPublish,
         };
       }
     );
@@ -338,6 +340,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               until: lookbackRange.end.toISOString(),
             },
             voiceId: brand?.id,
+            autoPublish: trigger.autoPublish,
           });
         }
       );

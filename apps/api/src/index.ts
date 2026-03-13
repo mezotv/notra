@@ -64,9 +64,13 @@ app.doc31("/openapi.json", (_c) => ({
   tags: [
     {
       name: "Content",
-      description: "Read content for the authenticated organization",
+      description:
+        "Read content. Organization is inferred from the API key (identity.externalId).",
     },
   ],
 }));
 
-export default app;
+export default {
+  port: process.env.PORT ?? 3000,
+  fetch: (request: Request) => app.fetch(request, process.env),
+};

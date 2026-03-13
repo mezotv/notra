@@ -80,6 +80,7 @@ export const { POST } = serve<EventWorkflowPayload>(
           outputType: result.outputType,
           outputConfig: result.outputConfig,
           enabled: result.enabled,
+          autoPublish: result.autoPublish,
         };
       }
     );
@@ -272,6 +273,7 @@ export const { POST } = serve<EventWorkflowPayload>(
               customInstructions: brand?.customInstructions ?? null,
             },
             sourceMetadata,
+            autoPublish: trigger.autoPublish,
           });
         }
       );

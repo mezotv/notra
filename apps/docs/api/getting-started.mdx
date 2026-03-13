@@ -3,27 +3,49 @@ title: "Getting Started"
 description: "Get started with the Notra API."
 ---
 
+We provide two ways to interact with the Notra API:
+
+<CardGroup cols={2}>
+  <Card title="REST API" icon="globe">
+    Use raw `fetch` or `cURL` to call endpoints directly. Full control, no dependencies.
+  </Card>
+  <Card title="TypeScript SDK" icon="code">
+    Use the official `@usenotra/sdk` package for a type-safe, ergonomic integration.
+  </Card>
+</CardGroup>
+
 ## Quick Start
 
 Base URL:
 ```bash
-https://api.usenotra.com/v1/:organizationId/:resource
+https://api.usenotra.com/v1/:resource
 ```
 
-Where `:organizationId` is your organization ID and `:resource` is the specific
-resource you want to interact with (e.g., `posts`, `categories`, `tags`,
-`authors`).
+`:resource` is the endpoint path (e.g., `posts`, `posts/{postId}`). The
+organization is inferred from your API key—no need to pass it in the URL.
 
-Run your first authenticated API request:
-
-```bash
+<CodeGroup>
+```bash cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
+  "https://api.usenotra.com/v1/posts"
 ```
+
+```typescript SDK
+import { Notra } from "@usenotra/sdk";
+
+const notra = new Notra({
+  bearerAuth: process.env.NOTRA_API_KEY ?? "",
+});
+
+const result = await notra.content.listPosts();
+
+console.log(result.posts);
+```
+</CodeGroup>
 
 <Tip>
-  Replace `YOUR_API_KEY` with your API key and `YOUR_ORGANIZATION_ID` with your
-  organization ID.
+  Replace `YOUR_API_KEY` with your API key. Keys are scoped to an organization
+  (set via `externalId` when created).
 </Tip>
 
 Create and manage API keys in [Authentication](/api/authentication).
@@ -34,16 +56,62 @@ Create and manage API keys in [Authentication](/api/authentication).
   requests whenever possible.
 </Warning>
 
+## SDK Installation
+
+Install the Notra SDK:
+
+<CodeGroup>
+
+```bash npm
+npm install @usenotra/sdk
+```
+
+```bash yarn
+yarn add @usenotra/sdk
+```
+
+```bash pnpm
+pnpm add @usenotra/sdk
+```
+
+```bash bun
+bun add @usenotra/sdk
+```
+
+</CodeGroup>
+
+Initialize the client with your API key:
+
+```typescript
+import { Notra } from "@usenotra/sdk";
+
+const notra = new Notra({
+  bearerAuth: process.env.NOTRA_API_KEY ?? "",
+});
+```
+
+<Tip>
+  Store your API key in an environment variable. Create and manage keys in your
+  [dashboard](https://app.usenotra.com) under **Developer → API Keys**.
+</Tip>
+
+For single-post lookups:
+
+```typescript
+const post = await notra.content.getPost({
+  postId: "post_abc",
+});
+```
+
 ## Available Endpoints
 
 <CardGroup cols={2}>
-<Card title="Posts" icon="file-text" href="/api-reference/content/list-posts">
-  Retrieve paginated posts with `sort`, `limit`, `page`, and `status`.
-</Card>
-
-<Card title="Single Post" icon="file" href="/api-reference/content/get-a-single-post">
-  Get a specific post by ID.
-</Card>
+  <Card title="Posts" icon="file-text" href="/api-reference/content/list-posts">
+    Retrieve paginated posts with `sort`, `limit`, `page`, and `status`.
+  </Card>
+  <Card title="Single Post" icon="file" href="/api-reference/content/get-a-single-post">
+    Get a specific post by ID.
+  </Card>
 </CardGroup>
 
 ## Next Steps
@@ -54,8 +122,5 @@ Create and manage API keys in [Authentication](/api/authentication).
   </Card>
   <Card title="TypeScript Types" icon="code" href="/api/types">
     Use our TypeScript definitions for type-safe development.
-  </Card>
-  <Card title="SDK" icon="code" href="/sdk/getting-started">
-    Use the official TypeScript SDK for a smoother integration.
   </Card>
 </CardGroup>

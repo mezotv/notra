@@ -1,5 +1,7 @@
 "use client";
 
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Combobox,
@@ -32,6 +34,12 @@ import {
   SheetTrigger,
 } from "@notra/ui/components/ui/sheet";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { Switch } from "@notra/ui/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
@@ -79,6 +87,7 @@ interface TriggerFormValues {
   schedule: Trigger["sourceConfig"]["cron"];
   lookbackWindow: LookbackWindow;
   brandVoiceId: string;
+  autoPublish: boolean;
 }
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
@@ -164,6 +173,7 @@ export function AddTriggerDialog({
           editTrigger.outputConfig.brandVoiceId !== "__default__"
             ? editTrigger.outputConfig.brandVoiceId
             : "",
+        autoPublish: editTrigger.autoPublish ?? false,
       };
     }
     return {
@@ -175,6 +185,7 @@ export function AddTriggerDialog({
       schedule: { frequency: "daily", hour: 9, minute: 0 },
       lookbackWindow: "last_7_days",
       brandVoiceId: "",
+      autoPublish: false,
     };
   }, [defaultSourceType, editTrigger]);
 
@@ -265,6 +276,7 @@ export function AddTriggerDialog({
             ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
           },
           enabled: isEditMode ? editTrigger.enabled : true,
+          autoPublish: value.autoPublish,
         }),
       });
 
@@ -709,6 +721,40 @@ export function AddTriggerDialog({
                 <Label>Publish destination</Label>
                 <Input disabled placeholder="Coming soon (Webflow, Framer)" />
               </div>
+
+              <form.Field name="autoPublish">
+                {(field) => (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-1.5">
+                      <Label
+                        className="cursor-pointer font-medium text-sm"
+                        htmlFor={field.name}
+                      >
+                        Instant publish
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                          <HugeiconsIcon
+                            icon={InformationCircleIcon}
+                            size={14}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="max-w-50 text-xs">
+                            When enabled, generated posts are published to the
+                            API immediately instead of saved as drafts.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      checked={field.state.value}
+                      id={field.name}
+                      onCheckedChange={field.handleChange}
+                    />
+                  </div>
+                )}
+              </form.Field>
             </div>
           </ScrollArea>
 

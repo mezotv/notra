@@ -12,6 +12,11 @@ import {
   getPostsParamsSchema,
   getPostsResponseSchema,
 } from "../schemas/content";
+import { getOrganizationId } from "../utils/auth";
+import {
+  ORGANIZATION_POST_PATH_REGEX,
+  ORGANIZATION_POSTS_PATH_REGEX,
+} from "../utils/regex";
 
 export const contentRoutes = new OpenAPIHono();
 
@@ -22,9 +27,54 @@ function shouldApplyFilter(
   return selectedValues.length < allValues.length;
 }
 
+contentRoutes.get("/:organizationId/posts", async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const pathOrg = c.req.param("organizationId");
+  if (orgId !== pathOrg) {
+    return c.json({ error: "Forbidden: organization access denied" }, 403);
+  }
+
+  const url = new URL(c.req.url);
+  const canonicalPath = url.pathname.replace(
+    ORGANIZATION_POSTS_PATH_REGEX,
+    "/posts"
+  );
+  return c.redirect(`${canonicalPath}${url.search}`, 308);
+});
+
+contentRoutes.get("/:organizationId/posts/:postId", async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const pathOrg = c.req.param("organizationId");
+  const postId = c.req.param("postId");
+  if (orgId !== pathOrg) {
+    return c.json({ error: "Forbidden: organization access denied" }, 403);
+  }
+
+  const url = new URL(c.req.url);
+  const canonicalPath = url.pathname.replace(
+    ORGANIZATION_POST_PATH_REGEX,
+    `/posts/${postId}`
+  );
+  return c.redirect(`${canonicalPath}${url.search}`, 308);
+});
+
 const getPostsRoute = createRoute({
   method: "get",
-  path: "/{organizationId}/posts",
+  path: "/posts",
   tags: ["Content"],
   operationId: "listPosts",
   summary: "List posts",
@@ -78,7 +128,7 @@ const getPostsRoute = createRoute({
 
 const getPostRoute = createRoute({
   method: "get",
-  path: "/{organizationId}/posts/{postId}",
+  path: "/posts/{postId}",
   tags: ["Content"],
   operationId: "getPost",
   summary: "Get a single post",
@@ -131,20 +181,20 @@ const getPostRoute = createRoute({
 });
 
 contentRoutes.openapi(getPostsRoute, async (c) => {
-  const params = c.req.valid("param");
-  const query = c.req.valid("query");
-
-  const auth = c.get("auth");
-  const keyOrganizationId = auth.identity?.externalId;
-  if (!keyOrganizationId || keyOrganizationId !== params.organizationId) {
-    return c.json({ error: "Forbidden: organization access denied" }, 403);
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
   }
 
+  const query = c.req.valid("query");
   const db = c.get("db");
   const { limit, page, sort, status, contentType } = query;
   const offset = (page - 1) * limit;
   const whereClause = and(
-    eq(posts.organizationId, params.organizationId),
+    eq(posts.organizationId, orgId),
     shouldApplyFilter(status, ALL_POST_STATUSES)
       ? inArray(posts.status, status)
       : undefined,
@@ -200,21 +250,22 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
 });
 
 contentRoutes.openapi(getPostRoute, async (c) => {
-  const params = c.req.valid("param");
-  const query = c.req.valid("query");
-
-  const auth = c.get("auth");
-  const keyOrganizationId = auth.identity?.externalId;
-  if (!keyOrganizationId || keyOrganizationId !== params.organizationId) {
-    return c.json({ error: "Forbidden: organization access denied" }, 403);
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
   }
 
+  const params = c.req.valid("param");
+  const query = c.req.valid("query");
   const db = c.get("db");
   const { status, contentType } = query;
   const post = await db.query.posts.findFirst({
     where: and(
       eq(posts.id, params.postId),
-      eq(posts.organizationId, params.organizationId),
+      eq(posts.organizationId, orgId),
       shouldApplyFilter(status, ALL_POST_STATUSES)
         ? inArray(posts.status, status)
         : undefined,

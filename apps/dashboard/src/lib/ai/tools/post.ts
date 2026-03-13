@@ -58,6 +58,7 @@ export function createCreatePostTool(
         markdown,
         recommendations: recommendations ?? null,
         contentType,
+        status: config.autoPublish ? "published" : "draft",
         sourceMetadata: config.sourceMetadata ?? null,
       });
       result.posts ??= [];

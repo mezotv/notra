@@ -118,6 +118,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       outputType,
       outputConfig,
       enabled,
+      autoPublish,
     } = bodyValidation.data;
 
     if (sourceType !== "github_webhook") {
@@ -161,6 +162,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         outputConfig: outputConfig ?? null,
         dedupeHash,
         enabled,
+        autoPublish,
       })
       .returning();
 
@@ -217,6 +219,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       outputType,
       outputConfig,
       enabled,
+      autoPublish,
     } = bodyValidation.data;
 
     if (sourceType !== "github_webhook") {
@@ -259,6 +262,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         outputConfig: outputConfig ?? null,
         dedupeHash,
         enabled,
+        autoPublish,
         qstashScheduleId: null,
         updatedAt: new Date(),
       })

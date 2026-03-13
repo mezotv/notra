@@ -212,6 +212,7 @@ export const configureTriggerBodySchema = z.object({
   outputType: z.enum(OUTPUT_CONTENT_TYPES),
   outputConfig: triggerOutputConfigSchema,
   enabled: z.boolean(),
+  autoPublish: z.boolean().default(false),
 });
 export type ConfigureTriggerBody = z.infer<typeof configureTriggerBodySchema>;
 

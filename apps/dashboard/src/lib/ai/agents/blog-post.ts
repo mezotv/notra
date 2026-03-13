@@ -19,7 +19,7 @@ import type {
   BlogPostAgentOptions,
   BlogPostAgentResult,
 } from "@/types/ai/agents";
-import type { PostToolsResult } from "@/types/ai/post-tools";
+import type { PostToolsConfig, PostToolsResult } from "@/types/ai/post-tools";
 
 const blogPostPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalBlogPostPrompt,
@@ -40,6 +40,7 @@ export async function generateBlogPost(
     dataPointSettings,
     selectionFilters,
     commitWindow,
+    autoPublish,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -62,17 +63,21 @@ export async function generateBlogPost(
   );
 
   const postToolsResult: PostToolsResult = {};
-  const postToolsConfig = {
+  const postToolsConfig: PostToolsConfig = {
     organizationId,
     contentType: "blog_post",
     sourceMetadata,
-  } as const;
+    autoPublish,
+  };
 
   const agent = new ToolLoopAgent({
     model,
-    experimental_telemetry: getAISDKTelemetry("generateBlogPost", {
-      agent: "blog_post",
-      contentType: "blog_post",
+    experimental_telemetry: await getAISDKTelemetry("generateBlogPost", {
+      organizationId,
+      metadata: {
+        agent: "blog_post",
+        contentType: "blog_post",
+      },
     }),
     providerOptions: {
       anthropic: {

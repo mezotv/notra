@@ -196,10 +196,16 @@ export const { POST } = serve<BrandAnalysisPayload>(
           const { output } = await generateText({
             model: gateway("anthropic/claude-haiku-4.5"),
             output: Output.object({ schema: brandSettingsSchema }),
-            experimental_telemetry: getAISDKTelemetry("extractBrandInfo", {
-              workflow: "brand_analysis",
-              route: "api/workflows/brand-analysis",
-            }),
+            experimental_telemetry: await getAISDKTelemetry(
+              "extractBrandInfo",
+              {
+                organizationId,
+                metadata: {
+                  workflow: "brand_analysis",
+                  route: "api/workflows/brand-analysis",
+                },
+              }
+            ),
             prompt: `Analyze this website content and extract brand identity information.
 
 Website content:

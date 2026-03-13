@@ -20,7 +20,7 @@ import type {
   LinkedInAgentOptions,
   LinkedInAgentResult,
 } from "@/types/ai/agents";
-import type { PostToolsResult } from "@/types/ai/post-tools";
+import type { PostToolsConfig, PostToolsResult } from "@/types/ai/post-tools";
 
 const linkedInPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalLinkedInPrompt,
@@ -42,6 +42,7 @@ export async function generateLinkedInPost(
     dataPointSettings,
     selectionFilters,
     commitWindow,
+    autoPublish,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -64,17 +65,21 @@ export async function generateLinkedInPost(
   );
 
   const postToolsResult: PostToolsResult = {};
-  const postToolsConfig = {
+  const postToolsConfig: PostToolsConfig = {
     organizationId,
     contentType: "linkedin_post",
     sourceMetadata,
-  } as const;
+    autoPublish,
+  };
 
   const agent = new ToolLoopAgent({
     model,
-    experimental_telemetry: getAISDKTelemetry("generateLinkedInPost", {
-      agent: "linkedin",
-      contentType: "linkedin_post",
+    experimental_telemetry: await getAISDKTelemetry("generateLinkedInPost", {
+      organizationId,
+      metadata: {
+        agent: "linkedin",
+        contentType: "linkedin_post",
+      },
     }),
     providerOptions: {
       anthropic: {

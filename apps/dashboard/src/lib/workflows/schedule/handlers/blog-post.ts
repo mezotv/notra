@@ -18,6 +18,7 @@ export async function handleBlogPost(
       dataPointSettings: ctx.dataPointSettings,
       selectionFilters: ctx.selectionFilters,
       commitWindow: ctx.commitWindow,
+      autoPublish: ctx.autoPublish,
     });
 
     return { status: "ok", postId, title, posts };

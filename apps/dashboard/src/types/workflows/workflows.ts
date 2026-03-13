@@ -9,6 +9,7 @@ export interface WorkflowTriggerData {
   outputType: string;
   outputConfig: unknown;
   enabled: boolean;
+  autoPublish: boolean;
 }
 
 export interface WorkflowRepositoryData {
@@ -48,6 +49,7 @@ export interface EventGenerationContext {
   };
   outputType: string;
   sourceMetadata: PostSourceMetadata;
+  autoPublish?: boolean;
 }
 
 export type EventGenerationResult =

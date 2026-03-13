@@ -6,6 +6,7 @@ export interface PostToolsConfig {
   organizationId: string;
   contentType: ContentType;
   sourceMetadata?: PostSourceMetadata;
+  autoPublish?: boolean;
 }
 
 export interface PostToolsResult {

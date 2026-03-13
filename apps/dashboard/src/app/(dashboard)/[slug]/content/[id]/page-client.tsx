@@ -1,6 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { SentIcon, TextIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Avatar,
   AvatarFallback,
@@ -16,7 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
@@ -103,6 +105,7 @@ export default function PageClient({
   organizationId,
 }: PageClientProps) {
   const { state: sidebarState } = useSidebar();
+  const queryClient = useQueryClient();
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
   const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
@@ -241,6 +244,48 @@ export default function PageClient({
     editorRef.current?.setMarkdown(originalMarkdown);
     setEditingTitle(null);
   }, [originalMarkdown]);
+
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
+  const handleToggleStatus = useCallback(async () => {
+    const currentStatus = data?.content?.status;
+    if (!currentStatus) {
+      return;
+    }
+    setIsTogglingStatus(true);
+    const newStatus = currentStatus === "published" ? "draft" : "published";
+    try {
+      const res = await fetch(
+        `/api/organizations/${organizationId}/content/${contentId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+      if (!res.ok) {
+        throw new Error("Failed to update status");
+      }
+      toast.success(
+        newStatus === "published" ? "Post published" : "Post moved to drafts"
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.CONTENT.detail(organizationId, contentId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.POSTS.list(organizationId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.POSTS.today(organizationId),
+        }),
+      ]);
+    } catch {
+      toast.error("Failed to update post status");
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }, [data?.content?.status, organizationId, contentId, queryClient]);
 
   useEffect(() => {
     handleSaveRef.current = handleSave;
@@ -546,6 +591,12 @@ export default function PageClient({
               <Badge className="capitalize" variant="secondary">
                 {getContentTypeLabel(content.contentType)}
               </Badge>
+              <Badge
+                className="capitalize"
+                variant={content.status === "published" ? "default" : "outline"}
+              >
+                {content.status}
+              </Badge>
             </div>
             {content.sourceMetadata &&
               (() => {
@@ -656,41 +707,59 @@ export default function PageClient({
                 );
               })()}
           </div>
-          {content.contentType === "linkedin_post" && (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             <Button
-              className="ml-auto shrink-0 text-white hover:opacity-90"
-              render={
-                <a
-                  href={createLinkedInPostUrl(currentMarkdown)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <Linkedin className="size-4" />
-                  Post to LinkedIn
-                </a>
-              }
+              disabled={isTogglingStatus}
+              onClick={handleToggleStatus}
               size="sm"
-              style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
-            />
-          )}
-          {content.contentType === "twitter_post" && (
-            <Button
-              className="ml-auto shrink-0 text-white hover:opacity-90"
-              nativeButton={false}
-              render={
-                <a
-                  href={createTwitterPostUrl(currentMarkdown)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <XTwitter className="size-4" />
-                  Post to X
-                </a>
-              }
-              size="sm"
-              style={{ backgroundColor: TWITTER_BRAND_COLOR }}
-            />
-          )}
+              variant={content.status === "draft" ? "default" : "outline"}
+            >
+              <HugeiconsIcon
+                className="size-4"
+                icon={content.status === "published" ? TextIcon : SentIcon}
+              />
+              {isTogglingStatus
+                ? "Updating..."
+                : content.status === "published"
+                  ? "Move to draft"
+                  : "Publish"}
+            </Button>
+            {content.contentType === "linkedin_post" && (
+              <Button
+                className="text-white hover:opacity-90"
+                render={
+                  <a
+                    href={createLinkedInPostUrl(currentMarkdown)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <Linkedin className="size-4" />
+                    Post to LinkedIn
+                  </a>
+                }
+                size="sm"
+                style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+              />
+            )}
+            {content.contentType === "twitter_post" && (
+              <Button
+                className="text-white hover:opacity-90"
+                nativeButton={false}
+                render={
+                  <a
+                    href={createTwitterPostUrl(currentMarkdown)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <XTwitter className="size-4" />
+                    Post to X
+                  </a>
+                }
+                size="sm"
+                style={{ backgroundColor: TWITTER_BRAND_COLOR }}
+              />
+            )}
+          </div>
         </div>
 
         <ContentEditorSwitch

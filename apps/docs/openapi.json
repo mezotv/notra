@@ -12,7 +12,7 @@
   "tags": [
     {
       "name": "Content",
-      "description": "Read content for the authenticated organization"
+      "description": "Read content. Organization is inferred from the API key (identity.externalId)."
     }
   ],
   "components": {
@@ -34,22 +34,12 @@
     "parameters": {}
   },
   "paths": {
-    "/v1/{organizationId}/posts": {
+    "/v1/posts": {
       "get": {
         "tags": ["Content"],
         "operationId": "listPosts",
         "summary": "List posts",
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "example": "org_123"
-            },
-            "required": true,
-            "in": "path",
-            "name": "organizationId"
-          },
           {
             "schema": {
               "type": "string",
@@ -247,22 +237,12 @@
         }
       }
     },
-    "/v1/{organizationId}/posts/{postId}": {
+    "/v1/posts/{postId}": {
       "get": {
         "tags": ["Content"],
         "operationId": "getPost",
         "summary": "Get a single post",
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "example": "org_123"
-            },
-            "required": true,
-            "in": "path",
-            "name": "organizationId"
-          },
           {
             "schema": {
               "type": "string",

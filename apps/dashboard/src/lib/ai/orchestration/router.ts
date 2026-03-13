@@ -13,7 +13,8 @@ const MODELS = {
 
 export async function routeMessage(
   userMessage: string,
-  hasGitHubContext: boolean
+  hasGitHubContext: boolean,
+  organizationId?: string
 ): Promise<RoutingDecision> {
   const contextHint = hasGitHubContext
     ? "\n\nNote: The user has added GitHub repository context, suggesting they may want to work with GitHub data."
@@ -25,9 +26,12 @@ export async function routeMessage(
     model: routerModel,
     output: Output.object({ schema: routingDecisionSchema }),
     system: ROUTING_PROMPT,
-    experimental_telemetry: getAISDKTelemetry("routeMessage", {
-      agent: "router",
-      feature: "chat_routing",
+    experimental_telemetry: await getAISDKTelemetry("routeMessage", {
+      organizationId,
+      metadata: {
+        agent: "router",
+        feature: "chat_routing",
+      },
     }),
     prompt: `Classify this user message:
 
@@ -46,9 +50,14 @@ export function selectModel(decision: RoutingDecision): string {
 
 export async function routeAndSelectModel(
   userMessage: string,
-  hasGitHubContext: boolean
+  hasGitHubContext: boolean,
+  organizationId?: string
 ): Promise<RoutingResult> {
-  const decision = await routeMessage(userMessage, hasGitHubContext);
+  const decision = await routeMessage(
+    userMessage,
+    hasGitHubContext,
+    organizationId
+  );
   const model = selectModel(decision);
 
   return {

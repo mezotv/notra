@@ -73,9 +73,12 @@ export async function orchestrateChat(
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: stepCountIs(maxSteps),
-    experimental_telemetry: getAISDKTelemetry("orchestrateChat", {
-      agent: "chat",
-      feature: "content_editor",
+    experimental_telemetry: await getAISDKTelemetry("orchestrateChat", {
+      organizationId,
+      metadata: {
+        agent: "chat",
+        feature: "content_editor",
+      },
     }),
     onError({ error }) {
       console.error("[Chat Stream Error]", {

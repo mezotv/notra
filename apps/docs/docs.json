@@ -29,6 +29,10 @@
     {
       "source": "/api",
       "destination": "/api/getting-started"
+    },
+    {
+      "source": "/sdk/getting-started",
+      "destination": "/api/getting-started"
     }
   ],
   "api": {
@@ -73,7 +77,7 @@
         "root": "overview"
       },
       {
-        "tab": "API",
+        "tab": "API & SDK",
         "pages": [
           "api/getting-started",
           "api/authentication",
@@ -86,32 +90,10 @@
               "source": "openapi.json",
               "directory": "api-reference"
             },
-            "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
-            ]
+            "pages": ["GET /v1/posts", "GET /v1/posts/{postId}"]
           }
         ],
         "root": "api/getting-started"
-      },
-      {
-        "tab": "SDK",
-        "pages": [
-          "sdk/getting-started",
-          {
-            "group": "Methods",
-            "expanded": true,
-            "openapi": {
-              "source": "https://spec.speakeasy.com/notra/notra/notra-api-with-code-samples",
-              "directory": "sdk-reference"
-            },
-            "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
-            ]
-          }
-        ],
-        "root": "sdk/getting-started"
       }
     ],
     "global": {
