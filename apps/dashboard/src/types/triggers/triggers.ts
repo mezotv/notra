@@ -41,6 +41,7 @@ export interface Trigger {
   outputConfig?: TriggerOutputConfig | null;
   lookbackWindow?: LookbackWindow;
   enabled: boolean;
+  autoPublish: boolean;
   createdAt: string;
   updatedAt: string;
 }

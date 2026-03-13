@@ -34,6 +34,7 @@ export interface ContentGenerationContext {
     until: string;
   };
   voiceId?: string;
+  autoPublish?: boolean;
 }
 
 export type ContentGenerationResult =

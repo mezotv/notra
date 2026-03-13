@@ -20,7 +20,7 @@ import type {
   ChangelogAgentOptions,
   ChangelogAgentResult,
 } from "@/types/ai/agents";
-import type { PostToolsResult } from "@/types/ai/post-tools";
+import type { PostToolsConfig, PostToolsResult } from "@/types/ai/post-tools";
 
 const changelogPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalChangelogPrompt,
@@ -42,6 +42,7 @@ export async function generateChangelog(
     dataPointSettings,
     selectionFilters,
     commitWindow,
+    autoPublish,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -64,11 +65,12 @@ export async function generateChangelog(
   );
 
   const postToolsResult: PostToolsResult = {};
-  const postToolsConfig = {
+  const postToolsConfig: PostToolsConfig = {
     organizationId,
     contentType: "changelog",
     sourceMetadata,
-  } as const;
+    autoPublish,
+  };
 
   const agent = new ToolLoopAgent({
     model,

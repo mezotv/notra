@@ -37,6 +37,7 @@ export interface ChangelogAgentOptions {
   dataPointSettings?: AgentDataPointSettings;
   selectionFilters?: GitHubSelectionFilters;
   commitWindow?: CommitWindow;
+  autoPublish?: boolean;
 }
 
 export interface LinkedInAgentResult {
@@ -60,6 +61,7 @@ export interface LinkedInAgentOptions {
   dataPointSettings?: AgentDataPointSettings;
   selectionFilters?: GitHubSelectionFilters;
   commitWindow?: CommitWindow;
+  autoPublish?: boolean;
 }
 
 export interface TwitterAgentResult {
@@ -83,6 +85,7 @@ export interface TwitterAgentOptions {
   dataPointSettings?: AgentDataPointSettings;
   selectionFilters?: GitHubSelectionFilters;
   commitWindow?: CommitWindow;
+  autoPublish?: boolean;
 }
 
 export interface BlogPostAgentResult {
@@ -105,6 +108,7 @@ export interface BlogPostAgentOptions {
   dataPointSettings?: AgentDataPointSettings;
   selectionFilters?: GitHubSelectionFilters;
   commitWindow?: CommitWindow;
+  autoPublish?: boolean;
 }
 
 export interface ChatAgentContext {

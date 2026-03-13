@@ -20,7 +20,7 @@ import type {
   TwitterAgentOptions,
   TwitterAgentResult,
 } from "@/types/ai/agents";
-import type { PostToolsResult } from "@/types/ai/post-tools";
+import type { PostToolsConfig, PostToolsResult } from "@/types/ai/post-tools";
 
 const twitterPromptByTone: Record<ToneProfile, () => string> = {
   Conversational: getConversationalTwitterPrompt,
@@ -42,6 +42,7 @@ export async function generateTwitterPost(
     dataPointSettings,
     selectionFilters,
     commitWindow,
+    autoPublish,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -64,11 +65,12 @@ export async function generateTwitterPost(
   );
 
   const postToolsResult: PostToolsResult = {};
-  const postToolsConfig = {
+  const postToolsConfig: PostToolsConfig = {
     organizationId,
     contentType: "twitter_post",
     sourceMetadata,
-  } as const;
+    autoPublish,
+  };
 
   const agent = new ToolLoopAgent({
     model,

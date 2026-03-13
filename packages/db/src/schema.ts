@@ -204,6 +204,7 @@ export const contentTriggers = pgTable(
     dedupeHash: text("dedupe_hash").notNull(),
     qstashScheduleId: text("qstash_schedule_id"),
     enabled: boolean("enabled").default(true).notNull(),
+    autoPublish: boolean("auto_publish").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

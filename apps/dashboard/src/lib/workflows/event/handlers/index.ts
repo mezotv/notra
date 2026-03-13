@@ -46,6 +46,7 @@ export async function generateEventBasedContent(
       tone: ctx.tone,
       promptInput,
       sourceMetadata: ctx.sourceMetadata,
+      autoPublish: ctx.autoPublish,
     };
 
     const result = await generateFn(agentOptions);
