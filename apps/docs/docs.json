@@ -86,10 +86,7 @@
               "source": "openapi.json",
               "directory": "api-reference"
             },
-            "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
-            ]
+            "pages": ["GET /v1/posts", "GET /v1/posts/{postId}"]
           }
         ],
         "root": "api/getting-started"
@@ -105,10 +102,7 @@
               "source": "https://spec.speakeasy.com/notra/notra/notra-api-with-code-samples",
               "directory": "sdk-reference"
             },
-            "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
-            ]
+            "pages": ["GET /v1/posts", "GET /v1/posts/{postId}"]
           }
         ],
         "root": "sdk/getting-started"

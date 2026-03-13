@@ -7,17 +7,14 @@ If you call the API with `fetch`, these types are a good starting point.
 
 ```typescript
 // Multiple posts
-const listResponse = await fetch(
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/",
-  {
-    headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
-  }
-);
+const listResponse = await fetch("https://api.usenotra.com/v1/posts", {
+  headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
+});
 const listData: NotraPostListResponse = await listResponse.json();
 
 // Single post
 const postResponse = await fetch(
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/YOUR_POST_ID",
+  "https://api.usenotra.com/v1/posts/YOUR_POST_ID",
   {
     headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
   }

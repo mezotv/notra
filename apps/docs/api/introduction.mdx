@@ -16,12 +16,11 @@ responses are JSON, and HTTP status codes indicate success or failure.
 All API access is over HTTPS. All data is sent and received as JSON.
 
 ```bash
-https://api.usenotra.com/v1/:organizationId/:resource
+https://api.usenotra.com/v1/:resource
 ```
 
-Where `:organizationId` is your organization ID and `:resource` is the specific
-resource you want to interact with (e.g., `posts`, `categories`, `tags`,
-`authors`).
+`:resource` is the endpoint path (e.g., `posts`, `posts/{postId}`). The
+organization is inferred from your API key via Unkey's `identity.externalId`.
 
 ## Response Format
 

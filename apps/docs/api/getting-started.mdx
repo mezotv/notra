@@ -7,23 +7,22 @@ description: "Get started with the Notra API."
 
 Base URL:
 ```bash
-https://api.usenotra.com/v1/:organizationId/:resource
+https://api.usenotra.com/v1/:resource
 ```
 
-Where `:organizationId` is your organization ID and `:resource` is the specific
-resource you want to interact with (e.g., `posts`, `categories`, `tags`,
-`authors`).
+`:resource` is the endpoint path (e.g., `posts`, `posts/{postId}`). The
+organization is inferred from your API key—no need to pass it in the URL.
 
 Run your first authenticated API request:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
+  "https://api.usenotra.com/v1/posts"
 ```
 
 <Tip>
-  Replace `YOUR_API_KEY` with your API key and `YOUR_ORGANIZATION_ID` with your
-  organization ID.
+  Replace `YOUR_API_KEY` with your API key. Keys are scoped to an organization
+  (set via `externalId` when created).
 </Tip>
 
 Create and manage API keys in [Authentication](/api/authentication).

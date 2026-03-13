@@ -8,4 +8,6 @@ To run:
 bun run dev
 ```
 
-open http://localhost:3004
+open the local URL Bun prints on startup
+
+The dev server runs with Bun so the `fetch` export is actually served.

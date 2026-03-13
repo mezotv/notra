@@ -39,9 +39,7 @@ const notra = new Notra({
 });
 
 async function main() {
-  const result = await notra.content.listPosts({
-    organizationId: "org_123",
-  });
+  const result = await notra.content.listPosts();
 
   console.log(result.posts);
 }
@@ -68,7 +66,6 @@ For single-post lookups:
 
 ```typescript
 const post = await notra.content.getPost({
-  organizationId: "org_123",
   postId: "post_abc",
 });
 ```

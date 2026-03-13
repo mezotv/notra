@@ -1,18 +1,6 @@
 import { z } from "@hono/zod-openapi";
 
-export const getPostsParamsSchema = z.object({
-  organizationId: z
-    .string()
-    .trim()
-    .min(1, "organizationId is required")
-    .openapi({
-      param: {
-        in: "path",
-        name: "organizationId",
-      },
-      example: "org_123",
-    }),
-});
+export const getPostsParamsSchema = z.object({});
 
 export const postStatusSchema = z.enum(["draft", "published"]);
 export const postContentTypeSchema = z.enum([
@@ -124,17 +112,6 @@ export const getPostsOpenApiQuerySchema = z.object({
 });
 
 export const getPostParamsSchema = z.object({
-  organizationId: z
-    .string()
-    .trim()
-    .min(1, "organizationId is required")
-    .openapi({
-      param: {
-        in: "path",
-        name: "organizationId",
-      },
-      example: "org_123",
-    }),
   postId: z
     .string()
     .trim()

@@ -64,14 +64,13 @@ app.doc31("/openapi.json", (_c) => ({
   tags: [
     {
       name: "Content",
-      description: "Read content for the authenticated organization",
+      description:
+        "Read content. Organization is inferred from the API key (identity.externalId).",
     },
   ],
 }));
 
 export default {
   port: process.env.PORT ?? 3000,
-  // kind of cursed, but necessary to read env vars when not running on cloudflare
   fetch: (request: Request) => app.fetch(request, process.env),
-
 };
