@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { getPermissionsForLevel } from "@/lib/api-keys/permissions";
 import { unkey } from "@/lib/api-keys/unkey";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
@@ -115,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     await unkey.keys.updateKey({
       keyId,
       name,
-      permissions: [permission],
+      permissions: getPermissionsForLevel(permission),
       expires,
       meta: {
         ...meta,

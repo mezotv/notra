@@ -1,4 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
+import {
+  getPermissionLevel,
+  getPermissionsForLevel,
+} from "@/lib/api-keys/permissions";
 import { unkey } from "@/lib/api-keys/unkey";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { createApiKeySchema, EXPIRATION_MS } from "@/schemas/api-keys";
@@ -45,9 +49,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           )
         : [];
 
-      const normalizedPermission =
-        permissions[0] ??
-        (typeof meta.permission === "string" ? meta.permission : "api.read");
+      const normalizedPermission = getPermissionLevel(
+        permissions,
+        meta.permission
+      );
 
       return {
         keyId: key.keyId,
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       name,
       externalId: organizationId,
       expires,
-      permissions: [permission],
+      permissions: getPermissionsForLevel(permission),
       meta: { permission, createdBy: auth.context.user.name },
     });
 

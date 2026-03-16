@@ -125,11 +125,6 @@ export const getPostParamsSchema = z.object({
     }),
 });
 
-export const getPostQuerySchema = z.object({
-  status: openApiStatusFilterSchema,
-  contentType: openApiContentTypeFilterSchema,
-});
-
 export const errorResponseSchema = z
   .object({
     error: z.string(),
@@ -167,10 +162,14 @@ export const getPostResponseSchema = z.object({
   post: postResponseSchema.nullable(),
 });
 
+export const deletePostResponseSchema = z.object({
+  id: z.string(),
+});
+
 export type GetPostsParams = z.infer<typeof getPostsParamsSchema>;
 export type GetPostsQuery = z.infer<typeof getPostsQuerySchema>;
 export type GetPostParams = z.infer<typeof getPostParamsSchema>;
-export type GetPostQuery = z.infer<typeof getPostQuerySchema>;
 export type PostResponse = z.infer<typeof postResponseSchema>;
 export type GetPostsResponse = z.infer<typeof getPostsResponseSchema>;
 export type GetPostResponse = z.infer<typeof getPostResponseSchema>;
+export type DeletePostResponse = z.infer<typeof deletePostResponseSchema>;

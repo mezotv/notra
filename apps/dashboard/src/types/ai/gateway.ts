@@ -1,4 +1,4 @@
-import type { createGateway } from "ai";
+import type { createGateway } from "@ai-sdk/gateway";
 
 export type GatewayClient = ReturnType<typeof createGateway>;
 

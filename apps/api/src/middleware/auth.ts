@@ -15,37 +15,53 @@ interface AuthOptions {
   permissions?: string;
 }
 
+type AuthResult =
+  | { success: true; auth: V2KeysVerifyKeyResponseData }
+  | { success: false; error: string; status: 401 | 403 | 503 };
+
+export async function verifyRequestAuth(
+  c: Context,
+  options: AuthOptions = {}
+): Promise<AuthResult> {
+  const getKey =
+    options.getKey ??
+    ((c: Context) =>
+      c.req.header("Authorization")?.replace("Bearer ", "") ?? null);
+
+  const apiKey = getKey(c);
+
+  if (!apiKey) {
+    return { success: false, error: "Missing API key", status: 401 };
+  }
+
+  try {
+    const unkey = new Unkey({ rootKey: c.env.UNKEY_ROOT_KEY });
+    const result = await unkey.keys.verifyKey({
+      key: apiKey,
+      permissions: options.permissions,
+    });
+
+    if (!result.data.valid) {
+      if (result.data.code === "INSUFFICIENT_PERMISSIONS") {
+        return { success: false, error: "Forbidden", status: 403 };
+      }
+      return { success: false, error: result.data.code, status: 401 };
+    }
+
+    c.set("auth", result.data);
+    return { success: true, auth: result.data };
+  } catch {
+    return { success: false, error: "Service unavailable", status: 503 };
+  }
+}
+
 export function authMiddleware(options: AuthOptions = {}) {
   return async (c: Context, next: Next) => {
-    const getKey =
-      options.getKey ??
-      ((c: Context) =>
-        c.req.header("Authorization")?.replace("Bearer ", "") ?? null);
-
-    const apiKey = getKey(c);
-
-    if (!apiKey) {
-      return c.json({ error: "Missing API key" }, 401);
+    const authResult = await verifyRequestAuth(c, options);
+    if (!authResult.success) {
+      return c.json({ error: authResult.error }, authResult.status);
     }
 
-    try {
-      const unkey = new Unkey({ rootKey: c.env.UNKEY_ROOT_KEY });
-      const result = await unkey.keys.verifyKey({
-        key: apiKey,
-        permissions: options.permissions,
-      });
-
-      if (!result.data.valid) {
-        if (result.data.code === "INSUFFICIENT_PERMISSIONS") {
-          return c.json({ error: "Forbidden" }, 403);
-        }
-        return c.json({ error: result.data.code }, 401);
-      }
-
-      c.set("auth", result.data);
-      await next();
-    } catch {
-      return c.json({ error: "Service unavailable" }, 503);
-    }
+    await next();
   };
 }

@@ -82,8 +82,8 @@ import {
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 const PERMISSION_LABELS: Record<ApiKeyPermission, string> = {
-  "api.read": "Read",
-  "api.write": "Write",
+  "api.read": "Read only",
+  "api.write": "Read & write",
 };
 
 type ApiKeyListItem = Omit<
@@ -128,7 +128,7 @@ function formatPermissionLabel(apiKey: ApiKeyListItem) {
   }
 
   if (hasWrite) {
-    return "Write only";
+    return "Read & write";
   }
 
   if (hasRead) {
@@ -686,8 +686,8 @@ export default function ApiKeysPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="api.read">Read only</SelectItem>
-                            <SelectItem disabled value="api.write">
-                              Write only (coming soon)
+                            <SelectItem value="api.write">
+                              Read & write
                             </SelectItem>
                           </SelectContent>
                         </Select>
@@ -827,9 +827,7 @@ export default function ApiKeysPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="api.read">Read only</SelectItem>
-                        <SelectItem disabled value="api.write">
-                          Write only (coming soon)
-                        </SelectItem>
+                        <SelectItem value="api.write">Read & write</SelectItem>
                       </SelectContent>
                     </Select>
                   </Field>

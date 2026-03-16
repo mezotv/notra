@@ -1,12 +1,13 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { posts } from "@notra/db/schema";
 import { and, count, eq, inArray } from "drizzle-orm";
+import { verifyRequestAuth } from "../middleware/auth";
 import {
   ALL_POST_CONTENT_TYPES,
   ALL_POST_STATUSES,
+  deletePostResponseSchema,
   errorResponseSchema,
   getPostParamsSchema,
-  getPostQuerySchema,
   getPostResponseSchema,
   getPostsOpenApiQuerySchema,
   getPostsParamsSchema,
@@ -134,7 +135,6 @@ const getPostRoute = createRoute({
   summary: "Get a single post",
   request: {
     params: getPostParamsSchema,
-    query: getPostQuerySchema,
   },
   responses: {
     200: {
@@ -146,7 +146,7 @@ const getPostRoute = createRoute({
       },
     },
     400: {
-      description: "Invalid path params or query",
+      description: "Invalid path params",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -163,6 +163,67 @@ const getPostRoute = createRoute({
     },
     403: {
       description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const deletePostRoute = createRoute({
+  method: "delete",
+  path: "/posts/{postId}",
+  tags: ["Content"],
+  operationId: "deletePost",
+  summary: "Delete a single post",
+  request: {
+    params: getPostParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Post deleted successfully",
+      content: {
+        "application/json": {
+          schema: deletePostResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid path params",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Post not found",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -259,20 +320,9 @@ contentRoutes.openapi(getPostRoute, async (c) => {
   }
 
   const params = c.req.valid("param");
-  const query = c.req.valid("query");
   const db = c.get("db");
-  const { status, contentType } = query;
   const post = await db.query.posts.findFirst({
-    where: and(
-      eq(posts.id, params.postId),
-      eq(posts.organizationId, orgId),
-      shouldApplyFilter(status, ALL_POST_STATUSES)
-        ? inArray(posts.status, status)
-        : undefined,
-      shouldApplyFilter(contentType, ALL_POST_CONTENT_TYPES)
-        ? inArray(posts.contentType, contentType)
-        : undefined
-    ),
+    where: and(eq(posts.id, params.postId), eq(posts.organizationId, orgId)),
     columns: {
       id: true,
       title: true,
@@ -293,4 +343,32 @@ contentRoutes.openapi(getPostRoute, async (c) => {
     },
     200
   );
+});
+
+contentRoutes.openapi(deletePostRoute, async (c) => {
+  const authResult = await verifyRequestAuth(c, { permissions: "api.write" });
+  if (!authResult.success) {
+    return c.json({ error: authResult.error }, authResult.status);
+  }
+
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const postId = c.req.param("postId");
+  const db = c.get("db");
+  const [deletedPost] = await db
+    .delete(posts)
+    .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
+    .returning({ id: posts.id });
+
+  if (!deletedPost) {
+    return c.json({ error: "Post not found" }, 404);
+  }
+
+  return c.json({ id: deletedPost.id }, 200);
 });
