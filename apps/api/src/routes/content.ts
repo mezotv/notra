@@ -359,7 +359,7 @@ contentRoutes.openapi(deletePostRoute, async (c) => {
     );
   }
 
-  const postId = c.req.param("postId");
+  const { postId } = c.req.valid("param");
   const db = c.get("db");
   const [deletedPost] = await db
     .delete(posts)
