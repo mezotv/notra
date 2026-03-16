@@ -1,7 +1,7 @@
-import { generateBlogPost } from "@/lib/ai/agents/blog-post";
-import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
-import { generateTwitterPost } from "@/lib/ai/agents/twitter";
+import { generateBlogPost } from "@notra/ai/agents/blog-post";
+import { generateChangelog } from "@notra/ai/agents/changelog";
+import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
+import { generateTwitterPost } from "@notra/ai/agents/twitter";
 import type {
   EventGenerationContext,
   EventGenerationResult,

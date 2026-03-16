@@ -1,5 +1,5 @@
-import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
   ContentGenerationContext,
   ContentGenerationResult,

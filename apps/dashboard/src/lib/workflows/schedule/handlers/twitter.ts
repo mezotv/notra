@@ -1,5 +1,5 @@
-import { generateTwitterPost } from "@/lib/ai/agents/twitter";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { generateTwitterPost } from "@notra/ai/agents/twitter";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
   ContentGenerationContext,
   ContentGenerationResult,

@@ -1,5 +1,5 @@
-import { generateBlogPost } from "@/lib/ai/agents/blog-post";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { generateBlogPost } from "@notra/ai/agents/blog-post";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
   ContentGenerationContext,
   ContentGenerationResult,

@@ -1,10 +1,14 @@
+import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { FEATURES } from "@/constants/features";
-import { orchestrateChat } from "@/lib/ai/orchestration/orchestrate";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
+import {
+  getGitHubIntegrationById,
+  getGitHubToolRepositoryContextByIntegrationId,
+} from "@/lib/services/github-integration";
 import { chatRequestSchema } from "@/schemas/content";
 
 interface RouteContext {
@@ -104,15 +108,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     try {
-      const { stream, routingDecision } = await orchestrateChat({
-        organizationId,
-        messages,
-        currentMarkdown,
-        contentType,
-        selection,
-        context,
-        maxSteps: 5,
-      });
+      const { stream, routingDecision } = await orchestrateChat(
+        {
+          organizationId,
+          messages,
+          currentMarkdown,
+          contentType,
+          selection,
+          context,
+          maxSteps: 5,
+        },
+        {
+          getIntegrationById: getGitHubIntegrationById,
+          resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+        }
+      );
 
       console.log("[Content Chat] Routing decision:", {
         requestId,

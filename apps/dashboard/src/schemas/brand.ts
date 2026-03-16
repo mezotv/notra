@@ -1,3 +1,10 @@
+export {
+  getValidToneProfile,
+  type ToneProfile,
+  toneProfileSchema,
+} from "@notra/ai/schemas/brand";
+
+import { toneProfileSchema } from "@notra/ai/schemas/brand";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
@@ -7,23 +14,6 @@ import {
 } from "@/constants/languages";
 
 export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGES);
-
-export const toneProfileSchema = z.enum([
-  "Conversational",
-  "Professional",
-  "Casual",
-  "Formal",
-]);
-
-export type ToneProfile = z.infer<typeof toneProfileSchema>;
-
-export function getValidToneProfile(
-  value: unknown,
-  fallback: ToneProfile = "Conversational"
-): ToneProfile {
-  const parsed = toneProfileSchema.safeParse(value);
-  return parsed.success ? parsed.data : fallback;
-}
 
 export function getValidLanguage(value: unknown): SupportedLanguage {
   const parsed = supportedLanguageSchema.safeParse(value);

@@ -1,5 +1,1 @@
-export interface PostSummary {
-  postId: string;
-  title: string;
-  recommendations: string | null;
-}
+export type { PostSummary } from "@notra/ai/types/posts";

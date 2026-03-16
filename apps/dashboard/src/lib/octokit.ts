@@ -1,8 +1,1 @@
-import { Octokit } from "@octokit/core";
-
-// https://github.com/octokit/core.js#readme
-export function createOctokit(auth?: string) {
-  return new Octokit({
-    auth,
-  });
-}
+export { createOctokit } from "@notra/ai/utils/octokit";

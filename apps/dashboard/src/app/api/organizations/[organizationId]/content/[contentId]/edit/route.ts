@@ -1,8 +1,8 @@
+import { createChatAgent } from "@notra/ai/agents/chat";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import { createChatAgent } from "@/lib/ai/agents/chat";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { editContentSchema } from "@/schemas/content";
 

@@ -1,3 +1,6 @@
+export { type ContentType, contentTypeSchema } from "@notra/ai/schemas/content";
+
+import { contentTypeSchema } from "@notra/ai/schemas/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
@@ -5,18 +8,8 @@ import {
   SUPPORTED_SCHEDULE_OUTPUT_TYPES,
 } from "./integrations";
 
-export const contentTypeSchema = z.enum([
-  "changelog",
-  "blog_post",
-  "twitter_post",
-  "linkedin_post",
-  "investor_update",
-]);
-
 export const postStatusSchema = z.enum(["draft", "published"]);
 export type PostStatus = z.infer<typeof postStatusSchema>;
-
-export type ContentType = z.infer<typeof contentTypeSchema>;
 
 export const sourceMetadataSchema = z
   .object({
