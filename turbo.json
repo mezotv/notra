@@ -39,7 +39,8 @@
     "TWITTER_CLIENT_ID",
     "TWITTER_CLIENT_SECRET",
     "RESPAN_API_KEY",
-    "NOTRA_API_KEY"
+    "NOTRA_API_KEY",
+    "CONTENT_GENERATION_WORKFLOW_BASE_URL"
   ],
   "envMode": "strict",
   "tasks": {

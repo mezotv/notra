@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "dotenv -- turbo run build",
-    "dev": "dotenv -- openlogs turbo run dev",
+    "dev": "dotenv -- turbo run dev",
     "check-types": "dotenv -- turbo run check-types",
     "db:generate": "dotenv -- bunx drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "dotenv -- bunx drizzle-kit migrate --config packages/db/drizzle.config.ts",
