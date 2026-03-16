@@ -304,6 +304,20 @@
   scrollbar-gutter: stable;
 }
 
+@keyframes thinking-letter {
+  0%,
+  100% {
+    color: var(--border);
+  }
+  45% {
+    color: var(--muted-foreground);
+  }
+}
+
+.thinking-letter {
+  animation: thinking-letter 1.35s ease-in-out infinite;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

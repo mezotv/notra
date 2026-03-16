@@ -77,7 +77,21 @@ Returns a list of available skills with their metadata (name, version, descripti
 }
 
 function getSkillsDir(): string {
-  return path.join(import.meta.dirname, "..", "skills");
+  const candidates = [
+    path.join(process.cwd(), "src", "lib", "ai", "skills"),
+    path.join(process.cwd(), "packages", "ai", "src", "skills"),
+    path.join(process.cwd(), "..", "..", "packages", "ai", "src", "skills"),
+  ];
+
+  const skillsDir = candidates.find((candidate) => fs.existsSync(candidate));
+
+  if (!skillsDir) {
+    throw new Error(
+      `Skills directory not found. Checked: ${candidates.join(", ")}`
+    );
+  }
+
+  return skillsDir;
 }
 
 export function getSkillByName(): Tool {

@@ -66,6 +66,7 @@ interface ChatInputProps {
   onSend?: (value: string) => void;
   isLoading?: boolean;
   statusText?: string;
+  completionMessage?: string | null;
   selection?: TextSelection | null;
   onClearSelection?: () => void;
   organizationSlug?: string;
@@ -83,6 +84,7 @@ const ChatInput = ({
   onSend,
   isLoading = false,
   statusText,
+  completionMessage,
   selection,
   onClearSelection,
   organizationSlug,
@@ -260,250 +262,277 @@ const ChatInput = ({
       </CardHeader>
       <CardContent className="p-0">
         <div
-          className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-sm"
           tabIndex={-1}
         >
-          {usageLimitError && (
-            <Alert className="mx-2 mt-2 mb-1" variant="destructive">
-              <AlertDescription className="flex flex-wrap items-center gap-1 break-words text-sm">
-                <span>{usageLimitError}</span>
-                {organizationSlug && (
-                  <Link
-                    className="font-medium underline underline-offset-2"
-                    href={`/${organizationSlug}/billing/plans`}
+          <div className="p-0.5">
+            {isLoading && statusText && (
+              <div className="flex items-start gap-2 rounded-t-xl border-border border-b bg-muted/40 px-3 py-2">
+                <p className="text-muted-foreground text-sm leading-5">
+                  {statusText}
+                </p>
+              </div>
+            )}
+            {!isLoading && completionMessage && (
+              <div className="flex items-start gap-2 rounded-t-xl border-border border-b bg-muted/40 px-3 py-2">
+                <p className="text-muted-foreground text-sm leading-5">
+                  {completionMessage}
+                </p>
+              </div>
+            )}
+            {usageLimitError && (
+              <Alert className="mx-2 mt-2 mb-1" variant="destructive">
+                <AlertDescription className="flex flex-wrap items-center gap-1 break-words text-sm">
+                  <span>{usageLimitError}</span>
+                  {organizationSlug && (
+                    <Link
+                      className="font-medium underline underline-offset-2"
+                      href={`/${organizationSlug}/billing/plans`}
+                    >
+                      Upgrade
+                    </Link>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            {(context.length > 0 || selection) && (
+              <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 pb-1">
+                {context.map((item, index) => (
+                  <div
+                    className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs"
+                    key={`${item.type}-${item.owner}-${item.repo}-${index}`}
                   >
-                    Upgrade
-                  </Link>
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-          {isLoading && statusText && (
-            <div className="flex items-start gap-2 px-3.5 pt-2 pb-1">
-              <Loader2Icon className="mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground text-sm leading-5">
-                {statusText}
-              </p>
-            </div>
-          )}
-          {(context.length > 0 || selection) && (
-            <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 pb-1">
-              {context.map((item, index) => (
-                <div
-                  className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs"
-                  key={`${item.type}-${item.owner}-${item.repo}-${index}`}
-                >
-                  <Github className="size-3.5" />
-                  <span className="font-medium">
-                    {item.owner}/{item.repo}
-                  </span>
-                  <button
-                    aria-label={`Remove ${item.owner}/${item.repo} from context`}
-                    className="ml-0.5 cursor-pointer rounded p-0.5 transition-colors hover:bg-accent"
-                    onClick={() => onRemoveContext?.(item)}
-                    type="button"
-                  >
-                    <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
-                  </button>
-                </div>
-              ))}
-              {selection && (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs" />
-                    }
-                  >
-                    <HugeiconsIcon
-                      className="size-3.5 text-muted-foreground"
-                      icon={TextSelectionIcon}
-                    />
+                    <Github className="size-3.5" />
                     <span className="font-medium">
-                      L{selection.startLine}:{selection.startChar} → L
-                      {selection.endLine}:{selection.endChar}
+                      {item.owner}/{item.repo}
                     </span>
                     <button
-                      aria-label="Remove selection"
+                      aria-label={`Remove ${item.owner}/${item.repo} from context`}
                       className="ml-0.5 cursor-pointer rounded p-0.5 transition-colors hover:bg-accent"
-                      onClick={onClearSelection}
+                      onClick={() => onRemoveContext?.(item)}
                       type="button"
                     >
                       <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
                     </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <div className="space-y-1">
-                      <p className="font-medium">Selected Text</p>
-                      <p className="text-xs opacity-70">
-                        From line {selection.startLine}, character{" "}
-                        {selection.startChar} to line {selection.endLine},
-                        character {selection.endChar}
-                      </p>
-                      <p className="line-clamp-3 whitespace-pre-wrap break-all text-xs opacity-80">
-                        "
-                        {selection.text.length > 150
-                          ? `${selection.text.slice(0, 150)}...`
-                          : selection.text}
-                        "
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          )}
-          <div className="flex flex-col rounded-xl bg-background">
-            <div className="flex w-full items-center">
-              <div className="relative flex flex-1 cursor-text transition-colors [--lh:1lh]">
-                <Textarea
-                  aria-label="Send a message"
-                  className="max-h-[12.5rem] min-h-8 w-full resize-none whitespace-pre-wrap border-0 bg-transparent py-0 pr-2 pl-3.5 text-foreground text-sm leading-8 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isLoading || isUsageBlocked}
-                  onBlur={() => setIsFocused(false)}
-                  onChange={(event) => {
-                    setValue(event.target.value);
-                  }}
-                  onFocus={() => setIsFocused(true)}
-                  onInput={resizeTextarea}
-                  placeholder={
-                    isLoading ? "AI is working..." : "Send a message..."
-                  }
-                  ref={textareaRef}
-                  rows={1}
-                  value={value}
-                />
+                  </div>
+                ))}
+                {selection && (
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs" />
+                      }
+                    >
+                      <HugeiconsIcon
+                        className="size-3.5 text-muted-foreground"
+                        icon={TextSelectionIcon}
+                      />
+                      <span className="font-medium">
+                        L{selection.startLine}:{selection.startChar} → L
+                        {selection.endLine}:{selection.endChar}
+                      </span>
+                      <button
+                        aria-label="Remove selection"
+                        className="ml-0.5 cursor-pointer rounded p-0.5 transition-colors hover:bg-accent"
+                        onClick={onClearSelection}
+                        type="button"
+                      >
+                        <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <div className="space-y-1">
+                        <p className="font-medium">Selected Text</p>
+                        <p className="text-xs opacity-70">
+                          From line {selection.startLine}, character{" "}
+                          {selection.startChar} to line {selection.endLine},
+                          character {selection.endChar}
+                        </p>
+                        <p className="line-clamp-3 whitespace-pre-wrap break-all text-xs opacity-80">
+                          "
+                          {selection.text.length > 150
+                            ? `${selection.text.slice(0, 150)}...`
+                            : selection.text}
+                          "
+                        </p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+            <div className="flex flex-col bg-background">
+              <div className="flex w-full items-center">
+                <div className="relative flex flex-1 cursor-text transition-colors [--lh:1lh]">
+                  <Textarea
+                    aria-label="Send a message"
+                    className="max-h-50 min-h-8 w-full resize-none whitespace-pre-wrap rounded-none border-0 bg-transparent py-0 pr-2 pl-3.5 text-foreground text-sm leading-8 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isLoading || isUsageBlocked}
+                    onBlur={() => setIsFocused(false)}
+                    onChange={(event) => {
+                      setValue(event.target.value);
+                    }}
+                    onFocus={() => setIsFocused(true)}
+                    onInput={resizeTextarea}
+                    placeholder={
+                      isLoading ? "AI is working..." : "Send a message..."
+                    }
+                    ref={textareaRef}
+                    rows={1}
+                    value={value}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          {shouldShowLowCredits && (
-            <div className="px-3 pb-1 text-muted-foreground text-xs">
-              {remainingChatCredits} chat messages left
-            </div>
-          )}
-          <CardFooter className="flex items-center justify-between overflow-hidden p-2">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <Button
-                      className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isLoading}
-                      size="sm"
-                      variant="outline"
-                    />
-                  }
-                >
-                  <div className="flex items-center gap-1.5 text-sm">
-                    <HugeiconsIcon className="size-4" icon={AtIcon} />
-                    <span className="hidden min-[400px]:inline">
-                      Add Context
-                    </span>
-                    <div className="flex items-center pr-1 sm:pr-2">
-                      <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                        <Slack />
+            {shouldShowLowCredits && (
+              <div className="px-3 pb-1 text-muted-foreground text-xs">
+                {remainingChatCredits} chat messages left
+              </div>
+            )}
+            <CardFooter className="flex items-center justify-between overflow-hidden p-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button
+                        className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={isLoading}
+                        size="sm"
+                        variant="outline"
+                      />
+                    }
+                  >
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <HugeiconsIcon className="size-4" icon={AtIcon} />
+                      <span className="hidden min-[400px]:inline">
+                        Add Context
                       </span>
-                      <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                        <Github />
-                      </span>
-                      <span className="rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                        <Linear />
-                      </span>
+                      <div className="flex items-center pr-1 sm:pr-2">
+                        <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
+                          <Slack />
+                        </span>
+                        <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
+                          <Github />
+                        </span>
+                        <span className="rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
+                          <Linear />
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel>Integrations</DropdownMenuLabel>
-                  </DropdownMenuGroup>
-                  {ALL_INTEGRATIONS.map((integration) => {
-                    const isGitHub = integration.id === "github";
-                    const isAvailable = integration.available;
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel>Integrations</DropdownMenuLabel>
+                    </DropdownMenuGroup>
+                    {ALL_INTEGRATIONS.map((integration) => {
+                      const isGitHub = integration.id === "github";
+                      const isAvailable = integration.available;
 
-                    // GitHub with repos - show submenu
-                    if (isGitHub && isAvailable && enabledRepos.length > 0) {
-                      return (
-                        <DropdownMenuSub key={integration.id}>
-                          <DropdownMenuSubTrigger>
+                      // GitHub with repos - show submenu
+                      if (isGitHub && isAvailable && enabledRepos.length > 0) {
+                        return (
+                          <DropdownMenuSub key={integration.id}>
+                            <DropdownMenuSubTrigger>
+                              <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
+                                {integration.icon}
+                              </span>
+                              <span className="text-foreground">
+                                {integration.name}
+                              </span>
+                              <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
+                                {enabledRepos.length}
+                              </span>
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                              <DropdownMenuGroup>
+                                <DropdownMenuLabel>
+                                  Select Repository
+                                </DropdownMenuLabel>
+                              </DropdownMenuGroup>
+                              {enabledRepos.map((repo) => {
+                                const inContext = isRepoInContext(repo);
+                                return (
+                                  <DropdownMenuItem
+                                    key={repo.id}
+                                    onClick={() => {
+                                      if (inContext) {
+                                        onRemoveContext?.({
+                                          type: "github-repo",
+                                          owner: repo.owner,
+                                          repo: repo.repo,
+                                          integrationId: repo.integrationId,
+                                        });
+                                      } else {
+                                        onAddContext?.({
+                                          type: "github-repo",
+                                          owner: repo.owner,
+                                          repo: repo.repo,
+                                          integrationId: repo.integrationId,
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Github className="size-4" />
+                                    <span className="truncate">
+                                      {repo.owner}/{repo.repo}
+                                    </span>
+                                    {inContext && (
+                                      <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
+                                        Added
+                                      </span>
+                                    )}
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                              {organizationSlug && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    render={
+                                      <Link
+                                        href={`/${organizationSlug}/integrations/github`}
+                                      />
+                                    }
+                                  >
+                                    Manage repositories
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuSubContent>
+                          </DropdownMenuSub>
+                        );
+                      }
+
+                      // GitHub available but no repos
+                      if (isGitHub && isAvailable && organizationSlug) {
+                        return (
+                          <DropdownMenuItem
+                            key={integration.id}
+                            render={
+                              <Link
+                                href={`/${organizationSlug}/integrations/github`}
+                              />
+                            }
+                          >
                             <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
                               {integration.icon}
                             </span>
                             <span className="text-foreground">
                               {integration.name}
                             </span>
-                            <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                              {enabledRepos.length}
+                            <span className="ml-auto text-muted-foreground text-xs">
+                              Setup
                             </span>
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                            <DropdownMenuGroup>
-                              <DropdownMenuLabel>
-                                Select Repository
-                              </DropdownMenuLabel>
-                            </DropdownMenuGroup>
-                            {enabledRepos.map((repo) => {
-                              const inContext = isRepoInContext(repo);
-                              return (
-                                <DropdownMenuItem
-                                  key={repo.id}
-                                  onClick={() => {
-                                    if (inContext) {
-                                      onRemoveContext?.({
-                                        type: "github-repo",
-                                        owner: repo.owner,
-                                        repo: repo.repo,
-                                        integrationId: repo.integrationId,
-                                      });
-                                    } else {
-                                      onAddContext?.({
-                                        type: "github-repo",
-                                        owner: repo.owner,
-                                        repo: repo.repo,
-                                        integrationId: repo.integrationId,
-                                      });
-                                    }
-                                  }}
-                                >
-                                  <Github className="size-4" />
-                                  <span className="truncate">
-                                    {repo.owner}/{repo.repo}
-                                  </span>
-                                  {inContext && (
-                                    <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                                      Added
-                                    </span>
-                                  )}
-                                </DropdownMenuItem>
-                              );
-                            })}
-                            {organizationSlug && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  render={
-                                    <Link
-                                      href={`/${organizationSlug}/integrations/github`}
-                                    />
-                                  }
-                                >
-                                  Manage repositories
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                      );
-                    }
+                          </DropdownMenuItem>
+                        );
+                      }
 
-                    // GitHub available but no repos
-                    if (isGitHub && isAvailable && organizationSlug) {
+                      // Not available integrations
                       return (
                         <DropdownMenuItem
+                          className="opacity-60"
+                          disabled
                           key={integration.id}
-                          render={
-                            <Link
-                              href={`/${organizationSlug}/integrations/github`}
-                            />
-                          }
                         >
                           <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
                             {integration.icon}
@@ -512,82 +541,63 @@ const ChatInput = ({
                             {integration.name}
                           </span>
                           <span className="ml-auto text-muted-foreground text-xs">
-                            Setup
+                            Soon
                           </span>
                         </DropdownMenuItem>
                       );
-                    }
-
-                    // Not available integrations
-                    return (
-                      <DropdownMenuItem
-                        className="opacity-60"
-                        disabled
-                        key={integration.id}
-                      >
-                        <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                          {integration.icon}
-                        </span>
-                        <span className="text-foreground">
-                          {integration.name}
-                        </span>
-                        <span className="ml-auto text-muted-foreground text-xs">
-                          Soon
-                        </span>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                  {organizationSlug && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        render={
-                          <Link href={`/${organizationSlug}/integrations`} />
-                        }
-                      >
-                        Manage integrations
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isLoading || isUsageBlocked}
-                    onClick={handleSend}
-                    size="sm"
-                    tabIndex={0}
-                    type="button"
-                    variant="outline"
-                  />
-                }
-              >
-                <div className="flex items-center gap-1 text-foreground text-sm">
-                  {isLoading ? (
-                    <Loader2Icon className="size-4 animate-spin" />
-                  ) : (
-                    <>
-                      <div className="px-0.5 text-sm leading-0 transition-transform">
-                        Go
-                      </div>
-                      <div className="hidden h-4 items-center rounded border border-border bg-background px-1 text-[10px] text-muted-foreground shadow-xs sm:inline-flex md:inline-flex">
-                        ↵
-                      </div>
-                    </>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                {isLoading
-                  ? "AI is thinking..."
-                  : "Enter to send. Shift+Enter for a new line."}
-              </TooltipContent>
-            </Tooltip>
-          </CardFooter>
+                    })}
+                    {organizationSlug && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          render={
+                            <Link href={`/${organizationSlug}/integrations`} />
+                          }
+                        >
+                          Manage integrations
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || isUsageBlocked}
+                      onClick={handleSend}
+                      size="sm"
+                      tabIndex={0}
+                      type="button"
+                      variant="outline"
+                    />
+                  }
+                >
+                  <div className="flex items-center gap-1 text-foreground text-sm">
+                    {isLoading ? (
+                      <Loader2Icon className="size-4 animate-spin" />
+                    ) : (
+                      <>
+                        <div className="px-0.5 text-sm leading-0 transition-transform">
+                          Go
+                        </div>
+                        <div className="hidden h-4 items-center rounded border border-border bg-background px-1 text-[10px] text-muted-foreground shadow-xs sm:inline-flex md:inline-flex">
+                          ↵
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isLoading
+                    ? "AI is thinking..."
+                    : "Enter to send. Shift+Enter for a new line."}
+                </TooltipContent>
+              </Tooltip>
+            </CardFooter>
+          </div>
         </div>
       </CardContent>
     </Card>

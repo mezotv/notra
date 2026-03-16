@@ -23,7 +23,7 @@ import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import remend from "remend";
 import { toast } from "sonner";
 import ChatInput, {
@@ -482,6 +482,24 @@ export default function PageClient({
     return undefined;
   })();
 
+  const completionMessage = useMemo(() => {
+    if (status === "streaming" || status === "submitted") {
+      return null;
+    }
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message?.role === "assistant" && message.parts) {
+        for (let j = message.parts.length - 1; j >= 0; j--) {
+          const part = message.parts[j];
+          if (part?.type === "text" && part.text?.trim()) {
+            return part.text.trim();
+          }
+        }
+      }
+    }
+    return null;
+  }, [messages, status]);
+
   const processedToolCallsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -810,6 +828,7 @@ export default function PageClient({
         className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"}`}
       >
         <ChatInput
+          completionMessage={completionMessage}
           context={context}
           error={chatError}
           isLoading={status === "streaming" || status === "submitted"}

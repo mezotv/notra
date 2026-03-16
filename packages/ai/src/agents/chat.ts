@@ -63,6 +63,8 @@ export async function createChatAgent(
 - For multi-line content use \\n in content string
 - When user selects text, focus only on that section
 - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
+- When you are completely done with all edits, end with a final short message (1 sentence max) summarizing what you changed. This must be your last text output.
+- Never use em dashes (—) or en dashes (–) in any content. Use hyphens (-) or rewrite the sentence instead.
 ${selectionContext}`,
     stopWhen: stepCountIs(15),
   });
