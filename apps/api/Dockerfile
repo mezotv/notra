@@ -13,6 +13,8 @@ COPY apps/api/package.json ./apps/api/package.json
 COPY apps/dashboard/package.json ./apps/dashboard/package.json
 COPY apps/docs/package.json ./apps/docs/package.json
 COPY apps/web/package.json ./apps/web/package.json
+COPY packages/ai/package.json ./packages/ai/package.json
+COPY packages/content-generation/package.json ./packages/content-generation/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/email/package.json ./packages/email/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
@@ -25,6 +27,8 @@ RUN bun install --frozen-lockfile
 FROM deps AS builder
 
 # Copy source for all packages the API depends on
+COPY packages/ai ./packages/ai
+COPY packages/content-generation ./packages/content-generation
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/db ./packages/db
 COPY apps/api ./apps/api
