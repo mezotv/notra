@@ -1,17 +1,11 @@
-export {
-  getValidToneProfile,
-  type ToneProfile,
-  toneProfileSchema,
-} from "@notra/ai/schemas/brand";
-
-import { toneProfileSchema } from "@notra/ai/schemas/brand";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
 import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
-} from "@/constants/languages";
+} from "@notra/ai/constants/languages";
+import { toneProfileSchema } from "@notra/ai/schemas/brand";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
 
 export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGES);
 

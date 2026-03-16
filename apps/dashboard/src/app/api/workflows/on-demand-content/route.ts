@@ -1,3 +1,4 @@
+import { getValidToneProfile } from "@notra/ai/schemas/brand";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import { githubIntegrations } from "@notra/db/schema";
@@ -5,7 +6,6 @@ import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq } from "drizzle-orm";
-
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
@@ -23,7 +23,6 @@ import {
   formatUtcTodayContext,
   resolveLookbackRange,
 } from "@/lib/workflows/shared/lookback";
-import { getValidToneProfile } from "@/schemas/brand";
 import {
   type OnDemandContentWorkflowPayload,
   onDemandContentWorkflowPayloadSchema,

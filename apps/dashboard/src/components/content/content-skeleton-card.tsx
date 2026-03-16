@@ -1,11 +1,11 @@
 "use client";
 
+import type { ContentType } from "@notra/ai/schemas/content";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Loader2Icon } from "lucide-react";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { cn } from "@/lib/utils";
-import type { ContentType } from "@/schemas/content";
 import { OutputTypeIcon } from "@/utils/output-types";
 
 interface ContentSkeletonCardProps {

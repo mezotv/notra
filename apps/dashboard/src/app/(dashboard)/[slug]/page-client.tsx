@@ -1,5 +1,6 @@
 "use client";
 
+import type { ContentType } from "@notra/ai/schemas/content";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 import { ContentCard } from "@/components/content/content-card";
@@ -11,7 +12,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
-import type { ContentType, PostStatus } from "@/schemas/content";
+import type { PostStatus } from "@/schemas/content";
 
 interface PageClientProps {
   organizationSlug: string;

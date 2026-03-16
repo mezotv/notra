@@ -1,3 +1,4 @@
+import type { ToneProfile } from "@notra/ai/schemas/brand";
 import {
   Combobox,
   ComboboxContent,
@@ -21,7 +22,6 @@ import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import type { ToneProfile } from "@/schemas/brand";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
 import {
   AUTO_SAVE_DELAY,

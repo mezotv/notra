@@ -1,3 +1,4 @@
+import { getValidToneProfile } from "@notra/ai/schemas/brand";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import {
@@ -34,7 +35,6 @@ import {
   parseLookbackWindow,
   parseTriggerOutputConfig,
 } from "@/lib/workflows/shared/parsing";
-import { getValidToneProfile } from "@/schemas/brand";
 import type { LookbackWindow } from "@/schemas/integrations";
 import {
   type EventWorkflowPayload,

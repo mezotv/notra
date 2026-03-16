@@ -1,5 +1,5 @@
+import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { ToneProfile } from "@/schemas/brand";
 import type { PostSummary } from "@/types/posts";
 
 export interface WorkflowTriggerData {

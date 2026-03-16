@@ -1,3 +1,4 @@
+import { createOctokit } from "@notra/ai/utils/octokit";
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
@@ -10,7 +11,6 @@ import {
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { createOctokit } from "@/lib/octokit";
 import { getTokenForIntegrationId } from "@/lib/services/github-integration";
 import { LOOKBACK_WINDOWS } from "@/schemas/integrations";
 import { resolveLookbackRange } from "@/utils/lookback";

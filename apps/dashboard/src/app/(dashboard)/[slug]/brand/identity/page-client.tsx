@@ -2,6 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { ToneProfile } from "@notra/ai/schemas/brand";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
@@ -23,7 +24,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { getValidLanguage, type ToneProfile } from "@/schemas/brand";
+import { getValidLanguage } from "@/schemas/brand";
 import { formatRelativeTime } from "@/utils/format";
 import {
   useAnalyzeBrand,

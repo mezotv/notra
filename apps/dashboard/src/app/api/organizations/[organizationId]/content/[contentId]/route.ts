@@ -1,10 +1,10 @@
+import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { marked } from "marked";
 import { type NextRequest, NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { sanitizeMarkdownHtml } from "@/lib/sanitize";
 import { updateContentSchema } from "@/schemas/content";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;

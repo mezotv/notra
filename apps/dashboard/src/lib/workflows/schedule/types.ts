@@ -1,7 +1,7 @@
+import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { AgentDataPointSettings } from "@notra/ai/types/agents";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { ToneProfile } from "@/schemas/brand";
 import type { PostSummary } from "@/types/posts";
 
 export interface ContentGenerationContext {

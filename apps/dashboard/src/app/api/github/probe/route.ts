@@ -1,8 +1,8 @@
+import { createOctokit } from "@notra/ai/utils/octokit";
 import { type NextRequest, NextResponse } from "next/server";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { getServerSession } from "@/lib/auth/session";
-import { createOctokit } from "@/lib/octokit";
 
 const probeRepoRequestSchema = z.object({
   owner: z.string().trim().min(1, "owner is required"),

@@ -8,6 +8,7 @@ import {
   ListViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { ContentType } from "@notra/ai/schemas/content";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { ButtonGroup } from "@notra/ui/components/ui/button-group";
@@ -39,7 +40,7 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useLocalStorage } from "@/lib/utils/local-storage";
-import type { ContentType, Post, PostStatus } from "@/schemas/content";
+import type { Post, PostStatus } from "@/schemas/content";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
 
