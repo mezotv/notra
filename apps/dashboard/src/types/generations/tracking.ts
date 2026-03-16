@@ -4,6 +4,7 @@ export interface ActiveGeneration {
   outputType: string;
   triggerName: string;
   startedAt: string;
+  source?: "api" | "dashboard";
 }
 
 export interface GenerationResult {
@@ -15,4 +16,5 @@ export interface GenerationResult {
   title?: string;
   reason?: string;
   completedAt: string;
+  source?: "api" | "dashboard";
 }

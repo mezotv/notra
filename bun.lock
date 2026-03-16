@@ -16,8 +16,11 @@
       "name": "api",
       "dependencies": {
         "@hono/zod-openapi": "^1.2.2",
+        "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
         "@unkey/api": "^2.3.0",
+        "@upstash/redis": "^1.35.8",
+        "@upstash/workflow": "^1.1.0",
         "hono": "^4.12.0",
         "marked": "^16.3.0",
         "sanitize-html": "^2.17.0",
@@ -52,6 +55,7 @@
         "@mendable/firecrawl-js": "^4.10.0",
         "@neoconfetti/react": "^1.0.0",
         "@notra/ai": "workspace:*",
+        "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
         "@notra/email": "workspace:*",
         "@notra/ui": "workspace:*",
@@ -179,6 +183,19 @@
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
         "@types/sanitize-html": "^2.16.0",
+        "typescript": "5.9.2",
+      },
+    },
+    "packages/content-generation": {
+      "name": "@notra/content-generation",
+      "version": "0.0.1",
+      "dependencies": {
+        "@notra/ai": "workspace:*",
+        "@upstash/redis": "^1.35.8",
+        "zod": "^4.3.4",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
         "typescript": "5.9.2",
       },
     },
@@ -829,6 +846,8 @@
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
     "@notra/ai": ["@notra/ai@workspace:packages/ai"],
+
+    "@notra/content-generation": ["@notra/content-generation@workspace:packages/content-generation"],
 
     "@notra/db": ["@notra/db@workspace:packages/db"],
 

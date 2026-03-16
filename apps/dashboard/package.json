@@ -35,6 +35,7 @@
     "@mendable/firecrawl-js": "^4.10.0",
     "@neoconfetti/react": "^1.0.0",
     "@notra/ai": "workspace:*",
+    "@notra/content-generation": "workspace:*",
     "@notra/db": "workspace:*",
     "@notra/email": "workspace:*",
     "@notra/ui": "workspace:*",

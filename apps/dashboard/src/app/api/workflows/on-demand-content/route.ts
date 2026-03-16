@@ -1,4 +1,12 @@
 import { getValidToneProfile } from "@notra/ai/schemas/brand";
+import {
+  appendContentGenerationJobEvent,
+  setContentGenerationJobStatus,
+} from "@notra/content-generation/jobs";
+import {
+  type ContentGenerationWorkflowPayload,
+  contentGenerationWorkflowPayloadSchema,
+} from "@notra/content-generation/schemas";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import { githubIntegrations } from "@notra/db/schema";
@@ -7,6 +15,7 @@ import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq } from "drizzle-orm";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
+import { redis } from "@/lib/redis";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
@@ -24,10 +33,6 @@ import {
   formatUtcTodayContext,
   resolveLookbackRange,
 } from "@/lib/workflows/shared/lookback";
-import {
-  type OnDemandContentWorkflowPayload,
-  onDemandContentWorkflowPayloadSchema,
-} from "@/schemas/workflows";
 
 interface RepositoryData {
   id: string;
@@ -47,9 +52,50 @@ type BrandSettingsData = {
   language: string | null;
 } | null;
 
-export const { POST } = serve<OnDemandContentWorkflowPayload>(
-  async (context: WorkflowContext<OnDemandContentWorkflowPayload>) => {
-    const parseResult = onDemandContentWorkflowPayloadSchema.safeParse(
+async function setTrackedJobStatus(
+  jobId: string | undefined,
+  status: "running" | "completed" | "failed",
+  updates?: { postId?: string | null; error?: string | null }
+) {
+  if (!(jobId && redis)) {
+    return;
+  }
+
+  await setContentGenerationJobStatus(redis, jobId, status, {
+    ...(updates?.postId !== undefined ? { postId: updates.postId } : {}),
+    ...(updates?.error !== undefined ? { error: updates.error } : {}),
+  });
+}
+
+async function appendTrackedJobEvent(
+  jobId: string | undefined,
+  type:
+    | "running"
+    | "fetching_repositories"
+    | "generating_content"
+    | "post_created"
+    | "completed"
+    | "failed",
+  message: string,
+  metadata?: Record<string, unknown> | null
+) {
+  if (!(jobId && redis)) {
+    return;
+  }
+
+  await appendContentGenerationJobEvent(redis, {
+    id: crypto.randomUUID(),
+    jobId,
+    type,
+    message,
+    createdAt: new Date().toISOString(),
+    metadata: metadata ?? null,
+  });
+}
+
+export const { POST } = serve<ContentGenerationWorkflowPayload>(
+  async (context: WorkflowContext<ContentGenerationWorkflowPayload>) => {
+    const parseResult = contentGenerationWorkflowPayloadSchema.safeParse(
       context.requestPayload
     );
     if (!parseResult.success) {
@@ -64,6 +110,7 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
     const {
       organizationId,
       runId,
+      jobId,
       contentType,
       lookbackWindow,
       repositoryIds,
@@ -71,7 +118,25 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
       dataPoints,
       selectedItems,
       aiCreditReserved,
+      source,
     } = parseResult.data;
+
+    await context.run("mark-job-running", async () => {
+      await setTrackedJobStatus(jobId, "running");
+      await appendTrackedJobEvent(
+        jobId,
+        "running",
+        `Started ${contentType.replaceAll("_", " ")} generation`
+      );
+    });
+
+    await context.run("log-fetching-repositories", async () => {
+      await appendTrackedJobEvent(
+        jobId,
+        "fetching_repositories",
+        "Resolving repository sources"
+      );
+    });
 
     const repositories = await context.run<RepositoryData[]>(
       "fetch-repositories",
@@ -118,6 +183,7 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
           status: "failed",
           reason: "No valid repositories found",
           completedAt: new Date().toISOString(),
+          source,
         });
       });
       await context.run("refund-no-repos", async () => {
@@ -151,6 +217,14 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
     );
 
     try {
+      await context.run("log-generating-content", async () => {
+        await appendTrackedJobEvent(
+          jobId,
+          "generating_content",
+          "Generating content from repository activity"
+        );
+      });
+
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
         async () => {
@@ -211,7 +285,9 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
               : undefined,
             selectedReleases: selectedItems?.releaseTagNames?.length
               ? selectedItems.releaseTagNames.filter(
-                  (item): item is { repositoryId: string; tagName: string } =>
+                  (
+                    item: string | { repositoryId: string; tagName: string }
+                  ): item is { repositoryId: string; tagName: string } =>
                     typeof item !== "string"
                 )
               : undefined,
@@ -278,7 +354,10 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
             status: "failed",
             reason,
             completedAt: new Date().toISOString(),
+            source,
           });
+          await setTrackedJobStatus(jobId, "failed", { error: reason });
+          await appendTrackedJobEvent(jobId, "failed", reason);
         });
 
         await context.run("log-generation-failure", async () => {
@@ -317,7 +396,16 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
             status: "failed",
             reason: "No content was generated",
             completedAt: new Date().toISOString(),
+            source,
           });
+          await setTrackedJobStatus(jobId, "failed", {
+            error: "No content was generated",
+          });
+          await appendTrackedJobEvent(
+            jobId,
+            "failed",
+            "No content was generated"
+          );
         });
 
         await context.run("log-no-posts", async () => {
@@ -354,7 +442,26 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
           status: "success",
           title: contentTitle,
           completedAt: new Date().toISOString(),
+          source,
         });
+        await setTrackedJobStatus(jobId, "completed", {
+          postId: createdPosts[0]?.postId ?? null,
+          error: null,
+        });
+        await appendTrackedJobEvent(
+          jobId,
+          "post_created",
+          createdPosts.length === 1
+            ? `Created post ${createdPosts[0]?.postId ?? ""}`
+            : `Created ${createdPosts.length} posts`,
+          { postId: createdPosts[0]?.postId ?? null }
+        );
+        await appendTrackedJobEvent(
+          jobId,
+          "completed",
+          `Completed ${contentType.replaceAll("_", " ")} generation`,
+          { postId: createdPosts[0]?.postId ?? null }
+        );
       });
 
       await context.run("log-generation-success", async () => {
@@ -387,7 +494,16 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
           status: "failed",
           reason: "Unexpected workflow error",
           completedAt: new Date().toISOString(),
+          source,
         });
+        await setTrackedJobStatus(jobId, "failed", {
+          error: "Unexpected workflow error",
+        });
+        await appendTrackedJobEvent(
+          jobId,
+          "failed",
+          "Unexpected workflow error"
+        );
       });
 
       await context.run("refund-error", async () => {
@@ -415,7 +531,16 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
           status: "failed",
           reason: "Workflow infrastructure failure",
           completedAt: new Date().toISOString(),
+          source: payload.source,
         });
+        await setTrackedJobStatus(payload.jobId, "failed", {
+          error: "Workflow infrastructure failure",
+        });
+        await appendTrackedJobEvent(
+          payload.jobId,
+          "failed",
+          "Workflow infrastructure failure"
+        );
         await refundReservedAiCredit(
           payload.organizationId,
           payload.aiCreditReserved

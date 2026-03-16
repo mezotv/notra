@@ -1,4 +1,8 @@
 import { z } from "@hono/zod-openapi";
+import {
+  LOOKBACK_WINDOWS,
+  SUPPORTED_CONTENT_GENERATION_TYPES,
+} from "@notra/content-generation/schemas";
 
 export const getPostsParamsSchema = z.object({});
 
@@ -192,6 +196,146 @@ export const deletePostResponseSchema = z.object({
   id: z.string(),
 });
 
+export const contentGenerationStatusSchema = z.enum([
+  "queued",
+  "running",
+  "completed",
+  "failed",
+]);
+
+export const contentGenerationLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
+
+export const contentGenerationTypeSchema = z.enum(
+  SUPPORTED_CONTENT_GENERATION_TYPES
+);
+
+export const createPostGenerationRequestSchema = z
+  .object({
+    contentType: contentGenerationTypeSchema.openapi({
+      example: "blog_post",
+    }),
+    lookbackWindow: contentGenerationLookbackWindowSchema
+      .default("last_7_days")
+      .openapi({ example: "last_7_days" }),
+    brandVoiceId: z.string().min(1).optional().openapi({
+      example: "voice_123",
+    }),
+    repositoryIds: z
+      .array(z.string().min(1))
+      .optional()
+      .openapi({
+        example: ["repo_1", "repo_2"],
+      }),
+    github: z
+      .object({
+        repositories: z.array(
+          z.object({
+            owner: z.string().min(1),
+            repo: z.string().min(1),
+          })
+        ),
+      })
+      .optional()
+      .openapi({
+        example: {
+          repositories: [{ owner: "usenotra", repo: "notra" }],
+        },
+      }),
+    dataPoints: z
+      .object({
+        includePullRequests: z.boolean().default(true),
+        includeCommits: z.boolean().default(true),
+        includeReleases: z.boolean().default(true),
+        includeLinearIssues: z.boolean().default(false),
+      })
+      .default({
+        includePullRequests: true,
+        includeCommits: true,
+        includeReleases: true,
+        includeLinearIssues: false,
+      }),
+    selectedItems: z
+      .object({
+        commitShas: z.array(z.string()).optional(),
+        pullRequestNumbers: z
+          .array(
+            z.object({
+              repositoryId: z.string(),
+              number: z.number(),
+            })
+          )
+          .optional(),
+        releaseTagNames: z
+          .array(
+            z.union([
+              z.string(),
+              z.object({
+                repositoryId: z.string(),
+                tagName: z.string(),
+              }),
+            ])
+          )
+          .optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (value) => !(value.repositoryIds && value.github?.repositories?.length),
+    {
+      message: "Provide either repositoryIds or github.repositories, not both",
+      path: ["github"],
+    }
+  );
+
+export const contentGenerationJobEventSchema = z.object({
+  id: z.string(),
+  jobId: z.string(),
+  type: z.string(),
+  message: z.string(),
+  createdAt: z.string(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+});
+
+export const contentGenerationJobSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  status: contentGenerationStatusSchema,
+  contentType: contentGenerationTypeSchema,
+  lookbackWindow: contentGenerationLookbackWindowSchema,
+  repositoryIds: z.array(z.string()),
+  brandVoiceId: z.string().nullable(),
+  workflowRunId: z.string().nullable(),
+  postId: z.string().nullable(),
+  error: z.string().nullable(),
+  source: z.enum(["api", "dashboard"]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  completedAt: z.string().nullable(),
+});
+
+export const createPostGenerationResponseSchema = z.object({
+  job: contentGenerationJobSchema,
+});
+
+export const getPostGenerationParamsSchema = z.object({
+  jobId: z
+    .string()
+    .trim()
+    .min(1, "jobId is required")
+    .openapi({
+      param: {
+        in: "path",
+        name: "jobId",
+      },
+      example: "job_123",
+    }),
+});
+
+export const getPostGenerationResponseSchema = z.object({
+  job: contentGenerationJobSchema,
+  events: z.array(contentGenerationJobEventSchema),
+});
+
 export type GetPostsParams = z.infer<typeof getPostsParamsSchema>;
 export type GetPostsQuery = z.infer<typeof getPostsQuerySchema>;
 export type GetPostParams = z.infer<typeof getPostParamsSchema>;
@@ -201,3 +345,15 @@ export type GetPostResponse = z.infer<typeof getPostResponseSchema>;
 export type PatchPostRequest = z.infer<typeof patchPostRequestSchema>;
 export type PatchPostResponse = z.infer<typeof patchPostResponseSchema>;
 export type DeletePostResponse = z.infer<typeof deletePostResponseSchema>;
+export type CreatePostGenerationRequest = z.infer<
+  typeof createPostGenerationRequestSchema
+>;
+export type CreatePostGenerationResponse = z.infer<
+  typeof createPostGenerationResponseSchema
+>;
+export type GetPostGenerationParams = z.infer<
+  typeof getPostGenerationParamsSchema
+>;
+export type GetPostGenerationResponse = z.infer<
+  typeof getPostGenerationResponseSchema
+>;

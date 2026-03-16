@@ -3,7 +3,12 @@
 import type { ContentType } from "@notra/ai/schemas/content";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { Loader2Icon } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { BracesIcon, Loader2Icon } from "lucide-react";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { cn } from "@/lib/utils";
 import { OutputTypeIcon } from "@/utils/output-types";
@@ -11,11 +16,13 @@ import { OutputTypeIcon } from "@/utils/output-types";
 interface ContentSkeletonCardProps {
   outputType: string;
   className?: string;
+  source?: "api" | "dashboard";
 }
 
 export function ContentSkeletonCard({
   outputType,
   className,
+  source,
 }: ContentSkeletonCardProps) {
   return (
     <div
@@ -32,6 +39,14 @@ export function ContentSkeletonCard({
             Generating content...
           </p>
         </div>
+        {source === "api" && (
+          <Tooltip>
+            <TooltipTrigger className="inline-flex shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/80 p-1 text-muted-foreground transition-colors hover:bg-background">
+              <BracesIcon className="size-3.5" />
+            </TooltipTrigger>
+            <TooltipContent side="top">Queued via API</TooltipContent>
+          </Tooltip>
+        )}
       </div>
       <div className="flex-1 space-y-2 rounded-[0.75rem] border border-border/80 bg-background px-4 py-3">
         <Skeleton className="h-3.5 w-full" />

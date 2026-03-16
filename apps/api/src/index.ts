@@ -30,6 +30,11 @@ function getAllowedOrigin(origin: string | undefined): string | null {
 interface Bindings {
   UNKEY_ROOT_KEY: string;
   DATABASE_URL: string;
+  UPSTASH_REDIS_REST_URL?: string;
+  UPSTASH_REDIS_REST_TOKEN?: string;
+  QSTASH_TOKEN?: string;
+  CONTENT_GENERATION_WORKFLOW_URL?: string;
+  CONTENT_GENERATION_WORKFLOW_BASE_URL?: string;
 }
 
 interface AppEnv {
