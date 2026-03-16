@@ -1,7 +1,6 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { posts } from "@notra/db/schema";
 import { and, count, eq, inArray } from "drizzle-orm";
-import { verifyRequestAuth } from "../middleware/auth";
 import {
   ALL_POST_CONTENT_TYPES,
   ALL_POST_STATUSES,
@@ -346,11 +345,6 @@ contentRoutes.openapi(getPostRoute, async (c) => {
 });
 
 contentRoutes.openapi(deletePostRoute, async (c) => {
-  const authResult = await verifyRequestAuth(c, { permissions: "api.write" });
-  if (!authResult.success) {
-    return c.json({ error: authResult.error }, authResult.status);
-  }
-
   const orgId = getOrganizationId(c);
   if (!orgId) {
     return c.json(

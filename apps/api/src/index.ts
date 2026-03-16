@@ -25,9 +25,12 @@ app.use("/v1/*", async (c, next) => {
   await next();
 });
 
-app.use("/v1/*", (c, next) =>
-  authMiddleware({ permissions: "api.read" })(c, next)
-);
+app.use("/v1/*", (c, next) => {
+  const permissions = ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method)
+    ? "api.write"
+    : "api.read";
+  return authMiddleware({ permissions })(c, next);
+});
 
 app.get("/", (c) => {
   return c.text("ok");
