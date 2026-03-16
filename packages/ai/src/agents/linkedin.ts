@@ -46,6 +46,7 @@ export async function generateLinkedInPost(
     selectionFilters,
     commitWindow,
     autoPublish,
+    resolveContext,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -101,6 +102,7 @@ export async function generateLinkedInPost(
         dataPointSettings,
         selectionFilters,
         commitWindow,
+        resolveContext,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),

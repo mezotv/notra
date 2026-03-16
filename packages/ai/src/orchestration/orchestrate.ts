@@ -1,7 +1,7 @@
 import { createModel } from "@notra/ai/model";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
 import { getAISDKTelemetry } from "@notra/ai/telemetry";
-import type { ResolveIntegrationContext } from "@notra/ai/tools/github";
+import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
 import type {
   OrchestrateInput,
   OrchestrateResult,

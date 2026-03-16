@@ -28,6 +28,7 @@ import {
   completeActiveGeneration,
   generateRunId,
 } from "@/lib/generations/tracking";
+import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
@@ -274,6 +275,7 @@ export const { POST } = serve<EventWorkflowPayload>(
             },
             sourceMetadata,
             autoPublish: trigger.autoPublish,
+            resolveContext: getGitHubToolRepositoryContextByIntegrationId,
           });
         }
       );

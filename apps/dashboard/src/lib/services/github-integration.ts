@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { createOctokit } from "@notra/ai/utils/octokit";
 import { db } from "@notra/db/drizzle";
 import {
   githubIntegrations,
@@ -19,7 +20,6 @@ import type {
   WebhookConfig,
 } from "@/types/services/integrations";
 import { getConfiguredAppUrl } from "@/utils/url";
-import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 

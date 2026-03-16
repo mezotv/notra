@@ -1,4 +1,7 @@
-import type { AgentDataPointSettings } from "@notra/ai/types/agents";
+import type {
+  AgentDataPointSettings,
+  ResolveIntegrationContext,
+} from "@notra/ai/types/agents";
 import type {
   CommitWindow,
   ErrorWithStatus,
@@ -141,11 +144,6 @@ async function withGitHubRateLimitHandling<T>(operation: () => Promise<T>) {
     throw error;
   }
 }
-
-export type ResolveIntegrationContext = (
-  integrationId: string,
-  options?: { organizationId?: string }
-) => Promise<GitHubToolRepositoryContext>;
 
 function createIntegrationContextResolver(
   config?: GitHubToolsAccessConfig,

@@ -47,6 +47,7 @@ export async function generateEventBasedContent(
       promptInput,
       sourceMetadata: ctx.sourceMetadata,
       autoPublish: ctx.autoPublish,
+      resolveContext: ctx.resolveContext,
     };
 
     const result = await generateFn(agentOptions);

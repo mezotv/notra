@@ -7,6 +7,7 @@ import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq } from "drizzle-orm";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
+import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
@@ -251,6 +252,7 @@ export const { POST } = serve<OnDemandContentWorkflowPayload>(
               until: lookback.end.toISOString(),
             },
             voiceId: brand?.id,
+            resolveContext: getGitHubToolRepositoryContextByIntegrationId,
           });
         }
       );

@@ -19,6 +19,7 @@ export async function handleBlogPost(
       selectionFilters: ctx.selectionFilters,
       commitWindow: ctx.commitWindow,
       autoPublish: ctx.autoPublish,
+      resolveContext: ctx.resolveContext,
     });
 
     return { status: "ok", postId, title, posts };

@@ -3,9 +3,9 @@ import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
-  type ResolveIntegrationContext,
 } from "@notra/ai/tools/github";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
 import type {
   BuildToolSetParams,
   RepoContext,

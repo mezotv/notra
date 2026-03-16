@@ -44,6 +44,7 @@ export async function generateBlogPost(
     selectionFilters,
     commitWindow,
     autoPublish,
+    resolveContext,
   } = options;
 
   if (!repositories || repositories.length === 0) {
@@ -94,6 +95,7 @@ export async function generateBlogPost(
         dataPointSettings,
         selectionFilters,
         commitWindow,
+        resolveContext,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),

@@ -1,4 +1,5 @@
 import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "@/types/posts";
 
@@ -50,6 +51,7 @@ export interface EventGenerationContext {
   outputType: string;
   sourceMetadata: PostSourceMetadata;
   autoPublish?: boolean;
+  resolveContext: ResolveIntegrationContext;
 }
 
 export type EventGenerationResult =
