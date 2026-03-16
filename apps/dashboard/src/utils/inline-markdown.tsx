@@ -104,7 +104,7 @@ function splitBoldSections(line: string): string[] {
     }
   }
 
-  if (matches[0] > 0) {
+  if (matches[0] !== undefined && matches[0] > 0) {
     const before = line.slice(0, matches[0]).trim();
     if (before) {
       segments.unshift(before);
