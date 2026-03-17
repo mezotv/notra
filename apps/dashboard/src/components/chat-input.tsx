@@ -127,14 +127,12 @@ const ChatInput = ({
     onClearError?.();
   }, [onClearError]);
 
-  // Support both controlled and uncontrolled modes
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
   const setValue = isControlled
     ? (onValueChange ?? (() => {}))
     : setInternalValue;
 
-  // Fetch GitHub integrations
   const { data: integrationsData } = useQuery<IntegrationsResponse>({
     queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId ?? ""),
     queryFn: async () => {
@@ -282,7 +280,7 @@ const ChatInput = ({
             )}
             {usageLimitError && (
               <Alert className="mx-2 mt-2 mb-1" variant="destructive">
-                <AlertDescription className="flex flex-wrap items-center gap-1 break-words text-sm">
+                <AlertDescription className="wrap-break-word flex flex-wrap items-center gap-1 text-sm">
                   <span>{usageLimitError}</span>
                   {organizationSlug && (
                     <Link
