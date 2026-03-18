@@ -195,7 +195,7 @@ export const auth = betterAuth({
       otpLength: 6,
       expiresIn: 300,
       sendVerificationOTP: async ({ email, otp, type }) => {
-        if (type === "forget-password") {
+        if (type === "forget-password" || type === "change-email") {
           return;
         }
         sendVerificationEmailAction({

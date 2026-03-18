@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { useRouter } from "next/navigation";
 import { memo, useMemo, useState } from "react";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
@@ -75,11 +76,12 @@ const IntegrationCard = memo(function IntegrationCard({
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
   const organizationSlug = activeOrganization?.slug;
+  const router = useRouter();
   const isActive = activeCount > 0;
   const [dialogOpen, setDialogOpen] = useState(false);
   const showConnectButton = integration.available;
   const showComingSoon = !integration.available;
-  const showDialog = integration.available && integration.id === "github";
+  const showGitHubDialog = integration.available && integration.id === "github";
 
   if (!(organizationId && organizationSlug)) {
     return null;
@@ -101,7 +103,13 @@ const IntegrationCard = memo(function IntegrationCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setDialogOpen(true);
+                if (showGitHubDialog) {
+                  setDialogOpen(true);
+                } else {
+                  router.push(
+                    `/${organizationSlug}/integrations/${integration.href}`
+                  );
+                }
               }}
               size="sm"
               variant="outline"
@@ -158,7 +166,7 @@ const IntegrationCard = memo(function IntegrationCard({
       ) : (
         cardContent
       )}
-      {showDialog ? (
+      {showGitHubDialog ? (
         <AddIntegrationDialog
           onOpenChange={setDialogOpen}
           onSuccess={() => {

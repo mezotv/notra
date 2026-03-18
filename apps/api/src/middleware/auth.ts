@@ -48,6 +48,14 @@ export async function verifyRequestAuth(
       return { success: false, error: result.data.code, status: 401 };
     }
 
+    if (!result.data.identity?.externalId) {
+      return {
+        success: false,
+        error: "Missing or invalid API key",
+        status: 401,
+      };
+    }
+
     c.set("auth", result.data);
     return { success: true, auth: result.data };
   } catch {

@@ -14,6 +14,7 @@
     "@unkey/api": "^2.3.0",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
+    "drizzle-orm": "^0.45.1",
     "hono": "^4.12.0",
     "marked": "^16.3.0",
     "sanitize-html": "^2.17.0",
@@ -21,6 +22,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
     "wrangler": "^4.4.0"
   }
 }

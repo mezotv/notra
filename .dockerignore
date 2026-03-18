@@ -49,6 +49,9 @@ logs/
 apps/dashboard
 apps/web
 apps/docs
+!apps/dashboard/package.json
+!apps/web/package.json
+!apps/docs/package.json
 
 # Openlogs
 .openlogs/

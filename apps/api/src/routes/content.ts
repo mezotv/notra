@@ -9,8 +9,14 @@ import {
   updateContentGenerationJob,
 } from "@notra/content-generation/jobs";
 import type { createDb } from "@notra/db/drizzle-http";
-import { brandSettings, githubIntegrations, posts } from "@notra/db/schema";
+import {
+  brandSettings,
+  githubIntegrations,
+  organizations,
+  posts,
+} from "@notra/db/schema";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
+
 import {
   ALL_POST_CONTENT_TYPES,
   ALL_POST_STATUSES,
@@ -45,6 +51,39 @@ import {
 } from "../utils/regex";
 
 export const contentRoutes = new OpenAPIHono();
+
+type DbClient = ReturnType<typeof createDb>;
+
+async function getOrganizationResponse(
+  db: DbClient,
+  organizationId: string
+): Promise<{
+  id: string;
+  slug: string;
+  name: string;
+  logo: string | null;
+} | null> {
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+    columns: {
+      id: true,
+      slug: true,
+      name: true,
+      logo: true,
+    },
+  });
+
+  if (!organization) {
+    return null;
+  }
+
+  return {
+    id: organization.id,
+    slug: organization.slug,
+    name: organization.name,
+    logo: organization.logo,
+  };
+}
 
 function shouldApplyFilter(
   selectedValues: readonly string[],
@@ -322,6 +361,14 @@ const getPostsRoute = createRoute({
         },
       },
     },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
     503: {
       description: "Authentication service unavailable",
       content: {
@@ -369,6 +416,14 @@ const getPostRoute = createRoute({
     },
     403: {
       description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Post or organization not found",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -641,6 +696,12 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
   const query = c.req.valid("query");
   const db = c.get("db");
   const { limit, page, sort, status, contentType } = query;
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
   const offset = (page - 1) * limit;
   const whereClause = and(
     eq(posts.organizationId, orgId),
@@ -684,6 +745,7 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
 
   return c.json(
     {
+      organization,
       posts: results,
       pagination: {
         limit,
@@ -709,6 +771,12 @@ contentRoutes.openapi(getPostRoute, async (c) => {
 
   const params = c.req.valid("param");
   const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
   const post = await db.query.posts.findFirst({
     where: and(eq(posts.id, params.postId), eq(posts.organizationId, orgId)),
     columns: {
@@ -727,6 +795,7 @@ contentRoutes.openapi(getPostRoute, async (c) => {
 
   return c.json(
     {
+      organization,
       post: post ?? null,
     },
     200
@@ -744,6 +813,12 @@ contentRoutes.openapi(deletePostRoute, async (c) => {
 
   const { postId } = c.req.valid("param");
   const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
   const [deletedPost] = await db
     .delete(posts)
     .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
@@ -753,7 +828,7 @@ contentRoutes.openapi(deletePostRoute, async (c) => {
     return c.json({ error: "Post not found" }, 404);
   }
 
-  return c.json({ id: deletedPost.id }, 200);
+  return c.json({ id: deletedPost.id, organization }, 200);
 });
 
 contentRoutes.openapi(patchPostRoute, async (c) => {
@@ -768,6 +843,11 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
   const { postId } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
 
   const existingPost = await db.query.posts.findFirst({
     where: and(eq(posts.id, postId), eq(posts.organizationId, orgId)),
@@ -832,7 +912,7 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     return c.json({ error: "Post not found" }, 404);
   }
 
-  return c.json({ post: updatedPost }, 200);
+  return c.json({ organization, post: updatedPost }, 200);
 });
 
 contentRoutes.openapi(createPostGenerationRoute, async (c) => {

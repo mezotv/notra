@@ -47,11 +47,11 @@ export const OUTPUT_SOURCES: readonly IntegrationConfig[] = [
   {
     id: "framer",
     name: "Framer",
-    description: "Sync content to your Framer site automatically",
+    description: "Import content into Framer automatically",
     icon: <Framer />,
     accentColor: "#0055FF",
     href: "framer",
-    available: false,
+    available: true,
     category: "output",
   },
   {
