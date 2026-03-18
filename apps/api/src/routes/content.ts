@@ -15,7 +15,7 @@ import {
   organizations,
   posts,
 } from "@notra/db/schema";
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 
 import {
   ALL_POST_CONTENT_TYPES,
@@ -24,6 +24,9 @@ import {
   createPostGenerationResponseSchema,
   deletePostResponseSchema,
   errorResponseSchema,
+  getBrandIdentitiesResponseSchema,
+  getBrandIdentityParamsSchema,
+  getBrandIdentityResponseSchema,
   getPostGenerationParamsSchema,
   getPostGenerationResponseSchema,
   getPostParamsSchema,
@@ -203,7 +206,7 @@ async function resolveRequestedRepositoryIds(
 async function resolveRequestedBrandVoiceId(
   db: ReturnType<typeof createDb>,
   organizationId: string,
-  brandVoiceId?: string
+  brandVoiceId?: string | null
 ) {
   if (brandVoiceId) {
     const explicitVoice = await db.query.brandSettings.findFirst({
@@ -631,6 +634,117 @@ const createPostGenerationRoute = createRoute({
   },
 });
 
+const getBrandIdentitiesRoute = createRoute({
+  method: "get",
+  path: "/brand-identities",
+  tags: ["Content"],
+  operationId: "listBrandIdentities",
+  summary: "List available brand identities",
+  responses: {
+    200: {
+      description: "Brand identities fetched successfully",
+      content: {
+        "application/json": {
+          schema: getBrandIdentitiesResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const getBrandIdentityRoute = createRoute({
+  method: "get",
+  path: "/brand-identities/{brandIdentityId}",
+  tags: ["Content"],
+  operationId: "getBrandIdentity",
+  summary: "Get a single brand identity",
+  request: {
+    params: getBrandIdentityParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Brand identity fetched successfully",
+      content: {
+        "application/json": {
+          schema: getBrandIdentityResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid path params",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 const getPostGenerationRoute = createRoute({
   method: "get",
   path: "/posts/generate/{jobId}",
@@ -745,7 +859,6 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
 
   return c.json(
     {
-      organization,
       posts: results,
       pagination: {
         limit,
@@ -755,6 +868,7 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
         totalPages,
         totalItems,
       },
+      organization,
     },
     200
   );
@@ -795,8 +909,8 @@ contentRoutes.openapi(getPostRoute, async (c) => {
 
   return c.json(
     {
-      organization,
       post: post ?? null,
+      organization,
     },
     200
   );
@@ -912,7 +1026,7 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     return c.json({ error: "Post not found" }, 404);
   }
 
-  return c.json({ organization, post: updatedPost }, 200);
+  return c.json({ post: updatedPost, organization }, 200);
 });
 
 contentRoutes.openapi(createPostGenerationRoute, async (c) => {
@@ -953,7 +1067,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
     resolvedBrandVoiceId = await resolveRequestedBrandVoiceId(
       db,
       orgId,
-      body.brandVoiceId
+      body.brandIdentityId ?? body.brandVoiceId
     );
   } catch (error) {
     return c.json(
@@ -1036,7 +1150,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
       metadata: { workflowRunId },
     });
 
-    return c.json({ organization: organization!, job: updatedJob ?? job }, 202);
+    return c.json({ job: updatedJob ?? job, organization: organization! }, 202);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to trigger workflow";
@@ -1065,6 +1179,67 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
       503
     );
   }
+});
+
+contentRoutes.openapi(getBrandIdentitiesRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const brandIdentities = await db.query.brandSettings.findMany({
+    where: eq(brandSettings.organizationId, orgId),
+    orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+    columns: {
+      id: true,
+      name: true,
+      isDefault: true,
+    },
+  });
+
+  return c.json({ brandIdentities, organization }, 200);
+});
+
+contentRoutes.openapi(getBrandIdentityRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { brandIdentityId } = c.req.valid("param");
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const brandIdentity = await db.query.brandSettings.findFirst({
+    where: and(
+      eq(brandSettings.id, brandIdentityId),
+      eq(brandSettings.organizationId, orgId)
+    ),
+    columns: {
+      id: true,
+      name: true,
+      isDefault: true,
+    },
+  });
+
+  return c.json({ brandIdentity: brandIdentity ?? null, organization }, 200);
 });
 
 contentRoutes.openapi(getPostGenerationRoute, async (c) => {

@@ -129,6 +129,20 @@ export const getPostParamsSchema = z.object({
     }),
 });
 
+export const getBrandIdentityParamsSchema = z.object({
+  brandIdentityId: z
+    .string()
+    .trim()
+    .min(1, "brandIdentityId is required")
+    .openapi({
+      param: {
+        in: "path",
+        name: "brandIdentityId",
+      },
+      example: "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561",
+    }),
+});
+
 export const errorResponseSchema = z
   .object({
     error: z.string(),
@@ -140,6 +154,12 @@ export const organizationResponseSchema = z.object({
   slug: z.string(),
   name: z.string(),
   logo: z.string().nullable(),
+});
+
+export const brandIdentityResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  isDefault: z.boolean(),
 });
 
 export const postResponseSchema = z.object({
@@ -207,6 +227,16 @@ export const deletePostResponseSchema = z.object({
   organization: organizationResponseSchema,
 });
 
+export const getBrandIdentitiesResponseSchema = z.object({
+  organization: organizationResponseSchema,
+  brandIdentities: z.array(brandIdentityResponseSchema),
+});
+
+export const getBrandIdentityResponseSchema = z.object({
+  brandIdentity: brandIdentityResponseSchema.nullable(),
+  organization: organizationResponseSchema,
+});
+
 export const contentGenerationStatusSchema = z.enum([
   "queued",
   "running",
@@ -229,6 +259,9 @@ export const createPostGenerationRequestSchema = z
       .default("last_7_days")
       .openapi({ example: "last_7_days" }),
     brandVoiceId: z.string().min(1).optional().openapi({
+      example: "voice_123",
+    }),
+    brandIdentityId: z.string().min(1).nullable().optional().openapi({
       example: "voice_123",
     }),
     repositoryIds: z
@@ -296,6 +329,14 @@ export const createPostGenerationRequestSchema = z
       message: "Provide either repositoryIds or github.repositories, not both",
       path: ["github"],
     }
+  )
+  .refine(
+    (value) =>
+      value.brandVoiceId === undefined || value.brandIdentityId === undefined,
+    {
+      message: "Provide either brandVoiceId or brandIdentityId, not both",
+      path: ["brandIdentityId"],
+    }
   );
 
 export const contentGenerationJobEventSchema = z.object({
@@ -351,9 +392,15 @@ export const getPostGenerationResponseSchema = z.object({
 export type GetPostsParams = z.infer<typeof getPostsParamsSchema>;
 export type GetPostsQuery = z.infer<typeof getPostsQuerySchema>;
 export type GetPostParams = z.infer<typeof getPostParamsSchema>;
+export type GetBrandIdentityParams = z.infer<
+  typeof getBrandIdentityParamsSchema
+>;
 export type PostResponse = z.infer<typeof postResponseSchema>;
 export type GetPostsResponse = z.infer<typeof getPostsResponseSchema>;
 export type GetPostResponse = z.infer<typeof getPostResponseSchema>;
+export type GetBrandIdentityResponse = z.infer<
+  typeof getBrandIdentityResponseSchema
+>;
 export type PatchPostRequest = z.infer<typeof patchPostRequestSchema>;
 export type PatchPostResponse = z.infer<typeof patchPostResponseSchema>;
 export type DeletePostResponse = z.infer<typeof deletePostResponseSchema>;

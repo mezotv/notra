@@ -65,6 +65,7 @@ export const createContentGenerationRequestSchema = z
     contentType: onDemandContentTypeSchema,
     lookbackWindow: lookbackWindowSchema.default("last_7_days"),
     brandVoiceId: z.string().min(1).optional(),
+    brandIdentityId: z.string().min(1).nullable().optional(),
     repositoryIds: z.array(z.string().min(1)).optional(),
     github: requestedGitHubRepositoriesSchema.optional(),
     dataPoints: contentDataPointSettingsSchema.prefault({}),
@@ -75,6 +76,14 @@ export const createContentGenerationRequestSchema = z
     {
       message: "Provide either repositoryIds or github.repositories, not both",
       path: ["github"],
+    }
+  )
+  .refine(
+    (value) =>
+      value.brandVoiceId === undefined || value.brandIdentityId === undefined,
+    {
+      message: "Provide either brandVoiceId or brandIdentityId, not both",
+      path: ["brandIdentityId"],
     }
   );
 

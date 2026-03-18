@@ -46,6 +46,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     lookbackWindow,
     repositoryIds,
     selectedItems,
+    brandIdentityId,
     brandVoiceId,
     dataPoints,
   } = bodyValidation.data;
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     contentType,
     lookbackWindow,
     repositoryIds,
-    brandVoiceId,
+    brandVoiceId: brandIdentityId ?? brandVoiceId,
     dataPoints,
     selectedItems,
     aiCreditReserved,
