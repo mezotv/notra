@@ -740,6 +740,883 @@
           }
         }
       }
+    },
+    "/v1/posts/generate": {
+      "post": {
+        "tags": ["Content"],
+        "operationId": "createPostGeneration",
+        "summary": "Queue async post generation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "enum": [
+                      "changelog",
+                      "blog_post",
+                      "linkedin_post",
+                      "twitter_post"
+                    ],
+                    "example": "blog_post"
+                  },
+                  "lookbackWindow": {
+                    "type": "string",
+                    "enum": [
+                      "current_day",
+                      "yesterday",
+                      "last_7_days",
+                      "last_14_days",
+                      "last_30_days"
+                    ],
+                    "default": "last_7_days",
+                    "example": "last_7_days"
+                  },
+                  "brandVoiceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "voice_123"
+                  },
+                  "brandIdentityId": {
+                    "type": ["string", "null"],
+                    "minLength": 1,
+                    "example": "voice_123"
+                  },
+                  "repositoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "example": ["repo_1", "repo_2"]
+                  },
+                  "integrations": {
+                    "type": "object",
+                    "properties": {
+                      "github": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1,
+                        "example": ["integration_1", "integration_2"]
+                      }
+                    }
+                  },
+                  "github": {
+                    "type": "object",
+                    "properties": {
+                      "repositories": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "owner": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "repo": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": ["owner", "repo"]
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["repositories"],
+                    "example": {
+                      "repositories": [
+                        {
+                          "owner": "usenotra",
+                          "repo": "notra"
+                        }
+                      ]
+                    }
+                  },
+                  "dataPoints": {
+                    "type": "object",
+                    "properties": {
+                      "includePullRequests": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeCommits": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeReleases": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeLinearIssues": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
+                    "default": {
+                      "includePullRequests": true,
+                      "includeCommits": true,
+                      "includeReleases": true,
+                      "includeLinearIssues": false
+                    }
+                  },
+                  "selectedItems": {
+                    "type": "object",
+                    "properties": {
+                      "commitShas": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "pullRequestNumbers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "repositoryId": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["repositoryId", "number"]
+                        }
+                      },
+                      "releaseTagNames": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "repositoryId": {
+                                  "type": "string"
+                                },
+                                "tagName": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["repositoryId", "tagName"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": ["contentType"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Post generation queued successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "contentType": {
+                          "type": "string",
+                          "enum": [
+                            "changelog",
+                            "blog_post",
+                            "linkedin_post",
+                            "twitter_post"
+                          ]
+                        },
+                        "lookbackWindow": {
+                          "type": "string",
+                          "enum": [
+                            "current_day",
+                            "yesterday",
+                            "last_7_days",
+                            "last_14_days",
+                            "last_30_days"
+                          ]
+                        },
+                        "repositoryIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "brandVoiceId": {
+                          "type": ["string", "null"]
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "postId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": ["api", "dashboard"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "status",
+                        "contentType",
+                        "lookbackWindow",
+                        "repositoryIds",
+                        "brandVoiceId",
+                        "workflowRunId",
+                        "postId",
+                        "error",
+                        "source",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "job"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Content generation is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "jobId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "listBrandIdentities",
+        "summary": "List available brand identities",
+        "responses": {
+          "200": {
+            "description": "Brand identities fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "brandIdentities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": ["id", "name", "isDefault"]
+                      }
+                    }
+                  },
+                  "required": ["organization", "brandIdentities"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities/{brandIdentityId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getBrandIdentity",
+        "summary": "Get a single brand identity",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561"
+            },
+            "required": true,
+            "in": "path",
+            "name": "brandIdentityId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand identity fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "brandIdentity": {
+                      "type": ["object", "null"],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["id", "name", "isDefault"]
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["brandIdentity", "organization"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "listIntegrations",
+        "summary": "List available integrations",
+        "responses": {
+          "200": {
+            "description": "Integrations fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "github": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "owner": {
+                            "type": ["string", "null"]
+                          },
+                          "repo": {
+                            "type": ["string", "null"]
+                          },
+                          "defaultBranch": {
+                            "type": ["string", "null"]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "owner",
+                          "repo",
+                          "defaultBranch"
+                        ]
+                      }
+                    },
+                    "slack": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "linear": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["github", "slack", "linear", "organization"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/posts/generate/{jobId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getPostGeneration",
+        "summary": "Get async post generation status",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "job_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "jobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post generation status fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "contentType": {
+                          "type": "string",
+                          "enum": [
+                            "changelog",
+                            "blog_post",
+                            "linkedin_post",
+                            "twitter_post"
+                          ]
+                        },
+                        "lookbackWindow": {
+                          "type": "string",
+                          "enum": [
+                            "current_day",
+                            "yesterday",
+                            "last_7_days",
+                            "last_14_days",
+                            "last_30_days"
+                          ]
+                        },
+                        "repositoryIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "brandVoiceId": {
+                          "type": ["string", "null"]
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "postId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": ["api", "dashboard"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "status",
+                        "contentType",
+                        "lookbackWindow",
+                        "repositoryIds",
+                        "brandVoiceId",
+                        "workflowRunId",
+                        "postId",
+                        "error",
+                        "source",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "queued",
+                              "workflow_triggered",
+                              "running",
+                              "fetching_repositories",
+                              "generating_content",
+                              "post_created",
+                              "completed",
+                              "failed"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "type": ["object", "null"],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "jobId",
+                          "type",
+                          "message",
+                          "createdAt",
+                          "metadata"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["job", "events"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Generation job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Content generation is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "webhooks": {}

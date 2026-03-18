@@ -13,6 +13,8 @@ const EVENT_TTL_SECONDS = JOB_TTL_SECONDS;
 const EVENT_LIMIT = 100;
 const JOB_LIMIT = 100;
 
+type SerializedJobFields = Record<string, string>;
+
 function getJobKey(jobId: string) {
   return `content-generation:job:${jobId}`;
 }
@@ -29,6 +31,31 @@ export function createContentGenerationJobId() {
   return `job_${crypto.randomUUID().replaceAll("-", "")}`;
 }
 
+function serializeJobFields(job: ContentGenerationJob): SerializedJobFields {
+  return Object.fromEntries(
+    Object.entries(job).map(([key, value]) => [key, JSON.stringify(value)])
+  );
+}
+
+function serializeJobFieldUpdates(updates: Partial<ContentGenerationJob>) {
+  return Object.fromEntries(
+    Object.entries(updates)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, JSON.stringify(value)])
+  );
+}
+
+function parseStoredJob(raw: Record<string, unknown>) {
+  return contentGenerationJobSchema.parse(
+    Object.fromEntries(
+      Object.entries(raw).map(([key, value]) => [
+        key,
+        typeof value === "string" ? JSON.parse(value) : value,
+      ])
+    )
+  );
+}
+
 export async function createContentGenerationJob(
   redis: Redis,
   job: ContentGenerationJob
@@ -38,7 +65,8 @@ export async function createContentGenerationJob(
   const organizationJobsKey = getOrganizationJobsKey(parsedJob.organizationId);
 
   const pipeline = redis.pipeline();
-  pipeline.set(jobKey, JSON.stringify(parsedJob), { ex: JOB_TTL_SECONDS });
+  pipeline.hset(jobKey, serializeJobFields(parsedJob));
+  pipeline.expire(jobKey, JOB_TTL_SECONDS);
   pipeline.lpush(organizationJobsKey, parsedJob.id);
   pipeline.ltrim(organizationJobsKey, 0, JOB_LIMIT - 1);
   pipeline.expire(organizationJobsKey, JOB_LIST_TTL_SECONDS);
@@ -48,7 +76,14 @@ export async function createContentGenerationJob(
 }
 
 export async function getContentGenerationJob(redis: Redis, jobId: string) {
-  const raw = await redis.get<string>(getJobKey(jobId));
+  const jobKey = getJobKey(jobId);
+  const rawHash = await redis.hgetall<Record<string, unknown>>(jobKey);
+
+  if (rawHash && Object.keys(rawHash).length > 0) {
+    return parseStoredJob(rawHash);
+  }
+
+  const raw = await redis.get<string>(jobKey);
   if (!raw) {
     return null;
   }
@@ -77,9 +112,14 @@ export async function updateContentGenerationJob(
     updatedAt: new Date().toISOString(),
   });
 
-  await redis.set(getJobKey(jobId), JSON.stringify(nextJob), {
-    ex: JOB_TTL_SECONDS,
-  });
+  await redis.hset(
+    getJobKey(jobId),
+    serializeJobFieldUpdates({
+      ...updates,
+      updatedAt: nextJob.updatedAt,
+    })
+  );
+  await redis.expire(getJobKey(jobId), JOB_TTL_SECONDS);
 
   return nextJob;
 }
@@ -123,9 +163,11 @@ export async function listContentGenerationJobEvents(
     (await redis.lrange<string>(getJobEventsKey(jobId), 0, EVENT_LIMIT - 1)) ??
     [];
 
-  return rawEvents.map((event) =>
-    contentGenerationJobEventSchema.parse(
-      typeof event === "string" ? JSON.parse(event) : event
+  return rawEvents
+    .map((event) =>
+      contentGenerationJobEventSchema.parse(
+        typeof event === "string" ? JSON.parse(event) : event
+      )
     )
-  );
+    .reverse();
 }

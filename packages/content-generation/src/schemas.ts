@@ -60,6 +60,10 @@ export const requestedGitHubRepositoriesSchema = z.object({
   repositories: z.array(requestedGitHubRepositorySchema).min(1),
 });
 
+export const requestedIntegrationsSchema = z.object({
+  github: z.array(z.string().min(1)).min(1).optional(),
+});
+
 export const createContentGenerationRequestSchema = z
   .object({
     contentType: onDemandContentTypeSchema,
@@ -67,15 +71,25 @@ export const createContentGenerationRequestSchema = z
     brandVoiceId: z.string().min(1).optional(),
     brandIdentityId: z.string().min(1).nullable().optional(),
     repositoryIds: z.array(z.string().min(1)).optional(),
+    integrations: requestedIntegrationsSchema.optional(),
     github: requestedGitHubRepositoriesSchema.optional(),
     dataPoints: contentDataPointSettingsSchema.prefault({}),
     selectedItems: selectedItemsSchema.optional(),
   })
   .refine(
-    (value) => !(value.repositoryIds && value.github?.repositories?.length),
+    (value) => {
+      const repositorySourceCount = [
+        value.repositoryIds?.length ? 1 : 0,
+        value.integrations?.github?.length ? 1 : 0,
+        value.github?.repositories?.length ? 1 : 0,
+      ].reduce((sum, count) => sum + count, 0);
+
+      return repositorySourceCount <= 1;
+    },
     {
-      message: "Provide either repositoryIds or github.repositories, not both",
-      path: ["github"],
+      message:
+        "Provide only one repository selector: repositoryIds, integrations.github, or github.repositories",
+      path: ["integrations"],
     }
   )
   .refine(

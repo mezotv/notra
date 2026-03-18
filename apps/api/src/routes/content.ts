@@ -24,9 +24,11 @@ import {
   createPostGenerationResponseSchema,
   deletePostResponseSchema,
   errorResponseSchema,
+  generationQueueErrorResponseSchema,
   getBrandIdentitiesResponseSchema,
   getBrandIdentityParamsSchema,
   getBrandIdentityResponseSchema,
+  getIntegrationsResponseSchema,
   getPostGenerationParamsSchema,
   getPostGenerationResponseSchema,
   getPostParamsSchema,
@@ -127,6 +129,9 @@ async function resolveRequestedRepositoryIds(
   organizationId: string,
   request: {
     repositoryIds?: string[];
+    integrations?: {
+      github?: string[];
+    };
     github?: {
       repositories: Array<{ owner: string; repo: string }>;
     };
@@ -134,6 +139,41 @@ async function resolveRequestedRepositoryIds(
 ) {
   if (request.repositoryIds?.length) {
     return request.repositoryIds;
+  }
+
+  if (request.integrations?.github?.length) {
+    const uniqueIntegrationIds = Array.from(
+      new Set(request.integrations.github)
+    );
+    const connectedRepositories = await db
+      .select({
+        id: githubIntegrations.id,
+      })
+      .from(githubIntegrations)
+      .where(
+        and(
+          eq(githubIntegrations.organizationId, organizationId),
+          eq(githubIntegrations.enabled, true),
+          inArray(githubIntegrations.id, uniqueIntegrationIds)
+        )
+      );
+
+    const matchedRepositoryIds = connectedRepositories.map(
+      (integration) => integration.id
+    );
+
+    if (matchedRepositoryIds.length !== uniqueIntegrationIds.length) {
+      const connectedRepositoryIds = new Set(matchedRepositoryIds);
+      const missingIntegrationIds = uniqueIntegrationIds.filter(
+        (integrationId) => !connectedRepositoryIds.has(integrationId)
+      );
+
+      throw new Error(
+        `Requested GitHub integrations are not available for this organization: ${missingIntegrationIds.join(", ")}`
+      );
+    }
+
+    return matchedRepositoryIds;
   }
 
   if (!request.github?.repositories?.length) {
@@ -154,8 +194,17 @@ async function resolveRequestedRepositoryIds(
       )
     );
 
+  const uniqueRequestedRepositories = Array.from(
+    new Map(
+      request.github.repositories.map((repository) => [
+        `${repository.owner.toLowerCase()}/${repository.repo.toLowerCase()}`,
+        repository,
+      ])
+    ).values()
+  );
+
   const requestedRepos = new Set(
-    request.github.repositories.map(
+    uniqueRequestedRepositories.map(
       ({ owner, repo }) => `${owner.toLowerCase()}/${repo.toLowerCase()}`
     )
   );
@@ -178,7 +227,7 @@ async function resolveRequestedRepositoryIds(
     )
     .map((integration) => integration.id);
 
-  if (matchedRepositoryIds.length !== request.github.repositories.length) {
+  if (matchedRepositoryIds.length !== uniqueRequestedRepositories.length) {
     const connectedRepoNames = new Set(
       connectedRepositories
         .filter((integration) => integration.owner && integration.repo)
@@ -188,7 +237,7 @@ async function resolveRequestedRepositoryIds(
         )
     );
 
-    const missingRepositories = request.github.repositories.filter(
+    const missingRepositories = uniqueRequestedRepositories.filter(
       ({ owner, repo }) =>
         !connectedRepoNames.has(`${owner.toLowerCase()}/${repo.toLowerCase()}`)
     );
@@ -627,7 +676,7 @@ const createPostGenerationRoute = createRoute({
       description: "Content generation is unavailable",
       content: {
         "application/json": {
-          schema: errorResponseSchema,
+          schema: generationQueueErrorResponseSchema,
         },
       },
     },
@@ -707,6 +756,56 @@ const getBrandIdentityRoute = createRoute({
       content: {
         "application/json": {
           schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const getIntegrationsRoute = createRoute({
+  method: "get",
+  path: "/integrations",
+  tags: ["Content"],
+  operationId: "listIntegrations",
+  summary: "List available integrations",
+  responses: {
+    200: {
+      description: "Integrations fetched successfully",
+      content: {
+        "application/json": {
+          schema: getIntegrationsResponseSchema,
         },
       },
     },
@@ -1062,6 +1161,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
   try {
     repositoryIds = await resolveRequestedRepositoryIds(db, orgId, {
       repositoryIds: body.repositoryIds,
+      integrations: body.integrations,
       github: body.github,
     });
     resolvedBrandVoiceId = await resolveRequestedBrandVoiceId(
@@ -1240,6 +1340,48 @@ contentRoutes.openapi(getBrandIdentityRoute, async (c) => {
   });
 
   return c.json({ brandIdentity: brandIdentity ?? null, organization }, 200);
+});
+
+contentRoutes.openapi(getIntegrationsRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const github = await db.query.githubIntegrations.findMany({
+    where: and(
+      eq(githubIntegrations.organizationId, orgId),
+      eq(githubIntegrations.enabled, true)
+    ),
+    orderBy: [asc(githubIntegrations.displayName), asc(githubIntegrations.id)],
+    columns: {
+      id: true,
+      displayName: true,
+      owner: true,
+      repo: true,
+      defaultBranch: true,
+    },
+  });
+
+  return c.json(
+    {
+      github,
+      slack: [],
+      linear: [],
+      organization,
+    },
+    200
+  );
 });
 
 contentRoutes.openapi(getPostGenerationRoute, async (c) => {

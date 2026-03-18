@@ -162,6 +162,14 @@ export const brandIdentityResponseSchema = z.object({
   isDefault: z.boolean(),
 });
 
+export const githubIntegrationResponseSchema = z.object({
+  id: z.string(),
+  displayName: z.string(),
+  owner: z.string().nullable(),
+  repo: z.string().nullable(),
+  defaultBranch: z.string().nullable(),
+});
+
 export const postResponseSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -237,6 +245,18 @@ export const getBrandIdentityResponseSchema = z.object({
   organization: organizationResponseSchema,
 });
 
+export const getIntegrationsResponseSchema = z.object({
+  github: z.array(githubIntegrationResponseSchema),
+  slack: z.array(z.unknown()),
+  linear: z.array(z.unknown()),
+  organization: organizationResponseSchema,
+});
+
+export const generationQueueErrorResponseSchema = z.object({
+  error: z.string(),
+  jobId: z.string().optional(),
+});
+
 export const contentGenerationStatusSchema = z.enum([
   "queued",
   "running",
@@ -270,14 +290,27 @@ export const createPostGenerationRequestSchema = z
       .openapi({
         example: ["repo_1", "repo_2"],
       }),
+    integrations: z
+      .object({
+        github: z
+          .array(z.string().min(1))
+          .min(1)
+          .optional()
+          .openapi({
+            example: ["integration_1", "integration_2"],
+          }),
+      })
+      .optional(),
     github: z
       .object({
-        repositories: z.array(
-          z.object({
-            owner: z.string().min(1),
-            repo: z.string().min(1),
-          })
-        ),
+        repositories: z
+          .array(
+            z.object({
+              owner: z.string().min(1),
+              repo: z.string().min(1),
+            })
+          )
+          .min(1),
       })
       .optional()
       .openapi({
@@ -324,10 +357,19 @@ export const createPostGenerationRequestSchema = z
       .optional(),
   })
   .refine(
-    (value) => !(value.repositoryIds && value.github?.repositories?.length),
+    (value) => {
+      const repositorySourceCount = [
+        value.repositoryIds?.length ? 1 : 0,
+        value.integrations?.github?.length ? 1 : 0,
+        value.github?.repositories?.length ? 1 : 0,
+      ].reduce((sum, count) => sum + count, 0);
+
+      return repositorySourceCount <= 1;
+    },
     {
-      message: "Provide either repositoryIds or github.repositories, not both",
-      path: ["github"],
+      message:
+        "Provide only one repository selector: repositoryIds, integrations.github, or github.repositories",
+      path: ["integrations"],
     }
   )
   .refine(
@@ -342,7 +384,16 @@ export const createPostGenerationRequestSchema = z
 export const contentGenerationJobEventSchema = z.object({
   id: z.string(),
   jobId: z.string(),
-  type: z.string(),
+  type: z.enum([
+    "queued",
+    "workflow_triggered",
+    "running",
+    "fetching_repositories",
+    "generating_content",
+    "post_created",
+    "completed",
+    "failed",
+  ]),
   message: z.string(),
   createdAt: z.string(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
