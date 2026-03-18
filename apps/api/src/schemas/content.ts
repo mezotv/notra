@@ -325,6 +325,7 @@ export const contentGenerationJobSchema = z.object({
 });
 
 export const createPostGenerationResponseSchema = z.object({
+  organization: organizationResponseSchema,
   job: contentGenerationJobSchema,
 });
 

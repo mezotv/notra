@@ -940,6 +940,8 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
 
   const body = c.req.valid("json");
   const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
   let repositoryIds: string[] | undefined;
   let resolvedBrandVoiceId: string | null = null;
 
@@ -1034,7 +1036,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
       metadata: { workflowRunId },
     });
 
-    return c.json({ job: updatedJob ?? job }, 202);
+    return c.json({ organization: organization!, job: updatedJob ?? job }, 202);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to trigger workflow";
