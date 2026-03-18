@@ -18,8 +18,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useMemo, useState } from "react";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
