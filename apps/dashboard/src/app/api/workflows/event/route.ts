@@ -41,6 +41,7 @@ import {
   type EventWorkflowPayload,
   eventWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import type { AutumnCheckResponse } from "@/types/autumn";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import type {
   EventGenerationResult,
@@ -193,7 +194,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         return { canceled: false, reserved: false };
       }
 
-      let data;
+      let data: AutumnCheckResponse | null = null;
       try {
         data = await autumn.check({
           customerId: trigger.organizationId,

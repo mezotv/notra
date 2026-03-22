@@ -50,6 +50,7 @@ import {
   type ScheduleWorkflowPayload,
   scheduleWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 interface TriggerData {
   id: string;
@@ -234,7 +235,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         return { canceled: false, reserved: false };
       }
 
-      let data;
+      let data: AutumnCheckResponse | null = null;
       try {
         data = await autumn.check({
           customerId: trigger.organizationId,

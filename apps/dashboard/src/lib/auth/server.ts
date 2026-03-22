@@ -30,6 +30,7 @@ import {
 import { redis } from "@/lib/redis";
 import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
@@ -38,7 +39,7 @@ async function enforceTeamMembersLimit(organizationId?: string | null) {
     return;
   }
 
-  let data;
+  let data: AutumnCheckResponse | null = null;
   try {
     data = await autumn.check({
       customerId: organizationId,

@@ -6,6 +6,7 @@ import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
 import { addActiveGeneration, generateRunId } from "@/lib/generations/tracking";
 import { triggerOnDemandContent } from "@/lib/triggers/qstash";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   let aiCreditReserved = false;
 
   if (autumn) {
-    let data;
+    let data: AutumnCheckResponse | null = null;
     try {
       data = await autumn.check({
         customerId: organizationId,

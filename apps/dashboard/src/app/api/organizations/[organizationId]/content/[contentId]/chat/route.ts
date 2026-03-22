@@ -10,6 +10,7 @@ import {
   getGitHubToolRepositoryContextByIntegrationId,
 } from "@/lib/services/github-integration";
 import { chatRequestSchema } from "@/schemas/content";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; contentId: string }>;
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         featureId: FEATURES.AI_CREDITS,
       });
 
-      let checkData;
+      let checkData: AutumnCheckResponse | null = null;
       try {
         checkData = await autumn.check({
           customerId: organizationId,
