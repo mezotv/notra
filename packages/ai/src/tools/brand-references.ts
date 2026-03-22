@@ -1,10 +1,11 @@
 import { toolDescription } from "@notra/ai/utils/description";
+import { db } from "@notra/db/drizzle";
 import {
   getBrandReferenceIdFromSearchResult,
   searchBrandReferenceMemories,
-} from "@notra/ai/utils/supermemory";
-import { db } from "@notra/db/drizzle";
+} from "@notra/db/utils/supermemory";
 import { type Tool, tool } from "ai";
+import { sql } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { getAICachedTools } from "./tool-cache";
@@ -21,29 +22,15 @@ type BrandReferenceRecord = Awaited<
   ReturnType<typeof db.query.brandReferences.findMany>
 >[number];
 
-interface BrandVoiceSummary {
-  id: string;
-  organizationId: string;
-  isDefault: boolean;
-}
-
 async function resolveSettingsId(config: BrandReferencesConfig) {
   if (config.voiceId) {
     return config.voiceId;
   }
 
-  const voices = await db.query.brandSettings.findMany({
-    columns: {
-      id: true,
-      organizationId: true,
-      isDefault: true,
-    },
+  const defaultVoice = await db.query.brandSettings.findFirst({
+    where: sql`organization_id = ${config.organizationId} and is_default = true`,
+    columns: { id: true },
   });
-
-  const defaultVoice = voices.find(
-    (voice: BrandVoiceSummary) =>
-      voice.organizationId === config.organizationId && voice.isDefault === true
-  );
 
   return defaultVoice?.id;
 }
@@ -55,15 +42,10 @@ async function getFilteredReferences(config: BrandReferencesConfig) {
     return { settingsId: null, references: [] };
   }
 
-  const refs = (await db.query.brandReferences.findMany()).filter(
-    (reference: BrandReferenceRecord) =>
-      reference.brandSettingsId === settingsId
-  );
-
-  refs.sort(
-    (a: BrandReferenceRecord, b: BrandReferenceRecord) =>
-      b.createdAt.getTime() - a.createdAt.getTime()
-  );
+  const refs = await db.query.brandReferences.findMany({
+    where: sql`brand_settings_id = ${settingsId}`,
+    orderBy: [sql`created_at desc`],
+  });
 
   const agentType = config.agentType;
 

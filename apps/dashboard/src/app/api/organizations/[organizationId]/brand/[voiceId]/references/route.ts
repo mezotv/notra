@@ -34,6 +34,15 @@ async function verifyVoiceOwnership(organizationId: string, voiceId: string) {
   });
 }
 
+async function getReferenceById(referenceId: string, voiceId: string) {
+  return db.query.brandReferences.findFirst({
+    where: and(
+      eq(brandReferences.id, referenceId),
+      eq(brandReferences.brandSettingsId, voiceId)
+    ),
+  });
+}
+
 function isMemorySyncFieldUpdate(data: {
   content?: string;
   note?: string | null;
@@ -260,12 +269,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const existing = await db.query.brandReferences.findFirst({
-      where: and(
-        eq(brandReferences.id, referenceId),
-        eq(brandReferences.brandSettingsId, voiceId)
-      ),
-    });
+    const existing = await getReferenceById(referenceId, voiceId);
 
     if (!existing) {
       return NextResponse.json(
@@ -300,7 +304,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       });
       createdDocumentId = link.documentId;
 
-      const synced = await db
+      await db
         .update(brandReferences)
         .set({
           supermemoryDocumentId: link.documentId,
@@ -308,8 +312,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
           supermemorySyncedAt: new Date(),
           supermemoryLastSyncError: null,
         })
-        .where(eq(brandReferences.id, referenceId))
-        .returning();
+        .where(eq(brandReferences.id, referenceId));
 
       if (
         existing.supermemoryDocumentId &&
@@ -329,7 +332,13 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
         }
       }
 
-      return NextResponse.json({ reference: synced[0] });
+      const refreshedReference = await getReferenceById(referenceId, voiceId);
+
+      if (!refreshedReference) {
+        throw new Error("Reference update refresh failed");
+      }
+
+      return NextResponse.json({ reference: refreshedReference });
     } catch (error) {
       console.error("Error syncing updated reference to Supermemory:", error);
 
@@ -391,12 +400,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const existing = await db.query.brandReferences.findFirst({
-      where: and(
-        eq(brandReferences.id, referenceId),
-        eq(brandReferences.brandSettingsId, voiceId)
-      ),
-    });
+    const existing = await getReferenceById(referenceId, voiceId);
 
     if (!existing) {
       return NextResponse.json(
@@ -405,7 +409,12 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    await removeBrandReferenceMemory(existing as ReferenceMemoryRecord);
+    try {
+      await removeBrandReferenceMemory(existing as ReferenceMemoryRecord);
+    } catch (error) {
+      console.error("Error deleting reference memory:", error);
+    }
+
     await db.delete(brandReferences).where(eq(brandReferences.id, referenceId));
 
     if (autumn) {

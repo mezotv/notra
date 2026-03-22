@@ -298,19 +298,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .values(values)
       .returning();
 
-    const createdDocumentIds: string[] = [];
+    let syncedCount = 0;
 
-    try {
-      for (const reference of inserted) {
+    for (const reference of inserted) {
+      let createdDocumentId: string | null = null;
+
+      try {
         const link = await syncBrandReferenceMemory({
           organizationId,
           voiceId,
           reference: reference as ReferenceMemoryRecord,
         });
-
-        if (link.documentId) {
-          createdDocumentIds.push(link.documentId);
-        }
+        createdDocumentId = link.documentId;
 
         await db
           .update(brandReferences)
@@ -321,47 +320,38 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
             supermemoryLastSyncError: null,
           })
           .where(eq(brandReferences.id, reference.id));
-      }
-    } catch (error) {
-      console.error("Error syncing imported tweets to Supermemory:", error);
+        syncedCount += 1;
+      } catch (error) {
+        console.error("Error syncing imported tweet to Supermemory:", error);
 
-      for (const documentId of createdDocumentIds) {
-        try {
-          await deleteBrandReferenceMemory({ documentId });
-        } catch (cleanupError) {
-          console.error(
-            "Error cleaning up imported Supermemory references:",
-            cleanupError
-          );
+        if (createdDocumentId) {
+          try {
+            await deleteBrandReferenceMemory({ documentId: createdDocumentId });
+          } catch (cleanupError) {
+            console.error(
+              "Error cleaning up imported Supermemory reference:",
+              cleanupError
+            );
+          }
         }
+
+        await db
+          .update(brandReferences)
+          .set({
+            supermemoryLastSyncError:
+              error instanceof Error
+                ? error.message
+                : "Supermemory sync failed during import",
+          })
+          .where(eq(brandReferences.id, reference.id));
       }
-
-      await db.delete(brandReferences).where(
-        sql`${brandReferences.id} = ANY(ARRAY[${sql.join(
-          inserted.map((reference) => sql`${reference.id}`),
-          sql`, `
-        )}]::text[])`
-      );
-
-      if (autumn && inserted.length > 0) {
-        await autumn.track({
-          customerId: organizationId,
-          featureId: FEATURES.REFERENCES,
-          value: -inserted.length,
-        });
-      }
-
-      return NextResponse.json(
-        { error: "Failed to sync imported references to memory" },
-        { status: 500 }
-      );
     }
 
-    if (autumn && inserted.length > 0) {
+    if (autumn && syncedCount > 0) {
       await autumn.track({
         customerId: organizationId,
         featureId: FEATURES.REFERENCES,
-        value: inserted.length,
+        value: syncedCount,
       });
     }
 
