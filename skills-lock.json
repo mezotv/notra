@@ -6,6 +6,16 @@
       "sourceType": "github",
       "computedHash": "8f05f0f8c7a0dbdd0b274ae4cb76cb887cc3ca794310907cc15f158c50bfd704"
     },
+    "react-flow": {
+      "source": "existential-birds/beagle",
+      "sourceType": "github",
+      "computedHash": "2e0b696ee5d7d3407263fb8330c1ed455837eb86f52464688e3bc7c60304b7b7"
+    },
+    "react-flow-advanced": {
+      "source": "existential-birds/beagle",
+      "sourceType": "github",
+      "computedHash": "8584b77e9491af20225a185bebdb3823bbc3e66e1da74d2e5e9dc5114559ef19"
+    },
     "turborepo": {
       "source": "vercel/turborepo",
       "sourceType": "github",
