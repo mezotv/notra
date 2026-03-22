@@ -3,6 +3,7 @@ import {
   AnalyticsUpIcon,
   Calendar03Icon,
   CorporateIcon,
+  FlowSquareIcon,
   Home01Icon,
   Key01Icon,
   NoteIcon,
@@ -73,6 +74,12 @@ const navMainItems: NavMainItem[] = [
     link: "/automation/events",
     icon: Notification03Icon,
     label: "Events",
+    category: "automation",
+  },
+  {
+    link: "/automation/workflows",
+    icon: FlowSquareIcon,
+    label: "Workflows",
     category: "automation",
   },
   {

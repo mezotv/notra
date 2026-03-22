@@ -85,6 +85,7 @@
         "@upstash/workflow": "^1.1.0",
         "@vercel/analytics": "^1.6.1",
         "@vercel/otel": "^2.1.1",
+        "@xyflow/react": "^12.10.1",
         "ai": "^6.0.116",
         "autumn-js": "^1.0.7",
         "axios": "^1.13.6",

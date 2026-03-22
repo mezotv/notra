@@ -304,6 +304,44 @@
   scrollbar-gutter: stable;
 }
 
+.react-flow {
+  --xy-background-color: transparent;
+}
+
+.react-flow__controls {
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+}
+
+.react-flow__controls-button {
+  background-color: var(--card) !important;
+  color: var(--foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  fill: var(--foreground) !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: var(--accent) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-sm) !important;
+  background-color: var(--card) !important;
+}
+
+.react-flow__edge.animated path {
+  animation-duration: 1s;
+}
+
 @keyframes thinking-letter {
   0%,
   100% {
