@@ -312,6 +312,10 @@ export const brandReferences = pgTable(
     content: text("content").notNull(),
     metadata: jsonb("metadata"),
     note: text("note"),
+    supermemoryDocumentId: text("supermemory_document_id"),
+    supermemoryMemoryId: text("supermemory_memory_id"),
+    supermemorySyncedAt: timestamp("supermemory_synced_at"),
+    supermemoryLastSyncError: text("supermemory_last_sync_error"),
     applicableTo: applicablePlatformEnum("applicable_to")
       .array()
       .default(sql`ARRAY['all']::applicable_platform[]`)

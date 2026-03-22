@@ -4,6 +4,7 @@ import {
   brandSettings,
   connectedSocialAccounts,
 } from "@notra/db/schema";
+import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
 import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { FEATURES } from "@/constants/features";
@@ -17,6 +18,10 @@ import type {
   TwitterTweet,
   TwitterUser,
 } from "@/types/services/twitter";
+import {
+  type ReferenceMemoryRecord,
+  syncBrandReferenceMemory,
+} from "@/utils/brand-reference-memory";
 import { ratelimit } from "@/utils/ratelimit";
 import { twitterFetch } from "@/utils/twitter-auth";
 
@@ -101,7 +106,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     let maxResults = parsed.data.maxResults;
 
     if (autumn) {
-      let data;
+      let data: {
+        allowed?: boolean;
+        balance?: { unlimited?: boolean; remaining?: number } | null;
+      } | null = null;
       try {
         data = await autumn.check({
           customerId: organizationId,
@@ -290,6 +298,65 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       .values(values)
       .returning();
 
+    const createdDocumentIds: string[] = [];
+
+    try {
+      for (const reference of inserted) {
+        const link = await syncBrandReferenceMemory({
+          organizationId,
+          voiceId,
+          reference: reference as ReferenceMemoryRecord,
+        });
+
+        if (link.documentId) {
+          createdDocumentIds.push(link.documentId);
+        }
+
+        await db
+          .update(brandReferences)
+          .set({
+            supermemoryDocumentId: link.documentId,
+            supermemoryMemoryId: link.memoryId,
+            supermemorySyncedAt: new Date(),
+            supermemoryLastSyncError: null,
+          })
+          .where(eq(brandReferences.id, reference.id));
+      }
+    } catch (error) {
+      console.error("Error syncing imported tweets to Supermemory:", error);
+
+      for (const documentId of createdDocumentIds) {
+        try {
+          await deleteBrandReferenceMemory({ documentId });
+        } catch (cleanupError) {
+          console.error(
+            "Error cleaning up imported Supermemory references:",
+            cleanupError
+          );
+        }
+      }
+
+      await db.delete(brandReferences).where(
+        sql`${brandReferences.id} = ANY(ARRAY[${sql.join(
+          inserted.map((reference) => sql`${reference.id}`),
+          sql`, `
+        )}]::text[])`
+      );
+
+      if (autumn && inserted.length > 0) {
+        await autumn.track({
+          customerId: organizationId,
+          featureId: FEATURES.REFERENCES,
+          value: -inserted.length,
+        });
+      }
+
+      return NextResponse.json(
+        { error: "Failed to sync imported references to memory" },
+        { status: 500 }
+      );
+    }
+
     if (autumn && inserted.length > 0) {
       await autumn.track({
         customerId: organizationId,
@@ -298,8 +365,18 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       });
     }
 
+    const syncedReferences = await db.query.brandReferences.findMany({
+      where: and(
+        eq(brandReferences.brandSettingsId, voiceId),
+        sql`${brandReferences.id} = ANY(ARRAY[${sql.join(
+          inserted.map((reference) => sql`${reference.id}`),
+          sql`, `
+        )}]::text[])`
+      ),
+    });
+
     return NextResponse.json(
-      { count: inserted.length, references: inserted },
+      { count: syncedReferences.length, references: syncedReferences },
       { status: 201 }
     );
   } catch (error) {

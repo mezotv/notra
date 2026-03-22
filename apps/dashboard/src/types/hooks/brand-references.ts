@@ -7,6 +7,10 @@ export interface BrandReference {
   content: string;
   metadata: Record<string, unknown> | null;
   note: string | null;
+  supermemoryDocumentId: string | null;
+  supermemoryMemoryId: string | null;
+  supermemorySyncedAt: string | null;
+  supermemoryLastSyncError: string | null;
   applicableTo: ApplicablePlatform[];
   createdAt: string;
   updatedAt: string;

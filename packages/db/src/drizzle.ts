@@ -1,7 +1,7 @@
 import { upstashCache } from "drizzle-orm/cache/upstash";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 // biome-ignore lint/performance/noNamespaceImport: Required for drizzle-kit
-import * as schema from "./schema";
+import * as schema from "./schema.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -11,7 +11,7 @@ if (!databaseUrl) {
 const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
 const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-export const db = drizzle(databaseUrl, {
+export const db: NodePgDatabase<typeof schema> = drizzle(databaseUrl, {
   cache:
     upstashUrl && upstashToken
       ? upstashCache({

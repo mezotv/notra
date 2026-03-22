@@ -6,7 +6,10 @@ import { getProfessionalTwitterPrompt } from "@notra/ai/prompts/twitter/professi
 import { getUserPrompt } from "@notra/ai/prompts/user";
 import { getValidToneProfile, type ToneProfile } from "@notra/ai/schemas/brand";
 import { getAISDKTelemetry } from "@notra/ai/telemetry";
-import { createGetBrandReferencesTool } from "@notra/ai/tools/brand-references";
+import {
+  createGetBrandReferencesTool,
+  createSearchBrandReferencesTool,
+} from "@notra/ai/tools/brand-references";
 import { buildGitHubDataTools } from "@notra/ai/tools/github";
 import {
   createCreatePostTool,
@@ -91,6 +94,11 @@ export async function generateTwitterPost(
       },
     },
     tools: {
+      searchBrandReferences: createSearchBrandReferencesTool({
+        organizationId,
+        voiceId,
+        agentType: "twitter",
+      }),
       getBrandReferences: createGetBrandReferencesTool({
         organizationId,
         voiceId,
