@@ -23,6 +23,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.2",
     "dotenv-cli": "^10.0.0",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.1",
     "openlogs": "^0.0.1",
     "turbo": "^2.8.20",
     "ultracite": "7.1.4"
