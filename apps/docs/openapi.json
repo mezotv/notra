@@ -1229,7 +1229,7 @@
       "post": {
         "tags": ["Content"],
         "operationId": "createBrandIdentity",
-        "summary": "Create a new brand identity",
+        "summary": "Create and analyze a new brand identity",
         "requestBody": {
           "required": true,
           "content": {
@@ -1255,8 +1255,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Brand identity created successfully",
+          "202": {
+            "description": "Brand identity analysis queued successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1280,40 +1280,38 @@
                       },
                       "required": ["id", "slug", "name", "logo"]
                     },
-                    "brandIdentity": {
+                    "job": {
                       "type": "object",
                       "properties": {
                         "id": {
                           "type": "string"
                         },
-                        "name": {
+                        "organizationId": {
                           "type": "string"
                         },
-                        "isDefault": {
-                          "type": "boolean"
-                        },
-                        "websiteUrl": {
+                        "brandIdentityId": {
                           "type": "string"
                         },
-                        "companyName": {
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "step": {
+                          "type": ["string", "null"],
+                          "enum": ["scraping", "extracting", "saving", null]
+                        },
+                        "currentStep": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSteps": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "workflowRunId": {
                           "type": ["string", "null"]
                         },
-                        "companyDescription": {
-                          "type": ["string", "null"]
-                        },
-                        "toneProfile": {
-                          "type": ["string", "null"]
-                        },
-                        "customTone": {
-                          "type": ["string", "null"]
-                        },
-                        "customInstructions": {
-                          "type": ["string", "null"]
-                        },
-                        "audience": {
-                          "type": ["string", "null"]
-                        },
-                        "language": {
+                        "error": {
                           "type": ["string", "null"]
                         },
                         "createdAt": {
@@ -1321,26 +1319,28 @@
                         },
                         "updatedAt": {
                           "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
                         }
                       },
                       "required": [
                         "id",
-                        "name",
-                        "isDefault",
-                        "websiteUrl",
-                        "companyName",
-                        "companyDescription",
-                        "toneProfile",
-                        "customTone",
-                        "customInstructions",
-                        "audience",
-                        "language",
+                        "organizationId",
+                        "brandIdentityId",
+                        "status",
+                        "step",
+                        "currentStep",
+                        "totalSteps",
+                        "workflowRunId",
+                        "error",
                         "createdAt",
-                        "updatedAt"
+                        "updatedAt",
+                        "completedAt"
                       ]
                     }
                   },
-                  "required": ["organization", "brandIdentity"]
+                  "required": ["organization", "job"]
                 }
               }
             }
@@ -1397,6 +1397,167 @@
           },
           "503": {
             "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities/generate/{jobId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getBrandIdentityGeneration",
+        "summary": "Get async brand identity analysis status",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "brand_job_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "jobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand identity analysis status fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "brandIdentityId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "step": {
+                          "type": ["string", "null"],
+                          "enum": ["scraping", "extracting", "saving", null]
+                        },
+                        "currentStep": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSteps": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "brandIdentityId",
+                        "status",
+                        "step",
+                        "currentStep",
+                        "totalSteps",
+                        "workflowRunId",
+                        "error",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "job"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand identity analysis job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Brand analysis is unavailable",
             "content": {
               "application/json": {
                 "schema": {
