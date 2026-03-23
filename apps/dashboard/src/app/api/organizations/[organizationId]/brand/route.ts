@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings, contentTriggers } from "@notra/db/schema";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
@@ -331,7 +331,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     }
 
     await db.transaction(async (tx) => {
-      for (const trigger of affectedTriggers) {
+      if (affectedTriggers.length > 0) {
         await tx
           .update(contentTriggers)
           .set({
@@ -339,10 +339,25 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
             qstashScheduleId: null,
             updatedAt: new Date(),
           })
-          .where(eq(contentTriggers.id, trigger.id));
+          .where(
+            and(
+              eq(contentTriggers.organizationId, organizationId),
+              inArray(
+                contentTriggers.id,
+                affectedTriggers.map((trigger) => trigger.id)
+              )
+            )
+          );
       }
 
-      await tx.delete(brandSettings).where(eq(brandSettings.id, voiceId));
+      await tx
+        .delete(brandSettings)
+        .where(
+          and(
+            eq(brandSettings.id, voiceId),
+            eq(brandSettings.organizationId, organizationId)
+          )
+        );
     });
 
     return NextResponse.json({

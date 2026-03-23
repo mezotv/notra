@@ -2176,9 +2176,9 @@ contentRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
     );
   }
 
-  await db.transaction(async (tx) => {
-    if (affectedTriggers.length > 0) {
-      await tx
+  if (affectedTriggers.length > 0) {
+    await db.batch([
+      db
         .update(contentTriggers)
         .set({
           enabled: false,
@@ -2193,18 +2193,28 @@ contentRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
               affectedTriggers.map((trigger) => trigger.id)
             )
           )
-        );
-    }
-
-    await tx
-      .delete(brandSettings)
-      .where(
-        and(
-          eq(brandSettings.id, brandIdentityId),
-          eq(brandSettings.organizationId, orgId)
-        )
-      );
-  });
+        ),
+      db
+        .delete(brandSettings)
+        .where(
+          and(
+            eq(brandSettings.id, brandIdentityId),
+            eq(brandSettings.organizationId, orgId)
+          )
+        ),
+    ]);
+  } else {
+    await db.batch([
+      db
+        .delete(brandSettings)
+        .where(
+          and(
+            eq(brandSettings.id, brandIdentityId),
+            eq(brandSettings.organizationId, orgId)
+          )
+        ),
+    ]);
+  }
 
   return c.json(
     {
