@@ -1129,9 +1129,53 @@
                           },
                           "isDefault": {
                             "type": "boolean"
+                          },
+                          "websiteUrl": {
+                            "type": "string"
+                          },
+                          "companyName": {
+                            "type": ["string", "null"]
+                          },
+                          "companyDescription": {
+                            "type": ["string", "null"]
+                          },
+                          "toneProfile": {
+                            "type": ["string", "null"]
+                          },
+                          "customTone": {
+                            "type": ["string", "null"]
+                          },
+                          "customInstructions": {
+                            "type": ["string", "null"]
+                          },
+                          "audience": {
+                            "type": ["string", "null"]
+                          },
+                          "language": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
                           }
                         },
-                        "required": ["id", "name", "isDefault"]
+                        "required": [
+                          "id",
+                          "name",
+                          "isDefault",
+                          "websiteUrl",
+                          "companyName",
+                          "companyDescription",
+                          "toneProfile",
+                          "customTone",
+                          "customInstructions",
+                          "audience",
+                          "language",
+                          "createdAt",
+                          "updatedAt"
+                        ]
                       }
                     }
                   },
@@ -1162,6 +1206,187 @@
           },
           "404": {
             "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Content"],
+        "operationId": "createBrandIdentity",
+        "summary": "Create a new brand identity",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "example": "Notra"
+                  },
+                  "websiteUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "https://usenotra.com"
+                  }
+                },
+                "required": ["websiteUrl"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Brand identity created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "brandIdentity": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "websiteUrl": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": ["string", "null"]
+                        },
+                        "companyDescription": {
+                          "type": ["string", "null"]
+                        },
+                        "toneProfile": {
+                          "type": ["string", "null"]
+                        },
+                        "customTone": {
+                          "type": ["string", "null"]
+                        },
+                        "customInstructions": {
+                          "type": ["string", "null"]
+                        },
+                        "audience": {
+                          "type": ["string", "null"]
+                        },
+                        "language": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "isDefault",
+                        "websiteUrl",
+                        "companyName",
+                        "companyDescription",
+                        "toneProfile",
+                        "customTone",
+                        "customInstructions",
+                        "audience",
+                        "language",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "brandIdentity"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Brand identity name already exists",
             "content": {
               "application/json": {
                 "schema": {
@@ -1219,9 +1444,53 @@
                         },
                         "isDefault": {
                           "type": "boolean"
+                        },
+                        "websiteUrl": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": ["string", "null"]
+                        },
+                        "companyDescription": {
+                          "type": ["string", "null"]
+                        },
+                        "toneProfile": {
+                          "type": ["string", "null"]
+                        },
+                        "customTone": {
+                          "type": ["string", "null"]
+                        },
+                        "customInstructions": {
+                          "type": ["string", "null"]
+                        },
+                        "audience": {
+                          "type": ["string", "null"]
+                        },
+                        "language": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
                         }
                       },
-                      "required": ["id", "name", "isDefault"]
+                      "required": [
+                        "id",
+                        "name",
+                        "isDefault",
+                        "websiteUrl",
+                        "companyName",
+                        "companyDescription",
+                        "toneProfile",
+                        "customTone",
+                        "customInstructions",
+                        "audience",
+                        "language",
+                        "createdAt",
+                        "updatedAt"
+                      ]
                     },
                     "organization": {
                       "type": "object",
@@ -1279,6 +1548,303 @@
           },
           "404": {
             "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Content"],
+        "operationId": "updateBrandIdentity",
+        "summary": "Update a single brand identity",
+        "description": "Updates brand identity fields. Pass isDefault: true to make the target brand identity the organization's default.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561"
+            },
+            "required": true,
+            "in": "path",
+            "name": "brandIdentityId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "example": "Notra"
+                  },
+                  "websiteUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "https://usenotra.com"
+                  },
+                  "companyName": {
+                    "type": ["string", "null"],
+                    "minLength": 1,
+                    "example": "Notra"
+                  },
+                  "companyDescription": {
+                    "type": ["string", "null"],
+                    "minLength": 10,
+                    "example": "AI-native content workflows for software teams."
+                  },
+                  "toneProfile": {
+                    "type": ["string", "null"],
+                    "enum": [
+                      "Conversational",
+                      "Professional",
+                      "Casual",
+                      "Formal",
+                      null
+                    ],
+                    "example": "Professional",
+                    "description": "Set a preset tone profile. When provided without customTone, any saved custom tone is cleared."
+                  },
+                  "customTone": {
+                    "type": ["string", "null"],
+                    "example": "Clear, direct, and technically confident",
+                    "description": "Provide a custom tone override. Send an empty string or null to clear it."
+                  },
+                  "customInstructions": {
+                    "type": ["string", "null"],
+                    "example": "Avoid hype. Prioritize concrete examples."
+                  },
+                  "audience": {
+                    "type": ["string", "null"],
+                    "minLength": 10,
+                    "example": "Engineering leaders and developer tooling teams."
+                  },
+                  "language": {
+                    "type": ["string", "null"],
+                    "enum": [
+                      "English",
+                      "Spanish",
+                      "French",
+                      "German",
+                      "Portuguese",
+                      "Dutch",
+                      "Italian",
+                      "Japanese",
+                      "Korean",
+                      "Chinese",
+                      "Arabic",
+                      "Hindi",
+                      "Russian",
+                      "Turkish",
+                      "Polish",
+                      "Swedish",
+                      "Danish",
+                      "Norwegian",
+                      "Finnish",
+                      "Czech",
+                      "Romanian",
+                      "Hungarian",
+                      "Greek",
+                      "Thai",
+                      "Vietnamese",
+                      "Indonesian",
+                      "Ukrainian",
+                      "Hebrew",
+                      null
+                    ],
+                    "example": "English"
+                  },
+                  "isDefault": {
+                    "type": "boolean",
+                    "enum": [true],
+                    "example": true,
+                    "description": "Set this brand identity as the organization's default. Only true is accepted."
+                  }
+                }
+              },
+              "examples": {
+                "setDefault": {
+                  "summary": "Set as default",
+                  "value": {
+                    "isDefault": true
+                  }
+                },
+                "updateAndSetDefault": {
+                  "summary": "Rename and set as default",
+                  "value": {
+                    "name": "Notra Marketing",
+                    "isDefault": true
+                  }
+                },
+                "switchToPresetTone": {
+                  "summary": "Switch custom tone to preset",
+                  "value": {
+                    "toneProfile": "Professional"
+                  }
+                },
+                "setCustomTone": {
+                  "summary": "Set custom tone",
+                  "value": {
+                    "customTone": "Warm, sharp, and opinionated"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Brand identity updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "brandIdentity": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "websiteUrl": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": ["string", "null"]
+                        },
+                        "companyDescription": {
+                          "type": ["string", "null"]
+                        },
+                        "toneProfile": {
+                          "type": ["string", "null"]
+                        },
+                        "customTone": {
+                          "type": ["string", "null"]
+                        },
+                        "customInstructions": {
+                          "type": ["string", "null"]
+                        },
+                        "audience": {
+                          "type": ["string", "null"]
+                        },
+                        "language": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "isDefault",
+                        "websiteUrl",
+                        "companyName",
+                        "companyDescription",
+                        "toneProfile",
+                        "customTone",
+                        "customInstructions",
+                        "audience",
+                        "language",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "brandIdentity"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Brand identity name already exists",
             "content": {
               "application/json": {
                 "schema": {
