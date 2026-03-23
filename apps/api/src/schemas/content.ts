@@ -368,6 +368,18 @@ export const patchBrandIdentityResponseSchema = z.object({
   brandIdentity: brandIdentityResponseSchema,
 });
 
+const disabledTriggerSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const deleteBrandIdentityResponseSchema = z.object({
+  id: z.string(),
+  organization: organizationResponseSchema,
+  disabledSchedules: z.array(disabledTriggerSchema),
+  disabledEvents: z.array(disabledTriggerSchema),
+});
+
 export const deletePostResponseSchema = z.object({
   id: z.string(),
   organization: organizationResponseSchema,

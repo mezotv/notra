@@ -18,6 +18,7 @@ import {
 import type { createDb } from "@notra/db/drizzle-http";
 import {
   brandSettings,
+  contentTriggers,
   githubIntegrations,
   organizations,
   posts,
@@ -31,6 +32,7 @@ import {
   createBrandIdentityResponseSchema,
   createPostGenerationRequestSchema,
   createPostGenerationResponseSchema,
+  deleteBrandIdentityResponseSchema,
   deletePostResponseSchema,
   errorResponseSchema,
   generationQueueErrorResponseSchema,
@@ -66,6 +68,7 @@ import {
   extractTitleFromMarkdown,
   renderMarkdownToHtml,
 } from "../utils/markdown";
+import { deleteQstashSchedule } from "../utils/qstash";
 import { getRedis } from "../utils/redis";
 import {
   ORGANIZATION_POST_PATH_REGEX,
@@ -216,6 +219,35 @@ function selectBrandIdentityColumns() {
     createdAt: brandSettings.createdAt,
     updatedAt: brandSettings.updatedAt,
   };
+}
+
+async function getTriggersForBrandIdentity(
+  db: DbClient,
+  organizationId: string,
+  brandIdentityId: string
+) {
+  const allTriggers = await db.query.contentTriggers.findMany({
+    where: eq(contentTriggers.organizationId, organizationId),
+    columns: {
+      id: true,
+      name: true,
+      sourceType: true,
+      outputConfig: true,
+      qstashScheduleId: true,
+    },
+  });
+
+  return allTriggers.filter((trigger) => {
+    const config = trigger.outputConfig as {
+      brandVoiceId?: string;
+      brandIdentityId?: string;
+    } | null;
+
+    return (
+      config?.brandIdentityId === brandIdentityId ||
+      config?.brandVoiceId === brandIdentityId
+    );
+  });
 }
 
 async function resolveRequestedRepositoryIds(
@@ -1131,6 +1163,69 @@ const patchBrandIdentityRoute = createRoute({
   },
 });
 
+const deleteBrandIdentityRoute = createRoute({
+  method: "delete",
+  path: "/brand-identities/{brandIdentityId}",
+  tags: ["Content"],
+  operationId: "deleteBrandIdentity",
+  summary: "Delete a single brand identity",
+  description:
+    "Deletes a non-default brand identity and disables any automation triggers that reference it.",
+  request: {
+    params: getBrandIdentityParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Brand identity deleted successfully",
+      content: {
+        "application/json": {
+          schema: deleteBrandIdentityResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Cannot delete the default brand identity",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Brand identity not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 const getIntegrationsRoute = createRoute({
   method: "get",
   path: "/integrations",
@@ -2025,6 +2120,104 @@ contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
 
     throw error;
   }
+});
+
+contentRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { brandIdentityId } = c.req.valid("param");
+  const runtimeEnv = c.env ?? {};
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const brandIdentity = await db.query.brandSettings.findFirst({
+    where: and(
+      eq(brandSettings.id, brandIdentityId),
+      eq(brandSettings.organizationId, orgId)
+    ),
+    columns: {
+      id: true,
+      isDefault: true,
+    },
+  });
+
+  if (!brandIdentity) {
+    return c.json({ error: "Brand identity not found" }, 404);
+  }
+
+  if (brandIdentity.isDefault) {
+    return c.json({ error: "Cannot delete the default brand identity" }, 400);
+  }
+
+  const affectedTriggers = await getTriggersForBrandIdentity(
+    db,
+    orgId,
+    brandIdentityId
+  );
+
+  for (const trigger of affectedTriggers) {
+    if (!trigger.qstashScheduleId) {
+      continue;
+    }
+
+    await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
+      (error) => {
+        console.error(
+          `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+          error
+        );
+      }
+    );
+  }
+
+  for (const trigger of affectedTriggers) {
+    await db
+      .update(contentTriggers)
+      .set({
+        enabled: false,
+        qstashScheduleId: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(contentTriggers.id, trigger.id),
+          eq(contentTriggers.organizationId, orgId)
+        )
+      );
+  }
+
+  await db
+    .delete(brandSettings)
+    .where(
+      and(
+        eq(brandSettings.id, brandIdentityId),
+        eq(brandSettings.organizationId, orgId)
+      )
+    );
+
+  return c.json(
+    {
+      id: brandIdentityId,
+      organization,
+      disabledSchedules: affectedTriggers
+        .filter((trigger) => trigger.sourceType === "cron")
+        .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+      disabledEvents: affectedTriggers
+        .filter((trigger) => trigger.sourceType !== "cron")
+        .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+    },
+    200
+  );
 });
 
 contentRoutes.openapi(getIntegrationsRoute, async (c) => {
