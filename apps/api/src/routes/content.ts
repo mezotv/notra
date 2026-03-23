@@ -177,6 +177,29 @@ function getPgConstraintName(error: unknown) {
   return null;
 }
 
+function isPgUniqueViolation(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  );
+}
+
+function isConstraintViolation(error: unknown, constraintName: string) {
+  const resolvedConstraintName = getPgConstraintName(error);
+
+  if (resolvedConstraintName === constraintName) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    return error.message.includes(constraintName);
+  }
+
+  return false;
+}
+
 function selectBrandIdentityColumns() {
   return {
     id: brandSettings.id,
@@ -1684,7 +1707,7 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       } catch (error) {
         const constraintName = getPgConstraintName(error);
 
-        if (constraintName !== "brandSettings_org_default_uidx") {
+        if (!isConstraintViolation(error, "brandSettings_org_default_uidx")) {
           throw error;
         }
 
@@ -1764,15 +1787,8 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       );
     }
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "23505"
-    ) {
-      const constraintName = getPgConstraintName(error);
-
-      if (constraintName === "brandSettings_org_name_uidx") {
+    if (isPgUniqueViolation(error)) {
+      if (isConstraintViolation(error, "brandSettings_org_name_uidx")) {
         return c.json(
           { error: "A brand identity with this name already exists" },
           409
@@ -2018,12 +2034,7 @@ contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
 
     return c.json({ brandIdentity, organization }, 200);
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "23505"
-    ) {
+    if (isPgUniqueViolation(error)) {
       return c.json(
         { error: "A brand identity with this name already exists" },
         409
