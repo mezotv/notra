@@ -1,8 +1,12 @@
 import { z } from "@hono/zod-openapi";
+import { supportedLanguageSchema } from "@notra/ai/schemas/language";
+import { toneProfileSchema } from "@notra/ai/schemas/tone";
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_CONTENT_GENERATION_TYPES,
 } from "@notra/content-generation/schemas";
+
+const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
 
 export const getPostsParamsSchema = z.object({});
 
@@ -156,10 +160,29 @@ export const organizationResponseSchema = z.object({
   logo: z.string().nullable(),
 });
 
+const websiteUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "websiteUrl is required")
+  .transform((value) =>
+    HTTP_PROTOCOL_REGEX.test(value) ? value : `https://${value}`
+  )
+  .pipe(z.string().url("Invalid website URL"));
+
 export const brandIdentityResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   isDefault: z.boolean(),
+  websiteUrl: z.string(),
+  companyName: z.string().nullable(),
+  companyDescription: z.string().nullable(),
+  toneProfile: z.string().nullable(),
+  customTone: z.string().nullable(),
+  customInstructions: z.string().nullable(),
+  audience: z.string().nullable(),
+  language: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export const githubIntegrationResponseSchema = z.object({
@@ -228,6 +251,87 @@ export const patchPostRequestSchema = z
 export const patchPostResponseSchema = z.object({
   organization: organizationResponseSchema,
   post: postResponseSchema,
+});
+
+export const createBrandIdentityRequestSchema = z.object({
+  name: z.string().trim().min(1).max(120).optional().openapi({
+    example: "Notra",
+  }),
+  websiteUrl: websiteUrlSchema.openapi({
+    example: "https://usenotra.com",
+  }),
+});
+
+export const createBrandIdentityResponseSchema = z.object({
+  organization: organizationResponseSchema,
+  brandIdentity: brandIdentityResponseSchema,
+});
+
+export const patchBrandIdentityRequestSchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional().openapi({
+      example: "Notra",
+    }),
+    websiteUrl: websiteUrlSchema.optional().openapi({
+      example: "https://usenotra.com",
+    }),
+    companyName: z.string().trim().min(1).optional().nullable().openapi({
+      example: "Notra",
+    }),
+    companyDescription: z
+      .string()
+      .trim()
+      .min(10)
+      .optional()
+      .nullable()
+      .openapi({
+        example: "AI-native content workflows for software teams.",
+      }),
+    toneProfile: toneProfileSchema.optional().nullable().openapi({
+      example: "Professional",
+      description:
+        "Set a preset tone profile. When provided without customTone, any saved custom tone is cleared.",
+    }),
+    customTone: z.string().trim().optional().nullable().openapi({
+      example: "Clear, direct, and technically confident",
+      description:
+        "Provide a custom tone override. Send an empty string or null to clear it.",
+    }),
+    customInstructions: z.string().trim().optional().nullable().openapi({
+      example: "Avoid hype. Prioritize concrete examples.",
+    }),
+    audience: z.string().trim().min(10).optional().nullable().openapi({
+      example: "Engineering leaders and developer tooling teams.",
+    }),
+    language: supportedLanguageSchema.optional().nullable().openapi({
+      example: "English",
+    }),
+    isDefault: z.literal(true).optional().openapi({
+      example: true,
+      description:
+        "Set this brand identity as the organization's default. Only true is accepted.",
+    }),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.websiteUrl !== undefined ||
+      data.companyName !== undefined ||
+      data.companyDescription !== undefined ||
+      data.toneProfile !== undefined ||
+      data.customTone !== undefined ||
+      data.customInstructions !== undefined ||
+      data.audience !== undefined ||
+      data.language !== undefined ||
+      data.isDefault !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
+
+export const patchBrandIdentityResponseSchema = z.object({
+  organization: organizationResponseSchema,
+  brandIdentity: brandIdentityResponseSchema,
 });
 
 export const deletePostResponseSchema = z.object({
@@ -451,6 +555,18 @@ export type GetPostsResponse = z.infer<typeof getPostsResponseSchema>;
 export type GetPostResponse = z.infer<typeof getPostResponseSchema>;
 export type GetBrandIdentityResponse = z.infer<
   typeof getBrandIdentityResponseSchema
+>;
+export type CreateBrandIdentityRequest = z.infer<
+  typeof createBrandIdentityRequestSchema
+>;
+export type CreateBrandIdentityResponse = z.infer<
+  typeof createBrandIdentityResponseSchema
+>;
+export type PatchBrandIdentityRequest = z.infer<
+  typeof patchBrandIdentityRequestSchema
+>;
+export type PatchBrandIdentityResponse = z.infer<
+  typeof patchBrandIdentityResponseSchema
 >;
 export type PatchPostRequest = z.infer<typeof patchPostRequestSchema>;
 export type PatchPostResponse = z.infer<typeof patchPostResponseSchema>;

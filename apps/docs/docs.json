@@ -114,7 +114,9 @@
                 "expanded": true,
                 "pages": [
                   "GET /v1/brand-identities",
-                  "GET /v1/brand-identities/{brandIdentityId}"
+                  "POST /v1/brand-identities",
+                  "GET /v1/brand-identities/{brandIdentityId}",
+                  "PATCH /v1/brand-identities/{brandIdentityId}"
                 ]
               },
               {

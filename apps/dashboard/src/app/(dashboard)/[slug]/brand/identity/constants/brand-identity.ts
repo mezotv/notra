@@ -1,5 +1,5 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
-import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ToneProfile } from "@notra/ai/schemas/tone";
 
 export const AUTO_SAVE_DELAY = 2500;
 

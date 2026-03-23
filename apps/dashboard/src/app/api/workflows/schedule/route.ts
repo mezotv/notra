@@ -1,4 +1,4 @@
-import { getValidToneProfile } from "@notra/ai/schemas/brand";
+import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import {

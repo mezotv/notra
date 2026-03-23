@@ -1,4 +1,4 @@
-import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ToneProfile } from "@notra/ai/schemas/tone";
 import {
   Combobox,
   ComboboxContent,

@@ -18,6 +18,7 @@
       "name": "api",
       "dependencies": {
         "@hono/zod-openapi": "^1.2.2",
+        "@notra/ai": "workspace:*",
         "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
         "@unkey/api": "^2.3.0",
@@ -32,6 +33,7 @@
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
+        "@types/sanitize-html": "^2.16.0",
         "wrangler": "^4.4.0",
       },
     },

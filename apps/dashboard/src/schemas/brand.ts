@@ -1,13 +1,11 @@
 import {
   DEFAULT_LANGUAGE,
-  SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@notra/ai/constants/languages";
-import { toneProfileSchema } from "@notra/ai/schemas/brand";
+import { supportedLanguageSchema } from "@notra/ai/schemas/language";
+import { toneProfileSchema } from "@notra/ai/schemas/tone";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-
-export const supportedLanguageSchema = z.enum(SUPPORTED_LANGUAGES);
 
 export function getValidLanguage(value: unknown): SupportedLanguage {
   const parsed = supportedLanguageSchema.safeParse(value);

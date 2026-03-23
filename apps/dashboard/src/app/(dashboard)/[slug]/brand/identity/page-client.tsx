@@ -2,7 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ToneProfile } from "@notra/ai/schemas/tone";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,

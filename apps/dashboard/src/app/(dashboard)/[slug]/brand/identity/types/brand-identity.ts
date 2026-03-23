@@ -1,5 +1,5 @@
 import type { SupportedLanguage } from "@notra/ai/constants/languages";
-import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ToneProfile } from "@notra/ai/schemas/tone";
 import type { AffectedTrigger } from "@/schemas/integrations";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 

@@ -20,6 +20,8 @@ import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 import {
   ALL_POST_CONTENT_TYPES,
   ALL_POST_STATUSES,
+  createBrandIdentityRequestSchema,
+  createBrandIdentityResponseSchema,
   createPostGenerationRequestSchema,
   createPostGenerationResponseSchema,
   deletePostResponseSchema,
@@ -36,6 +38,8 @@ import {
   getPostsOpenApiQuerySchema,
   getPostsParamsSchema,
   getPostsResponseSchema,
+  patchBrandIdentityRequestSchema,
+  patchBrandIdentityResponseSchema,
   patchPostRequestSchema,
   patchPostResponseSchema,
 } from "../schemas/content";
@@ -122,6 +126,32 @@ function getContentGenerationUnavailableReason(runtimeEnv: {
   }
 
   return null;
+}
+
+const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
+
+function normalizeWebsiteUrl(websiteUrl: string) {
+  return HTTP_PROTOCOL_REGEX.test(websiteUrl)
+    ? websiteUrl
+    : `https://${websiteUrl}`;
+}
+
+function selectBrandIdentityColumns() {
+  return {
+    id: brandSettings.id,
+    name: brandSettings.name,
+    isDefault: brandSettings.isDefault,
+    websiteUrl: brandSettings.websiteUrl,
+    companyName: brandSettings.companyName,
+    companyDescription: brandSettings.companyDescription,
+    toneProfile: brandSettings.toneProfile,
+    customTone: brandSettings.customTone,
+    customInstructions: brandSettings.customInstructions,
+    audience: brandSettings.audience,
+    language: brandSettings.language,
+    createdAt: brandSettings.createdAt,
+    updatedAt: brandSettings.updatedAt,
+  };
 }
 
 async function resolveRequestedRepositoryIds(
@@ -733,6 +763,82 @@ const getBrandIdentitiesRoute = createRoute({
   },
 });
 
+const createBrandIdentityRoute = createRoute({
+  method: "post",
+  path: "/brand-identities",
+  tags: ["Content"],
+  operationId: "createBrandIdentity",
+  summary: "Create a new brand identity",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: createBrandIdentityRequestSchema,
+        },
+      },
+      required: true,
+    },
+  },
+  responses: {
+    201: {
+      description: "Brand identity created successfully",
+      content: {
+        "application/json": {
+          schema: createBrandIdentityResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid request body",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    409: {
+      description: "Brand identity name already exists",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 const getBrandIdentityRoute = createRoute({
   method: "get",
   path: "/brand-identities/{brandIdentityId}",
@@ -777,6 +883,112 @@ const getBrandIdentityRoute = createRoute({
     },
     404: {
       description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const patchBrandIdentityRoute = createRoute({
+  method: "patch",
+  path: "/brand-identities/{brandIdentityId}",
+  tags: ["Content"],
+  operationId: "updateBrandIdentity",
+  summary: "Update a single brand identity",
+  description:
+    "Updates brand identity fields. Pass isDefault: true to make the target brand identity the organization's default.",
+  request: {
+    params: getBrandIdentityParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: patchBrandIdentityRequestSchema,
+          examples: {
+            setDefault: {
+              summary: "Set as default",
+              value: {
+                isDefault: true,
+              },
+            },
+            updateAndSetDefault: {
+              summary: "Rename and set as default",
+              value: {
+                name: "Notra Marketing",
+                isDefault: true,
+              },
+            },
+            switchToPresetTone: {
+              summary: "Switch custom tone to preset",
+              value: {
+                toneProfile: "Professional",
+              },
+            },
+            setCustomTone: {
+              summary: "Set custom tone",
+              value: {
+                customTone: "Warm, sharp, and opinionated",
+              },
+            },
+          },
+        },
+      },
+      required: true,
+    },
+  },
+  responses: {
+    200: {
+      description: "Brand identity updated successfully",
+      content: {
+        "application/json": {
+          schema: patchBrandIdentityResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid path params or request body",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Brand identity not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    409: {
+      description: "Brand identity name already exists",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -1304,10 +1516,78 @@ contentRoutes.openapi(getBrandIdentitiesRoute, async (c) => {
       id: true,
       name: true,
       isDefault: true,
+      websiteUrl: true,
+      companyName: true,
+      companyDescription: true,
+      toneProfile: true,
+      customTone: true,
+      customInstructions: true,
+      audience: true,
+      language: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
   return c.json({ brandIdentities, organization }, 200);
+});
+
+contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const body = c.req.valid("json");
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const name = body.name?.trim() || "Untitled Brand Voice";
+  const websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
+  const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
+    where: eq(brandSettings.organizationId, orgId),
+    columns: { id: true },
+  });
+
+  try {
+    const [brandIdentity] = await db
+      .insert(brandSettings)
+      .values({
+        id: crypto.randomUUID(),
+        organizationId: orgId,
+        name,
+        isDefault: !hasAnyBrandIdentity,
+        websiteUrl,
+      })
+      .returning(selectBrandIdentityColumns());
+
+    if (!brandIdentity) {
+      throw new Error("Failed to create brand identity");
+    }
+
+    return c.json({ brandIdentity, organization }, 201);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return c.json(
+        { error: "A brand identity with this name already exists" },
+        409
+      );
+    }
+
+    throw error;
+  }
 });
 
 contentRoutes.openapi(getBrandIdentityRoute, async (c) => {
@@ -1336,10 +1616,151 @@ contentRoutes.openapi(getBrandIdentityRoute, async (c) => {
       id: true,
       name: true,
       isDefault: true,
+      websiteUrl: true,
+      companyName: true,
+      companyDescription: true,
+      toneProfile: true,
+      customTone: true,
+      customInstructions: true,
+      audience: true,
+      language: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
   return c.json({ brandIdentity: brandIdentity ?? null, organization }, 200);
+});
+
+contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { brandIdentityId } = c.req.valid("param");
+  const body = c.req.valid("json");
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const existingBrandIdentity = await db.query.brandSettings.findFirst({
+    where: and(
+      eq(brandSettings.id, brandIdentityId),
+      eq(brandSettings.organizationId, orgId)
+    ),
+    columns: { id: true },
+  });
+
+  if (!existingBrandIdentity) {
+    return c.json({ error: "Brand identity not found" }, 404);
+  }
+
+  const updateData: Partial<typeof brandSettings.$inferInsert> = {
+    updatedAt: new Date(),
+  };
+  const shouldSetDefault = body.isDefault === true;
+
+  if (body.name !== undefined) {
+    updateData.name = body.name;
+  }
+
+  if (body.websiteUrl !== undefined) {
+    updateData.websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
+  }
+
+  if (body.companyName !== undefined) {
+    updateData.companyName = body.companyName;
+  }
+
+  if (body.companyDescription !== undefined) {
+    updateData.companyDescription = body.companyDescription;
+  }
+
+  if (body.toneProfile !== undefined) {
+    updateData.toneProfile = body.toneProfile;
+    if (body.customTone === undefined) {
+      updateData.customTone = null;
+    }
+  }
+
+  if (body.customTone !== undefined) {
+    updateData.customTone = body.customTone?.trim() ? body.customTone : null;
+  }
+
+  if (body.customInstructions !== undefined) {
+    updateData.customInstructions = body.customInstructions;
+  }
+
+  if (body.audience !== undefined) {
+    updateData.audience = body.audience;
+  }
+
+  if (body.language !== undefined) {
+    updateData.language = body.language;
+  }
+
+  try {
+    const [brandIdentity] = shouldSetDefault
+      ? await db.transaction(async (tx) => {
+          await tx
+            .update(brandSettings)
+            .set({ isDefault: false, updatedAt: new Date() })
+            .where(
+              and(
+                eq(brandSettings.organizationId, orgId),
+                eq(brandSettings.isDefault, true)
+              )
+            );
+
+          return tx
+            .update(brandSettings)
+            .set({ ...updateData, isDefault: true })
+            .where(
+              and(
+                eq(brandSettings.id, brandIdentityId),
+                eq(brandSettings.organizationId, orgId)
+              )
+            )
+            .returning(selectBrandIdentityColumns());
+        })
+      : await db
+          .update(brandSettings)
+          .set(updateData)
+          .where(
+            and(
+              eq(brandSettings.id, brandIdentityId),
+              eq(brandSettings.organizationId, orgId)
+            )
+          )
+          .returning(selectBrandIdentityColumns());
+
+    if (!brandIdentity) {
+      return c.json({ error: "Brand identity not found" }, 404);
+    }
+
+    return c.json({ brandIdentity, organization }, 200);
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return c.json(
+        { error: "A brand identity with this name already exists" },
+        409
+      );
+    }
+
+    throw error;
+  }
 });
 
 contentRoutes.openapi(getIntegrationsRoute, async (c) => {

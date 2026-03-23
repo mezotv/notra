@@ -1,4 +1,4 @@
-import type { ToneProfile } from "@notra/ai/schemas/brand";
+import type { ToneProfile } from "@notra/ai/schemas/tone";
 import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "@/types/posts";
