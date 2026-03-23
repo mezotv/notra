@@ -1686,6 +1686,21 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
   const now = new Date().toISOString();
   const jobId = createBrandAnalysisJobId();
 
+  const existingBrandIdentityWithName = await db.query.brandSettings.findFirst({
+    where: and(
+      eq(brandSettings.organizationId, orgId),
+      eq(brandSettings.name, name)
+    ),
+    columns: { id: true },
+  });
+
+  if (existingBrandIdentityWithName) {
+    return c.json(
+      { error: "A brand identity with this name already exists" },
+      409
+    );
+  }
+
   try {
     const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
       where: eq(brandSettings.organizationId, orgId),
