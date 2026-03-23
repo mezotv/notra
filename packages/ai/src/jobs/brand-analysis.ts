@@ -50,12 +50,21 @@ function serializeJobFieldUpdates(updates: Partial<BrandAnalysisJob>) {
 }
 
 function parseStoredJob(raw: Record<string, unknown>) {
+  const parseValue = (value: unknown) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  };
+
   return brandAnalysisJobSchema.parse(
     Object.fromEntries(
-      Object.entries(raw).map(([key, value]) => [
-        key,
-        typeof value === "string" ? JSON.parse(value) : value,
-      ])
+      Object.entries(raw).map(([key, value]) => [key, parseValue(value)])
     )
   );
 }
