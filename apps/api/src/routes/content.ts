@@ -128,12 +128,40 @@ function getContentGenerationUnavailableReason(runtimeEnv: {
   return null;
 }
 
-const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
+function getPgConstraintName(error: unknown) {
+  if (!(typeof error === "object" && error !== null)) {
+    return null;
+  }
 
-function normalizeWebsiteUrl(websiteUrl: string) {
-  return HTTP_PROTOCOL_REGEX.test(websiteUrl)
-    ? websiteUrl
-    : `https://${websiteUrl}`;
+  if ("constraint_name" in error && typeof error.constraint_name === "string") {
+    return error.constraint_name;
+  }
+
+  if ("constraint" in error && typeof error.constraint === "string") {
+    return error.constraint;
+  }
+
+  if (
+    "cause" in error &&
+    typeof error.cause === "object" &&
+    error.cause !== null
+  ) {
+    if (
+      "constraint_name" in error.cause &&
+      typeof error.cause.constraint_name === "string"
+    ) {
+      return error.cause.constraint_name;
+    }
+
+    if (
+      "constraint" in error.cause &&
+      typeof error.cause.constraint === "string"
+    ) {
+      return error.cause.constraint;
+    }
+  }
+
+  return null;
 }
 
 function selectBrandIdentityColumns() {
@@ -1550,23 +1578,45 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
   }
 
   const name = body.name?.trim() || "Untitled Brand Voice";
-  const websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
-  const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
-    where: eq(brandSettings.organizationId, orgId),
-    columns: { id: true },
-  });
+  const websiteUrl = body.websiteUrl;
 
   try {
-    const [brandIdentity] = await db
-      .insert(brandSettings)
-      .values({
-        id: crypto.randomUUID(),
-        organizationId: orgId,
-        name,
-        isDefault: !hasAnyBrandIdentity,
-        websiteUrl,
-      })
-      .returning(selectBrandIdentityColumns());
+    const [brandIdentity] = await db.transaction(async (tx) => {
+      const hasAnyBrandIdentity = await tx.query.brandSettings.findFirst({
+        where: eq(brandSettings.organizationId, orgId),
+        columns: { id: true },
+      });
+
+      try {
+        return tx
+          .insert(brandSettings)
+          .values({
+            id: crypto.randomUUID(),
+            organizationId: orgId,
+            name,
+            isDefault: !hasAnyBrandIdentity,
+            websiteUrl,
+          })
+          .returning(selectBrandIdentityColumns());
+      } catch (error) {
+        const constraintName = getPgConstraintName(error);
+
+        if (constraintName === "brandSettings_org_default_uidx") {
+          return tx
+            .insert(brandSettings)
+            .values({
+              id: crypto.randomUUID(),
+              organizationId: orgId,
+              name,
+              isDefault: false,
+              websiteUrl,
+            })
+            .returning(selectBrandIdentityColumns());
+        }
+
+        throw error;
+      }
+    });
 
     if (!brandIdentity) {
       throw new Error("Failed to create brand identity");
@@ -1580,10 +1630,16 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       "code" in error &&
       error.code === "23505"
     ) {
-      return c.json(
-        { error: "A brand identity with this name already exists" },
-        409
-      );
+      const constraintName = getPgConstraintName(error);
+
+      if (constraintName === "brandSettings_org_name_uidx") {
+        return c.json(
+          { error: "A brand identity with this name already exists" },
+          409
+        );
+      }
+
+      return c.json({ error: "Failed to create brand identity" }, 409);
     }
 
     throw error;
@@ -1672,7 +1728,7 @@ contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
   }
 
   if (body.websiteUrl !== undefined) {
-    updateData.websiteUrl = normalizeWebsiteUrl(body.websiteUrl);
+    updateData.websiteUrl = body.websiteUrl;
   }
 
   if (body.companyName !== undefined) {
