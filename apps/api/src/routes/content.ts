@@ -22,7 +22,7 @@ import {
   organizations,
   posts,
 } from "@notra/db/schema";
-import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 
 import {
   ALL_POST_CONTENT_TYPES,
@@ -1720,8 +1720,6 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
           })
           .returning(selectBrandIdentityColumns());
       } catch (error) {
-        const constraintName = getPgConstraintName(error);
-
         if (!isConstraintViolation(error, "brandSettings_org_default_uidx")) {
           throw error;
         }
@@ -1743,22 +1741,22 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       throw new Error("Failed to create brand identity");
     }
 
-    const job = await createBrandAnalysisJob(redis, {
-      id: jobId,
-      organizationId: orgId,
-      brandIdentityId: brandIdentity.id,
-      status: "queued",
-      step: null,
-      currentStep: 0,
-      totalSteps: 3,
-      workflowRunId: null,
-      error: null,
-      createdAt: now,
-      updatedAt: now,
-      completedAt: null,
-    });
-
     try {
+      const job = await createBrandAnalysisJob(redis, {
+        id: jobId,
+        organizationId: orgId,
+        brandIdentityId: brandIdentity.id,
+        status: "queued",
+        step: null,
+        currentStep: 0,
+        totalSteps: 3,
+        workflowRunId: null,
+        error: null,
+        createdAt: now,
+        updatedAt: now,
+        completedAt: null,
+      });
+
       const workflowRunId = await triggerBrandAnalysisWorkflow(runtimeEnv, {
         organizationId: orgId,
         url: websiteUrl,
@@ -1965,69 +1963,41 @@ contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
   try {
     const [brandIdentity] = shouldSetDefault
       ? await (async () => {
-          const defaultSwitchUpdate: Record<string, unknown> = {
-            isDefault: sql`case when ${brandSettings.id} = ${brandIdentityId} then true else false end`,
-            updatedAt: updateData.updatedAt,
-          };
+          const { updatedAt, ...targetUpdateData } = updateData;
 
-          if (updateData.name !== undefined) {
-            defaultSwitchUpdate.name = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.name} else ${brandSettings.name} end`;
-          }
-
-          if (updateData.websiteUrl !== undefined) {
-            defaultSwitchUpdate.websiteUrl = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.websiteUrl} else ${brandSettings.websiteUrl} end`;
-          }
-
-          if (updateData.companyName !== undefined) {
-            defaultSwitchUpdate.companyName = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.companyName} else ${brandSettings.companyName} end`;
-          }
-
-          if (updateData.companyDescription !== undefined) {
-            defaultSwitchUpdate.companyDescription = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.companyDescription} else ${brandSettings.companyDescription} end`;
-          }
-
-          if (updateData.toneProfile !== undefined) {
-            defaultSwitchUpdate.toneProfile = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.toneProfile} else ${brandSettings.toneProfile} end`;
-          }
-
-          if (updateData.customTone !== undefined) {
-            defaultSwitchUpdate.customTone = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.customTone} else ${brandSettings.customTone} end`;
-          }
-
-          if (updateData.customInstructions !== undefined) {
-            defaultSwitchUpdate.customInstructions = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.customInstructions} else ${brandSettings.customInstructions} end`;
-          }
-
-          if (updateData.audience !== undefined) {
-            defaultSwitchUpdate.audience = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.audience} else ${brandSettings.audience} end`;
-          }
-
-          if (updateData.language !== undefined) {
-            defaultSwitchUpdate.language = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.language} else ${brandSettings.language} end`;
+          if (Object.keys(targetUpdateData).length > 0) {
+            await db
+              .update(brandSettings)
+              .set(targetUpdateData)
+              .where(
+                and(
+                  eq(brandSettings.id, brandIdentityId),
+                  eq(brandSettings.organizationId, orgId)
+                )
+              );
           }
 
           await db
             .update(brandSettings)
-            .set(defaultSwitchUpdate)
+            .set({ isDefault: false })
             .where(
               and(
                 eq(brandSettings.organizationId, orgId),
-                or(
-                  eq(brandSettings.id, brandIdentityId),
-                  eq(brandSettings.isDefault, true)
-                )
+                eq(brandSettings.isDefault, true),
+                ne(brandSettings.id, brandIdentityId)
               )
             );
 
           return db
-            .select(selectBrandIdentityColumns())
-            .from(brandSettings)
+            .update(brandSettings)
+            .set({ isDefault: true, updatedAt })
             .where(
               and(
                 eq(brandSettings.id, brandIdentityId),
                 eq(brandSettings.organizationId, orgId)
               )
-            );
+            )
+            .returning(selectBrandIdentityColumns());
         })()
       : await db
           .update(brandSettings)
