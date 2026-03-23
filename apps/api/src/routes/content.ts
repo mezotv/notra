@@ -1,5 +1,12 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import {
+  createBrandAnalysisJob,
+  createBrandAnalysisJobId,
+  getBrandAnalysisJob,
+  setBrandAnalysisJobStatus,
+  updateBrandAnalysisJob,
+} from "@notra/ai/jobs/brand-analysis";
+import {
   appendContentGenerationJobEvent,
   createContentGenerationJob,
   createContentGenerationJobId,
@@ -27,6 +34,8 @@ import {
   deletePostResponseSchema,
   errorResponseSchema,
   generationQueueErrorResponseSchema,
+  getBrandAnalysisJobParamsSchema,
+  getBrandAnalysisJobResponseSchema,
   getBrandIdentitiesResponseSchema,
   getBrandIdentityParamsSchema,
   getBrandIdentityResponseSchema,
@@ -45,6 +54,10 @@ import {
 } from "../schemas/content";
 import { addActiveGeneration } from "../utils/active-generations";
 import { getOrganizationId } from "../utils/auth";
+import {
+  isBrandAnalysisConfigured,
+  triggerBrandAnalysisWorkflow,
+} from "../utils/brand-analysis";
 import {
   isContentGenerationConfigured,
   triggerContentGenerationWorkflow,
@@ -796,7 +809,7 @@ const createBrandIdentityRoute = createRoute({
   path: "/brand-identities",
   tags: ["Content"],
   operationId: "createBrandIdentity",
-  summary: "Create a new brand identity",
+  summary: "Create and analyze a new brand identity",
   request: {
     body: {
       content: {
@@ -808,8 +821,8 @@ const createBrandIdentityRoute = createRoute({
     },
   },
   responses: {
-    201: {
-      description: "Brand identity created successfully",
+    202: {
+      description: "Brand identity analysis queued successfully",
       content: {
         "application/json": {
           schema: createBrandIdentityResponseSchema,
@@ -858,6 +871,67 @@ const createBrandIdentityRoute = createRoute({
     },
     503: {
       description: "Authentication service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const getBrandAnalysisJobRoute = createRoute({
+  method: "get",
+  path: "/brand-identities/generate/{jobId}",
+  tags: ["Content"],
+  operationId: "getBrandIdentityGeneration",
+  summary: "Get async brand identity analysis status",
+  request: {
+    params: getBrandAnalysisJobParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Brand identity analysis status fetched successfully",
+      content: {
+        "application/json": {
+          schema: getBrandAnalysisJobResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid path params",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Brand identity analysis job not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Brand analysis is unavailable",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -1570,6 +1644,8 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
   }
 
   const body = c.req.valid("json");
+  const runtimeEnv = c.env ?? {};
+  const redis = getRedis(runtimeEnv);
   const db = c.get("db");
   const organization = await getOrganizationResponse(db, orgId);
 
@@ -1577,9 +1653,15 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
 
+  if (!redis || !isBrandAnalysisConfigured(runtimeEnv)) {
+    return c.json({ error: "Brand analysis is unavailable" }, 503);
+  }
+
   const name = body.name?.trim() || "Untitled Brand Voice";
   const websiteUrl = body.websiteUrl;
   const newBrandIdentityId = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const jobId = createBrandAnalysisJobId();
 
   try {
     const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
@@ -1623,7 +1705,64 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       throw new Error("Failed to create brand identity");
     }
 
-    return c.json({ brandIdentity, organization }, 201);
+    const job = await createBrandAnalysisJob(redis, {
+      id: jobId,
+      organizationId: orgId,
+      brandIdentityId: brandIdentity.id,
+      status: "queued",
+      step: null,
+      currentStep: 0,
+      totalSteps: 3,
+      workflowRunId: null,
+      error: null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    });
+
+    try {
+      const workflowRunId = await triggerBrandAnalysisWorkflow(runtimeEnv, {
+        organizationId: orgId,
+        url: websiteUrl,
+        voiceId: brandIdentity.id,
+        jobId,
+      });
+
+      const updatedJob = await updateBrandAnalysisJob(redis, jobId, {
+        workflowRunId,
+      });
+
+      return c.json(
+        { brandIdentity, job: updatedJob ?? job, organization },
+        202
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to trigger workflow";
+
+      await setBrandAnalysisJobStatus(redis, jobId, "failed", {
+        step: null,
+        currentStep: 0,
+        totalSteps: 3,
+        error: message,
+      });
+
+      await db
+        .delete(brandSettings)
+        .where(
+          and(
+            eq(brandSettings.id, brandIdentity.id),
+            eq(brandSettings.organizationId, orgId)
+          )
+        );
+
+      return c.json(
+        {
+          error: "Failed to queue brand identity analysis",
+        },
+        503
+      );
+    }
   } catch (error) {
     if (
       typeof error === "object" &&
@@ -1645,6 +1784,38 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
 
     throw error;
   }
+});
+
+contentRoutes.openapi(getBrandAnalysisJobRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { jobId } = c.req.valid("param");
+  const runtimeEnv = c.env ?? {};
+  const redis = getRedis(runtimeEnv);
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  if (!redis) {
+    return c.json({ error: "Brand analysis is unavailable" }, 503);
+  }
+
+  const job = await getBrandAnalysisJob(redis, jobId);
+
+  if (!job || job.organizationId !== orgId) {
+    return c.json({ error: "Brand identity analysis job not found" }, 404);
+  }
+
+  return c.json({ job, organization }, 200);
 });
 
 contentRoutes.openapi(getBrandIdentityRoute, async (c) => {

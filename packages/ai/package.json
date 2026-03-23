@@ -12,6 +12,7 @@
     "./agents/*": "./src/agents/*.ts",
     "./orchestration/*": "./src/orchestration/*.ts",
     "./tools/*": "./src/tools/*.ts",
+    "./jobs/*": "./src/jobs/*.ts",
     "./prompts/*": "./src/prompts/*.ts",
     "./prompts/twitter/*": "./src/prompts/twitter/*.ts",
     "./prompts/linkedin/*": "./src/prompts/linkedin/*.ts",

@@ -262,9 +262,44 @@ export const createBrandIdentityRequestSchema = z.object({
   }),
 });
 
+export const brandAnalysisJobSchema = z.object({
+  id: z.string(),
+  organizationId: z.string(),
+  brandIdentityId: z.string(),
+  status: z.enum(["queued", "running", "completed", "failed"]),
+  step: z.enum(["scraping", "extracting", "saving"]).nullable(),
+  currentStep: z.number().int().min(0),
+  totalSteps: z.number().int().min(1),
+  workflowRunId: z.string().nullable(),
+  error: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  completedAt: z.string().nullable(),
+});
+
 export const createBrandIdentityResponseSchema = z.object({
   organization: organizationResponseSchema,
   brandIdentity: brandIdentityResponseSchema,
+  job: brandAnalysisJobSchema,
+});
+
+export const getBrandAnalysisJobParamsSchema = z.object({
+  jobId: z
+    .string()
+    .trim()
+    .min(1, "jobId is required")
+    .openapi({
+      param: {
+        in: "path",
+        name: "jobId",
+      },
+      example: "brand_job_123",
+    }),
+});
+
+export const getBrandAnalysisJobResponseSchema = z.object({
+  organization: organizationResponseSchema,
+  job: brandAnalysisJobSchema,
 });
 
 export const patchBrandIdentityRequestSchema = z
@@ -561,6 +596,12 @@ export type CreateBrandIdentityRequest = z.infer<
 >;
 export type CreateBrandIdentityResponse = z.infer<
   typeof createBrandIdentityResponseSchema
+>;
+export type GetBrandAnalysisJobParams = z.infer<
+  typeof getBrandAnalysisJobParamsSchema
+>;
+export type GetBrandAnalysisJobResponse = z.infer<
+  typeof getBrandAnalysisJobResponseSchema
 >;
 export type PatchBrandIdentityRequest = z.infer<
   typeof patchBrandIdentityRequestSchema

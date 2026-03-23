@@ -1,6 +1,10 @@
 import { SdkError } from "@mendable/firecrawl-js";
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
+import {
+  setBrandAnalysisJobStatus,
+  updateBrandAnalysisJob,
+} from "@notra/ai/jobs/brand-analysis";
 import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
@@ -51,6 +55,7 @@ const brandAnalysisPayloadSchema = z.object({
   organizationId: z.string().min(1),
   url: z.string().url(),
   voiceId: z.string().optional(),
+  jobId: z.string().optional(),
 });
 
 type BrandAnalysisPayload = z.infer<typeof brandAnalysisPayloadSchema>;
@@ -87,6 +92,52 @@ async function setProgress(organizationId: string, data: ProgressData) {
   });
 }
 
+async function setJobProgress(jobId: string | undefined, data: ProgressData) {
+  if (!(redis && jobId)) {
+    return;
+  }
+
+  if (data.status === "failed") {
+    await setBrandAnalysisJobStatus(redis, jobId, "failed", {
+      step:
+        data.currentStep === 1
+          ? "scraping"
+          : data.currentStep === 2
+            ? "extracting"
+            : data.currentStep === 3
+              ? "saving"
+              : null,
+      currentStep: data.currentStep,
+      totalSteps: data.totalSteps,
+      error: data.error ?? "Brand analysis failed",
+    });
+    return;
+  }
+
+  if (data.status === "completed") {
+    await setBrandAnalysisJobStatus(redis, jobId, "completed", {
+      step: null,
+      currentStep: data.currentStep,
+      totalSteps: data.totalSteps,
+      error: null,
+    });
+    return;
+  }
+
+  await updateBrandAnalysisJob(redis, jobId, {
+    status: "running",
+    step:
+      data.status === "scraping" ||
+      data.status === "extracting" ||
+      data.status === "saving"
+        ? data.status
+        : null,
+    currentStep: data.currentStep,
+    totalSteps: data.totalSteps,
+    error: null,
+  });
+}
+
 export const { POST } = serve<BrandAnalysisPayload>(
   async (context: WorkflowContext<BrandAnalysisPayload>) => {
     const parseResult = brandAnalysisPayloadSchema.safeParse(
@@ -100,15 +151,17 @@ export const { POST } = serve<BrandAnalysisPayload>(
       await context.cancel();
       return;
     }
-    const { organizationId, url, voiceId } = parseResult.data;
+    const { organizationId, url, voiceId, jobId } = parseResult.data;
 
     // Step 1: Scrape website
     await context.run("set-progress-scraping", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "scraping",
         currentStep: 1,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     const scrapingResult = await context.run<ScrapingResult>(
@@ -169,12 +222,14 @@ export const { POST } = serve<BrandAnalysisPayload>(
 
     if (!scrapingResult.success) {
       await context.run("set-progress-failed-scraping", async () => {
-        await setProgress(organizationId, {
+        const progress = {
           status: "failed",
           currentStep: 1,
           totalSteps: STEP_COUNT,
           error: scrapingResult.error,
-        });
+        } as const;
+        await setProgress(organizationId, progress);
+        await setJobProgress(jobId, progress);
       });
       await context.cancel();
       return;
@@ -182,11 +237,13 @@ export const { POST } = serve<BrandAnalysisPayload>(
 
     // Step 2: Extract brand info
     await context.run("set-progress-extracting", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "extracting",
         currentStep: 2,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     const extractionResult = await context.run<ExtractionResult>(
@@ -236,12 +293,14 @@ Extract the following information:
 
     if (!extractionResult.success) {
       await context.run("set-progress-failed-extracting", async () => {
-        await setProgress(organizationId, {
+        const progress = {
           status: "failed",
           currentStep: 2,
           totalSteps: STEP_COUNT,
           error: extractionResult.error,
-        });
+        } as const;
+        await setProgress(organizationId, progress);
+        await setJobProgress(jobId, progress);
       });
       await context.cancel();
       return;
@@ -249,11 +308,13 @@ Extract the following information:
 
     // Step 3: Save to database
     await context.run("set-progress-saving", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "saving",
         currentStep: 3,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     await context.run("save-to-database", async () => {
@@ -333,11 +394,13 @@ Extract the following information:
 
     // Mark as completed
     await context.run("set-progress-completed", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "completed",
         currentStep: 3,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     return { success: true, brandInfo: extractionResult.brandInfo };
@@ -349,16 +412,18 @@ Extract the following information:
 
       // Set failed progress on workflow failure
       if (redis) {
-        await redis.set(
-          `brand:progress:${organizationId}`,
-          {
-            status: "failed",
-            currentStep: 0,
-            totalSteps: STEP_COUNT,
-            error: "Workflow failed unexpectedly",
-          },
-          { ex: PROGRESS_TTL }
-        );
+        const progress = {
+          status: "failed",
+          currentStep: 0,
+          totalSteps: STEP_COUNT,
+          error: "Workflow failed unexpectedly",
+        } as const;
+
+        await redis.set(`brand:progress:${organizationId}`, progress, {
+          ex: PROGRESS_TTL,
+        });
+
+        await setJobProgress(context.requestPayload.jobId, progress);
       }
 
       console.error(

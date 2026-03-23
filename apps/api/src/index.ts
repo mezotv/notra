@@ -35,6 +35,11 @@ interface Bindings {
   QSTASH_TOKEN?: string;
   CONTENT_GENERATION_WORKFLOW_URL?: string;
   CONTENT_GENERATION_WORKFLOW_BASE_URL?: string;
+  BRAND_ANALYSIS_WORKFLOW_URL?: string;
+  BRAND_ANALYSIS_WORKFLOW_BASE_URL?: string;
+  NEXT_PUBLIC_APP_URL?: string;
+  APP_URL?: string;
+  BETTER_AUTH_URL?: string;
 }
 
 interface AppEnv {
