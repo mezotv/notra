@@ -240,13 +240,9 @@ async function getTriggersForBrandIdentity(
   return allTriggers.filter((trigger) => {
     const config = trigger.outputConfig as {
       brandVoiceId?: string;
-      brandIdentityId?: string;
     } | null;
 
-    return (
-      config?.brandIdentityId === brandIdentityId ||
-      config?.brandVoiceId === brandIdentityId
-    );
+    return config?.brandVoiceId === brandIdentityId;
   });
 }
 
@@ -2180,30 +2176,35 @@ contentRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
     );
   }
 
-  for (const trigger of affectedTriggers) {
-    await db
-      .update(contentTriggers)
-      .set({
-        enabled: false,
-        qstashScheduleId: null,
-        updatedAt: new Date(),
-      })
+  await db.transaction(async (tx) => {
+    if (affectedTriggers.length > 0) {
+      await tx
+        .update(contentTriggers)
+        .set({
+          enabled: false,
+          qstashScheduleId: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(contentTriggers.organizationId, orgId),
+            inArray(
+              contentTriggers.id,
+              affectedTriggers.map((trigger) => trigger.id)
+            )
+          )
+        );
+    }
+
+    await tx
+      .delete(brandSettings)
       .where(
         and(
-          eq(contentTriggers.id, trigger.id),
-          eq(contentTriggers.organizationId, orgId)
+          eq(brandSettings.id, brandIdentityId),
+          eq(brandSettings.organizationId, orgId)
         )
       );
-  }
-
-  await db
-    .delete(brandSettings)
-    .where(
-      and(
-        eq(brandSettings.id, brandIdentityId),
-        eq(brandSettings.organizationId, orgId)
-      )
-    );
+  });
 
   return c.json(
     {
