@@ -279,7 +279,6 @@ export const brandAnalysisJobSchema = z.object({
 
 export const createBrandIdentityResponseSchema = z.object({
   organization: organizationResponseSchema,
-  brandIdentity: brandIdentityResponseSchema,
   job: brandAnalysisJobSchema,
 });
 

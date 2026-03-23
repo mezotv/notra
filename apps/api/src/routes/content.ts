@@ -1770,10 +1770,7 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
         workflowRunId,
       });
 
-      return c.json(
-        { brandIdentity, job: updatedJob ?? job, organization },
-        202
-      );
+      return c.json({ job: updatedJob ?? job, organization }, 202);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to trigger workflow";
