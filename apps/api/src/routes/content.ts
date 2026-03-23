@@ -15,7 +15,7 @@ import {
   organizations,
   posts,
 } from "@notra/db/schema";
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 
 import {
   ALL_POST_CONTENT_TYPES,
@@ -1579,19 +1579,20 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
 
   const name = body.name?.trim() || "Untitled Brand Voice";
   const websiteUrl = body.websiteUrl;
+  const newBrandIdentityId = crypto.randomUUID();
 
   try {
-    const [brandIdentity] = await db.transaction(async (tx) => {
-      const hasAnyBrandIdentity = await tx.query.brandSettings.findFirst({
-        where: eq(brandSettings.organizationId, orgId),
-        columns: { id: true },
-      });
+    const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
+      where: eq(brandSettings.organizationId, orgId),
+      columns: { id: true },
+    });
 
+    const [brandIdentity] = await (async () => {
       try {
-        return tx
+        return await db
           .insert(brandSettings)
           .values({
-            id: crypto.randomUUID(),
+            id: newBrandIdentityId,
             organizationId: orgId,
             name,
             isDefault: !hasAnyBrandIdentity,
@@ -1601,22 +1602,22 @@ contentRoutes.openapi(createBrandIdentityRoute, async (c) => {
       } catch (error) {
         const constraintName = getPgConstraintName(error);
 
-        if (constraintName === "brandSettings_org_default_uidx") {
-          return tx
-            .insert(brandSettings)
-            .values({
-              id: crypto.randomUUID(),
-              organizationId: orgId,
-              name,
-              isDefault: false,
-              websiteUrl,
-            })
-            .returning(selectBrandIdentityColumns());
+        if (constraintName !== "brandSettings_org_default_uidx") {
+          throw error;
         }
 
-        throw error;
+        return db
+          .insert(brandSettings)
+          .values({
+            id: newBrandIdentityId,
+            organizationId: orgId,
+            name,
+            isDefault: false,
+            websiteUrl,
+          })
+          .returning(selectBrandIdentityColumns());
       }
-    });
+    })();
 
     if (!brandIdentity) {
       throw new Error("Failed to create brand identity");
@@ -1764,28 +1765,71 @@ contentRoutes.openapi(patchBrandIdentityRoute, async (c) => {
 
   try {
     const [brandIdentity] = shouldSetDefault
-      ? await db.transaction(async (tx) => {
-          await tx
+      ? await (async () => {
+          const defaultSwitchUpdate: Record<string, unknown> = {
+            isDefault: sql`case when ${brandSettings.id} = ${brandIdentityId} then true else false end`,
+            updatedAt: updateData.updatedAt,
+          };
+
+          if (updateData.name !== undefined) {
+            defaultSwitchUpdate.name = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.name} else ${brandSettings.name} end`;
+          }
+
+          if (updateData.websiteUrl !== undefined) {
+            defaultSwitchUpdate.websiteUrl = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.websiteUrl} else ${brandSettings.websiteUrl} end`;
+          }
+
+          if (updateData.companyName !== undefined) {
+            defaultSwitchUpdate.companyName = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.companyName} else ${brandSettings.companyName} end`;
+          }
+
+          if (updateData.companyDescription !== undefined) {
+            defaultSwitchUpdate.companyDescription = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.companyDescription} else ${brandSettings.companyDescription} end`;
+          }
+
+          if (updateData.toneProfile !== undefined) {
+            defaultSwitchUpdate.toneProfile = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.toneProfile} else ${brandSettings.toneProfile} end`;
+          }
+
+          if (updateData.customTone !== undefined) {
+            defaultSwitchUpdate.customTone = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.customTone} else ${brandSettings.customTone} end`;
+          }
+
+          if (updateData.customInstructions !== undefined) {
+            defaultSwitchUpdate.customInstructions = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.customInstructions} else ${brandSettings.customInstructions} end`;
+          }
+
+          if (updateData.audience !== undefined) {
+            defaultSwitchUpdate.audience = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.audience} else ${brandSettings.audience} end`;
+          }
+
+          if (updateData.language !== undefined) {
+            defaultSwitchUpdate.language = sql`case when ${brandSettings.id} = ${brandIdentityId} then ${updateData.language} else ${brandSettings.language} end`;
+          }
+
+          await db
             .update(brandSettings)
-            .set({ isDefault: false, updatedAt: new Date() })
+            .set(defaultSwitchUpdate)
             .where(
               and(
                 eq(brandSettings.organizationId, orgId),
-                eq(brandSettings.isDefault, true)
+                or(
+                  eq(brandSettings.id, brandIdentityId),
+                  eq(brandSettings.isDefault, true)
+                )
               )
             );
 
-          return tx
-            .update(brandSettings)
-            .set({ ...updateData, isDefault: true })
+          return db
+            .select(selectBrandIdentityColumns())
+            .from(brandSettings)
             .where(
               and(
                 eq(brandSettings.id, brandIdentityId),
                 eq(brandSettings.organizationId, orgId)
               )
-            )
-            .returning(selectBrandIdentityColumns());
-        })
+            );
+        })()
       : await db
           .update(brandSettings)
           .set(updateData)
