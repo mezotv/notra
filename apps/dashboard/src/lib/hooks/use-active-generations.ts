@@ -7,7 +7,7 @@ import type {
   ActiveGeneration,
   GenerationResult,
 } from "@/types/generations/tracking";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 const ACTIVE_POLL_INTERVAL = 3000;
 const IDLE_POLL_INTERVAL = 30_000;
@@ -22,46 +22,24 @@ export function useActiveGenerations(organizationId: string) {
   const previousCountRef = useRef<number | null>(null);
   const toastedResultsRef = useRef(new Set<string>());
 
-  const query = useQuery({
-    queryKey: QUERY_KEYS.ACTIVE_GENERATIONS.list(organizationId),
-    queryFn: async (): Promise<ActiveGenerationsResponse> => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/active-generations`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch active generations");
-      }
-
-      return res.json();
-    },
-    enabled: !!organizationId,
-    meta: { errorMessage: "Failed to load active generations" },
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (data && data.generations.length > 0) {
-        return ACTIVE_POLL_INTERVAL;
-      }
-      return IDLE_POLL_INTERVAL;
-    },
-  });
-
-  const clearResult = useMutation({
-    mutationFn: async (runId: string) => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/active-generations`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ runId }),
+  const query = useQuery<ActiveGenerationsResponse>(
+    dashboardOrpc.content.activeGenerations.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+      meta: { errorMessage: "Failed to load active generations" },
+      refetchInterval: (query) => {
+        const data = query.state.data;
+        if (data && data.generations.length > 0) {
+          return ACTIVE_POLL_INTERVAL;
         }
-      );
+        return IDLE_POLL_INTERVAL;
+      },
+    })
+  );
 
-      if (!res.ok) {
-        throw new Error("Failed to clear result");
-      }
-    },
-  });
+  const clearResult = useMutation(
+    dashboardOrpc.content.activeGenerations.clearCompleted.mutationOptions()
+  );
 
   useEffect(() => {
     const generations = query.data?.generations ?? [];
@@ -70,15 +48,12 @@ export function useActiveGenerations(organizationId: string) {
 
     if (previousCount !== null && previousCount > 0 && currentCount === 0) {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.POSTS.list(organizationId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.POSTS.today(organizationId),
+        queryKey: dashboardOrpc.content.list.key(),
       });
     }
 
     previousCountRef.current = currentCount;
-  }, [query.data?.generations?.length, organizationId, queryClient]);
+  }, [query.data?.generations?.length, queryClient]);
 
   const clearResultMutate = clearResult.mutate;
 
@@ -99,10 +74,13 @@ export function useActiveGenerations(organizationId: string) {
           toast.error("Content generation failed, check logs for details");
         }
 
-        clearResultMutate(result.runId);
+        clearResultMutate({
+          organizationId,
+          runId: result.runId,
+        });
       }
     },
-    [clearResultMutate]
+    [clearResultMutate, organizationId]
   );
 
   useEffect(() => {
@@ -110,7 +88,7 @@ export function useActiveGenerations(organizationId: string) {
     if (results.length > 0) {
       processResults(results);
     }
-  }, [query.data?.results, processResults]);
+  }, [processResults, query.data?.results]);
 
   return {
     ...query,

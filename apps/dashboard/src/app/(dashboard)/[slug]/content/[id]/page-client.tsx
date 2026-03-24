@@ -37,12 +37,12 @@ import { RecommendationsSection } from "@/components/content/recommendations-sec
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { sourceMetadataSchema } from "@/schemas/content";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { createLinkedInPostUrl } from "@/utils/linkedin";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
@@ -108,19 +108,12 @@ export default function PageClient({
   const queryClient = useQueryClient();
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
-  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/brand`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
   const { activeOrganization } = useOrganizationsContext();
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
@@ -200,20 +193,11 @@ export default function PageClient({
         body.markdown = editedMarkdown;
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save");
-      }
-
-      const responseData = (await response.json()) as {
+      const responseData = (await dashboardOrpc.content.update.call({
+        organizationId,
+        contentId,
+        ...body,
+      })) as {
         content?: { title?: string };
       };
 
@@ -223,6 +207,16 @@ export default function PageClient({
       }
       setPersistedTitle(responseData.content?.title ?? title.trim());
       setEditingTitle(null);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.get.queryKey({
+            input: { organizationId, contentId },
+          }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.list.key(),
+        }),
+      ]);
       toast.success("Content saved");
     } catch {
       toast.error("Failed to save content");
@@ -255,29 +249,27 @@ export default function PageClient({
     setIsTogglingStatus(true);
     const newStatus = currentStatus === "published" ? "draft" : "published";
     try {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-      if (!res.ok) {
-        throw new Error("Failed to update status");
-      }
+      await dashboardOrpc.content.update.call({
+        organizationId,
+        contentId,
+        status: newStatus,
+      });
       toast.success(
         newStatus === "published" ? "Post published" : "Post moved to drafts"
       );
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.CONTENT.detail(organizationId, contentId),
+          queryKey: dashboardOrpc.content.get.queryKey({
+            input: { organizationId, contentId },
+          }),
         }),
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.POSTS.list(organizationId),
+          queryKey: dashboardOrpc.content.list.key(),
         }),
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.POSTS.today(organizationId),
+          queryKey: dashboardOrpc.content.metrics.get.queryKey({
+            input: { organizationId },
+          }),
         }),
       ]);
     } catch {

@@ -34,6 +34,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
 import {
   type AddGitHubIntegrationFormValues,
@@ -45,7 +46,6 @@ import type {
   GitHubIntegration,
   GitHubRepoInfo,
 } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { WebhookSetupDialog } from "./wehook-setup-dialog";
 
 type ProbeStatus = "idle" | "loading" | "success" | "error" | "not_found";
@@ -95,34 +95,15 @@ export function AddIntegrationDialog({
       setProbeStatus("loading");
 
       try {
-        const response = await fetch("/api/github/probe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, repo, token: token || undefined }),
-          signal: controller.signal,
-        });
-
         if (controller.signal.aborted) {
           return null;
         }
 
-        const payload: unknown = await response.json();
-
-        if (!response.ok) {
-          if (
-            response.status === 401 ||
-            response.status === 403 ||
-            response.status === 404
-          ) {
-            setProbeStatus("not_found");
-            setTokenOpen(true);
-            return null;
-          }
-          setProbeStatus("error");
-          return null;
-        }
-
-        const data = payload as ProbeResult;
+        const data = (await dashboardOrpc.github.probeRepository.call({
+          owner,
+          repo,
+          token: token || undefined,
+        })) as ProbeResult;
 
         if (data.status === "not_found" || data.status === "unauthorized") {
           setProbeStatus("not_found");
@@ -141,6 +122,17 @@ export function AddIntegrationDialog({
         if (error instanceof DOMException && error.name === "AbortError") {
           return null;
         }
+
+        if (
+          error instanceof Error &&
+          (error.message === "Repository not found" ||
+            error.message === "Repository access denied")
+        ) {
+          setProbeStatus("not_found");
+          setTokenOpen(true);
+          return null;
+        }
+
         setProbeStatus("error");
         return null;
       }
@@ -165,36 +157,25 @@ export function AddIntegrationDialog({
         throw new Error("Invalid GitHub repository URL");
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            branch: values.branch?.trim() || null,
-            token: values.token?.trim() || null,
-            type: "github" as const,
-          }),
-        }
-      );
+      const integration = await dashboardOrpc.integrations.create.call({
+        organizationId,
+        owner: parsed.owner,
+        repo: parsed.repo,
+        branch: values.branch?.trim() || null,
+        token: values.token?.trim() || null,
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create integration");
-      }
-
-      return data;
+      return integration;
     },
     onSuccess: (integration: GitHubIntegration) => {
       if (organizationId) {
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
+          queryKey: dashboardOrpc.integrations.key(),
         });
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+          queryKey: dashboardOrpc.onboarding.get.queryKey({
+            input: { organizationId },
+          }),
         });
       }
       toast.success("GitHub integration added successfully");

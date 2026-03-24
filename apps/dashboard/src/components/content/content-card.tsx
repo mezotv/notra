@@ -30,11 +30,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { memo, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
 import type { PostStatus } from "@/schemas/content";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { OutputTypeIcon } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 const CONTENT_TYPES = [
   "changelog",
@@ -83,18 +83,14 @@ const ContentCard = memo(function ContentCard({
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/${id}`,
-        { method: "DELETE" }
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to delete");
-      }
+      await dashboardOrpc.content.delete.call({
+        organizationId,
+        contentId: id,
+      });
 
       toast.success("Post deleted");
       await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.POSTS.list(organizationId),
+        queryKey: dashboardOrpc.content.list.key(),
       });
       setShowDeleteDialog(false);
     } catch {
@@ -108,28 +104,23 @@ const ContentCard = memo(function ContentCard({
     setIsTogglingStatus(true);
     const newStatus = status === "published" ? "draft" : "published";
     try {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/${id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to update status");
-      }
+      await dashboardOrpc.content.update.call({
+        organizationId,
+        contentId: id,
+        status: newStatus,
+      });
 
       toast.success(
         newStatus === "published" ? "Post published" : "Post moved to drafts"
       );
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.POSTS.list(organizationId),
+          queryKey: dashboardOrpc.content.list.key(),
         }),
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.POSTS.today(organizationId),
+          queryKey: dashboardOrpc.content.metrics.get.queryKey({
+            input: { organizationId },
+          }),
         }),
       ]);
     } catch {

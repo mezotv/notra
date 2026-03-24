@@ -23,12 +23,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EditTokenDialog } from "@/components/integrations/edit-token-dialog";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   AffectedTriggersData,
   DeleteResourceResponse,
 } from "@/schemas/integrations";
 import type { IntegrationCardProps } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function IntegrationCard({
   integration,
@@ -43,20 +43,12 @@ export function IntegrationCard({
 
   const { data: affectedSchedulesData, isLoading: isLoadingSchedules } =
     useQuery<AffectedTriggersData>({
-      queryKey: [
-        "integration-affected-schedules",
-        organizationId,
-        integration.id,
-      ],
-      queryFn: async () => {
-        const response = await fetch(
-          `/api/organizations/${organizationId}/integrations/${integration.id}?checkSchedules=true`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to check affected schedules");
-        }
-        return response.json();
-      },
+      ...dashboardOrpc.integrations.affectedSchedules.queryOptions({
+        input: {
+          organizationId,
+          integrationId: integration.id,
+        },
+      }),
       enabled: isDeleteDialogOpen,
     });
 
@@ -64,24 +56,15 @@ export function IntegrationCard({
 
   const toggleMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update integration");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.update.call({
+        organizationId,
+        integrationId: integration.id,
+        enabled,
+      });
     },
     onSuccess: (_, enabled) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       toast.success(enabled ? "Integration enabled" : "Integration disabled");
       onUpdate?.();
@@ -93,25 +76,17 @@ export function IntegrationCard({
 
   const deleteMutation = useMutation<DeleteResourceResponse, Error, void>({
     mutationFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete integration");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.delete.call({
+        organizationId,
+        integrationId: integration.id,
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.base,
+        queryKey: dashboardOrpc.automation.key(),
       });
 
       const disabledCount = data.disabledSchedules?.length ?? 0;
@@ -150,10 +125,6 @@ export function IntegrationCard({
       return;
     }
     const destination = `/${organizationSlug}/integrations/github/${integration.id}`;
-    queryClient.setQueryData(
-      QUERY_KEYS.INTEGRATIONS.detail(organizationId, integration.id),
-      integration
-    );
     router.prefetch(destination);
     router.push(destination);
   };

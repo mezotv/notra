@@ -20,6 +20,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type React from "react";
 import { isValidElement, useRef, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
 import {
   type AddRepositoryFormValues,
@@ -29,7 +30,6 @@ import type {
   AddRepositoryDialogProps,
   AvailableRepo,
 } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 function RepositorySelector({
   field,
@@ -154,23 +154,21 @@ export function AddRepositoryDialog({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const queryClient = useQueryClient();
 
-  const { data: availableRepos = [], isLoading: loadingRepos } = useQuery({
-    queryKey: QUERY_KEYS.INTEGRATIONS.availableRepos(integrationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch repositories");
-      }
-      const repos = (await response.json()) as AvailableRepo[];
-      const uniqueRepos = Array.from(
-        new Map(repos.map((repo) => [repo.fullName, repo])).values()
-      );
-      return uniqueRepos;
-    },
-    enabled: open && !!organizationId,
-  });
+  const availableRepositoriesQuery = useQuery(
+    dashboardOrpc.integrations.repositories.listAvailable.queryOptions({
+      input: { organizationId, integrationId },
+      enabled: open && !!organizationId,
+      select: (repos) =>
+        Array.from(
+          new Map(
+            (repos as AvailableRepo[]).map((repo) => [repo.fullName, repo])
+          ).values()
+        ),
+    })
+  );
+
+  const availableRepos: AvailableRepo[] = availableRepositoriesQuery.data ?? [];
+  const loadingRepos = availableRepositoriesQuery.isLoading;
 
   const mutation = useMutation({
     mutationFn: async (values: AddRepositoryFormValues) => {
@@ -182,38 +180,34 @@ export function AddRepositoryDialog({
       const normalizedOwner = parsed.owner.trim();
       const normalizedRepo = parsed.repo.trim();
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}/repositories`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            owner: normalizedOwner,
-            repo: normalizedRepo,
-            outputs: [
-              { type: "changelog", enabled: true },
-              { type: "blog_post", enabled: false },
-              { type: "twitter_post", enabled: false },
-              { type: "linkedin_post", enabled: false },
-              { type: "investor_update", enabled: false },
-            ],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to add repository");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.repositories.add.call({
+        organizationId,
+        integrationId,
+        owner: normalizedOwner,
+        repo: normalizedRepo,
+        outputs: [
+          { type: "changelog", enabled: true },
+          { type: "blog_post", enabled: false },
+          { type: "twitter_post", enabled: false },
+          { type: "linkedin_post", enabled: false },
+          { type: "investor_update", enabled: false },
+        ],
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.repositories(integrationId),
+        queryKey: dashboardOrpc.integrations.key(),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
+        queryKey: dashboardOrpc.integrations.get.queryKey({
+          input: { organizationId, integrationId },
+        }),
+      });
+      queryClient.invalidateQueries({
+        queryKey:
+          dashboardOrpc.integrations.repositories.listAvailable.queryKey({
+            input: { organizationId, integrationId },
+          }),
       });
       toast.success("Repository added successfully");
       setOpen(false);

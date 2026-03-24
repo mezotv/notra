@@ -2,20 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { OnboardingStatus } from "@/types/hooks/onboarding";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 export function useOnboardingStatus(organizationId: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
-    queryFn: async (): Promise<OnboardingStatus> => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/onboarding`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch onboarding status");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId,
-  });
+  return useQuery<OnboardingStatus>(
+    dashboardOrpc.onboarding.get.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 }

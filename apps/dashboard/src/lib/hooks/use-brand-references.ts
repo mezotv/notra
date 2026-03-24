@@ -6,24 +6,15 @@ import type {
   BrandReference,
   FetchedTweetResponse,
 } from "@/types/hooks/brand-references";
-import { QUERY_KEYS } from "@/utils/query-keys";
-
-function baseUrl(organizationId: string, voiceId: string) {
-  return `/api/organizations/${organizationId}/brand/${voiceId}/references`;
-}
+import { dashboardOrpc } from "../orpc/query";
 
 export function useReferences(organizationId: string, voiceId: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.BRAND.references(organizationId, voiceId),
-    queryFn: async (): Promise<{ references: BrandReference[] }> => {
-      const res = await fetch(baseUrl(organizationId, voiceId));
-      if (!res.ok) {
-        throw new Error("Failed to fetch references");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId && !!voiceId,
-  });
+  return useQuery<{ references: BrandReference[] }>(
+    dashboardOrpc.brand.references.list.queryOptions({
+      input: { organizationId, voiceId },
+      enabled: !!organizationId && !!voiceId,
+    })
+  );
 }
 
 export function useCreateReference(organizationId: string, voiceId: string) {
@@ -31,20 +22,17 @@ export function useCreateReference(organizationId: string, voiceId: string) {
 
   return useMutation({
     mutationFn: async (data: CreateReferenceInput) => {
-      const res = await fetch(baseUrl(organizationId, voiceId), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      return dashboardOrpc.brand.references.create.call({
+        organizationId,
+        voiceId,
+        ...data,
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create reference");
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.references(organizationId, voiceId),
+        queryKey: dashboardOrpc.brand.references.list.queryKey({
+          input: { organizationId, voiceId },
+        }),
       });
     },
   });
@@ -55,19 +43,17 @@ export function useDeleteReference(organizationId: string, voiceId: string) {
 
   return useMutation({
     mutationFn: async (referenceId: string) => {
-      const res = await fetch(
-        `${baseUrl(organizationId, voiceId)}?id=${referenceId}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to delete reference");
-      }
-      return res.json();
+      return dashboardOrpc.brand.references.delete.call({
+        organizationId,
+        voiceId,
+        referenceId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.references(organizationId, voiceId),
+        queryKey: dashboardOrpc.brand.references.list.queryKey({
+          input: { organizationId, voiceId },
+        }),
       });
     },
   });
@@ -84,23 +70,23 @@ export function useUpdateReference(organizationId: string, voiceId: string) {
       referenceId: string;
       data: { note?: string | null; content?: string; applicableTo?: string[] };
     }) => {
-      const res = await fetch(
-        `${baseUrl(organizationId, voiceId)}?id=${referenceId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to update reference");
-      }
-      return res.json();
+      const applicableTo = data.applicableTo as
+        | ("all" | "twitter" | "linkedin" | "blog")[]
+        | undefined;
+
+      return dashboardOrpc.brand.references.update.call({
+        organizationId,
+        voiceId,
+        referenceId,
+        ...data,
+        applicableTo,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.references(organizationId, voiceId),
+        queryKey: dashboardOrpc.brand.references.list.queryKey({
+          input: { organizationId, voiceId },
+        }),
       });
     },
   });
@@ -117,23 +103,18 @@ export function useImportTweets(organizationId: string, voiceId: string) {
       count: number;
       references: BrandReference[];
     }> => {
-      const res = await fetch(
-        `${baseUrl(organizationId, voiceId)}/import-tweets`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to import tweets");
-      }
-      return res.json();
+      return dashboardOrpc.brand.references.importTweets.call({
+        organizationId,
+        voiceId,
+        accountId: input.accountId,
+        maxResults: input.maxResults ?? 20,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.references(organizationId, voiceId),
+        queryKey: dashboardOrpc.brand.references.list.queryKey({
+          input: { organizationId, voiceId },
+        }),
       });
     },
   });
@@ -142,19 +123,11 @@ export function useImportTweets(organizationId: string, voiceId: string) {
 export function useFetchTweet(organizationId: string, voiceId: string) {
   return useMutation({
     mutationFn: async (url: string): Promise<FetchedTweetResponse> => {
-      const res = await fetch(
-        `${baseUrl(organizationId, voiceId)}/fetch-tweet`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to fetch tweet");
-      }
-      return res.json();
+      return dashboardOrpc.brand.references.fetchTweet.call({
+        organizationId,
+        voiceId,
+        url,
+      });
     },
   });
 }

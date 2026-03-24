@@ -26,6 +26,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   GitHubIntegration,
   GitHubRepository,
@@ -33,7 +34,6 @@ import type {
 } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { GitHubIntegrationDetailSkeleton } from "./skeleton";
 
 const EditIntegrationDialog = dynamic(
@@ -112,19 +112,26 @@ function WebhookSection({
     isFetched,
     isError,
   } = useQuery<WebhookConfig | null>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
+    queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+      input: { organizationId, repositoryId: repo.id },
+    }),
     queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/repositories/${repo.id}/webhook`
-      );
-      if (!response.ok) {
-        if (response.status === 404) {
+      try {
+        return await dashboardOrpc.integrations.repositories.webhook.get.call({
+          organizationId,
+          repositoryId: repo.id,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Webhook not configured"
+        ) {
           return null;
         }
-        throw new Error("Failed to fetch webhook config");
+        throw error;
       }
-      return response.json();
     },
+    retry: false,
   });
 
   const secretMutation = useMutation<
@@ -133,19 +140,18 @@ function WebhookSection({
     { regenerate: boolean }
   >({
     mutationFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/repositories/${repo.id}/webhook`,
-        { method: "POST", headers: { "Content-Type": "application/json" } }
+      return dashboardOrpc.integrations.repositories.webhook.generateSecret.call(
+        {
+          organizationId,
+          repositoryId: repo.id,
+        }
       );
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to generate webhook secret");
-      }
-      return response.json();
     },
     onSuccess: (_data, { regenerate }) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repo.id),
+        queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+          input: { organizationId, repositoryId: repo.id },
+        }),
       });
       if (regenerate) {
         toast.success("Webhook secret regenerated");
@@ -294,30 +300,17 @@ function EventsSection({
   repositoryIds: string[];
 }) {
   const normalizedRepositoryIds = [...repositoryIds].sort();
-  const repositoryQueryString = normalizedRepositoryIds
-    .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
-    .join("&");
   const hasRepositories = normalizedRepositoryIds.length > 0;
 
-  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: [
-      ...QUERY_KEYS.AUTOMATION.events(organizationId),
-      "repositoryIds",
-      ...normalizedRepositoryIds,
-    ],
-    queryFn: async () => {
-      const response = await fetch(
-        repositoryQueryString
-          ? `/api/organizations/${organizationId}/automation/events?${repositoryQueryString}`
-          : `/api/organizations/${organizationId}/automation/events`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch events");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId && hasRepositories,
-  });
+  const { data, isPending, isError } = useQuery(
+    dashboardOrpc.automation.events.list.queryOptions({
+      input: {
+        organizationId,
+        repositoryIds: normalizedRepositoryIds,
+      },
+      enabled: !!organizationId && hasRepositories,
+    })
+  );
 
   const events = data?.triggers ?? [];
   const displayEvents = events.slice(0, 5);
@@ -400,30 +393,17 @@ function SchedulesSection({
   repositoryIds: string[];
 }) {
   const normalizedRepositoryIds = [...repositoryIds].sort();
-  const repositoryQueryString = normalizedRepositoryIds
-    .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
-    .join("&");
   const hasRepositories = normalizedRepositoryIds.length > 0;
 
-  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: [
-      ...QUERY_KEYS.AUTOMATION.schedules(organizationId),
-      "repositoryIds",
-      ...normalizedRepositoryIds,
-    ],
-    queryFn: async () => {
-      const response = await fetch(
-        repositoryQueryString
-          ? `/api/organizations/${organizationId}/automation/schedules?${repositoryQueryString}`
-          : `/api/organizations/${organizationId}/automation/schedules`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch schedules");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId && hasRepositories,
-  });
+  const { data, isPending, isError } = useQuery(
+    dashboardOrpc.automation.schedules.list.queryOptions({
+      input: {
+        organizationId,
+        repositoryIds: normalizedRepositoryIds,
+      },
+      enabled: !!organizationId && hasRepositories,
+    })
+  );
 
   const schedules = data?.triggers ?? [];
   const displaySchedules = schedules.slice(0, 5);
@@ -502,26 +482,13 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
 
-  const { data: integration, isLoading: isLoadingIntegration } =
-    useQuery<GitHubIntegration>({
-      queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-        organizationId ?? "",
-        integrationId
-      ),
-      queryFn: async () => {
-        if (!organizationId) {
-          throw new Error("Organization ID is required");
-        }
-        const response = await fetch(
-          `/api/organizations/${organizationId}/integrations/${integrationId}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch integration");
-        }
-
-        return response.json();
-      },
+  const { data: integration, isLoading: isLoadingIntegration } = useQuery({
+      ...dashboardOrpc.integrations.get.queryOptions({
+        input: {
+          organizationId: organizationId ?? "",
+          integrationId,
+        },
+      }),
       enabled: !!organizationId,
       staleTime: 1000 * 60 * 5,
       gcTime: 1000 * 60 * 10,
@@ -530,10 +497,11 @@ export default function PageClient({ integrationId }: PageClientProps) {
           return undefined;
         }
 
-        const cachedIntegrations =
-          queryClient.getQueryData<IntegrationsResponse>(
-            QUERY_KEYS.INTEGRATIONS.all(organizationId)
-          );
+        const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
+          dashboardOrpc.integrations.list.queryKey({
+            input: { organizationId },
+          })
+        );
 
         return cachedIntegrations?.integrations.find(
           (cachedIntegration) => cachedIntegration.id === integrationId

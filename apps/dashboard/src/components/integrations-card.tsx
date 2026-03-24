@@ -16,11 +16,11 @@ import type React from "react";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   AffectedTriggersData,
   DeleteResourceResponse,
 } from "@/schemas/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { DeleteIntegrationDialog } from "./delete-integration-dialog";
 
 export interface InstalledIntegration {
@@ -28,7 +28,7 @@ export interface InstalledIntegration {
   displayName: string;
   type: string;
   enabled: boolean;
-  createdAt: Date;
+  createdAt: string;
   createdByUser?: {
     id: string;
     name: string;
@@ -66,20 +66,12 @@ export function InstalledIntegrationCard({
 
   const { data: affectedSchedulesData, isLoading: isLoadingSchedules } =
     useQuery<AffectedTriggersData>({
-      queryKey: [
-        "integration-affected-schedules",
-        organizationId,
-        integration.id,
-      ],
-      queryFn: async () => {
-        const response = await fetch(
-          `/api/organizations/${organizationId}/integrations/${integration.id}?checkSchedules=true`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to check affected schedules");
-        }
-        return response.json();
-      },
+      ...dashboardOrpc.integrations.affectedSchedules.queryOptions({
+        input: {
+          organizationId,
+          integrationId: integration.id,
+        },
+      }),
       enabled: isDeleteDialogOpen,
     });
 
@@ -87,24 +79,15 @@ export function InstalledIntegrationCard({
 
   const toggleMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update integration");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.update.call({
+        organizationId,
+        integrationId: integration.id,
+        enabled,
+      });
     },
     onSuccess: (_, enabled) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       toast.success(enabled ? "Integration enabled" : "Integration disabled");
       onUpdate?.();
@@ -116,25 +99,17 @@ export function InstalledIntegrationCard({
 
   const deleteMutation = useMutation<DeleteResourceResponse, Error, void>({
     mutationFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete integration");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.delete.call({
+        organizationId,
+        integrationId: integration.id,
+      });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.base,
+        queryKey: dashboardOrpc.automation.key(),
       });
 
       const disabledCount = data.disabledSchedules?.length ?? 0;

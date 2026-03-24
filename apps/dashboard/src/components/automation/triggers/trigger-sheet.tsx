@@ -46,6 +46,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCombobox } from "@/components/brand-voice-combobox";
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   LookbackWindow,
   OutputContentType,
@@ -60,7 +61,6 @@ import type { GitHubIntegration } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { OutputTypeIcon } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePicker } from "./trigger-schedule-picker";
 
 const EVENT_OPTIONS: Array<{ value: WebhookEventType; label: string }> = [
@@ -109,7 +109,6 @@ interface TriggerDialogProps {
   trigger?: React.ReactElement;
   allowedSourceTypes?: Trigger["sourceType"][];
   initialSourceType?: Trigger["sourceType"];
-  apiPath?: string;
   editTrigger?: Trigger;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -121,7 +120,6 @@ export function AddTriggerDialog({
   trigger,
   allowedSourceTypes,
   initialSourceType,
-  apiPath,
   editTrigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -198,37 +196,19 @@ export function AddTriggerDialog({
     },
   });
 
-  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery<{
-    integrations: Array<GitHubIntegration & { type: string }>;
-  }>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
+  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/brand`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 
   const brandVoices = brandResponse?.voices ?? [];
 
@@ -258,63 +238,92 @@ export function AddTriggerDialog({
 
   const mutation = useMutation<{ trigger: Trigger }, Error, TriggerFormValues>({
     mutationFn: async (value) => {
-      const basePath =
-        apiPath ??
-        (value.sourceType === "cron"
-          ? `/api/organizations/${organizationId}/automation/schedules`
-          : `/api/organizations/${organizationId}/automation/events`);
-      const targetPath = isEditMode
-        ? `${basePath}?triggerId=${editTrigger.id}`
-        : basePath;
-      const response = await fetch(targetPath, {
-        method: isEditMode ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: value.name,
-          sourceType: value.sourceType,
-          sourceConfig:
-            value.sourceType === "cron"
-              ? { cron: value.schedule }
-              : { eventTypes: [value.eventType] },
+      try {
+        if (value.sourceType === "cron") {
+          if (value.outputType === "investor_update") {
+            throw new Error("Investor updates are not supported for schedules");
+          }
+
+          if (!value.schedule) {
+            throw new Error("Schedule configuration is required");
+          }
+
+          const schedulePayload = {
+            organizationId,
+            name: value.name,
+            sourceType: "cron" as const,
+            sourceConfig: { cron: value.schedule },
+            targets: { repositoryIds: value.repositoryIds },
+            outputType: value.outputType,
+            outputConfig: {
+              ...(value.brandVoiceId
+                ? { brandVoiceId: value.brandVoiceId }
+                : {}),
+            },
+            enabled: isEditMode ? editTrigger.enabled : true,
+            autoPublish: value.autoPublish,
+            lookbackWindow: value.lookbackWindow,
+          };
+
+          if (isEditMode) {
+            return await dashboardOrpc.automation.schedules.update.call({
+              triggerId: editTrigger.id,
+              ...schedulePayload,
+            });
+          }
+
+          return await dashboardOrpc.automation.schedules.create.call(
+            schedulePayload
+          );
+        }
+
+        const eventPayload = {
+          organizationId,
+          sourceType: "github_webhook" as const,
+          sourceConfig: { eventTypes: [value.eventType] },
           targets: { repositoryIds: value.repositoryIds },
           outputType: value.outputType,
-          ...(value.sourceType === "cron"
-            ? { lookbackWindow: value.lookbackWindow }
-            : {}),
           outputConfig: {
             ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
           },
           enabled: isEditMode ? editTrigger.enabled : true,
           autoPublish: value.autoPublish,
-        }),
-      });
+        };
 
-      const payload = await response.json();
+        if (isEditMode) {
+          return await dashboardOrpc.automation.events.update.call({
+            triggerId: editTrigger.id,
+            ...eventPayload,
+          });
+        }
 
-      if (!response.ok) {
-        if (payload?.code === "DUPLICATE_TRIGGER") {
+        return await dashboardOrpc.automation.events.create.call(eventPayload);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Duplicate trigger"
+        ) {
           throw new Error(
             isScheduleContext
               ? "Schedule already exists"
               : "Trigger already exists"
           );
         }
-        let errorMessage = payload?.error;
 
-        if (!errorMessage) {
-          if (isEditMode) {
-            errorMessage = "Failed to update schedule";
-          } else if (isScheduleContext) {
-            errorMessage = "Failed to create schedule";
-          } else {
-            errorMessage = "Failed to create trigger";
-          }
+        if (error instanceof Error && error.message) {
+          throw error;
         }
 
-        throw new Error(errorMessage);
-      }
+        if (isEditMode) {
+          throw new Error("Failed to update schedule");
+        }
 
-      return payload;
+        throw new Error(
+          isScheduleContext
+            ? "Failed to create schedule"
+            : "Failed to create trigger"
+        );
+      }
     },
     onSuccess: (data) => {
       let successMessage: string;

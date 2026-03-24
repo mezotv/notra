@@ -9,8 +9,8 @@ import { parseAsInteger, useQueryState } from "nuqs";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEATURES } from "@/constants/features";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LogsResponse } from "@/types/webhooks/webhooks";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { LogsPageSkeleton } from "./skeleton";
@@ -32,23 +32,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     : false;
   const logRetentionDays = has30DayRetention ? 30 : 7;
 
-  const { data, isPending } = useQuery({
-    queryKey: QUERY_KEYS.WEBHOOK_LOGS.list(organizationId ?? "", page),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/webhook-logs?integrationType=github&integrationId=all&page=${page}&pageSize=10`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch webhook logs");
-      }
-
-      const result = await response.json();
-      return result as LogsResponse;
-    },
+  const { data, isPending } = useQuery<LogsResponse>({
+    ...dashboardOrpc.logs.webhooks.list.queryOptions({
+      input: {
+        organizationId: organizationId ?? "",
+        integrationType: "github",
+        integrationId: "all",
+        page,
+        pageSize: 10,
+      },
+    }),
     enabled: !!organizationId,
   });
 

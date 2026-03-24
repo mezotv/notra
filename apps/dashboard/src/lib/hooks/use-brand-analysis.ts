@@ -13,20 +13,16 @@ import type {
   Progress,
   ProgressResponse,
 } from "@/types/hooks/brand-analysis";
+import { dashboardOrpc } from "../orpc/query";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function useBrandSettings(organizationId: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
-    queryFn: async (): Promise<BrandSettingsResponse> => {
-      const res = await fetch(`/api/organizations/${organizationId}/brand`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch brand settings");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId,
-  });
+  return useQuery<BrandSettingsResponse>(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 }
 
 export function useBrandAnalysisProgress(
@@ -38,65 +34,44 @@ export function useBrandAnalysisProgress(
   const hasReset = useRef(false);
   const forcePollUntilMs = useRef<number | null>(null);
   const lastFailureMessage = useRef<string | null>(null);
+  const progressKey = dashboardOrpc.brand.analysis.getProgress.queryKey({
+    input: { organizationId },
+  });
 
   const shouldForcePoll = () => {
     const untilMs = forcePollUntilMs.current;
     return typeof untilMs === "number" && Date.now() < untilMs;
   };
 
-  const query = useQuery({
-    queryKey: QUERY_KEYS.BRAND.progress(organizationId),
-    queryFn: async (): Promise<Progress> => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/brand/progress`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch progress");
-      }
-
-      const data: ProgressResponse = await res.json();
+  const query = useQuery<ProgressResponse>({
+    queryKey: progressKey,
+    queryFn: async () => {
+      const data = await dashboardOrpc.brand.analysis.getProgress.call({
+        organizationId,
+      });
       const progress = data.progress;
 
-      if (
-        progress.status === "failed" &&
-        progress.error &&
-        lastFailureMessage.current !== progress.error
-      ) {
-        onFailure?.(progress.error);
-        lastFailureMessage.current = progress.error;
-      }
-
-      if (progress.status !== "failed" && lastFailureMessage.current) {
-        lastFailureMessage.current = null;
-      }
-
       if (progress.status === "idle" && shouldForcePoll()) {
-        const cached = queryClient.getQueryData<Progress>(
-          QUERY_KEYS.BRAND.progress(organizationId)
-        );
-        if (cached && cached.status !== "idle") {
+        const cached = queryClient.getQueryData<ProgressResponse>(progressKey);
+        if (cached && cached.progress.status !== "idle") {
           return cached;
         }
       }
 
-      if (progress.status !== "idle") {
-        forcePollUntilMs.current = null;
-      }
-
-      return progress;
+      return data;
     },
     enabled: !!organizationId,
     refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data) {
+      const progress = query.state.data?.progress;
+      if (!progress) {
         return 2000;
       }
 
-      if (data.status === "completed" || data.status === "failed") {
+      if (progress.status === "completed" || progress.status === "failed") {
         return false;
       }
 
-      if (data.status === "idle") {
+      if (progress.status === "idle") {
         return shouldForcePoll() ? 1000 : false;
       }
 
@@ -104,7 +79,7 @@ export function useBrandAnalysisProgress(
     },
   });
 
-  const progress = query.data ?? {
+  const progress = query.data?.progress ?? {
     status: "idle" as const,
     currentStep: 0,
     totalSteps: 3,
@@ -115,7 +90,7 @@ export function useBrandAnalysisProgress(
     forcePollUntilMs.current = Date.now() + 15_000;
 
     queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.BRAND.progress(organizationId),
+      queryKey: progressKey,
     });
   };
 
@@ -124,7 +99,9 @@ export function useBrandAnalysisProgress(
     forcePollUntilMs.current = null;
 
     queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+      queryKey: dashboardOrpc.brand.voices.list.queryKey({
+        input: { organizationId },
+      }),
     });
     queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.AUTH.organizations,
@@ -133,16 +110,35 @@ export function useBrandAnalysisProgress(
       queryKey: QUERY_KEYS.AUTH.activeOrganization,
     });
     queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+      queryKey: dashboardOrpc.onboarding.get.queryKey({
+        input: { organizationId },
+      }),
     });
     onAnalysisComplete?.();
   };
 
   useEffect(() => {
+    if (
+      progress.status === "failed" &&
+      progress.error &&
+      lastFailureMessage.current !== progress.error
+    ) {
+      onFailure?.(progress.error);
+      lastFailureMessage.current = progress.error;
+    }
+
+    if (progress.status !== "failed" && lastFailureMessage.current) {
+      lastFailureMessage.current = null;
+    }
+
+    if (progress.status !== "idle") {
+      forcePollUntilMs.current = null;
+    }
+
     if (progress.status === "completed" && !hasReset.current) {
       onComplete();
     }
-  }, [onComplete, progress.status]);
+  }, [onComplete, onFailure, progress]);
 
   return { progress, startPolling };
 }
@@ -152,31 +148,25 @@ export function useAnalyzeBrand(
   startPolling: () => void
 ) {
   const queryClient = useQueryClient();
+  const progressKey = dashboardOrpc.brand.analysis.getProgress.queryKey({
+    input: { organizationId },
+  });
 
   return useMutation({
     mutationFn: async (params: { url: string; voiceId?: string }) => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/brand/analyze`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: params.url,
-            voiceId: params.voiceId,
-          }),
-        }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to start analysis");
-      }
-      return res.json();
+      return dashboardOrpc.brand.analysis.start.call({
+        organizationId,
+        url: params.url,
+        voiceId: params.voiceId,
+      });
     },
     onMutate: () => {
-      queryClient.setQueryData(QUERY_KEYS.BRAND.progress(organizationId), {
-        status: "scraping",
-        currentStep: 1,
-        totalSteps: 3,
+      queryClient.setQueryData(progressKey, {
+        progress: {
+          status: "scraping",
+          currentStep: 1,
+          totalSteps: 3,
+        },
       });
 
       startPolling();
@@ -185,11 +175,13 @@ export function useAnalyzeBrand(
       startPolling();
     },
     onError: (error) => {
-      queryClient.setQueryData(QUERY_KEYS.BRAND.progress(organizationId), {
-        status: "failed",
-        currentStep: 0,
-        totalSteps: 3,
-        error: error instanceof Error ? error.message : "Analysis failed",
+      queryClient.setQueryData(progressKey, {
+        progress: {
+          status: "failed",
+          currentStep: 0,
+          totalSteps: 3,
+          error: error instanceof Error ? error.message : "Analysis failed",
+        },
       });
     },
   });
@@ -200,23 +192,28 @@ export function useUpdateBrandSettings(organizationId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateBrandSettingsInput) => {
-      const res = await fetch(`/api/organizations/${organizationId}/brand`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to update brand settings");
+      if (!data.id) {
+        throw new Error("Voice ID is required");
       }
-      return res.json();
+
+      const { id, ...updates } = data;
+
+      return dashboardOrpc.brand.voices.update.call({
+        organizationId,
+        voiceId: id,
+        ...updates,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+        queryKey: dashboardOrpc.brand.voices.list.queryKey({
+          input: { organizationId },
+        }),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+        queryKey: dashboardOrpc.onboarding.get.queryKey({
+          input: { organizationId },
+        }),
       });
     },
   });
@@ -230,20 +227,16 @@ export function useCreateBrandVoice(organizationId: string) {
       name: string;
       websiteUrl: string;
     }): Promise<{ voice: BrandSettings }> => {
-      const res = await fetch(`/api/organizations/${organizationId}/brand`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
+      return dashboardOrpc.brand.voices.create.call({
+        organizationId,
+        ...params,
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create brand voice");
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+        queryKey: dashboardOrpc.brand.voices.list.queryKey({
+          input: { organizationId },
+        }),
       });
     },
   });
@@ -255,18 +248,18 @@ export function useBrandVoiceAffectedTriggers(
   enabled: boolean
 ) {
   const query = useQuery<AffectedTriggersData>({
-    queryKey: ["brand-voice-affected", organizationId, voiceId],
+    queryKey: dashboardOrpc.brand.voices.affectedTriggers.queryKey({
+      input: { organizationId, voiceId },
+    }),
     queryFn: async () => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/brand?checkAffected=true&voiceId=${voiceId}`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to check affected triggers");
-      }
-      return res.json();
+      return dashboardOrpc.brand.voices.affectedTriggers.call({
+        organizationId,
+        voiceId,
+      });
     },
     enabled: enabled && !!voiceId,
   });
+
   return { ...query, isLoading: query.isLoading || query.isFetching };
 }
 
@@ -275,25 +268,24 @@ export function useDeleteBrandVoice(organizationId: string) {
 
   return useMutation<DeleteResourceResponse, Error, string>({
     mutationFn: async (voiceId: string) => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/brand?id=${voiceId}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to delete brand voice");
-      }
-      return res.json();
+      return dashboardOrpc.brand.voices.delete.call({
+        organizationId,
+        voiceId,
+      });
     },
     onSuccess: (_data, voiceId) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+        queryKey: dashboardOrpc.brand.voices.list.queryKey({
+          input: { organizationId },
+        }),
       });
       queryClient.removeQueries({
-        queryKey: ["brand-voice-affected", organizationId, voiceId],
+        queryKey: dashboardOrpc.brand.voices.affectedTriggers.queryKey({
+          input: { organizationId, voiceId },
+        }),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.base,
+        queryKey: dashboardOrpc.automation.key(),
       });
     },
   });
@@ -304,20 +296,16 @@ export function useSetDefaultBrandVoice(organizationId: string) {
 
   return useMutation({
     mutationFn: async (voiceId: string) => {
-      const res = await fetch(`/api/organizations/${organizationId}/brand`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: voiceId }),
+      return dashboardOrpc.brand.voices.setDefault.call({
+        organizationId,
+        voiceId,
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to set default voice");
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.BRAND.settings(organizationId),
+        queryKey: dashboardOrpc.brand.voices.list.queryKey({
+          input: { organizationId },
+        }),
       });
     },
   });

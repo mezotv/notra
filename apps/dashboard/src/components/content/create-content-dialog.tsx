@@ -69,6 +69,7 @@ import {
   EVENT_BADGE,
   EVENTS_PER_PAGE,
 } from "@/constants/content-preview";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ContentDataPointSettings,
   OnDemandContentType,
@@ -106,9 +107,8 @@ const EVENT_ICON: Record<EventType, typeof GitPullRequestIcon> = {
   Release: Rocket01Icon,
 };
 
-import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
+import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 interface CreateContentDialogProps {
   organizationId: string;
@@ -147,41 +147,21 @@ export function CreateContentDialog({
     },
   });
 
-  const { data: brandResponse } = useQuery<{
-    voices: Array<{
-      id: string;
-      name: string;
-      isDefault: boolean;
-    }>;
-  }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId),
-    queryFn: async () => {
-      const res = await fetch(`/api/organizations/${organizationId}/brand`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 
   const brandVoices = brandResponse?.voices ?? [];
 
-  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery<{
-    integrations: Array<GitHubIntegration & { type: string }>;
-  }>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 
   const { repositories, repositoryOptions, githubIntegrationId } =
     useMemo(() => {
@@ -222,36 +202,17 @@ export function CreateContentDialog({
     data: previewResponse,
     isFetching: isLoadingPreview,
     isError: isPreviewError,
-  } = useQuery<PreviewResponse, Error>({
-    queryKey: [
-      "content-preview",
-      organizationId,
-      repositoryIds,
-      lookbackWindow,
-      dataPoints.includeCommits,
-      dataPoints.includePullRequests,
-      dataPoints.includeReleases,
-    ],
-    queryFn: async () => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/preview`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            repositoryIds,
-            lookbackWindow,
-            includeCommits: dataPoints.includeCommits,
-            includePullRequests: dataPoints.includePullRequests,
-            includeReleases: dataPoints.includeReleases,
-          }),
-        }
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch preview");
-      }
-      return res.json();
-    },
+  } = useQuery({
+    ...dashboardOrpc.content.preview.queryOptions({
+      input: {
+        organizationId,
+        repositoryIds,
+        lookbackWindow,
+        includeCommits: dataPoints.includeCommits,
+        includePullRequests: dataPoints.includePullRequests,
+        includeReleases: dataPoints.includeReleases,
+      },
+    }),
     enabled: open && step === "review" && repositoryIds.length > 0,
     staleTime: 60_000,
   });
@@ -340,25 +301,18 @@ export function CreateContentDialog({
     }
   >({
     mutationFn: async (value) => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/generate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(value),
-        }
-      );
-      const payload = await res.json();
-      if (!res.ok) {
-        throw new Error(payload?.error || "Failed to create content");
-      }
-      return payload;
+      return await dashboardOrpc.content.generate.call({
+        organizationId,
+        ...value,
+      });
     },
     onSuccess: () => {
       setOpen(false);
       toast.success("Content generation started");
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.ACTIVE_GENERATIONS.list(organizationId),
+        queryKey: dashboardOrpc.content.activeGenerations.list.queryKey({
+          input: { organizationId },
+        }),
       });
     },
     onError: (err) => {

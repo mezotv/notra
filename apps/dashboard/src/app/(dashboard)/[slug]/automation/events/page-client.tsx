@@ -34,10 +34,10 @@ import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-sta
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
 
@@ -70,38 +70,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
 
-  const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events`
-      );
+  const { data, isPending } = useQuery(
+    dashboardOrpc.automation.events.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch triggers");
-      }
-
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
-
-  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId ?? ""),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/brand`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
     const map: Record<string, BrandSettings> = {};
@@ -120,31 +101,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${trigger.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sourceType: trigger.sourceType,
-            sourceConfig: trigger.sourceConfig,
-            targets: trigger.targets,
-            outputType: trigger.outputType,
-            outputConfig: trigger.outputConfig,
-            enabled: !trigger.enabled,
-          }),
-        }
-      );
 
-      if (!response.ok) {
-        throw new Error("Failed to update trigger");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.events.update.call({
+        organizationId,
+        triggerId: trigger.id,
+        sourceType: trigger.sourceType,
+        sourceConfig: trigger.sourceConfig,
+        targets: trigger.targets,
+        outputType: trigger.outputType,
+        outputConfig: trigger.outputConfig ?? {},
+        enabled: !trigger.enabled,
+        autoPublish: trigger.autoPublish,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.events.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
     },
     onError: () => {
@@ -157,20 +131,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${triggerId}`,
-        { method: "DELETE" }
-      );
 
-      if (!response.ok) {
-        throw new Error("Failed to delete trigger");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.events.delete.call({
+        organizationId,
+        triggerId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.events.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       toast.success("Event trigger removed");
     },
@@ -227,15 +198,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <AddTriggerDialog
             allowedSourceTypes={EVENT_SOURCE_TYPES}
-            apiPath={
-              organizationId
-                ? `/api/organizations/${organizationId}/automation/events`
-                : undefined
-            }
             initialSourceType="github_webhook"
             onSuccess={() =>
               queryClient.invalidateQueries({
-                queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+                queryKey: dashboardOrpc.automation.events.list.queryKey({
+                  input: { organizationId: organizationId ?? "" },
+                }),
               })
             }
             organizationId={organizationId ?? ""}
@@ -255,17 +223,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             action={
               <AddTriggerDialog
                 allowedSourceTypes={EVENT_SOURCE_TYPES}
-                apiPath={
-                  organizationId
-                    ? `/api/organizations/${organizationId}/automation/events`
-                    : undefined
-                }
                 initialSourceType="github_webhook"
                 onSuccess={() =>
                   queryClient.invalidateQueries({
-                    queryKey: QUERY_KEYS.AUTOMATION.events(
-                      organizationId ?? ""
-                    ),
+                    queryKey: dashboardOrpc.automation.events.list.queryKey({
+                      input: { organizationId: organizationId ?? "" },
+                    }),
                   })
                 }
                 organizationId={organizationId ?? ""}

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 export interface ConnectedAccount {
   id: string;
@@ -16,35 +16,22 @@ export interface ConnectedAccount {
   createdAt: string;
 }
 
-function baseUrl(organizationId: string) {
-  return `/api/organizations/${organizationId}/social-accounts`;
-}
-
 export function useConnectedAccounts(organizationId: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.CONNECTED_ACCOUNTS.list(organizationId),
-    queryFn: async (): Promise<{ accounts: ConnectedAccount[] }> => {
-      const res = await fetch(baseUrl(organizationId));
-      if (!res.ok) {
-        throw new Error("Failed to fetch connected accounts");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId,
-  });
+  return useQuery<{ accounts: ConnectedAccount[] }>(
+    dashboardOrpc.socialAccounts.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
 }
 
 export function useConnectTwitter(organizationId: string) {
   return useMutation({
     mutationFn: async (callbackPath: string): Promise<{ url: string }> => {
-      const res = await fetch(
-        `${baseUrl(organizationId)}/twitter/authorize?callbackPath=${encodeURIComponent(callbackPath)}`
-      );
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to initiate Twitter OAuth");
-      }
-      return res.json();
+      return dashboardOrpc.socialAccounts.twitter.beginAuth.call({
+        organizationId,
+        callbackPath,
+      });
     },
   });
 }
@@ -73,18 +60,16 @@ export function useDisconnectAccount(organizationId: string) {
 
   return useMutation({
     mutationFn: async (accountId: string) => {
-      const res = await fetch(`${baseUrl(organizationId)}?id=${accountId}`, {
-        method: "DELETE",
+      return dashboardOrpc.socialAccounts.disconnect.call({
+        organizationId,
+        accountId,
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to disconnect account");
-      }
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.CONNECTED_ACCOUNTS.list(organizationId),
+        queryKey: dashboardOrpc.socialAccounts.list.queryKey({
+          input: { organizationId },
+        }),
       });
     },
   });

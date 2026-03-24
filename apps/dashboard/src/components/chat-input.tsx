@@ -43,9 +43,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { FEATURES } from "@/constants/features";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubRepository } from "@/types/integrations";
-import type { IntegrationsResponse } from "@/types/services/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 export interface TextSelection {
   text: string;
@@ -135,19 +134,12 @@ const ChatInput = ({
     ? (onValueChange ?? (() => {}))
     : setInternalValue;
 
-  const { data: integrationsData } = useQuery<IntegrationsResponse>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId ?? ""),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: integrationsData } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   // Get all enabled repos from all integrations (memoized, single iteration)
   const enabledRepos = useMemo(() => {

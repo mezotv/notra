@@ -30,10 +30,9 @@ import {
   INTEGRATION_CATEGORY_MAP,
   OUTPUT_SOURCES,
 } from "@/lib/integrations/catalog";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { IntegrationType } from "@/schemas/integrations";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
-import type { IntegrationsResponse } from "@/types/services/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { IntegrationsPageSkeleton } from "./skeleton";
 
 const TAB_VALUES = ["all", "installed"] as const;
@@ -51,7 +50,7 @@ interface Integration {
   displayName: string;
   type: IntegrationType;
   enabled: boolean;
-  createdAt: Date;
+  createdAt: string;
   repositories: Array<{
     id: string;
     owner: string;
@@ -190,25 +189,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     parseAsStringLiteral(TAB_VALUES).withDefault("all")
   );
 
-  const { data, isPending, refetch } = useQuery<IntegrationsResponse>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-
-      const result: IntegrationsResponse = await response.json();
-      return result;
-    },
-    enabled: !!organizationId,
-  });
+  const { data, isPending, refetch } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   const integrations = data?.integrations;
   const installedCount = data?.count ?? 0;

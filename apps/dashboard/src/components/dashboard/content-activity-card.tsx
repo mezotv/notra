@@ -17,6 +17,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { ContentPublishingMetricsData } from "@/types/dashboard";
 
 interface ActivityEntry {
@@ -27,7 +28,6 @@ interface ActivityEntry {
   level: number;
 }
 
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { useOrganizationsContext } from "../providers/organization-provider";
 
 const numberFormatter = new Intl.NumberFormat("en-US");
@@ -37,21 +37,12 @@ export const ContentActivityCard = () => {
   const organizationId = activeOrganization?.id;
 
   const { data, isPending } = useQuery({
-    queryKey: organizationId
-      ? QUERY_KEYS.POSTS.metrics(organizationId)
-      : ["content-metrics", "disabled"],
-    queryFn: async (): Promise<ContentPublishingMetricsData> => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/content/metrics`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch content metrics");
-      }
-      return response.json();
-    },
+    ...dashboardOrpc.content.metrics.get.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+    }),
     enabled: Boolean(organizationId),
     meta: { errorMessage: "Failed to load content activity" },
-  });
+  }) as { data?: ContentPublishingMetricsData; isPending: boolean };
 
   if (isPending) {
     return <Skeleton className="h-40 w-full max-w-[53rem] rounded-lg" />;

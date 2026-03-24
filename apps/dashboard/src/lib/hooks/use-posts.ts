@@ -2,31 +2,23 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { PostsResponse } from "@/schemas/content";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 const DEFAULT_LIMIT = 12;
 
 export function usePosts(organizationId: string) {
-  return useInfiniteQuery({
-    queryKey: QUERY_KEYS.POSTS.list(organizationId),
-    queryFn: async ({ pageParam }): Promise<PostsResponse> => {
-      const params = new URLSearchParams({
-        limit: String(DEFAULT_LIMIT),
+  return useInfiniteQuery<PostsResponse>({
+    queryKey: dashboardOrpc.content.list.queryKey({
+      input: { organizationId, limit: DEFAULT_LIMIT },
+    }),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | null;
+
+      return dashboardOrpc.content.list.call({
+        organizationId,
+        limit: DEFAULT_LIMIT,
+        cursor: cursor ?? undefined,
       });
-
-      if (pageParam) {
-        params.set("cursor", pageParam);
-      }
-
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content?${params.toString()}`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch content");
-      }
-
-      return res.json();
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -36,27 +28,19 @@ export function usePosts(organizationId: string) {
 }
 
 export function useTodayPosts(organizationId: string) {
-  return useInfiniteQuery({
-    queryKey: QUERY_KEYS.POSTS.today(organizationId),
-    queryFn: async ({ pageParam }): Promise<PostsResponse> => {
-      const params = new URLSearchParams({
-        limit: String(DEFAULT_LIMIT),
+  return useInfiniteQuery<PostsResponse>({
+    queryKey: dashboardOrpc.content.list.queryKey({
+      input: { organizationId, limit: DEFAULT_LIMIT, date: "today" },
+    }),
+    queryFn: ({ pageParam }) => {
+      const cursor = pageParam as string | null;
+
+      return dashboardOrpc.content.list.call({
+        organizationId,
+        limit: DEFAULT_LIMIT,
         date: "today",
+        cursor: cursor ?? undefined,
       });
-
-      if (pageParam) {
-        params.set("cursor", pageParam);
-      }
-
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content?${params.toString()}`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch content");
-      }
-
-      return res.json();
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,

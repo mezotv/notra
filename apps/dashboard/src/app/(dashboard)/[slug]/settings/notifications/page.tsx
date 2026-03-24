@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -52,44 +52,26 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
   const isOwner = currentMember?.role === "owner";
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
-    queryKey: QUERY_KEYS.NOTIFICATION_SETTINGS.settings(organization?.id ?? ""),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organization?.id}/notification-settings`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch notification settings");
-      }
-      const data = await response.json();
-      return data.settings as NotificationSettings;
-    },
+    ...dashboardOrpc.notifications.get.queryOptions({
+      input: { organizationId: organization?.id ?? "" },
+      select: (data) => data.settings as NotificationSettings,
+    }),
     enabled: !!organization?.id,
   });
 
   const { mutate: updateSettings, isPending: isUpdating } = useMutation({
     mutationFn: async (data: Partial<NotificationSettings>) => {
-      const response = await fetch(
-        `/api/organizations/${organization?.id}/notification-settings`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        }
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          error.error ?? "Failed to update notification settings"
-        );
-      }
-      return response.json();
+      return dashboardOrpc.notifications.update.call({
+        organizationId: organization?.id ?? "",
+        ...data,
+      });
     },
     onSuccess: () => {
       toast.success("Notification settings updated");
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.NOTIFICATION_SETTINGS.settings(
-          organization?.id ?? ""
-        ),
+        queryKey: dashboardOrpc.notifications.get.queryKey({
+          input: { organizationId: organization?.id ?? "" },
+        }),
       });
     },
     onError: (error) => {

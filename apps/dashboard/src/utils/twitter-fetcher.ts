@@ -1,6 +1,6 @@
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 
-interface TweetData {
+export interface TweetData {
   tweetId: string;
   content: string;
   authorHandle: string;

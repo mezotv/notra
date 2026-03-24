@@ -5,7 +5,7 @@ export interface UploadApiError {
   error: string;
 }
 
-/** Response from POST /api/upload */
+/** Response from the upload presign procedure */
 export interface UploadPresignedResponse {
   /** Presigned PUT URL for direct upload to R2 */
   url: string;

@@ -71,6 +71,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   API_KEY_EXPIRATION_OPTIONS,
   API_KEY_PERMISSIONS,
@@ -79,7 +80,6 @@ import {
   createApiKeySchema,
   updateApiKeySchema,
 } from "@/schemas/api-keys";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 const PERMISSION_LABELS: Record<ApiKeyPermission, string> = {
   "api.read": "Read only",
@@ -267,19 +267,9 @@ export default function ApiKeysPage() {
   >(false);
 
   const { data: keys = [], isPending } = useQuery<ApiKeyListItem[]>({
-    queryKey: QUERY_KEYS.API_KEYS.list(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/api-keys`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch API keys");
-      }
-      return (await response.json()) as ApiKeyListItem[];
-    },
+    ...dashboardOrpc.apiKeys.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+    }),
     enabled: !!organizationId,
   });
 
@@ -345,27 +335,19 @@ export default function ApiKeysPage() {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/api-keys`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        }
-      );
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          (data as { error?: string }).error || "Failed to create API key"
-        );
-      }
-      return data as CreateApiKeyResponse;
+
+      return dashboardOrpc.apiKeys.create.call({
+        organizationId,
+        ...values,
+      }) as Promise<CreateApiKeyResponse>;
     },
     onSuccess: (data) => {
       setCreatedKey(data.key);
       form.reset();
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.API_KEYS.list(organizationId ?? ""),
+        queryKey: dashboardOrpc.apiKeys.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       toast.success("API key created");
     },
@@ -385,29 +367,19 @@ export default function ApiKeysPage() {
         throw new Error("Organization ID is required");
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/api-keys/${values.keyId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(values),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          (data as { error?: string }).error || "Failed to update API key"
-        );
-      }
-
-      return data as ApiKeyMutationResponse;
+      return dashboardOrpc.apiKeys.update.call({
+        organizationId,
+        keyIdParam: values.keyId,
+        payload: values,
+      }) as Promise<ApiKeyMutationResponse>;
     },
     onSuccess: () => {
       setEditDialogOpen(false);
       editForm.reset();
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.API_KEYS.list(organizationId ?? ""),
+        queryKey: dashboardOrpc.apiKeys.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       toast.success("API key updated");
     },
@@ -422,28 +394,18 @@ export default function ApiKeysPage() {
         throw new Error("Organization ID is required");
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/api-keys/${keyId}`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keyId }),
-        }
-      );
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          (data as { error?: string }).error || "Failed to delete API key"
-        );
-      }
-
-      return data as ApiKeyMutationResponse;
+      return dashboardOrpc.apiKeys.delete.call({
+        organizationId,
+        keyIdParam: keyId,
+        payload: { keyId },
+      }) as Promise<ApiKeyMutationResponse>;
     },
     onSuccess: () => {
       setDeletingKey(null);
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.API_KEYS.list(organizationId ?? ""),
+        queryKey: dashboardOrpc.apiKeys.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       toast.success("API key deleted");
     },

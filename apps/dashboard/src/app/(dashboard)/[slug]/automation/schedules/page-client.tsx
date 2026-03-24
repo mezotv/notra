@@ -59,10 +59,10 @@ import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-sta
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { SchedulePageSkeleton } from "./skeleton";
 
 const CRON_SOURCE_TYPES: TriggerSourceType[] = ["cron"];
@@ -106,43 +106,21 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
 
-  const { data, isPending } = useQuery<{
-    triggers: Trigger[];
-    repositoryMap: Record<string, string>;
-  }>({
-    queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/schedules`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch triggers");
-      }
-
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data, isPending } = useQuery(
+    dashboardOrpc.automation.schedules.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   const repositoryMap = data?.repositoryMap ?? {};
 
-  const { data: brandResponse } = useQuery<{ voices: BrandSettings[] }>({
-    queryKey: QUERY_KEYS.BRAND.settings(organizationId ?? ""),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/brand`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch brand voices");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
     const map: Record<string, BrandSettings> = {};
@@ -161,32 +139,45 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/schedules?triggerId=${trigger.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: trigger.name,
-            sourceType: trigger.sourceType,
-            sourceConfig: trigger.sourceConfig,
-            targets: trigger.targets,
-            outputType: trigger.outputType,
-            lookbackWindow: trigger.lookbackWindow,
-            outputConfig: trigger.outputConfig,
-            enabled: !trigger.enabled,
-          }),
-        }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const error = new Error(errorData.code || "Failed to update schedule");
-        (error as Error & { code?: string }).code = errorData.code;
-        throw error;
+      const cronConfig = trigger.sourceConfig.cron;
+      if (!cronConfig) {
+        throw new Error("Invalid schedule configuration");
       }
 
-      return response.json();
+      if (trigger.outputType === "investor_update") {
+        throw new Error("Unsupported schedule output");
+      }
+
+      try {
+        return await dashboardOrpc.automation.schedules.update.call({
+          organizationId,
+          triggerId: trigger.id,
+          name: trigger.name,
+          sourceType: "cron",
+          sourceConfig: { cron: cronConfig },
+          targets: trigger.targets,
+          outputType: trigger.outputType,
+          lookbackWindow: trigger.lookbackWindow ?? "last_7_days",
+          outputConfig: trigger.outputConfig ?? {},
+          enabled: !trigger.enabled,
+          autoPublish: trigger.autoPublish,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message ===
+            "Cannot update enabled schedule: one or more integrations not found"
+        ) {
+          const integrationError = new Error(error.message) as Error & {
+            code?: string;
+          };
+          integrationError.code = "INTEGRATION_NOT_FOUND";
+          throw integrationError;
+        }
+
+        throw error;
+      }
     },
     onError: (error) => {
       const errorWithCode = error as Error & { code?: string };
@@ -200,11 +191,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       if (organizationId) {
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+          queryKey: dashboardOrpc.onboarding.get.queryKey({
+            input: { organizationId },
+          }),
         });
       }
     },
@@ -215,31 +210,36 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/schedules?triggerId=${triggerId}`,
-        { method: "DELETE" }
-      );
 
-      if (!response.ok) {
-        throw new Error("Failed to delete schedule");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.schedules.delete.call({
+        organizationId,
+        triggerId,
+      });
     },
     onMutate: async (triggerId) => {
       await queryClient.cancelQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
 
       const previousData = queryClient.getQueryData<{
         triggers: Trigger[];
         repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""));
+      }>(
+        dashboardOrpc.automation.schedules.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        })
+      );
 
       queryClient.setQueryData<{
         triggers: Trigger[];
         repositoryMap: Record<string, string>;
-      }>(QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""), (old) => {
+      }>(
+        dashboardOrpc.automation.schedules.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
+        (old) => {
         if (!old) {
           return old;
         }
@@ -247,14 +247,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           triggers: old.triggers.filter((t) => t.id !== triggerId),
           repositoryMap: old.repositoryMap,
         };
-      });
+        }
+      );
 
       return { previousData };
     },
     onError: (_error, _triggerId, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(
-          QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+          dashboardOrpc.automation.schedules.list.queryKey({
+            input: { organizationId: organizationId ?? "" },
+          }),
           context.previousData
         );
       }
@@ -266,11 +269,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       if (organizationId) {
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+          queryKey: dashboardOrpc.onboarding.get.queryKey({
+            input: { organizationId },
+          }),
         });
       }
     },
@@ -281,22 +288,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/schedules/run?triggerId=${triggerId}`,
-        { method: "POST" }
-      );
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to run schedule");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.schedules.runNow.call({
+        organizationId,
+        triggerId,
+      });
     },
     onSuccess: () => {
       toast.success("Schedule triggered! Content will be generated shortly.");
       if (organizationId) {
-        const key = QUERY_KEYS.ACTIVE_GENERATIONS.list(organizationId);
+        const key = dashboardOrpc.content.activeGenerations.list.queryKey({
+          input: { organizationId },
+        });
         queryClient.invalidateQueries({ queryKey: key });
         setTimeout(
           () => queryClient.invalidateQueries({ queryKey: key }),
@@ -379,19 +382,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <AddTriggerDialog
             allowedSourceTypes={CRON_SOURCE_TYPES}
-            apiPath={
-              organizationId
-                ? `/api/organizations/${organizationId}/automation/schedules`
-                : undefined
-            }
             initialSourceType="cron"
             onSuccess={() => {
               queryClient.invalidateQueries({
-                queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+                queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+                  input: { organizationId: organizationId ?? "" },
+                }),
               });
               if (organizationId) {
                 queryClient.invalidateQueries({
-                  queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+                  queryKey: dashboardOrpc.onboarding.get.queryKey({
+                    input: { organizationId },
+                  }),
                 });
               }
             }}
@@ -412,21 +414,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             action={
               <AddTriggerDialog
                 allowedSourceTypes={CRON_SOURCE_TYPES}
-                apiPath={
-                  organizationId
-                    ? `/api/organizations/${organizationId}/automation/schedules`
-                    : undefined
-                }
                 initialSourceType="cron"
                 onSuccess={() => {
                   queryClient.invalidateQueries({
-                    queryKey: QUERY_KEYS.AUTOMATION.schedules(
-                      organizationId ?? ""
-                    ),
+                    queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+                      input: { organizationId: organizationId ?? "" },
+                    }),
                   });
                   if (organizationId) {
                     queryClient.invalidateQueries({
-                      queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+                      queryKey: dashboardOrpc.onboarding.get.queryKey({
+                        input: { organizationId },
+                      }),
                     });
                   }
                 }}
@@ -578,22 +577,21 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       {editTrigger && (
         <AddTriggerDialog
           allowedSourceTypes={CRON_SOURCE_TYPES}
-          apiPath={
-            organizationId
-              ? `/api/organizations/${organizationId}/automation/schedules`
-              : undefined
-          }
           editTrigger={editTrigger}
           initialSourceType="cron"
           onOpenChange={(open) => !open && setEditTrigger(null)}
           onSuccess={() => {
             setEditTrigger(null);
             queryClient.invalidateQueries({
-              queryKey: QUERY_KEYS.AUTOMATION.schedules(organizationId ?? ""),
+              queryKey: dashboardOrpc.automation.schedules.list.queryKey({
+                input: { organizationId: organizationId ?? "" },
+              }),
             });
             if (organizationId) {
               queryClient.invalidateQueries({
-                queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+                queryKey: dashboardOrpc.onboarding.get.queryKey({
+                  input: { organizationId },
+                }),
               });
             }
           }}

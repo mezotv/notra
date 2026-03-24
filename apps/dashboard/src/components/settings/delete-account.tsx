@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
+import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface OwnedOrganization {
   id: string;
@@ -61,15 +62,10 @@ export function DeleteAccountSection() {
   >({});
 
   const { data: ownedOrgsData, isLoading: isLoadingOrgs } = useQuery({
-    queryKey: ["user", "owned-organizations"],
-    queryFn: async () => {
-      const response = await fetch("/api/user/organizations");
-      if (!response.ok) {
-        throw new Error("Failed to fetch organizations");
-      }
-      const data = await response.json();
-      return data.ownedOrganizations as OwnedOrganization[];
-    },
+    ...dashboardOrpc.user.organizations.listOwned.queryOptions({
+      enabled: isDialogOpen,
+      select: (data) => data.ownedOrganizations as OwnedOrganization[],
+    }),
     enabled: isDialogOpen,
   });
 
@@ -110,18 +106,9 @@ export function DeleteAccountSection() {
         ];
 
         try {
-          const response = await fetch("/api/user/delete-with-transfers", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transfers }),
+          await dashboardOrpc.user.deleteWithTransfers.call({
+            transfers,
           });
-
-          if (!response.ok) {
-            const error = await response.json();
-            toast.error(error.error ?? "Failed to process organizations");
-            setIsDeleting(false);
-            return;
-          }
         } catch (fetchError) {
           console.error("Failed to process organizations:", fetchError);
           toast.error("Failed to process organizations. Please try again.");

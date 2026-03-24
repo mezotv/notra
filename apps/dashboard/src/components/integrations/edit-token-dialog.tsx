@@ -23,7 +23,7 @@ import {
   editGitHubTokenFormSchema,
 } from "@/schemas/integrations";
 import type { EditTokenDialogProps } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "@/lib/orpc/query";
 
 export function EditTokenDialog({
   integration,
@@ -40,34 +40,23 @@ export function EditTokenDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: EditGitHubTokenFormValues) => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token: values.token,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update personal access token");
-      }
-
-      return data;
+      return dashboardOrpc.integrations.update.call({
+        organizationId,
+        integrationId: integration.id,
+        token: values.token,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-          organizationId,
-          integration.id
-        ),
+        queryKey: dashboardOrpc.integrations.get.queryKey({
+          input: {
+            organizationId,
+            integrationId: integration.id,
+          },
+        }),
       });
       toast.success("Personal access token updated");
       form.reset();

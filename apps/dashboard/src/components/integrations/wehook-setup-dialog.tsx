@@ -19,11 +19,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   WebhookConfig,
   WebhookSetupDialogProps,
 } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -80,40 +80,43 @@ export function WebhookSetupDialog({
     isLoading: loadingConfig,
     isFetched,
   } = useQuery<WebhookConfig | null>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repositoryId),
+    queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+      input: { organizationId, repositoryId },
+    }),
     queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/repositories/${repositoryId}/webhook`
-      );
-      if (!response.ok) {
-        if (response.status === 404) {
+      try {
+        return await dashboardOrpc.integrations.repositories.webhook.get.call({
+          organizationId,
+          repositoryId,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Webhook not configured"
+        ) {
           return null;
         }
-        throw new Error("Failed to fetch webhook config");
+        throw error;
       }
-      return response.json();
     },
     enabled: open,
+    retry: false,
   });
 
   const generateMutation = useMutation<WebhookConfig, Error, void>({
     mutationFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/repositories/${repositoryId}/webhook`,
+      return dashboardOrpc.integrations.repositories.webhook.generateSecret.call(
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          organizationId,
+          repositoryId,
         }
       );
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to generate webhook secret");
-      }
-      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.webhookConfig(repositoryId),
+        queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+          input: { organizationId, repositoryId },
+        }),
       });
     },
     onError: (error: Error) => {

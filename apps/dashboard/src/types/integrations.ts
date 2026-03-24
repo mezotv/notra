@@ -71,6 +71,7 @@ export interface AvailableRepo {
   fullName: string;
   private: boolean;
   description: string | null;
+  url: string;
 }
 
 export interface IntegrationUIConfig {
