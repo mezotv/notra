@@ -1,10 +1,10 @@
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
-import * as z from "zod";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { redis } from "@/lib/redis";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import { redis } from "@/lib/redis";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   badRequest,
@@ -17,9 +17,11 @@ const organizationScopedInputSchema = z.object({
   organizationId: organizationIdSchema,
 });
 
-const disconnectSocialAccountInputSchema = organizationScopedInputSchema.extend({
-  accountId: z.string().min(1),
-});
+const disconnectSocialAccountInputSchema = organizationScopedInputSchema.extend(
+  {
+    accountId: z.string().min(1),
+  }
+);
 
 const beginTwitterAuthInputSchema = organizationScopedInputSchema.extend({
   callbackPath: z.string().default("/"),
@@ -53,6 +55,7 @@ export const socialAccountsRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const accounts = await db.query.connectedSocialAccounts.findMany({
@@ -82,6 +85,7 @@ export const socialAccountsRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const existing = await db.query.connectedSocialAccounts.findFirst({
@@ -109,6 +113,7 @@ export const socialAccountsRouter = {
         await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
+          user: context.user,
         });
 
         const clientId = process.env.TWITTER_CLIENT_ID;

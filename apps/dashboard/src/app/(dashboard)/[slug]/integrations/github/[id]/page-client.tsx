@@ -483,31 +483,31 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const organizationId = activeOrganization?.id;
 
   const { data: integration, isLoading: isLoadingIntegration } = useQuery({
-      ...dashboardOrpc.integrations.get.queryOptions({
-        input: {
-          organizationId: organizationId ?? "",
-          integrationId,
-        },
-      }),
-      enabled: !!organizationId,
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 10,
-      initialData: () => {
-        if (!organizationId) {
-          return undefined;
-        }
-
-        const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
-          dashboardOrpc.integrations.list.queryKey({
-            input: { organizationId },
-          })
-        );
-
-        return cachedIntegrations?.integrations.find(
-          (cachedIntegration) => cachedIntegration.id === integrationId
-        );
+    ...dashboardOrpc.integrations.get.queryOptions({
+      input: {
+        organizationId: organizationId ?? "",
+        integrationId,
       },
-    });
+    }),
+    enabled: !!organizationId,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    initialData: () => {
+      if (!organizationId) {
+        return undefined;
+      }
+
+      const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
+        dashboardOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        })
+      );
+
+      return cachedIntegrations?.integrations.find(
+        (cachedIntegration) => cachedIntegration.id === integrationId
+      );
+    },
+  });
 
   if (!organizationId) {
     return null;

@@ -166,9 +166,8 @@ export function CreateContentDialog({
   const { repositories, repositoryOptions, githubIntegrationId } =
     useMemo(() => {
       const githubIntegrations =
-        integrationsResponse?.integrations.filter(
-          (i) => i.type === "github"
-        ) ?? [];
+        integrationsResponse?.integrations.filter((i) => i.type === "github") ??
+        [];
       const repos = githubIntegrations.flatMap((i) => i.repositories);
       return {
         repositories: repos,

@@ -1,10 +1,10 @@
-import * as z from "zod";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdSchema } from "@/schemas/auth/organization";
-import { webhookLogsQuerySchema } from "@/schemas/api-params";
-import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 import { listWebhookLogs } from "@/lib/webhooks/logging";
+import { webhookLogsQuerySchema } from "@/schemas/api-params";
+import { organizationIdSchema } from "@/schemas/auth/organization";
+import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 
 function paginateLogs(logs: Log[], page: number, pageSize: number) {
   const startIndex = (page - 1) * pageSize;
@@ -28,6 +28,7 @@ export const logsRouter = {
         await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
+          user: context.user,
         });
 
         const logs = await listWebhookLogs(

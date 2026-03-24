@@ -370,9 +370,10 @@ function EventTable({
         </TableHeader>
         <TableBody>
           {sortedTriggers.map((trigger) => {
-            const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
-            const brandVoice = hasExplicitVoice
-              ? brandVoiceMap[trigger.outputConfig!.brandVoiceId!]
+            const explicitBrandVoiceId = trigger.outputConfig?.brandVoiceId;
+            const hasExplicitVoice = !!explicitBrandVoiceId;
+            const brandVoice = explicitBrandVoiceId
+              ? brandVoiceMap[explicitBrandVoiceId]
               : defaultBrandVoice;
 
             return (

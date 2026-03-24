@@ -1490,6 +1490,10 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
 
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
   const existingPost = await db.query.posts.findFirst({
     where: and(eq(posts.id, postId), eq(posts.organizationId, orgId)),
     columns: {
@@ -1678,7 +1682,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
       metadata: { workflowRunId },
     });
 
-    return c.json({ job: updatedJob ?? job, organization: organization! }, 202);
+    return c.json({ job: updatedJob ?? job, organization }, 202);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to trigger workflow";

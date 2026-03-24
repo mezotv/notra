@@ -14,7 +14,8 @@ describe("buildContentUpdateData", () => {
   test("preserves an explicit title and sanitizes rendered HTML", async () => {
     const updateData = await buildContentUpdateData("Existing title", {
       title: "Manual title",
-      markdown: "# Heading in markdown\n\n<script>alert('x')</script><p>Allowed</p>",
+      markdown:
+        "# Heading in markdown\n\n<script>alert('x')</script><p>Allowed</p>",
       status: "published",
     });
 

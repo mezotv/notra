@@ -14,7 +14,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
-  transpilePackages: ["@notra/db", "@notra/ui", "@notra/email", "@notra/ai", "@notra/content-generation"],
+  transpilePackages: [
+    "@notra/db",
+    "@notra/ui",
+    "@notra/email",
+    "@notra/ai",
+    "@notra/content-generation",
+  ],
   async redirects() {
     return [
       {

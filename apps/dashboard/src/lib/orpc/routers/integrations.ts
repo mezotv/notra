@@ -3,19 +3,19 @@ import { contentTriggers } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { getIntegrationsByOrganization } from "@/lib/services/integrations";
+import { baseProcedure } from "@/lib/orpc/base";
 import {
   addRepository,
   configureOutput,
   createGitHubIntegration,
   deleteGitHubIntegration,
   deleteRepository,
+  GitHubBranchNotFoundError,
   generateWebhookSecretForRepository,
   getGitHubIntegrationById,
   getOutputById,
   getRepositoryById,
   getWebhookConfigForRepository,
-  GitHubBranchNotFoundError,
   listAvailableRepositories,
   toggleOutput,
   updateGitHubIntegration,
@@ -23,17 +23,17 @@ import {
   updateRepository,
   validateRepositoryBranchExists,
 } from "@/lib/services/github-integration";
-import { baseProcedure } from "@/lib/orpc/base";
+import { getIntegrationsByOrganization } from "@/lib/services/integrations";
 import { deleteQstashSchedule } from "@/lib/triggers/qstash";
 import {
   addRepositoryRequestSchema,
   configureOutputBodySchema,
   createGitHubIntegrationRequestSchema,
+  type IntegrationType,
   integrationIdParamSchema,
   outputIdParamSchema,
   repositoryIdParamSchema,
   triggerTargetsSchema,
-  type IntegrationType,
   updateIntegrationBodySchema,
   updateOutputBodySchema,
   updateRepositoryBodySchema,
@@ -203,7 +203,10 @@ async function requireOutputInOrganization(
 ) {
   const output = await getOutputById(outputId);
 
-  if (!output || output.repository.integration.organizationId !== organizationId) {
+  if (
+    !output ||
+    output.repository.integration.organizationId !== organizationId
+  ) {
     throw notFound("Output not found");
   }
 
@@ -399,12 +402,14 @@ export const integrationsRouter = {
 
       for (const schedule of affectedSchedules) {
         if (schedule.qstashScheduleId) {
-          await deleteQstashSchedule(schedule.qstashScheduleId).catch((error) => {
-            console.error(
-              `Failed to delete qstash schedule ${schedule.qstashScheduleId}:`,
-              error
-            );
-          });
+          await deleteQstashSchedule(schedule.qstashScheduleId).catch(
+            (error) => {
+              console.error(
+                `Failed to delete qstash schedule ${schedule.qstashScheduleId}:`,
+                error
+              );
+            }
+          );
         }
 
         await db
@@ -529,7 +534,9 @@ export const integrationsRouter = {
           input.repositoryId
         );
         const normalizedDefaultBranch =
-          input.defaultBranch !== undefined ? input.defaultBranch || null : undefined;
+          input.defaultBranch !== undefined
+            ? input.defaultBranch || null
+            : undefined;
 
         try {
           if (normalizedDefaultBranch) {
@@ -624,7 +631,10 @@ export const integrationsRouter = {
 
             return config;
           } catch (error) {
-            if (error instanceof Error && error.message === "Webhook not configured") {
+            if (
+              error instanceof Error &&
+              error.message === "Webhook not configured"
+            ) {
               throw notFound("Webhook not configured");
             }
 

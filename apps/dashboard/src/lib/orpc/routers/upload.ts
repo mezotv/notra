@@ -6,13 +6,9 @@ import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { getFileExtension } from "@/lib/upload/mime";
-import {
-  getR2BucketName,
-  getR2Client,
-  getR2PublicUrl,
-} from "@/lib/upload/r2";
+import { getR2Config } from "@/lib/upload/r2";
 import { uploadSchema, validateUpload } from "@/schemas/upload";
-import { forbidden, unauthorized } from "../utils/errors";
+import { badRequest, forbidden, unauthorized } from "../utils/errors";
 
 const TRAILING_SLASH_REGEX = /\/$/;
 
@@ -62,12 +58,15 @@ export const uploadRouter = {
         case "content":
           key = `organization/${orgId}/content/${id}.${extension}`;
           break;
+        default:
+          throw badRequest("Unsupported upload type");
       }
 
+      const { client: r2Client, bucketName, publicUrl } = getR2Config();
       const presignedUrl = await getSignedUrl(
-        getR2Client(),
+        r2Client,
         new PutObjectCommand({
-          Bucket: getR2BucketName(),
+          Bucket: bucketName,
           Key: key,
           ContentLength: input.fileSize,
           ContentType: input.fileType,
@@ -75,7 +74,7 @@ export const uploadRouter = {
         { expiresIn: 3600 }
       );
 
-      const baseUrl = getR2PublicUrl().replace(TRAILING_SLASH_REGEX, "");
+      const baseUrl = publicUrl.replace(TRAILING_SLASH_REGEX, "");
 
       return {
         key,

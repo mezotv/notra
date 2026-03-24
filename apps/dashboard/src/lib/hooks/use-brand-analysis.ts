@@ -13,8 +13,8 @@ import type {
   Progress,
   ProgressResponse,
 } from "@/types/hooks/brand-analysis";
-import { dashboardOrpc } from "../orpc/query";
 import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 export function useBrandSettings(organizationId: string) {
   return useQuery<BrandSettingsResponse>(

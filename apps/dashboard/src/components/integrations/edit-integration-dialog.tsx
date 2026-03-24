@@ -20,11 +20,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type EditGitHubIntegrationFormValues,
   editGitHubIntegrationFormSchema,
 } from "@/schemas/integrations";
-import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubIntegration } from "@/types/integrations";
 
 interface EditIntegrationDialogProps {
@@ -56,9 +56,7 @@ export function EditIntegrationDialog({
         integrationId: integration.id,
         displayName: values.displayName,
         enabled: values.enabled,
-        ...(primaryRepository
-          ? { branch: values.branch?.trim() || null }
-          : {}),
+        ...(primaryRepository ? { branch: values.branch?.trim() || null } : {}),
       });
     },
     onSuccess: () => {

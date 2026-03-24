@@ -142,7 +142,9 @@ async function ensureScheduleTargetsExist(
     columns: { id: true },
   });
 
-  const existingIds = new Set(targetIntegrations.map((integration) => integration.id));
+  const existingIds = new Set(
+    targetIntegrations.map((integration) => integration.id)
+  );
   const missingIds = repositoryIds.filter((id) => !existingIds.has(id));
 
   if (missingIds.length > 0) {
@@ -168,9 +170,10 @@ function mapQstashError(error: unknown): never {
   throw error;
 }
 
-function filterTriggersByRepositoryIds<
-  TTrigger extends { targets: unknown },
->(triggers: TTrigger[], repositoryIds?: string[]) {
+function filterTriggersByRepositoryIds<TTrigger extends { targets: unknown }>(
+  triggers: TTrigger[],
+  repositoryIds?: string[]
+) {
   const normalizedRepositoryIds = repositoryIds?.filter(Boolean);
 
   if (!normalizedRepositoryIds || normalizedRepositoryIds.length === 0) {
@@ -192,23 +195,21 @@ function filterTriggersByRepositoryIds<
   });
 }
 
-function serializeTrigger(
-  trigger: {
-    id: string;
-    organizationId: string;
-    name: string;
-    sourceType: string;
-    sourceConfig: unknown;
-    targets: unknown;
-    outputType: string;
-    outputConfig: unknown;
-    enabled: boolean;
-    autoPublish: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    lookbackWindow?: LookbackWindow;
-  }
-): Trigger {
+function serializeTrigger(trigger: {
+  id: string;
+  organizationId: string;
+  name: string;
+  sourceType: string;
+  sourceConfig: unknown;
+  targets: unknown;
+  outputType: string;
+  outputConfig: unknown;
+  enabled: boolean;
+  autoPublish: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  lookbackWindow?: LookbackWindow;
+}): Trigger {
   return {
     id: trigger.id,
     organizationId: trigger.organizationId,
@@ -365,13 +366,20 @@ export const automationRouter = {
             qstashScheduleId: null,
             updatedAt: new Date(),
           })
-          .where(eq(contentTriggers.id, input.triggerId))
+          .where(
+            and(
+              eq(contentTriggers.id, input.triggerId),
+              eq(contentTriggers.organizationId, input.organizationId)
+            )
+          )
           .returning();
 
         if (previousQstashScheduleId) {
-          await deleteQstashSchedule(previousQstashScheduleId).catch((error) => {
-            console.error("Error deleting schedule:", error);
-          });
+          await deleteQstashSchedule(previousQstashScheduleId).catch(
+            (error) => {
+              console.error("Error deleting schedule:", error);
+            }
+          );
         }
 
         if (!trigger) {
@@ -436,7 +444,10 @@ export const automationRouter = {
         const lookbackWindows =
           triggerIds.length > 0
             ? await db.query.contentTriggerLookbackWindows.findMany({
-                where: inArray(contentTriggerLookbackWindows.triggerId, triggerIds),
+                where: inArray(
+                  contentTriggerLookbackWindows.triggerId,
+                  triggerIds
+                ),
               })
             : [];
 
@@ -591,9 +602,11 @@ export const automationRouter = {
           return { trigger: serializeTrigger(trigger) };
         } catch (error) {
           if (qstashScheduleId) {
-            await deleteQstashSchedule(qstashScheduleId).catch((cleanupError) => {
-              console.error("Error deleting schedule:", cleanupError);
-            });
+            await deleteQstashSchedule(qstashScheduleId).catch(
+              (cleanupError) => {
+                console.error("Error deleting schedule:", cleanupError);
+              }
+            );
           }
 
           await db
@@ -666,7 +679,8 @@ export const automationRouter = {
         const cronExpression = buildCronExpression(input.sourceConfig.cron);
         let qstashScheduleId: string | null = null;
         const persistedLookbackWindow = input.lookbackWindow;
-        const persistedName = input.name.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
+        const persistedName =
+          input.name.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
 
         if (cronExpression) {
           try {
@@ -732,9 +746,11 @@ export const automationRouter = {
           return { trigger: serializeTrigger(trigger) };
         } catch (error) {
           if (qstashScheduleId && qstashScheduleId !== existingScheduleId) {
-            await deleteQstashSchedule(qstashScheduleId).catch((cleanupError) => {
-              console.error("Error deleting schedule:", cleanupError);
-            });
+            await deleteQstashSchedule(qstashScheduleId).catch(
+              (cleanupError) => {
+                console.error("Error deleting schedule:", cleanupError);
+              }
+            );
           }
 
           throw internalServerError("Internal server error", error);

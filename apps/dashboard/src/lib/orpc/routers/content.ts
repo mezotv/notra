@@ -3,6 +3,7 @@ import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations, posts } from "@notra/db/schema";
+import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import {
   and,
   desc,
@@ -14,7 +15,6 @@ import {
   lte,
   or,
 } from "drizzle-orm";
-import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { marked } from "marked";
 import { z } from "zod";
 import {
@@ -91,7 +91,8 @@ function serializePost(post: {
     content: post.content,
     markdown: post.markdown,
     recommendations: post.recommendations,
-    contentType: post.contentType as PostsResponse["posts"][number]["contentType"],
+    contentType:
+      post.contentType as PostsResponse["posts"][number]["contentType"],
     status: post.status,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
@@ -243,7 +244,9 @@ export async function buildContentUpdateData(
       updateData.title = titleMatch?.[1] ?? existingTitle;
     }
 
-    updateData.content = sanitizeMarkdownHtml(await marked.parse(input.markdown));
+    updateData.content = sanitizeMarkdownHtml(
+      await marked.parse(input.markdown)
+    );
   }
 
   if (input.status !== undefined) {
@@ -265,13 +268,16 @@ async function fetchReleasesPreview(params: {
   let page = 1;
 
   while (page <= GITHUB_API_MAX_PAGES) {
-    const response = await octokit.request("GET /repos/{owner}/{repo}/releases", {
-      owner,
-      repo,
-      per_page: GITHUB_API_PAGE_SIZE,
-      page,
-      headers: { "X-GitHub-Api-Version": "2022-11-28" },
-    });
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/releases",
+      {
+        owner,
+        repo,
+        per_page: GITHUB_API_PAGE_SIZE,
+        page,
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      }
+    );
 
     const releases = response.data;
 
@@ -380,7 +386,9 @@ async function fetchMergedPullRequestsPreview(params: {
 
   return mergedPullRequests
     .sort((left, right) => {
-      const leftMergedAt = left.mergedAt ? new Date(left.mergedAt).getTime() : 0;
+      const leftMergedAt = left.mergedAt
+        ? new Date(left.mergedAt).getTime()
+        : 0;
       const rightMergedAt = right.mergedAt
         ? new Date(right.mergedAt).getTime()
         : 0;
@@ -402,15 +410,18 @@ async function fetchCommitsPreview(params: {
   let page = 1;
 
   while (page <= GITHUB_API_MAX_PAGES) {
-    const response = await octokit.request("GET /repos/{owner}/{repo}/commits", {
-      owner,
-      repo,
-      since: start.toISOString(),
-      until: end.toISOString(),
-      per_page: GITHUB_API_PAGE_SIZE,
-      page,
-      headers: { "X-GitHub-Api-Version": "2022-11-28" },
-    });
+    const response = await octokit.request(
+      "GET /repos/{owner}/{repo}/commits",
+      {
+        owner,
+        repo,
+        since: start.toISOString(),
+        until: end.toISOString(),
+        per_page: GITHUB_API_PAGE_SIZE,
+        page,
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      }
+    );
 
     const commits = response.data;
 
@@ -551,7 +562,10 @@ export const contentRouter = {
         throw notFound("Content not found");
       }
 
-      const updateData = await buildContentUpdateData(existingPost.title, input);
+      const updateData = await buildContentUpdateData(
+        existingPost.title,
+        input
+      );
 
       const [updatedPost] = await db
         .update(posts)
@@ -631,11 +645,16 @@ export const contentRouter = {
           )
           .orderBy(posts.createdAt);
 
-        const totalDrafts = allPosts.filter((post) => post.status === "draft").length;
+        const totalDrafts = allPosts.filter(
+          (post) => post.status === "draft"
+        ).length;
         const totalPublished = allPosts.filter(
           (post) => post.status === "published"
         ).length;
-        const dateMap = new Map<string, { drafts: number; published: number }>();
+        const dateMap = new Map<
+          string,
+          { drafts: number; published: number }
+        >();
 
         for (const post of allPosts) {
           const dateKey = format(post.createdAt, "yyyy-MM-dd");
@@ -656,7 +675,9 @@ export const contentRouter = {
         });
 
         const maxCount = Math.max(
-          ...Array.from(dateMap.values()).map((value) => value.drafts + value.published),
+          ...Array.from(dateMap.values()).map(
+            (value) => value.drafts + value.published
+          ),
           1
         );
 
@@ -816,7 +837,8 @@ export const contentRouter = {
             ]);
 
           const repoFailures: RepositoryPreviewFailure[] = [];
-          const commits = commitsResult.status === "fulfilled" ? commitsResult.value : [];
+          const commits =
+            commitsResult.status === "fulfilled" ? commitsResult.value : [];
 
           if (commitsResult.status === "rejected") {
             repoFailures.push({

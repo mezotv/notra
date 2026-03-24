@@ -6,7 +6,7 @@ import {
   organizations,
 } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
-import * as z from "zod";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
@@ -22,6 +22,7 @@ export const onboardingRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const [org, brand, integration, schedule] = await Promise.all([

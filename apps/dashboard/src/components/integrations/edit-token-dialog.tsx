@@ -18,12 +18,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type EditGitHubTokenFormValues,
   editGitHubTokenFormSchema,
 } from "@/schemas/integrations";
 import type { EditTokenDialogProps } from "@/types/integrations";
-import { dashboardOrpc } from "@/lib/orpc/query";
 
 export function EditTokenDialog({
   integration,

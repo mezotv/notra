@@ -13,13 +13,28 @@ export const userRouter = {
   organizations: {
     listOwned: authorizedProcedure.handler(async ({ context }) => {
       const ownedMemberships = await db.query.members.findMany({
-        where: and(eq(members.userId, context.user.id), eq(members.role, "owner")),
+        where: and(
+          eq(members.userId, context.user.id),
+          eq(members.role, "owner")
+        ),
         with: {
           organizations: true,
         },
       });
 
-      const ownedOrganizations = [];
+      const ownedOrganizations: Array<{
+        id: string;
+        logo: string | null;
+        memberCount: number;
+        name: string;
+        nextOwnerCandidate: {
+          email: string;
+          id: string;
+          name: string;
+          role: string;
+        } | null;
+        slug: string;
+      }> = [];
 
       for (const membership of ownedMemberships) {
         const org = membership.organizations;
@@ -133,7 +148,9 @@ export const userRouter = {
 
           if (input.action === "delete") {
             if (membership.role !== "owner") {
-              throw forbidden("Only organization owners can delete organizations");
+              throw forbidden(
+                "Only organization owners can delete organizations"
+              );
             }
 
             await tx
@@ -240,10 +257,12 @@ export const userRouter = {
                 )
               );
           } else {
-            const existingOrganization = await tx.query.organizations.findFirst({
-              columns: { id: true },
-              where: eq(organizations.id, transfer.orgId),
-            });
+            const existingOrganization = await tx.query.organizations.findFirst(
+              {
+                columns: { id: true },
+                where: eq(organizations.id, transfer.orgId),
+              }
+            );
 
             if (!existingOrganization) {
               throw notFound(`Organization ${transfer.orgId} not found`);

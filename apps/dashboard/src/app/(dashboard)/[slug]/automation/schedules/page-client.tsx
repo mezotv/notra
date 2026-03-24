@@ -240,13 +240,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           input: { organizationId: organizationId ?? "" },
         }),
         (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          triggers: old.triggers.filter((t) => t.id !== triggerId),
-          repositoryMap: old.repositoryMap,
-        };
+          if (!old) {
+            return old;
+          }
+          return {
+            triggers: old.triggers.filter((t) => t.id !== triggerId),
+            repositoryMap: old.repositoryMap,
+          };
         }
       );
 
@@ -703,9 +703,10 @@ function ScheduleTable({
               isUpdating && updatingTriggerId === trigger.id;
             const isThisRunning = isRunning && runningTriggerId === trigger.id;
 
-            const hasExplicitVoice = !!trigger.outputConfig?.brandVoiceId;
-            const brandVoice = hasExplicitVoice
-              ? brandVoiceMap[trigger.outputConfig!.brandVoiceId!]
+            const explicitBrandVoiceId = trigger.outputConfig?.brandVoiceId;
+            const hasExplicitVoice = !!explicitBrandVoiceId;
+            const brandVoice = explicitBrandVoiceId
+              ? brandVoiceMap[explicitBrandVoiceId]
               : defaultBrandVoice;
 
             return (

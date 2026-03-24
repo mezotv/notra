@@ -1,5 +1,5 @@
-import { automationRouter } from "./routers/automation";
 import { apiKeysRouter } from "./routers/api-keys";
+import { automationRouter } from "./routers/automation";
 import { brandRouter } from "./routers/brand";
 import { contentRouter } from "./routers/content";
 import { githubRouter } from "./routers/github";

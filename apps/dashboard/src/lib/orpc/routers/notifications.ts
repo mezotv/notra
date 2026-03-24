@@ -1,7 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { organizationNotificationSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
-import * as z from "zod";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
@@ -12,8 +12,10 @@ const notificationSettingsInputSchema = z.object({
   organizationId: organizationIdSchema,
 });
 
-const updateNotificationSettingsInputSchema = notificationSettingsInputSchema
-  .extend(updateNotificationSettingsSchema.shape);
+const updateNotificationSettingsInputSchema =
+  notificationSettingsInputSchema.extend(
+    updateNotificationSettingsSchema.shape
+  );
 
 export const notificationsRouter = {
   get: authorizedProcedure
@@ -22,16 +24,16 @@ export const notificationsRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
-      const settings = await db.query.organizationNotificationSettings.findFirst(
-        {
+      const settings =
+        await db.query.organizationNotificationSettings.findFirst({
           where: eq(
             organizationNotificationSettings.organizationId,
             input.organizationId
           ),
-        }
-      );
+        });
 
       return {
         settings: settings ?? {
@@ -46,6 +48,7 @@ export const notificationsRouter = {
       const access = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       if (access.membership.role !== "owner") {

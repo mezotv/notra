@@ -1,13 +1,14 @@
 import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
 import { ORPCError } from "@orpc/server";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import type { OrganizationAuth } from "@/types/auth/organization";
 import { getServerSession } from "./session";
 
 type AuthSession = Awaited<ReturnType<typeof getServerSession>>;
+type AuthenticatedUser = NonNullable<AuthSession["user"]>;
 type OrganizationMembership = {
   id: string;
   role: string;
@@ -26,7 +27,10 @@ const organizationAuthDependencies: OrganizationAuthDependencies = {
   getServerSession,
   findMembership: async ({ organizationId, userId }) =>
     db.query.members.findFirst({
-      where: and(eq(members.userId, userId), eq(members.organizationId, organizationId)),
+      where: and(
+        eq(members.userId, userId),
+        eq(members.organizationId, organizationId)
+      ),
       columns: {
         id: true,
         role: true,
@@ -37,7 +41,10 @@ const organizationAuthDependencies: OrganizationAuthDependencies = {
 
 export async function assertAuthenticatedWithDeps(
   { headers }: { headers: Headers },
-  deps: Pick<OrganizationAuthDependencies, "getServerSession"> = organizationAuthDependencies
+  deps: Pick<
+    OrganizationAuthDependencies,
+    "getServerSession"
+  > = organizationAuthDependencies
 ) {
   const { session, user } = (await deps.getServerSession({
     headers,
@@ -60,9 +67,11 @@ export async function assertOrganizationAccessWithDeps(
   {
     headers,
     organizationId,
+    user,
   }: {
     headers: Headers;
     organizationId: string;
+    user?: AuthenticatedUser;
   },
   deps: OrganizationAuthDependencies = organizationAuthDependencies
 ) {
@@ -82,10 +91,11 @@ export async function assertOrganizationAccessWithDeps(
     });
   }
 
-  const { user } = await assertAuthenticatedWithDeps({ headers }, deps);
+  const authenticatedUser =
+    user ?? (await assertAuthenticatedWithDeps({ headers }, deps)).user;
 
   const membership = await deps.findMembership({
-    userId: user.id,
+    userId: authenticatedUser.id,
     organizationId: safeOrganizationId.data,
   });
 
@@ -96,7 +106,7 @@ export async function assertOrganizationAccessWithDeps(
   }
 
   return {
-    user,
+    user: authenticatedUser,
     organizationId: safeOrganizationId.data,
     membership,
   };
@@ -105,13 +115,16 @@ export async function assertOrganizationAccessWithDeps(
 export async function assertOrganizationAccess({
   headers,
   organizationId,
+  user,
 }: {
   headers: Headers;
   organizationId: string;
+  user?: AuthenticatedUser;
 }) {
   return assertOrganizationAccessWithDeps({
     headers,
     organizationId,
+    user,
   });
 }
 
@@ -134,7 +147,10 @@ export async function withOrganizationAuth(
       return {
         success: false,
         response: NextResponse.json(
-          { error: error.message, ...(error.data ? { details: error.data } : {}) },
+          {
+            error: error.message,
+            ...(error.data ? { details: error.data } : {}),
+          },
           { status: error.status }
         ),
       };

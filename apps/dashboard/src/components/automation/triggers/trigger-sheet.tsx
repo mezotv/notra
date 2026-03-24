@@ -299,10 +299,7 @@ export function AddTriggerDialog({
 
         return await dashboardOrpc.automation.events.create.call(eventPayload);
       } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === "Duplicate trigger"
-        ) {
+        if (error instanceof Error && error.message === "Duplicate trigger") {
           throw new Error(
             isScheduleContext
               ? "Schedule already exists"

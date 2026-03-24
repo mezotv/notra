@@ -1,13 +1,12 @@
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getR2BucketName, getR2Client } from "./r2";
+import { getR2Config } from "./r2";
 
 const MAX_KEYS_PER_DELETE = 1000;
 
 async function deleteObjectsByPrefix(prefix: string) {
   let totalDeleted = 0;
   let continuationToken: string | undefined;
-  const r2 = getR2Client();
-  const bucketName = getR2BucketName();
+  const { client: r2, bucketName } = getR2Config();
 
   do {
     const listResult = await r2.send(

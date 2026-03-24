@@ -1,5 +1,5 @@
 import { createOctokit } from "@notra/ai/utils/octokit";
-import * as z from "zod";
+import { z } from "zod";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { badRequest, internalServerError } from "@/lib/orpc/utils/errors";
 

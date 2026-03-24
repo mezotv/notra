@@ -1,19 +1,24 @@
-import * as z from "zod";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { z } from "zod";
 import {
   getPermissionLevel,
   getPermissionsForLevel,
 } from "@/lib/api-keys/permissions";
 import { unkey } from "@/lib/api-keys/unkey";
+import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   createApiKeySchema,
   deleteApiKeySchema,
   EXPIRATION_MS,
   updateApiKeySchema,
 } from "@/schemas/api-keys";
-import { badRequest, internalServerError, notFound, serviceUnavailable } from "../utils/errors";
+import { organizationIdSchema } from "@/schemas/auth/organization";
+import {
+  badRequest,
+  internalServerError,
+  notFound,
+  serviceUnavailable,
+} from "../utils/errors";
 
 const organizationInputSchema = z.object({
   organizationId: organizationIdSchema,
@@ -92,6 +97,7 @@ export const apiKeysRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const { apiId, client } = requireUnkeyConfig();
@@ -135,6 +141,7 @@ export const apiKeysRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const { apiId, client } = requireUnkeyConfig();
@@ -173,6 +180,7 @@ export const apiKeysRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const { apiId, client } = requireUnkeyConfig();
@@ -230,6 +238,7 @@ export const apiKeysRouter = {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
+        user: context.user,
       });
 
       const { apiId, client } = requireUnkeyConfig();

@@ -125,8 +125,8 @@ export default function PageClient({
 
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
-  const handleSaveRef = useRef<() => void>(() => {});
-  const handleDiscardRef = useRef<() => void>(() => {});
+  const handleSaveRef = useRef<(() => void) | null>(null);
+  const handleDiscardRef = useRef<(() => void) | null>(null);
   const needsNormalizationRef = useRef(false);
   const originalMarkdownRef = useRef("");
   const editedMarkdownRef = useRef<string | null>(null);
@@ -230,6 +230,7 @@ export default function PageClient({
     editedMarkdown,
     organizationId,
     contentId,
+    queryClient,
   ]);
 
   const handleDiscard = useCallback(() => {
@@ -295,7 +296,7 @@ export default function PageClient({
               </span>
               <Button
                 onClick={() => {
-                  handleDiscardRef.current();
+                  handleDiscardRef.current?.();
                   toast.dismiss(t);
                 }}
                 size="sm"
@@ -305,7 +306,7 @@ export default function PageClient({
               </Button>
               <Button
                 onClick={() => {
-                  handleSaveRef.current();
+                  handleSaveRef.current?.();
                   toast.dismiss(t);
                 }}
                 size="sm"
@@ -433,7 +434,9 @@ export default function PageClient({
           );
           return;
         }
-      } catch {}
+      } catch {
+        // Ignore non-JSON error payloads.
+      }
 
       toast.error("Failed to edit content");
     },

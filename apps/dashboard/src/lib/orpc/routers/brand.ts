@@ -25,7 +25,11 @@ import {
   updateBrandSettingsSchema,
   updateReferenceSchema,
 } from "@/schemas/brand";
-import type { ApplicablePlatform } from "@/types/hooks/brand-references";
+import type { BrandSettings as BrandVoiceOutput } from "@/types/hooks/brand-analysis";
+import type {
+  ApplicablePlatform,
+  BrandReference as BrandReferenceOutput,
+} from "@/types/hooks/brand-references";
 import type {
   TwitterTimelineResponse,
   TwitterTweet,
@@ -37,10 +41,8 @@ import {
   syncBrandReferenceMemory,
 } from "@/utils/brand-reference-memory";
 import { ratelimit } from "@/utils/ratelimit";
-import { fetchTweet } from "@/utils/twitter-fetcher";
 import { twitterFetch } from "@/utils/twitter-auth";
-import type { BrandSettings as BrandVoiceOutput } from "@/types/hooks/brand-analysis";
-import type { BrandReference as BrandReferenceOutput } from "@/types/hooks/brand-references";
+import { fetchTweet } from "@/utils/twitter-fetcher";
 import {
   badRequest,
   conflict,
@@ -290,7 +292,10 @@ export const brandRouter = {
 
         const voices = await db.query.brandSettings.findMany({
           where: eq(brandSettings.organizationId, input.organizationId),
-          orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+          orderBy: [
+            desc(brandSettings.isDefault),
+            asc(brandSettings.createdAt),
+          ],
         });
 
         return { voices: voices.map(serializeBrandVoice) };
@@ -379,7 +384,10 @@ export const brandRouter = {
 
           const voices = await db.query.brandSettings.findMany({
             where: eq(brandSettings.organizationId, input.organizationId),
-            orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+            orderBy: [
+              desc(brandSettings.isDefault),
+              asc(brandSettings.createdAt),
+            ],
           });
 
           return { voices: voices.map(serializeBrandVoice) };
@@ -415,12 +423,14 @@ export const brandRouter = {
 
         for (const trigger of affectedTriggers) {
           if (trigger.qstashScheduleId) {
-            await deleteQstashSchedule(trigger.qstashScheduleId).catch((error) => {
-              console.error(
-                `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
-                error
-              );
-            });
+            await deleteQstashSchedule(trigger.qstashScheduleId).catch(
+              (error) => {
+                console.error(
+                  `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+                  error
+                );
+              }
+            );
           }
         }
 
@@ -493,7 +503,10 @@ export const brandRouter = {
 
         const voices = await db.query.brandSettings.findMany({
           where: eq(brandSettings.organizationId, input.organizationId),
-          orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+          orderBy: [
+            desc(brandSettings.isDefault),
+            asc(brandSettings.createdAt),
+          ],
         });
 
         return { voices: voices.map(serializeBrandVoice) };
@@ -541,7 +554,9 @@ export const brandRouter = {
         });
 
         const progress = redis
-          ? await redis.get<ProgressData>(`brand:progress:${input.organizationId}`)
+          ? await redis.get<ProgressData>(
+              `brand:progress:${input.organizationId}`
+            )
           : null;
 
         return {
@@ -622,8 +637,8 @@ export const brandRouter = {
           }
         }
 
-        const applicableTo: ApplicablePlatform[] =
-          input.applicableTo ?? typeDefaults[input.type] ?? ["all"];
+        const applicableTo: ApplicablePlatform[] = input.applicableTo ??
+          typeDefaults[input.type] ?? ["all"];
 
         if (autumn) {
           let data: { allowed?: boolean } | null = null;
@@ -694,11 +709,15 @@ export const brandRouter = {
 
           return { reference: serializeBrandReference(syncedReference) };
         } catch (error) {
-          await db.delete(brandReferences).where(eq(brandReferences.id, reference.id));
+          await db
+            .delete(brandReferences)
+            .where(eq(brandReferences.id, reference.id));
 
           if (createdDocumentId) {
             try {
-              await deleteBrandReferenceMemory({ documentId: createdDocumentId });
+              await deleteBrandReferenceMemory({
+                documentId: createdDocumentId,
+              });
             } catch (cleanupError) {
               console.error(
                 "Error cleaning up failed Supermemory reference:",
@@ -715,7 +734,10 @@ export const brandRouter = {
             });
           }
 
-          throw internalServerError("Failed to sync reference to memory", error);
+          throw internalServerError(
+            "Failed to sync reference to memory",
+            error
+          );
         }
       }),
     update: baseProcedure
@@ -728,7 +750,10 @@ export const brandRouter = {
 
         await verifyVoiceOwnership(input.organizationId, input.voiceId);
 
-        const existing = await getReferenceById(input.referenceId, input.voiceId);
+        const existing = await getReferenceById(
+          input.referenceId,
+          input.voiceId
+        );
 
         if (!existing) {
           throw notFound("Reference not found");
@@ -786,9 +811,14 @@ export const brandRouter = {
             existing.supermemoryDocumentId !== link.documentId
           ) {
             try {
-              await removeBrandReferenceMemory(existing as ReferenceMemoryRecord);
+              await removeBrandReferenceMemory(
+                existing as ReferenceMemoryRecord
+              );
             } catch (cleanupError) {
-              console.error("Error deleting stale reference memory:", cleanupError);
+              console.error(
+                "Error deleting stale reference memory:",
+                cleanupError
+              );
 
               await db
                 .update(brandReferences)
@@ -811,11 +841,16 @@ export const brandRouter = {
 
           return { reference: serializeBrandReference(refreshedReference) };
         } catch (error) {
-          console.error("Error syncing updated reference to Supermemory:", error);
+          console.error(
+            "Error syncing updated reference to Supermemory:",
+            error
+          );
 
           if (createdDocumentId) {
             try {
-              await deleteBrandReferenceMemory({ documentId: createdDocumentId });
+              await deleteBrandReferenceMemory({
+                documentId: createdDocumentId,
+              });
             } catch (cleanupError) {
               console.error(
                 "Error cleaning up failed updated Supermemory reference:",
@@ -828,7 +863,9 @@ export const brandRouter = {
             .update(brandReferences)
             .set({
               supermemoryLastSyncError:
-                error instanceof Error ? error.message : "Supermemory sync failed",
+                error instanceof Error
+                  ? error.message
+                  : "Supermemory sync failed",
             })
             .where(eq(brandReferences.id, input.referenceId));
 
@@ -848,7 +885,10 @@ export const brandRouter = {
 
         await verifyVoiceOwnership(input.organizationId, input.voiceId);
 
-        const existing = await getReferenceById(input.referenceId, input.voiceId);
+        const existing = await getReferenceById(
+          input.referenceId,
+          input.voiceId
+        );
 
         if (!existing) {
           throw notFound("Reference not found");
@@ -882,8 +922,9 @@ export const brandRouter = {
           organizationId: input.organizationId,
         });
 
-        const { success: withinLimit } =
-          await ratelimit.importTweets.limit(input.organizationId);
+        const { success: withinLimit } = await ratelimit.importTweets.limit(
+          input.organizationId
+        );
 
         if (!withinLimit) {
           throw tooManyRequests(
@@ -996,8 +1037,7 @@ export const brandRouter = {
             (tweet) =>
               !tweet.referenced_tweets?.some(
                 (reference) =>
-                  reference.type === "quoted" ||
-                  reference.type === "replied_to"
+                  reference.type === "quoted" || reference.type === "replied_to"
               )
           );
 
@@ -1009,7 +1049,10 @@ export const brandRouter = {
             }
           }
 
-          if (originalTweets.length >= maxResults || !timeline.meta?.next_token) {
+          if (
+            originalTweets.length >= maxResults ||
+            !timeline.meta?.next_token
+          ) {
             break;
           }
 
@@ -1056,12 +1099,15 @@ export const brandRouter = {
         const existingTweetIds = new Set(
           existingRefs
             .map((reference) => {
-              return (reference.metadata as Record<string, unknown> | null)?.tweetId;
+              return (reference.metadata as Record<string, unknown> | null)
+                ?.tweetId;
             })
             .filter(Boolean)
         );
 
-        const newTweets = tweets.filter((tweet) => !existingTweetIds.has(tweet.id));
+        const newTweets = tweets.filter(
+          (tweet) => !existingTweetIds.has(tweet.id)
+        );
 
         if (newTweets.length === 0) {
           return { count: 0, references: [] };
@@ -1116,11 +1162,16 @@ export const brandRouter = {
               .where(eq(brandReferences.id, reference.id));
             syncedCount += 1;
           } catch (error) {
-            console.error("Error syncing imported tweet to Supermemory:", error);
+            console.error(
+              "Error syncing imported tweet to Supermemory:",
+              error
+            );
 
             if (createdDocumentId) {
               try {
-                await deleteBrandReferenceMemory({ documentId: createdDocumentId });
+                await deleteBrandReferenceMemory({
+                  documentId: createdDocumentId,
+                });
               } catch (cleanupError) {
                 console.error(
                   "Error cleaning up imported Supermemory reference:",
@@ -1172,8 +1223,9 @@ export const brandRouter = {
           organizationId: input.organizationId,
         });
 
-        const { success: withinLimit } =
-          await ratelimit.fetchTweet.limit(input.organizationId);
+        const { success: withinLimit } = await ratelimit.fetchTweet.limit(
+          input.organizationId
+        );
 
         if (!withinLimit) {
           throw tooManyRequests("Too many requests. Please try again shortly.");
