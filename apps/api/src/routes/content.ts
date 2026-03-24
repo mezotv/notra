@@ -22,6 +22,7 @@ import {
   githubIntegrations,
   organizations,
   posts,
+  repositoryOutputs,
 } from "@notra/db/schema";
 import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 
@@ -30,6 +31,8 @@ import {
   ALL_POST_STATUSES,
   createBrandIdentityRequestSchema,
   createBrandIdentityResponseSchema,
+  createGitHubIntegrationRequestSchema,
+  createGitHubIntegrationResponseSchema,
   createPostGenerationRequestSchema,
   createPostGenerationResponseSchema,
   deleteBrandIdentityResponseSchema,
@@ -64,6 +67,14 @@ import {
   isContentGenerationConfigured,
   triggerContentGenerationWorkflow,
 } from "../utils/content-generation";
+import {
+  encryptGitHubIntegrationToken,
+  findMatchingGitHubIntegration,
+  generateGitHubIntegrationId,
+  generateGitHubWebhookSecret,
+  getGitHubIntegrationCreatorUserId,
+  validateGitHubRepositoryAccess,
+} from "../utils/github-integrations";
 import {
   extractTitleFromMarkdown,
   renderMarkdownToHtml,
@@ -794,6 +805,14 @@ const createPostGenerationRoute = createRoute({
         },
       },
     },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
     503: {
       description: "Content generation is unavailable",
       content: {
@@ -1272,6 +1291,82 @@ const getIntegrationsRoute = createRoute({
   },
 });
 
+const createGitHubIntegrationRoute = createRoute({
+  method: "post",
+  path: "/integrations/github",
+  tags: ["Content"],
+  operationId: "createGitHubIntegration",
+  summary: "Create a GitHub integration",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: createGitHubIntegrationRequestSchema,
+        },
+      },
+      required: true,
+    },
+  },
+  responses: {
+    201: {
+      description: "GitHub integration created successfully",
+      content: {
+        "application/json": {
+          schema: createGitHubIntegrationResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Invalid request body or GitHub repository access error",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Organization not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    409: {
+      description: "Repository already connected",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication or integration service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 const getPostGenerationRoute = createRoute({
   method: "get",
   path: "/posts/generate/{jobId}",
@@ -1586,6 +1681,10 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
   const body = c.req.valid("json");
   const db = c.get("db");
   const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
 
   let repositoryIds: string[] | undefined;
   let resolvedBrandVoiceId: string | null = null;
@@ -2275,6 +2374,134 @@ contentRoutes.openapi(getIntegrationsRoute, async (c) => {
     },
     200
   );
+});
+
+contentRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const body = c.req.valid("json");
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const owner = body.owner.trim();
+  const repo = body.repo.trim();
+  const branch = body.branch?.trim() || null;
+  const token = body.token?.trim() || null;
+
+  try {
+    const existingIntegration = await findMatchingGitHubIntegration(
+      db,
+      orgId,
+      owner,
+      repo
+    );
+
+    if (existingIntegration) {
+      return c.json({ error: "Repository already connected" }, 409);
+    }
+
+    await validateGitHubRepositoryAccess({ owner, repo, token });
+
+    const integrationId = generateGitHubIntegrationId();
+    const createdByUserId = await getGitHubIntegrationCreatorUserId(db, orgId);
+    const encryptedToken = token
+      ? encryptGitHubIntegrationToken(token, c.env ?? {})
+      : null;
+    const encryptedWebhookSecret = encryptGitHubIntegrationToken(
+      generateGitHubWebhookSecret(),
+      c.env ?? {}
+    );
+
+    const [integration] = await db
+      .insert(githubIntegrations)
+      .values({
+        id: integrationId,
+        organizationId: orgId,
+        createdByUserId,
+        encryptedToken,
+        displayName: `${owner}/${repo}`,
+        owner,
+        repo,
+        defaultBranch: branch,
+        repositoryEnabled: true,
+        encryptedWebhookSecret,
+        enabled: true,
+      })
+      .returning({
+        id: githubIntegrations.id,
+        displayName: githubIntegrations.displayName,
+        owner: githubIntegrations.owner,
+        repo: githubIntegrations.repo,
+        defaultBranch: githubIntegrations.defaultBranch,
+      });
+
+    if (!integration) {
+      return c.json({ error: "Failed to create integration" }, 503);
+    }
+
+    await db.insert(repositoryOutputs).values([
+      {
+        id: generateGitHubIntegrationId(),
+        repositoryId: integrationId,
+        outputType: "changelog",
+        enabled: true,
+        config: null,
+      },
+      {
+        id: generateGitHubIntegrationId(),
+        repositoryId: integrationId,
+        outputType: "blog_post",
+        enabled: false,
+        config: null,
+      },
+      {
+        id: generateGitHubIntegrationId(),
+        repositoryId: integrationId,
+        outputType: "twitter_post",
+        enabled: false,
+        config: null,
+      },
+    ]);
+
+    return c.json({ github: integration, organization }, 201);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("GitHub integrations are unavailable:")
+    ) {
+      return c.json({ error: error.message }, 503);
+    }
+
+    if (
+      isPgUniqueViolation(error) ||
+      isConstraintViolation(
+        error,
+        "githubIntegrations_organization_owner_repo_uidx"
+      )
+    ) {
+      return c.json({ error: "Repository already connected" }, 409);
+    }
+
+    return c.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to create GitHub integration",
+      },
+      400
+    );
+  }
 });
 
 contentRoutes.openapi(getPostGenerationRoute, async (c) => {

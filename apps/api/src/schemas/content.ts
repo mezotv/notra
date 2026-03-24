@@ -193,6 +193,43 @@ export const githubIntegrationResponseSchema = z.object({
   defaultBranch: z.string().nullable(),
 });
 
+const GITHUB_PAT_PREFIXES = [
+  "ghp_",
+  "github_pat_",
+  "gho_",
+  "ghu_",
+  "ghs_",
+  "ghr_",
+] as const;
+
+export const githubPersonalAccessTokenSchema = z
+  .string()
+  .trim()
+  .min(1, "Personal access token is required")
+  .refine(
+    (value) => GITHUB_PAT_PREFIXES.some((prefix) => value.startsWith(prefix)),
+    "Enter a valid GitHub personal access token"
+  );
+
+export const createGitHubIntegrationRequestSchema = z.object({
+  owner: z.string().trim().min(1, "Repository owner is required"),
+  repo: z.string().trim().min(1, "Repository name is required"),
+  branch: z.string().trim().min(1).nullable().optional(),
+  token: z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, githubPersonalAccessTokenSchema.optional().nullable()),
+});
+
+export const createGitHubIntegrationResponseSchema = z.object({
+  github: githubIntegrationResponseSchema,
+  organization: organizationResponseSchema,
+});
+
 export const postResponseSchema = z.object({
   id: z.string(),
   title: z.string(),

@@ -130,7 +130,10 @@
               {
                 "group": "Integrations",
                 "expanded": true,
-                "pages": ["GET /v1/integrations"]
+                "pages": [
+                  "GET /v1/integrations",
+                  "POST /v1/integrations/github"
+                ]
               }
             ]
           }
