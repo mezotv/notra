@@ -6,7 +6,7 @@ import {
   decodeIntegrationEncryptionKey,
   encryptIntegrationSecret,
 } from "@notra/db/utils/integration-encryption";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ilike } from "drizzle-orm";
 
 type DbClient = ReturnType<typeof createDb>;
 
@@ -66,25 +66,18 @@ export async function findMatchingGitHubIntegration(
   owner: string,
   repo: string
 ) {
-  const integrations = await db.query.githubIntegrations.findMany({
-    where: eq(githubIntegrations.organizationId, organizationId),
+  return db.query.githubIntegrations.findFirst({
+    where: and(
+      eq(githubIntegrations.organizationId, organizationId),
+      ilike(githubIntegrations.owner, owner),
+      ilike(githubIntegrations.repo, repo)
+    ),
     columns: {
       id: true,
       owner: true,
       repo: true,
     },
   });
-
-  const normalizedOwner = owner.toLowerCase();
-  const normalizedRepo = repo.toLowerCase();
-
-  return (
-    integrations.find(
-      (integration) =>
-        integration.owner?.toLowerCase() === normalizedOwner &&
-        integration.repo?.toLowerCase() === normalizedRepo
-    ) ?? null
-  );
 }
 
 export async function validateGitHubRepositoryAccess(input: {
@@ -92,27 +85,29 @@ export async function validateGitHubRepositoryAccess(input: {
   repo: string;
   token?: string | null;
 }) {
+  const requestOptions = {
+    owner: input.owner,
+    repo: input.repo,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  };
+
   if (input.token) {
     const octokit = createOctokit(input.token);
 
     try {
-      await octokit.request("GET /user");
+      await octokit.request("GET /repos/{owner}/{repo}", requestOptions);
       return;
     } catch {
-      throw new Error("Invalid GitHub token");
+      throw new Error("Invalid GitHub token or insufficient repository access");
     }
   }
 
   const octokit = createOctokit();
 
   try {
-    await octokit.request("GET /repos/{owner}/{repo}", {
-      owner: input.owner,
-      repo: input.repo,
-      headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
+    await octokit.request("GET /repos/{owner}/{repo}", requestOptions);
   } catch {
     throw new Error(
       "Unable to access repository. It may be private and require a Personal Access Token."

@@ -214,6 +214,20 @@ function isConstraintViolation(error: unknown, constraintName: string) {
   return false;
 }
 
+function getSafeGitHubIntegrationErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const safeMessages = new Set([
+    "Invalid GitHub token or insufficient repository access",
+    "Unable to access repository. It may be private and require a Personal Access Token.",
+    "Organization has no members available to own the integration",
+  ]);
+
+  return safeMessages.has(error.message) ? error.message : null;
+}
+
 function selectBrandIdentityColumns() {
   return {
     id: brandSettings.id,
@@ -2422,56 +2436,64 @@ contentRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
       c.env ?? {}
     );
 
-    const [integration] = await db
-      .insert(githubIntegrations)
-      .values({
-        id: integrationId,
-        organizationId: orgId,
-        createdByUserId,
-        encryptedToken,
-        displayName: `${owner}/${repo}`,
-        owner,
-        repo,
-        defaultBranch: branch,
-        repositoryEnabled: true,
-        encryptedWebhookSecret,
-        enabled: true,
-      })
-      .returning({
-        id: githubIntegrations.id,
-        displayName: githubIntegrations.displayName,
-        owner: githubIntegrations.owner,
-        repo: githubIntegrations.repo,
-        defaultBranch: githubIntegrations.defaultBranch,
-      });
+    const integration = await db.transaction(async (tx) => {
+      const [createdIntegration] = await tx
+        .insert(githubIntegrations)
+        .values({
+          id: integrationId,
+          organizationId: orgId,
+          createdByUserId,
+          encryptedToken,
+          displayName: `${owner}/${repo}`,
+          owner,
+          repo,
+          defaultBranch: branch,
+          repositoryEnabled: true,
+          encryptedWebhookSecret,
+          enabled: true,
+        })
+        .returning({
+          id: githubIntegrations.id,
+          displayName: githubIntegrations.displayName,
+          owner: githubIntegrations.owner,
+          repo: githubIntegrations.repo,
+          defaultBranch: githubIntegrations.defaultBranch,
+        });
+
+      if (!createdIntegration) {
+        throw new Error("Failed to create GitHub integration record");
+      }
+
+      await tx.insert(repositoryOutputs).values([
+        {
+          id: generateGitHubIntegrationId(),
+          repositoryId: integrationId,
+          outputType: "changelog",
+          enabled: true,
+          config: null,
+        },
+        {
+          id: generateGitHubIntegrationId(),
+          repositoryId: integrationId,
+          outputType: "blog_post",
+          enabled: false,
+          config: null,
+        },
+        {
+          id: generateGitHubIntegrationId(),
+          repositoryId: integrationId,
+          outputType: "twitter_post",
+          enabled: false,
+          config: null,
+        },
+      ]);
+
+      return createdIntegration;
+    });
 
     if (!integration) {
       return c.json({ error: "Failed to create integration" }, 503);
     }
-
-    await db.insert(repositoryOutputs).values([
-      {
-        id: generateGitHubIntegrationId(),
-        repositoryId: integrationId,
-        outputType: "changelog",
-        enabled: true,
-        config: null,
-      },
-      {
-        id: generateGitHubIntegrationId(),
-        repositoryId: integrationId,
-        outputType: "blog_post",
-        enabled: false,
-        config: null,
-      },
-      {
-        id: generateGitHubIntegrationId(),
-        repositoryId: integrationId,
-        outputType: "twitter_post",
-        enabled: false,
-        config: null,
-      },
-    ]);
 
     return c.json({ github: integration, organization }, 201);
   } catch (error) {
@@ -2492,12 +2514,17 @@ contentRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
       return c.json({ error: "Repository already connected" }, 409);
     }
 
+    const safeMessage = getSafeGitHubIntegrationErrorMessage(error);
+
+    if (safeMessage) {
+      return c.json({ error: safeMessage }, 400);
+    }
+
+    console.error("Failed to create GitHub integration", error);
+
     return c.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to create GitHub integration",
+        error: "Failed to create GitHub integration",
       },
       400
     );
