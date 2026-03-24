@@ -228,6 +228,13 @@ function getSafeGitHubIntegrationErrorMessage(error: unknown) {
   return safeMessages.has(error.message) ? error.message : null;
 }
 
+function isGitHubIntegrationUnavailableError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.startsWith("GitHub integrations are unavailable:")
+  );
+}
+
 function selectBrandIdentityColumns() {
   return {
     id: brandSettings.id,
@@ -2497,11 +2504,8 @@ contentRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
 
     return c.json({ github: integration, organization }, 201);
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.startsWith("GitHub integrations are unavailable:")
-    ) {
-      return c.json({ error: error.message }, 503);
+    if (isGitHubIntegrationUnavailableError(error)) {
+      return c.json({ error: "GitHub integrations are unavailable" }, 503);
     }
 
     if (
