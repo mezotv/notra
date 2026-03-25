@@ -68,7 +68,7 @@ export function DashboardSidebar({
     <Sidebar
       collapsible="icon"
       {...props}
-      className="overflow-hidden border-none"
+      className="overflow-hidden overscroll-none border-none"
     >
       <SidebarHeader>
         <OrgSelector />

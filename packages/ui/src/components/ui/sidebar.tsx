@@ -20,6 +20,8 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { useComposedRefs } from "@notra/ui/hooks/compose-refs";
+import { useSidebarScroll } from "@notra/ui/hooks/use-sidebar-scroll";
 import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 import { cn } from "@notra/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -40,6 +42,8 @@ type SidebarContextProps = {
 	setOpenMobile: (open: boolean) => void;
 	isMobile: boolean;
 	toggleSidebar: () => void;
+	contentRef: React.RefCallback<HTMLDivElement>;
+	proxyWheelToContent: (event: React.WheelEvent<HTMLElement>) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -68,6 +72,7 @@ function SidebarProvider({
 }) {
 	const isMobile = useIsMobile();
 	const [openMobile, setOpenMobile] = React.useState(false);
+	const { contentRef, proxyWheelToContent } = useSidebarScroll();
 
 	// This is the internal state of the sidebar.
 	// We use openProp and setOpenProp for control from outside the component.
@@ -124,8 +129,19 @@ function SidebarProvider({
 			openMobile,
 			setOpenMobile,
 			toggleSidebar,
+			contentRef,
+			proxyWheelToContent,
 		}),
-		[state, open, setOpen, isMobile, openMobile, toggleSidebar],
+		[
+			state,
+			open,
+			setOpen,
+			isMobile,
+			openMobile,
+			toggleSidebar,
+			contentRef,
+			proxyWheelToContent,
+		],
 	);
 
 	return (
@@ -331,23 +347,43 @@ function SidebarInput({
 	);
 }
 
-function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
+function SidebarHeader({
+	className,
+	onWheel,
+	...props
+}: React.ComponentProps<"div">) {
+	const { proxyWheelToContent } = useSidebar();
+
 	return (
 		<div
 			className={cn("flex flex-col gap-2 p-2", className)}
 			data-sidebar="header"
 			data-slot="sidebar-header"
+			onWheel={(event) => {
+				onWheel?.(event);
+				proxyWheelToContent(event);
+			}}
 			{...props}
 		/>
 	);
 }
 
-function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
+function SidebarFooter({
+	className,
+	onWheel,
+	...props
+}: React.ComponentProps<"div">) {
+	const { proxyWheelToContent } = useSidebar();
+
 	return (
 		<div
 			className={cn("flex flex-col gap-2 p-2", className)}
 			data-sidebar="footer"
 			data-slot="sidebar-footer"
+			onWheel={(event) => {
+				onWheel?.(event);
+				proxyWheelToContent(event);
+			}}
 			{...props}
 		/>
 	);
@@ -367,19 +403,26 @@ function SidebarSeparator({
 	);
 }
 
-function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+const SidebarContent = React.forwardRef<
+	HTMLDivElement,
+	React.ComponentProps<"div">
+>(function SidebarContent({ className, ...props }, ref) {
+	const { contentRef } = useSidebar();
+	const composedRef = useComposedRefs<HTMLDivElement>(contentRef, ref);
+
 	return (
 		<div
 			className={cn(
-				"no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+				"no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-y-auto overflow-x-hidden overscroll-none bg-sidebar group-data-[collapsible=icon]:overflow-hidden",
 				className,
 			)}
 			data-sidebar="content"
 			data-slot="sidebar-content"
+			ref={composedRef}
 			{...props}
 		/>
 	);
-}
+});
 
 function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (

@@ -20,6 +20,13 @@ export type Organization = NonNullable<
   ReturnType<typeof authClient.useListOrganizations>["data"]
 >[number];
 
+export interface InitialActiveOrganization {
+  id: string;
+  logo: string | null;
+  name: string;
+  slug: string;
+}
+
 interface OrganizationsContextValue {
   organizations: Organization[];
   activeOrganization: Organization | null;
@@ -38,7 +45,13 @@ const FALLBACK_ORGANIZATIONS_CONTEXT: OrganizationsContextValue = {
   getOrganization: () => undefined,
 };
 
-export function OrganizationsProvider({ children }: { children: ReactNode }) {
+export function OrganizationsProvider({
+  children,
+  initialActiveOrganization,
+}: {
+  children: ReactNode;
+  initialActiveOrganization?: InitialActiveOrganization | null;
+}) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
   const { refetch: refetchCustomer } = useCustomer();
@@ -86,6 +99,29 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
     }
     return segments[0] ?? null;
   }, [pathname]);
+  const organizationFromPath = useMemo(
+    () =>
+      slugFromPath
+        ? (organizations.find((org) => org.slug === slugFromPath) ?? null)
+        : null,
+    [organizations, slugFromPath]
+  );
+  const seededActiveOrganization = useMemo(() => {
+    if (!initialActiveOrganization) {
+      return null;
+    }
+
+    if (slugFromPath && initialActiveOrganization.slug !== slugFromPath) {
+      return null;
+    }
+
+    return initialActiveOrganization as Organization;
+  }, [initialActiveOrganization, slugFromPath]);
+  const resolvedActiveOrganization =
+    activeOrganization ??
+    optimisticActiveOrg ??
+    organizationFromPath ??
+    seededActiveOrganization;
 
   // Clear optimistic state when real data arrives
   useEffect(() => {
@@ -110,9 +146,6 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const organizationFromPath = organizations.find(
-      (org) => org.slug === slugFromPath
-    );
     if (!organizationFromPath) {
       return;
     }
@@ -148,7 +181,7 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
     activeOrganization?.slug,
     isLoadingActive,
     isLoadingOrgs,
-    organizations,
+    organizationFromPath,
     queryClient,
     slugFromPath,
   ]);
@@ -210,17 +243,11 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
   const contextValue = useMemo<OrganizationsContextValue>(
     () => ({
       organizations,
-      activeOrganization: activeOrganization ?? optimisticActiveOrg,
+      activeOrganization: resolvedActiveOrganization,
       isLoading,
       getOrganization,
     }),
-    [
-      organizations,
-      activeOrganization,
-      optimisticActiveOrg,
-      isLoading,
-      getOrganization,
-    ]
+    [organizations, resolvedActiveOrganization, isLoading, getOrganization]
   );
 
   useEffect(() => {

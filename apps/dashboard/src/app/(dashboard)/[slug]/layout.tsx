@@ -1,3 +1,4 @@
+import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 
 interface OrganizationLayoutProps {
@@ -11,7 +12,18 @@ export default async function OrganizationLayout({
 }: OrganizationLayoutProps) {
   const { slug } = await params;
 
-  await validateOrganizationAccess(slug);
+  const { organization } = await validateOrganizationAccess(slug);
 
-  return <>{children}</>;
+  return (
+    <DashboardClientWrapper
+      initialActiveOrganization={{
+        id: organization.id,
+        logo: organization.logo,
+        name: organization.name,
+        slug: organization.slug,
+      }}
+    >
+      {children}
+    </DashboardClientWrapper>
+  );
 }
