@@ -43,6 +43,7 @@ export function NavUser() {
   const { isMobile, state } = useSidebar();
   const { setTheme, resolvedTheme } = useTheme();
   const isCollapsed = state === "collapsed";
+  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "top";
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -154,7 +155,7 @@ export function NavUser() {
           <DropdownMenuContent
             align="end"
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={dropdownSide}
             sideOffset={4}
           >
             <DropdownMenuGroup>

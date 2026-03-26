@@ -197,6 +197,7 @@ export function OrgSelector() {
   const queryClient = useQueryClient();
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "bottom";
   const { activeOrganization, organizations, isLoading } =
     useOrganizationsContext();
   const { data: customer } = useCustomer({
@@ -284,25 +285,27 @@ export function OrgSelector() {
           )}
           <DropdownMenuContent
             align="start"
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg bg-sidebar p-1 text-sidebar-foreground ring-1 ring-sidebar-border/70"
-            side={isMobile ? "bottom" : "right"}
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+            side={dropdownSide}
             sideOffset={4}
           >
             {organizations?.length ? (
               <DropdownMenuGroup>
-                <DropdownMenuLabel className="text-sidebar-foreground/60 text-xs">
+                <DropdownMenuLabel>
                   Organizations
                 </DropdownMenuLabel>
                 {organizations.map((org) => (
                   <DropdownMenuItem
-                    className="flex items-center gap-4 pr-8 text-sidebar-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground"
+                    className="cursor-pointer gap-2 pr-8"
                     disabled={isNavigating}
                     key={org.id}
                     onClick={() => switchOrganization(org)}
                   >
-                    <Avatar className="size-6 rounded-[0.2rem]">
+                    <Avatar className="size-6 rounded-lg after:rounded-lg">
                       <AvatarImage src={org.logo || undefined} />
-                      <AvatarFallback>{org.name.slice(0, 2)}</AvatarFallback>
+                      <AvatarFallback className="rounded-lg">
+                        {org.name.slice(0, 2)}
+                      </AvatarFallback>
                     </Avatar>
                     <OverflowAwareText
                       className="text-sm"
@@ -311,7 +314,7 @@ export function OrgSelector() {
                     />
                     {activeOrganization?.id === org.id ? (
                       <HugeiconsIcon
-                        className="absolute right-0 size-4 text-sidebar-foreground/60"
+                        className="absolute right-2 size-4 text-muted-foreground"
                         icon={Tick02Icon}
                       />
                     ) : null}
@@ -319,7 +322,7 @@ export function OrgSelector() {
                 ))}
               </DropdownMenuGroup>
             ) : (
-              <div className="px-2 py-4 text-center text-sidebar-foreground/60 text-sm">
+              <div className="px-2 py-4 text-center text-muted-foreground text-sm">
                 No organizations found
               </div>
             )}
@@ -327,12 +330,10 @@ export function OrgSelector() {
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              className="flex cursor-pointer items-center gap-4 text-sidebar-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground"
+              className="cursor-pointer"
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <div className="flex size-6 items-center justify-center rounded-[0.2rem] bg-sidebar-accent/70">
-                <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-              </div>
+              <HugeiconsIcon icon={PlusSignIcon} />
               Create Organization
             </DropdownMenuItem>
           </DropdownMenuContent>
