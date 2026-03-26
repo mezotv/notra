@@ -8,6 +8,7 @@ import {
   NoteIcon,
   Notification03Icon,
   PlugIcon,
+  Settings01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
@@ -23,12 +24,7 @@ import { usePathname } from "next/navigation";
 import { memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
-type NavMainCategory =
-  | "none"
-  | "workspace"
-  | "automation"
-  | "utility"
-  | "developer";
+type NavMainCategory = "none" | "workspace" | "automation" | "manage";
 
 interface NavMainItem {
   link: string;
@@ -40,8 +36,7 @@ interface NavMainItem {
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
   workspace: "Workspace",
   automation: "Automation",
-  developer: "Developer",
-  utility: "Utility",
+  manage: "Manage",
 };
 
 const navMainItems: NavMainItem[] = [
@@ -79,19 +74,25 @@ const navMainItems: NavMainItem[] = [
     link: "/api-keys",
     icon: Key01Icon,
     label: "API Keys",
-    category: "developer",
+    category: "manage",
   },
   {
     link: "/integrations",
     icon: PlugIcon,
     label: "Integrations",
-    category: "utility",
+    category: "manage",
   },
   {
     link: "/logs",
     icon: AnalyticsUpIcon,
     label: "Logs",
-    category: "utility",
+    category: "manage",
+  },
+  {
+    link: "/settings/account",
+    icon: Settings01Icon,
+    label: "Settings",
+    category: "manage",
   },
 ];
 
@@ -99,8 +100,7 @@ const itemsByCategory: Record<NavMainCategory, NavMainItem[]> = {
   none: [],
   workspace: [],
   automation: [],
-  utility: [],
-  developer: [],
+  manage: [],
 };
 for (const item of navMainItems) {
   itemsByCategory[item.category].push(item);

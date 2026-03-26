@@ -1,25 +1,21 @@
 "use client";
 
-import { ArrowLeft01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
-  useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type * as React from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { cn } from "@/lib/utils";
 import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 import { NavSettings } from "./nav-settings";
 import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
@@ -49,7 +45,6 @@ export function DashboardSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { activeOrganization } = useOrganizationsContext();
-  const { open } = useSidebar();
   const shouldReduceMotion = useReducedMotion();
   const pathnameSegments = pathname.split("/").filter(Boolean);
   const slug = pathnameSegments[0] ?? activeOrganization?.slug ?? "";
@@ -123,54 +118,16 @@ export function DashboardSidebar({
               variants={mainVariants}
             >
               <NavMain />
-              <NavSecondary className="mt-auto" />
+              <div className="mt-auto">
+                <SidebarOnboarding />
+                <SidebarUpgrade />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </SidebarContent>
-      <SidebarFooter className="gap-0">
-        <AnimatePresence initial={false} mode="popLayout">
-          {!isSettingsRoute && (
-            <motion.div
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              key="onboarding"
-              transition={TRANSITION}
-              variants={mainVariants}
-            >
-              <SidebarOnboarding />
-              <SidebarUpgrade />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <SidebarGroup className={cn(open ? "px-2" : "px-0")}>
-          <SidebarMenu>
-            <AnimatePresence initial={false} mode="popLayout">
-              {!isSettingsRoute && (
-                <motion.div
-                  animate="animate"
-                  exit="exit"
-                  initial="initial"
-                  key="settings-button"
-                  transition={TRANSITION}
-                  variants={mainVariants}
-                >
-                  <SidebarMenuButton
-                    render={
-                      <Link href={`/${slug}/settings/general`}>
-                        <HugeiconsIcon icon={Settings01Icon} />
-                        <span>Settings</span>
-                      </Link>
-                    }
-                    tooltip="Settings"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </SidebarMenu>
-          <NavUser />
-        </SidebarGroup>
+      <SidebarFooter>
+        <NavUser />
       </SidebarFooter>
     </Sidebar>
   );
