@@ -132,7 +132,7 @@ function OrgSelectorTrigger({
       render={
         <SidebarMenuButton
           className={cn(
-            "cursor-pointer border border-transparent transition hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground",
+            "cursor-pointer border border-transparent transition hover:bg-sidebar-accent data-popup-open:border-sidebar-border/70 data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70",
             isCollapsed ? "size-10 min-w-0 justify-center p-1" : ""
           )}
           disabled={isSwitching}
