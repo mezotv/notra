@@ -291,9 +291,7 @@ export function OrgSelector() {
           >
             {organizations?.length ? (
               <DropdownMenuGroup>
-                <DropdownMenuLabel>
-                  Organizations
-                </DropdownMenuLabel>
+                <DropdownMenuLabel>Organizations</DropdownMenuLabel>
                 {organizations.map((org) => (
                   <DropdownMenuItem
                     className="cursor-pointer gap-2 pr-8"
