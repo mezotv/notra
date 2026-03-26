@@ -22,13 +22,15 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useComposedRefs } from "@notra/ui/hooks/compose-refs";
 import { useSidebarScroll } from "@notra/ui/hooks/use-sidebar-scroll";
+import {
+	SIDEBAR_COOKIE_MAX_AGE,
+	SIDEBAR_COOKIE_NAME,
+} from "@notra/ui/lib/sidebar-state";
 import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 import { cn } from "@notra/ui/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";

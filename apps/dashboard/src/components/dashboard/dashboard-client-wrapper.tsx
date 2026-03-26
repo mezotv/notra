@@ -11,17 +11,22 @@ import {
 interface DashboardClientWrapperProps {
   children: React.ReactNode;
   initialActiveOrganization?: InitialActiveOrganization | null;
+  initialSidebarOpen?: boolean;
 }
 
 export function DashboardClientWrapper({
   children,
   initialActiveOrganization,
+  initialSidebarOpen = true,
 }: DashboardClientWrapperProps) {
   return (
     <OrganizationsProvider
       initialActiveOrganization={initialActiveOrganization}
     >
-      <SidebarProvider className="h-svh overflow-hidden overscroll-none">
+      <SidebarProvider
+        className="h-svh overflow-hidden overscroll-none"
+        defaultOpen={initialSidebarOpen}
+      >
         <DashboardSidebar variant="inset" />
         <SidebarInset className="h-svh min-w-0 overflow-hidden">
           <SiteHeader />
