@@ -132,7 +132,7 @@ function OrgSelectorTrigger({
       render={
         <SidebarMenuButton
           className={cn(
-            "cursor-pointer border border-transparent transition hover:bg-sidebar-accent data-popup-open:border-sidebar-border/70 data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70",
+            "cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70",
             isCollapsed ? "size-10 min-w-0 justify-center p-1" : ""
           )}
           disabled={isSwitching}
@@ -164,11 +164,7 @@ function OrgSelectorTrigger({
                   <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
                     PRO
                   </Badge>
-                ) : (
-                  <Badge className="shrink-0 bg-emerald-500/15 px-1.5 py-0 font-semibold text-[10px] text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400">
-                    FREE
-                  </Badge>
-                )}
+                ) : null}
               </div>
               <HugeiconsIcon className="ml-auto" icon={ArrowDown01Icon} />
             </>
@@ -288,18 +284,18 @@ export function OrgSelector() {
           )}
           <DropdownMenuContent
             align="start"
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg bg-sidebar p-1 text-sidebar-foreground ring-1 ring-sidebar-border/70"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
           >
             {organizations?.length ? (
               <DropdownMenuGroup>
-                <DropdownMenuLabel className="text-muted-foreground text-xs">
+                <DropdownMenuLabel className="text-sidebar-foreground/60 text-xs">
                   Organizations
                 </DropdownMenuLabel>
                 {organizations.map((org) => (
                   <DropdownMenuItem
-                    className="flex items-center gap-4 pr-8"
+                    className="flex items-center gap-4 pr-8 text-sidebar-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground"
                     disabled={isNavigating}
                     key={org.id}
                     onClick={() => switchOrganization(org)}
@@ -315,7 +311,7 @@ export function OrgSelector() {
                     />
                     {activeOrganization?.id === org.id ? (
                       <HugeiconsIcon
-                        className="absolute right-0 size-4 text-muted-foreground"
+                        className="absolute right-0 size-4 text-sidebar-foreground/60"
                         icon={Tick02Icon}
                       />
                     ) : null}
@@ -323,7 +319,7 @@ export function OrgSelector() {
                 ))}
               </DropdownMenuGroup>
             ) : (
-              <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+              <div className="px-2 py-4 text-center text-sidebar-foreground/60 text-sm">
                 No organizations found
               </div>
             )}
@@ -331,10 +327,10 @@ export function OrgSelector() {
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              className="flex cursor-pointer items-center gap-4"
+              className="flex cursor-pointer items-center gap-4 text-sidebar-foreground focus:bg-sidebar-accent focus:text-sidebar-accent-foreground"
               onClick={() => setIsCreateModalOpen(true)}
             >
-              <div className="flex size-6 items-center justify-center rounded-[0.2rem] bg-muted">
+              <div className="flex size-6 items-center justify-center rounded-[0.2rem] bg-sidebar-accent/70">
                 <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
               </div>
               Create Organization
