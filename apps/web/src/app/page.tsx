@@ -29,8 +29,8 @@ export default function LandingPage() {
               Turn your daily work into publish-ready content
             </h1>
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Notra connects to GitHub and soon Slack and Linear to turn
-              shipped work into ready-to-publish content.
+              Notra connects to GitHub and soon Slack and Linear to turn shipped
+              work into ready-to-publish content.
             </div>
           </div>
         </div>
