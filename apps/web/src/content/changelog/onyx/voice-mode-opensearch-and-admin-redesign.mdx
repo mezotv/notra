@@ -1,0 +1,110 @@
+---
+title: "Onyx Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This week brings voice mode with real-time speech-to-text and text-to-speech, OpenSearch enabled by default for all new installs, and a redesigned admin Users interface with granular user management, role controls, and group editing. You'll also find OIDC PKCE support hardening the authentication fl"
+---
+
+This week brings voice mode with real-time speech-to-text and text-to-speech, OpenSearch enabled by default for all new installs, and a redesigned admin Users interface with granular user management, role controls, and group editing. You'll also find OIDC PKCE support hardening the authentication flow, extended file preview capabilities, configurable user upload limits, and a security patch for the flatted dependency. The admin sidebar has been reorganized with a new search feature, and custom tool error handling is improved with better timeline visualization.
+
+## Highlights
+
+### Voice mode with streaming speech-to-text and text-to-speech
+Real-time voice interaction now works end-to-end with gapless sentence-level streaming TTS synced to message generation, live mic recording with live transcription and waveform display, and per-user voice preferences for auto-send and playback speed. Admin panel includes provider setup for OpenAI, ElevenLabs, and Azure TTS, with SSRF protections and SSML escaping. (Author: [@jessicasingh7](https://github.com/jessicasingh7/))
+
+### OpenSearch enabled by default for all deployments
+New Onyx installs now use OpenSearch indexing and retrieval out of the box across Docker Compose and Helm deployments, with automatic service startup and correctly configured JVM heap sizes. Existing self-hosted and AWS-managed setups can opt out via environment variables. (Author: [@acaprau](https://github.com/acaprau/))
+
+### Redesigned admin Users interface with granular controls
+The Users page now ships with server-side pagination, inline role editing, row-level actions with confirmation modals, filters by role/group/status, an invite modal for bulk user creation, and a group membership editor. SCIM management has been integrated into the new page. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+
+### OIDC Proof Key for Code Exchange (PKCE) support
+OIDC login flow now supports PKCE (S256) with verifier cookies and state validation before token redemption, gated by `OIDC_PKCE_ENABLED` for staged rollout. Global error handlers return consistent JSON responses for token exchange failures. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+
+### Extended file preview with more text and data formats
+In-app file preview now supports plaintext, logs, configs, TSV, and additional YAML variants (text/yaml, text/x-yaml, application/yaml), with smarter MIME/extension detection and replaced TextViewModal with a unified PreviewModal text variant. (Author: [@jmelahman](https://github.com/jmelahman/))
+
+## More Updates
+
+### Security
+- **Patched CVE-2026-32141 in flatted dependency** [#9350](https://github.com/onyx-dot-app/onyx/pull/9350) - Dev-only dependency bump to resolve reported vulnerability. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+
+### Features & Enhancements
+- **Configurable user file upload size limits** [#9157](https://github.com/onyx-dot-app/onyx/pull/9157) - Added `MAX_USER_FILE_UPLOAD_SIZE_MB` setting for controlling upload constraints. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Frontend precheck for oversized uploads** [#9159](https://github.com/onyx-dot-app/onyx/pull/9159) - Early validation prevents large file submissions from reaching backend. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Backend enforcement of user upload limits** [#9158](https://github.com/onyx-dot-app/onyx/pull/9158) - Server-side validation for project and chat upload paths respects configured limits. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Custom tool error handling and timeline UI improvements** [#9189](https://github.com/onyx-dot-app/onyx/pull/9189) - Better error messages and visual timeline for custom tool execution feedback. (Author: [@Subash-Mohan](https://github.com/Subash-Mohan/))
+- **Admin sidebar refresh with new sections and search** [#9344](https://github.com/onyx-dot-app/onyx/pull/9344) - Reorganized sidebar with search capability and disabled enterprise-only tabs. (Author: [@raunakab](https://github.com/raunakab/))
+- **Progress bars and UI icon additions** [#9349](https://github.com/onyx-dot-app/onyx/pull/9349) - Added new icons (progress bars, curate, user variant) to component library. (Author: [@raunakab](https://github.com/raunakab/))
+- **LLM provider dropdown fixes and voice setup modal** [#9264](https://github.com/onyx-dot-app/onyx/pull/9264) - Improved FE provider workflow for voice mode configuration. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **LineItemButton component addition** [#9137](https://github.com/onyx-dot-app/onyx/pull/9137) - New UI component for list-based interactions. (Author: [@raunakab](https://github.com/raunakab/))
+
+### Bug Fixes
+- **Prevented removal and hiding of default model** [#9131](https://github.com/onyx-dot-app/onyx/pull/9131) - Models cannot be deleted if they are the system default. (Author: [@Danelegend](https://github.com/Danelegend/))
+- **Filtering embedding models in litellm provider** [#9347](https://github.com/onyx-dot-app/onyx/pull/9347) - Blocks embedding models from appearing in chat LLM selection. (Author: [@Danelegend](https://github.com/Danelegend/))
+- **SharePoint pages 400 list expand error** [#9321](https://github.com/onyx-dot-app/onyx/pull/9321) - Fixed expand parameter in SharePoint page enumeration. (Author: [@evan-onyx](https://github.com/evan-onyx/))
+- **Skip classic SharePoint site pages** [#9318](https://github.com/onyx-dot-app/onyx/pull/9318) - Connector no longer attempts to fetch unsupported classic site pages. (Author: [@evan-onyx](https://github.com/evan-onyx/))
+- **Slack bot admin pages broken links** [#9168](https://github.com/onyx-dot-app/onyx/pull/9168) - Restored navigation on admin slack bot configuration pages. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **Voice error sanitization and replay on revisit** [#9326](https://github.com/onyx-dot-app/onyx/pull/9326) - Error messages no longer expose internals; voice playback resumes correctly when returning to chat. (Author: [@jessicasingh7](https://github.com/jessicasingh7/))
+- **Fallback doc access for externally owned drive items** [#9053](https://github.com/onyx-dot-app/onyx/pull/9053) - Microsoft connector handles permission failures for shared external documents. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **InputComboBox filter value reset on open** [#9287](https://github.com/onyx-dot-app/onyx/pull/9287) - Dropdown no longer clears search text when expanded. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **InputSelect text selection prevention** [#9292](https://github.com/onyx-dot-app/onyx/pull/9292) - Clicking dropdown no longer selects background text. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **CSV inline display responsiveness** [#9242](https://github.com/onyx-dot-app/onyx/pull/9242) - Tables now reflow correctly on narrow viewports. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Comma literal parsing in CSV uploads** [#9245](https://github.com/onyx-dot-app/onyx/pull/9245) - Quoted commas in CSV fields no longer cause parsing errors. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Modal centering on smaller screens** [#9250](https://github.com/onyx-dot-app/onyx/pull/9250) - Breakpoint adjustment keeps modals centered on mobile devices. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **API memory allocator switch to jemalloc** [#9196](https://github.com/onyx-dot-app/onyx/pull/9196) - Reduces memory fragmentation in API container by replacing glibc allocator. (Author: [@Bo-Onyx](https://github.com/Bo-Onyx/))
+- **Prevent deep-copy during document indexing** [#9275](https://github.com/onyx-dot-app/onyx/pull/9275) - Improves indexing performance by avoiding unnecessary object duplication. (Author: [@Danelegend](https://github.com/Danelegend/))
+- **OpenSearch update clears empty projects and personas** [#8845](https://github.com/onyx-dot-app/onyx/pull/8845) - Removes stale project/persona references from index on document updates. (Author: [@acaprau](https://github.com/acaprau/))
+- **Safari search results shrinking issue** [#9126](https://github.com/onyx-dot-app/onyx/pull/9126) - Layout no longer collapses on macOS Safari. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Chat content padding fix** [#9216](https://github.com/onyx-dot-app/onyx/pull/9216) - Spacing corrected for message display area. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Code interpreter default base URL** [#9215](https://github.com/onyx-dot-app/onyx/pull/9215) - Sets sensible default for `CODE_INTERPRETER_BASE_URL` in Docker deployments. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **OnyxError response shape correction** [#9214](https://github.com/onyx-dot-app/onyx/pull/9214) - API now returns `detail` instead of `message` for consistency. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **SQLAlchemy batch user insert sentinel mismatch** [#9300](https://github.com/onyx-dot-app/onyx/pull/9300) - Fixes ORM comparison error when inserting multiple users at once. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **Consolidated search state machine** [#9234](https://github.com/onyx-dot-app/onyx/pull/9234) - Simplifies search request handling logic. (Author: [@raunakab](https://github.com/raunakab/))
+- **Jira group sync endpoint update** [#9241](https://github.com/onyx-dot-app/onyx/pull/9241) - Connector uses correct endpoint for fetching group memberships. (Author: [@evan-onyx](https://github.com/evan-onyx/))
+- **MCP tools endpoint CE compatibility** [#9193](https://github.com/onyx-dot-app/onyx/pull/9193) - Community Edition deployments no longer error when MCP fetches indexed documents. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Craft webapp route conflict** [#9283](https://github.com/onyx-dot-app/onyx/pull/9283) - Renamed endpoint to prevent HMR and asset request interference. (Author: [@rohoswagger](https://github.com/rohoswagger/))
+- **Helm User Auth secret default behavior** [#9325](https://github.com/onyx-dot-app/onyx/pull/9325) - User authentication secret now disabled by default in Helm deployments. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **SensitiveValue event hook** [#9177](https://github.com/onyx-dot-app/onyx/pull/9177) - Secrets are properly wrapped before event logging. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Available context tokens management** [#9174](https://github.com/onyx-dot-app/onyx/pull/9174) - Moves token budgeting from controller to hook, removes arbitrary 50% cap. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Proxied webapp asset and HMR reload leaks** [#9255](https://github.com/onyx-dot-app/onyx/pull/9255) - Craft development mode no longer leaks asset requests and hot-reload listeners. (Author: [@rohoswagger](https://github.com/rohoswagger/))
+- **Discord connector async resource cleanup** [#9203](https://github.com/onyx-dot-app/onyx/pull/9203) - Properly awaits async operations in cleanup sequence. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **MCP tools fetch when no LLMs configured** [#9173](https://github.com/onyx-dot-app/onyx/pull/9173) - Skips unnecessary MCP initialization when system has no LLMs. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **PostHog SSL upgrade on local redirect** [#9175](https://github.com/onyx-dot-app/onyx/pull/9175) - Development server handles SSL redirects correctly. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Favicon relative path preference** [#9307](https://github.com/onyx-dot-app/onyx/pull/9307) - Avoids absolute path issues in reverse proxy setups. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **App padding inside overflow container** [#9206](https://github.com/onyx-dot-app/onyx/pull/9206) - Layout padding no longer causes unexpected overflow. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Preview modal fade background color matching** [#9221](https://github.com/onyx-dot-app/onyx/pull/9221) - Modal background now matches code block background for visual consistency. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Storybook component references** [#9244](https://github.com/onyx-dot-app/onyx/pull/9244) - Fixed case-sensitivity and icon naming in Storybook stories. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+
+### Infrastructure
+- **OpenSearch environment variable configurability** [#9243](https://github.com/onyx-dot-app/onyx/pull/9243) - Allows tuning hybrid search subquery hit count via `OPENSEARCH_HYBRID_SUBQUERY_HITS`. (Author: [@acaprau](https://github.com/acaprau/))
+- **OpenSearch Vespa migration page size control** [#9239](https://github.com/onyx-dot-app/onyx/pull/9239) - `OPENSEARCH_VESPA_MIGRATION_CHUNK_SIZE` lets operators control batch sizes during migration. (Author: [@acaprau](https://github.com/acaprau/))
+- **Release tag workflow improvements** [#9278](https://github.com/onyx-dot-app/onyx/pull/9278) - Better semver tagging logic for Docker Hub `latest` tag. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Docker Compose OpenSearch container settings** [#9277](https://github.com/onyx-dot-app/onyx/pull/9277) - Unsets ulimits in dev environment for compatibility. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **LiteLLM models endpoint integration** [#8418](https://github.com/onyx-dot-app/onyx/pull/8418) - Backend can now fetch available models from LiteLLM provider. (Author: [@Danelegend](https://github.com/Danelegend/))
+
+### Internal Changes
+- **Prisma hierarchy node pruning** [#9066](https://github.com/onyx-dot-app/onyx/pull/9066) - Removes orphaned hierarchy nodes during indexing. (Author: [@evan-onyx](https://github.com/evan-onyx/))
+- **SharePoint deduplication logic** [#9254](https://github.com/onyx-dot-app/onyx/pull/9254) - Prevents duplicate document creation in SharePoint connector. (Author: [@evan-onyx](https://github.com/evan-onyx/))
+- **EncryptedBase cache_okay declaration** [#9253](https://github.com/onyx-dot-app/onyx/pull/9253) - SQLAlchemy type system declarations for encrypted columns. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **EncryptedJson cache_okay marking** [#9252](https://github.com/onyx-dot-app/onyx/pull/9252) - Marks encrypted JSON fields as safe for compilation cache. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Width CSS class refactor** [#9146](https://github.com/onyx-dot-app/onyx/pull/9146) - Changes default width utility from `w-auto` to `w-fit` for improved layout. (Author: [@raunakab](https://github.com/raunakab/))
+- **File preview modal improvements** [#9259](https://github.com/onyx-dot-app/onyx/pull/9259) - Additional polish for file preview display. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Unnecessary multitenant migration check removed** [#9172](https://github.com/onyx-dot-app/onyx/pull/9172) - Simplifies migration logic. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+- **Decryption utility update** [#9176](https://github.com/onyx-dot-app/onyx/pull/9176) - Improves secret handling utilities. (Author: [@wenxi-onyx](https://github.com/wenxi-onyx/))
+
+### Testing
+- **Playwright test-only flag cleanup** [#9336](https://github.com/onyx-dot-app/onyx/pull/9336) - Removed debug `.only` directive from test suite. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Storybook build and deploy CI** [#9205](https://github.com/onyx-dot-app/onyx/pull/9205) - Added GitHub Actions workflow to publish component library. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **Component story library** [#9194](https://github.com/onyx-dot-app/onyx/pull/9194) - Comprehensive Storybook stories for all UI components. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **Storybook infrastructure setup** [#9195](https://github.com/onyx-dot-app/onyx/pull/9195) - Initial Storybook configuration and tooling. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **Model server nightly test fixes** [#9236](https://github.com/onyx-dot-app/onyx/pull/9236) - Corrected deprecated OpenAI model references in tests. (Author: [@jmelahman](https://github.com/jmelahman/))
+- **Removed deprecated o1 model tests** [#9280](https://github.com/onyx-dot-app/onyx/pull/9280) - Cleaned up test suite for retired OpenAI models. (Author: [@nmgarza5](https://github.com/nmgarza5/))
+- **LLM model state cache integration test** [#9142](https://github.com/onyx-dot-app/onyx/pull/9142) - Added integration test for model state caching behavior. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Release branch Playwright runs** [#9233](https://github.com/onyx-dot-app/onyx/pull/9233) - Triggers browser automation tests on release branches. (Author: [@jmelahman](https://github.com/jmelahman/))
+
+### Documentation
+- **Greptile custom context improvements** [#9319](https://github.com/onyx-dot-app/onyx/pull/9319) - Enhanced documentation context for codebase search. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Cherry-pick workflow documentation** [#9329](https://github.com/onyx-dot-app/onyx/pull/9329) - CODEOWNERS file for cherry-pick release process. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Cherry-pick workflow improvements** [#9316](https://github.com/onyx-dot-app/onyx/pull/9316) - Enhanced cherry-pick automation. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Slack cherry-pick notification** [#9331](https://github.com/onyx-dot-app/onyx/pull/9331) - Notifies Slack channel on successful PR cherry-pick. (Author: [@justin-tahara](https://github.com/justin-tahara/))
+- **Cherry-pick whitelist for approved users** [#9330](https://github.com/onyx-dot-app/onyx/pull/9330) - Restricts cherry-pick permissions to designated team members. (Author: [@justin-tahara](https://github.com/justin-tahara/))

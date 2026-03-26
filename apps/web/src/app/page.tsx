@@ -9,13 +9,14 @@ import DocumentationSection from "../components/documentation-section";
 import FAQSection from "../components/faq-section";
 import IntegrationOrbit from "../components/integration-orbit";
 import { PricingCards } from "../components/pricing-section";
+import ReferencesPreview from "../components/references-preview";
 import TestimonialsSection from "../components/testimonials-section";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
 
 export const metadata: Metadata = {
   title: "Notra - Turn your daily work into publish-ready content",
   description:
-    "Notra connects to GitHub, Linear and Slack to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+    "Notra connects to GitHub and soon Slack and Linear to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
 };
 
 export default function LandingPage() {
@@ -28,8 +29,8 @@ export default function LandingPage() {
               Turn your daily work into publish-ready content
             </h1>
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Notra connects to GitHub, Linear and Slack to turn shipped work
-              into ready-to-publish content.
+              Notra connects to GitHub and soon Slack and Linear to turn
+              shipped work into ready-to-publish content.
             </div>
           </div>
         </div>
@@ -107,7 +108,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="flex items-start justify-center self-stretch sm:hidden">
+          <div className="flex items-start justify-center self-stretch md:hidden">
             <div className="relative w-4 self-stretch overflow-hidden">
               <div className="-top-30 -left-10 absolute flex w-30 flex-col items-start justify-start">
                 {Array.from({ length: 50 }).map((_, i) => (
@@ -132,28 +133,9 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {logo.type === "wordmark" ? (
-                    <Image
-                      alt={logo.name}
-                      className={`w-auto opacity-80 ${logo.name === "Consent" ? "h-6" : "h-8"}`}
-                      height={40}
-                      src={logo.src}
-                      width={180}
-                    />
-                  ) : (
-                    <>
-                      <Image
-                        alt={logo.name}
-                        className="h-8 w-8"
-                        height={32}
-                        src={logo.src}
-                        width={32}
-                      />
-                      <span className="font-medium font-sans text-foreground text-lg leading-tight">
-                        {logo.name}
-                      </span>
-                    </>
-                  )}
+                  <logo.Component
+                    className={`w-auto ${logo.className ?? "h-8"}`}
+                  />
                 </a>
               ))}
             </div>
@@ -170,7 +152,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="hidden items-start justify-center self-stretch sm:flex">
+          <div className="hidden items-start justify-center self-stretch md:flex">
             <div className="relative w-6 self-stretch overflow-hidden md:w-8 lg:w-12">
               <div className="-top-30 -left-12.5 md:-left-14.5 absolute flex w-35 flex-col items-start justify-start md:w-40.5">
                 {Array.from({ length: 50 }).map((_, i) => (
@@ -198,28 +180,7 @@ export default function LandingPage() {
                   }}
                   target="_blank"
                 >
-                  {logo.type === "wordmark" ? (
-                    <Image
-                      alt={logo.name}
-                      className="h-6 w-auto opacity-80 md:h-7"
-                      height={28}
-                      src={logo.src}
-                      width={120}
-                    />
-                  ) : (
-                    <>
-                      <Image
-                        alt={logo.name}
-                        className="h-6 w-6"
-                        height={24}
-                        src={logo.src}
-                        width={24}
-                      />
-                      <span className="font-medium font-sans text-base text-foreground leading-tight md:text-lg">
-                        {logo.name}
-                      </span>
-                    </>
-                  )}
+                  <logo.Component className="h-6 w-auto md:h-7" />
                 </a>
               ))}
             </div>
@@ -317,17 +278,15 @@ export default function LandingPage() {
               <div className="flex flex-col items-start justify-start gap-4 p-4 sm:gap-6 sm:p-6 md:p-8 lg:p-12">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-sans font-semibold text-foreground text-lg leading-tight sm:text-xl">
-                    More to come
+                    Writing references
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    We're building new features every week. Stay tuned for
-                    what's next.
+                    Add tweets, posts, or custom text as references so the AI
+                    matches your real writing style.
                   </p>
                 </div>
-                <div className="flex h-50 w-full items-center justify-center sm:h-62.5 md:h-75">
-                  <span className="font-sans text-muted-foreground/50 text-sm">
-                    Coming soon
-                  </span>
+                <div className="w-full pt-2">
+                  <ReferencesPreview />
                 </div>
               </div>
             </div>

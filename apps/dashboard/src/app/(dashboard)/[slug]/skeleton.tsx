@@ -27,10 +27,7 @@ export function DashboardPageSkeleton() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {skeletonKeys.map((key) => (
-              <div
-                className="h-[140px] rounded-lg border border-border/80 bg-muted/80"
-                key={key}
-              />
+              <Skeleton className="h-[8.75rem] rounded-lg" key={key} />
             ))}
           </div>
         </div>

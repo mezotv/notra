@@ -1,0 +1,34 @@
+---
+title: "Corsair Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This week brought three significant new integrations to Corsair: Sentry for error tracking, PagerDuty for incident management, and Amplitude for analytics. We also shipped MCP (Model Context Protocol) support, enabling AI agents to work seamlessly with Claude and other MCP-compatible tools through a"
+---
+
+This week brought three significant new integrations to Corsair: Sentry for error tracking, PagerDuty for incident management, and Amplitude for analytics. We also shipped MCP (Model Context Protocol) support, enabling AI agents to work seamlessly with Claude and other MCP-compatible tools through a standardized interface. Key reliability improvements include graceful handling of decryption errors and better error recovery during setup. These changes expand Corsair's reach into critical DevOps and observability workflows, making it easier for AI systems to safely interact with the tools your teams depend on every day.
+
+## Highlights
+
+### Sentry integration for real-time error tracking
+AI agents can now ingest and act on error data from Sentry with webhook support, database persistence, and proper type safety. (Author: [@mukul7661](https://github.com/mukul7661/))
+
+### PagerDuty incident integration with email routing
+New PagerDuty plugin enables agents to receive and respond to incidents, complete with email address support and improved webhook handling. (Author: [@mukul7661](https://github.com/mukul7661/))
+
+### Amplitude analytics events and cohort sync
+Amplitude plugin lets agents sync user events and cohort data to your analytics platform with database persistence and error handling. (Author: [@mukul7661](https://github.com/mukul7661/))
+
+### MCP package for standardized AI agent tooling
+New @corsair/mcp package and @corsair/ui provide Model Context Protocol support, enabling agents to work with Claude and other MCP tools through a consistent interface. (Author: [@mukul7661](https://github.com/mukul7661/))
+
+### Graceful error recovery on credential decryption
+Data encryption now fails gracefully instead of crashing, preventing silent errors when decryption keys or encrypted values are invalid. (Author: [@devjain32](https://github.com/devjain32/))
+
+## More Updates
+
+### Features & Enhancements
+- **Agent introspection support** - Agents can now discover and introspect available tools at runtime. (Author: [@devjain32](https://github.com/devjain32/))
+- **Backfill functionality** - Added support for backfilling historical data. (Author: [@devjain32](https://github.com/devjain32/))
+
+### Infrastructure
+- **MCP package config publishing** - Updated @corsair/mcp and @corsair/ui packages to public npm registry configuration. (Author: [@devjain32](https://github.com/devjain32/))
+- **TypeScript configuration updates** - Enhanced tsconfig for improved type checking and module resolution. (Author: [@devjain32](https://github.com/devjain32/))

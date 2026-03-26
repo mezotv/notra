@@ -21,6 +21,19 @@ import {
 const isDevelopment = process.env.NODE_ENV === "development";
 const resend = getResend();
 
+function getVerificationSubject(type: "sign-in" | "email-verification") {
+  switch (type) {
+    case "sign-in":
+      return "Your sign-in code";
+    case "email-verification":
+      return "Verify your email address";
+    default: {
+      const _exhaustiveCheck: never = type;
+      return _exhaustiveCheck;
+    }
+  }
+}
+
 export async function sendInviteEmailAction({
   inviteeEmail,
   inviterName,
@@ -87,13 +100,11 @@ export async function sendVerificationEmailAction({
   type,
 }: SendVerificationEmailProps) {
   if (!resend && isDevelopment) {
-    const subject =
-      type === "sign-in" ? "Your sign-in code" : "Verify your email address";
     return sendDevEmail({
       from: EMAIL_CONFIG.from,
       to: userEmail,
       text: "This is a mock verification email",
-      subject,
+      subject: getVerificationSubject(type),
       _mockContext: {
         type: "verification",
         data: { userEmail, otp, verificationType: type },

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   UploadFileProps,
   UploadFileResponse,
@@ -10,17 +11,11 @@ async function getPresignedUrl(
   file: File,
   type: UploadType
 ): Promise<UploadPresignedResponse> {
-  const response = await axios.post("/api/upload", {
+  return dashboardOrpc.upload.createPresignedUpload.call({
     type,
     fileType: file.type,
     fileSize: file.size,
   });
-
-  if (response.status !== 200) {
-    throw new Error("Failed to get presigned URL.");
-  }
-
-  return response.data;
 }
 
 async function uploadToR2(presignedUrl: string, file: File) {

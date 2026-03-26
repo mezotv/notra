@@ -1,0 +1,72 @@
+---
+title: "Unsloth AI Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "Over the past week, Unsloth has focused on studio infrastructure optimization, expanding model training capabilities to embeddings and audio, and strengthening dataset handling. The team accelerated local setup time by 8x through uv integration and improved build times with GPU architecture detectio"
+---
+
+Over the past week, Unsloth has focused on studio infrastructure optimization, expanding model training capabilities to embeddings and audio, and strengthening dataset handling. The team accelerated local setup time by 8x through uv integration and improved build times with GPU architecture detection. A new dataset conversion advisor uses multi-pass LLM inference to intelligently map non-conversational datasets, while expanded security controls disable remote code execution by default. Audio and embedding model training pipelines are now production-ready alongside fixes for Flex Attention on Blackwell GPUs, better VLM dataset detection, and subprocess isolation for clean version switching.
+
+## Highlights
+
+### Studio setup 8x faster with uv and GPU-optimized builds
+Replaced pip with the Rust-based uv package manager (reducing Python dependencies from 2m 28s to 18s) and added GPU compute capability detection with Ninja compiler support, cutting total setup time from 4m 35s to under 2 minutes.
+
+### Embedding model training with sentence transformers
+Added end-to-end training pipeline for embedding models using FastSentenceTransformer and MultipleNegativesRankingLoss, with automatic LoRA support and 5 pre-configured models (all-MiniLM-L6-v2, bge-m3, gte-modernbert-base, and others).
+
+### AI-driven dataset conversion for non-conversational data
+Multi-pass LLM advisor intelligently detects dataset type, generates user/assistant templates with column mappings, and produces contextual system prompts for datasets like SNLI and SQuAD without manual intervention.
+
+### Flex Attention now works on Blackwell GPUs
+Fixed flex attention backward kernel shared memory limits on Blackwell+ GPUs (sm_120 and above), re-enabling a 1.3x speedup previously disabled as a workaround.
+
+### Remote code execution disabled by default for model loading
+Switched HuggingFace model loading to disable trust_remote_code by default in seed dataset inspection and AI-assist model hint lookup, with explicit UI toggle for users who need custom model code.
+
+## More Updates
+
+### Security
+- **Disabled remote code execution in model loading endpoints** - Prevents untrusted Hugging Face repositories from executing arbitrary code during inference and dataset checks. (Author: [@danielhanchen](https://github.com/danielhanchen/))
+- **Prevent browser autofill in HF token fields** - Added autocomplete="off" to prevent credential managers from auto-filling sensitive API tokens.
+
+### Features & Enhancements
+- **Audio model training support** - Pure audio models (Orpheus, SparkTTS, Whisper) and audio-VLM models (Gemma3n) with automatic train_on_completions unchecking. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Streaming HF datasets with manual slice** - Streams only rows up to slice_end instead of downloading full dataset, saving bandwidth for large dataset subsets. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **ShareGPT+image VLM format support** - Detect and convert vision conversations with `<image>` placeholders in ChatML/ShareGPT format. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Better image column detection** - Scores candidates by resolvability (PIL > dict > URL > path), probes multiple candidates, and detects list-of-strings captions. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **GGUF shard downloading for split models** - Download all shards for multi-part quantized models (e.g., 7B Q8_0) instead of just the first file. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **ROCm/PyTorch version combinations** - Added support for more ROCm and PyTorch variants (rocm711-torch291 on Linux). (Author: [@sstamenk](https://github.com/sstamenk/))
+- **Chat sequence slider** - UI control to adjust sequence length in inference playground. (Author: [@Shine1i](https://github.com/Shine1i/))
+- **trust_remote_code UI toggle** - Users can now explicitly opt-in to loading custom model code from Hugging Face. (Author: [@sshah229](https://github.com/sshah229/))
+
+### Bug Fixes
+- **Fixed VLM model config llm_int8_skip_modules on transformers 5.x** - Dynamic quant checkpoints now respect skip patterns when prefix mismatch occurs. (Author: [@danielhanchen](https://github.com/danielhanchen/))
+- **Fixed data-designer plugin editable install for Colab** - Changed to non-editable install so kernel can find package files immediately in live sessions. (Author: [@LeoBorcherding](https://github.com/LeoBorcherding/))
+- **Fixed eval_loss broken after subprocess isolation refactor** - Restored eval_enabled signal for eval-only progress and dataset splitting. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed negative dataset slice boundaries in embedding worker** - Use explicit None checks instead of falsy `or` for slice_start and slice_end. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed GGUF variant matching to prevent superset collisions** - Use word-boundary regex so "Q8_0" doesn't match "IQ8_0"; discover shards by shared prefix instead of variant matches. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed gated embedding model authentication** - Forward hf_token to FastSentenceTransformer and key cache by token tuple. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed Windows training hang** - Added triton-windows support and scoped dataloader_num_workers=0 to Windows + transformers 5.x. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed nvm/npmrc prefix conflict in setup.sh** - Resolved npm configuration conflicts during setup. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed chat template error handling** - Better error messages for chat template issues. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed dataset preview preferring tabular over archives** - Tier 1 check-format now selects parquet over zip, preventing wrong column detection for VLM datasets. (Author: [@rolandtannous](https://github.com/rolandtannous/))
+- **Fixed dropdown and tooltip UI layering** - Increased tooltip z-index to appear above dropdowns. (Author: [@Imagineer99](https://github.com/Imagineer99/))
+
+### Performance Improvements
+- **Cached packed sequence metadata to reduce D2H syncs** - Packing metadata cached per device to avoid repeated device-to-host copies across transformer layers. (Author: [@ruixiangw](https://github.com/ruixiangw/))
+- **TRL 0.28+ compatibility** - Updated loss computation for completion_mask, removed deprecated sync/reload weights calls, patched RPC for newer TRL versions. (Author: [@Datta0](https://github.com/Datta0/))
+
+### Infrastructure
+- **Setup.sh GPU architecture detection and Ninja build** - Auto-detects GPU compute capability via nvidia-smi, limits CMAKE_CUDA_ARCHITECTURES, uses Ninja for better parallelism, and adds --threads=0 for multi-threaded compilation.
+- **Setup.ps1 combined build targets** - Single cmake --build invocation for llama-server and llama-quantize on Windows to improve MSBuild parallelism.
+- **Subprocess isolation for training, inference, and export** - Automatic transformers version switching between tasks without rebuilding shared state.
+- **Added AGPL-3.0 SPDX headers** - Compliance headers added to all studio source files.
+- **Enhanced pip check for known third-party conflicts** - Made pip check non-fatal for expected conflicts, preventing setup failures.
+
+### Internal Changes
+- **Refactored advisor from 4-pass to 3-pass LLM** - Removed Pass 3 self-scoring, trust Pass 2 output directly for better reliability.
+- **Column mapping refactor** - Advisor now generates column-to-role mappings instead of templates, then constructs conversations by grouping and concatenating column values by role.
+- **Model type derivation** - Backend now surfaces unified model_type field ("text" | "vision" | "audio" | "embeddings") instead of scattered boolean flags.
+- **Dataset upload to multipart/form-data** - Switched from base64 JSON to streamed multipart uploads with client-side file size validation.
+- **UI preferences store for chart settings** - Centralized chart styling and formatting configuration with new preferences store.
+- **Structlog integration for production logging** - Migrated print statements to structured logging across workers and backend.

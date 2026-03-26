@@ -29,7 +29,7 @@ export const ScheduledContentFailedEmail = ({
   scheduleName = "Weekly Product Updates",
   reason = "No meaningful changes were found in the lookback window.",
   organizationSlug = "acme",
-  settingsLink = `https://app.usenotra.com/${organizationSlug}/schedules`,
+  settingsLink = `https://app.usenotra.com/${organizationSlug}/automation/schedules`,
 }: ScheduledContentFailedEmailProps) => {
   const logoUrl = EMAIL_CONFIG.getLogoUrl();
 

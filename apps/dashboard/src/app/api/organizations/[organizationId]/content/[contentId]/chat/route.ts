@@ -1,11 +1,16 @@
+import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { FEATURES } from "@/constants/features";
-import { orchestrateChat } from "@/lib/ai/orchestration/orchestrate";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
+import {
+  getGitHubIntegrationById,
+  getGitHubToolRepositoryContextByIntegrationId,
+} from "@/lib/services/github-integration";
 import { chatRequestSchema } from "@/schemas/content";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; contentId: string }>;
@@ -33,12 +38,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         featureId: FEATURES.AI_CREDITS,
       });
 
-      const { data: checkData, error: checkError } = await autumn.check({
-        customer_id: organizationId,
-        feature_id: FEATURES.AI_CREDITS,
-      });
-
-      if (checkError) {
+      let checkData: AutumnCheckResponse | null = null;
+      try {
+        checkData = await autumn.check({
+          customerId: organizationId,
+          featureId: FEATURES.AI_CREDITS,
+        });
+      } catch (checkError) {
         console.error("[Autumn] Check error:", {
           requestId,
           customerId: organizationId,
@@ -87,32 +93,38 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     let tracked = false;
     if (autumn) {
-      const { error: trackError } = await autumn.track({
-        customer_id: organizationId,
-        feature_id: FEATURES.AI_CREDITS,
-        value: 1,
-      });
-
-      if (trackError) {
+      try {
+        await autumn.track({
+          customerId: organizationId,
+          featureId: FEATURES.AI_CREDITS,
+          value: 1,
+        });
+        tracked = true;
+      } catch (trackError) {
         console.error("[Autumn] Track error:", {
           requestId,
           customerId: organizationId,
           error: trackError,
         });
       }
-      tracked = !trackError;
     }
 
     try {
-      const { stream, routingDecision } = await orchestrateChat({
-        organizationId,
-        messages,
-        currentMarkdown,
-        contentType,
-        selection,
-        context,
-        maxSteps: 5,
-      });
+      const { stream, routingDecision } = await orchestrateChat(
+        {
+          organizationId,
+          messages,
+          currentMarkdown,
+          contentType,
+          selection,
+          context,
+          maxSteps: 5,
+        },
+        {
+          getIntegrationById: getGitHubIntegrationById,
+          resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+        }
+      );
 
       console.log("[Content Chat] Routing decision:", {
         requestId,
@@ -130,14 +142,25 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       });
     } catch (orchestrationError) {
       if (tracked && autumn) {
-        await autumn.track({
-          customer_id: organizationId,
-          feature_id: FEATURES.AI_CREDITS,
-          value: 0,
-        });
-        console.log("[Autumn] Usage compensated after orchestration failure:", {
-          requestId,
-        });
+        try {
+          await autumn.track({
+            customerId: organizationId,
+            featureId: FEATURES.AI_CREDITS,
+            value: 0,
+          });
+          console.log(
+            "[Autumn] Usage compensated after orchestration failure:",
+            {
+              requestId,
+            }
+          );
+        } catch (refundError) {
+          console.error("[Autumn] Failed to compensate usage:", {
+            requestId,
+            customerId: organizationId,
+            error: refundError,
+          });
+        }
       }
       throw orchestrationError;
     }

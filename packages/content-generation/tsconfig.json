@@ -1,0 +1,15 @@
+{
+  "extends": "@notra/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@notra/content-generation/*": ["./src/*"]
+    },
+    "strictNullChecks": true
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

@@ -5,13 +5,21 @@ import {
   ArrowUp01Icon,
   ArrowUpDownIcon,
   Calendar03Icon,
+  Copy01Icon,
   Link04Icon,
+  MoreVerticalIcon,
   Notification03Icon,
   PlayCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
@@ -21,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { createColumnHelper } from "@tanstack/react-table";
+import { toast } from "sonner";
 import type {
   IntegrationType,
   Log,
@@ -113,12 +122,27 @@ export const columns = [
     header: "Title",
     cell: (info) => {
       const title = info.getValue();
+      const errorMessage = info.row.original.errorMessage;
       return (
         <Tooltip>
           <TooltipTrigger>
-            <span className="block max-w-56 truncate font-medium">{title}</span>
+            <div className="text-left">
+              <span className="block max-w-56 truncate font-medium">
+                {title}
+              </span>
+              {errorMessage && (
+                <span className="block max-w-56 truncate text-muted-foreground text-xs">
+                  {errorMessage}
+                </span>
+              )}
+            </div>
           </TooltipTrigger>
-          <TooltipContent>{title}</TooltipContent>
+          <TooltipContent className="max-w-56">
+            <p>{title}</p>
+            {errorMessage && (
+              <p className="mt-1 text-muted-foreground">{errorMessage}</p>
+            )}
+          </TooltipContent>
         </Tooltip>
       );
     },
@@ -153,17 +177,6 @@ export const columns = [
       );
     },
   }),
-  columnHelper.accessor("referenceId", {
-    header: "Reference ID",
-    cell: (info) => {
-      const refId = info.getValue();
-      return (
-        <span className="font-mono text-muted-foreground text-sm">
-          {refId ?? "-"}
-        </span>
-      );
-    },
-  }),
   columnHelper.accessor("createdAt", {
     header: ({ column }) => {
       const isSorted = column.getIsSorted();
@@ -183,5 +196,36 @@ export const columns = [
         {formatDate(info.getValue())}
       </span>
     ),
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: "",
+    cell: (info) => {
+      const referenceId = info.row.original.referenceId;
+      if (!referenceId) {
+        return null;
+      }
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent">
+            <HugeiconsIcon
+              className="size-4 text-muted-foreground"
+              icon={MoreVerticalIcon}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem
+              onClick={() => {
+                navigator.clipboard.writeText(referenceId);
+                toast.success("Reference ID copied");
+              }}
+            >
+              <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+              Copy reference ID
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
   }),
 ];

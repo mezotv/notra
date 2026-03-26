@@ -29,8 +29,15 @@
     {
       "source": "/api",
       "destination": "/api/getting-started"
+    },
+    {
+      "source": "/sdk/getting-started",
+      "destination": "/api/getting-started"
     }
   ],
+  "api": {
+    "url": "full"
+  },
   "contextual": {
     "options": [
       "copy",
@@ -70,7 +77,7 @@
         "root": "overview"
       },
       {
-        "tab": "API",
+        "tab": "API & SDK",
         "pages": [
           "api/getting-started",
           "api/authentication",
@@ -84,38 +91,61 @@
               "directory": "api-reference"
             },
             "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
+              {
+                "group": "Posts",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/posts",
+                  "GET /v1/posts/{postId}",
+                  "PATCH /v1/posts/{postId}",
+                  "DELETE /v1/posts/{postId}",
+                  {
+                    "group": "Generation",
+                    "expanded": true,
+                    "pages": [
+                      "POST /v1/posts/generate",
+                      "GET /v1/posts/generate/{jobId}"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Brand Identities",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/brand-identities",
+                  "GET /v1/brand-identities/{brandIdentityId}",
+                  "PATCH /v1/brand-identities/{brandIdentityId}",
+                  "DELETE /v1/brand-identities/{brandIdentityId}",
+                  {
+                    "group": "Generation",
+                    "expanded": true,
+                    "pages": [
+                      "POST /v1/brand-identities/generate",
+                      "GET /v1/brand-identities/generate/{jobId}"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Integrations",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/integrations",
+                  "POST /v1/integrations/github"
+                ]
+              }
             ]
           }
         ],
         "root": "api/getting-started"
-      },
-      {
-        "tab": "SDK",
-        "pages": [
-          "sdk/getting-started",
-          {
-            "group": "Methods",
-            "expanded": true,
-            "openapi": {
-              "source": "https://spec.speakeasy.com/notra/notra/notra-api-with-code-samples",
-              "directory": "sdk-reference"
-            },
-            "pages": [
-              "GET /v1/{organizationId}/posts",
-              "GET /v1/{organizationId}/posts/{postId}"
-            ]
-          }
-        ],
-        "root": "sdk/getting-started"
       }
     ],
     "global": {
       "anchors": [
         {
           "anchor": "Discord Community",
-          "href": "https://discord.gg/2qzGZDsnwB",
+          "href": "https://www.usenotra.com/discord",
           "icon": "discord"
         }
       ]

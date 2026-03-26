@@ -1,0 +1,74 @@
+---
+title: "Char Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "Over the past week, we've focused on improving your onboarding experience, tightening up audio handling in the desktop app, and shipping a bunch of behind-the-scenes improvements to make note-taking and meeting summaries work better. Whether you're just getting started or managing thousands of notes"
+---
+
+Over the past week, we've focused on improving your onboarding experience, tightening up audio handling in the desktop app, and shipping a bunch of behind-the-scenes improvements to make note-taking and meeting summaries work better. Whether you're just getting started or managing thousands of notes, this batch brings real workflow improvements for privacy-focused teams.
+
+## Highlights
+
+### Polished onboarding with permission clarity and visual design
+The onboarding flow now shows exactly what permissions Char needs and why, with task-based copy that replaces generic labels. We added a background video for visual context, refined permission states to show what's done versus what still needs action, and made the Apple Calendar connection flow clearer so you know exactly what you're authorizing.
+
+### Images in session previews and resizable image nodes
+You can now see images right in your session preview cards without opening the full note. Blog and desktop editors both now support resizable images with persistent width settings, so your visual layouts stay consistent as you move between editing and published views.
+
+### Better live transcription streaming without data leaks
+Fixed an issue where starting a new recording back-to-back could leave stray transcript data from the previous session. The desktop app now properly cleans up state when you stop and start recording again.
+
+### Improved AI meeting summaries with topic-specific sections
+Your meeting notes now get better AI-generated section headers. We told the system to stop using generic section names like "Overview" and instead generate actual topic titles that reflect what you discussed. Your summaries read more like real notes now, less like templates.
+
+### Desktop settings redesigned as your primary settings home
+App settings are now the main settings view on desktop. Account and billing controls moved to the top of the app settings page, so you've got one clear place to manage everything without bouncing between tabs.
+
+## More Updates
+
+### Features & Enhancements
+- **Support multiple calendar connections at once** [#4481](https://github.com/fastrepl/char/pull/4481) - You can now connect multiple calendar accounts and sync from all of them. (Author: [@goranmoomin](https://github.com/goranmoomin/))
+- **Add calendar button with future items indicator** [#4508](https://github.com/fastrepl/char/pull/4508) - A floating button appears when you scroll back to the top and have upcoming events, giving you quick access to your calendar view. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Refresh drafts after creating a new post** [#4526](https://github.com/fastrepl/char/pull/4526) - New blog posts and articles show up immediately without a manual page refresh. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Normalize blog markdown imports and YouTube embeds** [#4527](https://github.com/fastrepl/char/pull/4527) - YouTube embeds from Google Docs now import cleanly, and underlined links stop getting mangled. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Improved header listen button styling** [#4522](https://github.com/fastrepl/char/pull/4522) - The listen button is slightly larger with better visual feedback. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Chat header handles longer titles without overflow** [#4506](https://github.com/fastrepl/char/pull/4506) - Long chat group names truncate cleanly instead of breaking the layout. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Cleaner chat auto-scroll control** [#4507](https://github.com/fastrepl/char/pull/4507) - Chat auto-scroll behaves more predictably when you scroll manually. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+
+### Bug Fixes
+- **Deduplicate calendar event participants during sync** [#4521](https://github.com/fastrepl/char/pull/4521) - If you're both the organizer and an attendee, the event no longer creates duplicate participant entries in your note. Also fixed missing self-participant detection when event data is incomplete. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Display Nango connection email addresses in account settings** - You can now see which email addresses are connected for your calendar and integration accounts. (Author: [@goranmoomin](https://github.com/goranmoomin/))
+- **Fix admin delete modal styling** [#4574](https://github.com/fastrepl/char/pull/4574) - Admin content deletion now shows proper dialog styling and surfaces any errors with a toast message. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Admin GitHub token refresh on expiry** [#4568](https://github.com/fastrepl/char/pull/4568) - If your GitHub auth expires while you're editing content, you're redirected to sign in and can pick up where you left off. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Fix admin post creation failure handling** [#4550](https://github.com/fastrepl/char/pull/4550) - New post inputs stay open until creation succeeds, and newly created drafts auto-open so you can keep editing. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Prevent organizer duplication in calendar sync** - Calendar events no longer add you twice when you're the organizer but also listed as an attendee. (Author: [@goranmoomin](https://github.com/goranmoomin/))
+- **Grammar fix in user tip message** [#4519](https://github.com/fastrepl/char/pull/4519) - Fixed subject-verb agreement in rotating tip text. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Remove non-breaking spaces from session markdown** [#4516](https://github.com/fastrepl/char/pull/4516) - Session exports no longer include stray formatting characters. (Author: [@goranmoomin](https://github.com/goranmoomin/))
+- **Prevent session preview during tab close dialog** [#4505](https://github.com/fastrepl/char/pull/4505) - Session cards don't display when you have a tab close confirmation dialog open. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Preserve GIFs in published blog content** [#4556](https://github.com/fastrepl/char/pull/4556) - Animated GIFs no longer get optimized into static images. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Fix note input placeholder styling and hints** [#4510](https://github.com/fastrepl/char/pull/4510) - Note placeholders now clearly explain how your notes guide AI summary generation, with command hints appearing in subsequent paragraphs. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Undo delete toast positioning** [#4513](https://github.com/fastrepl/char/pull/4513) - The undo delete toast and session status message no longer overlap. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Fix publish PR tab opening** [#4557](https://github.com/fastrepl/char/pull/4557) - When you publish a new article, the PR link opens in a new tab correctly. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Correct SelectTrigger alignment in STT provider dropdown** [#4528](https://github.com/fastrepl/char/pull/4528) - Text in the speech-to-text provider selector now aligns properly. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Handle macOS app rename during updates** [#4491](https://github.com/fastrepl/char/pull/4491) - If you're using a nightly build on macOS, the app renames correctly during the Hyprnote-to-Char transition. (Author: [@yujonglee](https://github.com/yujonglee/))
+
+### Infrastructure
+- **Move echo cancellation to audio crate with better API** [#4547](https://github.com/fastrepl/char/pull/4547) - Refactored audio echo cancellation (AEC) into a dedicated module with cleaner APIs for desktop and transcription contexts. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **Unify media library around a catalog model** [#4558](https://github.com/fastrepl/char/pull/4558) - Admin media library now backs storage assets with a catalog layer that keeps Mux video metadata and fallback paths in sync. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Merge transcribe-cli into apps/cli** - Consolidated CLI tooling for faster builds and simpler maintenance. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **Migrate to Vite 8** - Updated build tool for better performance and stability. (Author: [@yujonglee](https://github.com/yujonglee/))
+
+### Testing
+- **Add analytics funnel tracking specification** [#4538](https://github.com/fastrepl/char/pull/4538) - Documented user journey tracking across acquisition, onboarding, activation, and subscription conversion stages with PostHog event specs. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+
+### Documentation
+- **Add verification workflow to AGENTS.md** [#4524](https://github.com/fastrepl/char/pull/4524) - Development guidelines now include post-edit verification steps for typecheck and formatting. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Clarify account value proposition copy** [#4540](https://github.com/fastrepl/char/pull/4540) - Rewrote the signed-out account description to focus on hosted AI, sync, personalization, and integrations value. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Replace highlight markup with HTML underlines** [#4541](https://github.com/fastrepl/char/pull/4541) - Updated blog editor and documentation to use standard underline tags instead of custom '++' markup. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+- **Emit HTML underline tags in Tiptap markdown** [#4539](https://github.com/fastrepl/char/pull/4539) - Underline formatting now serializes as proper `<u>` tags for better downstream compatibility. (Author: [@ComputelessComputer](https://github.com/ComputelessComputer/))
+
+### Internal Changes
+- **Transcription Rust port and CLI improvements** - Core transcription logic ported to Rust with various CLI refinements. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **Extract shared changelog package** - Changelog rendering logic now shared between web and desktop. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **Keep Zustand store state during Vite HMR** - Development experience improved during hot reloads. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **Transcript tab cleanups and refactors** - Improved organization and clarity of transcript-related code. (Author: [@yujonglee](https://github.com/yujonglee/))
+- **UI improvements for timeline and folders** - Various refinements to sidebar and navigation UI. (Author: [@yujonglee](https://github.com/yujonglee/))

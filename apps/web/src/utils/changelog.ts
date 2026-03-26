@@ -1,93 +1,170 @@
-export const CHANGELOG_COMPANIES = [
-  {
-    slug: "better-auth",
-    name: "Better Auth",
-    domain: "better-auth.com",
-    description:
-      "The most comprehensive authentication framework for TypeScript.",
-    url: "https://better-auth.com",
-    accentColor: "#000000",
-  },
-  {
-    slug: "cal-com",
-    name: "Cal.com",
-    domain: "cal.com",
-    description:
-      "A fully customizable scheduling software for individuals, businesses taking calls and developers building scheduling platforms where users meet users.",
-    url: "https://cal.com",
-    accentColor: "#292929",
-  },
-  {
-    slug: "databuddy",
-    name: "Databuddy",
-    domain: "databuddy.cc",
-    description:
-      "Experience powerful, privacy-first analytics that matches Google Analytics feature-for-feature without compromising user data. Zero cookies required, 100% data ownership, and AI-powered insights to help your business grow while staying compliant.",
-    url: "https://databuddy.cc",
-    accentColor: "#000000",
-  },
-  {
-    slug: "langfuse",
-    name: "Langfuse",
-    domain: "langfuse.com",
-    description:
-      "Traces, evals, prompt management and metrics to debug and improve your LLM application. Integrates with Langchain, OpenAI, LlamaIndex, LiteLLM, and more.",
-    url: "https://langfuse.com",
-    accentColor: "#E11312",
-  },
-  {
-    slug: "autumn",
-    name: "Autumn",
-    domain: "useautumn.com",
-    description:
-      "Autumn is the easiest and most flexible way to set up your app's pricing model. With 3 functions, you can integrate Stripe payments, track usage limits, control feature entitlements, credits, add-ons & much more.",
-    url: "https://useautumn.com",
-    accentColor: "#9c5bff",
-  },
-  {
-    slug: "marble",
-    name: "Marble",
-    domain: "marblecms.com",
-    description:
-      "Marble is a simple way to manage your blog and media. Write, upload, and publish with a clean interface and simple API.",
-    url: "https://marblecms.com",
-    accentColor: "#202027",
-  },
-  {
-    slug: "neon",
-    name: "Neon",
-    domain: "neon.tech",
-    description:
-      "Serverless Postgres built for developers, with instant branching, autoscaling, and modern workflows for database-backed applications.",
-    url: "https://neon.tech",
-    accentColor: "#37C38F",
-  },
-  {
-    slug: "openclaw",
-    name: "OpenClaw",
-    domain: "openclaw.ai",
-    description:
-      "Clears your inbox, sends emails, manages your calendar, checks you in for flights. All from WhatsApp, Telegram, or any chat app you already use.",
-    url: "https://openclaw.ai/",
-    accentColor: "#F70715",
-  },
-  {
-    slug: "unkey",
-    name: "Unkey",
-    domain: "unkey.com",
-    description:
-      "Easily integrate necessary API features like API keys, rate limiting, and usage analytics, ensuring your API is ready to scale.",
-    url: "https://unkey.com",
-    accentColor: "#000000",
-  },
-] as const;
+import { Notra } from "@usenotra/sdk";
+import type {
+  GetPostPost,
+  ListPostsPost,
+} from "@usenotra/sdk/models/operations";
+import { unstable_cache } from "next/cache";
+import type {
+  ChangelogTimelineItem,
+  NotraChangelogPost,
+  NotraSourceMetadata,
+} from "~types/changelog";
 
-const MDX_EXTENSION_REGEX = /\.mdx$/;
+const CHANGELOG_CONTENT_TYPE = "changelog";
+const CHANGELOG_STATUS = "published";
+const DEFAULT_POST_LIMIT = 100;
+const FALLBACK_EXCERPT =
+  "Product updates, fixes, and shipped improvements from the Notra team.";
+const BLOCK_SEPARATOR_REGEX = /\n\s*\n/;
 
-export function getCompany(slug: string) {
-  return CHANGELOG_COMPANIES.find((c) => c.slug === slug);
+function getNotraChangelogConfig() {
+  return {
+    apiKey: process.env.NOTRA_API_KEY?.trim() ?? "",
+  };
 }
 
-export function getEntrySlug(infoPath: string) {
-  return infoPath.split("/").pop()?.replace(MDX_EXTENSION_REGEX, "") ?? "";
+function createNotraClient(apiKey: string) {
+  return new Notra({
+    bearerAuth: apiKey,
+  });
+}
+
+function sortPostsByCreatedAt(posts: NotraChangelogPost[]) {
+  return [...posts].sort(
+    (left, right) =>
+      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+  );
+}
+
+function stripMarkdownFormatting(value: string) {
+  return value
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")
+    .replace(/[>#*_~]+/g, "")
+    .replace(/^-\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getPostExcerpt(markdown: string) {
+  const blocks = markdown
+    .split(BLOCK_SEPARATOR_REGEX)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  for (const block of blocks) {
+    if (block.startsWith("#")) {
+      continue;
+    }
+
+    const excerpt = stripMarkdownFormatting(block);
+    if (excerpt.length > 0) {
+      return excerpt;
+    }
+  }
+
+  return FALLBACK_EXCERPT;
+}
+
+function slugifySegment(value: string) {
+  const slug = value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "update";
+}
+
+function normalizePost(post: ListPostsPost | GetPostPost): NotraChangelogPost {
+  return {
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    markdown: post.markdown,
+    recommendations: post.recommendations ?? null,
+    contentType: post.contentType,
+    sourceMetadata:
+      (post.sourceMetadata as NotraSourceMetadata | undefined) ?? null,
+    status: post.status,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    slug: createChangelogPostSlug({ title: post.title }),
+    excerpt: getPostExcerpt(post.markdown),
+  };
+}
+
+const fetchChangelogPosts = unstable_cache(
+  async () => {
+    const { apiKey } = getNotraChangelogConfig();
+
+    if (!apiKey) {
+      return [] satisfies NotraChangelogPost[];
+    }
+
+    try {
+      const client = createNotraClient(apiKey);
+      const response = await client.content.listPosts({
+        contentType: CHANGELOG_CONTENT_TYPE,
+        limit: DEFAULT_POST_LIMIT,
+        sort: "desc",
+        status: CHANGELOG_STATUS,
+      });
+
+      return sortPostsByCreatedAt(response.posts.map(normalizePost));
+    } catch (error) {
+      console.error("Failed to load Notra changelog posts", error);
+      return [] satisfies NotraChangelogPost[];
+    }
+  },
+  ["notra-changelog-posts"],
+  {
+    revalidate: 300,
+  }
+);
+
+export function isNotraChangelogConfigured() {
+  const { apiKey } = getNotraChangelogConfig();
+  return Boolean(apiKey);
+}
+
+export function createChangelogPostSlug(
+  post: Pick<NotraChangelogPost, "title">
+) {
+  return slugifySegment(post.title);
+}
+
+export function getChangelogPostHref(slug: string) {
+  return `/changelog/notra/${slug}`;
+}
+
+export function formatChangelogDate(date: string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export async function listNotraChangelogPosts() {
+  return fetchChangelogPosts();
+}
+
+export async function getNotraChangelogPostBySlug(slug: string) {
+  const posts = await listNotraChangelogPosts();
+  return posts.find((post) => post.slug === slug) ?? null;
+}
+
+export function buildChangelogTimelineItems(
+  posts: NotraChangelogPost[]
+): ChangelogTimelineItem[] {
+  return posts.map((post) => ({
+    id: post.id,
+    title: post.title,
+    description: post.excerpt,
+    href: getChangelogPostHref(post.slug),
+    date: post.createdAt,
+  }));
 }

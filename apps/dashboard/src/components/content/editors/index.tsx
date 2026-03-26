@@ -2,6 +2,7 @@
 
 import { ChangelogEditor } from "./changelog-editor";
 import { LinkedInEditor } from "./linkedin-editor";
+import { TwitterEditor } from "./twitter-editor";
 import type { ContentEditorProps } from "./types";
 
 export type {
@@ -23,6 +24,9 @@ export function ContentEditorSwitch({
   switch (contentType) {
     case "linkedin_post":
       return <LinkedInEditor {...props} />;
+
+    case "twitter_post":
+      return <TwitterEditor {...props} />;
 
     default:
       return <ChangelogEditor {...props} />;

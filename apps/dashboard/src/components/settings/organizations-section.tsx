@@ -26,6 +26,7 @@ import {
   getOrganizationMembershipAction,
   getOrganizationMembershipActionLabel,
 } from "@/lib/organizations/membership-action";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
@@ -41,18 +42,13 @@ export function OrganizationsSection() {
   >(null);
 
   const { data: ownedOrganizations = [] } = useQuery({
-    queryKey: ["owned-organizations"],
-    queryFn: async () => {
-      const response = await fetch("/api/user/organizations");
-      if (!response.ok) {
-        throw new Error("Failed to fetch owned organizations");
-      }
-      const data = await response.json();
-      return (data.ownedOrganizations ?? []) as {
-        id: string;
-        memberCount: number;
-      }[];
-    },
+    ...dashboardOrpc.user.organizations.listOwned.queryOptions({
+      select: (data) =>
+        (data.ownedOrganizations ?? []).map((org) => ({
+          id: org.id,
+          memberCount: org.memberCount,
+        })),
+    }),
   });
 
   const ownedOrganizationsById = new Map(
@@ -98,23 +94,10 @@ export function OrganizationsSection() {
     setIsProcessingOrgAction(org.id);
 
     try {
-      const response = await fetch("/api/user/organizations/membership", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          organizationId: org.id,
-          action,
-        }),
+      await dashboardOrpc.user.membership.applyAction.call({
+        organizationId: org.id,
+        action,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || "Failed to update organization membership");
-        return;
-      }
 
       if (action === "delete") {
         toast.success(`Deleted ${org.name}`);
@@ -126,7 +109,7 @@ export function OrganizationsSection() {
         queryKey: QUERY_KEYS.AUTH.organizations,
       });
       await queryClient.invalidateQueries({
-        queryKey: ["owned-organizations"],
+        queryKey: dashboardOrpc.user.organizations.listOwned.queryKey(),
       });
 
       const freshOrgs = await queryClient.fetchQuery({

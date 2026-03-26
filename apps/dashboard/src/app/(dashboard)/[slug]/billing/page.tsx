@@ -26,13 +26,14 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
-import type { CheckoutResult, Product } from "autumn-js";
-import { useCustomer, usePricingTable } from "autumn-js/react";
+import { useCustomer, useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import type { ProductFeature } from "@/types/hooks/billing";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
@@ -56,6 +57,11 @@ const INVOICE_PRODUCT_NAME_MAP: Record<string, string> = {
 
 const INVOICE_TABLE_COLUMN_COUNT = 4;
 
+type BillingPlan = Exclude<
+  ReturnType<typeof useListPlans>["data"],
+  undefined
+>[number];
+
 function formatInvoiceProductName(productId: string): string {
   return INVOICE_PRODUCT_NAME_MAP[productId] ?? productId;
 }
@@ -68,169 +74,88 @@ function getInvoiceDescription(productIds?: string[]): string {
   return productIds.map(formatInvoiceProductName).join(", ");
 }
 
-function getPricingButtonText(product: Product): string {
-  const { scenario, properties, free_trial } = product;
-  const { is_one_off, updateable } = properties ?? {};
+function getPricingButtonText(plan: BillingPlan): string {
+  const attachAction = plan.customerEligibility?.attachAction;
 
-  if (free_trial?.trial_available) {
+  if (plan.freeTrial && plan.customerEligibility?.trialAvailable) {
     return "Start Free Trial";
   }
-  if (scenario === "active" && updateable) {
-    return "Update";
-  }
-  if (scenario === "new" && is_one_off) {
+  if (attachAction === "purchase") {
     return "Purchase";
   }
 
-  return SCENARIO_TEXT[scenario ?? ""] ?? "Get Started";
+  return SCENARIO_TEXT[attachAction ?? ""] ?? "Get Started";
 }
 
-function getProductPrice(product: Product): {
+function getProductPrice(plan: BillingPlan): {
   amount: number;
   interval: string;
 } {
-  const priceItem = product.items.find((item) => item.price !== undefined);
-  if (!priceItem?.price) {
+  if (!plan.price) {
     return { amount: 0, interval: "month" };
   }
 
   return {
-    amount: priceItem.price,
-    interval: priceItem.interval ?? "month",
+    amount: plan.price.amount,
+    interval: plan.price.interval ?? "month",
   };
 }
 
-function getConfirmationTexts(result: CheckoutResult): {
-  title: string;
-  message: string;
-} {
-  const { product, current_product, next_cycle } = result;
-  const scenario = product.scenario;
-  const productName = product.name;
-  const currentProductName = current_product?.name;
-  const nextCycleDate = next_cycle?.starts_at
-    ? new Date(next_cycle.starts_at).toLocaleDateString()
-    : undefined;
-
-  const isRecurring = !product.properties?.is_one_off;
-
-  const CONFIRMATION_TEXT: Record<string, { title: string; message: string }> =
-    {
-      scheduled: {
-        title: "Already Scheduled",
-        message: "You already have this product scheduled.",
-      },
-      active: {
-        title: "Already Active",
-        message: "You are already subscribed to this product.",
-      },
-      renew: {
-        title: "Renew",
-        message: `Renew your subscription to ${productName}.`,
-      },
-      upgrade: {
-        title: `Upgrade to ${productName}`,
-        message: `Upgrade to ${productName}. Your card will be charged immediately.`,
-      },
-      downgrade: {
-        title: `Downgrade to ${productName}`,
-        message: `${currentProductName} will be cancelled. ${productName} begins ${nextCycleDate}.`,
-      },
-      cancel: {
-        title: "Cancel",
-        message: `Your ${currentProductName} subscription will end ${nextCycleDate}.`,
-      },
-    };
-
-  if (scenario === "new") {
-    return isRecurring
-      ? {
-          title: `Subscribe to ${productName}`,
-          message: `Subscribe to ${productName}. Charged immediately.`,
-        }
-      : {
-          title: `Purchase ${productName}`,
-          message: `Purchase ${productName}. Charged immediately.`,
-        };
-  }
-
-  return (
-    CONFIRMATION_TEXT[scenario ?? ""] ?? {
-      title: "Change Subscription",
-      message: "You are about to change your subscription.",
-    }
-  );
-}
-
-function getProductFeatures(product: Product | undefined): string[] {
-  if (!product?.items) {
+function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
+  if (!plan?.items) {
     return [];
   }
 
-  return product.items
-    .filter((item) => {
-      const isFeatureItem =
-        item.type === "feature" || item.type === "priced_feature";
-      const hasFeatureData =
-        item.feature_id || item.feature || item.display?.primary_text;
-      const hasUsage = item.included_usage !== 0;
-      // Remove later: filter out price items until Autumn SDK fix
-      const isPriceItem =
-        item.price !== undefined && !item.feature_id && !item.feature;
-      return (isFeatureItem || hasFeatureData) && hasUsage && !isPriceItem;
-    })
-    .map((item) => {
-      const displayText = item.display?.primary_text ?? "";
-      // Remove later: skip price-like display text until Autumn SDK fix
+  return plan.items
+    .map((item): ProductFeature | null => {
+      const displayText = item.display?.primaryText ?? "";
       if (displayText.startsWith("$") || PRICE_REGEX.test(displayText)) {
-        return "";
+        return null;
       }
+
+      const overageText = item.display?.secondaryText;
+
       if (displayText) {
-        return displayText;
+        return { text: displayText, overageText };
       }
 
-      const featureName = item.feature?.name ?? "";
+      const featureName = item.feature?.name ?? item.featureId;
       if (!featureName) {
-        return "";
+        return null;
       }
 
-      const includedUsage = item.included_usage;
-
-      if (
-        includedUsage !== undefined &&
-        includedUsage !== "inf" &&
-        includedUsage !== 0
-      ) {
-        const interval = item.interval ? `per ${item.interval}` : "";
-        return `${includedUsage} ${featureName} ${interval}`.trim();
+      if (item.unlimited) {
+        return { text: `Unlimited ${featureName.toLowerCase()}` };
       }
 
-      if (includedUsage === 0) {
-        return "";
+      const includedUsage = item.included;
+
+      if (includedUsage > 0) {
+        const interval = item.reset?.interval
+          ? `per ${item.reset.interval}`
+          : "";
+        return {
+          text: `${includedUsage} ${featureName} ${interval}`.trim(),
+          overageText,
+        };
       }
 
-      if (includedUsage === "inf") {
-        return `Unlimited ${featureName.toLowerCase()}`;
-      }
-
-      return featureName;
+      return null;
     })
-    .filter((feature) => feature.length > 0);
+    .filter((f): f is ProductFeature => f !== null);
 }
 
 export default function BillingPage() {
-  const { products, isLoading: productsLoading } = usePricingTable();
+  const { activeOrganization } = useOrganizationsContext();
+  const { data: plans, isLoading: plansLoading } = useListPlans();
   const {
-    checkout,
     attach,
-    customer,
+    data: customer,
     isLoading: customerLoading,
+    refetch,
   } = useCustomer({
-    expand: ["invoices"],
+    expand: ["invoices", "subscriptions.plan"],
   });
-  const [pendingCheckout, setPendingCheckout] = useState<CheckoutResult | null>(
-    null
-  );
   const [activeSection, setActiveSection] = useQueryState(
     "tab",
     parseAsStringLiteral(BILLING_SECTION_VALUES).withDefault("billing")
@@ -246,89 +171,79 @@ export default function BillingPage() {
 
   const sortedInvoices = useMemo(() => {
     return [...invoices].sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return dateSortOrder === "desc" ? dateB - dateA : dateA - dateB;
     });
   }, [invoices, dateSortOrder]);
 
-  const activeProduct = customer?.products.find(
-    (p) => p.status === "active" || p.status === "trialing"
+  const activeSubscription = customer?.subscriptions.find(
+    (subscription) => !subscription.addOn && subscription.status === "active"
   );
-  const isPro =
-    activeProduct?.id === "pro" || activeProduct?.id === "pro_yearly";
-  const isTrialing = activeProduct?.status === "trialing";
+  const activePlanId =
+    activeSubscription?.plan?.id ?? activeSubscription?.planId;
 
-  async function handleCheckout(productId: string) {
-    setLoading(productId);
+  useEffect(() => {
+    if (activePlanId === "pro") {
+      setIsYearly(false);
+    }
+  }, [activePlanId]);
+
+  const isFree = activePlanId === "free";
+  const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
+  const isTrialing =
+    activeSubscription?.trialEndsAt != null &&
+    activeSubscription.trialEndsAt > Date.now();
+
+  async function handleCheckout(planId: string) {
+    setLoading(planId);
     try {
-      const { data, error } = await checkout({ productId });
+      const successUrl = activeOrganization?.slug
+        ? `${window.location.origin}/${activeOrganization.slug}/billing/success`
+        : undefined;
 
-      if (error) {
-        console.error("Checkout error:", error);
-        toast.error(
-          error.message || "Could not start checkout. Please try again."
-        );
-        return;
-      }
+      const result = await attach({
+        planId,
+        redirectMode: "if_required",
+        successUrl,
+      });
 
-      if (data?.url) {
-        window.location.href = data.url;
-      } else if (data) {
-        setPendingCheckout(data);
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        await refetch();
       }
     } catch (err) {
-      console.error("Checkout error:", err);
+      console.error("Attach error:", err);
       toast.error(
         err instanceof Error
           ? err.message
-          : "Could not start checkout. Please try again."
+          : "Could not update billing. Please try again."
       );
     } finally {
       setLoading(null);
     }
   }
 
-  async function handleConfirm() {
-    if (!pendingCheckout) {
-      return;
-    }
+  const isBillingLoading = plansLoading || customerLoading;
 
-    setLoading("confirm");
-    try {
-      await attach({ productId: pendingCheckout.product.id });
-      setPendingCheckout(null);
-      window.location.reload();
-    } catch (err) {
-      console.error("Attach error:", err);
-    } finally {
-      setLoading(null);
-    }
-  }
-
-  const isBillingLoading = productsLoading || customerLoading;
-
-  const freeProduct = products?.find((p) => p.id === "free");
-  const proMonthlyProduct = products?.find((p) => p.id === "pro");
-  const proYearlyProduct = products?.find((p) => p.id === "pro_yearly");
-  const proProduct = isYearly ? proYearlyProduct : proMonthlyProduct;
-  const proPrice = proProduct
-    ? getProductPrice(proProduct)
+  const freePlan = plans?.find((plan) => plan.id === "free");
+  const proMonthlyPlan = plans?.find((plan) => plan.id === "pro");
+  const proYearlyPlan = plans?.find((plan) => plan.id === "pro_yearly");
+  const proPlan = isYearly ? proYearlyPlan : proMonthlyPlan;
+  const proPrice = proPlan
+    ? getProductPrice(proPlan)
     : { amount: 0, interval: isYearly ? "year" : "month" };
 
-  const freeFeatures = getProductFeatures(freeProduct);
-  const proFeatures = getProductFeatures(proMonthlyProduct);
-
-  const confirmTexts = pendingCheckout
-    ? getConfirmationTexts(pendingCheckout)
-    : null;
+  const freeFeatures = getProductFeatures(freePlan);
+  const proFeatures = getProductFeatures(proPlan);
 
   function handleSectionChange(value: string) {
     setActiveSection(value === "usage" ? "usage" : "billing");
   }
 
   function renderFreePlanButton() {
-    if (freeProduct && !isPro) {
+    if (freePlan && isFree) {
       return (
         <Button className="w-full" disabled variant="outline">
           Current Plan
@@ -336,15 +251,15 @@ export default function BillingPage() {
       );
     }
 
-    if (freeProduct) {
+    if (freePlan) {
       return (
         <Button
           className="w-full"
           disabled={loading !== null}
-          onClick={() => handleCheckout(freeProduct.id)}
+          onClick={() => handleCheckout(freePlan.id)}
           variant="outline"
         >
-          {loading === freeProduct.id ? "Loading..." : "Downgrade to Free"}
+          {loading === freePlan.id ? "Loading..." : "Downgrade to Free"}
         </Button>
       );
     }
@@ -357,7 +272,7 @@ export default function BillingPage() {
   }
 
   function renderProPlanButton() {
-    if (proProduct && isPro) {
+    if (proPlan && isPro) {
       return (
         <Button className="w-full" disabled>
           {isTrialing ? "Trial Active" : "Current Plan"}
@@ -365,16 +280,16 @@ export default function BillingPage() {
       );
     }
 
-    if (proProduct) {
+    if (proPlan) {
       return (
         <Button
           className="w-full"
           disabled={loading !== null}
-          onClick={() => handleCheckout(proProduct.id)}
+          onClick={() => handleCheckout(proPlan.id)}
         >
-          {loading === proProduct.id
+          {loading === proPlan.id
             ? "Loading..."
-            : getPricingButtonText(proProduct)}
+            : getPricingButtonText(proPlan)}
         </Button>
       );
     }
@@ -419,7 +334,7 @@ export default function BillingPage() {
                       <h2 className="font-semibold text-lg">Plans</h2>
                       <p className="text-muted-foreground text-sm">
                         Upgrade or change your plan. Pro includes a 3 day free
-                        trial.
+                        trial
                       </p>
                     </div>
                     <Tabs
@@ -443,24 +358,19 @@ export default function BillingPage() {
 
                   <div className="grid gap-6 lg:grid-cols-2">
                     <TitleCard
-                      action={!isPro && <Badge>Current</Badge>}
+                      action={isFree && <Badge>Current</Badge>}
                       className={cn(
-                        !isPro && "ring-2 ring-primary",
-                        isPro &&
-                          freeProduct &&
+                        isFree && "ring-2 ring-primary",
+                        !isFree &&
+                          freePlan &&
                           "transition-all hover:ring-2 hover:ring-muted-foreground/20"
                       )}
-                      heading={
-                        freeProduct?.display?.name ??
-                        freeProduct?.name ??
-                        "Free"
-                      }
+                      heading={freePlan?.name ?? "Free"}
                     >
                       <div className="space-y-4">
                         <div>
                           <p className="text-muted-foreground text-sm">
-                            {freeProduct?.display?.description ??
-                              "For Hobbyists"}
+                            {freePlan?.description ?? "For Hobbyists"}
                           </p>
                           <div className="mt-2 flex items-end">
                             <span className="font-bold text-3xl leading-none">
@@ -486,14 +396,21 @@ export default function BillingPage() {
                         <ul className="space-y-2.5 pt-2">
                           {freeFeatures.map((feature) => (
                             <li
-                              className="flex items-center gap-2 text-sm"
-                              key={`${freeFeatureListId}-${feature}`}
+                              className="flex items-start gap-2 text-sm"
+                              key={`${freeFeatureListId}-${feature.text}`}
                             >
                               <HugeiconsIcon
-                                className="size-4 text-emerald-500"
+                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
                                 icon={CheckmarkCircle02Icon}
                               />
-                              <span>{feature}</span>
+                              <div>
+                                <span>{feature.text}</span>
+                                {feature.overageText && (
+                                  <p className="text-muted-foreground text-xs">
+                                    {feature.overageText}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -513,7 +430,7 @@ export default function BillingPage() {
                       className={cn(
                         isPro && "ring-2 ring-primary",
                         !isPro &&
-                          proProduct &&
+                          proPlan &&
                           "transition-all hover:ring-2 hover:ring-primary/50"
                       )}
                       heading="Pro"
@@ -521,8 +438,7 @@ export default function BillingPage() {
                       <div className="space-y-4">
                         <div>
                           <p className="text-muted-foreground text-sm">
-                            {proProduct?.display?.description ??
-                              "For Small Teams"}
+                            {proPlan?.description ?? "For Small Teams"}
                           </p>
                           <div className="mt-2 flex items-end">
                             <span className="font-bold text-3xl leading-none">
@@ -547,14 +463,21 @@ export default function BillingPage() {
                         <ul className="space-y-2.5 pt-2">
                           {proFeatures.map((feature) => (
                             <li
-                              className="flex items-center gap-2 text-sm"
-                              key={`${proFeatureListId}-${feature}`}
+                              className="flex items-start gap-2 text-sm"
+                              key={`${proFeatureListId}-${feature.text}`}
                             >
                               <HugeiconsIcon
-                                className="size-4 text-emerald-500"
+                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
                                 icon={CheckmarkCircle02Icon}
                               />
-                              <span>{feature}</span>
+                              <div>
+                                <span>{feature.text}</span>
+                                {feature.overageText && (
+                                  <p className="text-muted-foreground text-xs">
+                                    {feature.overageText}
+                                  </p>
+                                )}
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -608,28 +531,28 @@ export default function BillingPage() {
                           sortedInvoices.map((invoice) => (
                             <TableRow
                               className={cn(
-                                invoice.hosted_invoice_url &&
+                                invoice.hostedInvoiceUrl &&
                                   "cursor-pointer transition-colors hover:bg-muted/50"
                               )}
-                              key={`${invoiceListId}-${invoice.created_at}-${invoice.total}`}
+                              key={`${invoiceListId}-${invoice.createdAt}-${invoice.total}`}
                               onClick={() => {
-                                if (invoice.hosted_invoice_url) {
+                                if (invoice.hostedInvoiceUrl) {
                                   window.open(
-                                    invoice.hosted_invoice_url,
+                                    invoice.hostedInvoiceUrl,
                                     "_blank"
                                   );
                                 }
                               }}
                             >
                               <TableCell className="w-[140px]">
-                                {invoice.created_at
+                                {invoice.createdAt
                                   ? new Date(
-                                      invoice.created_at
+                                      invoice.createdAt
                                     ).toLocaleDateString()
                                   : "-"}
                               </TableCell>
                               <TableCell className="wrap-break-word whitespace-normal">
-                                {getInvoiceDescription(invoice.product_ids)}
+                                {getInvoiceDescription(invoice.planIds)}
                               </TableCell>
                               <TableCell className="w-[120px] tabular-nums">
                                 {invoice.total !== undefined
@@ -670,40 +593,6 @@ export default function BillingPage() {
           </TabsContent>
         </Tabs>
       </div>
-
-      {pendingCheckout && confirmTexts && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
-            <h2 className="mb-2 font-semibold text-xl">{confirmTexts.title}</h2>
-            <p className="mb-4 text-muted-foreground">{confirmTexts.message}</p>
-
-            {pendingCheckout.total !== undefined &&
-              pendingCheckout.total > 0 && (
-                <p className="mb-4 font-medium text-lg">
-                  Total: ${pendingCheckout.total.toFixed(2)}
-                </p>
-              )}
-
-            <div className="flex gap-3">
-              <Button
-                className="flex-1"
-                disabled={loading === "confirm"}
-                onClick={() => setPendingCheckout(null)}
-                variant="outline"
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1"
-                disabled={loading === "confirm"}
-                onClick={handleConfirm}
-              >
-                {loading === "confirm" ? "Processing..." : "Confirm"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </PageContainer>
   );
 }

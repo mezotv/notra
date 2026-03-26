@@ -1,5 +1,7 @@
 "use client";
 
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Combobox,
@@ -32,10 +34,19 @@ import {
   SheetTrigger,
 } from "@notra/ui/components/ui/sheet";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { Switch } from "@notra/ui/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BrandVoiceCombobox } from "@/components/brand-voice-combobox";
+import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   LookbackWindow,
   OutputContentType,
@@ -45,10 +56,11 @@ import {
   LOOKBACK_WINDOWS,
   MAX_SCHEDULE_NAME_LENGTH,
 } from "@/schemas/integrations";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { GitHubIntegration } from "@/types/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { formatSnakeCaseLabel } from "@/utils/format";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { OutputTypeIcon } from "@/utils/output-types";
 import { SchedulePicker } from "./trigger-schedule-picker";
 
 const EVENT_OPTIONS: Array<{ value: WebhookEventType; label: string }> = [
@@ -63,8 +75,8 @@ const OUTPUT_OPTIONS: Array<{
 }> = [
   { value: "changelog", label: "Changelog" },
   { value: "linkedin_post", label: "LinkedIn Post" },
-  { value: "blog_post", label: "Blog Post", disabled: true },
-  { value: "twitter_post", label: "Twitter Post", disabled: true },
+  { value: "blog_post", label: "Blog Post" },
+  { value: "twitter_post", label: "Twitter Post" },
   { value: "investor_update", label: "Investor Update", disabled: true },
 ];
 
@@ -76,6 +88,8 @@ interface TriggerFormValues {
   repositoryIds: string[];
   schedule: Trigger["sourceConfig"]["cron"];
   lookbackWindow: LookbackWindow;
+  brandVoiceId: string;
+  autoPublish: boolean;
 }
 
 function RequiredLabel({ children }: { children: React.ReactNode }) {
@@ -95,7 +109,6 @@ interface TriggerDialogProps {
   trigger?: React.ReactElement;
   allowedSourceTypes?: Trigger["sourceType"][];
   initialSourceType?: Trigger["sourceType"];
-  apiPath?: string;
   editTrigger?: Trigger;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -107,7 +120,6 @@ export function AddTriggerDialog({
   trigger,
   allowedSourceTypes,
   initialSourceType,
-  apiPath,
   editTrigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
@@ -156,6 +168,12 @@ export function AddTriggerDialog({
           minute: 0,
         },
         lookbackWindow: editTrigger.lookbackWindow ?? "last_7_days",
+        brandVoiceId:
+          editTrigger.outputConfig?.brandVoiceId &&
+          editTrigger.outputConfig.brandVoiceId !== "__default__"
+            ? editTrigger.outputConfig.brandVoiceId
+            : "",
+        autoPublish: editTrigger.autoPublish ?? false,
       };
     }
     return {
@@ -166,6 +184,8 @@ export function AddTriggerDialog({
       repositoryIds: [],
       schedule: { frequency: "daily", hour: 9, minute: 0 },
       lookbackWindow: "last_7_days",
+      brandVoiceId: "",
+      autoPublish: false,
     };
   }, [defaultSourceType, editTrigger]);
 
@@ -176,97 +196,131 @@ export function AddTriggerDialog({
     },
   });
 
-  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery<{
-    integrations: Array<GitHubIntegration & { type: string }>;
-  }>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
-
-  const repositories = useMemo(
-    () =>
-      integrationsResponse?.integrations
-        .filter((integration) => integration.type === "github")
-        .flatMap((integration) => integration.repositories) ?? [],
-    [integrationsResponse]
+  const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
   );
+
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
+
+  const brandVoices = brandResponse?.voices ?? [];
+
+  const { repositories, githubIntegrationId } = useMemo(() => {
+    const githubIntegrations =
+      integrationsResponse?.integrations.filter(
+        (integration) => integration.type === "github"
+      ) ?? [];
+    return {
+      repositories: githubIntegrations.flatMap(
+        (integration) => integration.repositories
+      ),
+      githubIntegrationId: githubIntegrations[0]?.id,
+    };
+  }, [integrationsResponse]);
 
   const repositoryOptions = useMemo(
     () =>
       repositories.map((repo) => ({
         value: repo.id,
-        label: `${repo.owner}/${repo.repo}`,
+        label: repo.defaultBranch
+          ? `${repo.owner}/${repo.repo} · ${repo.defaultBranch}`
+          : `${repo.owner}/${repo.repo}`,
       })),
     [repositories]
   );
 
   const mutation = useMutation<{ trigger: Trigger }, Error, TriggerFormValues>({
     mutationFn: async (value) => {
-      const basePath =
-        apiPath ??
-        (value.sourceType === "cron"
-          ? `/api/organizations/${organizationId}/automation/schedules`
-          : `/api/organizations/${organizationId}/automation/events`);
-      const targetPath = isEditMode
-        ? `${basePath}?triggerId=${editTrigger.id}`
-        : basePath;
-      const response = await fetch(targetPath, {
-        method: isEditMode ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: value.name,
-          sourceType: value.sourceType,
-          sourceConfig:
-            value.sourceType === "cron"
-              ? { cron: value.schedule }
-              : { eventTypes: [value.eventType] },
+      try {
+        if (value.sourceType === "cron") {
+          if (value.outputType === "investor_update") {
+            throw new Error("Investor updates are not supported for schedules");
+          }
+
+          if (!value.schedule) {
+            throw new Error("Schedule configuration is required");
+          }
+
+          const schedulePayload = {
+            organizationId,
+            name: value.name,
+            sourceType: "cron" as const,
+            sourceConfig: { cron: value.schedule },
+            targets: { repositoryIds: value.repositoryIds },
+            outputType: value.outputType,
+            outputConfig: {
+              ...(value.brandVoiceId
+                ? { brandVoiceId: value.brandVoiceId }
+                : {}),
+            },
+            enabled: isEditMode ? editTrigger.enabled : true,
+            autoPublish: value.autoPublish,
+            lookbackWindow: value.lookbackWindow,
+          };
+
+          if (isEditMode) {
+            return await dashboardOrpc.automation.schedules.update.call({
+              triggerId: editTrigger.id,
+              ...schedulePayload,
+            });
+          }
+
+          return await dashboardOrpc.automation.schedules.create.call(
+            schedulePayload
+          );
+        }
+
+        const eventPayload = {
+          organizationId,
+          sourceType: "github_webhook" as const,
+          sourceConfig: { eventTypes: [value.eventType] },
           targets: { repositoryIds: value.repositoryIds },
           outputType: value.outputType,
-          ...(value.sourceType === "cron"
-            ? { lookbackWindow: value.lookbackWindow }
-            : {}),
-          outputConfig: {},
+          outputConfig: {
+            ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
+          },
           enabled: isEditMode ? editTrigger.enabled : true,
-        }),
-      });
+          autoPublish: value.autoPublish,
+        };
 
-      const payload = await response.json();
+        if (isEditMode) {
+          return await dashboardOrpc.automation.events.update.call({
+            triggerId: editTrigger.id,
+            ...eventPayload,
+          });
+        }
 
-      if (!response.ok) {
-        if (payload?.code === "DUPLICATE_TRIGGER") {
+        return await dashboardOrpc.automation.events.create.call(eventPayload);
+      } catch (error) {
+        if (error instanceof Error && error.message === "Duplicate trigger") {
           throw new Error(
             isScheduleContext
               ? "Schedule already exists"
               : "Trigger already exists"
           );
         }
-        let errorMessage = payload?.error;
 
-        if (!errorMessage) {
-          if (isEditMode) {
-            errorMessage = "Failed to update schedule";
-          } else if (isScheduleContext) {
-            errorMessage = "Failed to create schedule";
-          } else {
-            errorMessage = "Failed to create trigger";
-          }
+        if (error instanceof Error && error.message) {
+          throw error;
         }
 
-        throw new Error(errorMessage);
-      }
+        if (isEditMode) {
+          throw new Error("Failed to update schedule");
+        }
 
-      return payload;
+        throw new Error(
+          isScheduleContext
+            ? "Failed to create schedule"
+            : "Failed to create trigger"
+        );
+      }
     },
     onSuccess: (data) => {
       let successMessage: string;
@@ -453,6 +507,19 @@ export function AddTriggerDialog({
                           </div>
                         )}
                       </form.Field>
+
+                      {brandVoices.length > 1 && (
+                        <form.Field name="brandVoiceId">
+                          {(field) => (
+                            <BrandVoiceCombobox
+                              id={field.name}
+                              onChange={field.handleChange}
+                              value={field.state.value}
+                              voices={brandVoices}
+                            />
+                          )}
+                        </form.Field>
+                      )}
                     </>
                   ) : (
                     <form.Field name="eventType">
@@ -505,8 +572,16 @@ export function AddTriggerDialog({
                     </Label>
                     {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                     {!isLoadingRepos && repositories.length === 0 && (
-                      <div className="rounded-md border border-dashed p-3 text-muted-foreground text-xs">
-                        Add a GitHub repository first to select targets.
+                      <div className="flex items-center gap-2 rounded-md border border-dashed p-3">
+                        <span className="flex-1 text-muted-foreground text-xs">
+                          No repositories connected.
+                        </span>
+                        <AddRepositoryButton
+                          githubIntegrationId={githubIntegrationId}
+                          onCloseDialog={() => setOpen(true)}
+                          onOpenDialog={() => setOpen(false)}
+                          organizationId={organizationId}
+                        />
                       </div>
                     )}
                     {!isLoadingRepos && repositories.length > 0 && (
@@ -579,11 +654,17 @@ export function AddTriggerDialog({
                     >
                       <SelectTrigger className="w-full" id={field.name}>
                         <SelectValue placeholder="Output">
-                          {
-                            OUTPUT_OPTIONS.find(
-                              (o) => o.value === field.state.value
-                            )?.label
-                          }
+                          <span className="flex items-center gap-2">
+                            <OutputTypeIcon
+                              className="size-4"
+                              outputType={field.state.value}
+                            />
+                            {
+                              OUTPUT_OPTIONS.find(
+                                (o) => o.value === field.state.value
+                              )?.label
+                            }
+                          </span>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -593,8 +674,14 @@ export function AddTriggerDialog({
                             key={option.value}
                             value={option.value}
                           >
-                            {option.label}
-                            {option.disabled ? " (Coming soon)" : ""}
+                            <span className="flex items-center gap-2">
+                              <OutputTypeIcon
+                                className="size-4"
+                                outputType={option.value}
+                              />
+                              {option.label}
+                              {option.disabled ? " (Coming soon)" : ""}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -607,6 +694,40 @@ export function AddTriggerDialog({
                 <Label>Publish destination</Label>
                 <Input disabled placeholder="Coming soon (Webflow, Framer)" />
               </div>
+
+              <form.Field name="autoPublish">
+                {(field) => (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-1.5">
+                      <Label
+                        className="cursor-pointer font-medium text-sm"
+                        htmlFor={field.name}
+                      >
+                        Instant publish
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                          <HugeiconsIcon
+                            icon={InformationCircleIcon}
+                            size={14}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="max-w-50 text-xs">
+                            When enabled, generated posts are published to the
+                            API immediately instead of saved as drafts.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      checked={field.state.value}
+                      id={field.name}
+                      onCheckedChange={field.handleChange}
+                    />
+                  </div>
+                )}
+              </form.Field>
             </div>
           </ScrollArea>
 

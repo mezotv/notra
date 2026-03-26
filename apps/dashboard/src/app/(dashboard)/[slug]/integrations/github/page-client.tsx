@@ -7,14 +7,8 @@ import { AddIntegrationDialog } from "@/components/integrations/add-integration-
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { GitHubIntegration } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { GitHubIntegrationsPageSkeleton } from "./skeleton";
-
-interface IntegrationsResponse {
-  integrations: Array<GitHubIntegration & { type: string }>;
-  count: number;
-}
 
 interface PageClientProps {
   organizationSlug: string;
@@ -28,27 +22,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     data: response,
     isLoading: isLoadingIntegrations,
     refetch,
-  } = useQuery({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organization?.id ?? ""),
-    queryFn: async () => {
-      if (!organization?.id) {
-        throw new Error("Organization not found");
-      }
-
-      const res = await fetch(
-        `/api/organizations/${organization.id}/integrations`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-
-      return res.json() as Promise<IntegrationsResponse>;
-    },
-    enabled: !!organization?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 10, // 10 minutes
-  });
+  } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organization?.id ?? "" },
+      enabled: !!organization?.id,
+    })
+  );
 
   const integrations = response?.integrations.filter(
     (i) => i.type === "github"

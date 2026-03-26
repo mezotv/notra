@@ -265,6 +265,12 @@ function LinkedInPost({
     (reactions?.count ?? 0) > 0 || (comments ?? 0) > 0 || (reposts ?? 0) > 0;
   const isEditable = Boolean(onContentChange);
 
+  const [localValue, setLocalValue] = useState(() => content ?? "");
+
+  if ((content ?? "") !== localValue) {
+    setLocalValue(content ?? "");
+  }
+
   return (
     <Card className={cn("grid h-fit gap-0 py-0", className)} {...props}>
       <div className="flex items-start gap-2 px-4 pt-3 pb-1">
@@ -310,9 +316,13 @@ function LinkedInPost({
         {isEditable ? (
           <Textarea
             className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
-            defaultValue={content}
-            onChange={(e) => onContentChange?.(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setLocalValue(value);
+              onContentChange?.(value);
+            }}
             placeholder="What do you want to talk about?"
+            value={localValue}
           />
         ) : content ? (
           <PostContent

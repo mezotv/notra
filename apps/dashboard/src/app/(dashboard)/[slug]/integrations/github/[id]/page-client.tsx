@@ -1,50 +1,45 @@
 "use client";
 
+import {
+  ArrowRight01Icon,
+  Copy01Icon,
+  LinkSquare02Icon,
+  Refresh01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@notra/ui/components/ui/collapsible";
 import { Input } from "@notra/ui/components/ui/input";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  CopyIcon,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Loader2Icon } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
+import { dashboardOrpc } from "@/lib/orpc/query";
+import type {
+  GitHubIntegration,
+  GitHubRepository,
+  WebhookConfig,
+} from "@/types/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
-import { getConfiguredAppUrl, normalizeUrl } from "@/utils/url";
 import { GitHubIntegrationDetailSkeleton } from "./skeleton";
 
 const EditIntegrationDialog = dynamic(
   () =>
     import("@/components/integrations/edit-integration-dialog").then((mod) => ({
       default: mod.EditIntegrationDialog,
-    })),
-  { ssr: false }
-);
-
-const WebhookSetupDialog = dynamic(
-  () =>
-    import("@/components/integrations/wehook-setup-dialog").then((mod) => ({
-      default: mod.WebhookSetupDialog,
     })),
   { ssr: false }
 );
@@ -58,19 +53,15 @@ interface IntegrationsResponse {
   count: number;
 }
 
-function buildWebhookUrl(
-  organizationId: string,
-  integrationId: string,
-  repositoryId: string
-): string {
-  const baseUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : (getConfiguredAppUrl() ?? "http://localhost:3000");
-  return `${normalizeUrl(baseUrl)}/api/webhooks/github/${organizationId}/${integrationId}/${repositoryId}`;
-}
-
-function CopyableWebhookUrl({ url }: { url: string }) {
+function CopyButton({
+  value,
+  label,
+  className,
+}: {
+  value: string;
+  label: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -79,9 +70,9 @@ function CopyableWebhookUrl({ url }: { url: string }) {
       return;
     }
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(value);
       setCopied(true);
-      toast.success("Webhook URL copied to clipboard");
+      toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Failed to copy to clipboard");
@@ -89,54 +80,197 @@ function CopyableWebhookUrl({ url }: { url: string }) {
   };
 
   return (
-    <div className="flex gap-2">
-      <Input className="font-mono text-xs" readOnly value={url} />
-      <Button onClick={handleCopy} size="icon" type="button" variant="outline">
-        {copied ? (
-          <CheckIcon className="size-4" />
-        ) : (
-          <CopyIcon className="size-4" />
-        )}
-      </Button>
-    </div>
+    <Button
+      className={className}
+      onClick={handleCopy}
+      size="icon"
+      type="button"
+      variant="outline"
+    >
+      {copied ? (
+        <HugeiconsIcon className="size-4" icon={Tick02Icon} />
+      ) : (
+        <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+      )}
+    </Button>
   );
 }
 
-function WebhookDebugEntry({
+function WebhookSection({
   repo,
   organizationId,
-  integrationId,
 }: {
   repo: GitHubRepository;
   organizationId: string;
-  integrationId: string;
 }) {
-  const [webhookDialogOpen, setWebhookDialogOpen] = useState(false);
-  const webhookUrl = buildWebhookUrl(organizationId, integrationId, repo.id);
+  const [secretRevealed, setSecretRevealed] = useState(false);
+  const queryClient = useQueryClient();
+
+  const {
+    data: webhookConfig,
+    isLoading,
+    isFetched,
+    isError,
+  } = useQuery<WebhookConfig | null>({
+    queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+      input: { organizationId, repositoryId: repo.id },
+    }),
+    queryFn: async () => {
+      try {
+        return await dashboardOrpc.integrations.repositories.webhook.get.call({
+          organizationId,
+          repositoryId: repo.id,
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Webhook not configured"
+        ) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    retry: false,
+  });
+
+  const secretMutation = useMutation<
+    WebhookConfig,
+    Error,
+    { regenerate: boolean }
+  >({
+    mutationFn: async () => {
+      return dashboardOrpc.integrations.repositories.webhook.generateSecret.call(
+        {
+          organizationId,
+          repositoryId: repo.id,
+        }
+      );
+    },
+    onSuccess: (_data, { regenerate }) => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.integrations.repositories.webhook.get.queryKey({
+          input: { organizationId, repositoryId: repo.id },
+        }),
+      });
+      if (regenerate) {
+        toast.success("Webhook secret regenerated");
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 rounded-lg border p-5">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-9 w-full" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="rounded-lg border border-destructive/50 p-5">
+        <p className="font-medium text-destructive text-sm">
+          Failed to load webhook configuration
+        </p>
+      </div>
+    );
+  }
+
+  if (isFetched && !webhookConfig) {
+    return (
+      <div className="rounded-lg border border-dashed p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="font-medium text-sm">Webhook not configured</p>
+            <p className="text-muted-foreground text-xs">
+              Generate a webhook secret to start receiving events from GitHub.
+            </p>
+          </div>
+          <Button
+            disabled={secretMutation.isPending}
+            onClick={() => secretMutation.mutate({ regenerate: false })}
+            size="sm"
+            variant="outline"
+          >
+            {secretMutation.isPending ? (
+              <Loader2Icon className="size-3.5 animate-spin" />
+            ) : null}
+            Generate Secret
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!webhookConfig) {
+    return null;
+  }
 
   return (
-    <div className="space-y-2 rounded-lg border p-4">
-      <div className="flex items-center justify-between">
-        <p className="font-medium text-sm">
-          {repo.owner}/{repo.repo}
-        </p>
-        <Button
-          onClick={() => setWebhookDialogOpen(true)}
-          size="sm"
-          variant="outline"
-        >
-          Setup Webhook
-        </Button>
-      </div>
-      <CopyableWebhookUrl url={webhookUrl} />
-      <WebhookSetupDialog
-        onOpenChange={setWebhookDialogOpen}
-        open={webhookDialogOpen}
-        organizationId={organizationId}
-        owner={repo.owner}
-        repo={repo.repo}
-        repositoryId={repo.id}
-      />
+    <div className="space-y-4 rounded-lg border p-5">
+      <fieldset className="space-y-1.5">
+        <p className="font-medium text-sm">Payload URL</p>
+        <div className="flex gap-2">
+          <Input
+            className="font-mono text-xs"
+            readOnly
+            value={webhookConfig.webhookUrl}
+          />
+          <CopyButton label="URL" value={webhookConfig.webhookUrl} />
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-1.5">
+        <p className="font-medium text-sm">Content type</p>
+        <Input className="text-xs" disabled value="application/json" />
+      </fieldset>
+
+      <fieldset className="space-y-1.5">
+        <p className="font-medium text-sm">Secret</p>
+        <div className="flex gap-2">
+          <Input
+            className="font-mono text-xs"
+            onBlur={() => setSecretRevealed(false)}
+            onFocus={() => setSecretRevealed(true)}
+            readOnly
+            type={secretRevealed ? "text" : "password"}
+            value={webhookConfig.webhookSecret}
+          />
+          <CopyButton
+            className="shrink-0"
+            label="Secret"
+            value={webhookConfig.webhookSecret}
+          />
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  className="shrink-0"
+                  disabled={secretMutation.isPending}
+                  onClick={() => secretMutation.mutate({ regenerate: true })}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                />
+              }
+            >
+              {secretMutation.isPending ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <HugeiconsIcon className="size-4" icon={Refresh01Icon} />
+              )}
+            </TooltipTrigger>
+            <TooltipContent>Regenerate secret</TooltipContent>
+          </Tooltip>
+        </div>
+      </fieldset>
     </div>
   );
 }
@@ -151,7 +285,7 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
     return `Weekly - ${days[cron.dayOfWeek ?? 0]} @ ${time}`;
   }
   if (cron.frequency === "monthly") {
-    return `Monthly - Day ${cron.dayOfMonth} @ ${time}`;
+    return `Monthly - Day ${cron.dayOfMonth ?? 1} @ ${time}`;
   }
   return `Daily @ ${time}`;
 }
@@ -166,30 +300,17 @@ function EventsSection({
   repositoryIds: string[];
 }) {
   const normalizedRepositoryIds = [...repositoryIds].sort();
-  const repositoryQueryString = normalizedRepositoryIds
-    .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
-    .join("&");
   const hasRepositories = normalizedRepositoryIds.length > 0;
 
-  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: [
-      ...QUERY_KEYS.AUTOMATION.events(organizationId),
-      "repositoryIds",
-      ...normalizedRepositoryIds,
-    ],
-    queryFn: async () => {
-      const response = await fetch(
-        repositoryQueryString
-          ? `/api/organizations/${organizationId}/automation/events?${repositoryQueryString}`
-          : `/api/organizations/${organizationId}/automation/events`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch events");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId && hasRepositories,
-  });
+  const { data, isPending, isError } = useQuery(
+    dashboardOrpc.automation.events.list.queryOptions({
+      input: {
+        organizationId,
+        repositoryIds: normalizedRepositoryIds,
+      },
+      enabled: !!organizationId && hasRepositories,
+    })
+  );
 
   const events = data?.triggers ?? [];
   const displayEvents = events.slice(0, 5);
@@ -207,21 +328,17 @@ function EventsSection({
         {slug && (
           <Link href={`/${slug}/automation/events`}>
             <Button size="sm" variant="outline">
-              View all
-              <ArrowRightIcon className="ml-1 size-3.5" />
+              View All
+              <HugeiconsIcon
+                className="ml-1 size-3.5"
+                icon={ArrowRight01Icon}
+              />
             </Button>
           </Link>
         )}
       </div>
       {isLoadingEvents ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              className="h-12 animate-pulse rounded-lg border bg-muted/30"
-              key={i}
-            />
-          ))}
-        </div>
+        <Skeleton className="h-18 w-full rounded-lg" />
       ) : isError ? (
         <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
           Failed to load event triggers.
@@ -276,30 +393,17 @@ function SchedulesSection({
   repositoryIds: string[];
 }) {
   const normalizedRepositoryIds = [...repositoryIds].sort();
-  const repositoryQueryString = normalizedRepositoryIds
-    .map((repositoryId) => `repositoryId=${encodeURIComponent(repositoryId)}`)
-    .join("&");
   const hasRepositories = normalizedRepositoryIds.length > 0;
 
-  const { data, isPending, isError } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: [
-      ...QUERY_KEYS.AUTOMATION.schedules(organizationId),
-      "repositoryIds",
-      ...normalizedRepositoryIds,
-    ],
-    queryFn: async () => {
-      const response = await fetch(
-        repositoryQueryString
-          ? `/api/organizations/${organizationId}/automation/schedules?${repositoryQueryString}`
-          : `/api/organizations/${organizationId}/automation/schedules`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch schedules");
-      }
-      return response.json();
-    },
-    enabled: !!organizationId && hasRepositories,
-  });
+  const { data, isPending, isError } = useQuery(
+    dashboardOrpc.automation.schedules.list.queryOptions({
+      input: {
+        organizationId,
+        repositoryIds: normalizedRepositoryIds,
+      },
+      enabled: !!organizationId && hasRepositories,
+    })
+  );
 
   const schedules = data?.triggers ?? [];
   const displaySchedules = schedules.slice(0, 5);
@@ -317,21 +421,17 @@ function SchedulesSection({
         {slug && (
           <Link href={`/${slug}/automation/schedule`}>
             <Button size="sm" variant="outline">
-              View all
-              <ArrowRightIcon className="ml-1 size-3.5" />
+              View All
+              <HugeiconsIcon
+                className="ml-1 size-3.5"
+                icon={ArrowRight01Icon}
+              />
             </Button>
           </Link>
         )}
       </div>
       {isLoadingSchedules ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              className="h-12 animate-pulse rounded-lg border bg-muted/30"
-              key={i}
-            />
-          ))}
-        </div>
+        <Skeleton className="h-18 w-full rounded-lg" />
       ) : isError ? (
         <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
           Failed to load schedules.
@@ -382,44 +482,32 @@ export default function PageClient({ integrationId }: PageClientProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
 
-  const { data: integration, isLoading: isLoadingIntegration } =
-    useQuery<GitHubIntegration>({
-      queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-        organizationId ?? "",
-        integrationId
-      ),
-      queryFn: async () => {
-        if (!organizationId) {
-          throw new Error("Organization ID is required");
-        }
-        const response = await fetch(
-          `/api/organizations/${organizationId}/integrations/${integrationId}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch integration");
-        }
-
-        return response.json();
+  const { data: integration, isLoading: isLoadingIntegration } = useQuery({
+    ...dashboardOrpc.integrations.get.queryOptions({
+      input: {
+        organizationId: organizationId ?? "",
+        integrationId,
       },
-      enabled: !!organizationId,
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 10,
-      initialData: () => {
-        if (!organizationId) {
-          return undefined;
-        }
+    }),
+    enabled: !!organizationId,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    initialData: () => {
+      if (!organizationId) {
+        return undefined;
+      }
 
-        const cachedIntegrations =
-          queryClient.getQueryData<IntegrationsResponse>(
-            QUERY_KEYS.INTEGRATIONS.all(organizationId)
-          );
+      const cachedIntegrations = queryClient.getQueryData<IntegrationsResponse>(
+        dashboardOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        })
+      );
 
-        return cachedIntegrations?.integrations.find(
-          (cachedIntegration) => cachedIntegration.id === integrationId
-        );
-      },
-    });
+      return cachedIntegrations?.integrations.find(
+        (cachedIntegration) => cachedIntegration.id === integrationId
+      );
+    },
+  });
 
   if (!organizationId) {
     return null;
@@ -454,9 +542,10 @@ export default function PageClient({ integrationId }: PageClientProps) {
     integration.repositories.length === 1
       ? (primaryRepository?.defaultBranch ?? null)
       : null;
+  const formattedDate = format(new Date(integration.createdAt), "MMM d, yyyy");
   const createdLabel = integration.createdByUser
-    ? `Added by ${integration.createdByUser.name} on ${new Date(integration.createdAt).toLocaleDateString()}`
-    : `Created on ${new Date(integration.createdAt).toLocaleDateString()}`;
+    ? `Added by ${integration.createdByUser.name} on ${formattedDate}`
+    : `Created on ${formattedDate}`;
   const statusLabel = integration.enabled ? "Enabled" : "Disabled";
 
   return (
@@ -482,7 +571,16 @@ export default function PageClient({ integrationId }: PageClientProps) {
               </Badge>
             </div>
             {repositoryFullName ? (
-              <p className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Link
+                className="group flex items-center gap-2 text-muted-foreground text-sm hover:text-foreground"
+                href={
+                  repositoryDefaultBranch
+                    ? `https://github.com/${repositoryFullName}/tree/${repositoryDefaultBranch}`
+                    : `https://github.com/${repositoryFullName}`
+                }
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 <Github className="size-4 shrink-0" />
                 <span>{repositoryFullName}</span>
                 {repositoryDefaultBranch ? (
@@ -494,7 +592,11 @@ export default function PageClient({ integrationId }: PageClientProps) {
                     <span>{repositoryDefaultBranch}</span>
                   </>
                 ) : null}
-              </p>
+                <HugeiconsIcon
+                  className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                  icon={LinkSquare02Icon}
+                />
+              </Link>
             ) : null}
             <p className="text-muted-foreground">
               Configure your GitHub integration and manage repositories
@@ -543,41 +645,40 @@ export default function PageClient({ integrationId }: PageClientProps) {
             slug={activeOrganization?.slug ?? ""}
           />
 
-          {process.env.NODE_ENV !== "production" &&
-          organizationId &&
-          integration.repositories.length > 0 ? (
-            <Collapsible className="space-y-4">
-              <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border p-4 hover:bg-muted/50">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-lg">Developer Tools</h2>
-                  <Badge variant="secondary">Debug</Badge>
+          {organizationId && integration.repositories.length > 0 ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h2 className="font-semibold text-lg">Webhook</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Receive events from GitHub when commits are pushed or
+                    releases are published.
+                  </p>
                 </div>
-                <ChevronDownIcon className="size-5 transition-transform [[data-panel-open]_&]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="space-y-4 rounded-lg border p-6">
-                  <div>
-                    <h3 className="mb-2 font-medium text-sm">Webhook URLs</h3>
-                    <p className="mb-4 text-muted-foreground text-xs">
-                      Use these URLs to configure webhooks in your GitHub
-                      repository settings. Each repository has a unique webhook
-                      endpoint. Click "Setup Webhook" to generate a secret and
-                      see configuration instructions.
-                    </p>
-                  </div>
-                  <div className="space-y-4">
-                    {integration.repositories.map((repo) => (
-                      <WebhookDebugEntry
-                        integrationId={integrationId}
-                        key={repo.id}
-                        organizationId={organizationId}
-                        repo={repo}
+                {integration.repositories.length === 1 && primaryRepository ? (
+                  <Link
+                    href={`https://github.com/${primaryRepository.owner}/${primaryRepository.repo}/settings/hooks`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <Button size="sm" variant="outline">
+                      GitHub Settings
+                      <HugeiconsIcon
+                        className="ml-1 size-3.5"
+                        icon={LinkSquare02Icon}
                       />
-                    ))}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                    </Button>
+                  </Link>
+                ) : null}
+              </div>
+              {integration.repositories.map((repo) => (
+                <WebhookSection
+                  key={repo.id}
+                  organizationId={organizationId}
+                  repo={repo}
+                />
+              ))}
+            </div>
           ) : null}
         </div>
       </div>

@@ -8,6 +8,7 @@ interface TitleCardProps extends Omit<React.ComponentProps<"div">, "title"> {
   action?: React.ReactNode;
   accentColor?: string;
   contentClassName?: string;
+  disabled?: boolean;
 }
 
 function TitleCard({
@@ -17,6 +18,7 @@ function TitleCard({
   accentColor,
   className,
   contentClassName,
+  disabled = false,
   children,
   ...props
 }: TitleCardProps) {
@@ -28,15 +30,20 @@ function TitleCard({
 
   return (
     <div
+      aria-disabled={disabled || undefined}
       className={cn(
         "group relative flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2",
+        disabled && "cursor-not-allowed",
         className
       )}
       {...props}
     >
       {accentColor && (
         <div
-          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+          className={cn(
+            "pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200",
+            !disabled && "group-hover:opacity-100"
+          )}
           style={gradientStyle}
         />
       )}

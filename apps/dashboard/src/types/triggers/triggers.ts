@@ -27,6 +27,7 @@ export interface TriggerSourceConfig {
 
 export interface TriggerOutputConfig {
   publishDestination?: "webflow" | "framer" | "custom";
+  brandVoiceId?: string;
 }
 
 export interface Trigger {
@@ -40,6 +41,7 @@ export interface Trigger {
   outputConfig?: TriggerOutputConfig | null;
   lookbackWindow?: LookbackWindow;
   enabled: boolean;
+  autoPublish: boolean;
   createdAt: string;
   updatedAt: string;
 }

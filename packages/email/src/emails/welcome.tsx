@@ -27,15 +27,10 @@ export const WelcomeEmail = () => {
         </Text>
 
         <Text>
-          Or schedule a talk with us at{" "}
-          <Link href="https://usenotra.com/founder-call">
-            usenotra.com/founder-call
-          </Link>
-          !
-        </Text>
-
-        <Text>
-          You can get started at <Link href={appUrl}>app.usenotra.com</Link>
+          You can also{" "}
+          <Link href="https://usenotra.com/founder-chat">schedule a chat</Link>{" "}
+          with us or join our{" "}
+          <Link href="https://usenotra.com/discord">Discord Community</Link>!
         </Text>
 
         <Text>
@@ -51,6 +46,10 @@ export const WelcomeEmail = () => {
           {" · "}
           <Link href="https://usenotra.com/privacy" style={{ color: "#999" }}>
             Privacy Policy
+          </Link>
+          {" · "}
+          <Link href="https://usenotra.com/terms" style={{ color: "#999" }}>
+            Terms of Service
           </Link>
         </Text>
       </Body>

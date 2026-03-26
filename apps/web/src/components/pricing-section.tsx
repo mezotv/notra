@@ -22,7 +22,7 @@ function PricingCard({
   description: string;
   price: React.ReactNode;
   cta: { label: string; href: string };
-  features: readonly string[];
+  features: readonly (string | { label: string; subtitle: string })[];
   variant?: "default" | "featured";
 }) {
   const isFeatured = variant === "featured";
@@ -73,24 +73,45 @@ function PricingCard({
       </Button>
 
       <div className="flex flex-col items-start justify-start gap-2 pt-3">
-        {features.map((feature) => (
-          <div
-            className="flex items-center justify-start gap-[13px] self-stretch"
-            key={feature}
-          >
-            <HugeiconsIcon
-              className={`size-3 ${isFeatured ? "text-white" : "text-[#9CA3AF]"}`}
-              icon={Tick02Icon}
-            />
+        {features.map((feature) => {
+          const label = typeof feature === "string" ? feature : feature.label;
+          const subtitle =
+            typeof feature === "string" ? null : feature.subtitle;
+
+          return (
             <div
-              className={`flex-1 font-normal font-sans text-[12.5px] leading-5 ${
-                isFeatured ? "text-primary-foreground/95" : "text-foreground/80"
-              }`}
+              className="flex items-start justify-start gap-[13px] self-stretch"
+              key={label}
             >
-              {feature}
+              <HugeiconsIcon
+                className={`mt-[3px] size-3 ${isFeatured ? "text-white" : "text-[#9CA3AF]"}`}
+                icon={Tick02Icon}
+              />
+              <div className="flex flex-1 flex-col">
+                <div
+                  className={`font-normal font-sans text-[12.5px] leading-5 ${
+                    isFeatured
+                      ? "text-primary-foreground/95"
+                      : "text-foreground/80"
+                  }`}
+                >
+                  {label}
+                </div>
+                {subtitle && (
+                  <div
+                    className={`font-normal font-sans text-[11px] leading-4 ${
+                      isFeatured
+                        ? "text-primary-foreground/60"
+                        : "text-foreground/50"
+                    }`}
+                  >
+                    {subtitle}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

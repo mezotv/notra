@@ -6,13 +6,20 @@
     "description": "OpenAPI schema for authenticated content endpoints."
   },
   "servers": [
-    { "url": "https://api.usenotra.com", "description": "Production" }
+    {
+      "url": "https://api.usenotra.com",
+      "description": "Production"
+    }
   ],
-  "security": [{ "BearerAuth": [] }],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
   "tags": [
     {
       "name": "Content",
-      "description": "Read content for the authenticated organization"
+      "description": "Read content. Organization is inferred from the API key (identity.externalId)."
     }
   ],
   "components": {
@@ -27,29 +34,23 @@
     "schemas": {
       "ErrorResponse": {
         "type": "object",
-        "properties": { "error": { "type": "string" } },
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
         "required": ["error"]
       }
     },
     "parameters": {}
   },
   "paths": {
-    "/v1/{organizationId}/posts": {
+    "/v1/posts": {
       "get": {
         "tags": ["Content"],
         "operationId": "listPosts",
         "summary": "List posts",
         "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "example": "org_123"
-            },
-            "required": true,
-            "in": "path",
-            "name": "organizationId"
-          },
           {
             "schema": {
               "type": "string",
@@ -93,10 +94,16 @@
           {
             "schema": {
               "anyOf": [
-                { "type": "string", "enum": ["draft", "published"] },
+                {
+                  "type": "string",
+                  "enum": ["draft", "published"]
+                },
                 {
                   "type": "array",
-                  "items": { "type": "string", "enum": ["draft", "published"] },
+                  "items": {
+                    "type": "string",
+                    "enum": ["draft", "published"]
+                  },
                   "maxItems": 2
                 }
               ],
@@ -110,14 +117,27 @@
           {
             "schema": {
               "anyOf": [
-                { "type": "string", "enum": ["changelog", "linkedin_post"] },
+                {
+                  "type": "string",
+                  "enum": [
+                    "changelog",
+                    "linkedin_post",
+                    "twitter_post",
+                    "blog_post"
+                  ]
+                },
                 {
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "enum": ["changelog", "linkedin_post"]
+                    "enum": [
+                      "changelog",
+                      "linkedin_post",
+                      "twitter_post",
+                      "blog_post"
+                    ]
                   },
-                  "maxItems": 2
+                  "maxItems": 4
                 }
               ],
               "description": "Filter by content type. Repeat the query param to pass multiple values."
@@ -136,29 +156,65 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
                     "posts": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": { "type": "string" },
-                          "title": { "type": "string" },
-                          "content": { "type": "string" },
-                          "markdown": { "type": "string" },
-                          "contentType": { "type": "string" },
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          },
+                          "markdown": {
+                            "type": "string"
+                          },
+                          "recommendations": {
+                            "type": ["string", "null"]
+                          },
+                          "contentType": {
+                            "type": "string"
+                          },
                           "sourceMetadata": {},
                           "status": {
                             "type": "string",
                             "enum": ["draft", "published"]
                           },
-                          "createdAt": { "type": "string" },
-                          "updatedAt": { "type": "string" }
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
                         },
                         "required": [
                           "id",
                           "title",
                           "content",
                           "markdown",
+                          "recommendations",
                           "contentType",
                           "status",
                           "createdAt",
@@ -169,8 +225,14 @@
                     "pagination": {
                       "type": "object",
                       "properties": {
-                        "limit": { "type": "integer", "minimum": 1 },
-                        "currentPage": { "type": "integer", "minimum": 1 },
+                        "limit": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "currentPage": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
                         "nextPage": {
                           "type": ["integer", "null"],
                           "minimum": 1
@@ -179,8 +241,14 @@
                           "type": ["integer", "null"],
                           "minimum": 1
                         },
-                        "totalPages": { "type": "integer", "minimum": 1 },
-                        "totalItems": { "type": "integer", "minimum": 0 }
+                        "totalPages": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "totalItems": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
                       },
                       "required": [
                         "limit",
@@ -192,7 +260,7 @@
                       ]
                     }
                   },
-                  "required": ["posts", "pagination"]
+                  "required": ["organization", "posts", "pagination"]
                 }
               }
             }
@@ -201,7 +269,9 @@
             "description": "Invalid path params or query",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -209,7 +279,9 @@
             "description": "Missing or invalid API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -217,7 +289,19 @@
             "description": "Forbidden",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -225,14 +309,16 @@
             "description": "Authentication service unavailable",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }
         }
       }
     },
-    "/v1/{organizationId}/posts/{postId}": {
+    "/v1/posts/{postId}": {
       "get": {
         "tags": ["Content"],
         "operationId": "getPost",
@@ -242,58 +328,11 @@
             "schema": {
               "type": "string",
               "minLength": 1,
-              "example": "org_123"
-            },
-            "required": true,
-            "in": "path",
-            "name": "organizationId"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
               "example": "post_123"
             },
             "required": true,
             "in": "path",
             "name": "postId"
-          },
-          {
-            "schema": {
-              "anyOf": [
-                { "type": "string", "enum": ["draft", "published"] },
-                {
-                  "type": "array",
-                  "items": { "type": "string", "enum": ["draft", "published"] },
-                  "maxItems": 2
-                }
-              ],
-              "description": "Filter by status. Repeat the query param to pass multiple values."
-            },
-            "required": false,
-            "description": "Filter by status. Repeat the query param to pass multiple values.",
-            "name": "status",
-            "in": "query"
-          },
-          {
-            "schema": {
-              "anyOf": [
-                { "type": "string", "enum": ["changelog", "linkedin_post"] },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "enum": ["changelog", "linkedin_post"]
-                  },
-                  "maxItems": 2
-                }
-              ],
-              "description": "Filter by content type. Repeat the query param to pass multiple values."
-            },
-            "required": false,
-            "description": "Filter by content type. Repeat the query param to pass multiple values.",
-            "name": "contentType",
-            "in": "query"
           }
         ],
         "responses": {
@@ -304,27 +343,63 @@
                 "schema": {
                   "type": "object",
                   "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
                     "post": {
                       "type": ["object", "null"],
                       "properties": {
-                        "id": { "type": "string" },
-                        "title": { "type": "string" },
-                        "content": { "type": "string" },
-                        "markdown": { "type": "string" },
-                        "contentType": { "type": "string" },
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "recommendations": {
+                          "type": ["string", "null"]
+                        },
+                        "contentType": {
+                          "type": "string"
+                        },
                         "sourceMetadata": {},
                         "status": {
                           "type": "string",
                           "enum": ["draft", "published"]
                         },
-                        "createdAt": { "type": "string" },
-                        "updatedAt": { "type": "string" }
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
                       },
                       "required": [
                         "id",
                         "title",
                         "content",
                         "markdown",
+                        "recommendations",
                         "contentType",
                         "status",
                         "createdAt",
@@ -332,16 +407,18 @@
                       ]
                     }
                   },
-                  "required": ["post"]
+                  "required": ["organization", "post"]
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid path params or query",
+            "description": "Invalid path params",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -349,7 +426,9 @@
             "description": "Missing or invalid API key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -357,7 +436,19 @@
             "description": "Forbidden",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post or organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
@@ -365,7 +456,2196 @@
             "description": "Authentication service unavailable",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Content"],
+        "operationId": "deletePost",
+        "summary": "Delete a single post",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "post_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "postId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["id", "organization"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Content"],
+        "operationId": "updatePost",
+        "summary": "Update a single post",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "post_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "postId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "example": "Ship notes for week 11"
+                  },
+                  "markdown": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "# Ship notes\n\nWe shipped a faster editor."
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["draft", "published"],
+                    "example": "published"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Post updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "post": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "markdown": {
+                          "type": "string"
+                        },
+                        "recommendations": {
+                          "type": ["string", "null"]
+                        },
+                        "contentType": {
+                          "type": "string"
+                        },
+                        "sourceMetadata": {},
+                        "status": {
+                          "type": "string",
+                          "enum": ["draft", "published"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "title",
+                        "content",
+                        "markdown",
+                        "recommendations",
+                        "contentType",
+                        "status",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "post"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/posts/generate": {
+      "post": {
+        "tags": ["Content"],
+        "operationId": "createPostGeneration",
+        "summary": "Queue async post generation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "enum": [
+                      "changelog",
+                      "blog_post",
+                      "linkedin_post",
+                      "twitter_post"
+                    ],
+                    "example": "blog_post"
+                  },
+                  "lookbackWindow": {
+                    "type": "string",
+                    "enum": [
+                      "current_day",
+                      "yesterday",
+                      "last_7_days",
+                      "last_14_days",
+                      "last_30_days"
+                    ],
+                    "default": "last_7_days",
+                    "example": "last_7_days"
+                  },
+                  "brandVoiceId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "voice_123"
+                  },
+                  "brandIdentityId": {
+                    "type": ["string", "null"],
+                    "minLength": 1,
+                    "example": "voice_123"
+                  },
+                  "repositoryIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "example": ["repo_1", "repo_2"]
+                  },
+                  "integrations": {
+                    "type": "object",
+                    "properties": {
+                      "github": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "minItems": 1,
+                        "example": ["integration_1", "integration_2"]
+                      }
+                    }
+                  },
+                  "github": {
+                    "type": "object",
+                    "properties": {
+                      "repositories": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "owner": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "repo": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": ["owner", "repo"]
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["repositories"],
+                    "example": {
+                      "repositories": [
+                        {
+                          "owner": "usenotra",
+                          "repo": "notra"
+                        }
+                      ]
+                    }
+                  },
+                  "dataPoints": {
+                    "type": "object",
+                    "properties": {
+                      "includePullRequests": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeCommits": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeReleases": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "includeLinearIssues": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
+                    "default": {
+                      "includePullRequests": true,
+                      "includeCommits": true,
+                      "includeReleases": true,
+                      "includeLinearIssues": false
+                    }
+                  },
+                  "selectedItems": {
+                    "type": "object",
+                    "properties": {
+                      "commitShas": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "pullRequestNumbers": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "repositoryId": {
+                              "type": "string"
+                            },
+                            "number": {
+                              "type": "number"
+                            }
+                          },
+                          "required": ["repositoryId", "number"]
+                        }
+                      },
+                      "releaseTagNames": {
+                        "type": "array",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "repositoryId": {
+                                  "type": "string"
+                                },
+                                "tagName": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["repositoryId", "tagName"]
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": ["contentType"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Post generation queued successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "contentType": {
+                          "type": "string",
+                          "enum": [
+                            "changelog",
+                            "blog_post",
+                            "linkedin_post",
+                            "twitter_post"
+                          ]
+                        },
+                        "lookbackWindow": {
+                          "type": "string",
+                          "enum": [
+                            "current_day",
+                            "yesterday",
+                            "last_7_days",
+                            "last_14_days",
+                            "last_30_days"
+                          ]
+                        },
+                        "repositoryIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "brandVoiceId": {
+                          "type": ["string", "null"]
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "postId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": ["api", "dashboard"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "status",
+                        "contentType",
+                        "lookbackWindow",
+                        "repositoryIds",
+                        "brandVoiceId",
+                        "workflowRunId",
+                        "postId",
+                        "error",
+                        "source",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "job"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Content generation is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "jobId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "listBrandIdentities",
+        "summary": "List available brand identities",
+        "responses": {
+          "200": {
+            "description": "Brand identities fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "brandIdentities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
+                          },
+                          "websiteUrl": {
+                            "type": "string"
+                          },
+                          "companyName": {
+                            "type": ["string", "null"]
+                          },
+                          "companyDescription": {
+                            "type": ["string", "null"]
+                          },
+                          "toneProfile": {
+                            "type": ["string", "null"]
+                          },
+                          "customTone": {
+                            "type": ["string", "null"]
+                          },
+                          "customInstructions": {
+                            "type": ["string", "null"]
+                          },
+                          "audience": {
+                            "type": ["string", "null"]
+                          },
+                          "language": {
+                            "type": ["string", "null"]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "isDefault",
+                          "websiteUrl",
+                          "companyName",
+                          "companyDescription",
+                          "toneProfile",
+                          "customTone",
+                          "customInstructions",
+                          "audience",
+                          "language",
+                          "createdAt",
+                          "updatedAt"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["organization", "brandIdentities"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities/generate": {
+      "post": {
+        "tags": ["Content"],
+        "operationId": "createBrandIdentity",
+        "summary": "Queue async brand identity generation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "example": "Notra"
+                  },
+                  "websiteUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "https://usenotra.com"
+                  }
+                },
+                "required": ["websiteUrl"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Brand identity generation queued successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "brandIdentityId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "step": {
+                          "type": ["string", "null"],
+                          "enum": ["scraping", "extracting", "saving", null]
+                        },
+                        "currentStep": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSteps": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "brandIdentityId",
+                        "status",
+                        "step",
+                        "currentStep",
+                        "totalSteps",
+                        "workflowRunId",
+                        "error",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "job"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Brand identity name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities/generate/{jobId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getBrandIdentityGeneration",
+        "summary": "Get async brand identity generation status",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "brand_job_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "jobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand identity generation status fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "brandIdentityId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "step": {
+                          "type": ["string", "null"],
+                          "enum": ["scraping", "extracting", "saving", null]
+                        },
+                        "currentStep": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "totalSteps": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "brandIdentityId",
+                        "status",
+                        "step",
+                        "currentStep",
+                        "totalSteps",
+                        "workflowRunId",
+                        "error",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "job"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand identity analysis job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Brand analysis is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/brand-identities/{brandIdentityId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getBrandIdentity",
+        "summary": "Get a single brand identity",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561"
+            },
+            "required": true,
+            "in": "path",
+            "name": "brandIdentityId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand identity fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "brandIdentity": {
+                      "type": ["object", "null"],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "websiteUrl": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": ["string", "null"]
+                        },
+                        "companyDescription": {
+                          "type": ["string", "null"]
+                        },
+                        "toneProfile": {
+                          "type": ["string", "null"]
+                        },
+                        "customTone": {
+                          "type": ["string", "null"]
+                        },
+                        "customInstructions": {
+                          "type": ["string", "null"]
+                        },
+                        "audience": {
+                          "type": ["string", "null"]
+                        },
+                        "language": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "isDefault",
+                        "websiteUrl",
+                        "companyName",
+                        "companyDescription",
+                        "toneProfile",
+                        "customTone",
+                        "customInstructions",
+                        "audience",
+                        "language",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["brandIdentity", "organization"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Content"],
+        "operationId": "updateBrandIdentity",
+        "summary": "Update a single brand identity",
+        "description": "Updates brand identity fields. Pass isDefault: true to make the target brand identity the organization's default.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561"
+            },
+            "required": true,
+            "in": "path",
+            "name": "brandIdentityId"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "example": "Notra"
+                  },
+                  "websiteUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "example": "https://usenotra.com"
+                  },
+                  "companyName": {
+                    "type": ["string", "null"],
+                    "minLength": 1,
+                    "example": "Notra"
+                  },
+                  "companyDescription": {
+                    "type": ["string", "null"],
+                    "minLength": 10,
+                    "example": "AI-native content workflows for software teams."
+                  },
+                  "toneProfile": {
+                    "type": ["string", "null"],
+                    "enum": [
+                      "Conversational",
+                      "Professional",
+                      "Casual",
+                      "Formal",
+                      null
+                    ],
+                    "example": "Professional",
+                    "description": "Set a preset tone profile. When provided without customTone, any saved custom tone is cleared."
+                  },
+                  "customTone": {
+                    "type": ["string", "null"],
+                    "example": "Clear, direct, and technically confident",
+                    "description": "Provide a custom tone override. Send an empty string or null to clear it."
+                  },
+                  "customInstructions": {
+                    "type": ["string", "null"],
+                    "example": "Avoid hype. Prioritize concrete examples."
+                  },
+                  "audience": {
+                    "type": ["string", "null"],
+                    "minLength": 10,
+                    "example": "Engineering leaders and developer tooling teams."
+                  },
+                  "language": {
+                    "type": ["string", "null"],
+                    "enum": [
+                      "English",
+                      "Spanish",
+                      "French",
+                      "German",
+                      "Portuguese",
+                      "Dutch",
+                      "Italian",
+                      "Japanese",
+                      "Korean",
+                      "Chinese",
+                      "Arabic",
+                      "Hindi",
+                      "Russian",
+                      "Turkish",
+                      "Polish",
+                      "Swedish",
+                      "Danish",
+                      "Norwegian",
+                      "Finnish",
+                      "Czech",
+                      "Romanian",
+                      "Hungarian",
+                      "Greek",
+                      "Thai",
+                      "Vietnamese",
+                      "Indonesian",
+                      "Ukrainian",
+                      "Hebrew",
+                      null
+                    ],
+                    "example": "English"
+                  },
+                  "isDefault": {
+                    "type": "boolean",
+                    "enum": [true],
+                    "example": true,
+                    "description": "Set this brand identity as the organization's default. Only true is accepted."
+                  }
+                }
+              },
+              "examples": {
+                "setDefault": {
+                  "summary": "Set as default",
+                  "value": {
+                    "isDefault": true
+                  }
+                },
+                "updateAndSetDefault": {
+                  "summary": "Rename and set as default",
+                  "value": {
+                    "name": "Notra Marketing",
+                    "isDefault": true
+                  }
+                },
+                "switchToPresetTone": {
+                  "summary": "Switch custom tone to preset",
+                  "value": {
+                    "toneProfile": "Professional"
+                  }
+                },
+                "setCustomTone": {
+                  "summary": "Set custom tone",
+                  "value": {
+                    "customTone": "Warm, sharp, and opinionated"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Brand identity updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "brandIdentity": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        },
+                        "websiteUrl": {
+                          "type": "string"
+                        },
+                        "companyName": {
+                          "type": ["string", "null"]
+                        },
+                        "companyDescription": {
+                          "type": ["string", "null"]
+                        },
+                        "toneProfile": {
+                          "type": ["string", "null"]
+                        },
+                        "customTone": {
+                          "type": ["string", "null"]
+                        },
+                        "customInstructions": {
+                          "type": ["string", "null"]
+                        },
+                        "audience": {
+                          "type": ["string", "null"]
+                        },
+                        "language": {
+                          "type": ["string", "null"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "isDefault",
+                        "websiteUrl",
+                        "companyName",
+                        "companyDescription",
+                        "toneProfile",
+                        "customTone",
+                        "customInstructions",
+                        "audience",
+                        "language",
+                        "createdAt",
+                        "updatedAt"
+                      ]
+                    }
+                  },
+                  "required": ["organization", "brandIdentity"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path params or request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Brand identity name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Content"],
+        "operationId": "deleteBrandIdentity",
+        "summary": "Delete a single brand identity",
+        "description": "Deletes a non-default brand identity and disables any automation triggers that reference it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561"
+            },
+            "required": true,
+            "in": "path",
+            "name": "brandIdentityId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Brand identity deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    },
+                    "disabledSchedules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      }
+                    },
+                    "disabledEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["id", "name"]
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "organization",
+                    "disabledSchedules",
+                    "disabledEvents"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot delete the default brand identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Brand identity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "listIntegrations",
+        "summary": "List available integrations",
+        "responses": {
+          "200": {
+            "description": "Integrations fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "github": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "owner": {
+                            "type": ["string", "null"]
+                          },
+                          "repo": {
+                            "type": ["string", "null"]
+                          },
+                          "defaultBranch": {
+                            "type": ["string", "null"]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "displayName",
+                          "owner",
+                          "repo",
+                          "defaultBranch"
+                        ]
+                      }
+                    },
+                    "slack": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "linear": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["github", "slack", "linear", "organization"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/integrations/github": {
+      "post": {
+        "tags": ["Content"],
+        "operationId": "createGitHubIntegration",
+        "summary": "Create a GitHub integration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "owner": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "repo": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "branch": {
+                    "type": ["string", "null"],
+                    "minLength": 1
+                  },
+                  "token": {
+                    "type": ["string", "null"],
+                    "minLength": 1
+                  }
+                },
+                "required": ["owner", "repo"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "GitHub integration created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "github": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "type": "string"
+                        },
+                        "owner": {
+                          "type": ["string", "null"]
+                        },
+                        "repo": {
+                          "type": ["string", "null"]
+                        },
+                        "defaultBranch": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "displayName",
+                        "owner",
+                        "repo",
+                        "defaultBranch"
+                      ]
+                    },
+                    "organization": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "logo": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": ["id", "slug", "name", "logo"]
+                    }
+                  },
+                  "required": ["github", "organization"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body or GitHub repository access error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Repository already connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Authentication or integration service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/posts/generate/{jobId}": {
+      "get": {
+        "tags": ["Content"],
+        "operationId": "getPostGeneration",
+        "summary": "Get async post generation status",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "job_123"
+            },
+            "required": true,
+            "in": "path",
+            "name": "jobId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Post generation status fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "organizationId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": ["queued", "running", "completed", "failed"]
+                        },
+                        "contentType": {
+                          "type": "string",
+                          "enum": [
+                            "changelog",
+                            "blog_post",
+                            "linkedin_post",
+                            "twitter_post"
+                          ]
+                        },
+                        "lookbackWindow": {
+                          "type": "string",
+                          "enum": [
+                            "current_day",
+                            "yesterday",
+                            "last_7_days",
+                            "last_14_days",
+                            "last_30_days"
+                          ]
+                        },
+                        "repositoryIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "brandVoiceId": {
+                          "type": ["string", "null"]
+                        },
+                        "workflowRunId": {
+                          "type": ["string", "null"]
+                        },
+                        "postId": {
+                          "type": ["string", "null"]
+                        },
+                        "error": {
+                          "type": ["string", "null"]
+                        },
+                        "source": {
+                          "type": "string",
+                          "enum": ["api", "dashboard"]
+                        },
+                        "createdAt": {
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "type": "string"
+                        },
+                        "completedAt": {
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "organizationId",
+                        "status",
+                        "contentType",
+                        "lookbackWindow",
+                        "repositoryIds",
+                        "brandVoiceId",
+                        "workflowRunId",
+                        "postId",
+                        "error",
+                        "source",
+                        "createdAt",
+                        "updatedAt",
+                        "completedAt"
+                      ]
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "jobId": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "queued",
+                              "workflow_triggered",
+                              "running",
+                              "fetching_repositories",
+                              "generating_content",
+                              "post_created",
+                              "completed",
+                              "failed"
+                            ]
+                          },
+                          "message": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "type": ["object", "null"],
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "jobId",
+                          "type",
+                          "message",
+                          "createdAt",
+                          "metadata"
+                        ]
+                      }
+                    }
+                  },
+                  "required": ["job", "events"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Generation job not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Content generation is unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           }

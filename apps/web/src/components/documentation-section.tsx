@@ -211,29 +211,99 @@ export default function DocumentationSection() {
                   </div>
                   <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-linear-to-t from-background via-background/95 to-transparent" />
                 </div>
+              ) : activeCard === 1 ? (
+                <div className="relative h-full w-full bg-background">
+                  <div className="h-full overflow-hidden">
+                    <article className="prose prose-stone prose-sm dark:prose-invert h-full max-w-none overflow-hidden px-5 py-4 md:px-6 md:py-5">
+                      <p>
+                        When we built Notra, we made one big bet: that most
+                        teams would rather automate what goes to their audience
+                        than hand-tweak it every time. Still true. But we missed
+                        something. Not every ship deserves coverage. Not every
+                        commit is worth mentioning. And automatic is not helpful
+                        if the output does not sound like you.
+                      </p>
+                      <p>
+                        This week we shipped three things that change how you
+                        generate content. They come down to one idea: you decide
+                        what gets made and how it sounds.
+                      </p>
+
+                      <h2>Generate what you actually want to ship</h2>
+                      <p>
+                        For the first two months, Notra worked like this: set up
+                        a trigger, the AI looks at everything since last time,
+                        drafts appear. Fine if you wanted broad coverage. Broke
+                        down when you wanted to be selective.
+                      </p>
+                      <p>
+                        So we rebuilt the generate flow. When you create content
+                        on-demand now, you see a preview first. The commits,
+                        PRs, and releases Notra found. You check boxes for what
+                        belongs in your story. Toggle releases on or off. Pick a
+                        time window. Scope to specific repos.
+                      </p>
+
+                      <h2>Your voice, not a generic one</h2>
+                      <p>
+                        The other gap we kept hearing: content that looked good
+                        but sounded like nobody. Teams would edit our drafts
+                        because the tone felt off. Not wrong. Just not theirs.
+                      </p>
+                      <p>
+                        This week we shipped brand voice learning. Add
+                        references from your Twitter account (or paste custom
+                        text), and Notra's agents study them first, before
+                        generating anything.
+                      </p>
+                    </article>
+                  </div>
+                  <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-20 bg-linear-to-t from-background via-background/95 to-transparent" />
+                </div>
               ) : (
-                <div className="relative flex h-full w-full items-center justify-center">
-                  <Image
-                    alt=""
-                    className="object-cover object-top blur-[3px] dark:hidden"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 580px"
-                    src={activeCard === 1 ? "/logs.webp" : "/automation.webp"}
-                  />
-                  <Image
-                    alt=""
-                    className="hidden object-cover object-top blur-[3px] dark:block"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 580px"
-                    src={
-                      activeCard === 1
-                        ? "/logs-dark.webp"
-                        : "/automation-dark.webp"
-                    }
-                  />
-                  <span className="relative z-10 font-medium font-sans text-muted-foreground text-sm">
-                    Coming soon
-                  </span>
+                <div className="relative h-full w-full bg-background">
+                  <div className="flex h-full flex-col gap-4 overflow-hidden px-5 py-4 md:px-6 md:py-5">
+                    <div className="flex flex-col gap-3 rounded-xl border p-4">
+                      <div className="flex items-center gap-2.5">
+                        <Image
+                          alt="Notra"
+                          className="size-10 shrink-0 rounded-full"
+                          height={40}
+                          src="/notra-mark.svg"
+                          width={40}
+                        />
+                        <div>
+                          <p className="font-semibold text-sm">Notra</p>
+                          <p className="text-muted-foreground text-xs">
+                            2,400 followers · 1h
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-[0.8125rem] leading-relaxed">
+                        <p>Built on-demand content generation flow.</p>
+                        <p>Actually built it over the last week. Major ship.</p>
+                        <p>
+                          The problem our users kept asking for: they want
+                          content generated right now. Not scheduled, not
+                          waiting for the next webhook. Just a quick button
+                          press and a preview.
+                        </p>
+                        <p>
+                          We shipped:
+                          <br />- Configurable data sources (choose which repos,
+                          which commits, which releases)
+                          <br />- Live preview before generating
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4 border-t pt-3 text-muted-foreground text-xs">
+                        <span>42 likes</span>
+                        <span>8 comments</span>
+                        <span>3 reposts</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-background via-background/80 to-transparent" />
+                  <div className="pointer-events-none absolute right-0 bottom-0 left-0 h-28 bg-linear-to-t from-background via-background/95 to-transparent" />
                 </div>
               )}
             </div>

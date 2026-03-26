@@ -16,7 +16,7 @@ function isExternalHref(href?: string) {
   return typeof href === "string" && EXTERNAL_HREF_REGEX.test(href);
 }
 
-export function useMDXComponents(components: MDXComponents): MDXComponents {
+export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...components,
     a: ({ href, rel, target, ...props }) =>
@@ -31,4 +31,8 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
         <a {...props} href={href} rel={rel} target={target} />
       ),
   };
+}
+
+export function useMDXComponents(components: MDXComponents): MDXComponents {
+  return getMDXComponents(components);
 }

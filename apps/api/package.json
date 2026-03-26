@@ -2,18 +2,29 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "dev": "bun --watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.mjs",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.2.2",
+    "@notra/ai": "workspace:*",
+    "@notra/content-generation": "workspace:*",
     "@notra/db": "workspace:*",
     "@unkey/api": "^2.3.0",
+    "@upstash/redis": "^1.35.8",
+    "@upstash/workflow": "^1.1.0",
+    "drizzle-orm": "^0.45.1",
     "hono": "^4.12.0",
+    "marked": "^16.3.0",
+    "sanitize-html": "^2.17.0",
+    "tsup": "^8.5.1",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@types/sanitize-html": "^2.16.0",
+    "@notra/typescript-config": "workspace:*",
     "wrangler": "^4.4.0"
   }
 }

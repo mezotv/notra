@@ -1,12 +1,16 @@
+import type { ToneProfile } from "@notra/ai/schemas/tone";
+import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { ToneProfile } from "@/schemas/brand";
+import type { PostSummary } from "@/types/posts";
 
 export interface WorkflowTriggerData {
   id: string;
   name: string;
   organizationId: string;
   outputType: string;
+  outputConfig: unknown;
   enabled: boolean;
+  autoPublish: boolean;
 }
 
 export interface WorkflowRepositoryData {
@@ -16,11 +20,14 @@ export interface WorkflowRepositoryData {
 }
 
 export interface WorkflowBrandSettings {
+  id: string;
+  name: string;
   toneProfile: string | null;
   companyName: string | null;
   companyDescription: string | null;
   audience: string | null;
   customInstructions: string | null;
+  language: string | null;
 }
 
 export interface EventGenerationContext {
@@ -43,10 +50,17 @@ export interface EventGenerationContext {
   };
   outputType: string;
   sourceMetadata: PostSourceMetadata;
+  autoPublish?: boolean;
+  resolveContext: ResolveIntegrationContext;
 }
 
 export type EventGenerationResult =
-  | { status: "ok"; postId: string; title: string }
+  | {
+      status: "ok";
+      postId: string;
+      title: string;
+      posts: PostSummary[];
+    }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };
 

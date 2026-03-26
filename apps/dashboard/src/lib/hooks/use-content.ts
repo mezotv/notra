@@ -2,20 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { ContentApiResponse } from "@/types/hooks/content";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { dashboardOrpc } from "../orpc/query";
 
 export function useContent(organizationId: string, contentId: string) {
-  return useQuery({
-    queryKey: QUERY_KEYS.CONTENT.detail(organizationId, contentId),
-    queryFn: async (): Promise<ContentApiResponse> => {
-      const res = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch content");
-      }
-      return res.json();
-    },
-    enabled: !!organizationId && !!contentId,
-  });
+  return useQuery<ContentApiResponse>(
+    dashboardOrpc.content.get.queryOptions({
+      input: { organizationId, contentId },
+      enabled: !!organizationId && !!contentId,
+    })
+  );
 }

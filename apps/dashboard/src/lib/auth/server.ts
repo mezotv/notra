@@ -1,5 +1,5 @@
 import { db } from "@notra/db/drizzle";
-import { members, organizations } from "@notra/db/schema";
+import { members, organizations, sessions } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
@@ -10,7 +10,8 @@ import {
   lastLoginMethod,
   organization,
 } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
+import { isValid as isNotDisposableEmail } from "mailchecker";
 import { customAlphabet } from "nanoid";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
@@ -29,6 +30,7 @@ import {
 import { redis } from "@/lib/redis";
 import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
+import type { AutumnCheckResponse } from "@/types/autumn";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
@@ -37,13 +39,14 @@ async function enforceTeamMembersLimit(organizationId?: string | null) {
     return;
   }
 
-  const { data, error } = await autumn.check({
-    customer_id: organizationId,
-    feature_id: FEATURES.TEAM_MEMBERS,
-    required_balance: 1,
-  });
-
-  if (error) {
+  let data: AutumnCheckResponse | null = null;
+  try {
+    data = await autumn.check({
+      customerId: organizationId,
+      featureId: FEATURES.TEAM_MEMBERS,
+      requiredBalance: 1,
+    });
+  } catch (error) {
     console.warn("[Autumn] Failed to check team member limits", {
       organizationId,
       error,
@@ -194,7 +197,7 @@ export const auth = betterAuth({
       otpLength: 6,
       expiresIn: 300,
       sendVerificationOTP: async ({ email, otp, type }) => {
-        if (type === "forget-password") {
+        if (type === "forget-password" || type === "change-email") {
           return;
         }
         sendVerificationEmailAction({
@@ -205,18 +208,6 @@ export const auth = betterAuth({
       },
     }),
     organization({
-      schema: {
-        organization: {
-          additionalFields: {
-            websiteUrl: {
-              type: "string",
-              required: false,
-              input: true,
-              fieldName: "websiteUrl",
-            },
-          },
-        },
-      },
       sendInvitationEmail: async (data) => {
         const inviteLink = `${process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
         await sendInviteEmailAction({
@@ -235,7 +226,14 @@ export const auth = betterAuth({
           await enforceTeamMembersLimit(organization.id);
         },
         beforeAddMember: async ({ organization }) => {
-          await enforceTeamMembersLimit(organization.id);
+          const [result] = await db
+            .select({ value: count() })
+            .from(members)
+            .where(eq(members.organizationId, organization.id));
+
+          if (result && result.value > 0) {
+            await enforceTeamMembersLimit(organization.id);
+          }
         },
         beforeUpdateOrganization: async ({ organization }) => {
           if (!organization.slug) {
@@ -265,6 +263,34 @@ export const auth = betterAuth({
         },
       }
     : undefined,
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    storage: "secondary-storage",
+    customRules: {
+      "/sign-in/email": {
+        window: 60,
+        max: 5,
+      },
+      "/sign-up/email": {
+        window: 60,
+        max: 5,
+      },
+      "/forget-password": {
+        window: 60,
+        max: 3,
+      },
+      "/reset-password/*": {
+        window: 60,
+        max: 5,
+      },
+      "/email-otp/*": {
+        window: 60,
+        max: 5,
+      },
+    },
+  },
   trustedOrigins: [
     "http://localhost:3000",
     "https://app.usenotra.com",
@@ -284,7 +310,10 @@ export const auth = betterAuth({
         resetLink: url,
       });
     },
-    resetPasswordTokenExpiresIn: 3600, // 1 hour
+    resetPasswordTokenExpiresIn: 3600,
+    onPasswordReset: async ({ user }) => {
+      await db.delete(sessions).where(eq(sessions.userId, user.id));
+    },
   },
   account: {
     accountLinking: {
@@ -297,6 +326,13 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          if (!isNotDisposableEmail(user.email)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Disposable email addresses are not allowed",
+            });
+          }
+        },
         after: async (user) => {
           const email = user.email || "";
           const raw = email.split("@")[0] || "";
@@ -330,8 +366,8 @@ export const auth = betterAuth({
             );
             return;
           }
-          const result = await autumn.customers.create({
-            id: org.id,
+          await autumn.customers.getOrCreate({
+            customerId: org.id,
             name: org.name,
             metadata: {
               orgId: org.id,

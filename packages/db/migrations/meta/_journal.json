@@ -78,6 +78,83 @@
       "when": 1771624868413,
       "tag": "0010_cool_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772563998650,
+      "tag": "0011_free_excalibur",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1772564032463,
+      "tag": "0012_chilly_metal_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1772567619700,
+      "tag": "0013_empty_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1772568837533,
+      "tag": "0014_flat_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1772726260067,
+      "tag": "0015_lazy_mad_thinker",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1772746452885,
+      "tag": "0016_rare_kat_farrell",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1772902653668,
+      "tag": "0017_cool_azazel",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772981707111,
+      "tag": "0018_simple_jigsaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1773216506107,
+      "tag": "0019_medical_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1773419113247,
+      "tag": "0020_aberrant_wendell_vaughn",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1774192467340,
+      "tag": "0021_oval_logan",
+      "breakpoints": true
     }
   ]
 }

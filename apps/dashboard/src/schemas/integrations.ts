@@ -35,6 +35,24 @@ function isValidGitHubUrl(url: string): boolean {
   return GITHUB_URL_PATTERNS.some((pattern) => pattern.test(trimmed));
 }
 
+const GITHUB_PAT_PREFIXES = [
+  "ghp_",
+  "github_pat_",
+  "gho_",
+  "ghu_",
+  "ghs_",
+  "ghr_",
+] as const;
+
+export const githubPersonalAccessTokenSchema = z
+  .string()
+  .trim()
+  .min(1, "Personal access token is required")
+  .refine(
+    (value) => GITHUB_PAT_PREFIXES.some((prefix) => value.startsWith(prefix)),
+    "Enter a valid GitHub personal access token"
+  );
+
 export const addGitHubIntegrationFormSchema = z.object({
   repoUrl: z
     .string()
@@ -44,7 +62,14 @@ export const addGitHubIntegrationFormSchema = z.object({
       "Invalid GitHub repository URL or format. Use: https://github.com/owner/repo, git@github.com:owner/repo, or owner/repo"
     ),
   branch: z.string().optional().nullable(),
-  token: z.string().optional().nullable(),
+  token: z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, githubPersonalAccessTokenSchema.optional().nullable()),
 });
 export type AddGitHubIntegrationFormValues = z.infer<
   typeof addGitHubIntegrationFormSchema
@@ -55,7 +80,7 @@ export const createGitHubIntegrationRequestSchema = z.object({
   owner: z.string().min(1, "Repository owner is required"),
   repo: z.string().min(1, "Repository name is required"),
   branch: z.string().optional().nullable(),
-  token: z.string().optional().nullable(),
+  token: githubPersonalAccessTokenSchema.optional().nullable(),
 });
 export type CreateGitHubIntegrationRequest = z.infer<
   typeof createGitHubIntegrationRequestSchema
@@ -116,11 +141,23 @@ export const outputIdParamSchema = z.object({
 });
 export type OutputIdParam = z.infer<typeof outputIdParamSchema>;
 
-export const updateIntegrationBodySchema = z.object({
-  enabled: z.boolean(),
-  displayName: z.string().trim().min(1).optional(),
-  branch: z.string().trim().min(1).nullable().optional(),
-});
+export const updateIntegrationBodySchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    displayName: z.string().trim().min(1).optional(),
+    branch: z.string().trim().min(1).nullable().optional(),
+    token: githubPersonalAccessTokenSchema.optional(),
+  })
+  .refine(
+    (value) =>
+      value.enabled !== undefined ||
+      value.displayName !== undefined ||
+      value.branch !== undefined ||
+      value.token !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
 export type UpdateIntegrationBody = z.infer<typeof updateIntegrationBodySchema>;
 
 export const editGitHubIntegrationFormSchema = z.object({
@@ -130,6 +167,13 @@ export const editGitHubIntegrationFormSchema = z.object({
 });
 export type EditGitHubIntegrationFormValues = z.infer<
   typeof editGitHubIntegrationFormSchema
+>;
+
+export const editGitHubTokenFormSchema = z.object({
+  token: githubPersonalAccessTokenSchema,
+});
+export type EditGitHubTokenFormValues = z.infer<
+  typeof editGitHubTokenFormSchema
 >;
 
 export const updateRepositoryBodySchema = z
@@ -201,6 +245,7 @@ export const triggerTargetsSchema = z.object({
 export const triggerOutputConfigSchema = z
   .object({
     publishDestination: z.enum(["webflow", "framer", "custom"]).optional(),
+    brandVoiceId: z.string().optional(),
   })
   .optional();
 
@@ -211,12 +256,15 @@ export const configureTriggerBodySchema = z.object({
   outputType: z.enum(OUTPUT_CONTENT_TYPES),
   outputConfig: triggerOutputConfigSchema,
   enabled: z.boolean(),
+  autoPublish: z.boolean().default(false),
 });
 export type ConfigureTriggerBody = z.infer<typeof configureTriggerBodySchema>;
 
 export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = [
   "changelog",
+  "blog_post",
   "linkedin_post",
+  "twitter_post",
 ] as const;
 export type ScheduleOutputType =
   (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
@@ -243,21 +291,20 @@ export const getSchedulesQuerySchema = z.object({
 });
 export type GetSchedulesQuery = z.infer<typeof getSchedulesQuerySchema>;
 
-export const affectedScheduleSchema = z.object({
+export const affectedTriggerSchema = z.object({
   id: z.string(),
   name: z.string(),
   enabled: z.boolean(),
 });
-export type AffectedSchedule = z.infer<typeof affectedScheduleSchema>;
+export type AffectedTrigger = z.infer<typeof affectedTriggerSchema>;
 
-export const integrationWithAffectedSchedulesSchema = z.object({
-  affectedSchedules: z.array(affectedScheduleSchema).optional(),
+export const affectedTriggersDataSchema = z.object({
+  affectedSchedules: z.array(affectedTriggerSchema).optional(),
+  affectedEvents: z.array(affectedTriggerSchema).optional(),
 });
-export type IntegrationWithAffectedSchedules = z.infer<
-  typeof integrationWithAffectedSchedulesSchema
->;
+export type AffectedTriggersData = z.infer<typeof affectedTriggersDataSchema>;
 
-export const deleteIntegrationResponseSchema = z.object({
+export const deleteResourceResponseSchema = z.object({
   success: z.boolean(),
   disabledSchedules: z
     .array(
@@ -267,7 +314,15 @@ export const deleteIntegrationResponseSchema = z.object({
       })
     )
     .optional(),
+  disabledEvents: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      })
+    )
+    .optional(),
 });
-export type DeleteIntegrationResponse = z.infer<
-  typeof deleteIntegrationResponseSchema
+export type DeleteResourceResponse = z.infer<
+  typeof deleteResourceResponseSchema
 >;

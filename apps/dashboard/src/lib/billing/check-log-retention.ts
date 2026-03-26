@@ -1,4 +1,5 @@
 import { FEATURES } from "@/constants/features";
+import type { AutumnCheckResponse } from "@/types/autumn";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import { autumn } from "./autumn";
 
@@ -9,12 +10,17 @@ export async function checkLogRetention(
     return 30;
   }
 
-  const { data, error } = await autumn.check({
-    customer_id: organizationId,
-    feature_id: FEATURES.LOG_RETENTION_30_DAYS,
-  });
+  let data: AutumnCheckResponse | null = null;
+  try {
+    data = await autumn.check({
+      customerId: organizationId,
+      featureId: FEATURES.LOG_RETENTION_30_DAYS,
+    });
+  } catch {
+    return 30;
+  }
 
-  if (error || !data) {
+  if (!data) {
     return 30;
   }
 

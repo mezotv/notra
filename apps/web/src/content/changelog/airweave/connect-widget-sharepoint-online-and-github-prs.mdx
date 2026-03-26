@@ -1,0 +1,49 @@
+---
+title: "Airweave Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This release adds Airweave Connect, a new embeddable widget for integrating data source connections directly into your application, alongside major connector expansions and monitoring improvements."
+---
+
+This release adds Airweave Connect, a new embeddable widget for integrating data source connections directly into your application, alongside major connector expansions and monitoring improvements. The Connect playground gives you a live sandbox for configuration and code generation. SharePoint Online is now fully supported with ACL extraction and targeted browsing and sync. The GitHub connector can now index merged pull requests and review comments. Temporal heartbeats carry structured progress data instead of strings, giving you better visibility into sync operations.
+
+## Highlights
+
+### Airweave Connect: Embeddable widget and session API
+Developers can now embed interactive data source connection flows directly in their apps. The Connect widget handles OAuth flows, folder/site selection, and real-time sync with minimal setup. New APIs support session management, connection creation, and analytics tracking. Full customization for theme, branding, and allowed integrations.
+
+### SharePoint Online connector with ACL and browse tree
+Native SharePoint Online support via Microsoft Graph with per-file access control lists. Users can browse and select specific sites, drives, and folders before syncing instead of ingesting everything. Includes Entra ID and SharePoint site group expansion with cycle detection. Incremental sync via per-drive delta tokens preserves bandwidth.
+
+### GitHub merged PRs and review comments
+The GitHub connector now indexes merged pull requests, inline review comments, and changed file lists. New `sync_pull_requests` config flag (default off) enables optional PR syncing. Incremental cursor tracks the last updated PR timestamp for efficient updates.
+
+### Temporal activity heartbeats with structured progress data
+Heartbeat payloads now carry phase, elapsed time, entity counts (inserted, updated, deleted, kept), and optional stall detection instead of opaque strings. Improves debugging visibility in the Temporal UI and preserves context on activity failure.
+
+### Connect Playground: Interactive configuration and code generation
+Live preview environment for testing the Connect widget with adjustable theme, session mode, collection picker, and source filters. Export configuration as Python, TypeScript, React, or Vanilla JS snippets with a single click. Also exportable as Markdown, llms.txt, Cursor Rules, or Claude format.
+
+## More Updates
+
+### Features & Enhancements
+- **Boolean config fields render as toggles** [#1582](https://github.com/airweave-ai/airweave/pull/1582) - Source configuration UI now displays boolean settings (like `sync_pull_requests`) as toggle switches instead of text inputs, improving usability. (Author: [@felixschmetz](https://github.com/felixschmetz/))
+- **Zoom connector OAuth client ID configured** [#1590](https://github.com/airweave-ai/airweave/pull/1590) - Zoom connector now has dev environment OAuth credentials set, enabling local testing. (Author: [@viralpraxis](https://github.com/viralpraxis/))
+
+### Bug Fixes
+- **Fixed Auth0 pagination in user sync** [#1587](https://github.com/airweave-ai/airweave/pull/1587) - Management API pagination now handles users with 50+ organization memberships correctly using per_page=100 and iteration through all pages. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+- **Fixed user refresh selectinload preventing 422 on login** [#1583](https://github.com/airweave-ai/airweave/pull/1583) - Login now uses explicit selectinload queries instead of bare refresh, preventing failed organization serialization. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+- **Deep-copy entities before embedding to avoid mutation race** [#1605](https://github.com/airweave-ai/airweave/pull/1605) - Fixed concurrent execution bug where ChunkEmbedProcessor mutations corrupted entity data in parallel handlers. (Author: [@felixschmetz](https://github.com/felixschmetz/))
+- **Fixed MissingGreenlet in async ORM operations** [#1588](https://github.com/airweave-ai/airweave/pull/1588) - Snapshot ORM scalars before UoW commits to prevent lazy-load access after expiration in org membership and user provisioning flows. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+- **Fixed Connect test page URL detection** [#1616](https://github.com/airweave-ai/airweave/pull/1616) - Test page now derives iframe and API URLs from hostname instead of hardcoding localhost, enabling deployment to non-localhost environments. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+- **Removed incorrect Connect CORS origin** [#1615](https://github.com/airweave-ai/airweave/pull/1615) - Dropped non-existent connect.airweave.ai subdomain from CORS allowlist, keeping only the valid app.airweave.ai production origin. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+
+### Infrastructure
+- **Migrated Python runtime to 3.13** [#1534](https://github.com/airweave-ai/airweave/pull/1534) - Updated all Dockerfiles, CI, and `pyproject.toml` to Python 3.13 for toolchain consistency and modern async features. (Author: [@hiddeco](https://github.com/hiddeco/))
+- **Auth0 user ID updated on login instead of 409 conflict** [#1581](https://github.com/airweave-ai/airweave/pull/1581) - Removed account conflict error path; email is now the source of truth for user identity and auth0_id is updated on login. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+- **Fixed organization feature flag schema validation** [#1579](https://github.com/airweave-ai/airweave/pull/1579) - Unknown feature flags in cached/API responses are now filtered before schema validation, preventing 422 errors on deprecated flags. (Author: [@orhanrauf](https://github.com/orhanrauf/))
+
+### Internal Changes
+- **Refactored Temporal service singletons to protocol DI** - Legacy singleton imports in core/temporal_service.py and platform/temporal/schedule_service.py replaced with constructor-injected protocol services across activities and endpoints.
+- **Simplified processor strategy pattern** - Removed ProcessingRequirement enum and single-valued ContentProcessor indirection; ChunkEmbedProcessor now inlined directly in DestinationHandler.
+- **Eliminated source table and db_sync** - Source definitions now served exclusively from in-memory SourceRegistry; removed database table, CRUD layer, and runtime sync.
+- **Enhanced source and collection repositories with injected dependencies** - Moved collection status computation and ephemeral attachment into repository layer using injected SourceRegistry for federated lookups.

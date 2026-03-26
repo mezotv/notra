@@ -11,6 +11,18 @@ export const ratelimit = {
     prefix: "ratelimit:healthcheck",
     limiter: Ratelimit.slidingWindow(2, "1m"),
   }),
+  fetchTweet: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:fetch-tweet",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
+  importTweets: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:import-tweets",
+    limiter: Ratelimit.slidingWindow(20, "1m"),
+  }),
 };
 
 export function getClientIp(request: NextRequest): string {

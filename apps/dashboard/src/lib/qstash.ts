@@ -1,9 +1,18 @@
 import { Client as WorkflowClient } from "@upstash/workflow";
 
-const token = process.env.QSTASH_TOKEN;
+let cachedWorkflowClient: WorkflowClient | undefined;
 
-if (!token) {
-  throw new Error("QSTASH_TOKEN is not defined");
+export function getWorkflowClient() {
+  if (cachedWorkflowClient) {
+    return cachedWorkflowClient;
+  }
+
+  const token = process.env.QSTASH_TOKEN;
+
+  if (!token) {
+    throw new Error("QSTASH_TOKEN is not defined");
+  }
+
+  cachedWorkflowClient = new WorkflowClient({ token });
+  return cachedWorkflowClient;
 }
-
-export const workflowClient = new WorkflowClient({ token });

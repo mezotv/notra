@@ -96,6 +96,7 @@ export function LinkedInEditor({
             className="w-full max-w-lg"
             content={currentMarkdown}
             defaultExpanded
+            onContentChange={(value) => actions.setEditedMarkdown(value)}
             onSelectionChange={actions.onSelectionChange}
             timestamp="Just now"
             truncate={false}

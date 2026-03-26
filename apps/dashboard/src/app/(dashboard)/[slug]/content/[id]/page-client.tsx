@@ -1,20 +1,29 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { SentIcon, TextIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
-
+import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
+import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import remend from "remend";
 import { toast } from "sonner";
 import ChatInput, {
@@ -24,9 +33,17 @@ import ChatInput, {
 import { getContentTypeLabel } from "@/components/content/content-card";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
+import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
+import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { sourceMetadataSchema } from "@/schemas/content";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
+import { createLinkedInPostUrl } from "@/utils/linkedin";
+import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -66,6 +83,12 @@ function formatDateRange(start: string, end: string): string {
 }
 
 function formatTriggerType(type: string): string {
+  if (type === "cron") {
+    return "Schedule";
+  }
+  if (type === "github_webhook") {
+    return "GitHub Webhook";
+  }
   return formatSnakeCaseLabel(type);
 }
 
@@ -82,8 +105,15 @@ export default function PageClient({
   organizationId,
 }: PageClientProps) {
   const { state: sidebarState } = useSidebar();
+  const queryClient = useQueryClient();
   const { data, isPending, error } = useContent(organizationId, contentId);
   const { refetch: refetchCustomer } = useCustomer();
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId },
+      enabled: !!organizationId,
+    })
+  );
   const { activeOrganization } = useOrganizationsContext();
 
   const [editedMarkdown, setEditedMarkdown] = useState<string | null>(null);
@@ -95,8 +125,8 @@ export default function PageClient({
 
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
-  const handleSaveRef = useRef<() => void>(() => {});
-  const handleDiscardRef = useRef<() => void>(() => {});
+  const handleSaveRef = useRef<(() => void) | null>(null);
+  const handleDiscardRef = useRef<(() => void) | null>(null);
   const needsNormalizationRef = useRef(false);
   const originalMarkdownRef = useRef("");
   const editedMarkdownRef = useRef<string | null>(null);
@@ -155,7 +185,7 @@ export default function PageClient({
 
     setIsSaving(true);
     try {
-      const body: Record<string, string> = {};
+      const body: Record<string, string | null> = {};
       if (hasTitleChanges) {
         body.title = title.trim();
       }
@@ -163,20 +193,11 @@ export default function PageClient({
         body.markdown = editedMarkdown;
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to save");
-      }
-
-      const responseData = (await response.json()) as {
+      const responseData = (await dashboardOrpc.content.update.call({
+        organizationId,
+        contentId,
+        ...body,
+      })) as {
         content?: { title?: string };
       };
 
@@ -186,6 +207,16 @@ export default function PageClient({
       }
       setPersistedTitle(responseData.content?.title ?? title.trim());
       setEditingTitle(null);
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.get.queryKey({
+            input: { organizationId, contentId },
+          }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.list.key(),
+        }),
+      ]);
       toast.success("Content saved");
     } catch {
       toast.error("Failed to save content");
@@ -199,6 +230,7 @@ export default function PageClient({
     editedMarkdown,
     organizationId,
     contentId,
+    queryClient,
   ]);
 
   const handleDiscard = useCallback(() => {
@@ -207,6 +239,46 @@ export default function PageClient({
     editorRef.current?.setMarkdown(originalMarkdown);
     setEditingTitle(null);
   }, [originalMarkdown]);
+
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+
+  const handleToggleStatus = useCallback(async () => {
+    const currentStatus = data?.content?.status;
+    if (!currentStatus) {
+      return;
+    }
+    setIsTogglingStatus(true);
+    const newStatus = currentStatus === "published" ? "draft" : "published";
+    try {
+      await dashboardOrpc.content.update.call({
+        organizationId,
+        contentId,
+        status: newStatus,
+      });
+      toast.success(
+        newStatus === "published" ? "Post published" : "Post moved to drafts"
+      );
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.get.queryKey({
+            input: { organizationId, contentId },
+          }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.list.key(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.metrics.get.queryKey({
+            input: { organizationId },
+          }),
+        }),
+      ]);
+    } catch {
+      toast.error("Failed to update post status");
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }, [data?.content?.status, organizationId, contentId, queryClient]);
 
   useEffect(() => {
     handleSaveRef.current = handleSave;
@@ -224,7 +296,7 @@ export default function PageClient({
               </span>
               <Button
                 onClick={() => {
-                  handleDiscardRef.current();
+                  handleDiscardRef.current?.();
                   toast.dismiss(t);
                 }}
                 size="sm"
@@ -234,7 +306,7 @@ export default function PageClient({
               </Button>
               <Button
                 onClick={() => {
-                  handleSaveRef.current();
+                  handleSaveRef.current?.();
                   toast.dismiss(t);
                 }}
                 size="sm"
@@ -362,7 +434,9 @@ export default function PageClient({
           );
           return;
         }
-      } catch {}
+      } catch {
+        // Ignore non-JSON error payloads.
+      }
 
       toast.error("Failed to edit content");
     },
@@ -402,6 +476,24 @@ export default function PageClient({
     }
     return undefined;
   })();
+
+  const completionMessage = useMemo(() => {
+    if (status === "streaming" || status === "submitted") {
+      return null;
+    }
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message?.role === "assistant" && message.parts) {
+        for (let j = message.parts.length - 1; j >= 0; j--) {
+          const part = message.parts[j];
+          if (part?.type === "text" && part.text?.trim()) {
+            return part.text.trim();
+          }
+        }
+      }
+    }
+    return null;
+  }, [messages, status]);
 
   const processedToolCallsRef = useRef<Set<string>>(new Set());
 
@@ -478,7 +570,7 @@ export default function PageClient({
   return (
     <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Link
             className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             href={`/${organizationSlug}/content`}
@@ -501,7 +593,7 @@ export default function PageClient({
               Back to Content
             </Button>
           </Link>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-1 flex-col gap-1">
             <div className="flex items-center gap-3">
               <time
                 className="text-muted-foreground text-sm"
@@ -511,6 +603,12 @@ export default function PageClient({
               </time>
               <Badge className="capitalize" variant="secondary">
                 {getContentTypeLabel(content.contentType)}
+              </Badge>
+              <Badge
+                className="capitalize"
+                variant={content.status === "published" ? "default" : "outline"}
+              >
+                {content.status}
               </Badge>
             </div>
             {content.sourceMetadata &&
@@ -562,9 +660,118 @@ export default function PageClient({
                       meta.lookbackRange.end
                     )}
                     )
+                    {meta.brandVoiceName &&
+                      (() => {
+                        const voice = meta.brandVoiceId
+                          ? brandResponse?.voices.find(
+                              (v) => v.id === meta.brandVoiceId
+                            )
+                          : brandResponse?.voices.find(
+                              (v) => v.name === meta.brandVoiceName
+                            );
+                        return (
+                          <>
+                            {" \u00B7 "}
+                            {voice ? (
+                              <Tooltip>
+                                <TooltipTrigger
+                                  render={
+                                    <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                      {meta.brandVoiceName}
+                                    </span>
+                                  }
+                                />
+                                <TooltipContent
+                                  className="flex items-start gap-3"
+                                  side="top"
+                                >
+                                  <Avatar
+                                    className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
+                                    size="sm"
+                                  >
+                                    <AvatarImage
+                                      src={getBrandFaviconUrl(voice.websiteUrl)}
+                                    />
+                                    <AvatarFallback className="text-xs">
+                                      {voice.name.slice(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="space-y-0.5">
+                                    <p className="font-medium">{voice.name}</p>
+                                    {voice.toneProfile && (
+                                      <p>Tone: {voice.toneProfile}</p>
+                                    )}
+                                    {voice.language && (
+                                      <p>Language: {voice.language}</p>
+                                    )}
+                                    {voice.companyName && (
+                                      <p>Company: {voice.companyName}</p>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              meta.brandVoiceName
+                            )}
+                          </>
+                        );
+                      })()}
                   </p>
                 );
               })()}
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Button
+              disabled={isTogglingStatus}
+              onClick={handleToggleStatus}
+              size="sm"
+              variant={content.status === "draft" ? "default" : "outline"}
+            >
+              <HugeiconsIcon
+                className="size-4"
+                icon={content.status === "published" ? TextIcon : SentIcon}
+              />
+              {isTogglingStatus
+                ? "Updating..."
+                : content.status === "published"
+                  ? "Move to draft"
+                  : "Publish"}
+            </Button>
+            {content.contentType === "linkedin_post" && (
+              <Button
+                className="text-white hover:opacity-90"
+                render={
+                  <a
+                    href={createLinkedInPostUrl(currentMarkdown)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <Linkedin className="size-4" />
+                    Post to LinkedIn
+                  </a>
+                }
+                size="sm"
+                style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+              />
+            )}
+            {content.contentType === "twitter_post" && (
+              <Button
+                className="text-white hover:opacity-90"
+                nativeButton={false}
+                render={
+                  <a
+                    href={createTwitterPostUrl(currentMarkdown)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <XTwitter className="size-4" />
+                    Post to X
+                  </a>
+                }
+                size="sm"
+                style={{ backgroundColor: TWITTER_BRAND_COLOR }}
+              />
+            )}
           </div>
         </div>
 
@@ -607,6 +814,8 @@ export default function PageClient({
           }}
         />
 
+        <RecommendationsSection value={content.recommendations} />
+
         <div className="h-24" />
       </div>
 
@@ -614,6 +823,7 @@ export default function PageClient({
         className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"}`}
       >
         <ChatInput
+          completionMessage={completionMessage}
           context={context}
           error={chatError}
           isLoading={status === "streaming" || status === "submitted"}

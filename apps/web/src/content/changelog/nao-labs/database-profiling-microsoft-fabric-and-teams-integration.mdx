@@ -1,0 +1,56 @@
+---
+title: "nao Labs Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This week brings foundational improvements to analytics discovery and enterprise deployment options. Database profiling enables data teams to understand table characteristics within nao's context system, Microsoft Fabric support adds SQL Analytics endpoints for Fabric customers, and Microsoft Teams "
+---
+
+This week brings foundational improvements to analytics discovery and enterprise deployment options. Database profiling enables data teams to understand table characteristics within nao's context system, Microsoft Fabric support adds SQL Analytics endpoints for Fabric customers, and Microsoft Teams deployment lets business users query data directly in their workspace. We also shipped context window visualization so you can see exactly how much context your queries consume, an improved chat interface with data context shortcuts, and KPI card support for quick metric views.
+
+## Highlights
+
+### Database profiling for warehouse discovery
+Added profiling accessor across DuckDB, PostgreSQL, and MSSQL warehouses. The profiling feature generates summary statistics, column information, and top values for tables, automatically included in the agent context. Teams can configure refresh policies to balance context freshness against query costs.
+
+### Microsoft Fabric Data Warehouse and SQL Analytics Endpoint support
+New database connector for Microsoft Fabric with four authentication modes: SQL password, Azure CLI, Azure Interactive (browser-based AD), and service principal. Handles ODBC token injection, pandas 2.0+ compatibility, and proper system schema filtering for production reliability.
+
+### Microsoft Teams bot deployment channel
+Deployed nao as a Microsoft Teams bot, enabling business users to query data without leaving their workspace. The bot supports chat, story sharing, and image rendering within Teams native UI, filling the gap between web and Slack integrations.
+
+### Context window visualization in chat input
+Added real-time context token tracking as a donut ring in the chat input bar. Shows current token usage against the model's limit, helping teams understand how much context remains before hitting truncation. Updates dynamically as context is added or cleared.
+
+### Enhanced chat input with data context menu
+Added a plus menu in chat input for inserting Story mode, available skills, and database table mentions. Includes a context picker that reads your databases folder, making it faster to reference specific tables without typing.
+
+## More Updates
+
+### Features & Enhancements
+- **KPI cards for quick metric display** [#379](https://github.com/getnao/nao/pull/379) - Agents can now render key performance indicators as data cards in chat and stories, complementing the existing chart tools. (Author: [@cainemerrick98](https://github.com/cainemerrick98/))
+- **Editable titles with AI-assisted naming** [#442](https://github.com/getnao/nao/pull/442) - Chat conversations now have editable titles in the header, with optional AI-generated suggestions for quick naming. (Author: [@Bl3f](https://github.com/Bl3f/))
+- **Email notifications on story sharing** [#438](https://github.com/getnao/nao/commit/0b017274969bd15b4634a554451510f7d8d184b8) - When users share a story, recipients receive an email notification with access details. (Author: [@MatLBS](https://github.com/MatLBS/))
+- **GitHub and Slack community links in sidebar** [#435](https://github.com/getnao/nao/pull/435) - Added direct links to GitHub repository and Slack community in the sidebar for easier access to help and discussions. (Author: [@Rish-it](https://github.com/Rish-it/))
+- **Stacked bar chart validation improvement** [#417](https://github.com/getnao/nao/commit/16a7a709377fe5ea764382863fdb2e87e5d77201) - Enhanced validation for stacked bar charts to require at least two data series with clearer error messaging. (Author: [@cainemerrick98](https://github.com/cainemerrick98/))
+- **AI-powered annotations in CLI templates** [#382](https://github.com/getnao/nao/commit/6b598fbff64f955652b86391f012f08c94270b76) - CLI now supports AI-generated summaries and annotations in templates, with gating for interactive mode. (Author: [@Flamki](https://github.com/Flamki/))
+- **LLM model configuration responsive layout** [#450](https://github.com/getnao/nao/commit/7e40ff1153713b81cc12664af98e89c63a1517b3) - LLM configuration sections now adapt to different screen sizes for better mobile and tablet experience. (Author: [@MatLBS](https://github.com/MatLBS/))
+- **Improved Slack and Teams setup forms** [#436](https://github.com/getnao/nao/commit/6728e3fb56adeb9365a07b66933f5e38cc42c115) - Streamlined setup flows for Slack and Teams integrations with better guidance. (Author: [@MatLBS](https://github.com/MatLBS/))
+- **AWS region support in CLI** [#420](https://github.com/getnao/nao/commit/f7248b528e5cfc908630bf78b2cd512fa08990d0) - CLI now accepts AWS_REGION environment variable for deployments across different AWS regions. (Author: [@Bl3f](https://github.com/Bl3f/))
+- **CLI config validation flow** [#411](https://github.com/getnao/nao/commit/da10d798356ff8de601d9b05e5da90859386dbb2) - Running `nao init` with an invalid existing config now runs the update flow instead of erroring out. (Author: [@varunguleriaCodes](https://github.com/varunguleriaCodes/))
+- **User menu text truncation** [#453](https://github.com/getnao/nao/commit/fb306a433c54687524250da66fe856fdc4f38386) - Fixed long email and username display in sidebar user menu to prevent layout overflow. (Author: [@MatLBS](https://github.com/MatLBS/))
+
+### Infrastructure
+- **Automated documentation updates** [#428](https://github.com/getnao/nao/commit/4dcaccd80db96767c23d3b5468cebd3ef6c416f4) - Documentation reference updates are now automated via GitHub Actions to stay in sync with code changes. (Author: [@Bl3f](https://github.com/Bl3f/))
+- **PR preview deployments** [#437](https://github.com/getnao/nao/pull/437) - Automatically deploy preview environments for each pull request at preview.getnao.io subdomains. Previews include seeded test data and update on every push. (Author: [@Bl3f](https://github.com/Bl3f/))
+- **Teams bot integration in usage analytics** [#444](https://github.com/getnao/nao/commit/7c4351053098dbb4a4ce48e0d2b221fb9b1fb1d3) - Added Microsoft Teams as a third series in the messages usage chart alongside Web and Slack. Also made Fabric dependencies lazy-load to prevent import errors when unixodbc is unavailable. (Author: [@MatLBS](https://github.com/MatLBS/))
+- **Timezone awareness in system prompts** [#427](https://github.com/getnao/nao/commit/6c31254556491f809b73686d779d369680b66b19) - System prompt now includes user timezone information for better date/time understanding in queries. Fetches timezone from Slack when available. (Author: [@Bl3f](https://github.com/Bl3f/))
+- **Analytics event tracking improvements** [#445](https://github.com/getnao/nao/commit/b98ec1458e2fd97addedc75ce2e73cb606668e4c) - Fixed event correlation across frontend and backend by linking project_id and domain_host throughout the event pipeline, including Teams service and Slack events. (Author: [@paulpriyanshu](https://github.com/paulpriyanshu/))
+
+### Bug Fixes
+- **Message feedback routing** - Fixed feedback submission to correctly route to the intended message ID. (Author: [@socallmebertille](https://github.com/socallmebertille/))
+- **User message alignment** - Fixed user messages to display right-aligned in chat conversations. (Author: [@MatLBS](https://github.com/MatLBS/))
+
+### Testing
+- **Database profiling integration tests** - Added comprehensive integration tests for profiling implementations across DuckDB, MSSQL, PostgreSQL, and BigQuery warehouses.
+
+### Documentation
+- **Stacked bar validation messaging** - Improved error messages for stacked bar chart validation to guide users toward correct chart configuration.

@@ -1,0 +1,22 @@
+{
+  "name": "@notra/content-generation",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    "./jobs": "./src/jobs.ts",
+    "./schemas": "./src/schemas.ts"
+  },
+  "dependencies": {
+    "@notra/ai": "workspace:*",
+    "@upstash/redis": "^1.35.8",
+    "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
@@ -264,13 +265,21 @@ export async function sendScheduledContentCreatedEmail(
     recipientEmail,
     organizationName,
     scheduleName,
-    contentTitle,
+    createdContent,
     contentType,
-    contentLink,
+    contentOverviewLink,
     organizationSlug,
     subject,
   }: SendScheduledContentCreatedEmailProps
 ) {
+  const rawIdempotencySuffix = createdContent
+    .map((item) => item.contentLink)
+    .join(",");
+  const idempotencySuffix = createHash("sha256")
+    .update(rawIdempotencySuffix)
+    .digest("hex")
+    .slice(0, 32);
+
   return sendWithRetry(
     resend,
     {
@@ -282,12 +291,12 @@ export async function sendScheduledContentCreatedEmail(
         organizationName,
         organizationSlug,
         scheduleName,
-        contentTitle,
+        createdContent,
         contentType,
-        contentLink,
+        contentOverviewLink,
       }),
       tags: [{ name: "category", value: "schedule-content-created" }],
     },
-    `notra:schedule-content-created:${recipientEmail}:${contentLink}`
+    `notra:schedule-content-created:${recipientEmail}:${idempotencySuffix}`
   );
 }

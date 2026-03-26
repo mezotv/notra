@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -120,9 +121,7 @@ export class KiboCodeBlockNode extends DecoratorNode<JSX.Element> {
 
   decorate(_editor: LexicalEditor, _config: EditorConfig): JSX.Element {
     return (
-      <Suspense
-        fallback={<div className="h-32 animate-pulse rounded-lg bg-muted" />}
-      >
+      <Suspense fallback={<Skeleton className="h-32 rounded-lg" />}>
         <KiboCodeBlockComponent
           code={this.__code}
           language={this.__language}

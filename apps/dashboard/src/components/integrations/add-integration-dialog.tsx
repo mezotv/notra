@@ -20,6 +20,7 @@ import {
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { useForm } from "@tanstack/react-form";
+import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,17 +34,18 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
 import {
   type AddGitHubIntegrationFormValues,
   addGitHubIntegrationFormSchema,
+  githubPersonalAccessTokenSchema,
 } from "@/schemas/integrations";
 import type {
   AddIntegrationDialogProps,
   GitHubIntegration,
   GitHubRepoInfo,
 } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { WebhookSetupDialog } from "./wehook-setup-dialog";
 
 type ProbeStatus = "idle" | "loading" | "success" | "error" | "not_found";
@@ -77,12 +79,11 @@ export function AddIntegrationDialog({
   const [createdIntegration, setCreatedIntegration] =
     useState<GitHubIntegration | null>(null);
   const [showWebhookDialog, setShowWebhookDialog] = useState(false);
-  const [initializedBranchRepos, setInitializedBranchRepos] = useState<
-    Set<string>
-  >(new Set());
+  const initializedBranchReposRef = useRef<Set<string>>(new Set());
 
   const [probeStatus, setProbeStatus] = useState<ProbeStatus>("idle");
   const [tokenOpen, setTokenOpen] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const probeRepo = useCallback(
@@ -94,34 +95,15 @@ export function AddIntegrationDialog({
       setProbeStatus("loading");
 
       try {
-        const response = await fetch("/api/github/probe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ owner, repo, token: token || undefined }),
-          signal: controller.signal,
-        });
-
         if (controller.signal.aborted) {
           return null;
         }
 
-        const payload: unknown = await response.json();
-
-        if (!response.ok) {
-          if (
-            response.status === 401 ||
-            response.status === 403 ||
-            response.status === 404
-          ) {
-            setProbeStatus("not_found");
-            setTokenOpen(true);
-            return null;
-          }
-          setProbeStatus("error");
-          return null;
-        }
-
-        const data = payload as ProbeResult;
+        const data = (await dashboardOrpc.github.probeRepository.call({
+          owner,
+          repo,
+          token: token || undefined,
+        })) as ProbeResult;
 
         if (data.status === "not_found" || data.status === "unauthorized") {
           setProbeStatus("not_found");
@@ -140,6 +122,17 @@ export function AddIntegrationDialog({
         if (error instanceof DOMException && error.name === "AbortError") {
           return null;
         }
+
+        if (
+          error instanceof Error &&
+          (error.message === "Repository not found" ||
+            error.message === "Repository access denied")
+        ) {
+          setProbeStatus("not_found");
+          setTokenOpen(true);
+          return null;
+        }
+
         setProbeStatus("error");
         return null;
       }
@@ -148,14 +141,9 @@ export function AddIntegrationDialog({
   );
 
   useEffect(() => {
-    return () => {
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  useEffect(() => {
     if (open) {
-      setInitializedBranchRepos(new Set());
+      initializedBranchReposRef.current = new Set();
+      setHasAttemptedSubmit(false);
     }
   }, [open]);
 
@@ -169,36 +157,25 @@ export function AddIntegrationDialog({
         throw new Error("Invalid GitHub repository URL");
       }
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            owner: parsed.owner,
-            repo: parsed.repo,
-            branch: values.branch?.trim() || null,
-            token: values.token?.trim() || null,
-            type: "github" as const,
-          }),
-        }
-      );
+      const integration = await dashboardOrpc.integrations.create.call({
+        organizationId,
+        owner: parsed.owner,
+        repo: parsed.repo,
+        branch: values.branch?.trim() || null,
+        token: values.token?.trim() || null,
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create integration");
-      }
-
-      return data;
+      return integration;
     },
     onSuccess: (integration: GitHubIntegration) => {
       if (organizationId) {
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId),
+          queryKey: dashboardOrpc.integrations.key(),
         });
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.ONBOARDING.status(organizationId),
+          queryKey: dashboardOrpc.onboarding.get.queryKey({
+            input: { organizationId },
+          }),
         });
       }
       toast.success("GitHub integration added successfully");
@@ -206,6 +183,7 @@ export function AddIntegrationDialog({
       form.reset();
       setProbeStatus("idle");
       setTokenOpen(false);
+      setHasAttemptedSubmit(false);
       onSuccess?.();
 
       setCreatedIntegration(integration);
@@ -232,6 +210,62 @@ export function AddIntegrationDialog({
   });
 
   const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
+
+  const resetProbeState = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setRepoInfo(null);
+    setProbeStatus("idle");
+    form.setFieldValue("branch", "");
+  }, [form]);
+
+  const initializeBranch = useCallback(
+    (owner: string, repo: string, defaultBranch: string) => {
+      const repoKey = getRepoKey(owner, repo);
+
+      if (initializedBranchReposRef.current.has(repoKey)) {
+        return;
+      }
+
+      initializedBranchReposRef.current.add(repoKey);
+      form.setFieldValue("branch", defaultBranch);
+    },
+    [form]
+  );
+
+  const repoProbeDebouncer = useAsyncDebouncer(
+    async ({
+      owner,
+      repo,
+      token,
+    }: {
+      owner: string;
+      repo: string;
+      token?: string;
+    }) => {
+      const result = await probeRepo(owner, repo, token);
+      const latestParsed = parseGitHubUrl(form.getFieldValue("repoUrl"));
+      const latestToken = form.getFieldValue("token")?.trim() || undefined;
+      const isSameRepo =
+        latestParsed?.owner === owner && latestParsed?.repo === repo;
+
+      if (!isSameRepo || latestToken !== token || !result?.defaultBranch) {
+        return;
+      }
+
+      initializeBranch(owner, repo, result.defaultBranch);
+    },
+    {
+      wait: 400,
+    }
+  );
+
+  useEffect(() => {
+    return () => {
+      repoProbeDebouncer.cancel();
+      abortControllerRef.current?.abort();
+    };
+  }, [repoProbeDebouncer]);
 
   if (!organizationId) {
     return null;
@@ -274,6 +308,7 @@ export function AddIntegrationDialog({
             onSubmit={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              setHasAttemptedSubmit(true);
               form.handleSubmit();
             }}
           >
@@ -281,59 +316,7 @@ export function AddIntegrationDialog({
               <form.Field
                 name="repoUrl"
                 validators={{
-                  onChange: addGitHubIntegrationFormSchema.shape.repoUrl,
-                  onChangeAsyncDebounceMs: 300,
-                  onChangeAsync: ({ value }) => {
-                    if (!value.trim()) {
-                      abortControllerRef.current?.abort();
-                      abortControllerRef.current = null;
-                      setRepoInfo(null);
-                      setProbeStatus("idle");
-                      form.setFieldValue("branch", "");
-                      return;
-                    }
-                    const parsed = parseGitHubUrl(value);
-                    if (parsed) {
-                      setRepoInfo(parsed);
-                      const currentToken = form.getFieldValue("token");
-                      probeRepo(
-                        parsed.owner,
-                        parsed.repo,
-                        currentToken || undefined
-                      )
-                        .then((result) => {
-                          const latestParsed = parseGitHubUrl(
-                            form.getFieldValue("repoUrl")
-                          );
-                          const isSameRepo =
-                            latestParsed?.owner === parsed.owner &&
-                            latestParsed?.repo === parsed.repo;
-                          const repoKey = getRepoKey(parsed.owner, parsed.repo);
-
-                          if (
-                            isSameRepo &&
-                            result?.defaultBranch &&
-                            !initializedBranchRepos.has(repoKey)
-                          ) {
-                            form.setFieldValue("branch", result.defaultBranch);
-                            setInitializedBranchRepos((prev) => {
-                              const next = new Set(prev);
-                              next.add(repoKey);
-                              return next;
-                            });
-                          }
-                        })
-                        .catch(() => {
-                          return null;
-                        });
-                    } else {
-                      abortControllerRef.current?.abort();
-                      abortControllerRef.current = null;
-                      setRepoInfo(null);
-                      setProbeStatus("idle");
-                      form.setFieldValue("branch", "");
-                    }
-                  },
+                  onSubmit: addGitHubIntegrationFormSchema.shape.repoUrl,
                 }}
               >
                 {(field) => (
@@ -342,11 +325,38 @@ export function AddIntegrationDialog({
                     <Input
                       disabled={mutation.isPending}
                       onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        const parsed = parseGitHubUrl(nextValue);
+
+                        setHasAttemptedSubmit(false);
+                        field.handleChange(nextValue);
+
+                        if (!nextValue.trim()) {
+                          repoProbeDebouncer.cancel();
+                          resetProbeState();
+                          return;
+                        }
+
+                        if (!parsed) {
+                          repoProbeDebouncer.cancel();
+                          resetProbeState();
+                          return;
+                        }
+
+                        setRepoInfo(parsed);
+                        repoProbeDebouncer.maybeExecute({
+                          owner: parsed.owner,
+                          repo: parsed.repo,
+                          token:
+                            form.getFieldValue("token")?.trim() || undefined,
+                        });
+                      }}
                       placeholder="https://github.com/facebook/react or facebook/react"
                       value={field.state.value}
                     />
-                    {field.state.meta.errors.length > 0 ? (
+                    {hasAttemptedSubmit &&
+                    field.state.meta.errors.length > 0 ? (
                       <p className="mt-1 text-destructive text-sm">
                         {typeof field.state.meta.errors[0] === "string"
                           ? field.state.meta.errors[0]
@@ -406,7 +416,27 @@ export function AddIntegrationDialog({
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="pt-2">
-                    <form.Field name="token">
+                    <form.Field
+                      name="token"
+                      validators={{
+                        onSubmit: ({ value }) => {
+                          const trimmed = value.trim();
+
+                          if (!trimmed) {
+                            return undefined;
+                          }
+
+                          const validationResult =
+                            githubPersonalAccessTokenSchema.safeParse(trimmed);
+
+                          if (validationResult.success) {
+                            return undefined;
+                          }
+
+                          return validationResult.error.issues[0]?.message;
+                        },
+                      }}
+                    >
                       {(field) => (
                         <Field>
                           {probeStatus === "not_found" ? (
@@ -432,23 +462,12 @@ export function AddIntegrationDialog({
                               ) {
                                 probeRepo(repoInfo.owner, repoInfo.repo, token)
                                   .then((result) => {
-                                    const repoKey = getRepoKey(
-                                      repoInfo.owner,
-                                      repoInfo.repo
-                                    );
-                                    if (
-                                      result?.defaultBranch &&
-                                      !initializedBranchRepos.has(repoKey)
-                                    ) {
-                                      form.setFieldValue(
-                                        "branch",
+                                    if (result?.defaultBranch) {
+                                      initializeBranch(
+                                        repoInfo.owner,
+                                        repoInfo.repo,
                                         result.defaultBranch
                                       );
-                                      setInitializedBranchRepos((prev) => {
-                                        const next = new Set(prev);
-                                        next.add(repoKey);
-                                        return next;
-                                      });
                                     }
                                   })
                                   .catch(() => {
@@ -456,10 +475,25 @@ export function AddIntegrationDialog({
                                   });
                               }
                             }}
-                            onChange={(e) => field.handleChange(e.target.value)}
+                            onChange={(e) => {
+                              setHasAttemptedSubmit(false);
+                              field.handleChange(e.target.value);
+                            }}
                             placeholder="ghp_... (leave empty for public repos)"
                             value={field.state.value}
                           />
+                          {hasAttemptedSubmit &&
+                          field.state.meta.errors.length > 0 ? (
+                            <p className="mt-1 text-destructive text-sm">
+                              {typeof field.state.meta.errors[0] === "string"
+                                ? field.state.meta.errors[0]
+                                : ((
+                                    field.state.meta.errors[0] as unknown as {
+                                      message?: string;
+                                    }
+                                  )?.message ?? "Invalid value")}
+                            </p>
+                          ) : null}
                           <p className="mt-1 text-muted-foreground text-xs">
                             <a
                               className="text-primary hover:underline"
@@ -491,6 +525,7 @@ export function AddIntegrationDialog({
                     disabled={!canSubmit || mutation.isPending}
                     onClick={(e) => {
                       e.preventDefault();
+                      setHasAttemptedSubmit(true);
                       form.handleSubmit();
                     }}
                     type="button"

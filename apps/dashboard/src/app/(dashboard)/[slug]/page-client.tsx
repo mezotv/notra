@@ -1,16 +1,36 @@
 "use client";
 
+import type { ContentType } from "@notra/ai/schemas/content";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 import { ContentCard } from "@/components/content/content-card";
+import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
+import { CreateContentDialog } from "@/components/content/create-content-dialog";
 import { ContentActivityCard } from "@/components/dashboard/content-activity-card";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { authClient } from "@/lib/auth/client";
+import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
-import type { ContentType, PostStatus } from "@/schemas/content";
+import type { PostStatus } from "@/schemas/content";
 
 interface PageClientProps {
   organizationSlug: string;
+}
+
+function getGreeting(now: Date): string {
+  const hour = now.getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
 }
 
 function getPreview(markdown: string): string {
@@ -37,16 +57,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
   const skeletonId = useId();
+  const { data: session } = authClient.useSession();
   const { data, isPending } = useTodayPosts(organizationId);
+  const { data: activeGenerations } = useActiveGenerations(organizationId);
+  const greeting = getGreeting(new Date());
+  const userName = session?.user?.name?.trim();
+  const greetingText = userName ? `${greeting}, ${userName}!` : `${greeting}!`;
   const posts = data?.pages.flatMap((page) => page.posts) ?? [];
-  const previewPosts = posts.slice(0, 3);
+  const visibleGenerations = activeGenerations?.slice(0, 3) ?? [];
+  const hasActiveGenerations = visibleGenerations.length > 0;
+  const maxPreviewPosts = Math.max(0, 3 - visibleGenerations.length);
+  const previewPosts = posts.slice(0, maxPreviewPosts);
   const todayContent = (() => {
-    if (isPending) {
+    if (isPending && !hasActiveGenerations) {
       return (
         <div className="grid auto-rows-[1fr] justify-items-center gap-3 sm:grid-cols-2 sm:justify-items-stretch lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              className="h-[170px] w-full max-w-[340px] rounded-lg border border-border/60 bg-muted/30 sm:h-[140px] sm:max-w-none"
+            <Skeleton
+              className="h-[10.625rem] w-full max-w-[21.25rem] rounded-lg sm:h-[8.75rem] sm:max-w-none"
               key={`${skeletonId}-${index + 1}`}
             />
           ))}
@@ -54,9 +82,21 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       );
     }
 
-    if (previewPosts.length > 0) {
+    if (hasActiveGenerations || previewPosts.length > 0) {
       return (
         <div className="grid auto-rows-[1fr] justify-items-center gap-3 sm:grid-cols-2 sm:justify-items-stretch lg:grid-cols-3">
+          {visibleGenerations.map((gen) => (
+            <div
+              className="w-full max-w-[340px] sm:max-w-none"
+              key={`gen-${gen.runId}`}
+            >
+              <ContentSkeletonCard
+                className="min-h-35"
+                outputType={gen.outputType}
+                source={gen.source}
+              />
+            </div>
+          ))}
           {previewPosts.map((post) => (
             <div className="w-full max-w-[340px] sm:max-w-none" key={post.id}>
               <ContentCard
@@ -88,7 +128,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Welcome!</h1>
+          <h1 className="font-bold text-3xl tracking-tight">{greetingText}</h1>
         </div>
 
         <section className="space-y-4">
@@ -99,6 +139,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 Latest items created today
               </p>
             </div>
+            <CreateContentDialog organizationId={organizationId} />
           </div>
 
           {todayContent}

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "openlogs-server-logs": {
+      "source": "charlietlamb/openlogs",
+      "sourceType": "github",
+      "computedHash": "8f05f0f8c7a0dbdd0b274ae4cb76cb887cc3ca794310907cc15f158c50bfd704"
+    },
+    "turborepo": {
+      "source": "vercel/turborepo",
+      "sourceType": "github",
+      "computedHash": "d7be04aa62c17a202bf9f1b4584283b0b77a94dc84dfd7c9dbc5f2725a17a070"
+    }
+  }
+}

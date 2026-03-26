@@ -331,7 +331,7 @@ function LoginDetailsSection({
         const result = await authClient.changePassword({
           currentPassword: validated.data.currentPassword,
           newPassword: validated.data.newPassword,
-          revokeOtherSessions: false,
+          revokeOtherSessions: true,
         });
 
         if (result.error) {

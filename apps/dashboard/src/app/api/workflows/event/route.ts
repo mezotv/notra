@@ -1,7 +1,9 @@
+import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import {
   brandSettings,
+  contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
   members,
@@ -16,15 +18,30 @@ import { and, eq } from "drizzle-orm";
 import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
+import {
+  trackScheduledContentCreated,
+  trackScheduledContentFailed,
+} from "@/lib/databuddy";
 import { sendScheduledContentCreatedEmail } from "@/lib/email/send";
+import {
+  addActiveGeneration,
+  completeActiveGeneration,
+  generateRunId,
+} from "@/lib/generations/tracking";
+import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
-import { getValidToneProfile } from "@/schemas/brand";
+import {
+  parseLookbackWindow,
+  parseTriggerOutputConfig,
+} from "@/lib/workflows/shared/parsing";
+import type { LookbackWindow } from "@/schemas/integrations";
 import {
   type EventWorkflowPayload,
   eventWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import type { AutumnCheckResponse } from "@/types/autumn";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import type {
   EventGenerationResult,
@@ -63,7 +80,9 @@ export const { POST } = serve<EventWorkflowPayload>(
           name: result.name,
           organizationId: result.organizationId,
           outputType: result.outputType,
+          outputConfig: result.outputConfig,
           enabled: result.enabled,
+          autoPublish: result.autoPublish,
         };
       }
     );
@@ -79,6 +98,18 @@ export const { POST } = serve<EventWorkflowPayload>(
       await context.cancel();
       return;
     }
+
+    const lookbackWindow = await context.run<LookbackWindow>(
+      "fetch-lookback-window",
+      async () => {
+        const lookbackResult =
+          await db.query.contentTriggerLookbackWindows.findFirst({
+            where: eq(contentTriggerLookbackWindows.triggerId, triggerId),
+          });
+
+        return parseLookbackWindow(lookbackResult?.window);
+      }
+    );
 
     const repository = await context.run<WorkflowRepositoryData | null>(
       "fetch-repository",
@@ -117,20 +148,40 @@ export const { POST } = serve<EventWorkflowPayload>(
     const brand = await context.run<WorkflowBrandSettings | null>(
       "fetch-brand-settings",
       async () => {
-        const result = await db.query.brandSettings.findFirst({
-          where: eq(brandSettings.organizationId, trigger.organizationId),
-        });
+        const outputConfig = parseTriggerOutputConfig(trigger.outputConfig);
+        const voiceId = outputConfig?.brandVoiceId;
+
+        let result = voiceId
+          ? await db.query.brandSettings.findFirst({
+              where: and(
+                eq(brandSettings.id, voiceId),
+                eq(brandSettings.organizationId, trigger.organizationId)
+              ),
+            })
+          : null;
+
+        if (!result) {
+          result = await db.query.brandSettings.findFirst({
+            where: and(
+              eq(brandSettings.organizationId, trigger.organizationId),
+              eq(brandSettings.isDefault, true)
+            ),
+          });
+        }
 
         if (!result) {
           return null;
         }
 
         return {
+          id: result.id,
+          name: result.name,
           toneProfile: result.toneProfile,
           companyName: result.companyName,
           companyDescription: result.companyDescription,
           audience: result.audience,
           customInstructions: result.customInstructions,
+          language: result.language,
         };
       }
     );
@@ -143,14 +194,15 @@ export const { POST } = serve<EventWorkflowPayload>(
         return { canceled: false, reserved: false };
       }
 
-      const { data, error } = await autumn.check({
-        customer_id: trigger.organizationId,
-        feature_id: FEATURES.AI_CREDITS,
-        required_balance: 1,
-        send_event: true,
-      });
-
-      if (error) {
+      let data: AutumnCheckResponse | null = null;
+      try {
+        data = await autumn.check({
+          customerId: trigger.organizationId,
+          featureId: FEATURES.AI_CREDITS,
+          requiredBalance: 1,
+          sendEvent: true,
+        });
+      } catch (error) {
         throw new Error(`Autumn check failed: ${String(error)}`);
       }
 
@@ -175,6 +227,20 @@ export const { POST } = serve<EventWorkflowPayload>(
       async () => checkLogRetention(trigger.organizationId)
     );
 
+    const runId = await context.run("generate-run-id", () =>
+      generateRunId(triggerId)
+    );
+
+    await context.run("track-generation-start", async () => {
+      await addActiveGeneration(trigger.organizationId, {
+        runId,
+        triggerId: trigger.id,
+        outputType: trigger.outputType,
+        triggerName: trigger.name.trim() || `${eventType} event`,
+        startedAt: new Date().toISOString(),
+      });
+    });
+
     try {
       const sourceMetadata: PostSourceMetadata = {
         triggerId: trigger.id,
@@ -182,6 +248,8 @@ export const { POST } = serve<EventWorkflowPayload>(
         eventType,
         eventAction,
         repositories: [{ owner: repository.owner, repo: repository.name }],
+        brandVoiceName: brand?.name,
+        brandVoiceId: brand?.id,
       };
 
       const tone = getValidToneProfile(brand?.toneProfile, "Conversational");
@@ -208,21 +276,35 @@ export const { POST } = serve<EventWorkflowPayload>(
               customInstructions: brand?.customInstructions ?? null,
             },
             sourceMetadata,
+            autoPublish: trigger.autoPublish,
+            resolveContext: getGitHubToolRepositoryContextByIntegrationId,
           });
         }
       );
 
       if (contentResult.status === "unsupported_output_type") {
+        await context.run("track-generation-end-unsupported", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || `${eventType} event`,
+            status: "failed",
+            reason: "Unsupported output type",
+            completedAt: new Date().toISOString(),
+          });
+        });
+
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run("refund-ai-credit-unsupported", async () => {
-            const { error } = await autumnClient.track({
-              customer_id: trigger.organizationId,
-              feature_id: FEATURES.AI_CREDITS,
-              value: 0,
-            });
-
-            if (error) {
+            try {
+              await autumnClient.track({
+                customerId: trigger.organizationId,
+                featureId: FEATURES.AI_CREDITS,
+                value: 0,
+              });
+            } catch (error) {
               console.error("[Event] Failed to refund AI credit:", error);
             }
           });
@@ -236,16 +318,28 @@ export const { POST } = serve<EventWorkflowPayload>(
       }
 
       if (contentResult.status === "generation_failed") {
+        await context.run("track-generation-end-failure", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || `${eventType} event`,
+            status: "failed",
+            reason: contentResult.reason,
+            completedAt: new Date().toISOString(),
+          });
+        });
+
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run("refund-ai-credit-failure", async () => {
-            const { error } = await autumnClient.track({
-              customer_id: trigger.organizationId,
-              feature_id: FEATURES.AI_CREDITS,
-              value: 0,
-            });
-
-            if (error) {
+            try {
+              await autumnClient.track({
+                customerId: trigger.organizationId,
+                featureId: FEATURES.AI_CREDITS,
+                value: 0,
+              });
+            } catch (error) {
               console.error("[Event] Failed to refund AI credit:", error);
             }
           });
@@ -264,6 +358,29 @@ export const { POST } = serve<EventWorkflowPayload>(
           });
         });
 
+        await context.run("track-content-failed", async () => {
+          try {
+            await trackScheduledContentFailed({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              outputType: trigger.outputType,
+              reason: contentResult.reason,
+              lookbackWindow,
+              repositoryCount: 1,
+              source: "event",
+            });
+          } catch (trackingError) {
+            console.error(
+              "[Event] Failed to track content generation failure",
+              {
+                triggerId,
+                organizationId: trigger.organizationId,
+                error: trackingError,
+              }
+            );
+          }
+        });
+
         console.error(
           `[Event] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
@@ -271,19 +388,95 @@ export const { POST } = serve<EventWorkflowPayload>(
         return;
       }
 
-      const { postId, title: contentTitle } = contentResult;
+      const createdPosts = contentResult.posts;
+
+      if (createdPosts.length === 0) {
+        console.error("[Event] Content generation returned no posts", {
+          triggerId,
+          organizationId: trigger.organizationId,
+        });
+        await context.cancel();
+        return;
+      }
+
+      const [primaryPost] = createdPosts;
+
+      if (!primaryPost) {
+        console.error("[Event] Missing primary post after generation", {
+          triggerId,
+          organizationId: trigger.organizationId,
+        });
+        await context.cancel();
+        return;
+      }
+
+      const postId = primaryPost.postId;
+      const contentTitle =
+        createdPosts.length === 1
+          ? primaryPost.title
+          : `${createdPosts.length} ${trigger.outputType.replaceAll("_", " ")} drafts`;
+
+      await context.run("track-generation-end-success", async () => {
+        await completeActiveGeneration(trigger.organizationId, {
+          runId,
+          triggerId,
+          outputType: trigger.outputType,
+          triggerName: trigger.name.trim() || `${eventType} event`,
+          status: "success",
+          title: contentTitle,
+          completedAt: new Date().toISOString(),
+        });
+      });
 
       await context.run("log-generation-success", async () => {
         await appendWebhookLog({
           organizationId: trigger.organizationId,
           integrationId: triggerId,
           integrationType: "events",
-          title: `Event "${trigger.name.trim() || eventType}" created "${contentTitle}"`,
+          title:
+            createdPosts.length === 1
+              ? `Event "${trigger.name.trim() || eventType}" created "${contentTitle}"`
+              : `Event "${trigger.name.trim() || eventType}" created ${createdPosts.length} drafts`,
           status: "success",
           statusCode: null,
           referenceId: postId,
           retentionDays: logRetentionDays,
         });
+      });
+
+      await context.run("track-content-created", async () => {
+        const trackingResults = await Promise.allSettled(
+          createdPosts.map((createdPost) =>
+            trackScheduledContentCreated({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              postId: createdPost.postId,
+              outputType: trigger.outputType,
+              lookbackWindow,
+              repositoryCount: 1,
+              source: "event",
+            })
+          )
+        );
+
+        const failedTracking = trackingResults.flatMap((result, index) =>
+          result.status === "rejected"
+            ? [
+                {
+                  postId: createdPosts[index]?.postId ?? "unknown",
+                  error: result.reason,
+                },
+              ]
+            : []
+        );
+
+        if (failedTracking.length > 0) {
+          console.error("[Event] Failed to track some created posts", {
+            triggerId,
+            organizationId: trigger.organizationId,
+            failures: failedTracking,
+          });
+        }
       });
 
       const notificationData = await context.run<{
@@ -339,7 +532,11 @@ export const { POST } = serve<EventWorkflowPayload>(
 
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
-          const contentLink = `${baseUrl}/${notificationData.organizationSlug}/content/${postId}`;
+          const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
+          const createdContent = createdPosts.map((createdPost) => ({
+            title: createdPost.title,
+            contentLink: `${contentOverviewLink}/${createdPost.postId}`,
+          }));
           const triggerName = trigger.name.trim() || `${eventType} event`;
 
           await Promise.allSettled(
@@ -348,9 +545,9 @@ export const { POST } = serve<EventWorkflowPayload>(
                 recipientEmail: email,
                 organizationName: notificationData.organizationName,
                 scheduleName: triggerName,
-                contentTitle,
+                createdContent,
                 contentType: trigger.outputType,
-                contentLink,
+                contentOverviewLink,
                 organizationSlug: notificationData.organizationSlug,
                 subject: `New content created from ${eventType} event`,
               }).then((result) => {
@@ -372,16 +569,28 @@ export const { POST } = serve<EventWorkflowPayload>(
         throw error;
       }
 
+      await context.run("track-generation-end-error", async () => {
+        await completeActiveGeneration(trigger.organizationId, {
+          runId,
+          triggerId,
+          outputType: trigger.outputType,
+          triggerName: trigger.name.trim() || `${eventType} event`,
+          status: "failed",
+          reason: "Unexpected workflow error",
+          completedAt: new Date().toISOString(),
+        });
+      });
+
       const autumnClient = autumn;
       if (aiCreditReservation.reserved && autumnClient) {
         await context.run("refund-ai-credit-error", async () => {
-          const { error: refundError } = await autumnClient.track({
-            customer_id: trigger.organizationId,
-            feature_id: FEATURES.AI_CREDITS,
-            value: 0,
-          });
-
-          if (refundError) {
+          try {
+            await autumnClient.track({
+              customerId: trigger.organizationId,
+              featureId: FEATURES.AI_CREDITS,
+              value: 0,
+            });
+          } catch (refundError) {
             console.error("[Event] Failed to refund AI credit:", refundError);
           }
         });

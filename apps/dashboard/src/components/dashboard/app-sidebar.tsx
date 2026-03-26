@@ -158,7 +158,7 @@ export function DashboardSidebar({
                 >
                   <SidebarMenuButton
                     render={
-                      <Link href={`/${slug}/settings/account`}>
+                      <Link href={`/${slug}/settings/general`}>
                         <HugeiconsIcon icon={Settings01Icon} />
                         <span>Settings</span>
                       </Link>

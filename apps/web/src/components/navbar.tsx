@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { MARKETING_NAV_LINKS } from "@/utils/navigation";
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -94,30 +95,17 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <div className="hidden items-start justify-start gap-2 pl-3 sm:flex sm:gap-3 sm:pl-4 md:gap-4 md:pl-5 lg:gap-4 lg:pl-5">
-                <Link
-                  className="flex items-center justify-start"
-                  href="/#features"
-                >
-                  <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
-                    Features
-                  </div>
-                </Link>
-                <Link
-                  className="flex items-center justify-start"
-                  href="/pricing"
-                >
-                  <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
-                    Pricing
-                  </div>
-                </Link>
-                <Link
-                  className="flex items-center justify-start"
-                  href="/changelog"
-                >
-                  <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
-                    Showcase
-                  </div>
-                </Link>
+                {MARKETING_NAV_LINKS.map((link) => (
+                  <Link
+                    className="flex items-center justify-start"
+                    href={link.href}
+                    key={link.href}
+                  >
+                    <div className="flex flex-col justify-center font-medium font-sans text-foreground/80 text-xs leading-[14px] transition-colors hover:text-foreground md:text-[13px]">
+                      {link.label}
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
             <div className="hidden h-6 items-start justify-start gap-2 sm:flex sm:h-7 sm:gap-3 md:h-8">
@@ -170,27 +158,16 @@ export function Navbar() {
       {isOpen && (
         <div className="fixed inset-0 z-15 flex flex-col items-center justify-center gap-6 bg-background px-8 sm:hidden">
           <nav className="flex flex-col items-center gap-6">
-            <Link
-              className="font-medium font-sans text-foreground text-lg"
-              href="/#features"
-              onClick={() => setIsOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              className="font-medium font-sans text-foreground text-lg"
-              href="/pricing"
-              onClick={() => setIsOpen(false)}
-            >
-              Pricing
-            </Link>
-            <Link
-              className="font-medium font-sans text-foreground text-lg"
-              href="/changelog"
-              onClick={() => setIsOpen(false)}
-            >
-              Showcase
-            </Link>
+            {MARKETING_NAV_LINKS.map((link) => (
+              <Link
+                className="font-medium font-sans text-foreground text-lg"
+                href={link.href}
+                key={link.href}
+                onClick={() => setIsOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
           <div className="flex flex-col items-center gap-3">
             <ThemeToggle />

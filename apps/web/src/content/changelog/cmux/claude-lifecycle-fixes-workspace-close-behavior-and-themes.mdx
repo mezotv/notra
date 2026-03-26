@@ -1,0 +1,72 @@
+---
+title: "cmux Changelog - March 8-15, 2026"
+date: "2026-03-15"
+description: "Claude sidebar lifecycle fixes, workspace close behavior updates, interactive themes, socket listener reliability, and compact sidebar improvements in cmux 0.62.2."
+---
+
+Version 0.62.2 brings substantial improvements to workspace management, sidebar customization, and theme support. The release fixes stale Claude sidebar status with better lifecycle tracking and PID-aware cleanup, resolves critical window closing behavior so Cmd+W properly closes workspaces and windows, and adds a new `cmux themes` command for interactive theme management with persistent overrides. You can now adjust sidebar width constraints for more compact layouts, search across all surfaces with enhanced Cmd+P functionality, and enjoy improved dictation support and clipboard handling for image pasting. Bug fixes address command palette navigation, socket listener reliability, workspace creation crashes, and cwd inheritance in splits. The release also enhances settings UI clarity, adds Discord community links, and includes better error recovery for daemon RPC calls with throttled restart logic.
+
+## Highlights
+
+### Claude sidebar status lifecycle and stale process cleanup
+Fix persistent "Needs input" and permission-grant statuses with new lifecycle hooks, PID-aware tracking, and a 30-second sweep timer to clear dead processes.
+
+### Cmd+W closes workspaces and windows as expected
+Explicit close gestures (Cmd+W, tab X button) now close the workspace and window when closing the last terminal, while internal closes (process exit, panel moves) keep the workspace alive with a replacement shell.
+
+### Interactive cmux themes command
+New `cmux themes` CLI with list, set, clear operations; interactive picker with live preview; persistent light/dark overrides stored in Application Support with hot-reload.
+
+### Socket listener falls back to user-scoped path
+Socket moves to Application Support with automatic fallback to per-user `/tmp/cmux-<uid>.sock` on permission errors; improves reliability across different system states.
+
+### Smaller sidebar widths with centralized clamping
+Reduce sidebar minimum from 186 to 180 pixels for more compact layouts; unified drag and persistence clamping prevents inconsistent behavior.
+
+## More Updates
+
+### Bug Fixes
+
+- **Fix stale Claude sidebar status: add missing hooks, OSC suppression, PID sweep** [#1306](https://github.com/manaflow-ai/cmux/pull/1306) - Injects 6 hooks covering full Claude lifecycle; adds PID tracking with 30s stale-process sweep; suppresses duplicate OSC notifications when Claude is active. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Make Cmd+W close window when closing last terminal** [#1395](https://github.com/manaflow-ai/cmux/pull/1395) - Cmd+W and tab X button now close the workspace on last surface; internal closes spawn replacement shell. (Author: [@austinywang](https://github.com/austinywang/))
+- **Fix split cwd inheritance while shell cwd is stale** [#1403](https://github.com/manaflow-ai/cmux/pull/1403) - Preserves split cwd when shell cwd hasn't updated yet. (Author: [@austinywang](https://github.com/austinywang/))
+- **Fix crash when creating a new workspace** [#1391](https://github.com/manaflow-ai/cmux/pull/1391) - Snapshot TabManager state at workspace creation start to prevent Combine-backed re-entrant publishes. (Author: [@austinywang](https://github.com/austinywang/))
+- **Honor shell state for close confirmation** [#1386](https://github.com/manaflow-ai/cmux/pull/1386) - Close confirmation respects actual shell state instead of cached status. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix omnibar backspace/arrow key loss after prefix deletion** [#1413](https://github.com/manaflow-ai/cmux/pull/1413) - Replace SwiftUI TextField with AppKit NSTextField for omnibar so navigation commands survive prefix scope changes. (Author: [@austinywang](https://github.com/austinywang/))
+- **Fix macOS dictation NSTextInputClient conformance** [#1410](https://github.com/manaflow-ai/cmux/pull/1410) - Restore proper dictation support and caret rect anchoring. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix terminal Cmd+V clipboard payload handling** [#1305](https://github.com/manaflow-ai/cmux/pull/1305) - Support RTFD attachments, JPEG UTIs, and fallback payloads for robust image pasting. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix VS Code command palette to open desktop app** [#1389](https://github.com/manaflow-ai/cmux/pull/1389) - Correct target for VS Code integration. (Author: [@austinywang](https://github.com/austinywang/))
+- **Fix main CI regressions** [#1458](https://github.com/manaflow-ai/cmux/pull/1458) - Dynamic text input selector for Xcode 16.2 compatibility; refresh app-support config tests. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix bundled Ghostty theme picker helper packaging** [#1459](https://github.com/manaflow-ai/cmux/pull/1459) - Build and bundle universal Ghostty helper in release builds so `cmux themes` works in shipped versions. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix crash when adding a workspace into an orphaned window context** [#1380](https://github.com/manaflow-ai/cmux/pull/1380) - Skip orphaned workspace creation contexts. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+
+### Features & Enhancements
+
+- **Add cmux themes command** [#1334](https://github.com/manaflow-ai/cmux/pull/1334) - New `cmux themes list/set/clear` CLI with interactive picker, live preview, separate light/dark defaults, and persistent override stored in Application Support with hot-reload. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fallback stable socket listener to a user-scoped path** [#1351](https://github.com/manaflow-ai/cmux/pull/1351) - Socket moves to Application Support; falls back to per-user path on bind failure; keeps active path in health checks to prevent false unhealthy states. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Allow smaller sidebar widths** [#1420](https://github.com/manaflow-ai/cmux/pull/1420) - Lower minimum from 186 to 180 px; unify drag and persisted-width clamping for consistent behavior. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add Cmd+P all-surface search option** [#1382](https://github.com/manaflow-ai/cmux/pull/1382) - Search across all surfaces from command palette. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Exit split zoom when jumping to unread** [#1401](https://github.com/manaflow-ai/cmux/pull/1401) - Cmd+Shift+U now exits split zoom mode. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix command palette command-mode shortcut and navigation** [#1417](https://github.com/manaflow-ai/cmux/pull/1417) - Correct arrow key handling in command mode. (Author: [@austinywang](https://github.com/austinywang/))
+- **Bundle Ghostty themes in cmux** [#1314](https://github.com/manaflow-ai/cmux/pull/1314) - Bundle Ghostty themes alongside the app. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix Pure prompt duplication in Ghostty zsh integration** [#1316](https://github.com/manaflow-ai/cmux/pull/1316) - Fix Pure hidden-CR prompt redraw issues. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add subtitle to App Icon setting to clarify it's not a theme toggle** [#1367](https://github.com/manaflow-ai/cmux/pull/1367) - Adds "Dock and app switcher" subtitle and visual appearance picker with thumbnail previews; helps users distinguish from theme toggle. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Keep workspaces open when closing the last surface** [#1315](https://github.com/manaflow-ai/cmux/pull/1315) - Internal/programmatic closes spawn replacement shell. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add minimal sidebar detail toggles** [#1312](https://github.com/manaflow-ai/cmux/pull/1312) - New settings for sidebar detail visibility. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add settings to disable pane ring and flash** [#1217](https://github.com/manaflow-ai/cmux/pull/1217) - Toggles for unread pane ring and pane flash notifications. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add menu bar visibility setting** [#1330](https://github.com/manaflow-ai/cmux/pull/1330) - Option to hide cmux from the menu bar. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Summarize multi-workspace close confirmation** [#1329](https://github.com/manaflow-ai/cmux/pull/1329) - Better confirmation text when closing multiple workspaces; honors sidebar multi-select. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Include current_directory and custom_color in list-workspaces output** [#544](https://github.com/manaflow-ai/cmux/pull/544) - Expose workspace working directory and tab color in CLI output. (Author: [@arieltobiana](https://github.com/arieltobiana/))
+- **Add VoiceOver traits to pickers, reorder settings** [#1372](https://github.com/manaflow-ai/cmux/pull/1372) - Improved accessibility; reorder settings. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add Discord link to help menu** [#1366](https://github.com/manaflow-ai/cmux/pull/1366) - Link to community server. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add /nightly page** [#1378](https://github.com/manaflow-ai/cmux/pull/1378) - Localized nightly build landing page for all 18 locales. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+
+### Infrastructure
+
+- **Throttle repeated socket listener start failures** [#1415](https://github.com/manaflow-ai/cmux/pull/1415) - Avoid thrashing on daemon RPC startup failures. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Tag CLI Sentry events with app release** [#1408](https://github.com/manaflow-ai/cmux/pull/1408) - Better error tracking. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix GhosttyKit checksum drift in CI** [#1405](https://github.com/manaflow-ai/cmux/pull/1405) - Prevent checksum regressions. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Share last-surface close flow between X and Cmd+W** [#1346](https://github.com/manaflow-ai/cmux/pull/1346) - Unified code path. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Add workspace stress profiling and reduce switch churn** [#1218](https://github.com/manaflow-ai/cmux/pull/1218) - Performance optimization. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Fix internal drag regressions from bundle type declarations** [#1379](https://github.com/manaflow-ai/cmux/pull/1379) - Restore internal drag type exports. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))
+- **Build only universal nightly artifacts** [#1332](https://github.com/manaflow-ai/cmux/pull/1332) - CI optimization. (Author: [@lawrencecchen](https://github.com/lawrencecchen/))

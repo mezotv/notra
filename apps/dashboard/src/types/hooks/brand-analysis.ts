@@ -1,18 +1,22 @@
 export interface BrandSettings {
   id: string;
   organizationId: string;
+  name: string;
+  isDefault: boolean;
+  websiteUrl: string | null;
   companyName: string | null;
   companyDescription: string | null;
   toneProfile: string | null;
   customTone: string | null;
   customInstructions: string | null;
   audience: string | null;
+  language: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface BrandSettingsResponse {
-  settings: BrandSettings | null;
+  voices: BrandSettings[];
 }
 
 export type ProgressStatus =

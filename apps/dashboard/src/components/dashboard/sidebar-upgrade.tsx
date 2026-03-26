@@ -2,7 +2,7 @@
 
 import { Button } from "@notra/ui/components/ui/button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
-import { useCustomer, usePricingTable } from "autumn-js/react";
+import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -13,21 +13,29 @@ export function SidebarUpgrade() {
   const orgId = activeOrganization?.id ?? "";
 
   const { data: onboarding } = useOnboardingStatus(orgId);
-  const { customer, checkout } = useCustomer();
-  const { products } = usePricingTable();
+  const {
+    attach,
+    data: customer,
+    refetch,
+  } = useCustomer({
+    expand: ["subscriptions.plan"],
+  });
+  const { data: plans } = useListPlans();
   const [loading, setLoading] = useState(false);
 
   const isOnboardingDone =
     onboarding?.onboardingCompleted || onboarding?.onboardingDismissed;
 
-  const activeProduct = customer?.products.find(
-    (p) => p.status === "active" || p.status === "trialing"
+  const activeSubscription = customer?.subscriptions.find(
+    (subscription) => !subscription.addOn && subscription.status === "active"
   );
-  const isPro =
-    activeProduct?.id === "pro" || activeProduct?.id === "pro_yearly";
+  const activePlanId =
+    activeSubscription?.plan?.id ?? activeSubscription?.planId;
+  const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
 
-  const proProduct = products?.find((p) => p.id === "pro");
-  const hasFreeTrial = proProduct?.free_trial?.trial_available;
+  const proPlan = plans?.find((plan) => plan.id === "pro");
+  const hasFreeTrial =
+    !!proPlan?.freeTrial && !!proPlan.customerEligibility?.trialAvailable;
   const buttonLabel = loading
     ? "Loading..."
     : (hasFreeTrial && "Start 3 day free trial") || "Upgrade to Pro";
@@ -41,24 +49,27 @@ export function SidebarUpgrade() {
   }
 
   async function handleUpgrade() {
-    const productId = proProduct?.id ?? "pro";
+    const planId = proPlan?.id ?? "pro";
     setLoading(true);
     try {
-      const { data, error } = await checkout({ productId });
-      if (error) {
-        toast.error(
-          error.message || "Could not start checkout. Please try again."
-        );
-        return;
-      }
-      if (data?.url) {
-        window.location.href = data.url;
+      const successUrl = activeOrganization?.slug
+        ? `${window.location.origin}/${activeOrganization.slug}/billing/success`
+        : undefined;
+      const result = await attach({
+        planId,
+        redirectMode: "if_required",
+        successUrl,
+      });
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        await refetch();
       }
     } catch (err) {
       toast.error(
         err instanceof Error
           ? err.message
-          : "Could not start checkout. Please try again."
+          : "Could not update billing. Please try again."
       );
     } finally {
       setLoading(false);

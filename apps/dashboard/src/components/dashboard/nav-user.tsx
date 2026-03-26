@@ -29,6 +29,7 @@ import {
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -43,6 +44,7 @@ export function NavUser() {
   const { setTheme, resolvedTheme } = useTheme();
   const isCollapsed = state === "collapsed";
   const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const { activeOrganization } = useOrganizationsContext();
@@ -50,6 +52,8 @@ export function NavUser() {
   const { data: session, isPending } = authClient.useSession();
   const user = session?.user;
   const slug = activeOrganization?.slug ?? "";
+
+  useHotkey("M", toggleTheme);
 
   useEffect(() => {
     if (!(user || isPending || isRedirecting)) {
@@ -188,10 +192,13 @@ export function NavUser() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => setTheme(isDark ? "light" : "dark")}
+                onClick={toggleTheme}
               >
                 <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} />
                 {isDark ? "Light Mode" : "Dark Mode"}
+                <kbd className="ml-auto rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+                  M
+                </kbd>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

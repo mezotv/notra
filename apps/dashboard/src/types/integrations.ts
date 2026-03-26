@@ -71,6 +71,7 @@ export interface AvailableRepo {
   fullName: string;
   private: boolean;
   description: string | null;
+  url: string;
 }
 
 export interface IntegrationUIConfig {
@@ -96,6 +97,14 @@ export interface AddRepositoryDialogProps {
   integrationId: string;
   organizationId: string;
   onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}
+
+export interface EditTokenDialogProps {
+  integration: GitHubIntegration;
+  organizationId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
@@ -129,4 +138,11 @@ export interface WebhookSetupDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
+}
+
+export interface AddRepositoryButtonProps {
+  organizationId: string;
+  githubIntegrationId: string | undefined;
+  onOpenDialog?: () => void;
+  onCloseDialog?: () => void;
 }

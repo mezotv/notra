@@ -1,0 +1,72 @@
+---
+title: "Emdash Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "Over the past week, we've shipped five significant features, multiple critical stability fixes, and a bunch of smaller UX improvements that should make your workflow smoother. If you've been waiting for better terminal search, SSH reconnection handling, or cleaner PR review flows, this release has w"
+---
+
+Over the past week, we've shipped five significant features, multiple critical stability fixes, and a bunch of smaller UX improvements that should make your workflow smoother. If you've been waiting for better terminal search, SSH reconnection handling, or cleaner PR review flows, this release has what you need.
+
+## Highlights
+
+### Server-side PR search and filter presets
+Open PRs now supports server-side filtering with preset tabs (All Open, Needs My Review, My PRs, Draft) and arbitrary GitHub search queries. Load times are faster, and you can use full GitHub PR search syntax.
+
+### SSH sessions auto-restart after reconnection  
+When your SSH connection drops and reconnects, terminal sessions now resume automatically. The PTY session is re-established without losing your scrollback or requiring a new task.
+
+### Comments popover returns with in-memory drafts
+Comments are back, but simpler and faster. We ditched the database and now keep draft comments in memory per task and worktree, which means multi-agent variants stay isolated and the feature stays lightweight.
+
+### Terminal Cmd/Ctrl+F search
+You can now search terminal output on the fly. Hit Cmd+F or Ctrl+F in any terminal to highlight matches, step through results, and dismiss with Escape.
+
+### Expandable mini-terminal modal
+The right-sidebar terminal now expands to full-screen on demand. The session and scrollback stay intact when you toggle back to compact mode.
+
+## More Updates
+
+### Features & Enhancements
+
+- **Add VS Code Insiders as separate Open In app** [#1460](https://github.com/generalaction/emdash/pull/1460) - Splits Insiders out from regular VS Code with dedicated bundle ID and CLI commands. (Author: [@millar](https://github.com/millar/))
+- **Add terminal font size setting** [#1405](https://github.com/generalaction/emdash/pull/1405) - Font size control now available in Settings alongside the font family picker. (Author: [@naaa760](https://github.com/naaa760/))
+- **Make auto-inferred task names toggleable** [#1413](https://github.com/generalaction/emdash/pull/1413) - Added Settings toggle to control automatic task name generation. (Author: [@singhvibhanshu](https://github.com/singhvibhanshu/))
+- **Extract and display changelog entry published date** [#1465](https://github.com/generalaction/emdash/pull/1465) - Changelog entries now show when they were published.
+- **Add Xcode support to Open In** [#1446](https://github.com/generalaction/emdash/pull/1446) - Open files directly in Xcode.
+- **Add VSCodium support to Open In** [#1445](https://github.com/generalaction/emdash/pull/1445) - VSCodium now available as an Open In option.
+- **Add Android Studio support to Open In** [#1437](https://github.com/generalaction/emdash/pull/1437) - Android developers can now open projects in Android Studio.
+- **Add in-app changelog notifications** [#1450](https://github.com/generalaction/emdash/pull/1450) - Updates are highlighted in the home screen with a changelog card.
+- **Add Cmd/Ctrl shortcuts for agent tabs** [#1362](https://github.com/generalaction/emdash/pull/1362) - Switch between agent tabs with keyboard shortcuts. (Author: [@rabanspiegel](https://github.com/rabanspiegel/))
+- **Add file and directory management functions** [#1348](https://github.com/generalaction/emdash/pull/1348) - New rename, mkdir, and rmdir operations for both local and remote filesystems. (Author: [@yashdev9274](https://github.com/yashdev9274/))
+- **Add staging, commit & push, and file revert to sidebar** [#1349](https://github.com/generalaction/emdash/pull/1349) - Version control actions now live in the Changes sidebar. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Add initial prompt support via -i flag** [#1387](https://github.com/generalaction/emdash/pull/1387) - Pass an initial prompt to agents on task creation. (Author: [@naaa760](https://github.com/naaa760/))
+
+### Bug Fixes
+
+- **Fix PR review on fork PRs** [#1454](https://github.com/generalaction/emdash/pull/1454) - Ensure local branch exists before checking out fork PRs for review. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Fix kanban board card display** [#1452](https://github.com/generalaction/emdash/pull/1452) - Board now shows task data correctly instead of blank cards. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Improve diff sidebar presentation** [#1451](https://github.com/generalaction/emdash/pull/1451) - Better visual handling of deleted files in the diff viewer. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Fix diff viewer git status pipeline** [#1433](https://github.com/generalaction/emdash/pull/1433) - Hardened parsing and improved large-file rendering. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Use PTY-based renderer for lifecycle terminal output** [#1425](https://github.com/generalaction/emdash/pull/1425) - Lifecycle scripts now render with proper terminal colors and formatting. (Author: [@ckafrouni](https://github.com/ckafrouni/))
+- **Prevent Create PR button overflow in narrow sidebar** [#1420](https://github.com/generalaction/emdash/pull/1420) - Button no longer overflows on smaller viewports. (Author: [@naaa760](https://github.com/naaa760/))
+- **Prevent session ID collision for non-worktree tasks** [#1436](https://github.com/generalaction/emdash/pull/1436) - Non-worktree tasks now get fresh session UUIDs instead of colliding. (Author: [@Simonstorms](https://github.com/Simonstorms/))
+- **Improve update error state wording and styling** [#1474](https://github.com/generalaction/emdash/pull/1474) - Better messaging when updates fail.
+- **Hide Open PRs section while loading** [#1419](https://github.com/generalaction/emdash/pull/1419) - Cleaner loading state instead of spinner.
+- **Close in-app editor when opening settings** [#1422](https://github.com/generalaction/emdash/pull/1422) - Editor mode is exited before opening Settings. (Author: [@shreyaspapi](https://github.com/shreyaspapi/))
+- **Close in-app editor when opening diff from Changes panel** [#1374](https://github.com/generalaction/emdash/pull/1374) - Keeps editor and diff views from conflicting. (Author: [@naaa760](https://github.com/naaa760/))
+- **Start remote PTY in worktree dir and auto-start agent** [#1373](https://github.com/generalaction/emdash/pull/1373) - SSH remote terminals now open in the correct directory. (Author: [@naaa760](https://github.com/naaa760/))
+- **Resolve tmux to absolute path before spawning** [#1470](https://github.com/generalaction/emdash/pull/1470) - Fixes PTY spawning when tmux is not in PATH.
+- **Fix terminal keyboard shortcuts passthrough** [#1411](https://github.com/generalaction/emdash/pull/1411) - App shortcuts like Cmd/Ctrl+. now fire from terminal panes. (Author: [@ckafrouni](https://github.com/ckafrouni/))
+- **Create task under correct project using + button** [#1406](https://github.com/generalaction/emdash/pull/1406) - Tasks created from sidebar + button now go to the correct project. (Author: [@naaa760](https://github.com/naaa760/))
+- **Use default provider for PR review tasks** [#1453](https://github.com/generalaction/emdash/pull/1453) - PR review tasks now respect your default agent provider.
+- **Fix stale worktree reserves** [#1403](https://github.com/generalaction/emdash/pull/1403) - Prevents orphaned worktree reservations from blocking new tasks. (Author: [@jschwxrz](https://github.com/jschwxrz/))
+- **Prevent TaskModal content overflow on small viewports** [#1371](https://github.com/generalaction/emdash/pull/1371) - Modal stays usable on narrow screens.
+- **Collapse right sidebar on home screen by default** [#1355](https://github.com/generalaction/emdash/pull/1355) - Cleaner home screen presentation.
+
+### Security
+
+- **Harden SSH command validation** [#1350](https://github.com/generalaction/emdash/pull/1350) - Stricter shell control character checks and prefix matching. (Author: [@bhaktofmahakal](https://github.com/bhaktofmahakal/))
+- **Pin app-builder-lib minimatch for mac packaging** [#1391](https://github.com/generalaction/emdash/pull/1391) - Patches vulnerable minimatch resolutions to restore Mac releases.
+
+### Infrastructure
+
+- **Add Forgejo integration** [#1308](https://github.com/generalaction/emdash/pull/1308) - Emdash now supports Forgejo-hosted repositories. (Author: [@Codycody31](https://github.com/Codycody31/))

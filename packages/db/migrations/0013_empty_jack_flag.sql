@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "brandSettings_org_default_uidx" ON "brand_settings" USING btree ("organization_id") WHERE "brand_settings"."is_default" = true;

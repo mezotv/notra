@@ -1,0 +1,1 @@
+ALTER TABLE "connected_social_accounts" ADD COLUMN "verified" boolean DEFAULT false NOT NULL;

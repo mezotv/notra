@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -100,7 +100,6 @@ export const organizations = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     logo: text("logo"),
-    websiteUrl: text("website_url"),
     createdAt: timestamp("created_at").notNull(),
     metadata: text("metadata"),
     onboardingCompleted: boolean("onboarding_completed")
@@ -205,6 +204,7 @@ export const contentTriggers = pgTable(
     dedupeHash: text("dedupe_hash").notNull(),
     qstashScheduleId: text("qstash_schedule_id"),
     enabled: boolean("enabled").default(true).notNull(),
+    autoPublish: boolean("auto_publish").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -259,12 +259,16 @@ export const brandSettings = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull().default("Default"),
+    isDefault: boolean("is_default").notNull().default(true),
+    websiteUrl: text("website_url").notNull(),
     companyName: text("company_name"),
     companyDescription: text("company_description"),
     toneProfile: text("tone_profile"),
     customTone: text("custom_tone"),
     customInstructions: text("custom_instructions"),
     audience: text("audience"),
+    language: text("language").default("English"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -272,7 +276,93 @@ export const brandSettings = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("brandSettings_organizationId_uidx").on(table.organizationId),
+    uniqueIndex("brandSettings_org_name_uidx").on(
+      table.organizationId,
+      table.name
+    ),
+    uniqueIndex("brandSettings_org_default_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.isDefault} = true`),
+    index("brandSettings_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+export const referenceTypeEnum = pgEnum("reference_type", [
+  "twitter_post",
+  "linkedin_post",
+  "blog_post",
+  "custom",
+]);
+
+export const applicablePlatformEnum = pgEnum("applicable_platform", [
+  "all",
+  "twitter",
+  "linkedin",
+  "blog",
+]);
+
+export const brandReferences = pgTable(
+  "brand_references",
+  {
+    id: text("id").primaryKey(),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "cascade" }),
+    type: referenceTypeEnum("type").notNull(),
+    content: text("content").notNull(),
+    metadata: jsonb("metadata"),
+    note: text("note"),
+    supermemoryDocumentId: text("supermemory_document_id"),
+    supermemoryMemoryId: text("supermemory_memory_id"),
+    supermemorySyncedAt: timestamp("supermemory_synced_at"),
+    supermemoryLastSyncError: text("supermemory_last_sync_error"),
+    applicableTo: applicablePlatformEnum("applicable_to")
+      .array()
+      .default(sql`ARRAY['all']::applicable_platform[]`)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+  ]
+);
+
+export const connectedSocialAccounts = pgTable(
+  "connected_social_accounts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    username: text("username").notNull(),
+    displayName: text("display_name").notNull(),
+    profileImageUrl: text("profile_image_url"),
+    verified: boolean("verified").default(false).notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token"),
+    scope: text("scope"),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("connectedSocialAccounts_organizationId_idx").on(
+      table.organizationId
+    ),
+    uniqueIndex("connectedSocialAccounts_org_provider_account_uidx").on(
+      table.organizationId,
+      table.provider,
+      table.providerAccountId
+    ),
   ]
 );
 
@@ -312,6 +402,7 @@ export const posts = pgTable(
     title: text("title").notNull(),
     content: text("content").notNull(),
     markdown: text("markdown").notNull(),
+    recommendations: text("recommendations"),
     contentType: text("content_type").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
@@ -338,6 +429,11 @@ export interface PostSourceMetadata {
   lookbackRange?: { start: string; end: string };
   eventType?: string;
   eventAction?: string;
+  brandVoiceName?: string;
+  brandVoiceId?: string;
+  selectedCommitShas?: string[];
+  selectedPullRequests?: Array<{ repositoryId: string; number: number }>;
+  selectedReleases?: Array<{ repositoryId: string; tagName: string }>;
 }
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -368,8 +464,9 @@ export const organizationsRelations = relations(
     members: many(members),
     invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
-    brandSettings: one(brandSettings),
+    brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
+    connectedSocialAccounts: many(connectedSocialAccounts),
     posts: many(posts),
   })
 );
@@ -445,12 +542,36 @@ export const repositoryOutputsRelations = relations(
   })
 );
 
-export const brandSettingsRelations = relations(brandSettings, ({ one }) => ({
-  organization: one(organizations, {
-    fields: [brandSettings.organizationId],
-    references: [organizations.id],
-  }),
-}));
+export const brandSettingsRelations = relations(
+  brandSettings,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [brandSettings.organizationId],
+      references: [organizations.id],
+    }),
+    references: many(brandReferences),
+  })
+);
+
+export const brandReferencesRelations = relations(
+  brandReferences,
+  ({ one }) => ({
+    brandSettings: one(brandSettings, {
+      fields: [brandReferences.brandSettingsId],
+      references: [brandSettings.id],
+    }),
+  })
+);
+
+export const connectedSocialAccountsRelations = relations(
+  connectedSocialAccounts,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [connectedSocialAccounts.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
 
 export const organizationNotificationSettingsRelations = relations(
   organizationNotificationSettings,

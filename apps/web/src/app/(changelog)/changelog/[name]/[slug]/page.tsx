@@ -2,44 +2,46 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { changelog } from "@/../.source/server";
-import { NotraMark } from "../../../../../components/notra-mark";
+import { getMDXComponents } from "@/../mdx-components";
+import { NotraMark } from "@/components/notra-mark";
+import { TableOfContents } from "@/components/table-of-contents";
+import { formatChangelogDate } from "@/utils/changelog";
 import {
-  CHANGELOG_COMPANIES,
-  getCompany,
-  getEntrySlug,
-} from "../../../../../utils/changelog";
-
-interface PageProps {
-  params: Promise<{ name: string; slug: string }>;
-}
+  getShowcaseCompany,
+  getShowcaseEntrySlug,
+  SHOWCASE_COMPANIES,
+} from "@/utils/showcase";
+import type { ShowcaseEntryPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
-  return CHANGELOG_COMPANIES.flatMap((company) =>
+  return SHOWCASE_COMPANIES.flatMap((company) =>
     changelog
       .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
       .map((entry) => ({
         name: company.slug,
-        slug: getEntrySlug(entry.info.path),
+        slug: getShowcaseEntrySlug(entry.info.path),
       }))
   );
 }
 
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: ShowcaseEntryPageProps): Promise<Metadata> {
   const { name, slug } = await params;
-  const company = getCompany(name);
-  const entry = changelog.find((e) => e.info.path === `${name}/${slug}.mdx`);
-  if (!company || !entry) {
+  const entry = changelog.find(
+    (item) => item.info.path === `${name}/${slug}.mdx`
+  );
+
+  if (!entry) {
     return {};
   }
 
-  const title = { absolute: entry.title };
   const url = `https://usenotra.com/changelog/${name}/${slug}`;
 
   return {
-    title,
+    title: { absolute: entry.title },
     description: entry.description,
+    alternates: { canonical: url },
     openGraph: {
       title: entry.title,
       description: entry.description,
@@ -56,10 +58,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function ChangelogEntryPage({ params }: PageProps) {
+export default async function ShowcaseEntryPage({
+  params,
+}: ShowcaseEntryPageProps) {
   const { name, slug } = await params;
-  const company = getCompany(name);
-  const entry = changelog.find((e) => e.info.path === `${name}/${slug}.mdx`);
+  const company = getShowcaseCompany(name);
+  const entry = changelog.find(
+    (item) => item.info.path === `${name}/${slug}.mdx`
+  );
+
   if (!company || !entry) {
     notFound();
   }
@@ -67,7 +74,7 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
   const MDX = entry.body;
 
   return (
-    <>
+    <div className="w-full max-w-[760px] self-center">
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
         href={`/changelog/${name}`}
@@ -79,11 +86,7 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
         {entry.title}
       </h1>
       <time className="mt-2 block font-sans text-foreground/40 text-sm">
-        {new Date(entry.date).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
+        {formatChangelogDate(entry.date)}
       </time>
 
       <div className="mt-4 flex items-center gap-1.5">
@@ -97,13 +100,14 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
       </div>
 
       <article className="prose prose-neutral dark:prose-invert mt-8 max-w-none prose-headings:font-sans prose-headings:font-semibold prose-p:font-sans prose-a:text-primary prose-li:text-foreground/80 prose-p:text-foreground/80 prose-strong:text-foreground prose-p:leading-7 prose-headings:tracking-tight prose-a:no-underline hover:prose-a:underline">
-        <MDX />
+        <TableOfContents toc={entry.toc} />
+        <MDX components={getMDXComponents()} />
       </article>
 
       <div className="mt-12 flex items-center gap-2">
         <Link
           className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
-          href={`/?utm_source=changelog&utm_medium=referral&utm_campaign=${name}`}
+          href={`/?utm_source=showcase&utm_medium=referral&utm_campaign=${name}`}
         >
           <span className="text-primary">
             <NotraMark className="size-4 shrink-0" />
@@ -113,6 +117,6 @@ export default async function ChangelogEntryPage({ params }: PageProps) {
           </span>
         </Link>
       </div>
-    </>
+    </div>
   );
 }

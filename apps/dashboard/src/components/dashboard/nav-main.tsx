@@ -60,7 +60,7 @@ const navMainItems: NavMainItem[] = [
   {
     link: "/brand/identity",
     icon: CorporateIcon,
-    label: "Identity",
+    label: "Identity & References",
     category: "workspace",
   },
   {

@@ -1,4 +1,5 @@
 import { Databuddy } from "@databuddy/sdk/react";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import { Toaster } from "sonner";
@@ -106,6 +107,7 @@ export default function RootLayout({
             trackHashChanges={true}
             trackScrollDepth={true}
           />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

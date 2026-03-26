@@ -20,12 +20,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type EditGitHubIntegrationFormValues,
   editGitHubIntegrationFormSchema,
 } from "@/schemas/integrations";
 import type { GitHubIntegration } from "@/types/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 interface EditIntegrationDialogProps {
   integration: GitHubIntegration;
@@ -51,38 +51,25 @@ export function EditIntegrationDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: EditGitHubIntegrationFormValues) => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integration.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            displayName: values.displayName,
-            enabled: values.enabled,
-            ...(primaryRepository
-              ? { branch: values.branch?.trim() || null }
-              : {}),
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update integration");
-      }
-
-      return data;
+      return dashboardOrpc.integrations.update.call({
+        organizationId,
+        integrationId: integration.id,
+        displayName: values.displayName,
+        enabled: values.enabled,
+        ...(primaryRepository ? { branch: values.branch?.trim() || null } : {}),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.base,
+        queryKey: dashboardOrpc.integrations.key(),
       });
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(
-          organizationId,
-          integration.id
-        ),
+        queryKey: dashboardOrpc.integrations.get.queryKey({
+          input: {
+            organizationId,
+            integrationId: integration.id,
+          },
+        }),
       });
       toast.success("Integration updated successfully");
       setOpen(false);

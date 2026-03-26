@@ -1,0 +1,125 @@
+import type {
+  ContextItem,
+  ValidatedIntegration,
+} from "@notra/ai/types/orchestration";
+
+interface IntegrationData {
+  id: string;
+  organizationId: string;
+  enabled: boolean;
+  displayName: string;
+  repositories: Array<{
+    id: string;
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+    enabled: boolean;
+  }>;
+}
+
+export type GetIntegrationById = (
+  integrationId: string
+) => Promise<IntegrationData | null>;
+
+export async function validateIntegrations(
+  organizationId: string,
+  contextItems: ContextItem[] = [],
+  getIntegrationById?: GetIntegrationById
+): Promise<ValidatedIntegration[]> {
+  if (!contextItems.length || !getIntegrationById) {
+    return [];
+  }
+
+  const integrationIds = [...new Set(contextItems.map((c) => c.integrationId))];
+  const validatedIntegrations: ValidatedIntegration[] = [];
+
+  for (const integrationId of integrationIds) {
+    try {
+      const integration = await getIntegrationById(integrationId);
+
+      if (!integration) {
+        console.warn(
+          `[Integration Validator] Integration not found: ${integrationId}`
+        );
+        continue;
+      }
+
+      if (integration.organizationId !== organizationId) {
+        console.warn(
+          `[Integration Validator] Integration ${integrationId} does not belong to org ${organizationId}`
+        );
+        continue;
+      }
+
+      if (!integration.enabled) {
+        console.warn(
+          `[Integration Validator] Integration ${integrationId} is disabled`
+        );
+        continue;
+      }
+
+      const contextRepos = contextItems
+        .filter((c) => c.integrationId === integrationId)
+        .map((c) => ({ owner: c.owner, repo: c.repo }));
+
+      const enabledRepos = integration.repositories
+        .filter((r) => {
+          if (!r.enabled) {
+            return false;
+          }
+          return contextRepos.some(
+            (cr) => cr.owner === r.owner && cr.repo === r.repo
+          );
+        })
+        .map((r) => ({
+          id: r.id,
+          owner: r.owner,
+          repo: r.repo,
+          defaultBranch: r.defaultBranch ?? null,
+          enabled: r.enabled,
+        }));
+
+      if (enabledRepos.length === 0) {
+        console.warn(
+          `[Integration Validator] No enabled repositories for integration ${integrationId}`
+        );
+        continue;
+      }
+
+      validatedIntegrations.push({
+        id: integration.id,
+        type: "github",
+        enabled: integration.enabled,
+        displayName: integration.displayName,
+        organizationId: integration.organizationId,
+        repositories: enabledRepos,
+      });
+    } catch (error) {
+      console.error(
+        `[Integration Validator] Error validating integration ${integrationId}:`,
+        error
+      );
+    }
+  }
+
+  return validatedIntegrations;
+}
+
+export function hasEnabledGitHubIntegration(
+  validatedIntegrations: ValidatedIntegration[]
+): boolean {
+  return validatedIntegrations.some(
+    (i) => i.type === "github" && i.enabled && i.repositories.length > 0
+  );
+}
+
+export function getRepoContexts(
+  validatedIntegrations: ValidatedIntegration[]
+): Array<{ owner: string; repo: string }> {
+  return validatedIntegrations.flatMap((i) =>
+    i.repositories.map((r) => ({
+      owner: r.owner,
+      repo: r.repo,
+    }))
+  );
+}

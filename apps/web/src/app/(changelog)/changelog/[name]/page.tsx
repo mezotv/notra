@@ -4,31 +4,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { changelog } from "@/../.source/server";
+import { ChangelogPageHeader } from "@/components/changelog-page-header";
+import { ChangelogTimeline } from "@/components/changelog-timeline";
 import {
-  CHANGELOG_COMPANIES,
-  getCompany,
-  getEntrySlug,
-} from "../../../../utils/changelog";
-
-interface PageProps {
-  params: Promise<{ name: string }>;
-}
+  getShowcaseCompany,
+  getShowcaseEntrySlug,
+  SHOWCASE_COMPANIES,
+} from "@/utils/showcase";
+import type { ShowcaseCompanyPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
-  return CHANGELOG_COMPANIES.map((c) => ({ name: c.slug }));
+  return SHOWCASE_COMPANIES.map((company) => ({ name: company.slug }));
 }
 
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: ShowcaseCompanyPageProps): Promise<Metadata> {
   const { name } = await params;
-  const company = getCompany(name);
+  const company = getShowcaseCompany(name);
+
   if (!company) {
     return {};
   }
 
-  const titleString = `${company.name} Changelog`;
-  const title = { absolute: titleString };
+  const title = { absolute: `${company.name} Changelog` };
   const description = `${company.description} See AI-generated changelogs powered by Notra.`;
   const url = `https://usenotra.com/changelog/${name}`;
 
@@ -37,7 +36,7 @@ export async function generateMetadata({
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: titleString,
+      title: title.absolute,
       description,
       url,
       type: "website",
@@ -45,22 +44,35 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: titleString,
+      title: title.absolute,
       description,
     },
   };
 }
 
-export default async function CompanyChangelogPage({ params }: PageProps) {
+export default async function ShowcaseCompanyPage({
+  params,
+}: ShowcaseCompanyPageProps) {
   const { name } = await params;
-  const company = getCompany(name);
+  const company = getShowcaseCompany(name);
+
   if (!company) {
     notFound();
   }
 
-  const entries = changelog
+  const items = changelog
     .filter((entry) => entry.info.path.startsWith(`${name}/`))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort(
+      (left, right) =>
+        new Date(right.date).getTime() - new Date(left.date).getTime()
+    )
+    .map((entry) => ({
+      id: entry.info.path,
+      title: entry.title,
+      description: entry.description,
+      href: `/changelog/${name}/${getShowcaseEntrySlug(entry.info.path)}`,
+      date: entry.date,
+    }));
 
   return (
     <>
@@ -68,56 +80,38 @@ export default async function CompanyChangelogPage({ params }: PageProps) {
         className="inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
         href="/changelog"
       >
-        &larr; All companies
+        &larr; All changelogs
       </Link>
 
-      <div className="mt-8 flex w-full max-w-[586px] flex-col items-center gap-4 self-center">
-        <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-          {company.name} <span className="text-primary">Changelog</span>
-        </h1>
-        <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
-          Changelog entries generated from GitHub activity,
-          <br className="hidden sm:block" />
-          powered by Notra.
-        </p>
-        <a
-          className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
-          href={`${company.url}?utm_source=usenotra.com`}
-          target="_blank"
-        >
-          {company.domain}
-          <HugeiconsIcon className="size-3.5" icon={ArrowUpRight01Icon} />
-        </a>
+      <div className="mt-8 flex flex-col items-center">
+        <ChangelogPageHeader
+          description={
+            <>
+              Changelog entries generated from GitHub activity,
+              <br className="hidden sm:block" />
+              powered by Notra.
+            </>
+          }
+          meta={
+            <a
+              className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
+              href={`${company.url}?utm_source=usenotra.com`}
+              target="_blank"
+            >
+              {company.domain}
+              <HugeiconsIcon className="size-3.5" icon={ArrowUpRight01Icon} />
+            </a>
+          }
+          title={
+            <>
+              {company.name} <span className="text-primary">Changelog</span>
+            </>
+          }
+        />
       </div>
 
-      <div className="mt-14 flex w-full flex-col">
-        {entries.map((entry, index) => {
-          const slug = getEntrySlug(entry.info.path);
-          return (
-            <Link
-              className="group block border-border py-8 first:pt-0"
-              href={`/changelog/${name}/${slug}`}
-              key={entry.info.path}
-              style={{
-                borderTopWidth: index === 0 ? 0 : 1,
-              }}
-            >
-              <h2 className="font-sans font-semibold text-foreground text-lg tracking-tight transition-colors group-hover:text-primary sm:text-xl">
-                {entry.title}
-              </h2>
-              <p className="mt-1 line-clamp-2 font-sans text-muted-foreground text-sm leading-6">
-                {entry.description}
-              </p>
-              <time className="mt-2 block font-sans text-foreground/40 text-sm">
-                {new Date(entry.date).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </time>
-            </Link>
-          );
-        })}
+      <div className="mt-14 w-full max-w-[720px] self-center">
+        <ChangelogTimeline items={items} />
       </div>
     </>
   );

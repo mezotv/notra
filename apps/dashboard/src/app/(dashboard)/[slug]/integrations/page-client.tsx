@@ -18,6 +18,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useMemo, useState } from "react";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
@@ -29,10 +30,9 @@ import {
   INTEGRATION_CATEGORY_MAP,
   OUTPUT_SOURCES,
 } from "@/lib/integrations/catalog";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { IntegrationType } from "@/schemas/integrations";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
-import type { IntegrationsResponse } from "@/types/services/integrations";
-import { QUERY_KEYS } from "@/utils/query-keys";
 import { IntegrationsPageSkeleton } from "./skeleton";
 
 const TAB_VALUES = ["all", "installed"] as const;
@@ -50,7 +50,7 @@ interface Integration {
   displayName: string;
   type: IntegrationType;
   enabled: boolean;
-  createdAt: Date;
+  createdAt: string;
   repositories: Array<{
     id: string;
     owner: string;
@@ -75,11 +75,12 @@ const IntegrationCard = memo(function IntegrationCard({
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
   const organizationSlug = activeOrganization?.slug;
+  const router = useRouter();
   const isActive = activeCount > 0;
   const [dialogOpen, setDialogOpen] = useState(false);
   const showConnectButton = integration.available;
   const showComingSoon = !integration.available;
-  const showDialog = integration.available && integration.id === "github";
+  const showGitHubDialog = integration.available && integration.id === "github";
 
   if (!(organizationId && organizationSlug)) {
     return null;
@@ -101,7 +102,13 @@ const IntegrationCard = memo(function IntegrationCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                setDialogOpen(true);
+                if (showGitHubDialog) {
+                  setDialogOpen(true);
+                } else {
+                  router.push(
+                    `/${organizationSlug}/integrations/${integration.href}`
+                  );
+                }
               }}
               size="sm"
               variant="outline"
@@ -122,7 +129,7 @@ const IntegrationCard = memo(function IntegrationCard({
                     size="sm"
                     variant="outline"
                   >
-                    Soon
+                    Coming Soon
                   </Button>
                 }
               />
@@ -134,8 +141,9 @@ const IntegrationCard = memo(function IntegrationCard({
       className={
         integration.available
           ? "cursor-pointer transition-colors hover:bg-muted/80"
-          : ""
+          : undefined
       }
+      disabled={!integration.available}
       heading={integration.name}
       icon={integration.icon}
     >
@@ -157,7 +165,7 @@ const IntegrationCard = memo(function IntegrationCard({
       ) : (
         cardContent
       )}
-      {showDialog ? (
+      {showGitHubDialog ? (
         <AddIntegrationDialog
           onOpenChange={setDialogOpen}
           onSuccess={() => {
@@ -181,25 +189,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     parseAsStringLiteral(TAB_VALUES).withDefault("all")
   );
 
-  const { data, isPending, refetch } = useQuery<IntegrationsResponse>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.all(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch integrations");
-      }
-
-      const result: IntegrationsResponse = await response.json();
-      return result;
-    },
-    enabled: !!organizationId,
-  });
+  const { data, isPending, refetch } = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
   const integrations = data?.integrations;
   const installedCount = data?.count ?? 0;

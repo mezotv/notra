@@ -1,0 +1,24 @@
+---
+title: "Superagent Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "The Superagent SDK now supports automatic model failover for production resilience and includes comprehensive model type definitions across all major providers. The fallback model feature transparently handles transient provider errors, letting applications switch to backup models without manual int"
+---
+
+The Superagent SDK now supports automatic model failover for production resilience and includes comprehensive model type definitions across all major providers. The fallback model feature transparently handles transient provider errors, letting applications switch to backup models without manual intervention or code changes. Updated model types bring TypeScript and Python SDKs into parity with the latest models from OpenAI, Anthropic, Google, Bedrock, Vercel, Groq, OpenRouter, and Fireworks, backed by refined test architecture for faster iteration and more reliable validation.
+
+## Highlights
+
+### Automatic Model Failover for Provider Resilience
+When primary models hit transient errors (429, 500, 502, 503), the SDK automatically retries with a fallback model you specify. This unblocks production deployments during high-demand periods without requiring code changes.
+
+### Comprehensive Model Type Definitions
+All major provider models are now in the TypeScript and Python SDKs with full type support for autocomplete and type-checking, matching the latest available releases.
+
+### Unified Unit Test Architecture
+Consolidated 39 per-provider integration tests into parameterized unit tests that mock provider calls. Tests run instantly with deterministic results, eliminating external dependencies.
+
+## More Updates
+
+### Features & Enhancements
+- **Fallback model support for resilience** [#1136](https://github.com/superagent-ai/superagent/pull/1136) - Added fallbackModel/fallback_model option to GuardOptions, RedactOptions, and ScanOptions in both TypeScript and Python SDKs. The SDK retries failed requests to your specified backup model for automatic failover on retryable HTTP errors. (Author: [@homanp](https://github.com/homanp/))
+- **Updated model types across providers** [#1137](https://github.com/superagent-ai/superagent/pull/1137) - Added latest model releases from OpenAI, Anthropic, Google, Bedrock, Vercel, Groq, OpenRouter, and Fireworks with Literal-based type unions in the Python SDK for autocomplete and type-checking parity with TypeScript. (Author: [@homanp](https://github.com/homanp/))

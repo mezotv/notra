@@ -1309,7 +1309,7 @@ export default function DesignSystemClientPage() {
             </CardHeader>
             <CardContent className="flex flex-wrap items-center gap-4">
               <Avatar>
-                <AvatarImage src="https://i.pravatar.cc/80?img=32" />
+                <AvatarImage src="https://api.dicebear.com/9.x/avataaars/svg?seed=AJ" />
                 <AvatarFallback>AJ</AvatarFallback>
                 <AvatarBadge />
               </Avatar>
@@ -1318,11 +1318,11 @@ export default function DesignSystemClientPage() {
               </Avatar>
               <AvatarGroup>
                 <Avatar>
-                  <AvatarImage src="https://i.pravatar.cc/80?img=12" />
+                  <AvatarImage src="https://api.dicebear.com/9.x/avataaars/svg?seed=SA" />
                   <AvatarFallback>SA</AvatarFallback>
                 </Avatar>
                 <Avatar>
-                  <AvatarImage src="https://i.pravatar.cc/80?img=56" />
+                  <AvatarImage src="https://api.dicebear.com/9.x/avataaars/svg?seed=KM" />
                   <AvatarFallback>KM</AvatarFallback>
                 </Avatar>
                 <AvatarGroupCount>+3</AvatarGroupCount>
@@ -1438,7 +1438,7 @@ export default function DesignSystemClientPage() {
           <LinkedInPost
             author={{
               name: "Avery Lane",
-              avatar: "https://i.pravatar.cc/80?img=32",
+              avatar: "https://api.dicebear.com/9.x/avataaars/svg?seed=Avery",
               headline: "77,350 followers",
             }}
             comments={42}

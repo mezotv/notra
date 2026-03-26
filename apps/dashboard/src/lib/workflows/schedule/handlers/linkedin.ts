@@ -1,5 +1,5 @@
-import { generateLinkedInPost } from "@/lib/ai/agents/linkedin";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
   ContentGenerationContext,
   ContentGenerationResult,
@@ -9,15 +9,21 @@ export async function handleLinkedIn(
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
   try {
-    const { postId, title } = await generateLinkedInPost({
+    const { postId, title, posts } = await generateLinkedInPost({
       organizationId: ctx.organizationId,
+      voiceId: ctx.voiceId,
       repositories: ctx.repositories,
       tone: ctx.tone,
       promptInput: ctx.promptInput,
       sourceMetadata: ctx.sourceMetadata,
+      dataPointSettings: ctx.dataPointSettings,
+      selectionFilters: ctx.selectionFilters,
+      commitWindow: ctx.commitWindow,
+      autoPublish: ctx.autoPublish,
+      resolveContext: ctx.resolveContext,
     });
 
-    return { status: "ok", postId, title };
+    return { status: "ok", postId, title, posts };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
       return {

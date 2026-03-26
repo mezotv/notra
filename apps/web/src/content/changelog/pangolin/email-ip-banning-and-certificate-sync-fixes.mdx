@@ -1,0 +1,31 @@
+---
+title: "Pangolin Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This week, Pangolin released security enhancements and critical infrastructure fixes designed to strengthen access control and operational reliability. Administrators now have the ability to ban specific email addresses and IP ranges, adding a direct control mechanism for access decisions alongside "
+---
+
+This week, Pangolin released security enhancements and critical infrastructure fixes designed to strengthen access control and operational reliability. Administrators now have the ability to ban specific email addresses and IP ranges, adding a direct control mechanism for access decisions alongside identity and device verification. A longstanding issue affecting wildcard SSL certificate synchronization has been resolved, ensuring that certificate renewals properly sync from your provider without interruption. Additionally, a critical dashboard domain validation bug has been patched, stopping the redirect loops that occurred when resources were misconfigured with the dashboard's own domain. Complementing these changes, dialog rendering has been refined to ensure proper max-height enforcement, preventing interface overflow and maintaining a polished user experience. These updates collectively improve your zero-trust infrastructure's security posture and operational stability.
+
+## Highlights
+
+### Email and IP banning for access control
+Block specific email addresses and IP ranges to add a decisive layer of access control when other identity factors don't cut it.
+
+### Wildcard certificate sync fixed
+Wildcard SSL certificate renewals now properly pull from your provider instead of stalling out, preventing validation failures on wildcard domain connections.
+
+### Dashboard domain conflicts resolved
+Stopped resources from being created with the dashboard's own domain, which was causing endless redirect loops when this mistake happened.
+
+### Dialog rendering refinements
+Fixed Credenza dialog max-height so dialogs stay within their containers instead of overflowing.
+
+## More Updates
+
+### Features & Enhancements
+- **Email and IP banning** - Block specific email addresses and IP ranges to restrict access. (Author: [@oschwartz10612](https://github.com/oschwartz10612/))
+
+### Bug Fixes
+- **Wildcard certificate sync restored** - Wildcard SSL certificate updates now pull correctly. (Author: [@oschwartz10612](https://github.com/oschwartz10612/))
+- **Fixed dashboard domain conflicts** [#2603](https://github.com/fosrl/pangolin/pull/2603) - Added validation to prevent resources from being created with the dashboard's domain, eliminating redirect loops. (Author: [@Fizza-Mukhtar](https://github.com/Fizza-Mukhtar/))
+- **Dialog max-height fixed** - Credenza dialogs now respect container boundaries. (Author: [@shreyaspapi](https://github.com/shreyaspapi/))

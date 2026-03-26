@@ -1,0 +1,51 @@
+---
+title: "Sim Changelog - March 8-15, 2026"
+date: "2026-03-15"
+description: "Google Ads integration, Ashby webhooks, Fathom AI notetaker support, webhook deduplication, and SSRF security fixes across database and webhook tools."
+---
+
+This week brought three new integrations, critical security patches, and solid improvements across webhook reliability. Google Ads and Fathom AI are now available for workflows, Ashby webhooks finally work, and we patched some serious SSRF vulnerabilities. There's also a batch of fixes for block duplication, internal workflow calls, and various integrations.
+
+## Highlights
+
+### Google Ads integration for campaign and performance data
+Pull campaign and ad metrics directly into your workflows using GAQL queries. Full OAuth support and input validation included. ([#3360](https://github.com/simstudioai/sim/pull/3360))
+
+### Ashby webhooks for real-time hiring events
+Capture application submissions, stage changes, and offers as workflow triggers. Webhook setup and teardown happen automatically. ([#3548](https://github.com/simstudioai/sim/pull/3548))
+
+### Fathom AI Notetaker integration
+Record and analyze meetings, extract action items, and match them to your CRM. ([#3531](https://github.com/simstudioai/sim/pull/3531))
+
+### Webhook deduplication and custom acknowledgment
+Prevent duplicate processing with idempotency keys and configure how webhooks acknowledge receipt. ([#3525](https://github.com/simstudioai/sim/pull/3525))
+
+### SSRF security fixes for database and webhook tools
+Blocked Server-Side Request Forgery attacks on database connections and webhook endpoints. Localhost is properly blocked for user-supplied URLs, and redirects are validated. ([#3500](https://github.com/simstudioai/sim/pull/3500))
+
+## More Updates
+
+### Security
+- **SSRF protection on redirects** - HTTP redirect validation now enforces the same SSRF rules as the initial request. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+
+### Features & Enhancements
+- **Non-polling webhooks off trigger.dev** [#3527](https://github.com/simstudioai/sim/pull/3527) - Faster webhook handling without an external dependency. (Author: [@icecrasher321](https://github.com/icecrasher321/))
+- **Slack tools include email addresses** [#3509](https://github.com/simstudioai/sim/pull/3509) - Get user and list users now return email for matching users across your workspace. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Jira search returns full issue data** [#3544](https://github.com/simstudioai/sim/pull/3544) - Search/JQL endpoint now includes all fields by default instead of just IDs. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Grain integration updated** [#3556](https://github.com/simstudioai/sim/pull/3556) - Switched to stable API version and improved webhook verification. (Author: [@icecrasher321](https://github.com/icecrasher321/))
+
+### Bug Fixes
+- **Fixed block duplication remapping** [#3533](https://github.com/simstudioai/sim/pull/3533) - Duplicating, copying, or importing workflows now correctly updates condition and router block IDs so edges connect properly. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Fixed internal workflow Response blocks** [#3551](https://github.com/simstudioai/sim/pull/3551) - Child workflow calls now receive standard success/output format instead of hijacked response data. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Fixed trace span metadata from condition blocks** [#3534](https://github.com/simstudioai/sim/pull/3534) - Condition blocks no longer leak agent timing, token counts, or costs into the trace. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Fixed Gmail RFC 2047 encoding** [#3526](https://github.com/simstudioai/sim/pull/3526) - Long email subjects with non-Latin characters now encode correctly. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Fixed Jira issue key field** [#3547](https://github.com/simstudioai/sim/pull/3547) - Manual issue key input no longer clears when you change projects. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Fixed Slack webhook modal responses** [#3492](https://github.com/simstudioai/sim/pull/3492) - Returning an empty 200 response now closes modals cleanly. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Removed redundant webhook database queries** [#3523](https://github.com/simstudioai/sim/pull/3523) - Webhook execution no longer unnecessarily looks up credentials multiple times. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+
+### Infrastructure
+- **Canvas middle-mouse panning** [#3542](https://github.com/simstudioai/sim/pull/3542) - Pan the workflow canvas using the middle mouse button in cursor mode. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+
+### Internal Changes
+- **Parallel AI integration updated** [#3501](https://github.com/simstudioai/sim/pull/3501) - Updated to match the latest API schema. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))
+- **Condition ID code clarity** [#3546](https://github.com/simstudioai/sim/pull/3546) - Made the hyphen separator explicit in condition ID handling. (Author: [@waleedlatif1](https://github.com/waleedlatif1/))

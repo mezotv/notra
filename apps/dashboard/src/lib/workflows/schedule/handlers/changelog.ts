@@ -1,5 +1,5 @@
-import { generateChangelog } from "@/lib/ai/agents/changelog";
-import { isGitHubRateLimitError } from "@/lib/ai/tools/github";
+import { generateChangelog } from "@notra/ai/agents/changelog";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
   ContentGenerationContext,
   ContentGenerationResult,
@@ -9,15 +9,21 @@ export async function handleChangelog(
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
   try {
-    const { postId, title } = await generateChangelog({
+    const { postId, title, posts } = await generateChangelog({
       organizationId: ctx.organizationId,
+      voiceId: ctx.voiceId,
       repositories: ctx.repositories,
       tone: ctx.tone,
       promptInput: ctx.promptInput,
       sourceMetadata: ctx.sourceMetadata,
+      dataPointSettings: ctx.dataPointSettings,
+      selectionFilters: ctx.selectionFilters,
+      commitWindow: ctx.commitWindow,
+      autoPublish: ctx.autoPublish,
+      resolveContext: ctx.resolveContext,
     });
 
-    return { status: "ok", postId, title };
+    return { status: "ok", postId, title, posts };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
       return {

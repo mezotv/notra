@@ -1,16 +1,23 @@
 import { SdkError } from "@mendable/firecrawl-js";
+import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
+import { gateway } from "@notra/ai/gateway";
+import {
+  setBrandAnalysisJobStatus,
+  updateBrandAnalysisJob,
+} from "@notra/ai/jobs/brand-analysis";
+import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import { db } from "@notra/db/drizzle";
-import { brandSettings, organizations } from "@notra/db/schema";
+import { brandSettings } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
-import { eq } from "drizzle-orm";
-import { z } from "zod";
-import { gateway } from "@/lib/ai/gateway";
+import { and, eq } from "drizzle-orm";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 import { getFirecrawlClient } from "@/lib/firecrawl";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
-import { brandSettingsSchema } from "@/schemas/brand";
+import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 
 const PROGRESS_TTL = 300;
 
@@ -41,11 +48,14 @@ interface BrandInfo {
   toneProfile: string;
   customTone?: string | null;
   audience: string;
+  language?: string;
 }
 
 const brandAnalysisPayloadSchema = z.object({
   organizationId: z.string().min(1),
   url: z.string().url(),
+  voiceId: z.string().optional(),
+  jobId: z.string().optional(),
 });
 
 type BrandAnalysisPayload = z.infer<typeof brandAnalysisPayloadSchema>;
@@ -82,6 +92,52 @@ async function setProgress(organizationId: string, data: ProgressData) {
   });
 }
 
+async function setJobProgress(jobId: string | undefined, data: ProgressData) {
+  if (!(redis && jobId)) {
+    return;
+  }
+
+  if (data.status === "failed") {
+    await setBrandAnalysisJobStatus(redis, jobId, "failed", {
+      step:
+        data.currentStep === 1
+          ? "scraping"
+          : data.currentStep === 2
+            ? "extracting"
+            : data.currentStep === 3
+              ? "saving"
+              : null,
+      currentStep: data.currentStep,
+      totalSteps: data.totalSteps,
+      error: data.error ?? "Brand analysis failed",
+    });
+    return;
+  }
+
+  if (data.status === "completed") {
+    await setBrandAnalysisJobStatus(redis, jobId, "completed", {
+      step: null,
+      currentStep: data.currentStep,
+      totalSteps: data.totalSteps,
+      error: null,
+    });
+    return;
+  }
+
+  await updateBrandAnalysisJob(redis, jobId, {
+    status: "running",
+    step:
+      data.status === "scraping" ||
+      data.status === "extracting" ||
+      data.status === "saving"
+        ? data.status
+        : null,
+    currentStep: data.currentStep,
+    totalSteps: data.totalSteps,
+    error: null,
+  });
+}
+
 export const { POST } = serve<BrandAnalysisPayload>(
   async (context: WorkflowContext<BrandAnalysisPayload>) => {
     const parseResult = brandAnalysisPayloadSchema.safeParse(
@@ -95,15 +151,17 @@ export const { POST } = serve<BrandAnalysisPayload>(
       await context.cancel();
       return;
     }
-    const { organizationId, url } = parseResult.data;
+    const { organizationId, url, voiceId, jobId } = parseResult.data;
 
     // Step 1: Scrape website
     await context.run("set-progress-scraping", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "scraping",
         currentStep: 1,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     const scrapingResult = await context.run<ScrapingResult>(
@@ -164,12 +222,14 @@ export const { POST } = serve<BrandAnalysisPayload>(
 
     if (!scrapingResult.success) {
       await context.run("set-progress-failed-scraping", async () => {
-        await setProgress(organizationId, {
+        const progress = {
           status: "failed",
           currentStep: 1,
           totalSteps: STEP_COUNT,
           error: scrapingResult.error,
-        });
+        } as const;
+        await setProgress(organizationId, progress);
+        await setJobProgress(jobId, progress);
       });
       await context.cancel();
       return;
@@ -177,11 +237,13 @@ export const { POST } = serve<BrandAnalysisPayload>(
 
     // Step 2: Extract brand info
     await context.run("set-progress-extracting", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "extracting",
         currentStep: 2,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     const extractionResult = await context.run<ExtractionResult>(
@@ -191,6 +253,16 @@ export const { POST } = serve<BrandAnalysisPayload>(
           const { output } = await generateText({
             model: gateway("anthropic/claude-haiku-4.5"),
             output: Output.object({ schema: brandSettingsSchema }),
+            experimental_telemetry: await getAISDKTelemetry(
+              "extractBrandInfo",
+              {
+                organizationId,
+                metadata: {
+                  workflow: "brand_analysis",
+                  route: "api/workflows/brand-analysis",
+                },
+              }
+            ),
             prompt: `Analyze this website content and extract brand identity information.
 
 Website content:
@@ -200,7 +272,8 @@ Extract the following information:
 1. companyName: The name of the company
 2. companyDescription: A comprehensive description of what the company does, their mission, and what makes them unique (2-4 sentences)
 3. toneProfile: The tone of their communication - choose one of: "Conversational", "Professional", "Casual", "Formal"
-4. audience: A description of their target audience (1-2 sentences)`,
+4. audience: A description of their target audience (1-2 sentences)
+5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
             system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
           });
 
@@ -220,12 +293,14 @@ Extract the following information:
 
     if (!extractionResult.success) {
       await context.run("set-progress-failed-extracting", async () => {
-        await setProgress(organizationId, {
+        const progress = {
           status: "failed",
           currentStep: 2,
           totalSteps: STEP_COUNT,
           error: extractionResult.error,
-        });
+        } as const;
+        await setProgress(organizationId, progress);
+        await setJobProgress(jobId, progress);
       });
       await context.cancel();
       return;
@@ -233,56 +308,99 @@ Extract the following information:
 
     // Step 3: Save to database
     await context.run("set-progress-saving", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "saving",
         currentStep: 3,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     await context.run("save-to-database", async () => {
       const brandInfo = extractionResult.brandInfo;
 
-      await db
-        .update(organizations)
-        .set({ websiteUrl: url })
-        .where(eq(organizations.id, organizationId));
+      const validatedLanguage = getValidLanguage(brandInfo.language);
+      const brandData = {
+        websiteUrl: url,
+        companyName: brandInfo.companyName,
+        companyDescription: brandInfo.companyDescription,
+        toneProfile: brandInfo.toneProfile,
+        customTone: brandInfo.customTone ?? null,
+        audience: brandInfo.audience,
+        language: validatedLanguage,
+      };
 
-      const existing = await db.query.brandSettings.findFirst({
-        where: eq(brandSettings.organizationId, organizationId),
-      });
-
-      if (existing) {
-        await db
-          .update(brandSettings)
-          .set({
-            companyName: brandInfo.companyName,
-            companyDescription: brandInfo.companyDescription,
-            toneProfile: brandInfo.toneProfile,
-            customTone: brandInfo.customTone ?? null,
-            audience: brandInfo.audience,
-          })
-          .where(eq(brandSettings.organizationId, organizationId));
-      } else {
-        await db.insert(brandSettings).values({
-          id: crypto.randomUUID(),
-          organizationId,
-          companyName: brandInfo.companyName,
-          companyDescription: brandInfo.companyDescription,
-          toneProfile: brandInfo.toneProfile,
-          customTone: brandInfo.customTone ?? null,
-          audience: brandInfo.audience,
+      if (voiceId) {
+        const target = await db.query.brandSettings.findFirst({
+          where: and(
+            eq(brandSettings.id, voiceId),
+            eq(brandSettings.organizationId, organizationId)
+          ),
         });
+
+        if (target) {
+          await db
+            .update(brandSettings)
+            .set(brandData)
+            .where(eq(brandSettings.id, voiceId));
+        } else {
+          const defaultVoice = await db.query.brandSettings.findFirst({
+            where: and(
+              eq(brandSettings.organizationId, organizationId),
+              eq(brandSettings.isDefault, true)
+            ),
+          });
+
+          if (defaultVoice) {
+            await db
+              .update(brandSettings)
+              .set(brandData)
+              .where(eq(brandSettings.id, defaultVoice.id));
+          } else {
+            await db.insert(brandSettings).values({
+              id: crypto.randomUUID(),
+              organizationId,
+              name: "Default",
+              isDefault: true,
+              ...brandData,
+            });
+          }
+        }
+      } else {
+        const existing = await db.query.brandSettings.findFirst({
+          where: and(
+            eq(brandSettings.organizationId, organizationId),
+            eq(brandSettings.isDefault, true)
+          ),
+        });
+
+        if (existing) {
+          await db
+            .update(brandSettings)
+            .set(brandData)
+            .where(eq(brandSettings.id, existing.id));
+        } else {
+          await db.insert(brandSettings).values({
+            id: crypto.randomUUID(),
+            organizationId,
+            name: "Default",
+            isDefault: true,
+            ...brandData,
+          });
+        }
       }
     });
 
     // Mark as completed
     await context.run("set-progress-completed", async () => {
-      await setProgress(organizationId, {
+      const progress = {
         status: "completed",
         currentStep: 3,
         totalSteps: STEP_COUNT,
-      });
+      } as const;
+      await setProgress(organizationId, progress);
+      await setJobProgress(jobId, progress);
     });
 
     return { success: true, brandInfo: extractionResult.brandInfo };
@@ -294,16 +412,18 @@ Extract the following information:
 
       // Set failed progress on workflow failure
       if (redis) {
-        await redis.set(
-          `brand:progress:${organizationId}`,
-          {
-            status: "failed",
-            currentStep: 0,
-            totalSteps: STEP_COUNT,
-            error: "Workflow failed unexpectedly",
-          },
-          { ex: PROGRESS_TTL }
-        );
+        const progress = {
+          status: "failed",
+          currentStep: 0,
+          totalSteps: STEP_COUNT,
+          error: "Workflow failed unexpectedly",
+        } as const;
+
+        await redis.set(`brand:progress:${organizationId}`, progress, {
+          ex: PROGRESS_TTL,
+        });
+
+        await setJobProgress(context.requestPayload.jobId, progress);
       }
 
       console.error(

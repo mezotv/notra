@@ -203,19 +203,25 @@ export function OrgSelector() {
   const isCollapsed = state === "collapsed";
   const { activeOrganization, organizations, isLoading } =
     useOrganizationsContext();
-  const { customer } = useCustomer();
+  const { data: customer } = useCustomer({
+    expand: ["subscriptions.plan"],
+  });
 
   const [isPending, startTransition] = useTransition();
   const [isSwitching, setIsSwitching] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const isNavigating = isSwitching || isPending;
 
-  const proProduct = customer?.products.find(
-    (p) =>
-      (p.id === "pro" || p.id === "pro_yearly") &&
-      (p.status === "active" || p.status === "trialing")
+  const proSubscription = customer?.subscriptions.find(
+    (subscription) =>
+      !subscription.addOn &&
+      subscription.status === "active" &&
+      (subscription.plan?.id === "pro" ||
+        subscription.plan?.id === "pro_yearly" ||
+        subscription.planId === "pro" ||
+        subscription.planId === "pro_yearly")
   );
-  const isPro = Boolean(proProduct);
+  const isPro = Boolean(proSubscription);
 
   async function switchOrganization(org: Organization) {
     if (org.slug === activeOrganization?.slug) {

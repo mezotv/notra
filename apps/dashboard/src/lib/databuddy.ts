@@ -1,5 +1,8 @@
 import { Databuddy } from "@databuddy/sdk/node";
-import type { ScheduledContentCreatedEvent } from "@/types/lib/databuddy";
+import type {
+  ScheduledContentCreatedEvent,
+  ScheduledContentFailedEvent,
+} from "@/types/lib/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
 
@@ -30,7 +33,7 @@ export async function trackScheduledContentCreated(
     const result = await databuddy.track({
       name: "scheduled_content_created",
       namespace: "workflows",
-      source: "schedule",
+      source: event.source ?? "schedule",
       properties: {
         trigger_id: event.triggerId,
         organization_id: event.organizationId,
@@ -53,6 +56,44 @@ export async function trackScheduledContentCreated(
       console.warn("[Databuddy] scheduled_content_created error", {
         triggerId: event.triggerId,
         postId: event.postId,
+        error,
+      });
+    }
+  }
+}
+
+export async function trackScheduledContentFailed(
+  event: ScheduledContentFailedEvent
+): Promise<void> {
+  if (!databuddy) {
+    return;
+  }
+
+  try {
+    const result = await databuddy.track({
+      name: "scheduled_content_failed",
+      namespace: "workflows",
+      source: event.source ?? "schedule",
+      properties: {
+        trigger_id: event.triggerId,
+        organization_id: event.organizationId,
+        output_type: event.outputType,
+        reason: event.reason,
+        lookback_window: event.lookbackWindow,
+        repository_count: event.repositoryCount,
+      },
+    });
+
+    if (!result.success && isDevelopment) {
+      console.warn("[Databuddy] scheduled_content_failed failed", {
+        triggerId: event.triggerId,
+        error: result.error,
+      });
+    }
+  } catch (error) {
+    if (isDevelopment) {
+      console.warn("[Databuddy] scheduled_content_failed error", {
+        triggerId: event.triggerId,
         error,
       });
     }

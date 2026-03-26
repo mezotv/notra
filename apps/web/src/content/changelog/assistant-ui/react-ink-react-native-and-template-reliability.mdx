@@ -1,0 +1,75 @@
+---
+title: "Assistant UI Changelog - March 8-15, 2026"
+date: "2026-03-15"
+description: "React Ink ErrorPrimitive, react-ink-markdown, React Native API refactors, template reliability fixes, and stronger multi-platform tooling across the assistant-ui stack."
+---
+
+Over the past week, we've been shipping hard on multi-platform support, reliability improvements, and template polish. React developers and teams building AI chat interfaces got several meaningful upgrades, including better cross-platform component APIs, new building blocks for terminal apps, and fixes that squash real bugs in production scenarios.
+
+## Highlights
+
+### React Ink now gets ErrorPrimitive for better error handling
+We added a missing piece to the React Ink toolkit - the ErrorPrimitive component. If you're building terminal chat UIs, this gives you a clean way to display tool errors and validation failures in the same way the web components do.
+
+### react-ink-markdown joins the toolkit as a standalone package
+Rendering Markdown in terminal interfaces just got simpler. The new package works with React Ink and gives you a markdown renderer that feels native to the terminal, without wrestling with a web component library.
+
+### React Native's component API got a complete refactor
+The component API for React Native is now more consistent with the web components. This means less mental overhead switching between platforms and better code reuse across your web and mobile implementations.
+
+### Templates actually work with AssistantChatTransport now
+The with-ai-sdk-v6 example and starter templates were out of sync. We rewrote them so the backend correctly handles system prompts and tool forwarding from the client - making the example match what the docs promise.
+
+### Prevent accidental double-submit on form interactions
+Added a guard that stops duplicate message sends when users rapidly interact with the input. This is a small fix with big reliability impact for production apps.
+
+## More Updates
+
+### Features & Enhancements
+- **Multi-agent support** - Build apps that coordinate multiple AI agents in conversation threads
+- **resumeRun moved to stable** - The API for resuming interrupted assistant runs is no longer marked experimental
+- **Heat graph component** - New visualization component for displaying metrics and patterns over time
+- **React Ink and React Native runtime support** - Official support for both platforms in the core package
+- **React Ink ToolFallback component** - Dedicated component for rendering when tool execution fails in terminal contexts
+- **Brand page and footer link** - New pages for company branding and information
+- **New quote component in registry** - Added to the component registry for testimonials and callouts
+
+### Bug Fixes
+- **Fixed attachment tile rendering** - Removed duplicate DOM IDs and corrected the attachment source check across all templates
+- **LangGraph proxy now preserves CORS** - Fixed cross-origin browser support while safely stripping encoding headers in the proxy route
+- **CLI project creation is more robust** - Safer plugin resolution, correct transform sequencing, and better error messages
+- **Removed invalid interactive nesting in Clerk template** - Fixed accessible markup issues in the cloud-clerk starter
+- **Template links now have proper rel attributes** - Added rel="noopener noreferrer" to external links in threadlist sidebars
+- **Removed unused animation dependencies** - Cleaned up framer-motion from templates that weren't using it
+- **Fixed docs header breakpoints and nav links** - Responsive header now displays correctly and includes all navigation items
+- **User-Agent header now allowed in docs** - Unblocked requests that include this common header
+
+### Testing & Reliability
+- **Regression test for Vite compatibility** - Added a test that catches unguarded process.env access, which was crashing all Vite users and got reintroduced twice
+- **Core no longer requires Zod at runtime** - Removed the static Zod import that was breaking non-Node environments even though it was marked optional; now uses Standard Schema duck-typing instead
+
+### Documentation & Examples
+- **Updated with-ai-sdk-v6 example** - Docs, env vars, and metadata now match the OpenAI-based implementation
+- **Cloud redesign blog post** - New blog entry documenting the Assistant UI Cloud updates
+- **Cloud AI SDK docs** - Launched standalone persistence hooks documentation
+- **React Native landing page** - New dedicated page for React Native support and guides
+- **React Ink docs** - Documentation for building terminal chat interfaces
+- **Added new testimonials** - Neon, Y Combinator, yagudaev, and VoltAgent logos on the homepage
+- **SVG logo compatibility fixes** - All 10 company logos now work reliably on GitHub by converting text to paths and removing incompatible SVG features
+- **Docs SVG optimization** - Reduced SVG payload across docs by 14KB using SVGO
+- **Fixed README logo rendering** - Increased display height for readability and added proper link targets
+
+### Infrastructure & CI
+- **Semver check with cascade analysis** - New CI gate that detects breaking version bumps and analyzes downstream impact on dependent packages, with environment-based approval flow
+- **Enhanced release summary** - Pre-publish workflow that shows version changes, breaking bumps, downstream impact, and included commits for the exact release SHA
+- **Version PR unblocked from Semver Check** - Added synthetic passing check for the changesets bot-generated version PR which couldn't trigger workflows naturally
+- **Excluded .next/dev from Turbo build cache** - CI build artifacts now exclude the dev cache directory
+- **Improved CI for development dependencies** - Better handling of dependency updates in CI workflows
+- **Removed fork PR review support from Claude Code Review** - Security hardening to prevent unintended code review on untrusted forks
+- **Expo CI workflow** - New CI coverage for React Native Expo example
+- **Added EXPO_PUBLIC_CHAT_ENDPOINT_URL environment variable** - Required env var for the Expo example is now set in CI
+
+### Platform Improvements
+- **Consolidation of runtime implementations** - Refactored platform-specific code to reduce duplication across React, React Native, React Ink, and Expo
+- **Updated Expo example** - Now uses react-ai-sdk and includes tool UI components
+- **Examples integration endpoint** - Added API endpoint configuration to examples for proper LLM backend integration

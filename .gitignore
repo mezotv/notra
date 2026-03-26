@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Opencode
 opencode.json
+
+# Openlogs
+.openlogs/

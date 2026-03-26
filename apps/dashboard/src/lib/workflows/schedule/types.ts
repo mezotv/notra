@@ -1,5 +1,11 @@
+import type { ToneProfile } from "@notra/ai/schemas/tone";
+import type {
+  AgentDataPointSettings,
+  ResolveIntegrationContext,
+} from "@notra/ai/types/agents";
+import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { ToneProfile } from "@/schemas/brand";
+import type { PostSummary } from "@/types/posts";
 
 export interface ContentGenerationContext {
   organizationId: string;
@@ -20,12 +26,27 @@ export interface ContentGenerationContext {
     companyDescription?: string;
     audience?: string;
     customInstructions?: string | null;
+    language?: string;
   };
   sourceMetadata: PostSourceMetadata;
+  dataPointSettings?: AgentDataPointSettings;
+  selectionFilters?: GitHubSelectionFilters;
+  commitWindow?: {
+    since: string;
+    until: string;
+  };
+  voiceId?: string;
+  autoPublish?: boolean;
+  resolveContext: ResolveIntegrationContext;
 }
 
 export type ContentGenerationResult =
-  | { status: "ok"; postId: string; title: string }
+  | {
+      status: "ok";
+      postId: string;
+      title: string;
+      posts: PostSummary[];
+    }
   | { status: "rate_limited"; retryAfterSeconds?: number }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };

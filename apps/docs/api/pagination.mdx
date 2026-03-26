@@ -68,41 +68,65 @@ Every paginated response includes a `pagination` object:
 <Tab title="Default Pagination">
 Fetch the first page with the default limit (`10`):
 
+<CodeGroup>
 ```bash cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/"
+  "https://api.usenotra.com/v1/posts"
 ```
+
+```typescript SDK
+const result = await notra.content.listPosts();
+```
+</CodeGroup>
 
 </Tab>
 
 <Tab title="Custom Limit">
 Fetch 5 items per page:
 
+<CodeGroup>
 ```bash cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/?limit=5"
+  "https://api.usenotra.com/v1/posts?limit=5"
 ```
+
+```typescript SDK
+const result = await notra.content.listPosts({
+  limit: 5,
+});
+```
+</CodeGroup>
 
 </Tab>
 
 <Tab title="Specific Page">
 Fetch page 2 with 5 items per page:
 
+<CodeGroup>
 ```bash cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/?page=2&limit=5"
+  "https://api.usenotra.com/v1/posts?page=2&limit=5"
 ```
+
+```typescript SDK
+const result = await notra.content.listPosts({
+  page: 2,
+  limit: 5,
+});
+```
+</CodeGroup>
 
 </Tab>
 </Tabs>
 
-## TypeScript Example
+## Building Pagination Controls
 
 Use the pagination object to build navigation controls:
 
-```typescript
+<CodeGroup>
+```typescript fetch
 const response = await fetch(
-  "https://api.usenotra.com/v1/YOUR_ORGANIZATION_ID/posts/?page=1&limit=10",
+  "https://api.usenotra.com/v1/posts?page=1&limit=10",
   {
     headers: {
       Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
@@ -118,6 +142,23 @@ const canGoForward = pagination.nextPage !== null;
 const pageInfo = `Page ${pagination.currentPage} of ${pagination.totalPages}`;
 const itemCount = `${pagination.totalItems} total items`;
 ```
+
+```typescript SDK
+import type { Pagination } from "@usenotra/sdk/models/operations";
+
+const result = await notra.content.listPosts({
+  page: 1,
+  limit: 10,
+});
+
+const { pagination } = result;
+
+const canGoBack = pagination.previousPage !== null;
+const canGoForward = pagination.nextPage !== null;
+const pageInfo = `Page ${pagination.currentPage} of ${pagination.totalPages}`;
+const itemCount = `${pagination.totalItems} total items`;
+```
+</CodeGroup>
 
 <ResponseExample>
 ```json Success Response

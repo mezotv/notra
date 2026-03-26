@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { createOctokit } from "@notra/ai/utils/octokit";
 import { db } from "@notra/db/drizzle";
 import {
   githubIntegrations,
@@ -19,7 +20,6 @@ import type {
   WebhookConfig,
 } from "@/types/services/integrations";
 import { getConfiguredAppUrl } from "@/utils/url";
-import { createOctokit } from "../octokit";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -429,6 +429,64 @@ export async function updateGitHubIntegration(
   return updated;
 }
 
+export async function updateGitHubIntegrationToken(
+  integrationId: string,
+  token: string
+) {
+  const integration = await getGitHubIntegrationById(integrationId);
+
+  if (!integration) {
+    throw new Error("Integration not found");
+  }
+
+  const owner = integration.owner?.trim();
+  const repo = integration.repo?.trim();
+
+  if (!owner || !repo) {
+    throw new Error("Repository not configured for this integration");
+  }
+
+  const normalizedToken = token.trim();
+
+  if (integration.encryptedToken) {
+    const currentToken = decryptToken(integration.encryptedToken);
+
+    if (currentToken === normalizedToken) {
+      return integration;
+    }
+  }
+
+  const octokit = createOctokit(normalizedToken);
+
+  try {
+    await octokit.request("GET /user");
+  } catch (_error) {
+    throw new Error("Invalid GitHub token");
+  }
+
+  try {
+    await octokit.request("GET /repos/{owner}/{repo}", {
+      owner,
+      repo,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+  } catch (_error) {
+    throw new Error(`Token does not have access to ${owner}/${repo}`);
+  }
+
+  const encryptedToken = encryptToken(normalizedToken);
+
+  const [updated] = await db
+    .update(githubIntegrations)
+    .set({ encryptedToken })
+    .where(eq(githubIntegrations.id, integrationId))
+    .returning();
+
+  return updated;
+}
+
 export async function toggleRepository(repositoryId: string, enabled: boolean) {
   return updateRepository(repositoryId, { enabled });
 }
@@ -456,15 +514,18 @@ export async function updateRepository(
 export async function validateRepositoryBranchExists(
   params: ValidateRepositoryBranchExistsParams
 ) {
-  const { owner, repo, branch, encryptedToken } = params;
+  const { owner, repo, branch, token, encryptedToken } = params;
 
   const normalizedBranch = branch.trim();
   if (!normalizedBranch) {
     return;
   }
 
-  const token = encryptedToken ? decryptToken(encryptedToken) : undefined;
-  const octokit = createOctokit(token);
+  const resolvedToken = token?.trim() || undefined;
+  const authToken =
+    resolvedToken ??
+    (encryptedToken ? decryptToken(encryptedToken) : undefined);
+  const octokit = createOctokit(authToken);
 
   try {
     await octokit.request("GET /repos/{owner}/{repo}/branches/{branch}", {

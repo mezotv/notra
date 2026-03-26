@@ -1,6 +1,11 @@
 "use client";
 
-import { Upload01Icon } from "@hugeicons/core-free-icons";
+import {
+  Add01Icon,
+  Cancel01Icon,
+  NewTwitterIcon,
+  Upload01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Avatar,
@@ -11,6 +16,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,9 +29,15 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { authClient } from "@/lib/auth/client";
 import {
+  useConnectedAccounts,
+  useDisconnectAccount,
+  useHandleConnectTwitter,
+} from "@/lib/hooks/use-connected-accounts";
+import {
   getOrganizationMembershipActionLabel,
   type OrganizationMembershipAction,
 } from "@/lib/organizations/membership-action";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { uploadFile } from "@/lib/upload/client";
 import { organizationSlugSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
@@ -54,18 +66,13 @@ export default function GeneralSettingsPage({ params }: PageProps) {
     data: ownedOrganizations = [],
     isLoading: isLoadingOwnedOrganizations,
   } = useQuery({
-    queryKey: ["owned-organizations"],
-    queryFn: async () => {
-      const response = await fetch("/api/user/organizations");
-      if (!response.ok) {
-        throw new Error("Failed to fetch owned organizations");
-      }
-      const data = await response.json();
-      return (data.ownedOrganizations ?? []) as {
-        id: string;
-        memberCount: number;
-      }[];
-    },
+    ...dashboardOrpc.user.organizations.listOwned.queryOptions({
+      select: (data) =>
+        (data.ownedOrganizations ?? []).map((org) => ({
+          id: org.id,
+          memberCount: org.memberCount,
+        })),
+    }),
   });
 
   const ownedOrganization = ownedOrganizations.find(
@@ -85,29 +92,16 @@ export default function GeneralSettingsPage({ params }: PageProps) {
     setIsRemovingOrganization(true);
 
     try {
-      const response = await fetch("/api/user/organizations/membership", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          organizationId: organization.id,
-          action,
-        }),
+      await dashboardOrpc.user.membership.applyAction.call({
+        organizationId: organization.id,
+        action,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast.error(data.error || "Failed to update organization membership");
-        return;
-      }
 
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.organizations,
       });
       await queryClient.invalidateQueries({
-        queryKey: ["owned-organizations"],
+        queryKey: dashboardOrpc.user.organizations.listOwned.queryKey(),
       });
 
       const freshOrgs = await queryClient.fetchQuery({
@@ -348,7 +342,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
                 </Avatar>
               </button>
               <div className="space-y-1">
-                <p className="font-medium text-sm">Organization logo</p>
+                <p className="font-medium text-sm">Logo</p>
                 <p className="text-muted-foreground text-xs">
                   {isUploadingLogo
                     ? "Uploading..."
@@ -360,7 +354,11 @@ export default function GeneralSettingsPage({ params }: PageProps) {
             <form.Field name="name">
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor={field.name}>Organization Name</Label>
+                  <Label htmlFor={field.name}>Name</Label>{" "}
+                  <p className="text-muted-foreground text-xs">
+                    This is the name of your organization as it appears across
+                    the platform
+                  </p>
                   <Input
                     id={field.name}
                     onBlur={field.handleBlur}
@@ -368,10 +366,6 @@ export default function GeneralSettingsPage({ params }: PageProps) {
                     placeholder="My Organization"
                     value={field.state.value}
                   />
-                  <p className="text-muted-foreground text-xs">
-                    This is the name of your organization as it appears across
-                    the platform
-                  </p>
                 </div>
               )}
             </form.Field>
@@ -386,7 +380,11 @@ export default function GeneralSettingsPage({ params }: PageProps) {
             >
               {(field) => (
                 <div className="space-y-2">
-                  <Label htmlFor={field.name}>Organization Slug</Label>
+                  <Label htmlFor={field.name}>Slug</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Used in URLs: https://app.usenotra.com/
+                    {field.state.value || "your-slug"}
+                  </p>
                   <Input
                     aria-invalid={field.state.meta.errors.length > 0}
                     id={field.name}
@@ -400,17 +398,13 @@ export default function GeneralSettingsPage({ params }: PageProps) {
                       {field.state.meta.errors[0]}
                     </p>
                   ) : null}
-                  <p className="text-muted-foreground text-xs">
-                    Used in URLs: https://app.usenotra.com/
-                    {field.state.value || "your-slug"}
-                  </p>
                 </div>
               )}
             </form.Field>
 
             <div className="space-y-2">
-              <Label htmlFor="organization-id">Organization ID</Label>
-              <Input disabled id="organization-id" value={organization.id} />
+              <Label htmlFor="organization-id">ID</Label>
+              <Input id="organization-id" value={organization.id} />
             </div>
 
             <Button disabled={isUpdating} type="submit">
@@ -425,6 +419,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
             </Button>
           </form>
         </TitleCard>
+
+        <ConnectedAccountsSection organizationId={organization.id} />
 
         <TitleCard heading="Danger Zone">
           <div className="space-y-4">
@@ -481,5 +477,151 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         </TitleCard>
       </div>
     </PageContainer>
+  );
+}
+
+function ConnectedAccountsSection({
+  organizationId,
+}: {
+  organizationId: string;
+}) {
+  const { data, isLoading, isError } = useConnectedAccounts(organizationId);
+  const { handleConnect, isPending: isConnecting } =
+    useHandleConnectTwitter(organizationId);
+  const disconnectMutation = useDisconnectAccount(organizationId);
+
+  const twitterAccounts = (data?.accounts ?? []).filter(
+    (a) => a.provider === "twitter"
+  );
+
+  return (
+    <TitleCard
+      action={
+        twitterAccounts.length > 0 ? (
+          <Button disabled={isConnecting} onClick={handleConnect} size="sm">
+            {isConnecting ? (
+              <Loader2Icon className="size-3.5 animate-spin" />
+            ) : (
+              <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+            )}
+            Connect
+          </Button>
+        ) : undefined
+      }
+      heading="Connected Accounts"
+    >
+      <div className="space-y-3">
+        <p className="text-muted-foreground text-sm">
+          X accounts connected to this organization
+        </p>
+
+        {isLoading && (
+          <div className="space-y-3">
+            <Skeleton className="h-14 rounded-lg" />
+            <Skeleton className="h-14 rounded-lg" />
+          </div>
+        )}
+
+        {!isLoading && isError && (
+          <div className="rounded-lg border border-dashed py-8 text-center">
+            <p className="text-destructive text-sm">
+              Failed to load connected accounts
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && twitterAccounts.length === 0 && (
+          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-8">
+            <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+              <HugeiconsIcon className="size-5" icon={NewTwitterIcon} />
+            </div>
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm">
+                No X accounts connected
+              </p>
+            </div>
+            <Button disabled={isConnecting} onClick={handleConnect} size="sm">
+              {isConnecting ? (
+                <>
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+                  Connect X Account
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {!isLoading &&
+          !isError &&
+          twitterAccounts.map((account) => {
+            const isDisconnecting =
+              disconnectMutation.isPending &&
+              disconnectMutation.variables === account.id;
+
+            return (
+              <div
+                className="flex items-center gap-3 rounded-lg border p-3"
+                key={account.id}
+              >
+                <Avatar
+                  className="size-9 rounded-full after:rounded-full"
+                  size="sm"
+                >
+                  {account.profileImageUrl && (
+                    <AvatarImage
+                      alt={account.displayName}
+                      src={account.profileImageUrl}
+                    />
+                  )}
+                  <AvatarFallback>
+                    {account.username.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1 truncate font-medium text-sm">
+                    {account.displayName}
+                    {account.verified && (
+                      <XVerifiedBadge className="size-4 shrink-0" />
+                    )}
+                  </p>
+                  <p className="truncate text-muted-foreground text-xs">
+                    @{account.username}
+                  </p>
+                </div>
+                <Button
+                  aria-label={`Disconnect @${account.username}`}
+                  disabled={disconnectMutation.isPending}
+                  onClick={() => {
+                    disconnectMutation.mutate(account.id, {
+                      onSuccess: () => toast.success("Account disconnected"),
+                      onError: () =>
+                        toast.error("Failed to disconnect account"),
+                    });
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  {isDisconnecting ? (
+                    <>
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <HugeiconsIcon className="size-3.5" icon={Cancel01Icon} />
+                      Disconnect
+                    </>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+      </div>
+    </TitleCard>
   );
 }

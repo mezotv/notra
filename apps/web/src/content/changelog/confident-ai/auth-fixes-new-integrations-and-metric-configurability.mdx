@@ -1,0 +1,29 @@
+---
+title: "Confident AI Changelog - March 7-14, 2026"
+date: "2026-03-14"
+description: "This week brought fixes for authentication blockers, new integrations, and improved configurability across evaluation metrics. The platform now supports keyless Azure authentication, makes evaluation model selection customizable via environment variables, and adds comprehensive AgentCore framework i"
+---
+
+This week brought fixes for authentication blockers, new integrations, and improved configurability across evaluation metrics. The platform now supports keyless Azure authentication, makes evaluation model selection customizable via environment variables, and adds comprehensive AgentCore framework integration with documentation.
+
+## Highlights
+
+### AzureOpenAI keyless authentication now works correctly
+Credential validation is now deferred to the OpenAI SDK instead of failing early, allowing Azure AD and managed identity configurations to work as intended. This eliminates a blocker for engineers using keyless authentication patterns in Azure environments.
+
+### Environment variable configuration for evaluation models
+Evaluation model selection can now be set via environment variables, reducing configuration boilerplate and making it easier to standardize model choices across evaluation jobs.
+
+### AgentCore framework integration and documentation
+Full integration support for AgentCore with complete documentation and test coverage, enabling teams building agent applications to evaluate their systems within the DeepEval platform.
+
+## More Updates
+
+### Bug Fixes
+- **Fixed KnowledgeRetentionMetric validation error** [#2513](https://github.com/confident-ai/deepeval/pull/2513) - Corrected double-wrapped Knowledge object unpacking that was causing crashes. (Author: [@dgomez04](https://github.com/dgomez04/))
+- **Fixed CrewAI tool handling with unexpected thread pool events** [#2547](https://github.com/confident-ai/deepeval/pull/2547) - Resolved crashes when handling unexpected thread pool event arrivals. (Author: [@A-Vamshi](https://github.com/A-Vamshi/))
+
+### Features & Enhancements
+- **Made top_logprobs configurable in ConversationalGEval** [#2549](https://github.com/confident-ai/deepeval/pull/2549) - Added missing configuration option for consistency with GEval. (Author: [@SzymonCogiel](https://github.com/SzymonCogiel/))
+- **Removed OpenTelemetry configuration from AgentCore** [#2545](https://github.com/confident-ai/deepeval/pull/2545) - Simplified AgentCore integration and added iterator usage documentation. (Author: [@A-Vamshi](https://github.com/A-Vamshi/))
+- **Added comprehensive AgentCore documentation and tests** [#2544](https://github.com/confident-ai/deepeval/pull/2544) - Full integration guide and test coverage for AgentCore framework. (Author: [@A-Vamshi](https://github.com/A-Vamshi/))

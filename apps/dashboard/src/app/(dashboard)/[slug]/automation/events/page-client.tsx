@@ -26,6 +26,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
 import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
@@ -33,9 +34,10 @@ import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-sta
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { dashboardOrpc } from "@/lib/orpc/query";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
-import { getOutputTypeLabel } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
+import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
 
@@ -68,55 +70,55 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
 
-  const { data, isPending } = useQuery<{ triggers: Trigger[] }>({
-    queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
-    queryFn: async () => {
-      if (!organizationId) {
-        throw new Error("Organization ID is required");
-      }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events`
-      );
+  const { data, isPending } = useQuery(
+    dashboardOrpc.automation.events.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch triggers");
-      }
+  const { data: brandResponse } = useQuery(
+    dashboardOrpc.brand.voices.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
 
-      return response.json();
-    },
-    enabled: !!organizationId,
-  });
+  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
+    const map: Record<string, BrandSettings> = {};
+    let defaultVoice: BrandSettings | undefined;
+    for (const voice of brandResponse?.voices ?? []) {
+      map[voice.id] = voice;
+      if (voice.isDefault) {
+        defaultVoice = voice;
+      }
+    }
+    return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
+  }, [brandResponse]);
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${trigger.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sourceType: trigger.sourceType,
-            sourceConfig: trigger.sourceConfig,
-            targets: trigger.targets,
-            outputType: trigger.outputType,
-            outputConfig: trigger.outputConfig,
-            enabled: !trigger.enabled,
-          }),
-        }
-      );
 
-      if (!response.ok) {
-        throw new Error("Failed to update trigger");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.events.update.call({
+        organizationId,
+        triggerId: trigger.id,
+        sourceType: trigger.sourceType,
+        sourceConfig: trigger.sourceConfig,
+        targets: trigger.targets,
+        outputType: trigger.outputType,
+        outputConfig: trigger.outputConfig ?? {},
+        enabled: !trigger.enabled,
+        autoPublish: trigger.autoPublish,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.events.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
     },
     onError: () => {
@@ -129,20 +131,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const response = await fetch(
-        `/api/organizations/${organizationId}/automation/events?triggerId=${triggerId}`,
-        { method: "DELETE" }
-      );
 
-      if (!response.ok) {
-        throw new Error("Failed to delete trigger");
-      }
-
-      return response.json();
+      return dashboardOrpc.automation.events.delete.call({
+        organizationId,
+        triggerId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+        queryKey: dashboardOrpc.automation.events.list.queryKey({
+          input: { organizationId: organizationId ?? "" },
+        }),
       });
       toast.success("Event trigger removed");
     },
@@ -194,20 +193,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <h1 className="font-bold text-3xl tracking-tight">Events</h1>
             <p className="text-muted-foreground">
               React to GitHub activity and trigger content generation
-              automatically.
+              automatically
             </p>
           </div>
           <AddTriggerDialog
             allowedSourceTypes={EVENT_SOURCE_TYPES}
-            apiPath={
-              organizationId
-                ? `/api/organizations/${organizationId}/automation/events`
-                : undefined
-            }
             initialSourceType="github_webhook"
             onSuccess={() =>
               queryClient.invalidateQueries({
-                queryKey: QUERY_KEYS.AUTOMATION.events(organizationId ?? ""),
+                queryKey: dashboardOrpc.automation.events.list.queryKey({
+                  input: { organizationId: organizationId ?? "" },
+                }),
               })
             }
             organizationId={organizationId ?? ""}
@@ -227,17 +223,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             action={
               <AddTriggerDialog
                 allowedSourceTypes={EVENT_SOURCE_TYPES}
-                apiPath={
-                  organizationId
-                    ? `/api/organizations/${organizationId}/automation/events`
-                    : undefined
-                }
                 initialSourceType="github_webhook"
                 onSuccess={() =>
                   queryClient.invalidateQueries({
-                    queryKey: QUERY_KEYS.AUTOMATION.events(
-                      organizationId ?? ""
-                    ),
+                    queryKey: dashboardOrpc.automation.events.list.queryKey({
+                      input: { organizationId: organizationId ?? "" },
+                    }),
                   })
                 }
                 organizationId={organizationId ?? ""}
@@ -272,7 +263,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="active">
               <EventTable
+                brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
+                defaultBrandVoice={defaultBrandVoice}
                 onDelete={handleDelete}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
@@ -282,7 +275,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
             <TabsContent className="mt-4" value="paused">
               <EventTable
+                brandVoiceMap={brandVoiceMap}
                 createdSortOrder={createdSortOrder}
+                defaultBrandVoice={defaultBrandVoice}
                 onDelete={handleDelete}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
@@ -298,13 +293,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
 function EventTable({
   triggers,
+  brandVoiceMap,
   createdSortOrder,
+  defaultBrandVoice,
   onSortCreatedChange,
   onToggle,
   onDelete,
 }: {
   triggers: Trigger[];
+  brandVoiceMap: Record<string, BrandSettings>;
   createdSortOrder: false | "asc" | "desc";
+  defaultBrandVoice?: BrandSettings;
   onSortCreatedChange: (next: false | "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
@@ -348,6 +347,7 @@ function EventTable({
           <TableRow>
             <TableHead>Type</TableHead>
             <TableHead>Events</TableHead>
+            <TableHead>Brand</TableHead>
             <TableHead>Output</TableHead>
             <TableHead>Targets</TableHead>
             <TableHead>Status</TableHead>
@@ -369,40 +369,60 @@ function EventTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedTriggers.map((trigger) => (
-            <TableRow key={trigger.id}>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
-                    <Github className="size-4" />
+          {sortedTriggers.map((trigger) => {
+            const explicitBrandVoiceId = trigger.outputConfig?.brandVoiceId;
+            const hasExplicitVoice = !!explicitBrandVoiceId;
+            const brandVoice = explicitBrandVoiceId
+              ? brandVoiceMap[explicitBrandVoiceId]
+              : defaultBrandVoice;
+
+            return (
+              <TableRow key={trigger.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
+                      <Github className="size-4" />
+                    </span>
+                    <span className="text-sm">GitHub Webhook</span>
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground capitalize">
+                  {formatEventList(trigger.sourceConfig.eventTypes)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  <BrandVoiceCell
+                    isDefault={!hasExplicitVoice}
+                    voice={brandVoice}
+                  />
+                </TableCell>
+                <TableCell className="text-muted-foreground capitalize">
+                  <span className="flex items-center gap-1.5">
+                    <OutputTypeIcon
+                      className="size-3.5"
+                      outputType={trigger.outputType}
+                    />
+                    {getOutputTypeLabel(trigger.outputType)}
                   </span>
-                  <span className="text-sm">GitHub webhook</span>
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatEventList(trigger.sourceConfig.eventTypes)}
-              </TableCell>
-              <TableCell className="text-muted-foreground capitalize">
-                {getOutputTypeLabel(trigger.outputType)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {trigger.targets.repositoryIds.length} repositories
-              </TableCell>
-              <TableCell>
-                <TriggerStatusBadge enabled={trigger.enabled} />
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(trigger.createdAt)}
-              </TableCell>
-              <TableCell>
-                <TriggerRowActions
-                  onDelete={onDelete}
-                  onToggle={onToggle}
-                  trigger={trigger}
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {trigger.targets.repositoryIds.length} repositories
+                </TableCell>
+                <TableCell>
+                  <TriggerStatusBadge enabled={trigger.enabled} />
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(trigger.createdAt)}
+                </TableCell>
+                <TableCell>
+                  <TriggerRowActions
+                    onDelete={onDelete}
+                    onToggle={onToggle}
+                    trigger={trigger}
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

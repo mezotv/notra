@@ -5,9 +5,9 @@ import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import type { Repository, RepositoryListProps } from "@/types/integrations";
 import { getOutputTypeLabel } from "@/utils/output-types";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 export function RepositoryList({
   integrationId,
@@ -18,16 +18,9 @@ export function RepositoryList({
   const { data: integration, isLoading } = useQuery<{
     repositories: Repository[];
   }>({
-    queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/integrations/${integrationId}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch repositories");
-      }
-      return response.json();
-    },
+    ...dashboardOrpc.integrations.get.queryOptions({
+      input: { organizationId, integrationId },
+    }),
     enabled: !!organizationId,
   });
 
@@ -39,24 +32,17 @@ export function RepositoryList({
       outputId: string;
       enabled: boolean;
     }) => {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/outputs/${outputId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to update output");
-      }
-
-      return response.json();
+      return dashboardOrpc.integrations.outputs.update.call({
+        organizationId,
+        outputId,
+        enabled,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.INTEGRATIONS.detail(organizationId, integrationId),
+        queryKey: dashboardOrpc.integrations.get.queryKey({
+          input: { organizationId, integrationId },
+        }),
       });
       toast.success("Content output updated");
     },
