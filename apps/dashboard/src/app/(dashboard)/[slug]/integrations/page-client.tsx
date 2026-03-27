@@ -18,14 +18,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { memo, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { memo, useMemo, useState } from "react";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
 import {
   ALL_INTEGRATIONS,
   INPUT_SOURCES,
@@ -188,22 +188,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id;
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const mainRouter = useRouter();
 
-  useEffect(() => {
-    const connected = searchParams.get("linearConnected");
-    const error = searchParams.get("error");
-
-    if (connected === "true") {
-      toast.success("Linear workspace connected successfully");
-      mainRouter.replace(pathname, { scroll: false });
-    } else if (error === "workspace_already_connected") {
-      toast.error("This Linear workspace is already connected");
-      mainRouter.replace(pathname, { scroll: false });
-    }
-  }, [searchParams, pathname, mainRouter]);
+  useLinearConnectionToast();
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",

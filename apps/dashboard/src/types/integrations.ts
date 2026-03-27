@@ -161,3 +161,14 @@ export interface WebhookSetupDialogProps {
 export interface AddRepositoryButtonProps {
   onAdd?: () => void;
 }
+
+export interface CreateLinearIntegrationParams {
+  organizationId: string;
+  userId: string;
+  displayName: string;
+  accessToken: string;
+  linearOrganizationId: string;
+  linearOrganizationName?: string;
+  linearTeamId?: string;
+  linearTeamName?: string;
+}

@@ -4,24 +4,12 @@ import {
   createLinearIntegration,
   getLinearIntegrationsByOrganization,
 } from "@/lib/services/linear-integration";
-
-interface LinearTokenResponse {
-  access_token: string;
-  token_type: string;
-  scope: string;
-  expires_in?: number;
-}
-
-interface LinearOrganization {
-  id: string;
-  name: string;
-}
-
-interface OAuthState {
-  organizationId: string;
-  userId: string;
-  callbackPath: string;
-}
+import type {
+  LinearOAuthState,
+  LinearOrganizationResponse,
+  LinearTokenResponse,
+} from "@/types/linear-oauth";
+import { buildCallbackUrl } from "@/utils/build-callback-url";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -50,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     await redis.del(`linear_oauth:${state}`);
 
-    const oauthState: OAuthState =
+    const oauthState: LinearOAuthState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
 
     const clientId = process.env.LINEAR_CLIENT_ID;
@@ -105,7 +93,7 @@ export async function GET(request: NextRequest) {
     }
 
     const orgData = (await orgRes.json()) as {
-      data: { organization: LinearOrganization };
+      data: { organization: LinearOrganizationResponse };
     };
     const linearOrg = orgData.data.organization;
 
@@ -117,12 +105,10 @@ export async function GET(request: NextRequest) {
     );
 
     if (alreadyConnected) {
-      const rawPath = oauthState.callbackPath || "/";
-      const callbackPath =
-        rawPath.startsWith("/") && !rawPath.startsWith("//") ? rawPath : "/";
-      const separator = callbackPath.includes("?") ? "&" : "?";
       return NextResponse.redirect(
-        `${baseUrl}${callbackPath}${separator}error=workspace_already_connected`
+        buildCallbackUrl(baseUrl, oauthState.callbackPath, {
+          error: "workspace_already_connected",
+        })
       );
     }
 
@@ -135,12 +121,10 @@ export async function GET(request: NextRequest) {
       linearOrganizationName: linearOrg.name,
     });
 
-    const rawPath = oauthState.callbackPath || "/";
-    const callbackPath =
-      rawPath.startsWith("/") && !rawPath.startsWith("//") ? rawPath : "/";
-    const separator = callbackPath.includes("?") ? "&" : "?";
     return NextResponse.redirect(
-      `${baseUrl}${callbackPath}${separator}linearConnected=true`
+      buildCallbackUrl(baseUrl, oauthState.callbackPath, {
+        linearConnected: "true",
+      })
     );
   } catch (error) {
     console.error("Error in Linear OAuth callback:", error);

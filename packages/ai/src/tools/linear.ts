@@ -1,8 +1,6 @@
+import type { ResolveLinearIntegrationContext } from "@notra/ai/types/agents";
 import type {
-  AgentDataPointSettings,
-  ResolveLinearIntegrationContext,
-} from "@notra/ai/types/agents";
-import type {
+  BuildLinearDataToolsOptions,
   LinearToolContext,
   LinearToolsAccessConfig,
 } from "@notra/ai/types/tools";
@@ -348,13 +346,6 @@ export function createGetLinearCyclesTool(
       },
     }
   );
-}
-
-interface BuildLinearDataToolsOptions {
-  organizationId: string;
-  allowedIntegrationIds: string[];
-  dataPointSettings?: AgentDataPointSettings;
-  resolveContext?: ResolveLinearIntegrationContext;
 }
 
 export function buildLinearDataTools(

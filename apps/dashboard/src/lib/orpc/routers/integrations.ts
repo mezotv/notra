@@ -44,6 +44,7 @@ import {
   updateOutputBodySchema,
   updateRepositoryBodySchema,
 } from "@/schemas/integrations";
+import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
 import type {
   GitHubIntegration,
   GitHubRepository,
@@ -755,19 +756,7 @@ export const integrationsRouter = {
         };
       }),
     update: baseProcedure
-      .input(
-        integrationInputSchema.and(
-          z
-            .object({
-              enabled: z.boolean().optional(),
-              displayName: z.string().trim().min(1).optional(),
-            })
-            .refine(
-              (v) => v.enabled !== undefined || v.displayName !== undefined,
-              { message: "At least one field must be provided" }
-            )
-        )
-      )
+      .input(integrationInputSchema.and(updateLinearIntegrationBodySchema))
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,

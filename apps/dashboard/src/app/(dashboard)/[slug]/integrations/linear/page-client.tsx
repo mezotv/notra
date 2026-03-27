@@ -17,15 +17,16 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinearIntegration } from "@/types/integrations";
 import { LinearIntegrationsPageSkeleton } from "./skeleton";
@@ -226,21 +227,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
 
-  useEffect(() => {
-    const connected = searchParams.get("linearConnected");
-    const error = searchParams.get("error");
-
-    if (connected === "true") {
-      toast.success("Linear workspace connected successfully");
-      router.replace(pathname, { scroll: false });
-    } else if (error === "workspace_already_connected") {
-      toast.error("This Linear workspace is already connected");
-      router.replace(pathname, { scroll: false });
-    }
-  }, [searchParams, pathname, router]);
+  useLinearConnectionToast();
 
   const {
     data: response,

@@ -1,3 +1,8 @@
+import type {
+  AgentDataPointSettings,
+  ResolveLinearIntegrationContext,
+} from "@notra/ai/types/agents";
+
 export interface CommitWindow {
   since: string;
   until: string;
@@ -85,3 +90,10 @@ export type CachedWrapper = <TTool extends object>(
     debug?: boolean;
   }
 ) => TTool;
+
+export interface BuildLinearDataToolsOptions {
+  organizationId: string;
+  allowedIntegrationIds: string[];
+  dataPointSettings?: AgentDataPointSettings;
+  resolveContext?: ResolveLinearIntegrationContext;
+}

@@ -6,6 +6,7 @@ import type {
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
 import type {
+  IntegrationFetchers,
   OrchestrateInput,
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
@@ -18,7 +19,6 @@ import {
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
-  type IntegrationFetchers,
   validateIntegrations,
 } from "./integration-validator";
 import { routeAndSelectModel } from "./router";

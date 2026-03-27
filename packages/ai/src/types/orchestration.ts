@@ -106,3 +106,39 @@ export interface BuildToolSetParams {
   onMarkdownUpdate?: (markdown: string) => void;
   validatedIntegrations: ValidatedIntegration[];
 }
+
+export interface GitHubIntegrationData {
+  id: string;
+  organizationId: string;
+  enabled: boolean;
+  displayName: string;
+  repositories: Array<{
+    id: string;
+    owner: string;
+    repo: string;
+    defaultBranch?: string | null;
+    enabled: boolean;
+  }>;
+}
+
+export interface LinearIntegrationData {
+  id: string;
+  organizationId: string;
+  enabled: boolean;
+  displayName: string;
+  linearTeamId?: string | null;
+  linearTeamName?: string | null;
+}
+
+export type GetGitHubIntegrationById = (
+  integrationId: string
+) => Promise<GitHubIntegrationData | null>;
+
+export type GetLinearIntegrationById = (
+  integrationId: string
+) => Promise<LinearIntegrationData | null>;
+
+export interface IntegrationFetchers {
+  getGitHubIntegrationById?: GetGitHubIntegrationById;
+  getLinearIntegrationById?: GetLinearIntegrationById;
+}

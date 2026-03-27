@@ -4,19 +4,9 @@ import { linearIntegrations, members } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
+import type { CreateLinearIntegrationParams } from "@/types/integrations";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
-
-export interface CreateLinearIntegrationParams {
-  organizationId: string;
-  userId: string;
-  displayName: string;
-  accessToken: string;
-  linearOrganizationId: string;
-  linearOrganizationName?: string;
-  linearTeamId?: string;
-  linearTeamName?: string;
-}
 
 export async function createLinearIntegration(
   params: CreateLinearIntegrationParams
