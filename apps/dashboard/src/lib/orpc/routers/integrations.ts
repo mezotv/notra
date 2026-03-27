@@ -771,6 +771,8 @@ export const integrationsRouter = {
         const updated = await updateLinearIntegration(input.integrationId, {
           enabled: input.enabled,
           displayName: input.displayName,
+          linearTeamId: input.linearTeamId,
+          linearTeamName: input.linearTeamName,
         });
 
         return updated;
