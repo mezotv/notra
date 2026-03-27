@@ -187,8 +187,9 @@ export function CreateContentDialog({
       integrationsResponse?.integrations.filter((i) => i.type === "github") ??
       [];
     const linearIntegrationsList =
-      integrationsResponse?.integrations.filter((i) => i.type === "linear") ??
-      [];
+      integrationsResponse?.integrations.filter(
+        (i) => i.type === "linear" && i.enabled
+      ) ?? [];
     const repos = githubIntegrations.flatMap((i) => i.repositories);
 
     const options: Array<{
@@ -1139,79 +1140,48 @@ export function CreateContentDialog({
                             />
                           ))
                         )}
-                        {previewResponse?.linearIntegrations?.map((li) => (
-                          <div className="space-y-2" key={li.integrationId}>
-                            <div className="flex items-center gap-2 px-1 font-medium text-sm">
-                              <Linear className="size-4 shrink-0" />
-                              <span>{li.displayName}</span>
-                              <Badge className="text-xs" variant="secondary">
-                                {li.issues.length}
-                              </Badge>
-                            </div>
-                            <div className="space-y-1">
-                              {li.issues.map((issue) => {
-                                const key = `${li.integrationId}:${issue.id}`;
-                                const selected = selectedLinearKeys.has(key);
-                                return (
-                                  <button
-                                    className={cn(
-                                      "flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
-                                      selected
-                                        ? "border-primary/30 bg-primary/5"
-                                        : "border-transparent bg-muted/50 hover:bg-muted"
-                                    )}
-                                    key={issue.id}
-                                    onClick={() => {
-                                      selectionsTouchedRef.current = true;
-                                      setSelectedLinearKeys((prev) => {
-                                        const next = new Set(prev);
-                                        if (next.has(key)) {
-                                          next.delete(key);
-                                        } else {
-                                          next.add(key);
-                                        }
-                                        return next;
-                                      });
-                                    }}
-                                    type="button"
-                                  >
-                                    <div
-                                      className={cn(
-                                        "flex size-4 shrink-0 items-center justify-center rounded-sm border",
-                                        selected
-                                          ? "border-primary bg-primary text-primary-foreground"
-                                          : "border-muted-foreground/30"
-                                      )}
-                                    >
-                                      {selected && (
-                                        <HugeiconsIcon
-                                          className="size-3"
-                                          icon={Tick01Icon}
-                                        />
-                                      )}
-                                    </div>
-                                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                                      <Badge
-                                        className="shrink-0 text-xs"
-                                        variant="outline"
-                                      >
-                                        {issue.identifier}
-                                      </Badge>
-                                      <span className="truncate">
-                                        {issue.title}
-                                      </span>
-                                    </div>
-                                    {issue.state && (
-                                      <span className="shrink-0 text-muted-foreground text-xs">
-                                        {issue.state}
-                                      </span>
-                                    )}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
+                        {previewResponse?.linearIntegrations?.map(
+                          (li) =>
+                            li.issues.length > 0 && (
+                              <div
+                                className="overflow-hidden rounded-lg border"
+                                key={li.integrationId}
+                              >
+                                <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
+                                  <Linear className="size-4 shrink-0" />
+                                  <span className="font-medium text-sm">
+                                    {li.displayName}
+                                  </span>
+                                </div>
+                                <div className="divide-y">
+                                  {li.issues.map((issue) => {
+                                    const key = `${li.integrationId}:${issue.id}`;
+                                    return (
+                                      <EventRow
+                                        key={issue.id}
+                                        label={`${issue.identifier} ${issue.title}`}
+                                        meta={`${issue.assignee ?? "Unassigned"} · ${issue.completedAt ? formatEventDate(issue.completedAt) : ""}`}
+                                        onToggle={() => {
+                                          selectionsTouchedRef.current = true;
+                                          setSelectedLinearKeys((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(key)) {
+                                              next.delete(key);
+                                            } else {
+                                              next.add(key);
+                                            }
+                                            return next;
+                                          });
+                                        }}
+                                        selected={selectedLinearKeys.has(key)}
+                                        type="LinearIssue"
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )
+                        )}
                         {totalPages > 1 && (
                           <Pagination>
                             <PaginationContent>

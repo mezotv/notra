@@ -225,7 +225,7 @@ export function AddTriggerDialog({
         ) ?? [];
       const linearIntegrations =
         integrationsResponse?.integrations.filter(
-          (integration) => integration.type === "linear"
+          (integration) => integration.type === "linear" && integration.enabled
         ) ?? [];
       const repos = githubIntegrations.flatMap(
         (integration) => integration.repositories
