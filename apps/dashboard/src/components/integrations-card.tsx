@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { Github } from "@notra/ui/components/ui/svgs/github";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -35,12 +34,6 @@ export interface InstalledIntegration {
     email: string;
     image: string | null;
   };
-  repositories: Array<{
-    id: string;
-    owner: string;
-    repo: string;
-    enabled: boolean;
-  }>;
 }
 
 export interface InstalledIntegrationCardProps {
@@ -152,17 +145,6 @@ export function InstalledIntegrationCard({
     );
   };
 
-  const repositoryCount = integration.repositories.length;
-  const primaryRepository = integration.repositories[0];
-  const repositoryFullName = primaryRepository
-    ? `${primaryRepository.owner}/${primaryRepository.repo}`
-    : null;
-  const showRepositoryFullName = repositoryCount === 1 && !!repositoryFullName;
-  const repositoryText =
-    repositoryCount === 0
-      ? "No repositories"
-      : `${repositoryCount} ${repositoryCount === 1 ? "repository" : "repositories"}`;
-
   return (
     <>
       <DeleteIntegrationDialog
@@ -237,18 +219,11 @@ export function InstalledIntegrationCard({
           </>
         }
         className="cursor-pointer transition-colors hover:bg-muted/80"
+        contentClassName="hidden"
         heading={integration.displayName}
         icon={icon}
         onClick={handleCardClick}
-      >
-        {showRepositoryFullName && repositoryFullName ? (
-          <p className="mb-1 flex items-center gap-1.5 text-muted-foreground text-xs">
-            <Github className="size-3.5 shrink-0" />
-            <span className="truncate">{repositoryFullName}</span>
-          </p>
-        ) : null}
-        <p className="text-muted-foreground text-sm">{repositoryText}</p>
-      </TitleCard>
+      />
     </>
   );
 }

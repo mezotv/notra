@@ -18,9 +18,11 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -51,12 +53,6 @@ interface Integration {
   type: IntegrationType;
   enabled: boolean;
   createdAt: string;
-  repositories: Array<{
-    id: string;
-    owner: string;
-    repo: string;
-    enabled: boolean;
-  }>;
 }
 
 interface PageClientProps {
@@ -76,11 +72,13 @@ const IntegrationCard = memo(function IntegrationCard({
   const organizationId = activeOrganization?.id;
   const organizationSlug = activeOrganization?.slug;
   const router = useRouter();
+  const pathname = usePathname();
   const isActive = activeCount > 0;
   const [dialogOpen, setDialogOpen] = useState(false);
   const showConnectButton = integration.available;
   const showComingSoon = !integration.available;
   const showGitHubDialog = integration.available && integration.id === "github";
+  const showLinearDialog = integration.available && integration.id === "linear";
 
   if (!(organizationId && organizationSlug)) {
     return null;
@@ -102,7 +100,7 @@ const IntegrationCard = memo(function IntegrationCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (showGitHubDialog) {
+                if (showGitHubDialog || showLinearDialog) {
                   setDialogOpen(true);
                 } else {
                   router.push(
@@ -140,8 +138,8 @@ const IntegrationCard = memo(function IntegrationCard({
       }
       className={
         integration.available
-          ? "cursor-pointer transition-colors hover:bg-muted/80"
-          : undefined
+          ? "h-full cursor-pointer transition-colors hover:bg-muted/80"
+          : "h-full"
       }
       disabled={!integration.available}
       heading={integration.name}
@@ -157,7 +155,7 @@ const IntegrationCard = memo(function IntegrationCard({
     <>
       {integration.available ? (
         <Link
-          className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           href={`/${organizationSlug}/integrations/${integration.href}`}
         >
           {cardContent}
@@ -175,6 +173,13 @@ const IntegrationCard = memo(function IntegrationCard({
           organizationId={organizationId}
         />
       ) : null}
+      {showLinearDialog ? (
+        <AddLinearIntegrationDialog
+          authorizeUrl={`/api/integrations/linear/authorize?organizationId=${organizationId}&callbackPath=${encodeURIComponent(pathname)}`}
+          onOpenChange={setDialogOpen}
+          open={dialogOpen}
+        />
+      ) : null}
     </>
   );
 });
@@ -183,6 +188,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id;
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const mainRouter = useRouter();
+
+  useEffect(() => {
+    const connected = searchParams.get("linearConnected");
+    const error = searchParams.get("error");
+
+    if (connected === "true") {
+      toast.success("Linear workspace connected successfully");
+      mainRouter.replace(pathname, { scroll: false });
+    } else if (error === "workspace_already_connected") {
+      toast.error("This Linear workspace is already connected");
+      mainRouter.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, pathname, mainRouter]);
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",

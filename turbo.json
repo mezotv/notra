@@ -40,7 +40,9 @@
     "TWITTER_CLIENT_SECRET",
     "RESPAN_API_KEY",
     "NOTRA_API_KEY",
-    "WORKFLOW_BASE_URL"
+    "WORKFLOW_BASE_URL",
+    "LINEAR_CLIENT_ID",
+    "LINEAR_CLIENT_SECRET"
   ],
   "envMode": "strict",
   "tasks": {

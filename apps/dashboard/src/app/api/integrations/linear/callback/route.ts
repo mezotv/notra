@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
-import { createLinearIntegration } from "@/lib/services/linear-integration";
+import {
+  createLinearIntegration,
+  getLinearIntegrationsByOrganization,
+} from "@/lib/services/linear-integration";
 
 interface LinearTokenResponse {
   access_token: string;
@@ -105,6 +108,23 @@ export async function GET(request: NextRequest) {
       data: { organization: LinearOrganization };
     };
     const linearOrg = orgData.data.organization;
+
+    const existingIntegrations = await getLinearIntegrationsByOrganization(
+      oauthState.organizationId
+    );
+    const alreadyConnected = existingIntegrations.some(
+      (i) => i.linearOrganizationId === linearOrg.id
+    );
+
+    if (alreadyConnected) {
+      const rawPath = oauthState.callbackPath || "/";
+      const callbackPath =
+        rawPath.startsWith("/") && !rawPath.startsWith("//") ? rawPath : "/";
+      const separator = callbackPath.includes("?") ? "&" : "?";
+      return NextResponse.redirect(
+        `${baseUrl}${callbackPath}${separator}error=workspace_already_connected`
+      );
+    }
 
     await createLinearIntegration({
       organizationId: oauthState.organizationId,
