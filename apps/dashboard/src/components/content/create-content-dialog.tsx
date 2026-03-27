@@ -140,6 +140,9 @@ export function CreateContentDialog({
   const [selectedReleaseKeys, setSelectedReleaseKeys] = useState<Set<string>>(
     new Set()
   );
+  const [selectedLinearKeys, setSelectedLinearKeys] = useState<Set<string>>(
+    new Set()
+  );
   const lastInitializedParamsRef = useRef("");
   const previewWarningKeyRef = useRef<string>("");
   const selectionsTouchedRef = useRef(false);
@@ -285,7 +288,10 @@ export function CreateContentDialog({
   const previewFailures = previewResponse?.failures ?? [];
 
   useEffect(() => {
-    if (!previewData || lastInitializedParamsRef.current === previewParamsKey) {
+    if (
+      (!previewData && !previewResponse?.linearIntegrations) ||
+      lastInitializedParamsRef.current === previewParamsKey
+    ) {
       return;
     }
     lastInitializedParamsRef.current = previewParamsKey;
@@ -294,7 +300,8 @@ export function CreateContentDialog({
     const commitKeys = new Set<string>();
     const prKeys = new Set<string>();
     const relKeys = new Set<string>();
-    for (const repo of previewData) {
+    const linearKeys = new Set<string>();
+    for (const repo of previewData ?? []) {
       for (const commit of repo.commits) {
         commitKeys.add(commit.sha);
       }
@@ -315,9 +322,15 @@ export function CreateContentDialog({
         );
       }
     }
+    for (const li of previewResponse?.linearIntegrations ?? []) {
+      for (const issue of li.issues) {
+        linearKeys.add(`${li.integrationId}:${issue.id}`);
+      }
+    }
     setSelectedCommitKeys(commitKeys);
     setSelectedPrKeys(prKeys);
     setSelectedReleaseKeys(relKeys);
+    setSelectedLinearKeys(linearKeys);
   }, [previewData, previewParamsKey]);
 
   useEffect(() => {
@@ -393,6 +406,7 @@ export function CreateContentDialog({
         setSelectedCommitKeys(new Set());
         setSelectedPrKeys(new Set());
         setSelectedReleaseKeys(new Set());
+        setSelectedLinearKeys(new Set());
         lastInitializedParamsRef.current = "";
         selectionsTouchedRef.current = false;
       }
@@ -441,6 +455,14 @@ export function CreateContentDialog({
       id.startsWith("linear:")
     );
 
+    const selectedLinearIssues = Array.from(selectedLinearKeys).map((key) => {
+      const separatorIdx = key.indexOf(":");
+      return {
+        integrationId: key.slice(0, separatorIdx),
+        issueId: key.slice(separatorIdx + 1),
+      };
+    });
+
     mutation.mutate({
       ...value,
       repositoryIds: githubRepoIds,
@@ -449,17 +471,25 @@ export function CreateContentDialog({
         includeLinearData: hasLinear,
       },
       brandVoiceId: value.brandVoiceId || undefined,
-      selectedItems,
+      selectedItems: {
+        ...selectedItems,
+        linearIssueIds:
+          selectedLinearIssues.length > 0 ? selectedLinearIssues : undefined,
+      },
     });
-  }, [form, mutation, selectedCommitKeys, selectedPrKeys, selectedReleaseKeys]);
+  }, [
+    form,
+    mutation,
+    selectedCommitKeys,
+    selectedPrKeys,
+    selectedReleaseKeys,
+    selectedLinearKeys,
+  ]);
 
   const eventCounts = useMemo(() => {
-    if (!previewData) {
-      return { total: 0, selected: 0 };
-    }
     let total = 0;
     let selected = 0;
-    for (const repo of previewData) {
+    for (const repo of previewData ?? []) {
       if (dataPoints.includeCommits) {
         total += repo.commits.length;
         for (const commit of repo.commits) {
@@ -499,13 +529,23 @@ export function CreateContentDialog({
         }
       }
     }
+    for (const li of previewResponse?.linearIntegrations ?? []) {
+      total += li.issues.length;
+      for (const issue of li.issues) {
+        if (selectedLinearKeys.has(`${li.integrationId}:${issue.id}`)) {
+          selected++;
+        }
+      }
+    }
     return { total, selected };
   }, [
     previewData,
+    previewResponse?.linearIntegrations,
     dataPoints,
     selectedCommitKeys,
     selectedPrKeys,
     selectedReleaseKeys,
+    selectedLinearKeys,
   ]);
 
   const { paginatedRepos, totalPages } = useMemo(() => {
@@ -604,20 +644,19 @@ export function CreateContentDialog({
   }, [previewData, dataPoints, currentPage]);
 
   const handleToggleAll = useCallback(() => {
-    if (!previewData) {
-      return;
-    }
     selectionsTouchedRef.current = true;
     const allSelected = eventCounts.selected === eventCounts.total;
     if (allSelected) {
       setSelectedCommitKeys(new Set());
       setSelectedPrKeys(new Set());
       setSelectedReleaseKeys(new Set());
+      setSelectedLinearKeys(new Set());
     } else {
       const commitKeys = new Set<string>();
       const prKeys = new Set<string>();
       const relKeys = new Set<string>();
-      for (const repo of previewData) {
+      const linearKeys = new Set<string>();
+      for (const repo of previewData ?? []) {
         if (dataPoints.includeCommits) {
           for (const c of repo.commits) {
             commitKeys.add(c.sha);
@@ -644,11 +683,22 @@ export function CreateContentDialog({
           }
         }
       }
+      for (const li of previewResponse?.linearIntegrations ?? []) {
+        for (const issue of li.issues) {
+          linearKeys.add(`${li.integrationId}:${issue.id}`);
+        }
+      }
       setSelectedCommitKeys(commitKeys);
       setSelectedPrKeys(prKeys);
       setSelectedReleaseKeys(relKeys);
+      setSelectedLinearKeys(linearKeys);
     }
-  }, [previewData, dataPoints, eventCounts]);
+  }, [
+    previewData,
+    previewResponse?.linearIntegrations,
+    dataPoints,
+    eventCounts,
+  ]);
 
   const hasSelectableEvents =
     dataPoints.includeCommits ||
@@ -1014,7 +1064,7 @@ export function CreateContentDialog({
                       </div>
                     </div>
                   )}
-                {!isLoadingPreview && !isPreviewError && previewData && (
+                {!isLoadingPreview && !isPreviewError && previewResponse && (
                   <>
                     {eventCounts.total > 0 && (
                       <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
@@ -1089,6 +1139,79 @@ export function CreateContentDialog({
                             />
                           ))
                         )}
+                        {previewResponse?.linearIntegrations?.map((li) => (
+                          <div className="space-y-2" key={li.integrationId}>
+                            <div className="flex items-center gap-2 px-1 font-medium text-sm">
+                              <Linear className="size-4 shrink-0" />
+                              <span>{li.displayName}</span>
+                              <Badge className="text-xs" variant="secondary">
+                                {li.issues.length}
+                              </Badge>
+                            </div>
+                            <div className="space-y-1">
+                              {li.issues.map((issue) => {
+                                const key = `${li.integrationId}:${issue.id}`;
+                                const selected = selectedLinearKeys.has(key);
+                                return (
+                                  <button
+                                    className={cn(
+                                      "flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
+                                      selected
+                                        ? "border-primary/30 bg-primary/5"
+                                        : "border-transparent bg-muted/50 hover:bg-muted"
+                                    )}
+                                    key={issue.id}
+                                    onClick={() => {
+                                      selectionsTouchedRef.current = true;
+                                      setSelectedLinearKeys((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(key)) {
+                                          next.delete(key);
+                                        } else {
+                                          next.add(key);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                    type="button"
+                                  >
+                                    <div
+                                      className={cn(
+                                        "flex size-4 shrink-0 items-center justify-center rounded-sm border",
+                                        selected
+                                          ? "border-primary bg-primary text-primary-foreground"
+                                          : "border-muted-foreground/30"
+                                      )}
+                                    >
+                                      {selected && (
+                                        <HugeiconsIcon
+                                          className="size-3"
+                                          icon={Tick01Icon}
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                                      <Badge
+                                        className="shrink-0 text-xs"
+                                        variant="outline"
+                                      >
+                                        {issue.identifier}
+                                      </Badge>
+                                      <span className="truncate">
+                                        {issue.title}
+                                      </span>
+                                    </div>
+                                    {issue.state && (
+                                      <span className="shrink-0 text-muted-foreground text-xs">
+                                        {issue.state}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
                         {totalPages > 1 && (
                           <Pagination>
                             <PaginationContent>

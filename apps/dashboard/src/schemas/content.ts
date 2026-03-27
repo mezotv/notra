@@ -158,6 +158,14 @@ export const selectedItemsSchema = z.object({
       ])
     )
     .optional(),
+  linearIssueIds: z
+    .array(
+      z.object({
+        integrationId: z.string(),
+        issueId: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export type SelectedItems = z.infer<typeof selectedItemsSchema> | undefined;
