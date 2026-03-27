@@ -34,6 +34,7 @@ import {
 } from "@/lib/generations/tracking";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getTokenForIntegrationId } from "@/lib/services/github-integration";
+import { getLinearIntegrationsByOrganization } from "@/lib/services/linear-integration";
 import { triggerOnDemandContent } from "@/lib/triggers/qstash";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
@@ -912,20 +913,13 @@ export const contentRouter = {
         organizationId: input.organizationId,
       });
 
-      if (input.dataPoints.includeLinearData) {
-        throw badRequest(
-          "Linear Issues are not supported in manual content generation yet."
-        );
-      }
-
       if (
         !input.dataPoints.includePullRequests &&
         !input.dataPoints.includeCommits &&
-        !input.dataPoints.includeReleases
+        !input.dataPoints.includeReleases &&
+        !input.dataPoints.includeLinearData
       ) {
-        throw badRequest(
-          "At least one data source (Pull Requests, Commits, or Releases) must be enabled."
-        );
+        throw badRequest("At least one data source must be enabled.");
       }
 
       let aiCreditReserved = false;
@@ -962,6 +956,16 @@ export const contentRouter = {
         source: "dashboard",
       });
 
+      let linearIntegrationIds: string[] | undefined;
+      if (input.dataPoints.includeLinearData) {
+        const linearIntegrations = await getLinearIntegrationsByOrganization(
+          input.organizationId
+        );
+        linearIntegrationIds = linearIntegrations
+          .filter((i) => i.enabled)
+          .map((i) => i.id);
+      }
+
       await triggerOnDemandContent({
         organizationId: input.organizationId,
         runId,
@@ -971,6 +975,7 @@ export const contentRouter = {
         brandVoiceId: input.brandIdentityId ?? input.brandVoiceId,
         dataPoints: input.dataPoints,
         selectedItems: input.selectedItems,
+        linearIntegrationIds,
         aiCreditReserved,
         source: "dashboard",
       });

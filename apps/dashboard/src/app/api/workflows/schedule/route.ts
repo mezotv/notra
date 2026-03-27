@@ -6,6 +6,7 @@ import {
   contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
+  linearIntegrations,
   members,
   organizationNotificationSettings,
   organizations,
@@ -35,6 +36,7 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/gi
 import { getLinearToolContextByIntegrationId } from "@/lib/services/linear-integration";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
+import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand/helpers";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import {
@@ -178,9 +180,31 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       }
     );
 
-    if (repositories.length === 0) {
+    const linearIntegrationRefs = await context.run<
+      Array<{ integrationId: string; teamName?: string }>
+    >("fetch-linear-integrations", async () => {
+      const integrations = await db
+        .select({
+          id: linearIntegrations.id,
+          linearTeamName: linearIntegrations.linearTeamName,
+        })
+        .from(linearIntegrations)
+        .where(
+          and(
+            eq(linearIntegrations.organizationId, trigger.organizationId),
+            eq(linearIntegrations.enabled, true)
+          )
+        );
+
+      return integrations.map((i) => ({
+        integrationId: i.id,
+        teamName: i.linearTeamName ?? undefined,
+      }));
+    });
+
+    if (repositories.length === 0 && linearIntegrationRefs.length === 0) {
       console.log(
-        `[Schedule] No valid repositories for trigger ${triggerId}, canceling`
+        `[Schedule] No valid data sources for trigger ${triggerId}, canceling`
       );
       await context.cancel();
       return;
@@ -287,9 +311,32 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         async () => {
           const lookbackRange = resolveLookbackRange(lookbackWindow);
           const todayUtc = formatUtcTodayContext(lookbackRange.end);
-          const repoList = repositories
-            .map((r) => `integrationId: ${r.id}`)
-            .join(", ");
+
+          const hasLinear = linearIntegrationRefs.length > 0;
+          const dataPointSettings = {
+            includePullRequests: true,
+            includeCommits: true,
+            includeReleases: true,
+            includeLinearData: hasLinear,
+          };
+
+          const sourceTargetParts = repositories.map(
+            (r) => `${r.owner}/${r.repo} (integrationId: ${r.id})`
+          );
+          for (const ref of linearIntegrationRefs) {
+            sourceTargetParts.push(
+              `Linear${ref.teamName ? ` / ${ref.teamName}` : ""} (integrationId: ${ref.integrationId})`
+            );
+          }
+
+          const restrictionInstructions =
+            buildDataPointRestrictionInstructions(dataPointSettings);
+          const customInstructions = [
+            brand?.customInstructions?.trim() ?? "",
+            restrictionInstructions ?? "",
+          ]
+            .filter((v) => v.length > 0)
+            .join("\n\n");
 
           const sourceMetadata: PostSourceMetadata = {
             triggerId: trigger.id,
@@ -308,7 +355,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           };
 
           const promptInput = {
-            sourceTargets: repoList,
+            sourceTargets: sourceTargetParts.join(", "),
             todayUtc,
             lookbackLabel: lookbackRange.label,
             lookbackStartIso: lookbackRange.start.toISOString(),
@@ -316,7 +363,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             companyName: brand?.companyName ?? undefined,
             companyDescription: brand?.companyDescription ?? undefined,
             audience: brand?.audience ?? undefined,
-            customInstructions: brand?.customInstructions ?? null,
+            customInstructions: customInstructions || null,
             language: brand?.language ?? undefined,
           };
 
@@ -335,9 +382,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           return generateScheduledContent(trigger.outputType, {
             organizationId: trigger.organizationId,
             repositories: repositoryParams,
+            linearIntegrations: linearIntegrationRefs,
             tone,
             promptInput,
             sourceMetadata,
+            dataPointSettings,
             commitWindow: {
               since: lookbackRange.start.toISOString(),
               until: lookbackRange.end.toISOString(),

@@ -107,6 +107,8 @@ const EVENT_ICON: Record<EventType, typeof GitPullRequestIcon> = {
   Release: Rocket01Icon,
 };
 
+import { Github } from "@notra/ui/components/ui/svgs/github";
+import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { AddIntegrationDialog } from "@/components/integrations/add-integration-dialog";
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
@@ -171,23 +173,31 @@ export function CreateContentDialog({
     })
   );
 
-  const { repositories, repositoryOptions, githubIntegrationId } =
-    useMemo(() => {
-      const githubIntegrations =
-        integrationsResponse?.integrations.filter((i) => i.type === "github") ??
-        [];
-      const repos = githubIntegrations.flatMap((i) => i.repositories);
-      return {
-        repositories: repos,
-        repositoryOptions: repos.map((r) => ({
-          value: r.id,
-          label: r.defaultBranch
-            ? `${r.owner}/${r.repo} · ${r.defaultBranch}`
-            : `${r.owner}/${r.repo}`,
-        })),
-        githubIntegrationId: githubIntegrations[0]?.id,
-      };
-    }, [integrationsResponse]);
+  const {
+    repositories,
+    repositoryOptions,
+    githubIntegrationId,
+    hasLinearIntegrations,
+  } = useMemo(() => {
+    const githubIntegrations =
+      integrationsResponse?.integrations.filter((i) => i.type === "github") ??
+      [];
+    const linearIntegrations =
+      integrationsResponse?.integrations.filter((i) => i.type === "linear") ??
+      [];
+    const repos = githubIntegrations.flatMap((i) => i.repositories);
+    return {
+      repositories: repos,
+      repositoryOptions: repos.map((r) => ({
+        value: r.id,
+        label: r.defaultBranch
+          ? `${r.owner}/${r.repo} · ${r.defaultBranch}`
+          : `${r.owner}/${r.repo}`,
+      })),
+      githubIntegrationId: githubIntegrations[0]?.id,
+      hasLinearIntegrations: linearIntegrations.length > 0,
+    };
+  }, [integrationsResponse]);
 
   const repositoryIds = useStore(form.store, (s) => s.values.repositoryIds);
   const lookbackWindow = useStore(form.store, (s) => s.values.lookbackWindow);
@@ -764,7 +774,7 @@ export function CreateContentDialog({
                   <form.Field name="repositoryIds">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor={field.name}>Repositories</Label>
+                        <Label htmlFor={field.name}>GitHub Repositories</Label>
                         {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                         {!isLoadingRepos && repositories.length === 0 && (
                           <div className="flex items-center gap-2 rounded-md border border-dashed p-3">
@@ -796,7 +806,10 @@ export function CreateContentDialog({
                                   }
                                   return (
                                     <ComboboxChip key={r.value}>
-                                      {r.label}
+                                      <span className="flex items-center gap-1.5">
+                                        <Github className="size-3 shrink-0" />
+                                        {r.label}
+                                      </span>
                                     </ComboboxChip>
                                   );
                                 })}
@@ -809,7 +822,10 @@ export function CreateContentDialog({
                                 <ComboboxList>
                                   {repositoryOptions.map((r) => (
                                     <ComboboxItem key={r.value} value={r.value}>
-                                      {r.label}
+                                      <span className="flex items-center gap-2">
+                                        <Github className="size-3.5 shrink-0" />
+                                        {r.label}
+                                      </span>
                                     </ComboboxItem>
                                   ))}
                                 </ComboboxList>
@@ -870,6 +886,19 @@ export function CreateContentDialog({
                           />
                         )}
                       </form.Field>
+                      {hasLinearIntegrations && (
+                        <form.Field name="dataPoints.includeLinearData">
+                          {(field) => (
+                            <DataPointToggle
+                              checked={field.state.value}
+                              description="Include issues, projects, and cycles from Linear."
+                              disabled={mutation.isPending}
+                              label="Linear Issues"
+                              onCheckedChange={field.handleChange}
+                            />
+                          )}
+                        </form.Field>
+                      )}
                     </CollapsibleContent>
                   </Collapsible>
                 </div>
@@ -1080,7 +1109,10 @@ export function CreateContentDialog({
                 <div className="flex items-center justify-end">
                   <Button
                     disabled={
-                      repositoryIds.length === 0 || !hasAnyGitHubDataPointActive
+                      (repositoryIds.length === 0 &&
+                        !dataPoints.includeLinearData) ||
+                      (!hasAnyGitHubDataPointActive &&
+                        !dataPoints.includeLinearData)
                     }
                     onClick={handleContinue}
                     type="button"

@@ -17,6 +17,7 @@ import { and, eq } from "drizzle-orm";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { redis } from "@/lib/redis";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
+import { getLinearToolContextByIntegrationId } from "@/lib/services/linear-integration";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
@@ -117,6 +118,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       brandVoiceId,
       dataPoints,
       selectedItems,
+      linearIntegrationIds,
       aiCreditReserved,
       source,
     } = parseResult.data;
@@ -169,24 +171,29 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       }
     );
 
-    if (repositories.length === 0) {
+    const hasLinearSources =
+      dataPoints.includeLinearData &&
+      linearIntegrationIds &&
+      linearIntegrationIds.length > 0;
+
+    if (repositories.length === 0 && !hasLinearSources) {
       console.error(
-        "[OnDemandContent] No valid repositories found, canceling",
+        "[OnDemandContent] No valid data sources found, canceling",
         { organizationId }
       );
-      await context.run("complete-no-repos", async () => {
+      await context.run("complete-no-sources", async () => {
         await completeActiveGeneration(organizationId, {
           runId,
           triggerId: "manual_on_demand",
           outputType: contentType,
           triggerName: contentType,
           status: "failed",
-          reason: "No valid repositories found",
+          reason: "No valid data sources found",
           completedAt: new Date().toISOString(),
           source,
         });
       });
-      await context.run("refund-no-repos", async () => {
+      await context.run("refund-no-sources", async () => {
         await refundReservedAiCredit(organizationId, aiCreditReserved);
       });
       await context.cancel();
@@ -293,11 +300,22 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
               : undefined,
           };
 
-          const sourceTargets = repositories
-            .map(
-              (repo) => `${repo.owner}/${repo.repo} (integrationId: ${repo.id})`
-            )
-            .join(", ");
+          const sourceTargetParts = repositories.map(
+            (repo) => `${repo.owner}/${repo.repo} (integrationId: ${repo.id})`
+          );
+
+          const linearIntegrationRefs =
+            hasLinearSources && linearIntegrationIds
+              ? linearIntegrationIds.map((id) => ({ integrationId: id }))
+              : [];
+
+          for (const ref of linearIntegrationRefs) {
+            sourceTargetParts.push(
+              `Linear (integrationId: ${ref.integrationId})`
+            );
+          }
+
+          const sourceTargets = sourceTargetParts.join(", ");
 
           return generateScheduledContent(contentType, {
             organizationId,
@@ -307,6 +325,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
               repo: repo.repo,
               defaultBranch: repo.defaultBranch,
             })),
+            linearIntegrations: linearIntegrationRefs,
             tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
             promptInput: {
               sourceTargets,
@@ -329,6 +348,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             },
             voiceId: brand?.id,
             resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+            resolveLinearContext: getLinearToolContextByIntegrationId,
           });
         }
       );

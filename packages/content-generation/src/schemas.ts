@@ -153,6 +153,7 @@ export const contentGenerationWorkflowPayloadSchema = z.object({
   brandVoiceId: z.string().min(1).optional(),
   dataPoints: contentDataPointSettingsSchema,
   selectedItems: selectedItemsSchema.optional(),
+  linearIntegrationIds: z.array(z.string()).optional(),
   aiCreditReserved: z.boolean(),
   source: z.enum(["api", "dashboard"]).default("dashboard"),
 });

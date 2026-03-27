@@ -34,6 +34,7 @@ import {
   SheetTrigger,
 } from "@notra/ui/components/ui/sheet";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
   Tooltip,
@@ -581,7 +582,7 @@ export function AddTriggerDialog({
                   {(field) => (
                     <div className="space-y-2">
                       <Label htmlFor={field.name}>
-                        <RequiredLabel>Targets</RequiredLabel>
+                        <RequiredLabel>GitHub Repositories</RequiredLabel>
                       </Label>
                       {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                       {!isLoadingRepos && repositories.length === 0 && (
@@ -619,7 +620,10 @@ export function AddTriggerDialog({
                                 }
                                 return (
                                   <ComboboxChip key={repo.value}>
-                                    {repo.label}
+                                    <span className="flex items-center gap-1.5">
+                                      <Github className="size-3 shrink-0" />
+                                      {repo.label}
+                                    </span>
                                   </ComboboxChip>
                                 );
                               })}
@@ -635,7 +639,10 @@ export function AddTriggerDialog({
                                     key={repo.value}
                                     value={repo.value}
                                   >
-                                    {repo.label}
+                                    <span className="flex items-center gap-2">
+                                      <Github className="size-3.5 shrink-0" />
+                                      {repo.label}
+                                    </span>
                                   </ComboboxItem>
                                 ))}
                               </ComboboxList>
@@ -644,7 +651,7 @@ export function AddTriggerDialog({
                         </div>
                       )}
                       <p className="text-muted-foreground text-xs">
-                        Pick one or more repositories.
+                        Pick one or more GitHub repositories.
                       </p>
                     </div>
                   )}

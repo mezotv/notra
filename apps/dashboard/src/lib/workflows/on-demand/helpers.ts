@@ -229,11 +229,28 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
     );
   }
 
-  if (restrictions.length === 0) {
+  const instructions: string[] = [...restrictions];
+
+  if (
+    dataPoints.includeLinearData &&
+    (dataPoints.includePullRequests ||
+      dataPoints.includeCommits ||
+      dataPoints.includeReleases)
+  ) {
+    instructions.push(
+      "- DEDUPLICATION: GitHub and Linear data may describe the same work items. When a GitHub PR and a Linear issue reference the same change, consolidate into a single entry. Do not list the same change twice."
+    );
+  }
+
+  if (instructions.length === 0) {
     return null;
   }
 
-  return `Strict data-point restrictions:\n${restrictions.join("\n")}`;
+  return instructions.length === restrictions.length
+    ? `Strict data-point restrictions:\n${restrictions.join("\n")}`
+    : restrictions.length > 0
+      ? `Strict data-point restrictions:\n${restrictions.join("\n")}\n\nCross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`
+      : `Cross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`;
 }
 
 export async function refundReservedAiCredit(
