@@ -1467,7 +1467,7 @@ function EventRow({
       </div>
       <Badge className={cn("shrink-0", EVENT_BADGE[type])}>
         <HugeiconsIcon className="size-3!" icon={EVENT_ICON[type]} />
-        {type}
+        {type === "LinearIssue" ? "Issue" : type}
       </Badge>
     </button>
   );
