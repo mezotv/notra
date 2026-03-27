@@ -221,14 +221,14 @@ export function AddTriggerDialog({
     useMemo(() => {
       const githubIntegrations =
         integrationsResponse?.integrations.filter(
-          (integration) => integration.type === "github"
+          (integration) => integration.type === "github" && integration.enabled
         ) ?? [];
       const linearIntegrations =
         integrationsResponse?.integrations.filter(
           (integration) => integration.type === "linear" && integration.enabled
         ) ?? [];
-      const repos = githubIntegrations.flatMap(
-        (integration) => integration.repositories
+      const repos = githubIntegrations.flatMap((integration) =>
+        integration.repositories.filter((r) => r.enabled)
       );
 
       const options: Array<{

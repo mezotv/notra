@@ -184,13 +184,16 @@ export function CreateContentDialog({
     hasLinearIntegrations,
   } = useMemo(() => {
     const githubIntegrations =
-      integrationsResponse?.integrations.filter((i) => i.type === "github") ??
-      [];
+      integrationsResponse?.integrations.filter(
+        (i) => i.type === "github" && i.enabled
+      ) ?? [];
     const linearIntegrationsList =
       integrationsResponse?.integrations.filter(
         (i) => i.type === "linear" && i.enabled
       ) ?? [];
-    const repos = githubIntegrations.flatMap((i) => i.repositories);
+    const repos = githubIntegrations.flatMap((i) =>
+      i.repositories.filter((r) => r.enabled)
+    );
 
     const options: Array<{
       value: string;
@@ -1369,7 +1372,8 @@ function RepoSection({
 
   return (
     <div className="overflow-hidden rounded-lg border">
-      <div className="bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
+        <Github className="size-4 shrink-0" />
         <span className="font-medium text-sm">
           {repo.owner}/{repo.repo}
         </span>
