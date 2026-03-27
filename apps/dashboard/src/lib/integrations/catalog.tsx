@@ -28,7 +28,7 @@ export const INPUT_SOURCES: readonly IntegrationConfig[] = [
     icon: <Linear />,
     accentColor: "#5E6AD2",
     href: "linear",
-    available: false,
+    available: true,
     category: "input",
   },
   {

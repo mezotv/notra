@@ -1,7 +1,9 @@
 import type { ToneProfile } from "@notra/ai/schemas/tone";
 import type {
   AgentDataPointSettings,
+  LinearIntegrationRef,
   ResolveIntegrationContext,
+  ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import type { PostSourceMetadata } from "@notra/db/schema";
@@ -15,6 +17,7 @@ export interface ContentGenerationContext {
     repo: string;
     defaultBranch: string | null;
   }>;
+  linearIntegrations?: LinearIntegrationRef[];
   tone: ToneProfile;
   promptInput: {
     sourceTargets: string;
@@ -38,6 +41,7 @@ export interface ContentGenerationContext {
   voiceId?: string;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export type ContentGenerationResult =

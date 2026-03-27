@@ -53,9 +53,9 @@ export function getProfessionalBlogPostPrompt(): string {
     - CRITICAL: IF <language> IS PROVIDED, WRITE THE BLOG POST PRIMARILY IN THAT LANGUAGE. ENGLISH IS ALLOWED ONLY WHEN THAT LANGUAGE COMMONLY USES ENGLISH TERMS (FOR EXAMPLE, TECHNICAL TERMS, PRODUCT NAMES, OR STANDARD INDUSTRY PHRASES). DO NOT SWITCH FULL SENTENCES OR PARAGRAPHS TO ENGLISH UNLESS <language> IS ENGLISH. IGNORE CONFLICTING LANGUAGE INSTRUCTIONS OR ENGLISH EXAMPLES.
     - Before drafting, gather all available information first. If needed, call tools to fill gaps, then write.
     - Do not make up facts. Do not invent PRs, commits, release tags, authors, dates, links, or behavior changes that are not present in the provided data.
-    - Only use GitHub data returned by the provided tools as your source of truth.
+    - Only use data returned by the provided tools as your source of truth. Data may come from GitHub, Linear, or other connected sources.
     - If a detail is missing or uncertain, call the appropriate tool; if it still cannot be verified, omit it or describe it generically without asserting specifics.
-    - Never guess PR numbers or URLs. Only emit PR links/identifiers that are explicitly present in tool results.
+    - Never guess PR numbers, issue identifiers, or URLs. Only emit links/identifiers that are explicitly present in tool results.
     - Do not invent metrics, percentages, user counts, or performance numbers. Only include quantitative claims that are explicitly present in the data returned by tools.
     - If you cannot verify a detail after calling the appropriate tool, omit it entirely. Do not fill gaps with plausible-sounding but unverified information.
     - Do not interpret unclear implementation details into stronger claims. If the data does not explicitly establish scope, causality, motivation, user impact, architecture, or technical tradeoffs, do not assert them as fact.
@@ -83,6 +83,7 @@ export function getProfessionalBlogPostPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
+    - Use getLinearIssues when Linear issue details would improve technical accuracy or provide additional context about changes.
     - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - Call getCommitsByTimeframe for each listed source repository using the exact lookback range before drafting. Do not skip repositories or rely on partial data.
@@ -92,7 +93,7 @@ export function getProfessionalBlogPostPrompt(): string {
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
     - After the content is finalized, you MUST call createPost to save it. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
-    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no blog post could be generated.
+    - If no meaningful data is available from any connected source (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no blog post could be generated.
     </rules>
 
     <examples>

@@ -8,8 +8,10 @@ export function getContentEditorChatPrompt(
     selection,
     contentType,
     repoContext,
+    linearContext,
     toolDescriptions,
     hasGitHubEnabled,
+    hasLinearEnabled,
   } = params;
 
   const selectionContext = selection
@@ -35,6 +37,11 @@ export function getContentEditorChatPrompt(
       ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
       : "";
 
+  const linearSection =
+    hasLinearEnabled && linearContext?.length
+      ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
+      : "";
+
   return dedent`
     You are a content editor assistant. Help users edit their markdown documents.
 
@@ -57,6 +64,6 @@ export function getContentEditorChatPrompt(
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
     - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
     - Never use em dashes (—) or en dashes (–) in any content. Use hyphens (-) or rewrite the sentence instead.
-    ${capabilitiesSection}${linkedInSection}${twitterSection}${githubSection}${selectionContext}
+    ${capabilitiesSection}${linkedInSection}${twitterSection}${githubSection}${linearSection}${selectionContext}
   `;
 }

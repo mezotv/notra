@@ -4,6 +4,7 @@ import type {
   IntegrationsResponse,
 } from "@/types/services/integrations";
 import { getGitHubIntegrationsByOrganization } from "./github-integration";
+import { getLinearIntegrationsByOrganization } from "./linear-integration";
 
 const integrationFetchers: Partial<
   Record<IntegrationType, IntegrationFetcher>
@@ -37,6 +38,19 @@ const integrationFetchers: Partial<
         })),
       };
     });
+  },
+  linear: async (organizationId) => {
+    const integrations =
+      await getLinearIntegrationsByOrganization(organizationId);
+
+    return integrations.map((integration) => ({
+      id: integration.id,
+      displayName: integration.displayName,
+      type: "linear" as const,
+      enabled: integration.enabled,
+      createdAt: integration.createdAt,
+      repositories: [],
+    }));
   },
 };
 

@@ -1,6 +1,6 @@
 import type { streamText, UIMessage } from "ai";
 
-export interface ValidatedIntegration {
+export interface ValidatedGitHubIntegration {
   id: string;
   type: "github";
   enabled: boolean;
@@ -15,8 +15,23 @@ export interface ValidatedIntegration {
   }>;
 }
 
+export interface ValidatedLinearIntegration {
+  id: string;
+  type: "linear";
+  enabled: boolean;
+  displayName: string;
+  organizationId: string;
+  linearTeamId?: string | null;
+  linearTeamName?: string | null;
+}
+
+export type ValidatedIntegration =
+  | ValidatedGitHubIntegration
+  | ValidatedLinearIntegration;
+
 export interface EnabledCapabilities {
   github: boolean;
+  linear: boolean;
   skills: boolean;
   markdown: boolean;
 }
@@ -29,12 +44,20 @@ export interface TextSelection {
   endChar: number;
 }
 
-export interface ContextItem {
+export interface GitHubContextItem {
   type: "github-repo";
   owner: string;
   repo: string;
   integrationId: string;
 }
+
+export interface LinearContextItem {
+  type: "linear-team";
+  integrationId: string;
+  teamName?: string;
+}
+
+export type ContextItem = GitHubContextItem | LinearContextItem;
 
 export interface RoutingDecision {
   complexity: "simple" | "complex";

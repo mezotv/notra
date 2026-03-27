@@ -1,7 +1,10 @@
 import { createModel } from "@notra/ai/model";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
 import { getAISDKTelemetry } from "@notra/ai/telemetry";
-import type { ResolveIntegrationContext } from "@notra/ai/types/agents";
+import type {
+  ResolveIntegrationContext,
+  ResolveLinearIntegrationContext,
+} from "@notra/ai/types/agents";
 import type {
   OrchestrateInput,
   OrchestrateResult,
@@ -13,16 +16,22 @@ import {
   type UIMessage,
 } from "ai";
 import {
-  type GetIntegrationById,
   hasEnabledGitHubIntegration,
+  hasEnabledLinearIntegration,
+  type IntegrationFetchers,
   validateIntegrations,
 } from "./integration-validator";
 import { routeAndSelectModel } from "./router";
-import { buildToolSet, getRepoContextFromIntegrations } from "./tool-registry";
+import {
+  buildToolSet,
+  getLinearContextFromIntegrations,
+  getRepoContextFromIntegrations,
+} from "./tool-registry";
 
 export interface OrchestrateDeps {
-  getIntegrationById?: GetIntegrationById;
+  integrationFetchers?: IntegrationFetchers;
   resolveContext?: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export async function orchestrateChat(
@@ -42,13 +51,18 @@ export async function orchestrateChat(
   const validatedIntegrations = await validateIntegrations(
     organizationId,
     context,
-    deps?.getIntegrationById
+    deps?.integrationFetchers
   );
 
   const hasGitHub = hasEnabledGitHubIntegration(validatedIntegrations);
+  const hasLinear = hasEnabledLinearIntegration(validatedIntegrations);
+  const hasDataSources = hasGitHub || hasLinear;
 
   const lastUserMessage = getLastUserMessage(messages);
-  const routingDecision = await routeAndSelectModel(lastUserMessage, hasGitHub);
+  const routingDecision = await routeAndSelectModel(
+    lastUserMessage,
+    hasDataSources
+  );
 
   console.log("[Chat Routing]", {
     model: routingDecision.model,
@@ -56,6 +70,7 @@ export async function orchestrateChat(
     requiresTools: routingDecision.requiresTools,
     reasoning: routingDecision.reasoning,
     hasGitHub,
+    hasLinear,
   });
 
   const modelWithMemory = createModel(organizationId, routingDecision.model);
@@ -66,17 +81,23 @@ export async function orchestrateChat(
       currentMarkdown,
       validatedIntegrations,
     },
-    { resolveContext: deps?.resolveContext }
+    {
+      resolveContext: deps?.resolveContext,
+      resolveLinearContext: deps?.resolveLinearContext,
+    }
   );
 
   const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
+  const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
 
   const systemPrompt = getContentEditorChatPrompt({
     selection,
     contentType,
     repoContext,
+    linearContext,
     toolDescriptions: descriptions,
     hasGitHubEnabled: hasGitHub,
+    hasLinearEnabled: hasLinear,
   });
 
   const stream = streamText({

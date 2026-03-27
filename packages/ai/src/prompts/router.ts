@@ -5,7 +5,7 @@ Classify messages as:
 - COMPLEX: Multi-step tasks, content creation from scratch, research, analysis, tasks requiring reasoning
 
 Determine if tools are needed:
-- Tools REQUIRED: Any editing, fetching GitHub data, accessing skills
+- Tools REQUIRED: Any editing, fetching data from connected sources, accessing skills
 - Tools NOT required: Answering questions, explaining concepts, conversation
 
 Examples:

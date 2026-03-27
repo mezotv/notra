@@ -34,6 +34,18 @@ export interface GitHubSelectionFilters {
   allowedCommitShas?: string[];
 }
 
+export interface LinearToolContext {
+  integrationId: string;
+  organizationId: string;
+  accessToken: string;
+  linearTeamId?: string | null;
+}
+
+export interface LinearToolsAccessConfig {
+  organizationId?: string;
+  allowedIntegrationIds?: string[];
+}
+
 export interface ErrorWithStatus {
   status?: number;
   message?: string;

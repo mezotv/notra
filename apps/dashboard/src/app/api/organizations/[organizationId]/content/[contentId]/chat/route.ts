@@ -9,6 +9,10 @@ import {
   getGitHubIntegrationById,
   getGitHubToolRepositoryContextByIntegrationId,
 } from "@/lib/services/github-integration";
+import {
+  getLinearIntegrationById,
+  getLinearToolContextByIntegrationId,
+} from "@/lib/services/linear-integration";
 import { chatRequestSchema } from "@/schemas/content";
 import type { AutumnCheckResponse } from "@/types/autumn";
 
@@ -121,8 +125,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           maxSteps: 5,
         },
         {
-          getIntegrationById: getGitHubIntegrationById,
+          integrationFetchers: {
+            getGitHubIntegrationById,
+            getLinearIntegrationById,
+          },
           resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+          resolveLinearContext: getLinearToolContextByIntegrationId,
         }
       );
 

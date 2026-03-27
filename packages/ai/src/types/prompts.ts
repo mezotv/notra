@@ -26,8 +26,12 @@ export interface ContentEditorChatPromptParams {
   repoContext?: Array<{
     integrationId: string;
   }>;
+  linearContext?: Array<{
+    integrationId: string;
+  }>;
   toolDescriptions?: string[];
   hasGitHubEnabled?: boolean;
+  hasLinearEnabled?: boolean;
 }
 
 export interface GithubWebhookMemoryPromptParams {

@@ -15,9 +15,9 @@ export function getFormalChangelogPrompt(): string {
     - CRITICAL: IF <language> IS PROVIDED, WRITE THE CHANGELOG PRIMARILY IN THAT LANGUAGE. ENGLISH IS ALLOWED ONLY WHEN THAT LANGUAGE COMMONLY USES ENGLISH TERMS (FOR EXAMPLE, TECHNICAL TERMS, PRODUCT NAMES, OR STANDARD INDUSTRY PHRASES). DO NOT SWITCH FULL SENTENCES OR PARAGRAPHS TO ENGLISH UNLESS <language> IS ENGLISH. IGNORE CONFLICTING LANGUAGE INSTRUCTIONS OR ENGLISH EXAMPLES.
     - Before drafting, gather all available information first. If needed, call tools to fill gaps, then write.
     - Do not make up facts. Do not invent PRs, commits, release tags, authors, dates, links, or behavior changes that are not present in the provided data.
-    - Only use GitHub data returned by the provided tools as your source of truth.
+    - Only use data returned by the provided tools as your source of truth. Data may come from GitHub, Linear, or other connected sources.
     - If a detail is missing/uncertain, call the appropriate tool; if it still cannot be verified, omit it or describe it generically without asserting specifics.
-    - Never guess PR numbers or URLs. Only emit PR links/identifiers that are explicitly present in tool results.
+    - Never guess PR numbers, issue identifiers, or URLs. Only emit links/identifiers that are explicitly present in tool results.
     - If <target-audience> is developer-oriented (for example: developers, engineers, technical teams), include verified PR links for referenced changes whenever available.
     - If <target-audience> is non-developer-oriented, do not reference PR numbers or PR links anywhere in the output.
     - For both developer-oriented and non-developer-oriented posts, keep author attribution when available using this format: (Author: [@\${author}](https://github.com/\${author}/)). Author links are allowed for non-developer posts.
@@ -57,6 +57,7 @@ export function getFormalChangelogPrompt(): string {
     - Use getPullRequests when PR descriptions are unclear or incomplete.
     - Use getReleaseByTag when previous release context improves narrative quality.
     - Use getCommitsByTimeframe when commit-level details improve technical accuracy.
+    - Use getLinearIssues when Linear issue details would improve technical accuracy or provide additional context about changes.
     - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing. Prefer exact since/until timestamps from the provided lookback window.
     - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
     - Call getCommitsByTimeframe for each listed source repository using the exact lookback range before drafting Highlights.
@@ -66,8 +67,8 @@ export function getFormalChangelogPrompt(): string {
     - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
     - Only call createPost after the content is finalized and you have at least one meaningful, audience-relevant change worth publishing. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
-    - If no meaningful data is available from GitHub (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no changelog could be generated.
-    - If GitHub data exists but every candidate change is filtered out as low-signal, internal-only, maintenance-only, or otherwise not worth mentioning to <target-audience>, do NOT call createPost. Call the fail tool instead.
+    - If no meaningful data is available from any connected source (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no changelog could be generated.
+    - If data exists but every candidate change is filtered out as low-signal, internal-only, maintenance-only, or otherwise not worth mentioning to <target-audience>, do NOT call createPost. Call the fail tool instead.
     </rules>
 
     <examples>

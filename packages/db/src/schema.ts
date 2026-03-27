@@ -188,6 +188,41 @@ export const githubIntegrations = pgTable(
   ]
 );
 
+export const linearIntegrations = pgTable(
+  "linear_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    displayName: text("display_name").notNull(),
+    encryptedAccessToken: text("encrypted_access_token"),
+    linearOrganizationId: text("linear_organization_id").notNull(),
+    linearOrganizationName: text("linear_organization_name"),
+    linearTeamId: text("linear_team_id"),
+    linearTeamName: text("linear_team_name"),
+    encryptedWebhookSecret: text("encrypted_webhook_secret"),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("linearIntegrations_organizationId_idx").on(table.organizationId),
+    index("linearIntegrations_createdByUserId_idx").on(table.createdByUserId),
+    uniqueIndex("linearIntegrations_org_linearOrg_team_uidx").on(
+      table.organizationId,
+      table.linearOrganizationId,
+      table.linearTeamId
+    ),
+  ]
+);
+
 export const contentTriggers = pgTable(
   "content_triggers",
   {
@@ -442,6 +477,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   members: many(members),
   invitations: many(invitations),
   githubIntegrations: many(githubIntegrations),
+  linearIntegrations: many(linearIntegrations),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -464,6 +500,7 @@ export const organizationsRelations = relations(
     members: many(members),
     invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
+    linearIntegrations: many(linearIntegrations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -505,6 +542,20 @@ export const githubIntegrationsRelations = relations(
       references: [users.id],
     }),
     outputs: many(repositoryOutputs),
+  })
+);
+
+export const linearIntegrationsRelations = relations(
+  linearIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [linearIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [linearIntegrations.createdByUserId],
+      references: [users.id],
+    }),
   })
 );
 

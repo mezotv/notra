@@ -33,6 +33,23 @@ export interface GitHubIntegration {
   repositories: GitHubRepository[];
 }
 
+export interface LinearIntegration {
+  id: string;
+  displayName: string;
+  enabled: boolean;
+  createdAt: string;
+  linearOrganizationId?: string;
+  linearOrganizationName?: string | null;
+  linearTeamId?: string | null;
+  linearTeamName?: string | null;
+  createdByUser?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+}
+
 export type WebhookLogType = "release" | "push" | "ping";
 
 export interface IntegrationWebhookLog {

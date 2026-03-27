@@ -8,6 +8,7 @@ import { getValidToneProfile, type ToneProfile } from "@notra/ai/schemas/brand";
 import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import { createGetBrandReferencesTool } from "@notra/ai/tools/brand-references";
 import { buildGitHubDataTools } from "@notra/ai/tools/github";
+import { buildLinearDataTools } from "@notra/ai/tools/linear";
 import {
   createCreatePostTool,
   createFailTool,
@@ -39,6 +40,7 @@ export async function generateLinkedInPost(
     organizationId,
     voiceId,
     repositories,
+    linearIntegrations,
     tone = "Conversational",
     promptInput,
     sourceMetadata,
@@ -47,11 +49,15 @@ export async function generateLinkedInPost(
     commitWindow,
     autoPublish,
     resolveContext,
+    resolveLinearContext,
   } = options;
 
-  if (!repositories || repositories.length === 0) {
+  if (
+    (!repositories || repositories.length === 0) &&
+    (!linearIntegrations || linearIntegrations.length === 0)
+  ) {
     throw new Error(
-      "At least one repository must be provided to generate a LinkedIn post."
+      "At least one repository or Linear integration must be provided to generate a LinkedIn post."
     );
   }
 
@@ -65,7 +71,11 @@ export async function generateLinkedInPost(
   const prompt = getUserPrompt("LinkedIn post", promptInput);
 
   const allowedIntegrationIds = Array.from(
-    new Set(repositories.map((repo) => repo.integrationId))
+    new Set((repositories ?? []).map((repo) => repo.integrationId))
+  );
+
+  const allowedLinearIntegrationIds = Array.from(
+    new Set((linearIntegrations ?? []).map((li) => li.integrationId))
   );
 
   const postToolsResult: PostToolsResult = {};
@@ -103,6 +113,12 @@ export async function generateLinkedInPost(
         selectionFilters,
         commitWindow,
         resolveContext,
+      }),
+      ...buildLinearDataTools({
+        organizationId,
+        allowedIntegrationIds: allowedLinearIntegrationIds,
+        dataPointSettings,
+        resolveContext: resolveLinearContext,
       }),
       listAvailableSkills: listAvailableSkills(),
       getSkillByName: getSkillByName(),

@@ -3,6 +3,7 @@ import {
   getGitHubIntegrationById,
   getRepositoryById,
 } from "@/lib/services/github-integration";
+import { getLinearIntegrationById } from "@/lib/services/linear-integration";
 import { handleGitHubWebhook } from "@/lib/webhooks/github";
 import { handleLinearWebhook } from "@/lib/webhooks/linear";
 import type { InputIntegrationType } from "@/schemas/integrations";
@@ -42,7 +43,16 @@ const INTEGRATION_FETCHERS: Record<
       enabled: integration.enabled,
     };
   },
-  linear: null,
+  linear: async (integrationId) => {
+    const integration = await getLinearIntegrationById(integrationId);
+    if (!integration) {
+      return null;
+    }
+    return {
+      organizationId: integration.organizationId,
+      enabled: integration.enabled,
+    };
+  },
   slack: null,
 };
 
@@ -92,17 +102,21 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    // Verify repository belongs to this integration
-    const repository = await getRepositoryById(repositoryId);
-    if (!repository) {
-      return Response.json({ error: "Repository not found" }, { status: 404 });
-    }
+    if (provider === "github") {
+      const repository = await getRepositoryById(repositoryId);
+      if (!repository) {
+        return Response.json(
+          { error: "Repository not found" },
+          { status: 404 }
+        );
+      }
 
-    if (repository.integration.id !== integrationId) {
-      return Response.json(
-        { error: "Repository does not belong to this integration" },
-        { status: 403 }
-      );
+      if (repository.integration.id !== integrationId) {
+        return Response.json(
+          { error: "Repository does not belong to this integration" },
+          { status: 403 }
+        );
+      }
     }
 
     const handler = WEBHOOK_HANDLERS[provider];

@@ -13,6 +13,7 @@ export async function handleLinkedIn(
       organizationId: ctx.organizationId,
       voiceId: ctx.voiceId,
       repositories: ctx.repositories,
+      linearIntegrations: ctx.linearIntegrations,
       tone: ctx.tone,
       promptInput: ctx.promptInput,
       sourceMetadata: ctx.sourceMetadata,
@@ -21,6 +22,7 @@ export async function handleLinkedIn(
       commitWindow: ctx.commitWindow,
       autoPublish: ctx.autoPublish,
       resolveContext: ctx.resolveContext,
+      resolveLinearContext: ctx.resolveLinearContext,
     });
 
     return { status: "ok", postId, title, posts };

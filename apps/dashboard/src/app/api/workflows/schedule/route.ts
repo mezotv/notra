@@ -32,6 +32,7 @@ import {
   generateRunId,
 } from "@/lib/generations/tracking";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
+import { getLinearToolContextByIntegrationId } from "@/lib/services/linear-integration";
 import { getBaseUrl, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
@@ -344,6 +345,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             voiceId: brand?.id,
             autoPublish: trigger.autoPublish,
             resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+            resolveLinearContext: getLinearToolContextByIntegrationId,
           });
         }
       );

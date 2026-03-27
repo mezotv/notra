@@ -11,12 +11,18 @@ import type {
   CommitWindow,
   GitHubSelectionFilters,
   GitHubToolRepositoryContext,
+  LinearToolContext,
 } from "./tools";
 
 export type ResolveIntegrationContext = (
   integrationId: string,
   options?: { organizationId?: string }
 ) => Promise<GitHubToolRepositoryContext>;
+
+export type ResolveLinearIntegrationContext = (
+  integrationId: string,
+  options?: { organizationId?: string }
+) => Promise<LinearToolContext>;
 
 export interface AgentDataPointSettings {
   includePullRequests?: boolean;
@@ -31,6 +37,11 @@ export interface ChangelogAgentResult {
   posts: PostSummary[];
 }
 
+export interface LinearIntegrationRef {
+  integrationId: string;
+  teamName?: string;
+}
+
 export interface ChangelogAgentOptions {
   organizationId: string;
   voiceId?: string;
@@ -40,6 +51,7 @@ export interface ChangelogAgentOptions {
     repo: string;
     defaultBranch?: string | null;
   }>;
+  linearIntegrations?: LinearIntegrationRef[];
   tone?: ToneProfile;
   promptInput: ChangelogTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
@@ -48,6 +60,7 @@ export interface ChangelogAgentOptions {
   commitWindow?: CommitWindow;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export interface LinkedInAgentResult {
@@ -65,6 +78,7 @@ export interface LinkedInAgentOptions {
     repo: string;
     defaultBranch?: string | null;
   }>;
+  linearIntegrations?: LinearIntegrationRef[];
   tone?: ToneProfile;
   promptInput: LinkedInTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
@@ -73,6 +87,7 @@ export interface LinkedInAgentOptions {
   commitWindow?: CommitWindow;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export interface TwitterAgentResult {
@@ -90,6 +105,7 @@ export interface TwitterAgentOptions {
     repo: string;
     defaultBranch?: string | null;
   }>;
+  linearIntegrations?: LinearIntegrationRef[];
   tone?: ToneProfile;
   promptInput: TwitterTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
@@ -98,6 +114,7 @@ export interface TwitterAgentOptions {
   commitWindow?: CommitWindow;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export interface BlogPostAgentResult {
@@ -114,6 +131,7 @@ export interface BlogPostAgentOptions {
     repo: string;
     defaultBranch?: string | null;
   }>;
+  linearIntegrations?: LinearIntegrationRef[];
   tone?: ToneProfile;
   promptInput: BlogPostTonePromptInput;
   sourceMetadata?: PostSourceMetadata;
@@ -122,6 +140,7 @@ export interface BlogPostAgentOptions {
   commitWindow?: CommitWindow;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
 export interface ChatAgentContext {

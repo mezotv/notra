@@ -12,6 +12,7 @@ export async function handleBlogPost(
     const { postId, title, posts } = await generateBlogPost({
       organizationId: ctx.organizationId,
       repositories: ctx.repositories,
+      linearIntegrations: ctx.linearIntegrations,
       tone: ctx.tone,
       promptInput: ctx.promptInput,
       sourceMetadata: ctx.sourceMetadata,
@@ -20,6 +21,7 @@ export async function handleBlogPost(
       commitWindow: ctx.commitWindow,
       autoPublish: ctx.autoPublish,
       resolveContext: ctx.resolveContext,
+      resolveLinearContext: ctx.resolveLinearContext,
     });
 
     return { status: "ok", postId, title, posts };
