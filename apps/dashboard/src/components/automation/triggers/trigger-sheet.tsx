@@ -35,6 +35,7 @@ import {
 } from "@notra/ui/components/ui/sheet";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
   Tooltip,
@@ -216,29 +217,45 @@ export function AddTriggerDialog({
 
   const brandVoices = brandResponse?.voices ?? [];
 
-  const { repositories, githubIntegrationId } = useMemo(() => {
-    const githubIntegrations =
-      integrationsResponse?.integrations.filter(
-        (integration) => integration.type === "github"
-      ) ?? [];
-    return {
-      repositories: githubIntegrations.flatMap(
+  const { repositories, integrationOptions, githubIntegrationId } =
+    useMemo(() => {
+      const githubIntegrations =
+        integrationsResponse?.integrations.filter(
+          (integration) => integration.type === "github"
+        ) ?? [];
+      const linearIntegrations =
+        integrationsResponse?.integrations.filter(
+          (integration) => integration.type === "linear"
+        ) ?? [];
+      const repos = githubIntegrations.flatMap(
         (integration) => integration.repositories
-      ),
-      githubIntegrationId: githubIntegrations[0]?.id,
-    };
-  }, [integrationsResponse]);
+      );
 
-  const repositoryOptions = useMemo(
-    () =>
-      repositories.map((repo) => ({
-        value: repo.id,
-        label: repo.defaultBranch
-          ? `${repo.owner}/${repo.repo} · ${repo.defaultBranch}`
-          : `${repo.owner}/${repo.repo}`,
-      })),
-    [repositories]
-  );
+      const options: Array<{
+        value: string;
+        label: string;
+        type: "github" | "linear";
+      }> = [
+        ...repos.map((r) => ({
+          value: r.id,
+          label: r.defaultBranch
+            ? `${r.owner}/${r.repo} · ${r.defaultBranch}`
+            : `${r.owner}/${r.repo}`,
+          type: "github" as const,
+        })),
+        ...linearIntegrations.map((i) => ({
+          value: `linear:${i.id}`,
+          label: i.displayName,
+          type: "linear" as const,
+        })),
+      ];
+
+      return {
+        repositories: repos,
+        integrationOptions: options,
+        githubIntegrationId: githubIntegrations[0]?.id,
+      };
+    }, [integrationsResponse]);
 
   const mutation = useMutation<{ trigger: Trigger }, Error, TriggerFormValues>({
     mutationFn: async (value) => {
@@ -252,12 +269,16 @@ export function AddTriggerDialog({
             throw new Error("Schedule configuration is required");
           }
 
+          const githubRepoIds = value.repositoryIds.filter(
+            (id) => !id.startsWith("linear:")
+          );
+
           const schedulePayload = {
             organizationId,
             name: value.name,
             sourceType: "cron" as const,
             sourceConfig: { cron: value.schedule },
-            targets: { repositoryIds: value.repositoryIds },
+            targets: { repositoryIds: githubRepoIds },
             outputType: value.outputType,
             outputConfig: {
               ...(value.brandVoiceId
@@ -281,11 +302,15 @@ export function AddTriggerDialog({
           );
         }
 
+        const eventRepoIds = value.repositoryIds.filter(
+          (id) => !id.startsWith("linear:")
+        );
+
         const eventPayload = {
           organizationId,
           sourceType: "github_webhook" as const,
           sourceConfig: { eventTypes: [value.eventType] },
-          targets: { repositoryIds: value.repositoryIds },
+          targets: { repositoryIds: eventRepoIds },
           outputType: value.outputType,
           outputConfig: {
             ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
@@ -585,10 +610,10 @@ export function AddTriggerDialog({
                         <RequiredLabel>Integrations</RequiredLabel>
                       </Label>
                       {isLoadingRepos && <Skeleton className="h-10 w-full" />}
-                      {!isLoadingRepos && repositories.length === 0 && (
+                      {!isLoadingRepos && integrationOptions.length === 0 && (
                         <div className="flex items-center gap-2 rounded-md border border-dashed p-3">
                           <span className="flex-1 text-muted-foreground text-xs">
-                            No repositories connected.
+                            No integrations connected.
                           </span>
                           <AddRepositoryButton
                             onAdd={() => {
@@ -598,10 +623,10 @@ export function AddTriggerDialog({
                           />
                         </div>
                       )}
-                      {!isLoadingRepos && repositories.length > 0 && (
+                      {!isLoadingRepos && integrationOptions.length > 0 && (
                         <div ref={comboboxAnchor}>
                           <Combobox
-                            items={repositoryOptions.map((repo) => repo.value)}
+                            items={integrationOptions.map((o) => o.value)}
                             multiple
                             onValueChange={(value) =>
                               field.handleChange(
@@ -611,37 +636,45 @@ export function AddTriggerDialog({
                             value={field.state.value}
                           >
                             <ComboboxChips>
-                              {field.state.value.map((repoId) => {
-                                const repo = repositoryOptions.find(
-                                  (option) => option.value === repoId
+                              {field.state.value.map((id) => {
+                                const opt = integrationOptions.find(
+                                  (o) => o.value === id
                                 );
-                                if (!repo) {
+                                if (!opt) {
                                   return null;
                                 }
                                 return (
-                                  <ComboboxChip key={repo.value}>
+                                  <ComboboxChip key={opt.value}>
                                     <span className="flex items-center gap-1.5">
-                                      <Github className="size-3 shrink-0" />
-                                      {repo.label}
+                                      {opt.type === "github" ? (
+                                        <Github className="size-3 shrink-0" />
+                                      ) : (
+                                        <Linear className="size-3 shrink-0" />
+                                      )}
+                                      {opt.label}
                                     </span>
                                   </ComboboxChip>
                                 );
                               })}
-                              <ComboboxChipsInput placeholder="Search repositories" />
+                              <ComboboxChipsInput placeholder="Search integrations" />
                             </ComboboxChips>
                             <ComboboxContent anchor={comboboxAnchor.current}>
                               <ComboboxEmpty>
-                                No repositories found.
+                                No integrations found.
                               </ComboboxEmpty>
                               <ComboboxList>
-                                {repositoryOptions.map((repo) => (
+                                {integrationOptions.map((opt) => (
                                   <ComboboxItem
-                                    key={repo.value}
-                                    value={repo.value}
+                                    key={opt.value}
+                                    value={opt.value}
                                   >
                                     <span className="flex items-center gap-2">
-                                      <Github className="size-3.5 shrink-0" />
-                                      {repo.label}
+                                      {opt.type === "github" ? (
+                                        <Github className="size-3.5 shrink-0" />
+                                      ) : (
+                                        <Linear className="size-3.5 shrink-0" />
+                                      )}
+                                      {opt.label}
                                     </span>
                                   </ComboboxItem>
                                 ))}
