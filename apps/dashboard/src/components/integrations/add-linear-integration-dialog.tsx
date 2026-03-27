@@ -1,7 +1,5 @@
 "use client";
 
-import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -42,22 +40,24 @@ export function AddLinearIntegrationDialog({
   return (
     <ResponsiveDialog onOpenChange={setOpen} open={open}>
       {triggerElement}
-      <ResponsiveDialogContent className="sm:max-w-[480px]">
+      <ResponsiveDialogContent className="sm:max-w-[520px]">
         <ResponsiveDialogHeader>
           <div className="flex items-center gap-3">
-            <Linear className="size-8" />
-            <ResponsiveDialogTitle className="text-2xl">
-              Connect Linear
-            </ResponsiveDialogTitle>
+            <Linear className="size-7" />
+            <div>
+              <ResponsiveDialogTitle className="text-xl">
+                Add Linear Integration
+              </ResponsiveDialogTitle>
+              <ResponsiveDialogDescription>
+                Connect a Linear workspace to enable AI-powered outputs like
+                changelogs, blog posts, and tweets.
+              </ResponsiveDialogDescription>
+            </div>
           </div>
-          <ResponsiveDialogDescription>
-            Connect your Linear workspace to sync issues and updates for
-            AI-powered content generation.
-          </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <div className="space-y-3 py-4">
           <p className="text-muted-foreground text-sm">
-            You will be redirected to Linear to authorize access to your
+            You will be redirected to Linear to authorize read access to your
             workspace. Once authorized, your integration will be created
             automatically.
           </p>
@@ -66,13 +66,7 @@ export function AddLinearIntegrationDialog({
           <ResponsiveDialogClose render={<Button variant="outline" />}>
             Cancel
           </ResponsiveDialogClose>
-          <a
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm shadow-sm transition-colors hover:bg-primary/90"
-            href={authorizeUrl}
-          >
-            Connect with Linear
-            <HugeiconsIcon className="size-4" icon={ArrowRight02Icon} />
-          </a>
+          <Button render={<a href={authorizeUrl} />}>Add Integration</Button>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

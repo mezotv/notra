@@ -49,6 +49,14 @@ export const selectedItemsSchema = z.object({
       ])
     )
     .optional(),
+  linearIssueIds: z
+    .array(
+      z.object({
+        integrationId: z.string(),
+        issueId: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export const requestedGitHubRepositorySchema = z.object({

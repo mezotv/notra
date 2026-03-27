@@ -20,6 +20,22 @@ export interface ReleasePreview {
   prerelease: boolean;
 }
 
+export interface LinearIssuePreview {
+  id: string;
+  identifier: string;
+  title: string;
+  state: string | null;
+  assignee: string | null;
+  completedAt: string | null;
+  url: string;
+}
+
+export interface LinearIntegrationPreview {
+  integrationId: string;
+  displayName: string;
+  issues: LinearIssuePreview[];
+}
+
 export interface RepositoryPreview {
   repositoryId: string;
   owner: string;
@@ -53,6 +69,7 @@ export interface PreviewResponse {
     releases?: ReleasePreview[];
   }>;
   failures?: PreviewFailure[];
+  linearIntegrations?: LinearIntegrationPreview[];
 }
 
 export interface PrSelection {
@@ -65,4 +82,4 @@ export interface ReleaseSelection {
   tagName: string;
 }
 
-export type EventType = "Commit" | "PR" | "Release";
+export type EventType = "Commit" | "PR" | "Release" | "LinearIssue";

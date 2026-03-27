@@ -105,6 +105,7 @@ const EVENT_ICON: Record<EventType, typeof GitPullRequestIcon> = {
   PR: GitPullRequestIcon,
   Commit: GitCommitIcon,
   Release: Rocket01Icon,
+  LinearIssue: Tick01Icon,
 };
 
 import { Github } from "@notra/ui/components/ui/svgs/github";
@@ -223,16 +224,25 @@ export function CreateContentDialog({
     [repositoryIds]
   );
 
+  const selectedLinearIds = useMemo(
+    () =>
+      repositoryIds
+        .filter((id) => id.startsWith("linear:"))
+        .map((id) => id.replace("linear:", "")),
+    [repositoryIds]
+  );
+
   const previewParamsKey = useMemo(
     () =>
       JSON.stringify({
         repositoryIds: githubRepoIds,
+        linearIntegrationIds: selectedLinearIds,
         lookbackWindow,
         includeCommits: dataPoints.includeCommits,
         includePullRequests: dataPoints.includePullRequests,
         includeReleases: dataPoints.includeReleases,
       }),
-    [githubRepoIds, lookbackWindow, dataPoints]
+    [githubRepoIds, selectedLinearIds, lookbackWindow, dataPoints]
   );
 
   const {
@@ -248,9 +258,14 @@ export function CreateContentDialog({
         includeCommits: dataPoints.includeCommits,
         includePullRequests: dataPoints.includePullRequests,
         includeReleases: dataPoints.includeReleases,
+        linearIntegrationIds:
+          selectedLinearIds.length > 0 ? selectedLinearIds : undefined,
       },
     }),
-    enabled: open && step === "review" && githubRepoIds.length > 0,
+    enabled:
+      open &&
+      step === "review" &&
+      (githubRepoIds.length > 0 || selectedLinearIds.length > 0),
     staleTime: 60_000,
   });
 
@@ -1160,9 +1175,7 @@ export function CreateContentDialog({
                     disabled={
                       mutation.isPending ||
                       isLoadingPreview ||
-                      (hasSelectableEvents &&
-                        eventCounts.total > 0 &&
-                        eventCounts.selected === 0)
+                      eventCounts.selected === 0
                     }
                     onClick={handleCreate}
                     type="button"

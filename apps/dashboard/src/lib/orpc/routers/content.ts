@@ -1,3 +1,4 @@
+import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
@@ -34,7 +35,10 @@ import {
 } from "@/lib/generations/tracking";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getTokenForIntegrationId } from "@/lib/services/github-integration";
-import { getLinearIntegrationsByOrganization } from "@/lib/services/linear-integration";
+import {
+  getDecryptedLinearToken,
+  getLinearIntegrationsByOrganization,
+} from "@/lib/services/linear-integration";
 import { triggerOnDemandContent } from "@/lib/triggers/qstash";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
@@ -61,11 +65,12 @@ const contentInputSchema = organizationIdInputSchema.extend({
 });
 
 const previewRequestSchema = z.object({
-  repositoryIds: z.array(z.string().min(1)).min(1),
+  repositoryIds: z.array(z.string().min(1)),
   lookbackWindow: z.enum(LOOKBACK_WINDOWS),
   includeCommits: z.boolean().default(true),
   includePullRequests: z.boolean().default(true),
   includeReleases: z.boolean().default(true),
+  linearIntegrationIds: z.array(z.string().min(1)).optional(),
 });
 
 type PostRecord = InferSelectModel<typeof posts>;
@@ -158,6 +163,22 @@ export interface RepositoryPreview {
   releases: ReleasePreview[];
   repo: string;
   repositoryId: string;
+}
+
+export interface LinearIssuePreviewItem {
+  id: string;
+  identifier: string;
+  title: string;
+  state: string | null;
+  assignee: string | null;
+  completedAt: string | null;
+  url: string;
+}
+
+export interface LinearIntegrationPreviewItem {
+  integrationId: string;
+  displayName: string;
+  issues: LinearIssuePreviewItem[];
 }
 
 type PreviewFailureStage =
@@ -900,8 +921,93 @@ export const contentRouter = {
           (repository): repository is RepositoryPreview => repository !== null
         );
 
+      let linearIntegrationPreviews: LinearIntegrationPreviewItem[] = [];
+
+      if (input.linearIntegrationIds && input.linearIntegrationIds.length > 0) {
+        const linearIntegrations = await getLinearIntegrationsByOrganization(
+          input.organizationId
+        );
+        const requestedIds = new Set(input.linearIntegrationIds);
+        const enabledIntegrations = linearIntegrations.filter(
+          (i) => i.enabled && requestedIds.has(i.id)
+        );
+
+        linearIntegrationPreviews = await Promise.all(
+          enabledIntegrations.map(async (integration) => {
+            try {
+              const token = await getDecryptedLinearToken(integration.id);
+              if (!token) {
+                return {
+                  integrationId: integration.id,
+                  displayName: integration.displayName,
+                  issues: [],
+                };
+              }
+
+              const client = createLinearClient(token);
+              const filter: Record<string, unknown> = {
+                completedAt: { null: false },
+              };
+
+              if (integration.linearTeamId) {
+                filter.team = { id: { eq: integration.linearTeamId } };
+              }
+
+              filter.completedAt = {
+                gte: lookback.start.toISOString(),
+                lte: lookback.end.toISOString(),
+              };
+
+              const issues = await client.issues({
+                filter,
+                first: 50,
+                orderBy: "updatedAt" as never,
+              });
+
+              const items = await Promise.all(
+                issues.nodes.map(async (issue) => {
+                  const [state, assignee] = await Promise.all([
+                    issue.state,
+                    issue.assignee,
+                  ]);
+                  return {
+                    id: issue.id,
+                    identifier: issue.identifier,
+                    title: issue.title,
+                    state: state?.name ?? null,
+                    assignee: assignee?.name ?? assignee?.displayName ?? null,
+                    completedAt: issue.completedAt?.toISOString() ?? null,
+                    url: issue.url,
+                  };
+                })
+              );
+
+              return {
+                integrationId: integration.id,
+                displayName: integration.displayName,
+                issues: items,
+              };
+            } catch (error) {
+              console.error(
+                `[Preview] Failed to fetch Linear issues for ${integration.id}:`,
+                error
+              );
+              return {
+                integrationId: integration.id,
+                displayName: integration.displayName,
+                issues: [],
+              };
+            }
+          })
+        );
+      }
+
       return {
         repositories: results,
+        linearIntegrations:
+          linearIntegrationPreviews.length > 0
+            ? linearIntegrationPreviews
+            : undefined,
         failures,
       };
     }),
@@ -920,6 +1026,18 @@ export const contentRouter = {
         !input.dataPoints.includeLinearData
       ) {
         throw badRequest("At least one data source must be enabled.");
+      }
+
+      if (input.selectedItems) {
+        const hasAnySelected =
+          (input.selectedItems.commitShas?.length ?? 0) > 0 ||
+          (input.selectedItems.pullRequestNumbers?.length ?? 0) > 0 ||
+          (input.selectedItems.releaseTagNames?.length ?? 0) > 0 ||
+          (input.selectedItems.linearIssueIds?.length ?? 0) > 0;
+
+        if (!hasAnySelected) {
+          throw badRequest("At least one event must be selected.");
+        }
       }
 
       let aiCreditReserved = false;
