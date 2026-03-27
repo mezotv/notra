@@ -67,13 +67,15 @@ export function serviceUnavailable(message: string) {
 }
 
 export function internalServerError(message: string, cause?: unknown) {
+  let resolvedCause: Error | undefined;
+  if (cause instanceof Error) {
+    resolvedCause = cause;
+  } else if (cause !== undefined) {
+    resolvedCause = new Error(String(cause));
+  }
+
   return new ORPCError("INTERNAL_SERVER_ERROR", {
-    cause:
-      cause instanceof Error
-        ? cause
-        : cause !== undefined
-          ? new Error(String(cause))
-          : undefined,
+    cause: resolvedCause,
     message,
   });
 }

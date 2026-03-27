@@ -66,7 +66,13 @@ export function AddLinearIntegrationDialog({
           <ResponsiveDialogClose render={<Button variant="outline" />}>
             Cancel
           </ResponsiveDialogClose>
-          <Button render={<a href={authorizeUrl} />}>Add Integration</Button>
+          <Button
+            onClick={() => {
+              window.location.href = authorizeUrl;
+            }}
+          >
+            Add Integration
+          </Button>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
