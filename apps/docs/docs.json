@@ -78,7 +78,8 @@
             "pages": [
               "integrations/github",
               "integrations/framer",
-              "integrations/featul"
+              "integrations/featul",
+              "integrations/kontentspace"
             ]
           }
         ],
