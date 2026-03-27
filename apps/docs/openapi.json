@@ -854,7 +854,7 @@
                         "type": "boolean",
                         "default": true
                       },
-                      "includeLinearIssues": {
+                      "includeLinearData": {
                         "type": "boolean",
                         "default": false
                       }
@@ -863,7 +863,7 @@
                       "includePullRequests": true,
                       "includeCommits": true,
                       "includeReleases": true,
-                      "includeLinearIssues": false
+                      "includeLinearData": false
                     }
                   },
                   "selectedItems": {

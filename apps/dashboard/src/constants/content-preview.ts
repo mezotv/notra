@@ -16,7 +16,7 @@ export const DEFAULT_DATA_POINTS: ContentDataPointSettings = {
   includePullRequests: true,
   includeCommits: true,
   includeReleases: true,
-  includeLinearIssues: false,
+  includeLinearData: false,
 };
 
 export const EVENT_BADGE: Record<EventType, string> = {

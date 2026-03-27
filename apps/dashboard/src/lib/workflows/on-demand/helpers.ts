@@ -201,7 +201,7 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
   includePullRequests: boolean;
   includeCommits: boolean;
   includeReleases: boolean;
-  includeLinearIssues: boolean;
+  includeLinearData: boolean;
 }) {
   const restrictions: string[] = [];
 
@@ -223,7 +223,7 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
     );
   }
 
-  if (!dataPoints.includeLinearIssues) {
+  if (!dataPoints.includeLinearData) {
     restrictions.push(
       "- Exclude Linear issue data entirely. Do not mention issue IDs, titles, statuses, or issue-based summaries."
     );

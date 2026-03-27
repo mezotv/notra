@@ -144,6 +144,24 @@ export async function getDecryptedLinearToken(
   return decryptToken(integration.encryptedAccessToken);
 }
 
+export async function getDecryptedLinearWebhookSecret(
+  integrationId: string
+): Promise<string | undefined> {
+  const [integration] = await db
+    .select({
+      encryptedWebhookSecret: linearIntegrations.encryptedWebhookSecret,
+    })
+    .from(linearIntegrations)
+    .where(eq(linearIntegrations.id, integrationId))
+    .limit(1);
+
+  if (!integration?.encryptedWebhookSecret) {
+    return undefined;
+  }
+
+  return decryptToken(integration.encryptedWebhookSecret);
+}
+
 export async function getLinearToolContextByIntegrationId(
   integrationId: string,
   options?: { organizationId?: string }

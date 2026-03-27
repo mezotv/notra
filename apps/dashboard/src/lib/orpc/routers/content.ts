@@ -912,7 +912,7 @@ export const contentRouter = {
         organizationId: input.organizationId,
       });
 
-      if (input.dataPoints.includeLinearIssues) {
+      if (input.dataPoints.includeLinearData) {
         throw badRequest(
           "Linear Issues are not supported in manual content generation yet."
         );

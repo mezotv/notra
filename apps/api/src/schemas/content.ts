@@ -510,13 +510,13 @@ export const createPostGenerationRequestSchema = z
         includePullRequests: z.boolean().default(true),
         includeCommits: z.boolean().default(true),
         includeReleases: z.boolean().default(true),
-        includeLinearIssues: z.boolean().default(false),
+        includeLinearData: z.boolean().default(false),
       })
       .default({
         includePullRequests: true,
         includeCommits: true,
         includeReleases: true,
-        includeLinearIssues: false,
+        includeLinearData: false,
       }),
     selectedItems: z
       .object({

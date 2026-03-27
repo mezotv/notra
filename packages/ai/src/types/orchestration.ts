@@ -81,6 +81,10 @@ export interface RepoContext {
   integrationId: string;
 }
 
+export interface LinearContext {
+  integrationId: string;
+}
+
 export interface OrchestrateInput {
   organizationId: string;
   messages: UIMessage[];

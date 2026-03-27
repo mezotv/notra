@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "linearIntegrations_org_linearOrg_no_team_uidx" ON "linear_integrations" USING btree ("organization_id","linear_organization_id") WHERE "linear_integrations"."linear_team_id" IS NULL;

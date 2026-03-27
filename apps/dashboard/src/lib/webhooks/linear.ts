@@ -1,4 +1,6 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
+import { getDecryptedLinearWebhookSecret } from "@/lib/services/linear-integration";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import type { WebhookContext } from "@/types/webhooks/webhooks";
 
@@ -31,6 +33,35 @@ export async function handleLinearWebhook(
       { error: "Missing Linear-Signature header" },
       { status: 400 }
     );
+  }
+
+  const webhookSecret = await getDecryptedLinearWebhookSecret(integrationId);
+  if (webhookSecret) {
+    const expected = createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+
+    const isValid =
+      signature.length === expected.length &&
+      timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+
+    if (!isValid) {
+      await appendWebhookLog({
+        organizationId,
+        integrationId,
+        integrationType: "linear",
+        title: "Invalid webhook signature",
+        status: "failed",
+        statusCode: 401,
+        referenceId: null,
+        errorMessage: "Linear webhook signature verification failed",
+      });
+
+      return Response.json(
+        { error: "Invalid webhook signature" },
+        { status: 401 }
+      );
+    }
   }
 
   let payload: LinearWebhookPayload;

@@ -28,7 +28,7 @@ export interface AgentDataPointSettings {
   includePullRequests?: boolean;
   includeCommits?: boolean;
   includeReleases?: boolean;
-  includeLinearIssues?: boolean;
+  includeLinearData?: boolean;
 }
 
 export interface ChangelogAgentResult {

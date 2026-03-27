@@ -367,9 +367,9 @@ export function buildLinearDataTools(
     resolveContext,
   } = options;
 
-  const includeLinearIssues = dataPointSettings?.includeLinearIssues !== false;
+  const includeLinearData = dataPointSettings?.includeLinearData !== false;
 
-  if (!includeLinearIssues) {
+  if (!includeLinearData) {
     return {};
   }
 

@@ -16,6 +16,7 @@ import type {
 } from "@notra/ai/types/agents";
 import type {
   BuildToolSetParams,
+  LinearContext,
   RepoContext,
   ToolSet,
   ValidatedIntegration,
@@ -169,7 +170,7 @@ export function getRepoContextFromIntegrations(
 
 export function getLinearContextFromIntegrations(
   integrations: ValidatedIntegration[]
-): RepoContext[] {
+): LinearContext[] {
   return Array.from(
     new Set(
       integrations

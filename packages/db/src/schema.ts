@@ -220,6 +220,9 @@ export const linearIntegrations = pgTable(
       table.linearOrganizationId,
       table.linearTeamId
     ),
+    uniqueIndex("linearIntegrations_org_linearOrg_no_team_uidx")
+      .on(table.organizationId, table.linearOrganizationId)
+      .where(sql`${table.linearTeamId} IS NULL`),
   ]
 );
 
