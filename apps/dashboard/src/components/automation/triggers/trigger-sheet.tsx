@@ -582,7 +582,7 @@ export function AddTriggerDialog({
                   {(field) => (
                     <div className="space-y-2">
                       <Label htmlFor={field.name}>
-                        <RequiredLabel>GitHub Repositories</RequiredLabel>
+                        <RequiredLabel>Integrations</RequiredLabel>
                       </Label>
                       {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                       {!isLoadingRepos && repositories.length === 0 && (
@@ -651,7 +651,7 @@ export function AddTriggerDialog({
                         </div>
                       )}
                       <p className="text-muted-foreground text-xs">
-                        Pick one or more GitHub repositories.
+                        Pick one or more integrations.
                       </p>
                     </div>
                   )}

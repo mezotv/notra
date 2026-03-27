@@ -175,27 +175,42 @@ export function CreateContentDialog({
 
   const {
     repositories,
-    repositoryOptions,
+    integrationOptions,
     githubIntegrationId,
     hasLinearIntegrations,
   } = useMemo(() => {
     const githubIntegrations =
       integrationsResponse?.integrations.filter((i) => i.type === "github") ??
       [];
-    const linearIntegrations =
+    const linearIntegrationsList =
       integrationsResponse?.integrations.filter((i) => i.type === "linear") ??
       [];
     const repos = githubIntegrations.flatMap((i) => i.repositories);
-    return {
-      repositories: repos,
-      repositoryOptions: repos.map((r) => ({
+
+    const options: Array<{
+      value: string;
+      label: string;
+      type: "github" | "linear";
+    }> = [
+      ...repos.map((r) => ({
         value: r.id,
         label: r.defaultBranch
           ? `${r.owner}/${r.repo} · ${r.defaultBranch}`
           : `${r.owner}/${r.repo}`,
+        type: "github" as const,
       })),
+      ...linearIntegrationsList.map((i) => ({
+        value: `linear:${i.id}`,
+        label: i.displayName,
+        type: "linear" as const,
+      })),
+    ];
+
+    return {
+      repositories: repos,
+      integrationOptions: options,
       githubIntegrationId: githubIntegrations[0]?.id,
-      hasLinearIntegrations: linearIntegrations.length > 0,
+      hasLinearIntegrations: linearIntegrationsList.length > 0,
     };
   }, [integrationsResponse]);
 
@@ -203,16 +218,21 @@ export function CreateContentDialog({
   const lookbackWindow = useStore(form.store, (s) => s.values.lookbackWindow);
   const dataPoints = useStore(form.store, (s) => s.values.dataPoints);
 
+  const githubRepoIds = useMemo(
+    () => repositoryIds.filter((id) => !id.startsWith("linear:")),
+    [repositoryIds]
+  );
+
   const previewParamsKey = useMemo(
     () =>
       JSON.stringify({
-        repositoryIds,
+        repositoryIds: githubRepoIds,
         lookbackWindow,
         includeCommits: dataPoints.includeCommits,
         includePullRequests: dataPoints.includePullRequests,
         includeReleases: dataPoints.includeReleases,
       }),
-    [repositoryIds, lookbackWindow, dataPoints]
+    [githubRepoIds, lookbackWindow, dataPoints]
   );
 
   const {
@@ -223,14 +243,14 @@ export function CreateContentDialog({
     ...dashboardOrpc.content.preview.queryOptions({
       input: {
         organizationId,
-        repositoryIds,
+        repositoryIds: githubRepoIds,
         lookbackWindow,
         includeCommits: dataPoints.includeCommits,
         includePullRequests: dataPoints.includePullRequests,
         includeReleases: dataPoints.includeReleases,
       },
     }),
-    enabled: open && step === "review" && repositoryIds.length > 0,
+    enabled: open && step === "review" && githubRepoIds.length > 0,
     staleTime: 60_000,
   });
 
@@ -399,8 +419,20 @@ export function CreateContentDialog({
               : [],
           }
         : undefined;
+    const githubRepoIds = value.repositoryIds.filter(
+      (id) => !id.startsWith("linear:")
+    );
+    const hasLinear = value.repositoryIds.some((id) =>
+      id.startsWith("linear:")
+    );
+
     mutation.mutate({
       ...value,
+      repositoryIds: githubRepoIds,
+      dataPoints: {
+        ...value.dataPoints,
+        includeLinearData: hasLinear,
+      },
       brandVoiceId: value.brandVoiceId || undefined,
       selectedItems,
     });
@@ -774,22 +806,22 @@ export function CreateContentDialog({
                   <form.Field name="repositoryIds">
                     {(field) => (
                       <div className="space-y-2">
-                        <Label htmlFor={field.name}>GitHub Repositories</Label>
+                        <Label htmlFor={field.name}>Integrations</Label>
                         {isLoadingRepos && <Skeleton className="h-10 w-full" />}
-                        {!isLoadingRepos && repositories.length === 0 && (
+                        {!isLoadingRepos && integrationOptions.length === 0 && (
                           <div className="flex items-center gap-2 rounded-md border border-dashed p-3">
                             <span className="flex-1 text-muted-foreground text-xs">
-                              No repositories connected.
+                              No integrations connected.
                             </span>
                             <AddRepositoryButton
                               onAdd={handleOpenAddRepositoryFlow}
                             />
                           </div>
                         )}
-                        {!isLoadingRepos && repositories.length > 0 && (
+                        {!isLoadingRepos && integrationOptions.length > 0 && (
                           <div ref={comboboxAnchor}>
                             <Combobox
-                              items={repositoryOptions.map((r) => r.value)}
+                              items={integrationOptions.map((o) => o.value)}
                               multiple
                               onValueChange={(v) =>
                                 field.handleChange(Array.isArray(v) ? v : [])
@@ -798,33 +830,44 @@ export function CreateContentDialog({
                             >
                               <ComboboxChips>
                                 {field.state.value.map((id) => {
-                                  const r = repositoryOptions.find(
+                                  const opt = integrationOptions.find(
                                     (o) => o.value === id
                                   );
-                                  if (!r) {
+                                  if (!opt) {
                                     return null;
                                   }
                                   return (
-                                    <ComboboxChip key={r.value}>
+                                    <ComboboxChip key={opt.value}>
                                       <span className="flex items-center gap-1.5">
-                                        <Github className="size-3 shrink-0" />
-                                        {r.label}
+                                        {opt.type === "github" ? (
+                                          <Github className="size-3 shrink-0" />
+                                        ) : (
+                                          <Linear className="size-3 shrink-0" />
+                                        )}
+                                        {opt.label}
                                       </span>
                                     </ComboboxChip>
                                   );
                                 })}
-                                <ComboboxChipsInput placeholder="Search repositories" />
+                                <ComboboxChipsInput placeholder="Search integrations" />
                               </ComboboxChips>
                               <ComboboxContent anchor={comboboxAnchor.current}>
                                 <ComboboxEmpty>
-                                  No repositories found.
+                                  No integrations found.
                                 </ComboboxEmpty>
                                 <ComboboxList>
-                                  {repositoryOptions.map((r) => (
-                                    <ComboboxItem key={r.value} value={r.value}>
+                                  {integrationOptions.map((opt) => (
+                                    <ComboboxItem
+                                      key={opt.value}
+                                      value={opt.value}
+                                    >
                                       <span className="flex items-center gap-2">
-                                        <Github className="size-3.5 shrink-0" />
-                                        {r.label}
+                                        {opt.type === "github" ? (
+                                          <Github className="size-3.5 shrink-0" />
+                                        ) : (
+                                          <Linear className="size-3.5 shrink-0" />
+                                        )}
+                                        {opt.label}
                                       </span>
                                     </ComboboxItem>
                                   ))}
@@ -834,7 +877,7 @@ export function CreateContentDialog({
                           </div>
                         )}
                         <p className="text-muted-foreground text-xs">
-                          Pick one or more repositories.
+                          Pick one or more integrations to pull data from.
                         </p>
                       </div>
                     )}
@@ -886,19 +929,6 @@ export function CreateContentDialog({
                           />
                         )}
                       </form.Field>
-                      {hasLinearIntegrations && (
-                        <form.Field name="dataPoints.includeLinearData">
-                          {(field) => (
-                            <DataPointToggle
-                              checked={field.state.value}
-                              description="Include issues, projects, and cycles from Linear."
-                              disabled={mutation.isPending}
-                              label="Linear Issues"
-                              onCheckedChange={field.handleChange}
-                            />
-                          )}
-                        </form.Field>
-                      )}
                     </CollapsibleContent>
                   </Collapsible>
                 </div>
@@ -1108,12 +1138,7 @@ export function CreateContentDialog({
               {step === "configure" && (
                 <div className="flex items-center justify-end">
                   <Button
-                    disabled={
-                      (repositoryIds.length === 0 &&
-                        !dataPoints.includeLinearData) ||
-                      (!hasAnyGitHubDataPointActive &&
-                        !dataPoints.includeLinearData)
-                    }
+                    disabled={repositoryIds.length === 0}
                     onClick={handleContinue}
                     type="button"
                   >
