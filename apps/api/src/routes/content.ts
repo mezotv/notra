@@ -91,6 +91,10 @@ export const contentRoutes = new OpenAPIHono();
 
 type DbClient = ReturnType<typeof createDb>;
 
+function supportsPostSlug(contentType: string) {
+  return contentType === "blog_post" || contentType === "changelog";
+}
+
 async function getOrganizationResponse(
   db: DbClient,
   organizationId: string
@@ -1528,6 +1532,7 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
     columns: {
       id: true,
       title: true,
+      slug: true,
       content: true,
       markdown: true,
       recommendations: true,
@@ -1578,6 +1583,7 @@ contentRoutes.openapi(getPostRoute, async (c) => {
     columns: {
       id: true,
       title: true,
+      slug: true,
       content: true,
       markdown: true,
       recommendations: true,
@@ -1654,6 +1660,8 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     columns: {
       id: true,
       title: true,
+      slug: true,
+      contentType: true,
     },
   });
 
@@ -1667,6 +1675,17 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
 
   if (body.title !== undefined) {
     updateData.title = body.title;
+  }
+
+  if (body.slug !== undefined) {
+    if (!supportsPostSlug(existingPost.contentType)) {
+      return c.json(
+        { error: "Slug can only be set for blog posts and changelogs" },
+        400
+      );
+    }
+
+    updateData.slug = body.slug;
   }
 
   if (body.markdown !== undefined) {
@@ -1698,6 +1717,7 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     .returning({
       id: posts.id,
       title: posts.title,
+      slug: posts.slug,
       content: posts.content,
       markdown: posts.markdown,
       recommendations: posts.recommendations,

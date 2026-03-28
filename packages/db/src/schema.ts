@@ -438,6 +438,7 @@ export const posts = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
+    slug: text("slug"),
     content: text("content").notNull(),
     markdown: text("markdown").notNull(),
     recommendations: text("recommendations"),

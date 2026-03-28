@@ -7,6 +7,7 @@ import {
 } from "@notra/content-generation/schemas";
 
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
+const POST_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export const getPostsParamsSchema = z.object({});
 
@@ -242,6 +243,7 @@ export const createGitHubIntegrationResponseSchema = z.object({
 export const postResponseSchema = z.object({
   id: z.string(),
   title: z.string(),
+  slug: z.string().nullable(),
   content: z.string(),
   markdown: z.string(),
   recommendations: z.string().nullable(),
@@ -277,6 +279,20 @@ export const patchPostRequestSchema = z
     title: z.string().trim().min(1).max(120).optional().openapi({
       example: "Ship notes for week 11",
     }),
+    slug: z
+      .string()
+      .trim()
+      .min(1)
+      .max(160)
+      .regex(
+        POST_SLUG_REGEX,
+        "Slug must contain lowercase letters, numbers, and hyphens only"
+      )
+      .nullable()
+      .optional()
+      .openapi({
+        example: "ship-notes-week-11",
+      }),
     markdown: z.string().min(1).optional().openapi({
       example: "# Ship notes\n\nWe shipped a faster editor.",
     }),
@@ -287,6 +303,7 @@ export const patchPostRequestSchema = z
   .refine(
     (data) =>
       data.title !== undefined ||
+      data.slug !== undefined ||
       data.markdown !== undefined ||
       data.status !== undefined,
     {

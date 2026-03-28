@@ -74,6 +74,11 @@ function slugifySegment(value: string) {
 }
 
 function normalizePost(post: ListPostsPost | GetPostPost): NotraBlogPost {
+  const slug =
+    "slug" in post && typeof post.slug === "string"
+      ? post.slug
+      : createBlogPostSlug({ title: post.title });
+
   return {
     id: post.id,
     title: post.title,
@@ -85,7 +90,7 @@ function normalizePost(post: ListPostsPost | GetPostPost): NotraBlogPost {
     status: post.status,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
-    slug: createBlogPostSlug({ title: post.title }),
+    slug,
     excerpt: getPostExcerpt(post.markdown),
   };
 }

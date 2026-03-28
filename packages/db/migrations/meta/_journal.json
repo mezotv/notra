@@ -169,6 +169,13 @@
       "when": 1774635023969,
       "tag": "0023_warm_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1774716656237,
+      "tag": "0024_purple_edwin_jarvis",
+      "breakpoints": true
     }
   ]
 }
