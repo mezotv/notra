@@ -156,6 +156,7 @@
                         "properties": {
                           "id": { "type": "string" },
                           "title": { "type": "string" },
+                          "slug": { "type": ["string", "null"] },
                           "content": { "type": "string" },
                           "markdown": { "type": "string" },
                           "recommendations": { "type": ["string", "null"] },
@@ -171,6 +172,7 @@
                         "required": [
                           "id",
                           "title",
+                          "slug",
                           "content",
                           "markdown",
                           "recommendations",
@@ -295,6 +297,7 @@
                       "properties": {
                         "id": { "type": "string" },
                         "title": { "type": "string" },
+                        "slug": { "type": ["string", "null"] },
                         "content": { "type": "string" },
                         "markdown": { "type": "string" },
                         "recommendations": { "type": ["string", "null"] },
@@ -310,6 +313,7 @@
                       "required": [
                         "id",
                         "title",
+                        "slug",
                         "content",
                         "markdown",
                         "recommendations",
@@ -479,6 +483,13 @@
                     "maxLength": 120,
                     "example": "Ship notes for week 11"
                   },
+                  "slug": {
+                    "type": ["string", "null"],
+                    "minLength": 1,
+                    "maxLength": 160,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+                    "example": "ship-notes-week-11"
+                  },
                   "markdown": {
                     "type": "string",
                     "minLength": 1,
@@ -517,6 +528,7 @@
                       "properties": {
                         "id": { "type": "string" },
                         "title": { "type": "string" },
+                        "slug": { "type": ["string", "null"] },
                         "content": { "type": "string" },
                         "markdown": { "type": "string" },
                         "recommendations": { "type": ["string", "null"] },
@@ -532,6 +544,7 @@
                       "required": [
                         "id",
                         "title",
+                        "slug",
                         "content",
                         "markdown",
                         "recommendations",
