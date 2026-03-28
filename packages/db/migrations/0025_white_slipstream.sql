@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "posts_org_slug_uidx" ON "posts" USING btree ("organization_id","slug") WHERE "posts"."slug" IS NOT NULL;

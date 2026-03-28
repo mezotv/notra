@@ -1,4 +1,9 @@
 import { contentTypeSchema } from "@notra/ai/schemas/content";
+import {
+  POST_SLUG_MAX_LENGTH,
+  POST_SLUG_REGEX,
+  supportsPostSlug,
+} from "@notra/ai/schemas/post";
 import type {
   PostToolsConfig,
   PostToolsResult,
@@ -20,15 +25,11 @@ const postSlugSchema = z
   .string()
   .trim()
   .min(1)
-  .max(160)
+  .max(POST_SLUG_MAX_LENGTH)
   .regex(
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    POST_SLUG_REGEX,
     "Slug must contain lowercase letters, numbers, and hyphens only"
   );
-
-function supportsPostSlug(contentType: string) {
-  return contentType === "blog_post" || contentType === "changelog";
-}
 
 export function createCreatePostTool(
   config: PostToolsConfig,

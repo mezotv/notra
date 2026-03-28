@@ -452,6 +452,9 @@ export const posts = pgTable(
       .notNull(),
   },
   (table) => [
+    uniqueIndex("posts_org_slug_uidx")
+      .on(table.organizationId, table.slug)
+      .where(sql`${table.slug} IS NOT NULL`),
     index("posts_org_createdAt_id_idx").on(
       table.organizationId,
       table.createdAt,

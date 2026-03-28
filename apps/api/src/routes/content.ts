@@ -6,6 +6,7 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { supportsPostSlug } from "@notra/ai/schemas/post";
 import {
   appendContentGenerationJobEvent,
   createContentGenerationJob,
@@ -90,10 +91,6 @@ import {
 export const contentRoutes = new OpenAPIHono();
 
 type DbClient = ReturnType<typeof createDb>;
-
-function supportsPostSlug(contentType: string) {
-  return contentType === "blog_post" || contentType === "changelog";
-}
 
 async function getOrganizationResponse(
   db: DbClient,
@@ -740,6 +737,14 @@ const deletePostRoute = createRoute({
         },
       },
     },
+    409: {
+      description: "Post slug already exists",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
     503: {
       description: "Authentication service unavailable",
       content: {
@@ -803,6 +808,14 @@ const patchPostRoute = createRoute({
     },
     404: {
       description: "Post not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    409: {
+      description: "Post slug already exists",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -1710,23 +1723,50 @@ contentRoutes.openapi(patchPostRoute, async (c) => {
     updateData.status = body.status;
   }
 
-  const [updatedPost] = await db
-    .update(posts)
-    .set(updateData)
-    .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
-    .returning({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      content: posts.content,
-      markdown: posts.markdown,
-      recommendations: posts.recommendations,
-      contentType: posts.contentType,
-      sourceMetadata: posts.sourceMetadata,
-      status: posts.status,
-      createdAt: posts.createdAt,
-      updatedAt: posts.updatedAt,
-    });
+  let updatedRows: Array<{
+    id: string;
+    title: string;
+    slug: string | null;
+    content: string;
+    markdown: string;
+    recommendations: string | null;
+    contentType: string;
+    sourceMetadata: unknown;
+    status: "draft" | "published";
+    createdAt: Date;
+    updatedAt: Date;
+  }> = [];
+
+  try {
+    updatedRows = await db
+      .update(posts)
+      .set(updateData)
+      .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
+      .returning({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        content: posts.content,
+        markdown: posts.markdown,
+        recommendations: posts.recommendations,
+        contentType: posts.contentType,
+        sourceMetadata: posts.sourceMetadata,
+        status: posts.status,
+        createdAt: posts.createdAt,
+        updatedAt: posts.updatedAt,
+      });
+  } catch (error) {
+    if (
+      isPgUniqueViolation(error) &&
+      isConstraintViolation(error, "posts_org_slug_uidx")
+    ) {
+      return c.json({ error: "A post with this slug already exists" }, 409);
+    }
+
+    throw error;
+  }
+
+  const [updatedPost] = updatedRows;
 
   if (!updatedPost) {
     return c.json({ error: "Post not found" }, 404);

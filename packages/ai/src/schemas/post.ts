@@ -1,0 +1,6 @@
+export const POST_SLUG_MAX_LENGTH = 160;
+export const POST_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export function supportsPostSlug(contentType: string) {
+  return contentType === "blog_post" || contentType === "changelog";
+}

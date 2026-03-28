@@ -1,5 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { supportedLanguageSchema } from "@notra/ai/schemas/language";
+import { POST_SLUG_MAX_LENGTH, POST_SLUG_REGEX } from "@notra/ai/schemas/post";
 import { toneProfileSchema } from "@notra/ai/schemas/tone";
 import {
   LOOKBACK_WINDOWS,
@@ -7,8 +8,6 @@ import {
 } from "@notra/content-generation/schemas";
 
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
-const POST_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-
 export const getPostsParamsSchema = z.object({});
 
 export const postStatusSchema = z.enum(["draft", "published"]);
@@ -283,7 +282,7 @@ export const patchPostRequestSchema = z
       .string()
       .trim()
       .min(1)
-      .max(160)
+      .max(POST_SLUG_MAX_LENGTH)
       .regex(
         POST_SLUG_REGEX,
         "Slug must contain lowercase letters, numbers, and hyphens only"
