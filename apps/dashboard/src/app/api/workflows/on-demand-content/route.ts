@@ -346,7 +346,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           });
 
           try {
-            return generateScheduledContent(contentType, {
+            return await generateScheduledContent(contentType, {
               organizationId,
               repositories: repositories.map((repo) => ({
                 integrationId: repo.id,

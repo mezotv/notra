@@ -394,7 +394,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           });
 
           try {
-            return generateScheduledContent(trigger.outputType, {
+            return await generateScheduledContent(trigger.outputType, {
               organizationId: trigger.organizationId,
               repositories: repositoryParams,
               linearIntegrations: linearIntegrationRefs,
