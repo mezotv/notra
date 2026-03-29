@@ -43,7 +43,8 @@
     "LINEAR_CLIENT_ID",
     "LINEAR_CLIENT_SECRET",
     "AXIOM_TOKEN",
-    "AXIOM_AI_DATASET"
+    "AXIOM_AI_DATASET",
+    "AXIOM_ORG_ID"
   ],
   "envMode": "strict",
   "tasks": {
