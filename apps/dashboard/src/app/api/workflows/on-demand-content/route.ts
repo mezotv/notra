@@ -14,6 +14,7 @@ import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq } from "drizzle-orm";
+import { createRequestLogger } from "evlog";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { redis } from "@/lib/redis";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
@@ -331,39 +332,57 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
 
           const sourceTargets = sourceTargetParts.join(", ");
 
-          return generateScheduledContent(contentType, {
-            organizationId,
-            repositories: repositories.map((repo) => ({
-              integrationId: repo.id,
-              owner: repo.owner,
-              repo: repo.repo,
-              defaultBranch: repo.defaultBranch,
-            })),
-            linearIntegrations: linearIntegrationRefs,
-            tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
-            promptInput: {
-              sourceTargets,
-              todayUtc,
-              lookbackLabel: lookback.label,
-              lookbackStartIso: lookback.start.toISOString(),
-              lookbackEndIso: lookback.end.toISOString(),
-              companyName: brand?.companyName ?? undefined,
-              companyDescription: brand?.companyDescription ?? undefined,
-              audience: brand?.audience ?? undefined,
-              customInstructions: customInstructions || null,
-              language: brand?.language ?? undefined,
-            },
-            sourceMetadata,
-            dataPointSettings: dataPoints,
-            selectionFilters,
-            commitWindow: {
-              since: lookback.start.toISOString(),
-              until: lookback.end.toISOString(),
-            },
-            voiceId: brand?.id,
-            resolveContext: getGitHubToolRepositoryContextByIntegrationId,
-            resolveLinearContext: getLinearToolContextByIntegrationId,
+          const log = createRequestLogger({
+            method: "POST",
+            path: "/api/workflows/on-demand-content",
           });
+
+          log.set({
+            feature: "on_demand_content_generation",
+            organizationId,
+            contentType,
+            runId,
+            jobId: jobId ?? null,
+          });
+
+          try {
+            return generateScheduledContent(contentType, {
+              organizationId,
+              repositories: repositories.map((repo) => ({
+                integrationId: repo.id,
+                owner: repo.owner,
+                repo: repo.repo,
+                defaultBranch: repo.defaultBranch,
+              })),
+              linearIntegrations: linearIntegrationRefs,
+              tone: getValidToneProfile(brand?.toneProfile, "Conversational"),
+              promptInput: {
+                sourceTargets,
+                todayUtc,
+                lookbackLabel: lookback.label,
+                lookbackStartIso: lookback.start.toISOString(),
+                lookbackEndIso: lookback.end.toISOString(),
+                companyName: brand?.companyName ?? undefined,
+                companyDescription: brand?.companyDescription ?? undefined,
+                audience: brand?.audience ?? undefined,
+                customInstructions: customInstructions || null,
+                language: brand?.language ?? undefined,
+              },
+              sourceMetadata,
+              dataPointSettings: dataPoints,
+              selectionFilters,
+              commitWindow: {
+                since: lookback.start.toISOString(),
+                until: lookback.end.toISOString(),
+              },
+              voiceId: brand?.id,
+              resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+              resolveLinearContext: getLinearToolContextByIntegrationId,
+              log,
+            });
+          } finally {
+            log.emit();
+          }
         }
       );
 

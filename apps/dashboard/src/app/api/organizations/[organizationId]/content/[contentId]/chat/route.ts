@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { FEATURES } from "@/constants/features";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { autumn } from "@/lib/billing/autumn";
+import { useLogger, withEvlog } from "@/lib/evlog";
 import {
   getGitHubIntegrationById,
   getGitHubToolRepositoryContextByIntegrationId,
@@ -22,11 +23,22 @@ interface RouteContext {
 
 export const maxDuration = 60;
 
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export const POST = withEvlog(async function POST(
+  request: NextRequest,
+  { params }: RouteContext
+) {
   const requestId = nanoid(10);
+  const log = useLogger();
 
   try {
-    const { organizationId } = await params;
+    const { organizationId, contentId } = await params;
+
+    log.set({
+      feature: "content_chat",
+      organizationId,
+      contentId,
+      requestId,
+    });
 
     const auth = await withOrganizationAuth(request, organizationId);
 
@@ -123,6 +135,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           selection,
           context,
           maxSteps: 5,
+          log,
         },
         {
           integrationFetchers: {
@@ -131,6 +144,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
           },
           resolveContext: getGitHubToolRepositoryContextByIntegrationId,
           resolveLinearContext: getLinearToolContextByIntegrationId,
+          log,
         }
       );
 
@@ -182,4 +196,4 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       { status: 500 }
     );
   }
-}
+});

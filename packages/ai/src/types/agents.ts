@@ -1,3 +1,4 @@
+import type { AILogTarget } from "@notra/ai/observability";
 import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "./posts";
@@ -23,6 +24,8 @@ export type ResolveLinearIntegrationContext = (
   integrationId: string,
   options?: { organizationId?: string }
 ) => Promise<LinearToolContext>;
+
+export type { AILogTarget } from "@notra/ai/observability";
 
 export interface AgentDataPointSettings {
   includePullRequests?: boolean;
@@ -61,6 +64,7 @@ export interface ChangelogAgentOptions {
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export interface LinkedInAgentResult {
@@ -88,6 +92,7 @@ export interface LinkedInAgentOptions {
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export interface TwitterAgentResult {
@@ -115,6 +120,7 @@ export interface TwitterAgentOptions {
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export interface BlogPostAgentResult {
@@ -142,6 +148,7 @@ export interface BlogPostAgentOptions {
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export interface ChatAgentContext {
@@ -150,4 +157,5 @@ export interface ChatAgentContext {
   selectedText?: string;
   onMarkdownUpdate: (markdown: string) => void;
   brandContext?: string;
+  log?: AILogTarget;
 }

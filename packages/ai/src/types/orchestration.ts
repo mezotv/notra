@@ -1,3 +1,4 @@
+import type { AILogTarget } from "@notra/ai/observability";
 import type { streamText, UIMessage } from "ai";
 
 export interface ValidatedGitHubIntegration {
@@ -93,6 +94,7 @@ export interface OrchestrateInput {
   selection?: TextSelection;
   context?: ContextItem[];
   maxSteps?: number;
+  log?: AILogTarget;
 }
 
 export interface OrchestrateResult {

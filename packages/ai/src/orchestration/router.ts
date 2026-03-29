@@ -1,7 +1,10 @@
 import { gateway } from "@notra/ai/gateway";
+import {
+  type AILogTarget,
+  wrapModelWithObservability,
+} from "@notra/ai/observability";
 import { ROUTING_PROMPT } from "@notra/ai/prompts/router";
 import { routingDecisionSchema } from "@notra/ai/schemas/orchestration";
-import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import type {
   RoutingDecision,
   RoutingResult,
@@ -17,25 +20,18 @@ const MODELS = {
 export async function routeMessage(
   userMessage: string,
   hasGitHubContext: boolean,
-  organizationId?: string
+  log?: AILogTarget
 ): Promise<RoutingDecision> {
   const contextHint = hasGitHubContext
     ? "\n\nNote: The user has added GitHub repository context, suggesting they may want to work with GitHub data."
     : "";
 
-  const routerModel = gateway(MODELS.router);
+  const routerModel = wrapModelWithObservability(gateway(MODELS.router), log);
 
   const { output } = await generateText({
     model: routerModel,
     output: Output.object({ schema: routingDecisionSchema }),
     system: ROUTING_PROMPT,
-    experimental_telemetry: await getAISDKTelemetry("routeMessage", {
-      organizationId,
-      metadata: {
-        agent: "router",
-        feature: "chat_routing",
-      },
-    }),
     prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
@@ -54,13 +50,9 @@ export function selectModel(decision: RoutingDecision): string {
 export async function routeAndSelectModel(
   userMessage: string,
   hasGitHubContext: boolean,
-  organizationId?: string
+  log?: AILogTarget
 ): Promise<RoutingResult> {
-  const decision = await routeMessage(
-    userMessage,
-    hasGitHubContext,
-    organizationId
-  );
+  const decision = await routeMessage(userMessage, hasGitHubContext, log);
   const model = selectModel(decision);
 
   return {

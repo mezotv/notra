@@ -23,6 +23,7 @@ export async function handleLinkedIn(
       autoPublish: ctx.autoPublish,
       resolveContext: ctx.resolveContext,
       resolveLinearContext: ctx.resolveLinearContext,
+      log: ctx.log,
     });
 
     return { status: "ok", postId, title, posts };

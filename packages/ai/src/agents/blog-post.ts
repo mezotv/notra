@@ -5,7 +5,6 @@ import { getFormalBlogPostPrompt } from "@notra/ai/prompts/blog_post/formal";
 import { getProfessionalBlogPostPrompt } from "@notra/ai/prompts/blog_post/professional";
 import { getUserPrompt } from "@notra/ai/prompts/user";
 import { getValidToneProfile, type ToneProfile } from "@notra/ai/schemas/brand";
-import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import { createGetBrandReferencesTool } from "@notra/ai/tools/brand-references";
 import { buildGitHubDataTools } from "@notra/ai/tools/github";
 import { buildLinearDataTools } from "@notra/ai/tools/linear";
@@ -50,6 +49,7 @@ export async function generateBlogPost(
     autoPublish,
     resolveContext,
     resolveLinearContext,
+    log,
   } = options;
 
   if (
@@ -61,7 +61,12 @@ export async function generateBlogPost(
     );
   }
 
-  const model = createModel(organizationId, "anthropic/claude-haiku-4.5");
+  const model = createModel(
+    organizationId,
+    "anthropic/claude-haiku-4.5",
+    undefined,
+    log
+  );
 
   const resolvedTone = getValidToneProfile(tone, "Conversational");
 
@@ -88,13 +93,6 @@ export async function generateBlogPost(
 
   const agent = new ToolLoopAgent({
     model,
-    experimental_telemetry: await getAISDKTelemetry("generateBlogPost", {
-      organizationId,
-      metadata: {
-        agent: "blog_post",
-        contentType: "blog_post",
-      },
-    }),
     providerOptions: {
       anthropic: {
         thinking: { type: "enabled", budgetTokens: 4096 },

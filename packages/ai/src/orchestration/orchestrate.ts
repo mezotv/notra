@@ -1,6 +1,6 @@
 import { createModel } from "@notra/ai/model";
+import type { AILogTarget } from "@notra/ai/observability";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
-import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import type {
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
@@ -32,6 +32,7 @@ export interface OrchestrateDeps {
   integrationFetchers?: IntegrationFetchers;
   resolveContext?: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export async function orchestrateChat(
@@ -46,7 +47,10 @@ export async function orchestrateChat(
     selection,
     context = [],
     maxSteps = 1,
+    log: inputLog,
   } = input;
+
+  const log = deps?.log ?? inputLog;
 
   const validatedIntegrations = await validateIntegrations(
     organizationId,
@@ -61,7 +65,8 @@ export async function orchestrateChat(
   const lastUserMessage = getLastUserMessage(messages);
   const routingDecision = await routeAndSelectModel(
     lastUserMessage,
-    hasDataSources
+    hasDataSources,
+    log
   );
 
   console.log("[Chat Routing]", {
@@ -73,7 +78,12 @@ export async function orchestrateChat(
     hasLinear,
   });
 
-  const modelWithMemory = createModel(organizationId, routingDecision.model);
+  const modelWithMemory = createModel(
+    organizationId,
+    routingDecision.model,
+    undefined,
+    log
+  );
 
   const { tools, descriptions } = buildToolSet(
     {
@@ -106,13 +116,6 @@ export async function orchestrateChat(
     messages: await convertToModelMessages(messages),
     tools,
     stopWhen: stepCountIs(maxSteps),
-    experimental_telemetry: await getAISDKTelemetry("orchestrateChat", {
-      organizationId,
-      metadata: {
-        agent: "chat",
-        feature: "content_editor",
-      },
-    }),
     onError({ error }) {
       console.error("[Chat Stream Error]", {
         organizationId,

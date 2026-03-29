@@ -1,6 +1,5 @@
 import { createModel } from "@notra/ai/model";
 import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
-import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import type { ChatAgentContext } from "@notra/ai/types/agents";
@@ -11,10 +10,15 @@ export async function createChatAgent(
   instruction: string
 ) {
   const { organizationId } = context;
-  const decision = await routeMessage(instruction, false, organizationId);
+  const decision = await routeMessage(instruction, false, context.log);
   const model = selectModel(decision);
 
-  const modelWithMemory = createModel(context.organizationId, model);
+  const modelWithMemory = createModel(
+    context.organizationId,
+    model,
+    undefined,
+    context.log
+  );
 
   const { getMarkdown, editMarkdown } = createMarkdownTools({
     currentMarkdown: context.currentMarkdown,
@@ -31,13 +35,6 @@ export async function createChatAgent(
 
   return new ToolLoopAgent({
     model: modelWithMemory,
-    experimental_telemetry: await getAISDKTelemetry("createChatAgent", {
-      organizationId,
-      metadata: {
-        agent: "chat",
-        feature: "markdown_editor",
-      },
-    }),
     tools: {
       getMarkdown,
       editMarkdown,

@@ -5,7 +5,6 @@ import { getFormalTwitterPrompt } from "@notra/ai/prompts/twitter/formal";
 import { getProfessionalTwitterPrompt } from "@notra/ai/prompts/twitter/professional";
 import { getUserPrompt } from "@notra/ai/prompts/user";
 import { getValidToneProfile, type ToneProfile } from "@notra/ai/schemas/brand";
-import { getAISDKTelemetry } from "@notra/ai/telemetry";
 import {
   createGetBrandReferencesTool,
   createSearchBrandReferencesTool,
@@ -53,6 +52,7 @@ export async function generateTwitterPost(
     autoPublish,
     resolveContext,
     resolveLinearContext,
+    log,
   } = options;
 
   if (
@@ -64,7 +64,12 @@ export async function generateTwitterPost(
     );
   }
 
-  const model = createModel(organizationId, "anthropic/claude-haiku-4.5");
+  const model = createModel(
+    organizationId,
+    "anthropic/claude-haiku-4.5",
+    undefined,
+    log
+  );
 
   const resolvedTone = getValidToneProfile(tone, "Conversational");
 
@@ -91,13 +96,6 @@ export async function generateTwitterPost(
 
   const agent = new ToolLoopAgent({
     model,
-    experimental_telemetry: await getAISDKTelemetry("generateTwitterPost", {
-      organizationId,
-      metadata: {
-        agent: "twitter",
-        contentType: "twitter_post",
-      },
-    }),
     providerOptions: {
       anthropic: {
         thinking: { type: "enabled", budgetTokens: 4096 },

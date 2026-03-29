@@ -16,6 +16,7 @@ import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
+import { createRequestLogger } from "evlog";
 import { FEATURES } from "@/constants/features";
 import { GITHUB_RATE_LIMIT_RETRY_DELAY } from "@/constants/workflows";
 import { autumn } from "@/lib/billing/autumn";
@@ -379,23 +380,41 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             "Conversational"
           );
 
-          return generateScheduledContent(trigger.outputType, {
-            organizationId: trigger.organizationId,
-            repositories: repositoryParams,
-            linearIntegrations: linearIntegrationRefs,
-            tone,
-            promptInput,
-            sourceMetadata,
-            dataPointSettings,
-            commitWindow: {
-              since: lookbackRange.start.toISOString(),
-              until: lookbackRange.end.toISOString(),
-            },
-            voiceId: brand?.id,
-            autoPublish: trigger.autoPublish,
-            resolveContext: getGitHubToolRepositoryContextByIntegrationId,
-            resolveLinearContext: getLinearToolContextByIntegrationId,
+          const log = createRequestLogger({
+            method: "POST",
+            path: "/api/workflows/schedule",
           });
+
+          log.set({
+            feature: "scheduled_content_generation",
+            organizationId: trigger.organizationId,
+            triggerId,
+            outputType: trigger.outputType,
+            manual,
+          });
+
+          try {
+            return generateScheduledContent(trigger.outputType, {
+              organizationId: trigger.organizationId,
+              repositories: repositoryParams,
+              linearIntegrations: linearIntegrationRefs,
+              tone,
+              promptInput,
+              sourceMetadata,
+              dataPointSettings,
+              commitWindow: {
+                since: lookbackRange.start.toISOString(),
+                until: lookbackRange.end.toISOString(),
+              },
+              voiceId: brand?.id,
+              autoPublish: trigger.autoPublish,
+              resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+              resolveLinearContext: getLinearToolContextByIntegrationId,
+              log,
+            });
+          } finally {
+            log.emit();
+          }
         }
       );
 

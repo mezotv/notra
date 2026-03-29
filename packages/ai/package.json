@@ -8,7 +8,7 @@
   "exports": {
     "./gateway": "./src/gateway.ts",
     "./model": "./src/model.ts",
-    "./telemetry": "./src/telemetry.ts",
+    "./observability": "./src/observability.ts",
     "./agents/*": "./src/agents/*.ts",
     "./orchestration/*": "./src/orchestration/*.ts",
     "./tools/*": "./src/tools/*.ts",
@@ -34,6 +34,7 @@
     "ai": "^6.0.116",
     "dedent": "^1.7.1",
     "drizzle-orm": "^0.45.1",
+    "evlog": "^2.10.0",
     "gray-matter": "^4.0.3",
     "marked": "^17.0.1",
     "nanoid": "^5.1.6",

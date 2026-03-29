@@ -1,6 +1,7 @@
 import type { ToneProfile } from "@notra/ai/schemas/tone";
 import type {
   AgentDataPointSettings,
+  AILogTarget,
   LinearIntegrationRef,
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
@@ -42,6 +43,7 @@ export interface ContentGenerationContext {
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  log?: AILogTarget;
 }
 
 export type ContentGenerationResult =
