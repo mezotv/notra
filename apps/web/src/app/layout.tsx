@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import FooterSection from "../components/footer-section";
 import { Navbar } from "../components/navbar";
 import { ThemeProvider } from "../components/theme-provider";
+import { Providers } from "../utils/providers";
 
 import "@/styles/globals.css";
 
@@ -80,6 +81,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${instrumentSerif.variable} antialiased`}
       >
+        <Providers>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -112,6 +114,7 @@ export default function RootLayout({
           />
           <Analytics />
         </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

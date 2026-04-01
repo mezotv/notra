@@ -463,6 +463,36 @@ export const posts = pgTable(
   ]
 );
 
+export const marketplaceBrands = pgTable(
+  "marketplace_brands",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    companyName: text("company_name").notNull(),
+    companyDescription: text("company_description"),
+    websiteUrl: text("website_url").notNull(),
+    logoUrl: text("logo_url"),
+    accentColor: text("accent_color"),
+    toneProfile: text("tone_profile"),
+    customTone: text("custom_tone"),
+    audience: text("audience"),
+    language: text("language").default("English"),
+    customInstructions: text("custom_instructions"),
+    category: text("category").notNull(),
+    featured: boolean("featured").default(false).notNull(),
+    references: jsonb("references").notNull().default(sql`'[]'::jsonb`),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("marketplaceBrands_slug_uidx").on(table.slug),
+    index("marketplaceBrands_category_idx").on(table.category),
+  ]
+);
+
 export interface PostSourceMetadata {
   triggerId: string;
   triggerSourceType: string;

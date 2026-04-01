@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
-  transpilePackages: ["@notra/ui"],
+  transpilePackages: ["@notra/ui", "@notra/db"],
   rewrites: async () => ({
     beforeFiles: [
       {
@@ -153,7 +153,7 @@ const nextConfig: NextConfig = {
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' databuddy.cc *.databuddy.cc",
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self'",
-            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc",
+            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc www.google.com *.gstatic.com icons.duckduckgo.com",
             "connect-src 'self' databuddy.cc *.databuddy.cc",
             "frame-src 'none'",
             "frame-ancestors 'none'",
@@ -168,6 +168,17 @@ const nextConfig: NextConfig = {
   ],
   images: {
     formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "www.google.com",
+        pathname: "/s2/favicons/**",
+      },
+      {
+        protocol: "https",
+        hostname: "icons.duckduckgo.com",
+      },
+    ],
   },
 };
 

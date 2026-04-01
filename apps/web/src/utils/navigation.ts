@@ -12,6 +12,10 @@ export const MARKETING_NAV_LINKS = [
     label: "Blog",
   },
   {
+    href: "/marketplace",
+    label: "Marketplace",
+  },
+  {
     href: "/changelog/notra",
     label: "What's New",
   },
