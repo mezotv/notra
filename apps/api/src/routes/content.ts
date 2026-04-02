@@ -278,11 +278,19 @@ async function getTriggersForBrandIdentity(
   });
 }
 
+type IntegrationTrigger = Awaited<
+  ReturnType<typeof getTriggersForIntegration>
+>[number];
+type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
+
 async function getTriggersForIntegration(
   db: DbClient,
   organizationId: string,
   integrationId: string
 ) {
+  // Triggers currently persist both GitHub integration IDs and Linear selections
+  // inside targets.repositoryIds. Linear values are stored with a `linear:` prefix.
+  // This mirrors the trigger contract used by the dashboard today.
   const allTriggers = await db.query.contentTriggers.findMany({
     where: eq(contentTriggers.organizationId, organizationId),
     columns: {
@@ -294,6 +302,8 @@ async function getTriggersForIntegration(
     },
   });
 
+  // We already fetch all org triggers for brand-identity cleanup, and trigger counts
+  // are expected to stay small enough that an in-memory filter is acceptable here.
   return allTriggers.filter((trigger) => {
     const targets = trigger.targets as
       | {
@@ -310,6 +320,56 @@ async function getTriggersForIntegration(
         targetId === integrationId || targetId === `linear:${integrationId}`
     );
   });
+}
+
+async function disableTriggersAndDeleteIntegration(
+  db: DbClient,
+  organizationId: string,
+  affectedTriggers: IntegrationTrigger[],
+  deleteIntegration: (tx: DbTransaction) => Promise<unknown>
+) {
+  await db.transaction(async (tx) => {
+    if (affectedTriggers.length > 0) {
+      await tx
+        .update(contentTriggers)
+        .set({
+          enabled: false,
+          qstashScheduleId: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(contentTriggers.organizationId, organizationId),
+            inArray(
+              contentTriggers.id,
+              affectedTriggers.map((trigger) => trigger.id)
+            )
+          )
+        );
+    }
+
+    await deleteIntegration(tx);
+  });
+}
+
+async function deleteQstashSchedulesForTriggers(
+  runtimeEnv: Record<string, unknown>,
+  affectedTriggers: IntegrationTrigger[]
+) {
+  for (const trigger of affectedTriggers) {
+    if (!trigger.qstashScheduleId) {
+      continue;
+    }
+
+    await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
+      (error) => {
+        console.error(
+          `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+          error
+        );
+      }
+    );
+  }
 }
 
 async function resolveRequestedRepositoryIds(
@@ -2764,7 +2824,7 @@ contentRoutes.openapi(deleteIntegrationRoute, async (c) => {
   }
 
   const { integrationId } = c.req.valid("param");
-  const runtimeEnv = c.env ?? {};
+  const runtimeEnv = (c.env ?? {}) as Record<string, unknown>;
   const db = c.get("db");
   const organization = await getOrganizationResponse(db, orgId);
 
@@ -2789,48 +2849,22 @@ contentRoutes.openapi(deleteIntegrationRoute, async (c) => {
       integrationId
     );
 
-    for (const trigger of affectedTriggers) {
-      if (!trigger.qstashScheduleId) {
-        continue;
-      }
-
-      await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
-        (error) => {
-          console.error(
-            `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
-            error
-          );
-        }
-      );
-    }
-
-    if (affectedTriggers.length > 0) {
-      await db
-        .update(contentTriggers)
-        .set({
-          enabled: false,
-          qstashScheduleId: null,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(contentTriggers.organizationId, orgId),
-            inArray(
-              contentTriggers.id,
-              affectedTriggers.map((trigger) => trigger.id)
+    await disableTriggersAndDeleteIntegration(
+      db,
+      orgId,
+      affectedTriggers,
+      (tx) =>
+        tx
+          .delete(githubIntegrations)
+          .where(
+            and(
+              eq(githubIntegrations.id, integrationId),
+              eq(githubIntegrations.organizationId, orgId)
             )
           )
-        );
-    }
+    );
 
-    await db
-      .delete(githubIntegrations)
-      .where(
-        and(
-          eq(githubIntegrations.id, integrationId),
-          eq(githubIntegrations.organizationId, orgId)
-        )
-      );
+    await deleteQstashSchedulesForTriggers(runtimeEnv, affectedTriggers);
 
     return c.json(
       {
@@ -2868,48 +2902,18 @@ contentRoutes.openapi(deleteIntegrationRoute, async (c) => {
     integrationId
   );
 
-  for (const trigger of affectedTriggers) {
-    if (!trigger.qstashScheduleId) {
-      continue;
-    }
-
-    await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
-      (error) => {
-        console.error(
-          `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
-          error
-        );
-      }
-    );
-  }
-
-  if (affectedTriggers.length > 0) {
-    await db
-      .update(contentTriggers)
-      .set({
-        enabled: false,
-        qstashScheduleId: null,
-        updatedAt: new Date(),
-      })
+  await disableTriggersAndDeleteIntegration(db, orgId, affectedTriggers, (tx) =>
+    tx
+      .delete(linearIntegrations)
       .where(
         and(
-          eq(contentTriggers.organizationId, orgId),
-          inArray(
-            contentTriggers.id,
-            affectedTriggers.map((trigger) => trigger.id)
-          )
+          eq(linearIntegrations.id, integrationId),
+          eq(linearIntegrations.organizationId, orgId)
         )
-      );
-  }
-
-  await db
-    .delete(linearIntegrations)
-    .where(
-      and(
-        eq(linearIntegrations.id, integrationId),
-        eq(linearIntegrations.organizationId, orgId)
       )
-    );
+  );
+
+  await deleteQstashSchedulesForTriggers(runtimeEnv, affectedTriggers);
 
   return c.json(
     {
