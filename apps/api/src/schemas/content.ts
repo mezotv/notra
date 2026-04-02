@@ -147,6 +147,20 @@ export const getBrandIdentityParamsSchema = z.object({
     }),
 });
 
+export const getIntegrationParamsSchema = z.object({
+  integrationId: z
+    .string()
+    .trim()
+    .min(1, "integrationId is required")
+    .openapi({
+      param: {
+        in: "path",
+        name: "integrationId",
+      },
+      example: "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561",
+    }),
+});
+
 export const errorResponseSchema = z
   .object({
     error: z.string(),
@@ -445,6 +459,13 @@ export const deleteBrandIdentityResponseSchema = z.object({
 export const deletePostResponseSchema = z.object({
   id: z.string(),
   organization: organizationResponseSchema,
+});
+
+export const deleteIntegrationResponseSchema = z.object({
+  id: z.string(),
+  organization: organizationResponseSchema,
+  disabledSchedules: z.array(disabledTriggerSchema),
+  disabledEvents: z.array(disabledTriggerSchema),
 });
 
 export const getBrandIdentitiesResponseSchema = z.object({

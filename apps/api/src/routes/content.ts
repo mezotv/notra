@@ -38,6 +38,7 @@ import {
   createPostGenerationRequestSchema,
   createPostGenerationResponseSchema,
   deleteBrandIdentityResponseSchema,
+  deleteIntegrationResponseSchema,
   deletePostResponseSchema,
   errorResponseSchema,
   generationQueueErrorResponseSchema,
@@ -46,6 +47,7 @@ import {
   getBrandIdentitiesResponseSchema,
   getBrandIdentityParamsSchema,
   getBrandIdentityResponseSchema,
+  getIntegrationParamsSchema,
   getIntegrationsResponseSchema,
   getPostGenerationParamsSchema,
   getPostGenerationResponseSchema,
@@ -273,6 +275,40 @@ async function getTriggersForBrandIdentity(
     } | null;
 
     return config?.brandVoiceId === brandIdentityId;
+  });
+}
+
+async function getTriggersForIntegration(
+  db: DbClient,
+  organizationId: string,
+  integrationId: string
+) {
+  const allTriggers = await db.query.contentTriggers.findMany({
+    where: eq(contentTriggers.organizationId, organizationId),
+    columns: {
+      id: true,
+      name: true,
+      sourceType: true,
+      targets: true,
+      qstashScheduleId: true,
+    },
+  });
+
+  return allTriggers.filter((trigger) => {
+    const targets = trigger.targets as
+      | {
+          repositoryIds?: string[];
+        }
+      | undefined;
+
+    if (!targets?.repositoryIds?.length) {
+      return false;
+    }
+
+    return targets.repositoryIds.some(
+      (targetId) =>
+        targetId === integrationId || targetId === `linear:${integrationId}`
+    );
   });
 }
 
@@ -1435,6 +1471,61 @@ const createGitHubIntegrationRoute = createRoute({
     },
     503: {
       description: "Authentication or integration service unavailable",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+const deleteIntegrationRoute = createRoute({
+  method: "delete",
+  path: "/integrations/{integrationId}",
+  tags: ["Content"],
+  operationId: "deleteIntegration",
+  summary: "Delete a single integration",
+  description:
+    "Deletes a GitHub or Linear integration. Any automation triggers targeting a deleted GitHub integration are disabled.",
+  request: {
+    params: getIntegrationParamsSchema,
+  },
+  responses: {
+    200: {
+      description: "Integration deleted successfully",
+      content: {
+        "application/json": {
+          schema: deleteIntegrationResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Missing or invalid API key",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Integration not found",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    503: {
+      description: "Authentication service unavailable",
       content: {
         "application/json": {
           schema: errorResponseSchema,
@@ -2661,6 +2752,178 @@ contentRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
       400
     );
   }
+});
+
+contentRoutes.openapi(deleteIntegrationRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { integrationId } = c.req.valid("param");
+  const runtimeEnv = c.env ?? {};
+  const db = c.get("db");
+  const organization = await getOrganizationResponse(db, orgId);
+
+  if (!organization) {
+    return c.json({ error: "Organization not found" }, 404);
+  }
+
+  const githubIntegration = await db.query.githubIntegrations.findFirst({
+    where: and(
+      eq(githubIntegrations.id, integrationId),
+      eq(githubIntegrations.organizationId, orgId)
+    ),
+    columns: {
+      id: true,
+    },
+  });
+
+  if (githubIntegration) {
+    const affectedTriggers = await getTriggersForIntegration(
+      db,
+      orgId,
+      integrationId
+    );
+
+    for (const trigger of affectedTriggers) {
+      if (!trigger.qstashScheduleId) {
+        continue;
+      }
+
+      await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
+        (error) => {
+          console.error(
+            `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+            error
+          );
+        }
+      );
+    }
+
+    if (affectedTriggers.length > 0) {
+      await db
+        .update(contentTriggers)
+        .set({
+          enabled: false,
+          qstashScheduleId: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(contentTriggers.organizationId, orgId),
+            inArray(
+              contentTriggers.id,
+              affectedTriggers.map((trigger) => trigger.id)
+            )
+          )
+        );
+    }
+
+    await db
+      .delete(githubIntegrations)
+      .where(
+        and(
+          eq(githubIntegrations.id, integrationId),
+          eq(githubIntegrations.organizationId, orgId)
+        )
+      );
+
+    return c.json(
+      {
+        id: integrationId,
+        organization,
+        disabledSchedules: affectedTriggers
+          .filter((trigger) => trigger.sourceType === "cron")
+          .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+        disabledEvents: affectedTriggers
+          .filter((trigger) => trigger.sourceType !== "cron")
+          .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+      },
+      200
+    );
+  }
+
+  const [deletedLinearIntegration] = await db
+    .select({ id: linearIntegrations.id })
+    .from(linearIntegrations)
+    .where(
+      and(
+        eq(linearIntegrations.id, integrationId),
+        eq(linearIntegrations.organizationId, orgId)
+      )
+    )
+    .limit(1);
+
+  if (!deletedLinearIntegration) {
+    return c.json({ error: "Integration not found" }, 404);
+  }
+
+  const affectedTriggers = await getTriggersForIntegration(
+    db,
+    orgId,
+    integrationId
+  );
+
+  for (const trigger of affectedTriggers) {
+    if (!trigger.qstashScheduleId) {
+      continue;
+    }
+
+    await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
+      (error) => {
+        console.error(
+          `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
+          error
+        );
+      }
+    );
+  }
+
+  if (affectedTriggers.length > 0) {
+    await db
+      .update(contentTriggers)
+      .set({
+        enabled: false,
+        qstashScheduleId: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(contentTriggers.organizationId, orgId),
+          inArray(
+            contentTriggers.id,
+            affectedTriggers.map((trigger) => trigger.id)
+          )
+        )
+      );
+  }
+
+  await db
+    .delete(linearIntegrations)
+    .where(
+      and(
+        eq(linearIntegrations.id, integrationId),
+        eq(linearIntegrations.organizationId, orgId)
+      )
+    );
+
+  return c.json(
+    {
+      id: deletedLinearIntegration.id,
+      organization,
+      disabledSchedules: affectedTriggers
+        .filter((trigger) => trigger.sourceType === "cron")
+        .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+      disabledEvents: affectedTriggers
+        .filter((trigger) => trigger.sourceType !== "cron")
+        .map((trigger) => ({ id: trigger.id, name: trigger.name })),
+    },
+    200
+  );
 });
 
 contentRoutes.openapi(getPostGenerationRoute, async (c) => {
