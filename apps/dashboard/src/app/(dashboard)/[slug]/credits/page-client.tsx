@@ -108,7 +108,7 @@ export default function CreditsPageClient() {
   });
 
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
-    queryKey: ["credit-events", FEATURES.AI_CREDITS],
+    queryKey: ["credit-events", FEATURES.AI_CREDITS, slug],
     queryFn: async () => {
       const res = await fetch("/api/autumn/events/list", {
         method: "POST",
@@ -119,6 +119,9 @@ export default function CreditsPageClient() {
           limit: 20,
         }),
       });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch events: ${res.status}`);
+      }
       return res.json() as Promise<CreditEventsResponse>;
     },
   });
