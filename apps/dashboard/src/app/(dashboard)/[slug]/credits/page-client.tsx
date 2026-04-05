@@ -22,11 +22,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { cn } from "@notra/ui/lib/utils";
-import {
-  useAggregateEvents,
-  useCustomer,
-  useListEvents,
-} from "autumn-js/react";
+import { useQuery } from "@tanstack/react-query";
+import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -39,6 +36,7 @@ import {
   CREDIT_RANGES,
   type CreditRangeOption,
 } from "@/types/billing/credits";
+import type { CreditEvent, CreditEventsResponse } from "@/types/billing/events";
 import {
   formatDollars,
   formatFullDate,
@@ -55,7 +53,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-function renderEventRows(events: ReturnType<typeof useListEvents>["list"]) {
+function renderEventRows(events: CreditEvent[] | undefined) {
   if (!events?.length) {
     return (
       <TableRow>
@@ -71,8 +69,7 @@ function renderEventRows(events: ReturnType<typeof useListEvents>["list"]) {
 
   return events.map((event) => {
     const outputType =
-      "output_type" in event.properties &&
-      typeof event.properties.output_type === "string"
+      typeof event.properties?.output_type === "string"
         ? event.properties.output_type
         : undefined;
 
@@ -110,10 +107,22 @@ export default function CreditsPageClient() {
     binSize: "day",
   });
 
-  const { list: eventsList, isLoading: eventsLoading } = useListEvents({
-    featureId: FEATURES.AI_CREDITS,
-    limit: 20,
+  const { data: eventsData, isLoading: eventsLoading } = useQuery({
+    queryKey: ["credit-events", FEATURES.AI_CREDITS],
+    queryFn: async () => {
+      const res = await fetch("/api/autumn/events/list", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          feature_id: FEATURES.AI_CREDITS,
+          limit: 20,
+        }),
+      });
+      return res.json() as Promise<CreditEventsResponse>;
+    },
   });
+  const eventsList = eventsData?.list;
 
   const aiCredits = customer?.balances?.[FEATURES.AI_CREDITS];
   const aiCreditsBalance =
