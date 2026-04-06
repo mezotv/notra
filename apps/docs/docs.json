@@ -90,6 +90,7 @@
         "tab": "API & SDK",
         "pages": [
           "api/getting-started",
+          "api/rust-sdk",
           "api/authentication",
           "api/caching",
           "api/common-tasks",
