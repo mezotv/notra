@@ -1,8 +1,14 @@
 import { Databuddy } from "@databuddy/sdk/node";
 import type {
-  ScheduledContentCreatedEvent,
-  ScheduledContentFailedEvent,
-} from "@/types/lib/databuddy";
+  ContentCreatedTrackingEvent,
+  ContentFailedTrackingEvent,
+} from "@notra/content-generation/databuddy";
+import {
+  buildContentCreatedDatabuddyProperties,
+  buildContentFailedDatabuddyProperties,
+  CONTENT_CREATED_DATABUDDY_EVENT,
+  CONTENT_FAILED_DATABUDDY_EVENT,
+} from "@notra/content-generation/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
 
@@ -23,7 +29,7 @@ export const databuddy = apiKey
 const isDevelopment = process.env.NODE_ENV === "development";
 
 export async function trackScheduledContentCreated(
-  event: ScheduledContentCreatedEvent
+  event: ContentCreatedTrackingEvent
 ): Promise<void> {
   if (!databuddy) {
     return;
@@ -31,17 +37,10 @@ export async function trackScheduledContentCreated(
 
   try {
     const result = await databuddy.track({
-      name: "scheduled_content_created",
+      name: CONTENT_CREATED_DATABUDDY_EVENT,
       namespace: "workflows",
       source: event.source ?? "schedule",
-      properties: {
-        trigger_id: event.triggerId,
-        organization_id: event.organizationId,
-        post_id: event.postId,
-        output_type: event.outputType,
-        lookback_window: event.lookbackWindow,
-        repository_count: event.repositoryCount,
-      },
+      properties: buildContentCreatedDatabuddyProperties(event),
     });
 
     if (!result.success && isDevelopment) {
@@ -63,7 +62,7 @@ export async function trackScheduledContentCreated(
 }
 
 export async function trackScheduledContentFailed(
-  event: ScheduledContentFailedEvent
+  event: ContentFailedTrackingEvent
 ): Promise<void> {
   if (!databuddy) {
     return;
@@ -71,17 +70,10 @@ export async function trackScheduledContentFailed(
 
   try {
     const result = await databuddy.track({
-      name: "scheduled_content_failed",
+      name: CONTENT_FAILED_DATABUDDY_EVENT,
       namespace: "workflows",
       source: event.source ?? "schedule",
-      properties: {
-        trigger_id: event.triggerId,
-        organization_id: event.organizationId,
-        output_type: event.outputType,
-        reason: event.reason,
-        lookback_window: event.lookbackWindow,
-        repository_count: event.repositoryCount,
-      },
+      properties: buildContentFailedDatabuddyProperties(event),
     });
 
     if (!result.success && isDevelopment) {

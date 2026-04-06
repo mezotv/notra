@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@databuddy/sdk": "^2.3.29",
-    "@hugeicons/core-free-icons": "^3.1.1",
+    "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.5",
     "@notra/ui": "workspace:*",
     "@tailwindcss/typography": "^0.5.19",

@@ -7,7 +7,4 @@ updates:
       - "/packages/*"
     schedule:
       interval: "weekly"
-    groups:
-      workspace-dependencies:
-        applies-to: "version-updates"
-        group-by: "dependency-name"
+    open-pull-requests-limit: 0
