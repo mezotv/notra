@@ -1,13 +1,13 @@
 import { Databuddy } from "@databuddy/sdk/node";
+import type {
+  ContentCreatedTrackingEvent,
+  ContentFailedTrackingEvent,
+} from "@notra/content-generation/databuddy";
 import {
   buildContentCreatedDatabuddyProperties,
   buildContentFailedDatabuddyProperties,
   CONTENT_CREATED_DATABUDDY_EVENT,
   CONTENT_FAILED_DATABUDDY_EVENT,
-} from "@notra/content-generation/databuddy";
-import type {
-  ContentCreatedTrackingEvent,
-  ContentFailedTrackingEvent,
 } from "@notra/content-generation/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
