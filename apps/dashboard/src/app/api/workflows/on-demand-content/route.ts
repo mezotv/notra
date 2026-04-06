@@ -18,6 +18,10 @@ import { createRequestLogger } from "evlog";
 import { FEATURES } from "@/constants/features";
 import { autumn } from "@/lib/billing/autumn";
 import { calculateTokenCostCents } from "@/lib/billing/token-pricing";
+import {
+  trackScheduledContentCreated,
+  trackScheduledContentFailed,
+} from "@/lib/databuddy";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { redis } from "@/lib/redis";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
@@ -208,6 +212,29 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       });
       await context.run("refund-no-sources", async () => {
         await refundReservedAiCredit(organizationId, aiCreditReserved);
+      });
+      await context.run("track-content-failed-no-sources", async () => {
+        try {
+          await trackScheduledContentFailed({
+            triggerId: "manual_on_demand",
+            organizationId,
+            outputType: contentType,
+            creationMode: "manual",
+            reason: "No valid data sources found",
+            lookbackWindow,
+            repositoryCount: 0,
+            source: "on_demand",
+          });
+        } catch (trackingError) {
+          console.error(
+            "[OnDemandContent] Failed to track no-sources failure",
+            {
+              organizationId,
+              contentType,
+              error: trackingError,
+            }
+          );
+        }
       });
       await context.cancel();
       return;
@@ -433,6 +460,30 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           await refundReservedAiCredit(organizationId, aiCreditReserved);
         });
 
+        await context.run("track-content-failed", async () => {
+          try {
+            await trackScheduledContentFailed({
+              triggerId: "manual_on_demand",
+              organizationId,
+              outputType: contentType,
+              creationMode: "manual",
+              reason,
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "on_demand",
+            });
+          } catch (trackingError) {
+            console.error(
+              "[OnDemandContent] Failed to track generation failure",
+              {
+                organizationId,
+                contentType,
+                error: trackingError,
+              }
+            );
+          }
+        });
+
         console.error(`[OnDemandContent] Generation failed: ${reason}`, {
           organizationId,
           contentType,
@@ -479,6 +530,30 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
 
         await context.run("refund-no-posts", async () => {
           await refundReservedAiCredit(organizationId, aiCreditReserved);
+        });
+
+        await context.run("track-content-failed-no-posts", async () => {
+          try {
+            await trackScheduledContentFailed({
+              triggerId: "manual_on_demand",
+              organizationId,
+              outputType: contentType,
+              creationMode: "manual",
+              reason: "No content was generated",
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "on_demand",
+            });
+          } catch (trackingError) {
+            console.error(
+              "[OnDemandContent] Failed to track no-posts failure",
+              {
+                organizationId,
+                contentType,
+                error: trackingError,
+              }
+            );
+          }
         });
 
         await context.cancel();
@@ -575,6 +650,45 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
         });
       });
 
+      await context.run("track-content-created", async () => {
+        const trackingResults = await Promise.allSettled(
+          createdPosts.map((createdPost) =>
+            trackScheduledContentCreated({
+              triggerId: "manual_on_demand",
+              organizationId,
+              postId: createdPost.postId,
+              outputType: contentType,
+              creationMode: "manual",
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "on_demand",
+            })
+          )
+        );
+
+        const failedTracking = trackingResults.flatMap((result, index) =>
+          result.status === "rejected"
+            ? [
+                {
+                  postId: createdPosts[index]?.postId ?? "unknown",
+                  error: result.reason,
+                },
+              ]
+            : []
+        );
+
+        if (failedTracking.length > 0) {
+          console.error(
+            "[OnDemandContent] Failed to track some created posts",
+            {
+              organizationId,
+              contentType,
+              failures: failedTracking,
+            }
+          );
+        }
+      });
+
       return { success: true, postId: contentResult.postId };
     } catch (error) {
       if (error instanceof WorkflowAbort) {
@@ -604,6 +718,30 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
 
       await context.run("refund-error", async () => {
         await refundReservedAiCredit(organizationId, aiCreditReserved);
+      });
+
+      await context.run("track-content-failed-error", async () => {
+        try {
+          await trackScheduledContentFailed({
+            triggerId: "manual_on_demand",
+            organizationId,
+            outputType: contentType,
+            creationMode: "manual",
+            reason: "Unexpected workflow error",
+            lookbackWindow,
+            repositoryCount: repositories.length,
+            source: "on_demand",
+          });
+        } catch (trackingError) {
+          console.error(
+            "[OnDemandContent] Failed to track unexpected workflow error",
+            {
+              organizationId,
+              contentType,
+              error: trackingError,
+            }
+          );
+        }
       });
 
       throw error;
@@ -641,6 +779,15 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           payload.organizationId,
           payload.aiCreditReserved
         );
+        await trackScheduledContentFailed({
+          triggerId: "manual_on_demand",
+          organizationId: payload.organizationId,
+          outputType: payload.contentType,
+          creationMode: "manual",
+          reason: "Workflow infrastructure failure",
+          lookbackWindow: payload.lookbackWindow,
+          source: "on_demand",
+        });
       } catch (cleanupError) {
         console.error(
           "[OnDemandContent] Failed to cleanup after workflow failure:",

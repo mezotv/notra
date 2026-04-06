@@ -102,6 +102,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       return;
     }
     const { triggerId, manual } = parseResult.data;
+    const creationMode = manual ? "manual" : "automatic";
 
     // Step 1: Fetch trigger configuration
     const trigger = await context.run<TriggerData | null>(
@@ -586,6 +587,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               triggerId: trigger.id,
               organizationId: trigger.organizationId,
               outputType: trigger.outputType,
+              creationMode,
               reason: contentResult.reason,
               lookbackWindow,
               repositoryCount: repositories.length,
@@ -747,6 +749,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               organizationId: trigger.organizationId,
               postId: createdPost.postId,
               outputType: trigger.outputType,
+              creationMode,
               lookbackWindow,
               repositoryCount: repositories.length,
               source: "schedule",

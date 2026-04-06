@@ -2049,6 +2049,7 @@ contentRoutes.openapi(createPostGenerationRoute, async (c) => {
       dataPoints: body.dataPoints,
       selectedItems: body.selectedItems,
       aiCreditReserved: false,
+      aiCreditMarkup: false,
       source: "api",
     });
 
