@@ -21,7 +21,7 @@
     "@aws-sdk/s3-request-presigner": "^3.990.0",
     "@calcom/embed-react": "^1.5.3",
     "@databuddy/sdk": "^2.3.24",
-    "@hugeicons/core-free-icons": "^3.1.1",
+    "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.4",
     "@lexical/extension": "^0.39.0",
     "@lexical/link": "^0.39.0",
