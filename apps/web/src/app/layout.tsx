@@ -108,7 +108,6 @@ export default function RootLayout({
             trackAttributes={true}
             trackErrors={true}
             trackHashChanges={true}
-            trackScrollDepth={true}
           />
           <Analytics />
         </ThemeProvider>

@@ -57,7 +57,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   trackAttributes={true}
                   trackErrors={true}
                   trackHashChanges={true}
-                  trackScrollDepth={true}
                 />
               )}
             </NuqsAdapter>
