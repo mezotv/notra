@@ -6,6 +6,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
+  admin,
   emailOTP,
   haveIBeenPwned,
   lastLoginMethod,
@@ -193,6 +194,7 @@ export const auth = betterAuth({
     joins: true,
   },
   plugins: [
+    admin(),
     emailOTP({
       otpLength: 6,
       expiresIn: 300,
@@ -300,11 +302,7 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    "http://localhost:3000",
-    "https://app.usenotra.com",
-    "https://www.usenotra.com",
-  ],
+  trustedOrigins: ["http://localhost:3000", "https://app.usenotra.com"],
   session: {
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,

@@ -1,4 +1,5 @@
 import {
+  adminClient,
   emailOTPClient,
   inferOrgAdditionalFields,
   lastLoginMethodClient,
@@ -14,5 +15,6 @@ export const authClient = createAuthClient({
     organizationClient({
       schema: inferOrgAdditionalFields<typeof auth>(),
     }),
+    adminClient(),
   ],
 });
