@@ -16,7 +16,7 @@
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
     "autumn-js": "^1.2.5",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.0",
     "marked": "^16.3.0",
     "sanitize-html": "^2.17.0",

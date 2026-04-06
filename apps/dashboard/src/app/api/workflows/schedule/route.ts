@@ -102,6 +102,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       return;
     }
     const { triggerId, manual } = parseResult.data;
+    const creationMode = manual ? "manual" : "automatic";
 
     // Step 1: Fetch trigger configuration
     const trigger = await context.run<TriggerData | null>(
@@ -552,7 +553,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           );
         }
 
-        console.error(
+        console.log(
           `[Schedule] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
 
@@ -586,13 +587,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               triggerId: trigger.id,
               organizationId: trigger.organizationId,
               outputType: trigger.outputType,
+              creationMode,
               reason: contentResult.reason,
               lookbackWindow,
               repositoryCount: repositories.length,
               source: "schedule",
             });
           } catch (trackingError) {
-            console.error(
+            console.warn(
               "[Schedule] Failed to track content generation failure",
               {
                 triggerId,
@@ -669,7 +671,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                   reason: contentResult.reason,
                 }).then((result) => {
                   if (result.error) {
-                    console.error(
+                    console.warn(
                       `[Schedule] Failed to send failure notification to ${email}:`,
                       result.error
                     );
@@ -687,7 +689,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       const createdPosts = contentResult.posts;
 
       if (createdPosts.length === 0) {
-        console.error("[Schedule] Content generation returned no posts", {
+        console.warn("[Schedule] Content generation returned no posts", {
           triggerId,
           organizationId: trigger.organizationId,
         });
@@ -698,7 +700,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       const [primaryPost] = createdPosts;
 
       if (!primaryPost) {
-        console.error("[Schedule] Missing primary post after generation", {
+        console.warn("[Schedule] Missing primary post after generation", {
           triggerId,
           organizationId: trigger.organizationId,
         });
@@ -747,6 +749,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               organizationId: trigger.organizationId,
               postId: createdPost.postId,
               outputType: trigger.outputType,
+              creationMode,
               lookbackWindow,
               repositoryCount: repositories.length,
               source: "schedule",
@@ -766,7 +769,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         );
 
         if (failedTracking.length > 0) {
-          console.error("[Schedule] Failed to track some created posts", {
+          console.warn("[Schedule] Failed to track some created posts", {
             triggerId,
             organizationId: trigger.organizationId,
             failures: failedTracking,
@@ -852,7 +855,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                 subject,
               }).then((result) => {
                 if (result.error) {
-                  console.error(
+                  console.warn(
                     `[Schedule] Failed to send notification to ${email}:`,
                     result.error
                   );

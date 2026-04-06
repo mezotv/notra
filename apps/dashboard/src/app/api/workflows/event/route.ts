@@ -370,24 +370,22 @@ export const { POST } = serve<EventWorkflowPayload>(
               triggerId: trigger.id,
               organizationId: trigger.organizationId,
               outputType: trigger.outputType,
+              creationMode: "automatic",
               reason: contentResult.reason,
               lookbackWindow,
               repositoryCount: 1,
               source: "event",
             });
           } catch (trackingError) {
-            console.error(
-              "[Event] Failed to track content generation failure",
-              {
-                triggerId,
-                organizationId: trigger.organizationId,
-                error: trackingError,
-              }
-            );
+            console.warn("[Event] Failed to track content generation failure", {
+              triggerId,
+              organizationId: trigger.organizationId,
+              error: trackingError,
+            });
           }
         });
 
-        console.error(
+        console.log(
           `[Event] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
         await context.cancel();
@@ -397,7 +395,7 @@ export const { POST } = serve<EventWorkflowPayload>(
       const createdPosts = contentResult.posts;
 
       if (createdPosts.length === 0) {
-        console.error("[Event] Content generation returned no posts", {
+        console.warn("[Event] Content generation returned no posts", {
           triggerId,
           organizationId: trigger.organizationId,
         });
@@ -408,7 +406,7 @@ export const { POST } = serve<EventWorkflowPayload>(
       const [primaryPost] = createdPosts;
 
       if (!primaryPost) {
-        console.error("[Event] Missing primary post after generation", {
+        console.warn("[Event] Missing primary post after generation", {
           triggerId,
           organizationId: trigger.organizationId,
         });
@@ -458,6 +456,7 @@ export const { POST } = serve<EventWorkflowPayload>(
               organizationId: trigger.organizationId,
               postId: createdPost.postId,
               outputType: trigger.outputType,
+              creationMode: "automatic",
               lookbackWindow,
               repositoryCount: 1,
               source: "event",
@@ -477,7 +476,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         );
 
         if (failedTracking.length > 0) {
-          console.error("[Event] Failed to track some created posts", {
+          console.warn("[Event] Failed to track some created posts", {
             triggerId,
             organizationId: trigger.organizationId,
             failures: failedTracking,
@@ -603,7 +602,7 @@ export const { POST } = serve<EventWorkflowPayload>(
                 subject: `New content created from ${eventType} event`,
               }).then((result) => {
                 if (result.error) {
-                  console.error(
+                  console.warn(
                     `[Event] Failed to send notification to ${email}:`,
                     result.error
                   );
