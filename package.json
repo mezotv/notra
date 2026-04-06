@@ -24,7 +24,7 @@
     "dotenv-cli": "^10.0.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.1",
-    "openlogs": "^0.0.1",
+    "openlogs": "^0.0.2",
     "turbo": "^2.9.3",
     "ultracite": "7.1.4"
   },

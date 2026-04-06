@@ -9,7 +9,7 @@
         "dotenv-cli": "^10.0.0",
         "drizzle-kit": "^0.31.10",
         "drizzle-orm": "^0.45.1",
-        "openlogs": "^0.0.1",
+        "openlogs": "^0.0.2",
         "turbo": "^2.9.3",
         "ultracite": "7.1.4",
       },
@@ -315,13 +315,13 @@
 
     "@ai-sdk/anthropic": ["@ai-sdk/anthropic@2.0.70", "", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.22" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-W3WjQlb0Ho+CVAQUvb8Rtk3hGS3Jlgy79ihY2H0yj2k4yU8XuxpQw0Oz+7JQsB47j+jlHhk7nUXtxhAeRg3S3Q=="],
 
-    "@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.88", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.22", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-AFoj7xdWAtCQcy0jJ235ENSakYM8D28qBX+rB+/rX4r8qe/LXgl0e5UivOqxAlIM5E9jnQdYxIPuj3XFtGk/yg=="],
+    "@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.91", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@ai-sdk/provider-utils": "4.0.23", "@vercel/oidc": "3.1.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-J39Dh6Gyg6HjG3A7OFKnJMp3QyZ3Eex+XDiX8aFBdRwwZm3jGWaMhkCxQPH7yiQ9kRiErZwHXX/Oexx4SyGGGA=="],
 
     "@ai-sdk/openai": ["@ai-sdk/openai@2.0.100", "", { "dependencies": { "@ai-sdk/provider": "2.0.1", "@ai-sdk/provider-utils": "3.0.22" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-HhlNPe/tgQHq78649abqFtnFKtAdYs+ZY34LGnVO0n0d+ciE+3foT45YUprkzectPRFM+v195jmgSuvTqYkXFQ=="],
 
     "@ai-sdk/provider": ["@ai-sdk/provider@3.0.8", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ=="],
 
-    "@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@4.0.22", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@standard-schema/spec": "^1.1.0", "eventsource-parser": "^3.0.6" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-B2OTFcRw/Pdka9ZTjpXv6T6qZ6RruRuLokyb8HwW+aoW9ndJ3YasA3/mVswyJw7VMBF8ofXgqvcrCt9KYvFifg=="],
+    "@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@4.0.23", "", { "dependencies": { "@ai-sdk/provider": "3.0.8", "@standard-schema/spec": "^1.1.0", "eventsource-parser": "^3.0.6" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-z8GlDaCmRSDlqkMF2f4/RFgWxdarvIbyuk+m6WXT1LYgsnGiXRJGTD2Z1+SDl3LqtFuRtGX1aghYvQLoHL/9pg=="],
 
     "@ai-sdk/react": ["@ai-sdk/react@3.0.118", "", { "dependencies": { "@ai-sdk/provider-utils": "4.0.19", "ai": "6.0.116", "swr": "^2.2.5", "throttleit": "2.1.0" }, "peerDependencies": { "react": "^18 || ~19.0.1 || ~19.1.2 || ^19.2.1" } }, "sha512-fBAix8Jftxse6/2YJnOFkwW1/O6EQK4DK68M9DlFmZGAzBmsaHXEPVS77sVIlkaOWCy11bE7434NAVXRY+3OsQ=="],
 
@@ -2891,7 +2891,7 @@
 
     "openapi3-ts": ["openapi3-ts@4.5.0", "", { "dependencies": { "yaml": "^2.8.0" } }, "sha512-jaL+HgTq2Gj5jRcfdutgRGLosCy/hT8sQf6VOy+P+g36cZOjI1iukdPnijC+4CmeRzg/jEllJUboEic2FhxhtQ=="],
 
-    "openlogs": ["openlogs@0.0.1", "", { "bin": { "ol": "src/cli.ts", "openlogs": "src/cli.ts" } }, "sha512-tu2NZpExFyLIb1sridtSq4FM7ImW6TMrGEtJQGy7H/iaZY+QOTZTCy1Bx1VvUWFIdHwVJwXV7KtkdmSKpuGX3w=="],
+    "openlogs": ["openlogs@0.0.2", "", { "peerDependencies": { "react": ">=18", "svelte": ">=4", "vue": ">=3" }, "optionalPeers": ["react", "svelte", "vue"], "bin": { "openlogs": "src/cli.ts", "ol": "src/cli.ts" } }, "sha512-twB0l80GH7GIB7YZvhZ1URmeagrVZ7Gqo8grQzdNpyoSbphNV0j3nkvLFyOgaNUX8ySUEa1a38WSqjJhIPKmOg=="],
 
     "ora": ["ora@8.2.0", "", { "dependencies": { "chalk": "^5.3.0", "cli-cursor": "^5.0.0", "cli-spinners": "^2.9.2", "is-interactive": "^2.0.0", "is-unicode-supported": "^2.0.0", "log-symbols": "^6.0.0", "stdin-discarder": "^0.2.2", "string-width": "^7.2.0", "strip-ansi": "^7.1.0" } }, "sha512-weP+BZ8MVNnlCm8c0Qdc1WSWq4Qn7I+9CJGm7Qali6g44e/PUzbjNqJX5NJ9ljlNMosfJvg1fKEGILklK9cwnw=="],
 
