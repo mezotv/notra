@@ -70,7 +70,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dedent": "^1.7.1",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "evlog": "^2.10.0",
     "gray-matter": "^4.0.3",
     "lexical": "^0.39.0",
