@@ -14,11 +14,11 @@ export function markdownSection(title: string, lines: string[]) {
   return [`## ${title}`, "", ...lines, ""].join("\n");
 }
 
-export function stripFrontmatter(source: string) {
+function stripFrontmatter(source: string) {
   return source.replace(FRONTMATTER_REGEX, "").trim();
 }
 
-export function decodeHtmlEntities(source: string) {
+function decodeHtmlEntities(source: string) {
   const namedEntities: Record<string, string> = {
     amp: "&",
     apos: "'",

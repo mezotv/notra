@@ -15,7 +15,7 @@ export interface NotraBlogPost {
   excerpt: string;
 }
 
-export interface BlogPageHeaderProps {
+interface BlogPageHeaderProps {
   eyebrow?: string;
   title: ReactNode;
   description: ReactNode;
@@ -29,13 +29,13 @@ export interface BlogTimelineItem {
   date: string;
 }
 
-export interface BlogTimelineProps {
+interface BlogTimelineProps {
   items: BlogTimelineItem[];
   emptyTitle?: string;
   emptyDescription?: string;
 }
 
-export interface BlogHtmlArticleProps {
+interface BlogHtmlArticleProps {
   html: string;
 }
 

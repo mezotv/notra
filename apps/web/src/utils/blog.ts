@@ -124,11 +124,11 @@ const fetchBlogPosts = unstable_cache(
   }
 );
 
-export function createBlogPostSlug(post: Pick<NotraBlogPost, "title">) {
+function createBlogPostSlug(post: Pick<NotraBlogPost, "title">) {
   return slugifySegment(post.title);
 }
 
-export function getBlogPostHref(slug: string) {
+function getBlogPostHref(slug: string) {
   return `/blog/${slug}`;
 }
 
