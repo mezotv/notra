@@ -97,5 +97,3 @@ export const ScheduledContentFailedEmail = ({
     </Html>
   );
 };
-
-export default ScheduledContentFailedEmail;

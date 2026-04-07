@@ -70,5 +70,3 @@ export const ResetPasswordEmail = ({
     </Html>
   );
 };
-
-export default ResetPasswordEmail;

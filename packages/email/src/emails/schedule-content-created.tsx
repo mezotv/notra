@@ -134,5 +134,3 @@ export const ScheduledContentCreatedEmail = ({
     </Html>
   );
 };
-
-export default ScheduledContentCreatedEmail;

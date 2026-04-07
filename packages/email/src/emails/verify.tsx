@@ -97,5 +97,3 @@ export const VerifyUserEmail = ({
     </Html>
   );
 };
-
-export default VerifyUserEmail;
