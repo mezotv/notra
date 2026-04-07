@@ -130,14 +130,12 @@ const fetchChangelogPosts = unstable_cache(
   }
 );
 
-export function isNotraChangelogConfigured() {
+function isNotraChangelogConfigured() {
   const { apiKey } = getNotraChangelogConfig();
   return Boolean(apiKey);
 }
 
-export function createChangelogPostSlug(
-  post: Pick<NotraChangelogPost, "title">
-) {
+function createChangelogPostSlug(post: Pick<NotraChangelogPost, "title">) {
   return slugifySegment(post.title);
 }
 

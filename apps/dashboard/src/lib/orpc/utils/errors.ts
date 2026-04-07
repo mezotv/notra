@@ -1,17 +1,4 @@
 import { ORPCError } from "@orpc/server";
-import type { ZodError } from "zod";
-
-export function validationError(
-  error: ZodError,
-  message = "Validation failed"
-) {
-  return new ORPCError("BAD_REQUEST", {
-    message,
-    data: {
-      issues: error.issues,
-    },
-  });
-}
 
 export function badRequest(message: string, data?: unknown) {
   return new ORPCError("BAD_REQUEST", {
