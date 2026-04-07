@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { PAID_OR_LEGACY_PLAN_IDS } from "@/constants/features";
+import { PAID_OR_LEGACY_PLAN_IDS, PLANS } from "@/constants/features";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 import { autumn } from "./autumn";
 
@@ -32,5 +32,29 @@ export async function assertActiveSubscription(
 
   if (!hasActivePlan) {
     throw paymentRequired("Active subscription required");
+  }
+}
+
+export async function hasActivePaidSubscription(
+  organizationId: string
+): Promise<boolean> {
+  if (!autumn) {
+    return true;
+  }
+
+  try {
+    const customer = await autumn.customers.getOrCreate({
+      customerId: organizationId,
+    });
+
+    return customer.subscriptions.some(
+      (subscription) =>
+        !subscription.addOn &&
+        subscription.status === "active" &&
+        subscription.planId !== PLANS.FREE &&
+        PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
+    );
+  } catch {
+    return false;
   }
 }

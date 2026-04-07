@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { hasActivePaidSubscription } from "@/lib/billing/subscription";
 
 export default async function AuthCallback(props: {
   searchParams: Promise<{ returnTo?: string }>;
@@ -12,29 +13,31 @@ export default async function AuthCallback(props: {
     redirect("/login");
   }
 
-  // If returnTo is provided and it's a valid path, redirect there
   if (returnTo && typeof returnTo === "string") {
-    // Decode URL-encoded returnTo (Next.js should auto-decode, but be explicit)
     try {
       returnTo = decodeURIComponent(returnTo);
     } catch {
       // If decoding fails, use original value
     }
-    // Validate that returnTo is a relative path (security check)
     if (
       returnTo.startsWith("/") &&
       !returnTo.startsWith("//") &&
       !returnTo.includes("\\")
     ) {
-      // Redirect to returnTo before checking for organization
       redirect(returnTo);
-      return; // Ensure we don't continue to organization redirect
+      return;
     }
   }
 
   const organization = await getLastActiveOrganization(session.user.id);
 
-  if (organization) {
+  if (!organization) {
+    redirect("/onboarding");
+  }
+
+  const isSubscribed = await hasActivePaidSubscription(organization.id);
+
+  if (isSubscribed) {
     redirect(`/${organization.slug}`);
   }
 

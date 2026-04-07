@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
-import { OnboardingClient } from "./page-client";
+import { hasActivePaidSubscription } from "@/lib/billing/subscription";
+import { PricingClient } from "./pricing-client";
 
 export default async function OnboardingPage() {
   const session = await getSession();
@@ -11,9 +12,15 @@ export default async function OnboardingPage() {
 
   const organization = await getLastActiveOrganization(session.user.id);
 
-  if (organization) {
+  if (!organization) {
+    redirect("/login");
+  }
+
+  const isSubscribed = await hasActivePaidSubscription(organization.id);
+
+  if (isSubscribed) {
     redirect(`/${organization.slug}`);
   }
 
-  return <OnboardingClient />;
+  return <PricingClient slug={organization.slug} />;
 }
