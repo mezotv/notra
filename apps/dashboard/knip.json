@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreIssues": {
+    "src/app/(dashboard)/**/constants/**/*.ts": ["exports"],
+    "src/components/**/*.tsx": ["types"],
+    "src/components/content/content-card.tsx": ["exports"],
+    "src/components/content/editor/markdown-transformers.ts": ["exports"],
+    "src/components/dashboard/content-activity-card.tsx": ["exports"],
+    "src/constants/**/*.ts": ["exports", "types"],
+    "src/lib/auth/organization.ts": ["exports"],
+    "src/lib/billing/**/*.ts": ["exports", "types"],
+    "src/lib/databuddy.ts": ["exports"],
+    "src/lib/hooks/**/*.ts": ["exports"],
+    "src/lib/orpc/routers/**/*.ts": ["exports", "types"],
+    "src/lib/orpc/client.ts": ["types"],
+    "src/lib/services/**/*.ts": ["exports", "types"],
+    "src/lib/upload/**/*.ts": ["exports"],
+    "src/lib/utils/local-storage.ts": ["exports"],
+    "src/lib/webhooks/**/*.ts": ["exports"],
+    "src/schemas/**/*.ts": ["exports", "types"],
+    "src/types/**/*.ts": ["exports", "types"],
+    "src/utils/**/*.ts": ["exports", "types"],
+    "src/utils/**/*.tsx": ["exports", "types"]
+  }
+}

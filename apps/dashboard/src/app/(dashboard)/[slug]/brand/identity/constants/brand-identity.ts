@@ -18,10 +18,7 @@ export const TONE_OPTIONS: { value: ToneProfile; label: string }[] = [
 
 export const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
 
-export const LANGUAGE_FLAGS: Record<
-  (typeof SUPPORTED_LANGUAGES)[number],
-  string
-> = {
+const LANGUAGE_FLAGS: Record<(typeof SUPPORTED_LANGUAGES)[number], string> = {
   English: "🇺🇸",
   Spanish: "🇪🇸",
   French: "🇫🇷",
