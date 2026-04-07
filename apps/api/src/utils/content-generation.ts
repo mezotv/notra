@@ -10,7 +10,7 @@ function trimTrailingSlash(value: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-export function getContentGenerationWorkflowUrl(env: ContentGenerationEnv) {
+function getContentGenerationWorkflowUrl(env: ContentGenerationEnv) {
   if (env.WORKFLOW_BASE_URL) {
     return `${trimTrailingSlash(env.WORKFLOW_BASE_URL)}/api/workflows/on-demand-content`;
   }

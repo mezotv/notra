@@ -26,6 +26,7 @@
   "devDependencies": {
     "@types/sanitize-html": "^2.16.0",
     "@notra/typescript-config": "workspace:*",
+    "typescript": "^5",
     "wrangler": "^4.4.0"
   }
 }

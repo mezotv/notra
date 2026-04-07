@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreDependencies": ["wrangler"],
+  "ignoreBinaries": ["tsc"],
+  "ignoreIssues": {
+    "src/schemas/content.ts": ["exports", "types"]
+  }
+}

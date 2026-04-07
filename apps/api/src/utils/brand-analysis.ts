@@ -10,7 +10,7 @@ function trimTrailingSlash(value: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
 
-export function getBrandAnalysisWorkflowUrl(env: BrandAnalysisEnv) {
+function getBrandAnalysisWorkflowUrl(env: BrandAnalysisEnv) {
   const baseUrl = env.WORKFLOW_BASE_URL;
 
   if (!baseUrl) {

@@ -19,7 +19,7 @@ type AuthResult =
   | { success: true; auth: V2KeysVerifyKeyResponseData }
   | { success: false; error: string; status: 401 | 403 | 503 };
 
-export async function verifyRequestAuth(
+async function verifyRequestAuth(
   c: Context,
   options: AuthOptions = {}
 ): Promise<AuthResult> {
