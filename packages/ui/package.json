@@ -49,9 +49,11 @@
   },
   "devDependencies": {
     "@notra/typescript-config": "*",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "postcss": "^8.5.8",
     "tailwindcss": "^4",
     "typescript": "5.9.2"
   }
