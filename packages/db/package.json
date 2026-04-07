@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check-types": "tsc --noEmit",
-    "backfill:reference-memories": "bun scripts/backfill-reference-memories.ts"
+    "check-types": "tsc --noEmit"
   },
   "exports": {
     "./drizzle": "./src/drizzle.ts",
@@ -17,13 +16,11 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.45.2",
-    "nanoid": "^5.1.6",
     "pg": "^8.20.0"
   },
   "devDependencies": {
     "@notra/typescript-config": "*",
     "@types/node": "^22.15.3",
-    "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.8",
     "typescript": "5.9.2"
   }
