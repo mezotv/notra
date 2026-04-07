@@ -10,15 +10,13 @@ import {
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
 export const getPostsParamsSchema = z.object({});
 
-export const postStatusSchema = z.enum(["draft", "published"]);
-export const postContentTypeSchema = z.enum([
+const postStatusSchema = z.enum(["draft", "published"]);
+const postContentTypeSchema = z.enum([
   "changelog",
   "linkedin_post",
   "twitter_post",
   "blog_post",
 ]);
-export type PostStatus = z.infer<typeof postStatusSchema>;
-export type PostContentType = z.infer<typeof postContentTypeSchema>;
 
 export const ALL_POST_STATUSES = postStatusSchema.options;
 export const ALL_POST_CONTENT_TYPES = postContentTypeSchema.options;
@@ -80,7 +78,7 @@ const contentTypeFilterSchema = createQueryEnumFilterSchema(
   ALL_POST_CONTENT_TYPES.length
 );
 
-export const getPostsQuerySchema = z.object({
+const getPostsQuerySchema = z.object({
   sort: z.enum(["asc", "desc"]).default("desc"),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   page: z.coerce.number().int().min(1).default(1),
@@ -167,7 +165,7 @@ export const errorResponseSchema = z
   })
   .openapi("ErrorResponse");
 
-export const organizationResponseSchema = z.object({
+const organizationResponseSchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),
@@ -183,7 +181,7 @@ const websiteUrlSchema = z
   )
   .pipe(z.string().url("Invalid website URL"));
 
-export const brandIdentityResponseSchema = z.object({
+const brandIdentityResponseSchema = z.object({
   id: z.string(),
   name: z.string(),
   isDefault: z.boolean(),
@@ -199,7 +197,7 @@ export const brandIdentityResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const githubIntegrationResponseSchema = z.object({
+const githubIntegrationResponseSchema = z.object({
   id: z.string(),
   displayName: z.string(),
   owner: z.string().nullable(),
@@ -207,7 +205,7 @@ export const githubIntegrationResponseSchema = z.object({
   defaultBranch: z.string().nullable(),
 });
 
-export const linearIntegrationResponseSchema = z.object({
+const linearIntegrationResponseSchema = z.object({
   id: z.string(),
   displayName: z.string(),
   linearOrganizationId: z.string(),
@@ -225,7 +223,7 @@ const GITHUB_PAT_PREFIXES = [
   "ghr_",
 ] as const;
 
-export const githubPersonalAccessTokenSchema = z
+const githubPersonalAccessTokenSchema = z
   .string()
   .trim()
   .min(1, "Personal access token is required")
@@ -253,7 +251,7 @@ export const createGitHubIntegrationResponseSchema = z.object({
   organization: organizationResponseSchema,
 });
 
-export const postResponseSchema = z.object({
+const postResponseSchema = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string().nullable(),
@@ -267,7 +265,7 @@ export const postResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const postsPaginationSchema = z.object({
+const postsPaginationSchema = z.object({
   limit: z.number().int().min(1),
   currentPage: z.number().int().min(1),
   nextPage: z.number().int().min(1).nullable(),
@@ -338,7 +336,7 @@ export const createBrandIdentityRequestSchema = z.object({
   }),
 });
 
-export const brandAnalysisJobSchema = z.object({
+const brandAnalysisJobSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
   brandIdentityId: z.string(),
@@ -490,18 +488,16 @@ export const generationQueueErrorResponseSchema = z.object({
   jobId: z.string().optional(),
 });
 
-export const contentGenerationStatusSchema = z.enum([
+const contentGenerationStatusSchema = z.enum([
   "queued",
   "running",
   "completed",
   "failed",
 ]);
 
-export const contentGenerationLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
+const contentGenerationLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
 
-export const contentGenerationTypeSchema = z.enum(
-  SUPPORTED_CONTENT_GENERATION_TYPES
-);
+const contentGenerationTypeSchema = z.enum(SUPPORTED_CONTENT_GENERATION_TYPES);
 
 export const createPostGenerationRequestSchema = z
   .object({
@@ -654,7 +650,7 @@ export const createPostGenerationRequestSchema = z
     }
   );
 
-export const contentGenerationJobEventSchema = z.object({
+const contentGenerationJobEventSchema = z.object({
   id: z.string(),
   jobId: z.string(),
   type: z.enum([
@@ -672,7 +668,7 @@ export const contentGenerationJobEventSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable(),
 });
 
-export const contentGenerationJobSchema = z.object({
+const contentGenerationJobSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
   status: contentGenerationStatusSchema,
@@ -712,49 +708,3 @@ export const getPostGenerationResponseSchema = z.object({
   job: contentGenerationJobSchema,
   events: z.array(contentGenerationJobEventSchema),
 });
-
-export type GetPostsParams = z.infer<typeof getPostsParamsSchema>;
-export type GetPostsQuery = z.infer<typeof getPostsQuerySchema>;
-export type GetPostParams = z.infer<typeof getPostParamsSchema>;
-export type GetBrandIdentityParams = z.infer<
-  typeof getBrandIdentityParamsSchema
->;
-export type PostResponse = z.infer<typeof postResponseSchema>;
-export type GetPostsResponse = z.infer<typeof getPostsResponseSchema>;
-export type GetPostResponse = z.infer<typeof getPostResponseSchema>;
-export type GetBrandIdentityResponse = z.infer<
-  typeof getBrandIdentityResponseSchema
->;
-export type CreateBrandIdentityRequest = z.infer<
-  typeof createBrandIdentityRequestSchema
->;
-export type CreateBrandIdentityResponse = z.infer<
-  typeof createBrandIdentityResponseSchema
->;
-export type GetBrandAnalysisJobParams = z.infer<
-  typeof getBrandAnalysisJobParamsSchema
->;
-export type GetBrandAnalysisJobResponse = z.infer<
-  typeof getBrandAnalysisJobResponseSchema
->;
-export type PatchBrandIdentityRequest = z.infer<
-  typeof patchBrandIdentityRequestSchema
->;
-export type PatchBrandIdentityResponse = z.infer<
-  typeof patchBrandIdentityResponseSchema
->;
-export type PatchPostRequest = z.infer<typeof patchPostRequestSchema>;
-export type PatchPostResponse = z.infer<typeof patchPostResponseSchema>;
-export type DeletePostResponse = z.infer<typeof deletePostResponseSchema>;
-export type CreatePostGenerationRequest = z.infer<
-  typeof createPostGenerationRequestSchema
->;
-export type CreatePostGenerationResponse = z.infer<
-  typeof createPostGenerationResponseSchema
->;
-export type GetPostGenerationParams = z.infer<
-  typeof getPostGenerationParamsSchema
->;
-export type GetPostGenerationResponse = z.infer<
-  typeof getPostGenerationResponseSchema
->;
