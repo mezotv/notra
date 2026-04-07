@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
-import { hasActivePaidSubscription } from "@/lib/billing/subscription";
+import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
 import { PricingClient } from "./pricing-client";
 
 export default async function OnboardingPage() {
@@ -16,9 +16,9 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  const isSubscribed = await hasActivePaidSubscription(organization.id);
+  const hasSubHistory = await hasPaidSubscriptionHistory(organization.id);
 
-  if (isSubscribed) {
+  if (hasSubHistory) {
     redirect(`/${organization.slug}`);
   }
 

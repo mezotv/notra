@@ -380,18 +380,6 @@ export const auth = betterAuth({
               orgId: org.id,
             },
           });
-
-          try {
-            await autumn.billing.attach({
-              customerId: org.id,
-              planId: "basic",
-            });
-          } catch (attachError) {
-            console.error(
-              "[Autumn] Failed to attach basic trial:",
-              attachError
-            );
-          }
         },
       },
     },

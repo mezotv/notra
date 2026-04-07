@@ -39,7 +39,6 @@ import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEATURES } from "@/constants/features";
-import { MARKUP_PERCENT } from "@/lib/billing/token-pricing";
 import type { ProductFeature } from "@/types/hooks/billing";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
@@ -134,11 +133,7 @@ function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
             style: "currency",
             currency: "USD",
           }).format(cents / 100);
-          return {
-            text: `${dollars} AI Credits`,
-            overageText: `${MARKUP_PERCENT}% platform fee on top-ups`,
-            overageTooltip: `Plan-included credits are charged at cost. A ${MARKUP_PERCENT}% fee is applied only on purchased top-up credits.`,
-          };
+          return { text: `${dollars} AI Credits` };
         }
         return null;
       }

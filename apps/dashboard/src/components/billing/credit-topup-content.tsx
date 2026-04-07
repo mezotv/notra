@@ -16,6 +16,7 @@ import {
   TOPUP_MIN_DOLLARS,
   TOPUP_PRESETS,
 } from "@/constants/features";
+import { MARKUP_PERCENT } from "@/lib/billing/token-pricing";
 
 function formatDollars(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -197,6 +198,11 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
           "Select an amount"
         )}
       </Button>
+
+      <p className="text-center text-muted-foreground text-xs">
+        A {MARKUP_PERCENT}% platform fee is added to top-ups. Plan-included
+        credits are charged at cost.
+      </p>
     </div>
   );
 }

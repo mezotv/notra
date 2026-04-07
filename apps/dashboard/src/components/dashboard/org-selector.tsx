@@ -222,9 +222,7 @@ export function OrgSelector() {
     activeSubscription?.plan?.id ?? activeSubscription?.planId;
   const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
   const isBasic = activePlanId === "basic" || activePlanId === "basic_yearly";
-  const isTrialing =
-    activeSubscription?.trialEndsAt != null &&
-    activeSubscription.trialEndsAt > Date.now();
+  const hasActivePaidPlan = isPro || isBasic;
 
   async function switchOrganization(org: Organization) {
     if (org.slug === activeOrganization?.slug) {
@@ -337,8 +335,7 @@ export function OrgSelector() {
             <DropdownMenuItem
               className="flex cursor-pointer items-center gap-4"
               onClick={() => {
-                const orgCount = organizations?.length ?? 0;
-                if (isTrialing && orgCount >= 2) {
+                if (!hasActivePaidPlan) {
                   toast("Subscribe to create more organizations", {
                     action: {
                       label: "Upgrade",

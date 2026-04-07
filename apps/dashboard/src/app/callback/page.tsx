@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
-import { hasActivePaidSubscription } from "@/lib/billing/subscription";
+import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
 
 export default async function AuthCallback(props: {
   searchParams: Promise<{ returnTo?: string }>;
@@ -35,9 +35,9 @@ export default async function AuthCallback(props: {
     redirect("/onboarding");
   }
 
-  const isSubscribed = await hasActivePaidSubscription(organization.id);
+  const hasSubHistory = await hasPaidSubscriptionHistory(organization.id);
 
-  if (isSubscribed) {
+  if (hasSubHistory) {
     redirect(`/${organization.slug}`);
   }
 

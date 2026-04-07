@@ -58,3 +58,26 @@ export async function hasActivePaidSubscription(
     return false;
   }
 }
+
+export async function hasPaidSubscriptionHistory(
+  organizationId: string
+): Promise<boolean> {
+  if (!autumn) {
+    return true;
+  }
+
+  try {
+    const customer = await autumn.customers.getOrCreate({
+      customerId: organizationId,
+    });
+
+    return customer.subscriptions.some(
+      (subscription) =>
+        !subscription.addOn &&
+        subscription.planId !== PLANS.FREE &&
+        PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
+    );
+  } catch {
+    return true;
+  }
+}

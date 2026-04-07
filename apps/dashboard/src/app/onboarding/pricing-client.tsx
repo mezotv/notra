@@ -12,7 +12,6 @@ import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { FEATURES, PLANS } from "@/constants/features";
-import { MARKUP_PERCENT } from "@/lib/billing/token-pricing";
 import type { ProductFeature } from "@/types/hooks/billing";
 
 interface PricingClientProps {
@@ -51,10 +50,7 @@ function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
             style: "currency",
             currency: "USD",
           }).format(cents / 100);
-          return {
-            text: `${dollars} AI Credits`,
-            overageText: `${MARKUP_PERCENT}% platform fee on top-ups`,
-          };
+          return { text: `${dollars} AI Credits` };
         }
         return null;
       }
@@ -169,6 +165,7 @@ export function PricingClient({ slug }: PricingClientProps) {
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <TitleCard
+            action={<Badge variant="outline">3-day free trial</Badge>}
             className={cn(
               "transition-all hover:ring-2 hover:ring-muted-foreground/20"
             )}
@@ -187,9 +184,6 @@ export function PricingClient({ slug }: PricingClientProps) {
                     /{isYearly ? "year" : "month"}
                   </span>
                 </div>
-                <Badge className="mt-2" variant="outline">
-                  3-day free trial
-                </Badge>
               </div>
 
               <Button
@@ -228,6 +222,7 @@ export function PricingClient({ slug }: PricingClientProps) {
           </TitleCard>
 
           <TitleCard
+            action={<Badge>Most popular</Badge>}
             className={cn(
               "ring-2 ring-primary transition-all hover:ring-primary/80"
             )}
@@ -246,7 +241,6 @@ export function PricingClient({ slug }: PricingClientProps) {
                     /{isYearly ? "year" : "month"}
                   </span>
                 </div>
-                <Badge className="mt-2">Most popular</Badge>
               </div>
 
               <Button
