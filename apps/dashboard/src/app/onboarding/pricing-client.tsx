@@ -7,7 +7,6 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
-import { cn } from "@notra/ui/lib/utils";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -166,9 +165,7 @@ export function PricingClient({ slug }: PricingClientProps) {
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <TitleCard
             action={<Badge variant="outline">3-day free trial</Badge>}
-            className={cn(
-              "transition-all hover:ring-2 hover:ring-muted-foreground/20"
-            )}
+            className="transition-all hover:ring-2 hover:ring-muted-foreground/20"
             heading="Basic"
           >
             <div className="space-y-4">
@@ -223,9 +220,7 @@ export function PricingClient({ slug }: PricingClientProps) {
 
           <TitleCard
             action={<Badge>Most popular</Badge>}
-            className={cn(
-              "ring-2 ring-primary transition-all hover:ring-primary/80"
-            )}
+            className="ring-2 ring-primary transition-all hover:ring-primary/80"
             heading="Pro"
           >
             <div className="space-y-4">
