@@ -1,6 +1,6 @@
 "use client";
 
-import { track, useFlag } from "@databuddy/sdk/react";
+import { track } from "@databuddy/sdk/react";
 import Link from "next/link";
 import type { ComponentProps, MouseEvent } from "react";
 import {
@@ -10,6 +10,7 @@ import {
   normalizeLandingPageH1Variant,
   serializeSignupAttribution,
 } from "@/utils/databuddy";
+import { useCachedFlag } from "@/utils/feature-flag-cache";
 
 const DEFAULT_SIGNUP_URL = "https://app.usenotra.com/signup";
 
@@ -39,7 +40,7 @@ export function TrackedSignupLink({
   source,
   ...props
 }: TrackedSignupLinkProps) {
-  const { variant } = useFlag(LANDING_PAGE_H1_EXPERIMENT_KEY);
+  const { variant } = useCachedFlag(LANDING_PAGE_H1_EXPERIMENT_KEY);
   const trackedHref = buildTrackedSignupHref(href, source, variant);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
