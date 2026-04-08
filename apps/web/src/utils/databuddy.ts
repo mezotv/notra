@@ -1,7 +1,5 @@
 import { createSerializer, parseAsString } from "nuqs";
-
-export const LANDING_PAGE_H1_EXPERIMENT_KEY = "landing-page-h1";
-export const LANDING_PAGE_H1_TEAM_MARKETER_VARIANT = "team-marketer";
+import { LANDING_PAGE_H1_TEAM_MARKETER_VARIANT } from "./feature-flag-keys";
 
 export const LANDING_PAGE_H1_CONTROL_COPY =
   "Turn your daily work into publish-ready content";

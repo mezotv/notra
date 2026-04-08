@@ -10,6 +10,8 @@ import ReferencesPreview from "../components/references-preview";
 import TestimonialsSection from "../components/testimonials-section";
 import { TrackedSignupLink } from "../components/tracked-signup-link";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
+import { getServerFlagVariant } from "../utils/feature-flag-cookie.server";
+import { LANDING_PAGE_H1_EXPERIMENT_KEY } from "../utils/feature-flag-keys";
 
 const DocumentationSection = dynamic(
   () => import("../components/documentation-section")
@@ -55,14 +57,21 @@ const jsonLd = {
   },
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const initialH1Variant = await getServerFlagVariant(
+    LANDING_PAGE_H1_EXPERIMENT_KEY
+  );
+
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-54">
         <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
-            <LandingPageHeadline className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24" />
+            <LandingPageHeadline
+              className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24"
+              initialVariant={initialH1Variant}
+            />
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
               Notra connects to GitHub and soon Slack and Linear to turn shipped
               work into ready-to-publish content.
@@ -72,7 +81,10 @@ export default function LandingPage() {
 
         <div className="relative z-10 mt-6 mb-16 flex w-full max-w-124.25 flex-col items-center justify-center gap-6 sm:mt-8 sm:mb-0 sm:gap-8 md:mt-10 md:gap-10 lg:mt-12 lg:gap-12">
           <div className="flex items-center justify-start gap-4 backdrop-blur-[0.515625rem]">
-            <TrackedSignupLink source="landing_page_hero_cta">
+            <TrackedSignupLink
+              initialVariant={initialH1Variant}
+              source="landing_page_hero_cta"
+            >
               <Button className="h-10 overflow-hidden rounded-lg border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
                 <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
                   Start for free

@@ -6,11 +6,11 @@ import type { ComponentProps, MouseEvent } from "react";
 import {
   DATABUDDY_SIGNUP_STARTED_EVENT,
   getLandingPageH1Copy,
-  LANDING_PAGE_H1_EXPERIMENT_KEY,
   normalizeLandingPageH1Variant,
   serializeSignupAttribution,
 } from "@/utils/databuddy";
-import { useCachedFlag } from "@/utils/feature-flag-cache";
+import { LANDING_PAGE_H1_EXPERIMENT_KEY } from "@/utils/feature-flag-keys";
+import { useStickyFlag } from "@/utils/use-sticky-flag";
 
 const DEFAULT_SIGNUP_URL = "https://app.usenotra.com/signup";
 
@@ -30,17 +30,19 @@ function buildTrackedSignupHref(
 type TrackedSignupLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
   children?: React.ReactNode;
   href?: string;
+  initialVariant?: string;
   source: string;
 };
 
 export function TrackedSignupLink({
   children,
   href = DEFAULT_SIGNUP_URL,
+  initialVariant,
   onClick,
   source,
   ...props
 }: TrackedSignupLinkProps) {
-  const { variant } = useCachedFlag(LANDING_PAGE_H1_EXPERIMENT_KEY);
+  const variant = useStickyFlag(LANDING_PAGE_H1_EXPERIMENT_KEY, initialVariant);
   const trackedHref = buildTrackedSignupHref(href, source, variant);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
