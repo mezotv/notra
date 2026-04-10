@@ -66,7 +66,9 @@ export function Navbar() {
                       className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                       href="/"
                       onClick={(e) => {
-                        const event = e as React.MouseEvent & { preventBaseUIHandler?: () => void };
+                        const event = e as React.MouseEvent & {
+                          preventBaseUIHandler?: () => void;
+                        };
                         event.preventBaseUIHandler?.();
                       }}
                       onContextMenu={(e) => {
