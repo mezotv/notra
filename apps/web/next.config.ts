@@ -84,6 +84,10 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/blog/engineers-are-great-marketing",
+        destination: "/blog/engineers-are-great-for-marketing",
+      },
+      {
+        source: "/blog/engineers-are-great-marketing",
         destination: "/blog/engineers-are-great-for-marketing/markdown",
         has: [
           {
@@ -96,6 +100,17 @@ const nextConfig: NextConfig = {
       {
         source: "/blog/engineers-are-great-marketing.md",
         destination: "/blog/engineers-are-great-for-marketing/markdown",
+      },
+      {
+        source: "/blog/markdown",
+        destination: "/blog/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
       },
       {
         source: "/blog/:slug",
@@ -150,12 +165,56 @@ const nextConfig: NextConfig = {
         destination: "/changelog/markdown",
       },
       {
+        source: "/changelog/markdown",
+        destination: "/changelog/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
+      },
+      {
         source: "/changelog/notra.md",
         destination: "/changelog/notra/markdown",
       },
       {
+        source: "/changelog/notra/markdown",
+        destination: "/changelog/notra/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
+      },
+      {
         source: "/changelog/notra/:slug.md",
         destination: "/changelog/notra/:slug/markdown",
+      },
+      {
+        source: "/changelog/notra/:slug/markdown",
+        destination: "/changelog/notra/:slug/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
+      },
+      {
+        source: "/changelog/:name/markdown",
+        destination: "/changelog/:name/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
       },
       {
         source: "/changelog/:name",
@@ -171,6 +230,17 @@ const nextConfig: NextConfig = {
       {
         source: "/changelog/:name.md",
         destination: "/changelog/:name/markdown",
+      },
+      {
+        source: "/changelog/:name/:slug/markdown",
+        destination: "/changelog/:name/:slug/markdown",
+        has: [
+          {
+            type: "header",
+            key: "accept",
+            value: ".*text/markdown.*",
+          },
+        ],
       },
       {
         source: "/changelog/:name/:slug",

@@ -26,23 +26,3 @@ export function markdownSection(title: string, lines: string[]) {
 export function stripFrontmatter(source: string) {
   return source.replace(FRONTMATTER_REGEX, "").trim();
 }
-
-function decodeHtmlEntities(source: string) {
-  const namedEntities: Record<string, string> = {
-    amp: "&",
-    apos: "'",
-    gt: ">",
-    lt: "<",
-    nbsp: " ",
-    quot: '"',
-  };
-
-  return source
-    .replace(/&#(\d+);/g, (_, decimal) =>
-      String.fromCodePoint(Number.parseInt(decimal, 10))
-    )
-    .replace(/&#x([\da-fA-F]+);/g, (_, hex) =>
-      String.fromCodePoint(Number.parseInt(hex, 16))
-    )
-    .replace(/&([a-zA-Z]+);/g, (match, name) => namedEntities[name] ?? match);
-}
