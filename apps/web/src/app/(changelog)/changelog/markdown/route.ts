@@ -1,27 +1,23 @@
-import {
-  getChangelogPostHref,
-  listNotraChangelogPosts,
-} from "@/utils/changelog";
+import { SHOWCASE_COMPANIES } from "@/utils/showcase";
 import { markdownResponse } from "@/utils/markdown";
 
 export async function GET() {
-  const posts = await listNotraChangelogPosts();
-
-  const list = posts
-    .map(
-      (post) =>
-        `- [${post.title}](https://usenotra.com${getChangelogPostHref(post.slug)}.md) (${post.createdAt})`
-    )
-    .join("\n");
+  const list = [
+    "- [Notra](https://usenotra.com/changelog/notra.md)",
+    ...SHOWCASE_COMPANIES.map(
+      (company) =>
+        `- [${company.name}](https://usenotra.com/changelog/${company.slug}.md)`
+    ),
+  ].join("\n");
 
   const markdown = [
     "# Changelog",
     "",
-    "The latest product updates, release notes, and improvements from the Notra team.",
+    "See how Notra transforms GitHub activity into professional product updates from real open source projects.",
     "",
-    "## Entries",
+    "## Changelogs",
     "",
-    list || "No changelog entries found.",
+    list,
     "",
   ].join("\n");
 
