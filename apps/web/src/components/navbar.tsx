@@ -50,7 +50,7 @@ export function Navbar() {
           <HatchPattern className="w-4 sm:w-6 md:w-8 lg:w-12" />
 
           <div className="relative flex min-w-0 flex-1 items-center justify-between border-border border-r border-l bg-background/80 px-3 backdrop-blur-sm sm:px-4 md:px-5">
-            <div className="flex min-w-0 items-center justify-center">
+            <div className="z-10 flex min-w-0 items-center justify-center">
               <DropdownMenu
                 onOpenChange={(open) => {
                   if (!open) {
@@ -60,13 +60,21 @@ export function Navbar() {
                 open={logoMenuOpen}
               >
                 <DropdownMenuTrigger
-                  className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
                   nativeButton={false}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setLogoMenuOpen((prev) => !prev);
-                  }}
-                  render={<Link href="/" />}
+                  render={
+                    <Link
+                      className="flex cursor-pointer items-center justify-start gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-primary"
+                      href="/"
+                      onClick={(e) => {
+                        const event = e as React.MouseEvent & { preventBaseUIHandler?: () => void };
+                        event.preventBaseUIHandler?.();
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setLogoMenuOpen((prev) => !prev);
+                      }}
+                    />
+                  }
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-transparent p-1 dark:bg-[#f3eeea]">
                     <NotraMark className="h-7 w-7 shrink-0" />
@@ -88,10 +96,10 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <div className="absolute inset-0 hidden items-center justify-center gap-2 sm:flex sm:gap-3 md:gap-4 lg:gap-4">
+            <div className="pointer-events-none absolute inset-0 hidden items-center justify-center gap-2 sm:flex sm:gap-3 md:gap-4 lg:gap-4">
               {MARKETING_NAV_LINKS.map((link) => (
                 <Link
-                  className="flex items-center justify-start"
+                  className="pointer-events-auto flex items-center justify-start"
                   href={link.href}
                   key={link.href}
                 >
