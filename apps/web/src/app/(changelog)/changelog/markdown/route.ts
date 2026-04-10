@@ -1,5 +1,5 @@
-import { SHOWCASE_COMPANIES } from "@/utils/showcase";
 import { markdownResponse } from "@/utils/markdown";
+import { SHOWCASE_COMPANIES } from "@/utils/showcase";
 
 export async function GET() {
   const list = [
