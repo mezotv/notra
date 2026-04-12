@@ -1,13 +1,11 @@
 To install dependencies:
 ```sh
-bun install
+pnpm install
 ```
 
 To run:
 ```sh
-bun run dev
+pnpm --filter api dev
 ```
 
-open the local URL Bun prints on startup
-
-The dev server runs with Bun so the `fetch` export is actually served.
+open http://localhost:3000 after the server starts

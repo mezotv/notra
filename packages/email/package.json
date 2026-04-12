@@ -1,6 +1,7 @@
 {
   "name": "@notra/email",
   "version": "0.0.0",
+  "type": "module",
   "exports": {
     "./emails/invite": "./src/emails/invite.tsx",
     "./emails/reset": "./src/emails/reset.tsx",

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun x ultracite fix"
+            "command": "pnpm exec ultracite fix"
           }
         ]
       }

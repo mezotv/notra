@@ -43,7 +43,7 @@ export default function BillingSuccessPage() {
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4">
-      <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
         <Confetti
           colors={[
             "var(--primary)",

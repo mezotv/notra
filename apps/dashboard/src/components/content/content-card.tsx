@@ -255,5 +255,5 @@ const ContentCard = memo(function ContentCard({
   );
 });
 
-export { ContentCard, CONTENT_TYPES, getContentTypeLabel };
 export type { ContentCardProps, ContentType };
+export { CONTENT_TYPES, ContentCard, getContentTypeLabel };

@@ -112,7 +112,7 @@ export function LoginForm({
           <div className="relative">
             {lastMethod === "google" && (
               <Badge
-                className="-top-4 -right-2 absolute z-10"
+                className="absolute -top-4 -right-2 z-10"
                 variant="default"
               >
                 Last Used
@@ -132,7 +132,7 @@ export function LoginForm({
           <div className="relative">
             {lastMethod === "github" && (
               <Badge
-                className="-top-4 -right-2 absolute z-10"
+                className="absolute -top-4 -right-2 z-10"
                 variant="default"
               >
                 Last Used
@@ -190,7 +190,7 @@ export function LoginForm({
                 />
                 <button
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="-translate-y-1/2 absolute top-1/2 right-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                  className="absolute top-1/2 right-4 -translate-y-1/2 text-muted-foreground hover:text-foreground disabled:opacity-50"
                   disabled={isAuthLoading}
                   onClick={() => setShowPassword(!showPassword)}
                   type="button"
@@ -207,7 +207,7 @@ export function LoginForm({
           <div className="relative mt-4">
             {lastMethod === "email" && (
               <Badge
-                className="-top-2 -right-2 absolute z-10"
+                className="absolute -top-2 -right-2 z-10"
                 variant="default"
               >
                 Last Used

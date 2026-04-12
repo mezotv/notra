@@ -30,19 +30,19 @@ npx mint dev
 Refresh the local OpenAPI snapshot from the API app:
 
 ```bash
-bun run openapi:pull:local
+curl http://localhost:3000/openapi.json -o openapi/openapi.json
 ```
 
 Or refresh from production:
 
 ```bash
-bun run openapi:pull:prod
+curl https://api.usenotra.com/openapi.json -o openapi/openapi.json
 ```
 
 Validate the OpenAPI file before pushing docs changes:
 
 ```bash
-bun run openapi:check
+pnpm openapi:check
 ```
 
 ---

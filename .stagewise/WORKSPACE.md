@@ -144,7 +144,7 @@ workspaceScripts:
 - `db:seed` → run both seed scripts  
 - `format` → UltraCite fix  
 
-ci: `.github/workflows/code-quality.yml` → bun install, ultracite check on push/PR  
+ci: `.github/workflows/code-quality.yml` → pnpm install, ultracite check on push/PR  
 
 envFiles: `.env`, `.env.example`  
 
@@ -158,7 +158,7 @@ add API endpoint → `apps/api/src/routes/content.ts`, `apps/api/src/index.ts`, 
 add dashboard route → `apps/dashboard/src/app/`  
 add API route handler → `apps/dashboard/src/app/api/`  
 add component → `packages/ui/src/components/`  
-add DB table → `packages/db/src/schema.ts`, then `bun run db:generate`, `bun run db:migrate`  
+add DB table → `packages/db/src/schema.ts`, then `pnpm db:generate`, `pnpm db:migrate`  
 add email template → `packages/email/src/emails/`  
 add auth logic → `apps/dashboard/src/lib/auth/`  
 configure styling → `packages/ui/src/styles/`, `tailwind.config.*`  
@@ -189,7 +189,7 @@ integrate external service → `apps/dashboard/src/lib/` (new module)
 
 `turbo.json` → Workspace tasks (build, dev, check-types), global env vars, task dependencies | orchestration  
 `biome.jsonc` → Lint rules (Biome), UltraCite presets, file exclusions | code quality  
-`.github/workflows/code-quality.yml` → CI: bun install, ultracite check | automated code quality  
+`.github/workflows/code-quality.yml` → CI: pnpm install, ultracite check | automated code quality  
 
 ---
 

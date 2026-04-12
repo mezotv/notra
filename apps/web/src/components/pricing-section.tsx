@@ -135,7 +135,7 @@ export function PricingCards() {
   return (
     <>
       <div className="relative flex flex-col items-center justify-center gap-0 self-stretch px-6 py-9 md:px-16">
-        <div className="-translate-x-1/2 absolute top-[63px] left-1/2 z-0 h-0 w-full max-w-[1060px] transform border-primary/12 border-t" />
+        <div className="absolute top-[63px] left-1/2 z-0 h-0 w-full max-w-[1060px] -translate-x-1/2 transform border-primary/12 border-t" />
 
         <div className="relative z-20 flex items-center justify-center overflow-hidden rounded-lg border border-primary/6 bg-background p-3">
           <div className="relative flex h-auto gap-[2px] overflow-hidden rounded-[99px] border-[0.5px] border-primary/8 bg-primary/10 p-[2px]">

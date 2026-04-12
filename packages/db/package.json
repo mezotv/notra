@@ -19,7 +19,7 @@
     "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@notra/typescript-config": "*",
+    "@notra/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "drizzle-kit": "^0.31.8",
     "typescript": "5.9.2"

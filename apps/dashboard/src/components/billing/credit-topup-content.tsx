@@ -111,7 +111,7 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
         <div className="rounded-lg border bg-muted/30 p-4">
           <p className="text-muted-foreground text-sm">Current Balance</p>
           <p className="font-bold text-2xl tabular-nums">
-            {aiCreditsBalance !== null ? formatDollars(aiCreditsBalance) : "-"}
+            {aiCreditsBalance === null ? "-" : formatDollars(aiCreditsBalance)}
           </p>
           {aiCreditsIncluded !== null && (
             <p className="text-muted-foreground text-xs">
@@ -152,7 +152,7 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
         </div>
 
         <div className="relative">
-          <span className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 text-muted-foreground text-sm">
+          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground text-sm">
             $
           </span>
           <Input

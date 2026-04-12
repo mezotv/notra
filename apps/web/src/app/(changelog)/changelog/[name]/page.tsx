@@ -96,6 +96,7 @@ export default async function ShowcaseCompanyPage({
             <a
               className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
               href={`${company.url}?utm_source=usenotra.com`}
+              rel="noopener"
               target="_blank"
             >
               {company.domain}

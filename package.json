@@ -5,13 +5,13 @@
     "build": "dotenv -- turbo run build",
     "dev": "dotenv -- turbo run dev",
     "check-types": "dotenv -- turbo run check-types",
-    "db:generate": "dotenv -- bunx drizzle-kit generate --config packages/db/drizzle.config.ts",
-    "db:migrate": "dotenv -- bunx drizzle-kit migrate --config packages/db/drizzle.config.ts",
-    "db:push": "dotenv -- bunx drizzle-kit push --config packages/db/drizzle.config.ts",
-    "db:studio": "dotenv -- bunx drizzle-kit studio --config packages/db/drizzle.config.ts",
-    "db:drop": "dotenv -- bunx drizzle-kit drop --config packages/db/drizzle.config.ts",
-    "db:pull": "dotenv -- bunx drizzle-kit pull --config packages/db/drizzle.config.ts",
-    "email:dev": "dotenv -- bun run --filter=@notra/email dev",
+    "db:generate": "dotenv -- pnpm exec drizzle-kit generate --config packages/db/drizzle.config.ts",
+    "db:migrate": "dotenv -- pnpm exec drizzle-kit migrate --config packages/db/drizzle.config.ts",
+    "db:push": "dotenv -- pnpm exec drizzle-kit push --config packages/db/drizzle.config.ts",
+    "db:studio": "dotenv -- pnpm exec drizzle-kit studio --config packages/db/drizzle.config.ts",
+    "db:drop": "dotenv -- pnpm exec drizzle-kit drop --config packages/db/drizzle.config.ts",
+    "db:pull": "dotenv -- pnpm exec drizzle-kit pull --config packages/db/drizzle.config.ts",
+    "email:dev": "dotenv -- pnpm --filter @notra/email dev",
     "check": "ultracite check",
     "format": "ultracite fix",
     "format:unsafe": "ultracite fix --unsafe"
@@ -32,5 +32,5 @@
     "apps/*",
     "packages/*"
   ],
-  "packageManager": "bun@1.3.9"
+  "packageManager": "pnpm@10.33.0"
 }

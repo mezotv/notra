@@ -1,5 +1,5 @@
-import path from "node:path";
 import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { changelog } from "@/../.source/server";
 import { markdownResponse, stripFrontmatter } from "@/utils/markdown";
 import { getShowcaseCompany, getShowcaseEntrySlug } from "@/utils/showcase";

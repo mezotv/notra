@@ -295,4 +295,4 @@ function TwitterPost({
   );
 }
 
-export { TwitterPost, type TwitterPostProps, type TwitterPostMenuItem };
+export { TwitterPost, type TwitterPostMenuItem, type TwitterPostProps };

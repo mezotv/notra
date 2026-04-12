@@ -498,12 +498,12 @@ export async function updateRepository(
   const [updated] = await db
     .update(githubIntegrations)
     .set({
-      ...(data.enabled !== undefined
-        ? { repositoryEnabled: data.enabled }
-        : {}),
-      ...(data.defaultBranch !== undefined
-        ? { defaultBranch: data.defaultBranch }
-        : {}),
+      ...(data.enabled === undefined
+        ? {}
+        : { repositoryEnabled: data.enabled }),
+      ...(data.defaultBranch === undefined
+        ? {}
+        : { defaultBranch: data.defaultBranch }),
     })
     .where(eq(githubIntegrations.id, repositoryId))
     .returning();

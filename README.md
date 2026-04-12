@@ -49,21 +49,20 @@ Notra runs as an event-driven content pipeline:
 ## Local development
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm dev
 ```
 
 To run only the dashboard app:
 
 ```bash
-bun run dev --filter=dashboard
+pnpm dev -- --filter=dashboard
 ```
 
 To build the dashboard app:
 
 ```bash
-bun run build --filter=dashboard
+pnpm build -- --filter=dashboard
 ```
 
 Contributor note: if you update landing page copy in `apps/web/src/app/page.tsx`, update `apps/web/src/app/markdown/route.ts` too. See `.github/CONTRIBUTING.md` for details.
-

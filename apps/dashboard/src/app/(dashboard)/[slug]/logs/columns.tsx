@@ -165,15 +165,15 @@ export const columns = [
       const label = info.getValue();
       const code = info.row.original.statusCode;
       const status = { label, code } as StatusWithCode;
-      return status.code !== null ? (
+      return status.code === null ? (
+        <StatusBadge status={status} />
+      ) : (
         <Tooltip>
           <TooltipTrigger>
             <StatusBadge status={status} />
           </TooltipTrigger>
           <TooltipContent>{`Status code: ${status.code}`}</TooltipContent>
         </Tooltip>
-      ) : (
-        <StatusBadge status={status} />
       );
     },
   }),

@@ -61,7 +61,7 @@ git remote add upstream https://github.com/usenotra/notra.git
 2. Install dependencies:
 
 ```bash
-bun install
+pnpm install
 ```
 
 3. Set up environment variables:
@@ -90,22 +90,22 @@ Helpful provider docs:
 5. Run database migrations:
 
 ```bash
-bun run db:migrate
+pnpm db:migrate
 ```
 
 6. Start development:
 
 ```bash
-bun dev
+pnpm dev
 ```
 
 Run a single app when needed:
 
 ```bash
-bun dev --filter=dashboard
-bun dev --filter=api
-bun dev --filter=web
-bun dev --filter=docs
+pnpm dev -- --filter=dashboard
+pnpm dev -- --filter=api
+pnpm dev -- --filter=web
+pnpm dev -- --filter=docs
 ```
 
 ## QStash Local Workflows
@@ -148,16 +148,16 @@ https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-
 Common Drizzle commands from the repo root:
 
 ```bash
-bun run db:generate
-bun run db:migrate
-bun run db:push
-bun run db:studio
+pnpm db:generate
+pnpm db:migrate
+pnpm db:push
+pnpm db:studio
 ```
 
 Seed helpers:
 
 ```bash
-bun run db:seed
+pnpm --filter dashboard db:seed
 ```
 
 ## Making Changes
@@ -171,10 +171,10 @@ git checkout -b feat/short-description
 2. Run quality checks before you commit:
 
 ```bash
-bun run format
-bun run check
-bun run check-types
-bun run build
+pnpm format
+pnpm check
+pnpm check-types
+pnpm build
 ```
 
 3. Commit with clear [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) messages:

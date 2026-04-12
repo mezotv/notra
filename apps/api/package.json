@@ -2,12 +2,13 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsup",
-    "start": "node dist/index.mjs",
-    "check-types": "bunx tsc --noEmit"
+    "start": "tsx src/server.ts",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.13",
     "@hono/zod-openapi": "^1.2.2",
     "@notra/ai": "workspace:*",
     "@notra/content-generation": "workspace:*",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/sanitize-html": "^2.16.0",
     "@notra/typescript-config": "workspace:*",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

@@ -307,7 +307,7 @@ export function BrandForm({
                 <div className="relative">
                   <span
                     aria-hidden="true"
-                    className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 z-10 text-base leading-none"
+                    className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2 text-base leading-none"
                   >
                     {getLanguageFlag(field.state.value)}
                   </span>

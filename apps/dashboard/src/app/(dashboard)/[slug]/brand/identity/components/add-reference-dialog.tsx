@@ -372,7 +372,7 @@ function ImportXStep({
   const { remaining } = useReferenceBalance();
 
   const effectiveMax =
-    remaining !== null ? Math.min(maxResults, remaining) : maxResults;
+    remaining === null ? maxResults : Math.min(maxResults, remaining);
 
   useEffect(() => {
     if (remaining !== null && remaining < maxResults) {
@@ -454,13 +454,13 @@ function ImportXStep({
               <Input
                 className="h-7 w-16 text-center text-xs"
                 id="max-results"
-                max={remaining !== null ? Math.min(20, remaining) : 20}
+                max={remaining === null ? 20 : Math.min(20, remaining)}
                 min={1}
                 onChange={(e) => {
                   const val = Number.parseInt(e.target.value, 10);
                   if (!Number.isNaN(val)) {
                     const cap =
-                      remaining !== null ? Math.min(20, remaining) : 20;
+                      remaining === null ? 20 : Math.min(20, remaining);
                     setMaxResults(Math.min(cap, Math.max(1, val)));
                   }
                 }}

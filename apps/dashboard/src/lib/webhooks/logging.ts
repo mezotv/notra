@@ -12,8 +12,12 @@ const LOG_TTL_30_DAYS = 60 * 60 * 24 * 30;
 const LOG_LIMIT = 200;
 
 export function getLogTtlSeconds(retentionDays: LogRetentionDays) {
-  if (retentionDays === 30) return LOG_TTL_30_DAYS;
-  if (retentionDays === 14) return LOG_TTL_14_DAYS;
+  if (retentionDays === 30) {
+    return LOG_TTL_30_DAYS;
+  }
+  if (retentionDays === 14) {
+    return LOG_TTL_14_DAYS;
+  }
   return LOG_TTL_7_DAYS;
 }
 

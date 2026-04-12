@@ -58,7 +58,7 @@ export function useActiveGenerations(organizationId: string) {
     }
 
     previousCountRef.current = currentCount;
-  }, [query.data?.generations?.length, queryClient]);
+  }, [query.data?.generations?.length, queryClient, query.data?.generations]);
 
   const clearResultMutate = clearResult.mutate;
 

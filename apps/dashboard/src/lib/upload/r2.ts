@@ -1,12 +1,12 @@
 import { S3Client } from "@aws-sdk/client-s3";
 
-type R2Env = {
+interface R2Env {
   accessKeyId: string;
   secretAccessKey: string;
   bucketName: string;
   endpoint: string;
   publicUrl: string;
-};
+}
 
 let cachedR2Client: S3Client | undefined;
 let cachedR2Env: R2Env | undefined;
