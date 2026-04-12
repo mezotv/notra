@@ -336,7 +336,7 @@ export function CreateContentDialog({
     setSelectedPrKeys(prKeys);
     setSelectedReleaseKeys(relKeys);
     setSelectedLinearKeys(linearKeys);
-  }, [previewData, previewParamsKey, previewResponse?.linearIntegrations]);
+  }, [previewData, previewParamsKey]);
 
   useEffect(() => {
     if (!previewFailures.length) {
@@ -502,7 +502,6 @@ export function CreateContentDialog({
     selectedPrKeys,
     selectedReleaseKeys,
     selectedLinearKeys,
-    selectedLinearIds,
   ]);
 
   const eventCounts = useMemo(() => {

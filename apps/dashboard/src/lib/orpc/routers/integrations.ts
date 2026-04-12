@@ -105,9 +105,9 @@ function serializeRepository(repository: {
     repo: repository.repo,
     defaultBranch: repository.defaultBranch,
     enabled: repository.enabled,
-    ...(repository.encryptedWebhookSecret === undefined
-      ? {}
-      : { hasWebhook: Boolean(repository.encryptedWebhookSecret) }),
+    ...(repository.encryptedWebhookSecret !== undefined
+      ? { hasWebhook: Boolean(repository.encryptedWebhookSecret) }
+      : {}),
     ...(repository.outputs
       ? {
           outputs: repository.outputs.map(serializeRepositoryOutput),
@@ -340,7 +340,7 @@ export const integrationsRouter = {
       );
 
       const normalizedBranch =
-        input.branch === undefined ? undefined : input.branch || null;
+        input.branch !== undefined ? input.branch || null : undefined;
 
       try {
         if (input.token !== undefined) {
@@ -546,9 +546,9 @@ export const integrationsRouter = {
           input.repositoryId
         );
         const normalizedDefaultBranch =
-          input.defaultBranch === undefined
-            ? undefined
-            : input.defaultBranch || null;
+          input.defaultBranch !== undefined
+            ? input.defaultBranch || null
+            : undefined;
 
         try {
           if (normalizedDefaultBranch) {
@@ -561,10 +561,10 @@ export const integrationsRouter = {
           }
 
           const updated = await updateRepository(input.repositoryId, {
-            ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
-            ...(normalizedDefaultBranch === undefined
-              ? {}
-              : { defaultBranch: normalizedDefaultBranch }),
+            ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
+            ...(normalizedDefaultBranch !== undefined
+              ? { defaultBranch: normalizedDefaultBranch }
+              : {}),
           });
 
           if (!updated) {

@@ -352,7 +352,7 @@ function LinkedInPost({
           <div className="flex items-center gap-1">
             {reactions?.count && reactions.count > 0 && (
               <>
-                <div className="flex -space-x-0.5">
+                <div className="-space-x-0.5 flex">
                   {reactionTypes.map((type) => (
                     <ReactionDot key={type} type={type} />
                   ))}

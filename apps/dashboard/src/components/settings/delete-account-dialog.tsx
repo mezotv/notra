@@ -187,7 +187,7 @@ export function DeleteAccountDialog({
                           <p className="font-medium text-sm">{org.name}</p>
                           <p className="text-muted-foreground text-xs">
                             {org.memberCount} member
-                            {org.memberCount === 1 ? "" : "s"}
+                            {org.memberCount !== 1 ? "s" : ""}
                           </p>
                         </div>
                       </div>

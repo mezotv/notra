@@ -227,7 +227,7 @@ export function IntegrationCard({
             ) : (
               <p>
                 {integration.repositories.length} repository
-                {integration.repositories.length === 1 ? "" : "ies"} configured
+                {integration.repositories.length !== 1 ? "ies" : ""} configured
               </p>
             )}
           </div>

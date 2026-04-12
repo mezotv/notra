@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
   },
   turbopack: {
-    root: path.resolve(import.meta.dirname, "../.."),
+    root: path.resolve(__dirname, "../.."),
   },
   transpilePackages: [
     "@notra/db",

@@ -30,7 +30,7 @@ export function CreditTopupModal({
     return (
       <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
         <ResponsiveDialogContent className="sm:max-w-md">
-          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
+          <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
             <Confetti
               colors={[
                 "var(--primary)",

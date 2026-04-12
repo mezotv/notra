@@ -188,7 +188,7 @@ export default function CreditsPageClient() {
   if (success) {
     return (
       <PageContainer className="flex flex-1 flex-col items-center justify-center">
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
+        <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
           <Confetti
             colors={[
               "var(--primary)",
@@ -258,9 +258,9 @@ export default function CreditsPageClient() {
             <TitleCard accentColor="#10b981" heading="Current Balance">
               <div>
                 <p className="font-bold text-3xl tabular-nums tracking-tight">
-                  {aiCreditsBalance === null
-                    ? "-"
-                    : formatDollars(aiCreditsBalance)}
+                  {aiCreditsBalance !== null
+                    ? formatDollars(aiCreditsBalance)
+                    : "-"}
                 </p>
                 {aiCreditsIncluded !== null && (
                   <p className="mt-1 text-muted-foreground text-sm">

@@ -17,7 +17,7 @@ const SHOWCASE_COMPANY_SLUGS = [
 const nextConfig: NextConfig = {
   reactCompiler: true,
   turbopack: {
-    root: path.resolve(import.meta.dirname, "../.."),
+    root: path.resolve(__dirname, "../.."),
   },
   experimental: {
     turbopackFileSystemCacheForDev: false,

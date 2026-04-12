@@ -51,7 +51,7 @@ export function CreditBalanceButton() {
         variant="outline"
       >
         <HugeiconsIcon icon={Wallet01Icon} size={16} />
-        {balance === null ? "-" : formatDollars(balance)}
+        {balance !== null ? formatDollars(balance) : "-"}
       </Button>
       <CreditTopupModal onOpenChange={setOpen} open={open} />
     </>

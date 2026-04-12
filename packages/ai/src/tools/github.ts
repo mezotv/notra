@@ -372,13 +372,13 @@ export function createGetReleaseByTagTool(
     config?.allowedReleaseTagsByIntegrationId !== undefined ||
     config?.allowedReleaseTagsGlobal !== undefined;
   const allowedReleaseTagsGlobal =
-    config?.allowedReleaseTagsGlobal === undefined
-      ? undefined
-      : new Set(
+    config?.allowedReleaseTagsGlobal !== undefined
+      ? new Set(
           config.allowedReleaseTagsGlobal
             .map((value) => value.trim().toLowerCase())
             .filter((value) => value.length > 0)
-        );
+        )
+      : undefined;
 
   return cached(
     tool({
@@ -513,13 +513,13 @@ export function createGetCommitsByTimeframeTool(
     resolveContext
   );
   const allowedCommitShas =
-    config?.allowedCommitShas === undefined
-      ? undefined
-      : new Set(
+    config?.allowedCommitShas !== undefined
+      ? new Set(
           config.allowedCommitShas
             .map((value) => value.trim().toLowerCase())
             .filter((value) => value.length > 0)
-        );
+        )
+      : undefined;
 
   return cached(
     tool({

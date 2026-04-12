@@ -176,9 +176,9 @@ export function UsageSection() {
           <TitleCard accentColor="#10b981" heading="Credits Remaining">
             <div className="flex items-baseline gap-2">
               <p className="font-bold text-3xl tabular-nums tracking-tight">
-                {aiCreditsFeature.balance === null
-                  ? "-"
-                  : formatDollars(aiCreditsFeature.balance)}
+                {aiCreditsFeature.balance !== null
+                  ? formatDollars(aiCreditsFeature.balance)
+                  : "-"}
               </p>
               <p className="text-muted-foreground text-sm">
                 {aiCreditsFeature.included
@@ -206,9 +206,9 @@ export function UsageSection() {
                   ? Math.min((used / feature.included) * 100, 100)
                   : 0;
               const descriptionText =
-                feature.balance === null
-                  ? `of ${formatNumber(feature.included ?? 0)}`
-                  : `${formatNumber(feature.balance)} of ${formatNumber(feature.included ?? 0)} remaining`;
+                feature.balance !== null
+                  ? `${formatNumber(feature.balance)} of ${formatNumber(feature.included ?? 0)} remaining`
+                  : `of ${formatNumber(feature.included ?? 0)}`;
 
               return (
                 <div
@@ -263,9 +263,9 @@ export function UsageSection() {
                               Remaining
                             </span>
                             <span>
-                              {feature.balance === null
-                                ? "-"
-                                : formatNumber(feature.balance)}
+                              {feature.balance !== null
+                                ? formatNumber(feature.balance)
+                                : "-"}
                             </span>
                           </div>
                           <div className="flex items-center justify-between">

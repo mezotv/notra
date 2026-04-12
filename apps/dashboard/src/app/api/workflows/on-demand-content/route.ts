@@ -71,8 +71,8 @@ async function setTrackedJobStatus(
   }
 
   await setContentGenerationJobStatus(redis, jobId, status, {
-    ...(updates?.postId === undefined ? {} : { postId: updates.postId }),
-    ...(updates?.error === undefined ? {} : { error: updates.error }),
+    ...(updates?.postId !== undefined ? { postId: updates.postId } : {}),
+    ...(updates?.error !== undefined ? { error: updates.error } : {}),
   });
 }
 
@@ -611,11 +611,11 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             properties: {
               source: "manual",
               output_type: contentType,
-              input_tokens: contentResult.usage?.inputTokens,
-              output_tokens: contentResult.usage?.outputTokens,
-              cache_read_tokens: contentResult.usage?.cacheReadTokens,
-              cache_write_tokens: contentResult.usage?.cacheWriteTokens,
-              total_tokens: contentResult.usage?.totalTokens,
+              input_tokens: contentResult.usage!.inputTokens,
+              output_tokens: contentResult.usage!.outputTokens,
+              cache_read_tokens: contentResult.usage!.cacheReadTokens,
+              cache_write_tokens: contentResult.usage!.cacheWriteTokens,
+              total_tokens: contentResult.usage!.totalTokens,
               cost_cents: costCents,
             },
           });

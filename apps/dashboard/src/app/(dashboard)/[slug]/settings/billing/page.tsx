@@ -656,9 +656,9 @@ export default function BillingPage() {
                                 {getInvoiceDescription(invoice.planIds)}
                               </TableCell>
                               <TableCell className="w-[120px] tabular-nums">
-                                {invoice.total === undefined
-                                  ? "-"
-                                  : `$${invoice.total.toFixed(2)}`}
+                                {invoice.total !== undefined
+                                  ? `$${invoice.total.toFixed(2)}`
+                                  : "-"}
                               </TableCell>
                               <TableCell className="w-[120px]">
                                 <Badge

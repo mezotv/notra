@@ -9,10 +9,10 @@ import { getServerSession } from "./session";
 
 type AuthSession = Awaited<ReturnType<typeof getServerSession>>;
 type AuthenticatedUser = NonNullable<AuthSession["user"]>;
-interface OrganizationMembership {
+type OrganizationMembership = {
   id: string;
   role: string;
-}
+};
 
 interface OrganizationAuthDependencies {
   getServerSession: typeof getServerSession;

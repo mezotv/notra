@@ -14,24 +14,21 @@ const cacheEntrySchema = z.object({
   variant: z.string().optional(),
 });
 
-interface CachedFlag {
+type CachedFlag = {
   on: boolean;
   value: boolean | string | number | undefined;
   variant: string | undefined;
-}
+};
 
-interface CachedEntry {
-  key: string;
-  flag: CachedFlag;
-}
+type CachedEntry = { key: string; flag: CachedFlag };
 
-interface CachedFlagState {
+type CachedFlagState = {
   on: boolean;
   status: "loading" | "ready" | "error" | "pending";
   loading: boolean;
   value: boolean | string | number | undefined;
   variant: string | undefined;
-}
+};
 
 function readCache(key: string): CachedFlag | null {
   if (typeof window === "undefined") {

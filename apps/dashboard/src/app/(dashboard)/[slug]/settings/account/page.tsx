@@ -402,7 +402,7 @@ function LoginDetailsSection({
                               ? "Hide current password"
                               : "Show current password"
                           }
-                          className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="-translate-y-1/2 absolute top-1/2 right-3 text-muted-foreground hover:text-foreground"
                           onClick={() =>
                             setShowCurrentPassword(!showCurrentPassword)
                           }
@@ -441,7 +441,7 @@ function LoginDetailsSection({
                               ? "Hide new password"
                               : "Show new password"
                           }
-                          className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          className="-translate-y-1/2 absolute top-1/2 right-3 text-muted-foreground hover:text-foreground"
                           onClick={() => setShowNewPassword(!showNewPassword)}
                           type="button"
                         >

@@ -170,7 +170,6 @@ export function PricingClient({ slug }: PricingClientProps) {
     attribution.signupMethod,
     attribution.source,
     signupCompletedMutation,
-    attribution,
   ]);
 
   async function handleSelectPlan(planId: string | undefined) {
