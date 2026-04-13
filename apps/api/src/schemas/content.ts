@@ -37,17 +37,13 @@ function normalizeFilterValues<T extends string>(
   return Array.from(new Set(normalized));
 }
 
-function splitQueryFilterValues(
-  values: string | string[] | undefined
-): string[] {
+function splitQueryFilterValues(values: string | undefined): string[] {
   if (!values) {
     return [];
   }
 
-  const normalized = Array.isArray(values) ? values : [values];
-
-  return normalized
-    .flatMap((value) => value.split(","))
+  return values
+    .split(",")
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 }
@@ -83,7 +79,7 @@ function validateEnumFilterValues<T extends string>(
   }
 }
 
-function createQueryEnumFilterSchema<T extends string>(
+function createBaseEnumFilterSchema<T extends string>(
   valueSchema: z.ZodType<T>,
   defaultValues: readonly T[],
   maxItems: number
@@ -106,32 +102,28 @@ function createQueryEnumFilterSchema<T extends string>(
     });
 }
 
+function createQueryEnumFilterSchema<T extends string>(
+  valueSchema: z.ZodType<T>,
+  defaultValues: readonly T[],
+  maxItems: number
+) {
+  return createBaseEnumFilterSchema(valueSchema, defaultValues, maxItems);
+}
+
 function createOpenApiEnumFilterSchema<T extends string>(
   valueSchema: z.ZodType<T>,
   defaultValues: readonly T[],
   maxItems: number,
   description: string
 ) {
-  return z
-    .string()
-    .optional()
-    .superRefine((values, ctx) => {
-      const parsedValues = splitQueryFilterValues(values);
-      validateFilterItemCount(parsedValues, maxItems, ctx);
-      validateEnumFilterValues(parsedValues, valueSchema, ctx);
-    })
-    .transform((values: string | undefined) => {
-      const parsedValues = splitQueryFilterValues(values);
-
-      return normalizeFilterValues(
-        parsedValues.map((value) => valueSchema.parse(value)),
-        defaultValues
-      );
-    })
-    .openapi({ description });
+  return createBaseEnumFilterSchema(
+    valueSchema,
+    defaultValues,
+    maxItems
+  ).openapi({ description });
 }
 
-function createQueryStringFilterSchema(maxItems: number) {
+function createBaseStringFilterSchema(maxItems: number) {
   return z
     .string()
     .optional()
@@ -145,22 +137,15 @@ function createQueryStringFilterSchema(maxItems: number) {
     });
 }
 
+function createQueryStringFilterSchema(maxItems: number) {
+  return createBaseStringFilterSchema(maxItems);
+}
+
 function createOpenApiStringFilterSchema(
   maxItems: number,
   description: string
 ) {
-  return z
-    .string()
-    .optional()
-    .superRefine((values, ctx) => {
-      validateFilterItemCount(splitQueryFilterValues(values), maxItems, ctx);
-    })
-    .transform((values: string | undefined) => {
-      const parsedValues = splitQueryFilterValues(values);
-
-      return Array.from(new Set(parsedValues));
-    })
-    .openapi({ description });
+  return createBaseStringFilterSchema(maxItems).openapi({ description });
 }
 
 const statusFilterSchema = createQueryEnumFilterSchema(
