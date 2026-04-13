@@ -26,7 +26,7 @@ import {
   posts,
   repositoryOutputs,
 } from "@notra/db/schema";
-import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import {
   ALL_POST_CONTENT_TYPES,
@@ -1659,7 +1659,7 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
 
   const query = c.req.valid("query");
   const db = c.get("db");
-  const { limit, page, sort, status, contentType } = query;
+  const { limit, page, sort, status, contentType, brandIdentityId } = query;
   const organization = await getOrganizationResponse(db, orgId);
 
   if (!organization) {
@@ -1674,6 +1674,12 @@ contentRoutes.openapi(getPostsRoute, async (c) => {
       : undefined,
     shouldApplyFilter(contentType, ALL_POST_CONTENT_TYPES)
       ? inArray(posts.contentType, contentType)
+      : undefined,
+    brandIdentityId.length > 0
+      ? inArray(
+          sql<string>`${posts.sourceMetadata} ->> 'brandVoiceId'`,
+          brandIdentityId
+        )
       : undefined
   );
 

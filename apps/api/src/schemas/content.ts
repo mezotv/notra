@@ -37,18 +37,73 @@ function normalizeFilterValues<T extends string>(
   return Array.from(new Set(normalized));
 }
 
+function splitQueryFilterValues(
+  values: string | string[] | undefined
+): string[] {
+  if (!values) {
+    return [];
+  }
+
+  const normalized = Array.isArray(values) ? values : [values];
+
+  return normalized
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+function validateFilterItemCount(
+  parsedValues: readonly string[],
+  maxItems: number,
+  ctx: z.RefinementCtx
+) {
+  if (parsedValues.length > maxItems) {
+    ctx.addIssue({
+      code: "custom",
+      message: `Expected at most ${maxItems} items`,
+    });
+  }
+}
+
+function validateEnumFilterValues<T extends string>(
+  parsedValues: readonly string[],
+  valueSchema: z.ZodType<T>,
+  ctx: z.RefinementCtx
+) {
+  for (const value of parsedValues) {
+    const parsedValue = valueSchema.safeParse(value);
+
+    if (!parsedValue.success) {
+      const message = parsedValue.error.issues[0]?.message ?? "Invalid value";
+      ctx.addIssue({
+        code: "custom",
+        message,
+      });
+    }
+  }
+}
+
 function createQueryEnumFilterSchema<T extends string>(
   valueSchema: z.ZodType<T>,
   defaultValues: readonly T[],
   maxItems: number
 ) {
   return z
-    .array(valueSchema)
-    .max(maxItems)
+    .string()
     .optional()
-    .transform((values: T[] | undefined) =>
-      normalizeFilterValues(values, defaultValues)
-    );
+    .superRefine((values, ctx) => {
+      const parsedValues = splitQueryFilterValues(values);
+      validateFilterItemCount(parsedValues, maxItems, ctx);
+      validateEnumFilterValues(parsedValues, valueSchema, ctx);
+    })
+    .transform((values: string | undefined) => {
+      const parsedValues = splitQueryFilterValues(values);
+
+      return normalizeFilterValues(
+        parsedValues.map((value) => valueSchema.parse(value)),
+        defaultValues
+      );
+    });
 }
 
 function createOpenApiEnumFilterSchema<T extends string>(
@@ -58,11 +113,53 @@ function createOpenApiEnumFilterSchema<T extends string>(
   description: string
 ) {
   return z
-    .union([valueSchema, z.array(valueSchema).max(maxItems)])
+    .string()
     .optional()
-    .transform((values: T | T[] | undefined) =>
-      normalizeFilterValues(values, defaultValues)
-    )
+    .superRefine((values, ctx) => {
+      const parsedValues = splitQueryFilterValues(values);
+      validateFilterItemCount(parsedValues, maxItems, ctx);
+      validateEnumFilterValues(parsedValues, valueSchema, ctx);
+    })
+    .transform((values: string | undefined) => {
+      const parsedValues = splitQueryFilterValues(values);
+
+      return normalizeFilterValues(
+        parsedValues.map((value) => valueSchema.parse(value)),
+        defaultValues
+      );
+    })
+    .openapi({ description });
+}
+
+function createQueryStringFilterSchema(maxItems: number) {
+  return z
+    .string()
+    .optional()
+    .superRefine((values, ctx) => {
+      validateFilterItemCount(splitQueryFilterValues(values), maxItems, ctx);
+    })
+    .transform((values: string | undefined) => {
+      const parsedValues = splitQueryFilterValues(values);
+
+      return Array.from(new Set(parsedValues));
+    });
+}
+
+function createOpenApiStringFilterSchema(
+  maxItems: number,
+  description: string
+) {
+  return z
+    .string()
+    .optional()
+    .superRefine((values, ctx) => {
+      validateFilterItemCount(splitQueryFilterValues(values), maxItems, ctx);
+    })
+    .transform((values: string | undefined) => {
+      const parsedValues = splitQueryFilterValues(values);
+
+      return Array.from(new Set(parsedValues));
+    })
     .openapi({ description });
 }
 
@@ -78,26 +175,34 @@ const contentTypeFilterSchema = createQueryEnumFilterSchema(
   ALL_POST_CONTENT_TYPES.length
 );
 
+const brandIdentityIdFilterSchema = createQueryStringFilterSchema(100);
+
 const getPostsQuerySchema = z.object({
   sort: z.enum(["asc", "desc"]).default("desc"),
   limit: z.coerce.number().int().min(1).max(100).default(10),
   page: z.coerce.number().int().min(1).default(1),
   status: statusFilterSchema,
   contentType: contentTypeFilterSchema,
+  brandIdentityId: brandIdentityIdFilterSchema,
 });
 
 const openApiStatusFilterSchema = createOpenApiEnumFilterSchema(
   postStatusSchema,
   ["published"],
   ALL_POST_STATUSES.length,
-  "Filter by status. Repeat the query param to pass multiple values."
+  "Filter by status using a comma-separated list."
 );
 
 const openApiContentTypeFilterSchema = createOpenApiEnumFilterSchema(
   postContentTypeSchema,
   ALL_POST_CONTENT_TYPES,
   ALL_POST_CONTENT_TYPES.length,
-  "Filter by content type. Repeat the query param to pass multiple values."
+  "Filter by content type using a comma-separated list."
+);
+
+const openApiBrandIdentityIdFilterSchema = createOpenApiStringFilterSchema(
+  100,
+  "Filter by brand identity ID using a comma-separated list."
 );
 
 export const getPostsOpenApiQuerySchema = z.object({
@@ -115,6 +220,7 @@ export const getPostsOpenApiQuerySchema = z.object({
   }),
   status: openApiStatusFilterSchema,
   contentType: openApiContentTypeFilterSchema,
+  brandIdentityId: openApiBrandIdentityIdFilterSchema,
 });
 
 export const getPostParamsSchema = z.object({
