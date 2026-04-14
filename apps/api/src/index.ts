@@ -4,6 +4,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
 import { contentRoutes } from "./routes/content";
+import { schedulesRoutes } from "./routes/schedules";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
 
@@ -104,6 +105,7 @@ app.get("/ping", (c) => {
 });
 
 app.route("/v1", contentRoutes);
+app.route("/v1", schedulesRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
   type: "http",
@@ -132,6 +134,11 @@ app.doc31("/openapi.json", (_c) => ({
       name: "Content",
       description:
         "Read content. Organization is inferred from the API key (identity.externalId).",
+    },
+    {
+      name: "Schedules",
+      description:
+        "Manage scheduled content generation. Organization is inferred from the API key (identity.externalId).",
     },
   ],
 }));
