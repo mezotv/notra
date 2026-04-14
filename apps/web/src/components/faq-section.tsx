@@ -72,7 +72,7 @@ export default function FAQSection() {
           <div className="w-full font-normal font-sans text-base text-muted-foreground leading-7">
             Common questions about how Notra
             <br className="hidden md:block" />
-            turns your team's work into content.
+            {" "}turns your team's work into content.
           </div>
         </div>
 
