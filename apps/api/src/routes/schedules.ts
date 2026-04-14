@@ -90,6 +90,7 @@ function hashSchedule(input: CreateScheduleBody) {
         sourceConfig: normalized.sourceConfig,
         targets: normalized.targets,
         outputType: normalized.outputType,
+        outputConfig: normalized.outputConfig ?? null,
         lookbackWindow: normalized.lookbackWindow,
       })
     )
@@ -603,18 +604,20 @@ schedulesRoutes.openapi(createScheduleRoute, async (c) => {
   const cronExpression = buildCronExpression(normalized.sourceConfig.cron);
   let qstashScheduleId: string | null = null;
 
-  try {
-    qstashScheduleId = await createQstashSchedule(env, {
-      triggerId,
-      cron: cronExpression,
-    });
-  } catch (error) {
-    const mapped = mapQstashError(error);
-    if (mapped.status === 400) {
-      return c.json({ error: mapped.error }, 400);
-    }
+  if (input.enabled) {
+    try {
+      qstashScheduleId = await createQstashSchedule(env, {
+        triggerId,
+        cron: cronExpression,
+      });
+    } catch (error) {
+      const mapped = mapQstashError(error);
+      if (mapped.status === 400) {
+        return c.json({ error: mapped.error }, 400);
+      }
 
-    return c.json({ error: mapped.error }, 500);
+      return c.json({ error: mapped.error }, 500);
+    }
   }
 
   try {
@@ -727,22 +730,23 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
   const persistedName =
     input.name.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
   const cronExpression = buildCronExpression(normalized.sourceConfig.cron);
-  const existingScheduleId = existing.qstashScheduleId ?? undefined;
+  const previousQstashScheduleId = existing.qstashScheduleId ?? null;
   let qstashScheduleId: string | null = null;
 
-  try {
-    qstashScheduleId = await createQstashSchedule(env, {
-      triggerId: scheduleId,
-      cron: cronExpression,
-      scheduleId: existingScheduleId,
-    });
-  } catch (error) {
-    const mapped = mapQstashError(error);
-    if (mapped.status === 400) {
-      return c.json({ error: mapped.error }, 400);
-    }
+  if (input.enabled) {
+    try {
+      qstashScheduleId = await createQstashSchedule(env, {
+        triggerId: scheduleId,
+        cron: cronExpression,
+      });
+    } catch (error) {
+      const mapped = mapQstashError(error);
+      if (mapped.status === 400) {
+        return c.json({ error: mapped.error }, 400);
+      }
 
-    return c.json({ error: mapped.error }, 500);
+      return c.json({ error: mapped.error }, 500);
+    }
   }
 
   try {
@@ -794,9 +798,13 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
       });
     });
 
+    if (previousQstashScheduleId) {
+      await deleteQstashSchedule(env, previousQstashScheduleId);
+    }
+
     return c.json({ schedule, organization }, 200);
   } catch (error) {
-    if (qstashScheduleId && qstashScheduleId !== existingScheduleId) {
+    if (qstashScheduleId) {
       await deleteQstashSchedule(env, qstashScheduleId).catch(() => null);
     }
 
@@ -839,14 +847,7 @@ schedulesRoutes.openapi(deleteScheduleRoute, async (c) => {
   }
 
   if (existing.qstashScheduleId) {
-    await deleteQstashSchedule(env, existing.qstashScheduleId).catch(
-      (error) => {
-        console.error(
-          `Failed to delete qstash schedule ${existing.qstashScheduleId}:`,
-          error
-        );
-      }
-    );
+    await deleteQstashSchedule(env, existing.qstashScheduleId);
   }
 
   await db
