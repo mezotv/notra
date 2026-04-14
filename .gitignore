@@ -53,3 +53,4 @@ opencode.json
 # Openlogs
 .openlogs/
 .opencode/package-lock.json
+.mcp.json
