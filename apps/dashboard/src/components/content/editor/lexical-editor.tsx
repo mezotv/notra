@@ -16,6 +16,7 @@ import { TablePlugin } from "@lexical/react/LexicalTablePlugin";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
+import type { TextSelection } from "@/schemas/content";
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
 import { KiboCodeBlockNode } from "./nodes/kibo-code-block-node";
@@ -29,10 +30,7 @@ import {
 import { FloatingToolbarPlugin } from "./plugins/floating-toolbar-plugin";
 import { HorizontalRulePlugin } from "./plugins/horizontal-rule-plugin";
 import { MarkdownSyncPlugin } from "./plugins/markdown-sync-plugin";
-import {
-  SelectionPlugin,
-  type TextSelection,
-} from "./plugins/selection-plugin";
+import { SelectionPlugin } from "./plugins/selection-plugin";
 import { TabFocusPlugin } from "./plugins/tab-focus-plugin";
 import { TableActionMenuPlugin } from "./plugins/table-action-menu-plugin";
 

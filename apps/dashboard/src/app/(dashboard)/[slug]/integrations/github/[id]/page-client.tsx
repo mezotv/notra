@@ -27,11 +27,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type {
-  GitHubIntegration,
-  GitHubRepository,
-  WebhookConfig,
-} from "@/types/integrations";
+import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
+import type { WebhookConfig } from "@/types/services/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
 import { GitHubIntegrationDetailSkeleton } from "./skeleton";

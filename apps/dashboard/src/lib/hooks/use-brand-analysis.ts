@@ -10,7 +10,6 @@ import type {
 import type {
   BrandSettings,
   BrandSettingsResponse,
-  Progress,
   ProgressResponse,
 } from "@/types/hooks/brand-analysis";
 import { QUERY_KEYS } from "@/utils/query-keys";

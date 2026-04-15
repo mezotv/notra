@@ -22,7 +22,6 @@ import {
   contentTriggers,
   githubIntegrations,
   linearIntegrations,
-  organizations,
   posts,
   repositoryOutputs,
 } from "@notra/db/schema";
@@ -40,7 +39,6 @@ import {
   deleteBrandIdentityResponseSchema,
   deleteIntegrationResponseSchema,
   deletePostResponseSchema,
-  errorResponseSchema,
   generationQueueErrorResponseSchema,
   getBrandAnalysisJobParamsSchema,
   getBrandAnalysisJobResponseSchema,
@@ -83,6 +81,8 @@ import {
   extractTitleFromMarkdown,
   renderMarkdownToHtml,
 } from "../utils/markdown";
+import { errorResponse } from "../utils/openapi-responses";
+import { getOrganizationResponse } from "../utils/organizations";
 import { deleteQstashSchedule } from "../utils/qstash";
 import { getRedis } from "../utils/redis";
 import {
@@ -93,37 +93,6 @@ import {
 export const contentRoutes = new OpenAPIHono();
 
 type DbClient = ReturnType<typeof createDb>;
-
-async function getOrganizationResponse(
-  db: DbClient,
-  organizationId: string
-): Promise<{
-  id: string;
-  slug: string;
-  name: string;
-  logo: string | null;
-} | null> {
-  const organization = await db.query.organizations.findFirst({
-    where: eq(organizations.id, organizationId),
-    columns: {
-      id: true,
-      slug: true,
-      name: true,
-      logo: true,
-    },
-  });
-
-  if (!organization) {
-    return null;
-  }
-
-  return {
-    id: organization.id,
-    slug: organization.slug,
-    name: organization.name,
-    logo: organization.logo,
-  };
-}
 
 function shouldApplyFilter(
   selectedValues: readonly string[],
@@ -353,8 +322,8 @@ async function disableTriggersAndDeleteIntegration(
 }
 
 async function deleteQstashSchedulesForTriggers(
-  runtimeEnv: Record<string, unknown>,
-  affectedTriggers: IntegrationTrigger[]
+  runtimeEnv: { QSTASH_TOKEN?: string; WORKFLOW_BASE_URL?: string },
+  affectedTriggers: readonly { qstashScheduleId: string | null }[]
 ) {
   for (const trigger of affectedTriggers) {
     if (!trigger.qstashScheduleId) {
@@ -679,46 +648,11 @@ const getPostsRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params or query",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params or query"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -740,46 +674,11 @@ const getPostRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Post or organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Post or organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -801,54 +700,12 @@ const deletePostRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Post not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    409: {
-      description: "Post slug already exists",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Post not found"),
+    409: errorResponse("Post slug already exists"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -878,54 +735,12 @@ const patchPostRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params or request body",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Post not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    409: {
-      description: "Post slug already exists",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params or request body"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Post not found"),
+    409: errorResponse("Post slug already exists"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -954,38 +769,10 @@ const createPostGenerationRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid request body",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid request body"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
     503: {
       description: "Content generation is unavailable",
       content: {
@@ -1012,38 +799,10 @@ const getBrandIdentitiesRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1072,54 +831,12 @@ const createBrandIdentityRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid request body",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    409: {
-      description: "Brand identity name already exists",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid request body"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    409: errorResponse("Brand identity name already exists"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1141,46 +858,11 @@ const getBrandAnalysisJobRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Brand identity analysis job not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Brand analysis is unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Brand identity analysis job not found"),
+    503: errorResponse("Brand analysis is unavailable"),
   },
 });
 
@@ -1202,46 +884,11 @@ const getBrandIdentityRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1300,54 +947,12 @@ const patchBrandIdentityRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid path params or request body",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Brand identity not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    409: {
-      description: "Brand identity name already exists",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Invalid path params or request body"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Brand identity not found"),
+    409: errorResponse("Brand identity name already exists"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1371,46 +976,11 @@ const deleteBrandIdentityRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Cannot delete the default brand identity",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Brand identity not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse("Cannot delete the default brand identity"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Brand identity not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1429,38 +999,10 @@ const getIntegrationsRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1489,54 +1031,14 @@ const createGitHubIntegrationRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid request body or GitHub repository access error",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Organization not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    409: {
-      description: "Repository already connected",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication or integration service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    400: errorResponse(
+      "Invalid request body or GitHub repository access error"
+    ),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    409: errorResponse("Repository already connected"),
+    503: errorResponse("Authentication or integration service unavailable"),
   },
 });
 
@@ -1560,38 +1062,10 @@ const deleteIntegrationRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Integration not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Authentication service unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Integration not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -1613,38 +1087,10 @@ const getPostGenerationRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    403: {
-      description: "Forbidden",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    404: {
-      description: "Generation job not found",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
-    503: {
-      description: "Content generation is unavailable",
-      content: {
-        "application/json": {
-          schema: errorResponseSchema,
-        },
-      },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Generation job not found"),
+    503: errorResponse("Content generation is unavailable"),
   },
 });
 
@@ -2555,20 +2001,7 @@ contentRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
     brandIdentityId
   );
 
-  for (const trigger of affectedTriggers) {
-    if (!trigger.qstashScheduleId) {
-      continue;
-    }
-
-    await deleteQstashSchedule(runtimeEnv, trigger.qstashScheduleId).catch(
-      (error) => {
-        console.error(
-          `Failed to delete qstash schedule ${trigger.qstashScheduleId}:`,
-          error
-        );
-      }
-    );
-  }
+  await deleteQstashSchedulesForTriggers(runtimeEnv, affectedTriggers);
 
   if (affectedTriggers.length > 0) {
     await db.batch([

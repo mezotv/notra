@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { OnboardingAccountMenu } from "@/components/onboarding/account-menu";
 import { FEATURES, PLANS } from "@/constants/features";
+import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
 
 interface PricingClientProps {
@@ -19,11 +20,6 @@ interface PricingClientProps {
 }
 
 const PRICE_REGEX = /^\d+([.,]\d+)?$/;
-
-type BillingPlan = Exclude<
-  ReturnType<typeof useListPlans>["data"],
-  undefined
->[number];
 
 function getProductPrice(plan: BillingPlan | undefined): number {
   return plan?.price?.amount ?? 0;

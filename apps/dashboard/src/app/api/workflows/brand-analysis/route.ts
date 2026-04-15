@@ -19,23 +19,12 @@ import { getFirecrawlClient } from "@/lib/firecrawl";
 import { redis } from "@/lib/redis";
 import { getBaseUrl } from "@/lib/triggers/qstash";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
+import type {
+  ProgressData,
+  ProgressStatus,
+} from "@/types/hooks/brand-analysis";
 
 const PROGRESS_TTL = 300;
-
-type ProgressStatus =
-  | "idle"
-  | "scraping"
-  | "extracting"
-  | "saving"
-  | "completed"
-  | "failed";
-
-interface ProgressData {
-  status: ProgressStatus;
-  currentStep: number;
-  totalSteps: number;
-  error?: string;
-}
 
 interface ErrorDetail {
   code: string;

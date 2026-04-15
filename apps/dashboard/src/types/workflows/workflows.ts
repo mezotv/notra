@@ -33,6 +33,24 @@ export interface WorkflowBrandSettings {
   language: string | null;
 }
 
+export interface ScheduleRepositoryData {
+  id: string;
+  owner: string;
+  repo: string;
+  defaultBranch: string | null;
+}
+
+export type ScheduleBrandSettingsData = {
+  id: string;
+  name: string;
+  toneProfile: string | null;
+  companyName: string | null;
+  companyDescription: string | null;
+  audience: string | null;
+  customInstructions: string | null;
+  language: string | null;
+} | null;
+
 export interface EventGenerationContext {
   organizationId: string;
   triggerId: string;

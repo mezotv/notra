@@ -5,11 +5,9 @@ import {
   contentTriggerLookbackWindows,
   contentTriggers,
   githubIntegrations,
-  organizations,
 } from "@notra/db/schema";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
-import { errorResponseSchema } from "../schemas/content";
 import {
   createScheduleRequestSchema,
   deleteScheduleResponseSchema,
@@ -23,6 +21,8 @@ import {
   scheduleTargetsSchema,
 } from "../schemas/schedules";
 import { getOrganizationId } from "../utils/auth";
+import { errorResponse } from "../utils/openapi-responses";
+import { getOrganizationResponse } from "../utils/organizations";
 import {
   buildCronExpression,
   createQstashSchedule,
@@ -95,18 +95,6 @@ function hashSchedule(input: CreateScheduleBody) {
       })
     )
     .digest("hex");
-}
-
-async function getOrganizationResponse(db: DbClient, organizationId: string) {
-  return db.query.organizations.findFirst({
-    where: eq(organizations.id, organizationId),
-    columns: {
-      id: true,
-      slug: true,
-      name: true,
-      logo: true,
-    },
-  });
 }
 
 async function ensureScheduleTargetsExist(
@@ -323,18 +311,9 @@ const getSchedulesRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    404: {
-      description: "Organization not found",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
   },
 });
 
@@ -363,30 +342,12 @@ const createScheduleRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid request",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    404: {
-      description: "Organization not found",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    409: {
-      description: "Duplicate schedule",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    500: {
-      description: "Failed to create schedule",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
+    400: errorResponse("Invalid request"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Organization not found"),
+    409: errorResponse("Duplicate schedule"),
+    500: errorResponse("Failed to create schedule"),
   },
 });
 
@@ -416,30 +377,12 @@ const patchScheduleRoute = createRoute({
         },
       },
     },
-    400: {
-      description: "Invalid request",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    401: {
-      description: "Missing or invalid API key",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    404: {
-      description: "Schedule or organization not found",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    409: {
-      description: "Duplicate schedule",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    500: {
-      description: "Failed to update schedule",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
+    400: errorResponse("Invalid request"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Schedule or organization not found"),
+    409: errorResponse("Duplicate schedule"),
+    500: errorResponse("Failed to update schedule"),
   },
 });
 
@@ -461,18 +404,9 @@ const deleteScheduleRoute = createRoute({
         },
       },
     },
-    401: {
-      description: "Missing or invalid API key",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    403: {
-      description: "Forbidden",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
-    404: {
-      description: "Schedule or organization not found",
-      content: { "application/json": { schema: errorResponseSchema } },
-    },
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Schedule or organization not found"),
   },
 });
 

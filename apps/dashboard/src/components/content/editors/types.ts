@@ -1,5 +1,5 @@
-import type { TextSelection } from "@/components/chat-input";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
+import type { TextSelection } from "@/schemas/content";
 
 export interface ContentData {
   id: string;

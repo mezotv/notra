@@ -29,9 +29,9 @@ import {
 import Image from "next/image";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import type { TextSelection } from "@/components/chat-input";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
+import type { TextSelection } from "@/schemas/content";
 
 interface LinkedInPostProps extends React.ComponentProps<"div"> {
   author: {

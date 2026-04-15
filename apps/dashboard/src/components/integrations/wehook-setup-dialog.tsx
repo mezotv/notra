@@ -20,10 +20,8 @@ import type React from "react";
 import { isValidElement, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type {
-  WebhookConfig,
-  WebhookSetupDialogProps,
-} from "@/types/integrations";
+import type { WebhookSetupDialogProps } from "@/types/integrations";
+import type { WebhookConfig } from "@/types/services/integrations";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);

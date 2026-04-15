@@ -44,22 +44,8 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { FEATURES } from "@/constants/features";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import type { ContextItem, TextSelection } from "@/schemas/content";
 import type { GitHubRepository } from "@/types/integrations";
-
-export interface TextSelection {
-  text: string;
-  startLine: number;
-  startChar: number;
-  endLine: number;
-  endChar: number;
-}
-
-export interface ContextItem {
-  type: "github-repo";
-  owner: string;
-  repo: string;
-  integrationId: string;
-}
 
 interface ChatInputProps {
   onSend?: (value: string) => void;

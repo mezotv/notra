@@ -27,7 +27,7 @@ export type ProgressStatus =
   | "completed"
   | "failed";
 
-export interface Progress {
+export interface ProgressData {
   status: ProgressStatus;
   currentStep: number;
   totalSteps: number;
@@ -35,5 +35,5 @@ export interface Progress {
 }
 
 export interface ProgressResponse {
-  progress: Progress;
+  progress: ProgressData;
 }

@@ -25,9 +25,9 @@ import {
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
-import type { TextSelection } from "@/components/chat-input";
 import { TWITTER_CHAR_LIMIT } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
+import type { TextSelection } from "@/schemas/content";
 import { formatTweetContent } from "@/utils/format-tweet-content";
 
 interface TwitterPostMenuItem {

@@ -39,6 +39,7 @@ import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEATURES } from "@/constants/features";
+import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
@@ -65,11 +66,6 @@ const INVOICE_PRODUCT_NAME_MAP: Record<string, string> = {
 };
 
 const INVOICE_TABLE_COLUMN_COUNT = 4;
-
-type BillingPlan = Exclude<
-  ReturnType<typeof useListPlans>["data"],
-  undefined
->[number];
 
 function formatInvoiceProductName(productId: string): string {
   return INVOICE_PRODUCT_NAME_MAP[productId] ?? productId;

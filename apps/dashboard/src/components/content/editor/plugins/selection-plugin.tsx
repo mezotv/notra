@@ -9,14 +9,7 @@ import {
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { useEffect } from "react";
-
-export interface TextSelection {
-  text: string;
-  startLine: number;
-  startChar: number;
-  endLine: number;
-  endChar: number;
-}
+import type { TextSelection } from "@/schemas/content";
 
 interface SelectionPluginProps {
   onSelectionChange: (selection: TextSelection | null) => void;

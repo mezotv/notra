@@ -62,20 +62,6 @@ export interface IntegrationWebhookLog {
   createdAt: string;
 }
 
-export interface GitHubIntegration {
-  id: string;
-  displayName: string;
-  enabled: boolean;
-  createdAt: string;
-  createdByUser?: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-  repositories: GitHubRepository[];
-}
-
 export interface GitHubRepoInfo {
   owner: string;
   repo: string;
@@ -138,14 +124,6 @@ export interface IntegrationCardProps {
 export interface RepositoryListProps {
   integrationId: string;
   organizationId: string;
-}
-
-export interface WebhookConfig {
-  webhookUrl: string;
-  webhookSecret: string;
-  repositoryId: string;
-  owner: string;
-  repo: string;
 }
 
 export interface WebhookSetupDialogProps {

@@ -59,6 +59,10 @@ import {
   type ScheduleWorkflowPayload,
   scheduleWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import type {
+  ScheduleBrandSettingsData as BrandSettingsData,
+  ScheduleRepositoryData as RepositoryData,
+} from "@/types/workflows/workflows";
 
 interface TriggerData {
   id: string;
@@ -72,24 +76,6 @@ interface TriggerData {
   enabled: boolean;
   autoPublish: boolean;
 }
-
-interface RepositoryData {
-  id: string;
-  owner: string;
-  repo: string;
-  defaultBranch: string | null;
-}
-
-type BrandSettingsData = {
-  id: string;
-  name: string;
-  toneProfile: string | null;
-  companyName: string | null;
-  companyDescription: string | null;
-  audience: string | null;
-  customInstructions: string | null;
-  language: string | null;
-} | null;
 
 export const { POST } = serve<ScheduleWorkflowPayload>(
   async (context: WorkflowContext<ScheduleWorkflowPayload>) => {

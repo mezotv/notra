@@ -42,24 +42,10 @@ import {
   formatUtcTodayContext,
   resolveLookbackRange,
 } from "@/lib/workflows/shared/lookback";
-
-interface RepositoryData {
-  id: string;
-  owner: string;
-  repo: string;
-  defaultBranch: string | null;
-}
-
-type BrandSettingsData = {
-  id: string;
-  name: string;
-  toneProfile: string | null;
-  companyName: string | null;
-  companyDescription: string | null;
-  audience: string | null;
-  customInstructions: string | null;
-  language: string | null;
-} | null;
+import type {
+  ScheduleBrandSettingsData as BrandSettingsData,
+  ScheduleRepositoryData as RepositoryData,
+} from "@/types/workflows/workflows";
 
 async function setTrackedJobStatus(
   jobId: string | undefined,

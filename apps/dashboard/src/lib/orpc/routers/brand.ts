@@ -26,7 +26,10 @@ import {
   updateBrandSettingsSchema,
   updateReferenceSchema,
 } from "@/schemas/brand";
-import type { BrandSettings as BrandVoiceOutput } from "@/types/hooks/brand-analysis";
+import type {
+  BrandSettings as BrandVoiceOutput,
+  ProgressData,
+} from "@/types/hooks/brand-analysis";
 import type {
   ApplicablePlatform,
   BrandReference as BrandReferenceOutput,
@@ -84,19 +87,6 @@ const analyzeInputSchema = organizationIdInputSchema.extend({
 const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({
   voiceId: z.string().min(1, "Voice ID is required"),
 });
-
-export interface ProgressData {
-  status:
-    | "idle"
-    | "scraping"
-    | "extracting"
-    | "saving"
-    | "completed"
-    | "failed";
-  currentStep: number;
-  totalSteps: number;
-  error?: string;
-}
 
 const typeDefaults: Record<string, ApplicablePlatform[]> = {
   twitter_post: ["twitter"],
