@@ -34,13 +34,30 @@ export function getPgConstraintName(error: unknown) {
   return null;
 }
 
-export function isPgUniqueViolation(error: unknown) {
+function hasUniqueViolationCode(error: unknown) {
   return (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
     error.code === "23505"
   );
+}
+
+export function isPgUniqueViolation(error: unknown) {
+  if (hasUniqueViolationCode(error)) {
+    return true;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "cause" in error &&
+    hasUniqueViolationCode(error.cause)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function isConstraintViolation(error: unknown, constraintName: string) {

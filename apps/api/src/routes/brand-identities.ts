@@ -582,11 +582,11 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
 
   try {
     const [brandIdentity] = shouldSetDefault
-      ? await (async () => {
+      ? await db.transaction(async (tx) => {
           const { updatedAt, ...targetUpdateData } = updateData;
 
           if (Object.keys(targetUpdateData).length > 0) {
-            await db
+            await tx
               .update(brandSettings)
               .set(targetUpdateData)
               .where(
@@ -597,7 +597,7 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
               );
           }
 
-          await db
+          await tx
             .update(brandSettings)
             .set({ isDefault: false })
             .where(
@@ -608,7 +608,7 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
               )
             );
 
-          return db
+          return tx
             .update(brandSettings)
             .set({ isDefault: true, updatedAt })
             .where(
@@ -618,7 +618,7 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
               )
             )
             .returning(selectBrandIdentityColumns());
-        })()
+        })
       : await db
           .update(brandSettings)
           .set(updateData)
@@ -720,16 +720,14 @@ brandIdentitiesRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
         ),
     ]);
   } else {
-    await db.batch([
-      db
-        .delete(brandSettings)
-        .where(
-          and(
-            eq(brandSettings.id, brandIdentityId),
-            eq(brandSettings.organizationId, orgId)
-          )
-        ),
-    ]);
+    await db
+      .delete(brandSettings)
+      .where(
+        and(
+          eq(brandSettings.id, brandIdentityId),
+          eq(brandSettings.organizationId, orgId)
+        )
+      );
   }
 
   return c.json(

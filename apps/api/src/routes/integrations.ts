@@ -383,7 +383,7 @@ integrationsRoutes.openapi(deleteIntegrationRoute, async (c) => {
     );
   }
 
-  const [deletedLinearIntegration] = await db
+  const [existingLinearIntegration] = await db
     .select({ id: linearIntegrations.id })
     .from(linearIntegrations)
     .where(
@@ -394,7 +394,7 @@ integrationsRoutes.openapi(deleteIntegrationRoute, async (c) => {
     )
     .limit(1);
 
-  if (!deletedLinearIntegration) {
+  if (!existingLinearIntegration) {
     return c.json({ error: "Integration not found" }, 404);
   }
 
@@ -419,7 +419,7 @@ integrationsRoutes.openapi(deleteIntegrationRoute, async (c) => {
 
   return c.json(
     {
-      id: deletedLinearIntegration.id,
+      id: existingLinearIntegration.id,
       organization,
       disabledSchedules: affectedTriggers
         .filter((trigger) => trigger.sourceType === "cron")
