@@ -80,6 +80,27 @@ export async function findMatchingGitHubIntegration(
   });
 }
 
+export function getSafeGitHubIntegrationErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+
+  const safeMessages = new Set([
+    "Invalid GitHub token or insufficient repository access",
+    "Unable to access repository. It may be private and require a Personal Access Token.",
+    "Organization has no members available to own the integration",
+  ]);
+
+  return safeMessages.has(error.message) ? error.message : null;
+}
+
+export function isGitHubIntegrationUnavailableError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.startsWith("GitHub integrations are unavailable:")
+  );
+}
+
 export async function validateGitHubRepositoryAccess(input: {
   owner: string;
   repo: string;

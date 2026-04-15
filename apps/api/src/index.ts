@@ -3,7 +3,10 @@ import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
-import { contentRoutes } from "./routes/content";
+import { brandIdentitiesRoutes } from "./routes/brand-identities";
+import { integrationsRoutes } from "./routes/integrations";
+import { legacyRedirectRoutes } from "./routes/legacy-redirects";
+import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
@@ -104,7 +107,10 @@ app.get("/ping", (c) => {
   return c.text("pong");
 });
 
-app.route("/v1", contentRoutes);
+app.route("/v1", legacyRedirectRoutes);
+app.route("/v1", postsRoutes);
+app.route("/v1", brandIdentitiesRoutes);
+app.route("/v1", integrationsRoutes);
 app.route("/v1", schedulesRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
