@@ -690,11 +690,9 @@ brandIdentitiesRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
     brandIdentityId
   );
 
-  await deleteQstashSchedulesForTriggers(runtimeEnv, affectedTriggers);
-
-  if (affectedTriggers.length > 0) {
-    await db.batch([
-      db
+  await db.transaction(async (tx) => {
+    if (affectedTriggers.length > 0) {
+      await tx
         .update(contentTriggers)
         .set({
           enabled: false,
@@ -709,18 +707,10 @@ brandIdentitiesRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
               affectedTriggers.map((trigger) => trigger.id)
             )
           )
-        ),
-      db
-        .delete(brandSettings)
-        .where(
-          and(
-            eq(brandSettings.id, brandIdentityId),
-            eq(brandSettings.organizationId, orgId)
-          )
-        ),
-    ]);
-  } else {
-    await db
+        );
+    }
+
+    await tx
       .delete(brandSettings)
       .where(
         and(
@@ -728,7 +718,9 @@ brandIdentitiesRoutes.openapi(deleteBrandIdentityRoute, async (c) => {
           eq(brandSettings.organizationId, orgId)
         )
       );
-  }
+  });
+
+  await deleteQstashSchedulesForTriggers(runtimeEnv, affectedTriggers);
 
   return c.json(
     {
