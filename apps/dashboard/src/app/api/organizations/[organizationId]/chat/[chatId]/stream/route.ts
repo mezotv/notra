@@ -53,9 +53,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   let unsubscribe: (() => void) | undefined;
 
+  const toChunks = (data: unknown): UIMessageChunk[] =>
+    Array.isArray(data) ? (data as UIMessageChunk[]) : [data as UIMessageChunk];
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const encoder = new TextEncoder();
+
+      const emit = (chunk: UIMessageChunk) => {
+        controller.enqueue(encoder.encode(toSseChunk(chunk)));
+        return chunk.type === "finish" || chunk.type === "abort";
+      };
+
       const history = await channel.history();
 
       for (const item of history) {
@@ -63,24 +72,23 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
           continue;
         }
 
-        const chunk = item.data as UIMessageChunk;
-        controller.enqueue(encoder.encode(toSseChunk(chunk)));
-
-        if (chunk.type === "finish" || chunk.type === "abort") {
-          controller.close();
-          return;
+        for (const chunk of toChunks(item.data)) {
+          if (emit(chunk)) {
+            controller.close();
+            return;
+          }
         }
       }
 
       unsubscribe = await channel.subscribe({
         events: ["ai.chunk"],
         onData: ({ data }) => {
-          const chunk = data as UIMessageChunk;
-          controller.enqueue(encoder.encode(toSseChunk(chunk)));
-
-          if (chunk.type === "finish" || chunk.type === "abort") {
-            unsubscribe?.();
-            controller.close();
+          for (const chunk of toChunks(data)) {
+            if (emit(chunk)) {
+              unsubscribe?.();
+              controller.close();
+              return;
+            }
           }
         },
       });

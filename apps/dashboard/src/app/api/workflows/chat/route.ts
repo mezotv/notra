@@ -240,23 +240,46 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       },
     });
 
+    let buffer: UIMessageChunk[] = [];
+    let flushPromise: Promise<void> | null = null;
+
+    const flushBuffer = async () => {
+      while (buffer.length > 0) {
+        const batch = buffer;
+        buffer = [];
+        await channel.emit("ai.chunk", batch as never);
+      }
+    };
+
+    const scheduleFlush = () => {
+      if (flushPromise) {
+        return;
+      }
+      flushPromise = flushBuffer().finally(() => {
+        flushPromise = null;
+      });
+    };
+
     for await (const chunk of uiStream) {
       if (abortController.signal.aborted) {
         break;
       }
-      await channel.emit("ai.chunk", chunk as UIMessageChunk);
+      buffer.push(chunk as UIMessageChunk);
+      scheduleFlush();
     }
 
     if (abortController.signal.aborted) {
-      await channel.emit("ai.chunk", {
-        type: "abort",
-        reason: "user-stopped",
-      });
-      await channel.emit("ai.chunk", {
-        type: "finish",
-        finishReason: "stop",
-      });
+      buffer.push(
+        { type: "abort", reason: "user-stopped" },
+        { type: "finish", finishReason: "stop" }
+      );
+      scheduleFlush();
     }
+
+    if (flushPromise) {
+      await flushPromise;
+    }
+    await flushBuffer();
   } catch (error) {
     const isAbort =
       abortController.signal.aborted ||
