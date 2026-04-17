@@ -184,6 +184,7 @@ export const POST = withEvlog(async function POST(
         log,
         model: parseResult.data.model,
         enableThinking: parseResult.data.enableThinking,
+        thinkingLevel: parseResult.data.thinkingLevel,
         abortSignal: request.signal,
       });
     }
