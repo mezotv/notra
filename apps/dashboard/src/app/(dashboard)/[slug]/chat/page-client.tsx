@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { BrailleLoader } from "@/components/braille-loader";
+import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import {
   ChatInputAdvanced,
   type ThinkingLevel,
@@ -38,7 +39,7 @@ import {
   chatErrorPayloadSchema,
   chatTransportRequestInputSchema,
 } from "@/schemas/chat";
-import type { ContextItem } from "@/types/chat";
+import type { ChatUIMessage, ContextItem } from "@/types/chat";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,
@@ -229,7 +230,7 @@ function StandaloneChatPageClient({
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
+      new DefaultChatTransport<ChatUIMessage>({
         api: `/api/organizations/${organizationId}/chat`,
         prepareSendMessagesRequest: ({ id, messages }) => ({
           body: {
@@ -345,7 +346,7 @@ function StandaloneChatPageClient({
     addToolApprovalResponse,
     status,
     stop,
-  } = useChat({
+  } = useChat<ChatUIMessage>({
     id: stableChatId,
     resume: Boolean(initialChatId && pendingMessageId),
     experimental_throttle: 50,
@@ -894,6 +895,9 @@ function StandaloneChatPageClient({
                       renderPart(part, message.id, index)
                     )}
                   </MessageContent>
+                  {message.role === "assistant" && (
+                    <AssistantMetadataHover metadata={message.metadata} />
+                  )}
                 </Message>
               ))}
               {wasStoppedByUser && !isLoading && (

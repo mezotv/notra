@@ -104,6 +104,13 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
 
   const abortController = new AbortController();
   let stopAbortPolling: (() => void) | null = null;
+  const streamStartedAt = Date.now();
+  const timing: { firstChunkAt: number | null } = { firstChunkAt: null };
+  const usageSnapshot: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  } = {};
 
   try {
     stopAbortPolling = startChatAbortPolling({
@@ -134,7 +141,16 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         },
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
+        onFirstChunk() {
+          if (timing.firstChunkAt === null) {
+            timing.firstChunkAt = Date.now();
+          }
+        },
         async onUsage(usage, modelId) {
+          usageSnapshot.inputTokens = usage.inputTokens ?? 0;
+          usageSnapshot.outputTokens = usage.outputTokens ?? 0;
+          usageSnapshot.totalTokens = usage.totalTokens ?? 0;
+
           if (!autumn) {
             return;
           }
@@ -190,6 +206,43 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       originalMessages: messages,
       generateMessageId: nanoid,
       sendReasoning: enableThinking !== false,
+      messageMetadata: ({ part }) => {
+        if (part.type === "start") {
+          return {
+            model: routingDecision.model,
+            thinkingLevel: enableThinking === false ? "off" : thinkingLevel,
+            createdAt: streamStartedAt,
+          };
+        }
+
+        if (part.type === "finish") {
+          const finishedAt = Date.now();
+          const ttftMs =
+            timing.firstChunkAt !== null
+              ? timing.firstChunkAt - streamStartedAt
+              : undefined;
+          const generationDurationMs =
+            timing.firstChunkAt !== null
+              ? finishedAt - timing.firstChunkAt
+              : undefined;
+          const outputTokens = usageSnapshot.outputTokens ?? 0;
+          const tokensPerSecond =
+            generationDurationMs && generationDurationMs > 0 && outputTokens > 0
+              ? (outputTokens / generationDurationMs) * 1000
+              : undefined;
+
+          return {
+            inputTokens: usageSnapshot.inputTokens,
+            outputTokens: usageSnapshot.outputTokens,
+            totalTokens: usageSnapshot.totalTokens,
+            ttftMs,
+            generationDurationMs,
+            tokensPerSecond,
+          };
+        }
+
+        return;
+      },
       onFinish: async ({ messages: responseMessages }) => {
         try {
           await replaceChatHistory(organizationId, chatId, responseMessages);

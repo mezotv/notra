@@ -27,6 +27,7 @@ export interface StandaloneChatDeps {
     usage: LanguageModelUsage,
     modelId: string
   ) => void | Promise<void>;
+  onFirstChunk?: () => void;
   log?: AILogTarget;
 }
 

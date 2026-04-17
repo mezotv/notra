@@ -108,6 +108,7 @@ export async function orchestrateStandaloneChat(
     thinkingLevel
   );
 
+  let firstChunkFired = false;
   const stream = streamText({
     model: modelWithMemory,
     system: systemPrompt,
@@ -119,6 +120,15 @@ export async function orchestrateStandaloneChat(
     experimental_transform: smoothStream(),
     providerOptions,
     abortSignal,
+    onChunk({ chunk }) {
+      if (firstChunkFired) {
+        return;
+      }
+      if (chunk.type === "text-delta" || chunk.type === "reasoning-delta") {
+        firstChunkFired = true;
+        deps?.onFirstChunk?.();
+      }
+    },
     onAbort({ steps }) {
       console.log("[Standalone Chat Stream Aborted]", {
         organizationId,

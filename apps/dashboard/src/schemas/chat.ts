@@ -13,6 +13,18 @@ export const chatModelSchema = z.enum([
 
 export const thinkingLevelSchema = z.enum(["off", "low", "medium", "high"]);
 
+export const chatMessageMetadataSchema = z.object({
+  model: chatModelSchema.optional(),
+  thinkingLevel: thinkingLevelSchema.optional(),
+  inputTokens: z.number().int().nonnegative().optional(),
+  outputTokens: z.number().int().nonnegative().optional(),
+  totalTokens: z.number().int().nonnegative().optional(),
+  ttftMs: z.number().nonnegative().optional(),
+  generationDurationMs: z.number().nonnegative().optional(),
+  tokensPerSecond: z.number().nonnegative().optional(),
+  createdAt: z.number().int().nonnegative().optional(),
+});
+
 const uiMessageSchema = z.custom<UIMessage>((value) => {
   if (typeof value !== "object" || value === null) {
     return false;

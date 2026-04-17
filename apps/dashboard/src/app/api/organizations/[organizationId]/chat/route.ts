@@ -373,8 +373,16 @@ async function createDirectStandaloneChatResponse({
     ]);
   };
 
+  const streamStartedAt = Date.now();
+  let firstChunkAt: number | null = null;
+  const usageSnapshot: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  } = {};
+
   try {
-    const { stream } = await orchestrateStandaloneChat(
+    const { stream, routingDecision } = await orchestrateStandaloneChat(
       {
         organizationId,
         messages: messages as never,
@@ -397,7 +405,16 @@ async function createDirectStandaloneChatResponse({
         },
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
+        onFirstChunk() {
+          if (firstChunkAt === null) {
+            firstChunkAt = Date.now();
+          }
+        },
         async onUsage(usage, modelId) {
+          usageSnapshot.inputTokens = usage.inputTokens ?? 0;
+          usageSnapshot.outputTokens = usage.outputTokens ?? 0;
+          usageSnapshot.totalTokens = usage.totalTokens ?? 0;
+
           if (!autumnClient) {
             return;
           }
@@ -449,6 +466,39 @@ async function createDirectStandaloneChatResponse({
       generateMessageId: nanoid,
       sendReasoning: enableThinking !== false,
       headers: { "X-Chat-Id": chatId },
+      messageMetadata: ({ part }) => {
+        if (part.type === "start") {
+          return {
+            model: routingDecision.model,
+            thinkingLevel: enableThinking === false ? "off" : thinkingLevel,
+            createdAt: streamStartedAt,
+          };
+        }
+
+        if (part.type === "finish") {
+          const finishedAt = Date.now();
+          const ttftMs =
+            firstChunkAt !== null ? firstChunkAt - streamStartedAt : undefined;
+          const generationDurationMs =
+            firstChunkAt !== null ? finishedAt - firstChunkAt : undefined;
+          const outputTokens = usageSnapshot.outputTokens ?? 0;
+          const tokensPerSecond =
+            generationDurationMs && generationDurationMs > 0 && outputTokens > 0
+              ? (outputTokens / generationDurationMs) * 1000
+              : undefined;
+
+          return {
+            inputTokens: usageSnapshot.inputTokens,
+            outputTokens: usageSnapshot.outputTokens,
+            totalTokens: usageSnapshot.totalTokens,
+            ttftMs,
+            generationDurationMs,
+            tokensPerSecond,
+          };
+        }
+
+        return;
+      },
       onFinish: async ({ messages: responseMessages }) => {
         try {
           await replaceChatHistory(organizationId, chatId, responseMessages);
