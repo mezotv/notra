@@ -18,6 +18,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DefaultChatTransport,
+  isToolUIPart,
   lastAssistantMessageIsCompleteWithApprovalResponses,
 } from "ai";
 import { nanoid } from "nanoid";
@@ -535,6 +536,16 @@ function StandaloneChatPageClient({
     async (text: string) => {
       const isFirstMessage = !initialChatId;
       setWasStoppedByUser(false);
+      for (const message of messages) {
+        for (const part of message.parts) {
+          if (isToolUIPart(part) && part.state === "approval-requested") {
+            addToolApprovalResponse({
+              id: part.approval.id,
+              approved: false,
+            });
+          }
+        }
+      }
       await sendMessage({ text });
       if (isFirstMessage) {
         router.replace(`/${organizationSlug}/chat/${stableChatId}`);
@@ -544,7 +555,9 @@ function StandaloneChatPageClient({
       }
     },
     [
+      addToolApprovalResponse,
       initialChatId,
+      messages,
       organizationId,
       organizationSlug,
       queryClient,
