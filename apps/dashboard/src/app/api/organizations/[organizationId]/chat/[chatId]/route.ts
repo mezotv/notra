@@ -4,6 +4,7 @@ import { isAiChatExperimentEnabled } from "@/lib/ai-chat-experiment";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteChatSession,
+  getActiveChatStream,
   getLastResponseStopped,
   isChatDeleted,
   loadChatHistory,
@@ -41,11 +42,17 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Chat not found" }, { status: 404 });
   }
 
-  const [messages, lastResponseStopped] = await Promise.all([
+  const [messages, lastResponseStopped, activeStreamId] = await Promise.all([
     loadChatHistory(organizationId, chatId),
     getLastResponseStopped(organizationId, chatId),
+    getActiveChatStream(organizationId, chatId),
   ]);
-  return NextResponse.json({ chatId, messages, lastResponseStopped });
+  return NextResponse.json({
+    chatId,
+    messages,
+    lastResponseStopped,
+    activeStreamId,
+  });
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {

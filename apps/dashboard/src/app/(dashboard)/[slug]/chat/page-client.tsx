@@ -457,6 +457,8 @@ function StandaloneChatPageClient({
       return {
         messages: data?.messages ?? null,
         lastResponseStopped: Boolean(data?.lastResponseStopped),
+        activeStreamId:
+          typeof data?.activeStreamId === "string" ? data.activeStreamId : null,
       };
     },
     enabled: Boolean(initialChatId) && Boolean(organizationId),
@@ -471,6 +473,9 @@ function StandaloneChatPageClient({
       setMessages(chatHistoryQuery.data.messages);
     }
     setWasStoppedByUser(Boolean(chatHistoryQuery.data.lastResponseStopped));
+    if (chatHistoryQuery.data.activeStreamId) {
+      setPendingMessageId(chatHistoryQuery.data.activeStreamId);
+    }
   }, [chatHistoryQuery.data, setMessages]);
 
   useEffect(() => {
