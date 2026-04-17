@@ -15,23 +15,20 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
-
-
 import { Separator } from "@notra/ui/components/ui/separator";
+import { cn } from "@notra/ui/lib/utils";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { cn } from "@notra/ui/lib/utils";
 
 const DEFAULT_TRUNCATION_LIMIT = 200;
-const URL_REGEX = /(https?:\/\/[^\s]+)/g;
-const HASHTAG_REGEX = /(#\w+)/g;
+const URL_REGEX = /^https?:\/\/[^\s]+$/;
+const HASHTAG_REGEX = /^#\w+$/;
 const COMBINED_REGEX = /(https?:\/\/[^\s]+|#\w+)/g;
 
 function formatContent(text: string): ReactNode[] {
   const parts = text.split(COMBINED_REGEX);
   return parts.map((part, index) => {
     if (HASHTAG_REGEX.test(part)) {
-      HASHTAG_REGEX.lastIndex = 0;
       return (
         <span className="text-blue-600" key={index}>
           {part}
@@ -39,7 +36,6 @@ function formatContent(text: string): ReactNode[] {
       );
     }
     if (URL_REGEX.test(part)) {
-      URL_REGEX.lastIndex = 0;
       return (
         <span className="text-blue-600" key={index}>
           {part}

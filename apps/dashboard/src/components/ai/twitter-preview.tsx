@@ -16,9 +16,12 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@/constants/chat";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
-type PreviewState = "draft" | "loading" | "finished";
+type IncomingState = "draft" | "finished";
+type EffectiveState = "draft" | "loading" | "finished";
+type UserAction = "none" | "saving" | "save-failed";
 
 interface TwitterPreviewAuthor {
   name: string;
@@ -26,7 +29,7 @@ interface TwitterPreviewAuthor {
 }
 
 interface TwitterPreviewProps {
-  state: PreviewState;
+  state: IncomingState;
   title: string;
   markdown: string;
   author?: TwitterPreviewAuthor;
@@ -42,26 +45,33 @@ export function TwitterPreview({
   onApprove,
   onDeny,
 }: TwitterPreviewProps) {
-  const [optimisticState, setOptimisticState] = useState<PreviewState | null>(
-    null
-  );
+  const [userAction, setUserAction] = useState<UserAction>("none");
 
-  useEffect(() => {
+  const effectiveState: EffectiveState = (() => {
     if (incomingState === "finished") {
-      setOptimisticState(null);
+      return "finished";
     }
-  }, [incomingState]);
-
-  const state = optimisticState ?? incomingState;
-
-  const [isOpen, setIsOpen] = useState(state !== "finished");
+    if (userAction === "saving") {
+      return "loading";
+    }
+    if (userAction === "save-failed") {
+      return "finished";
+    }
+    return "draft";
+  })();
 
   useEffect(() => {
-    setIsOpen(state !== "finished");
-  }, [state]);
+    if (userAction !== "saving") {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setUserAction("save-failed");
+    }, CHAT_PREVIEW_SAVE_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [userAction]);
 
   const handleApprove = useCallback(() => {
-    setOptimisticState("loading");
+    setUserAction("saving");
     onApprove?.();
   }, [onApprove]);
 
@@ -69,8 +79,14 @@ export function TwitterPreview({
     onDeny?.();
   }, [onDeny]);
 
+  const isFinished = effectiveState === "finished";
+  const showDraftBadge = isFinished && userAction !== "save-failed";
+
   return (
-    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+    <Collapsible
+      defaultOpen={!isFinished}
+      key={isFinished ? "collapsed" : "open"}
+    >
       <div className="ml-px max-w-md">
         <div className="rounded-lg border border-border bg-muted/80">
           <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 [&[data-panel-open]>svg]:rotate-90">
@@ -82,7 +98,7 @@ export function TwitterPreview({
               {title}
             </span>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              {state === "finished" && (
+              {showDraftBadge && (
                 <Badge className="text-[0.625rem]" variant="outline">
                   draft
                 </Badge>
@@ -114,20 +130,20 @@ export function TwitterPreview({
             </div>
           </CollapsibleContent>
 
-          {state !== "finished" && (
+          {!isFinished && (
             <div className="flex items-center justify-end gap-2 px-3 pb-2">
-              {state === "draft" && (
+              {effectiveState === "draft" && (
                 <Button onClick={handleDeny} size="sm" variant="ghost">
                   <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
                   Discard
                 </Button>
               )}
               <Button
-                disabled={state === "loading"}
+                disabled={effectiveState === "loading"}
                 onClick={handleApprove}
                 size="sm"
               >
-                {state === "loading" ? (
+                {effectiveState === "loading" ? (
                   <>
                     <Loader2Icon className="size-4 animate-spin" />
                     Saving
