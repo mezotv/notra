@@ -198,7 +198,6 @@ function StandaloneChatPageClient({
   const organizationId = organization?.id ?? "";
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
-  const router = useRouter();
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -557,9 +556,15 @@ function StandaloneChatPageClient({
           });
         }
       }
+      if (isFirstMessage) {
+        window.history.replaceState(
+          null,
+          "",
+          `/${organizationSlug}/chat/${stableChatId}`
+        );
+      }
       await sendMessage({ text });
       if (isFirstMessage) {
-        router.replace(`/${organizationSlug}/chat/${stableChatId}`);
         queryClient.invalidateQueries({
           queryKey: ["chat-sessions", organizationId],
         });
@@ -571,7 +576,6 @@ function StandaloneChatPageClient({
       organizationId,
       organizationSlug,
       queryClient,
-      router,
       sendMessage,
       stableChatId,
     ]
