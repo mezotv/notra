@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 
 type PrivacyField = "hidePersonalData" | "showAgentStats";
@@ -21,6 +22,13 @@ function usePrivacyField(field: PrivacyField): {
       }
       await refetch();
       return value;
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update preference. Please try again."
+      );
     },
   });
 
