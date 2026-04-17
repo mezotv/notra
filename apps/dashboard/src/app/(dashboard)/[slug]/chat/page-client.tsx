@@ -534,9 +534,11 @@ function StandaloneChatPageClient({
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
+  const hasUpdatedUrlRef = useRef(false);
+
   const handleSend = useCallback(
     async (text: string) => {
-      const isFirstMessage = !initialChatId;
+      const isFirstMessage = !initialChatId && !hasUpdatedUrlRef.current;
       setWasStoppedByUser(false);
       for (const message of messagesRef.current) {
         if (message.role !== "assistant") {
@@ -557,6 +559,7 @@ function StandaloneChatPageClient({
         }
       }
       if (isFirstMessage) {
+        hasUpdatedUrlRef.current = true;
         window.history.replaceState(
           null,
           "",
