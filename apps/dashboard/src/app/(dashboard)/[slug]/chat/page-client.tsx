@@ -544,12 +544,17 @@ function StandaloneChatPageClient({
           continue;
         }
         for (const part of message.parts) {
-          if (isToolUIPart(part) && part.state === "approval-requested") {
-            addToolApprovalResponse({
-              id: part.approval.id,
-              approved: false,
-            });
+          if (!(isToolUIPart(part) && part.state === "approval-requested")) {
+            continue;
           }
+          const approvalId = part.approval?.id;
+          if (!approvalId) {
+            continue;
+          }
+          addToolApprovalResponse({
+            id: approvalId,
+            approved: false,
+          });
         }
       }
       await sendMessage({ text });
