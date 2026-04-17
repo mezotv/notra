@@ -475,6 +475,8 @@ function StandaloneChatPageClient({
     setWasStoppedByUser(Boolean(chatHistoryQuery.data.lastResponseStopped));
     if (chatHistoryQuery.data.activeStreamId) {
       setPendingMessageId(chatHistoryQuery.data.activeStreamId);
+    } else {
+      setPendingMessageId(null);
     }
   }, [chatHistoryQuery.data, setMessages]);
 
