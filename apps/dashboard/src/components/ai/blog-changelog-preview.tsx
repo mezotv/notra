@@ -99,7 +99,7 @@ export function BlogChangelogPreview({
           <CollapsibleContent>
             <div className="mx-2 mb-2">
               <div className="max-h-[24rem] overflow-y-auto rounded-lg border border-border/80 bg-background px-4 py-3">
-                <MessageResponse className="text-sm leading-relaxed">
+                <MessageResponse className="text-sm leading-relaxed [&_ol]:pl-5 [&_ul]:pl-5 [&_ul]:marker:text-muted-foreground">
                   {markdown}
                 </MessageResponse>
               </div>
