@@ -58,6 +58,7 @@ interface LinkedInPostPreviewProps {
   content: string;
   timestamp?: string;
   className?: string;
+  truncationLimit?: number;
 }
 
 export function LinkedInPostPreview({
@@ -65,12 +66,13 @@ export function LinkedInPostPreview({
   content,
   timestamp = "Just now",
   className,
+  truncationLimit = DEFAULT_TRUNCATION_LIMIT,
 }: LinkedInPostPreviewProps) {
   const [expanded, setExpanded] = useState(false);
-  const canTruncate = content.length > DEFAULT_TRUNCATION_LIMIT;
+  const canTruncate = content.length > truncationLimit;
   const isCollapsed = canTruncate && !expanded;
   const displayContent = isCollapsed
-    ? content.slice(0, DEFAULT_TRUNCATION_LIMIT).trimEnd()
+    ? content.slice(0, truncationLimit).trimEnd()
     : content;
 
   return (

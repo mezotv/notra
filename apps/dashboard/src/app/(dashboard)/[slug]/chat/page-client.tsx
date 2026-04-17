@@ -49,10 +49,24 @@ import {
 } from "@/utils/chat-preferences";
 import { formatLongDate, getGreeting } from "@/utils/dashboard-greeting";
 
-const ContentPreviewCard = dynamic(
+const BlogChangelogPreview = dynamic(
   () =>
-    import("@/components/ai/content-preview-card").then(
-      (mod) => mod.ContentPreviewCard
+    import("@/components/ai/blog-changelog-preview").then(
+      (mod) => mod.BlogChangelogPreview
+    ),
+  { ssr: false }
+);
+
+const TwitterPreview = dynamic(
+  () =>
+    import("@/components/ai/twitter-preview").then((mod) => mod.TwitterPreview),
+  { ssr: false }
+);
+
+const LinkedInPreview = dynamic(
+  () =>
+    import("@/components/ai/linkedin-preview").then(
+      (mod) => mod.LinkedInPreview
     ),
   { ssr: false }
 );
@@ -666,62 +680,6 @@ function StandaloneChatPageClient({
         const title = toolPart.input?.title ?? "Untitled";
         const markdown = toolPart.input?.markdown ?? "";
 
-        if (toolPart.state === "approval-requested" && toolPart.approval) {
-          const approvalId = toolPart.approval.id;
-          return (
-            <ContentPreviewCard
-              author={contentAuthor}
-              contentType={contentType}
-              key={toolPart.toolCallId}
-              markdown={markdown}
-              onApprove={() =>
-                addToolApprovalResponse({
-                  id: approvalId,
-                  approved: true,
-                })
-              }
-              onDeny={() =>
-                addToolApprovalResponse({
-                  id: approvalId,
-                  approved: false,
-                })
-              }
-              organizationSlug={organizationSlug}
-              state="pending"
-              title={title}
-            />
-          );
-        }
-
-        if (toolPart.state === "output-available" && toolPart.output?.postId) {
-          return (
-            <ContentPreviewCard
-              author={contentAuthor}
-              contentType={contentType}
-              key={toolPart.toolCallId}
-              markdown={markdown}
-              organizationSlug={organizationSlug}
-              postId={toolPart.output.postId}
-              state="saved"
-              title={title}
-            />
-          );
-        }
-
-        if (toolPart.state === "output-denied") {
-          return (
-            <ContentPreviewCard
-              author={contentAuthor}
-              contentType={contentType}
-              key={toolPart.toolCallId}
-              markdown={markdown}
-              organizationSlug={organizationSlug}
-              state="discarded"
-              title={title}
-            />
-          );
-        }
-
         if (
           toolPart.state === "input-streaming" ||
           toolPart.state === "input-available"
@@ -741,7 +699,68 @@ function StandaloneChatPageClient({
           );
         }
 
-        return null;
+        if (toolPart.state === "output-denied") {
+          return null;
+        }
+
+        const previewState: "draft" | "finished" =
+          toolPart.state === "output-available" ? "finished" : "draft";
+
+        const approvalId = toolPart.approval?.id;
+        const handleApprove = approvalId
+          ? () =>
+              addToolApprovalResponse({
+                id: approvalId,
+                approved: true,
+              })
+          : undefined;
+        const handleDeny = approvalId
+          ? () =>
+              addToolApprovalResponse({
+                id: approvalId,
+                approved: false,
+              })
+          : undefined;
+
+        if (contentType === "twitter_post") {
+          return (
+            <TwitterPreview
+              author={contentAuthor}
+              key={toolPart.toolCallId}
+              markdown={markdown}
+              onApprove={handleApprove}
+              onDeny={handleDeny}
+              state={previewState}
+              title={title}
+            />
+          );
+        }
+
+        if (contentType === "linkedin_post") {
+          return (
+            <LinkedInPreview
+              author={contentAuthor}
+              key={toolPart.toolCallId}
+              markdown={markdown}
+              onApprove={handleApprove}
+              onDeny={handleDeny}
+              state={previewState}
+              title={title}
+            />
+          );
+        }
+
+        return (
+          <BlogChangelogPreview
+            contentType={contentType}
+            key={toolPart.toolCallId}
+            markdown={markdown}
+            onApprove={handleApprove}
+            onDeny={handleDeny}
+            state={previewState}
+            title={title}
+          />
+        );
       }
 
       if (
