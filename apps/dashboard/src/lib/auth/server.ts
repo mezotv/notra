@@ -433,5 +433,17 @@ export const auth = betterAuth({
     deleteUser: {
       enabled: true,
     },
+    additionalFields: {
+      hidePersonalData: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+      showAgentStats: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+    },
   },
 });

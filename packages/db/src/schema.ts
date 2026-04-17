@@ -35,6 +35,8 @@ export const users = pgTable("users", {
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
+  hidePersonalData: boolean("hide_personal_data").default(false).notNull(),
+  showAgentStats: boolean("show_agent_stats").default(false).notNull(),
 });
 
 export const sessions = pgTable(

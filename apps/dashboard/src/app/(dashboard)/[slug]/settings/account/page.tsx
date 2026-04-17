@@ -32,7 +32,10 @@ import { PageContainer } from "@/components/layout/container";
 import { DeleteAccountSection } from "@/components/settings/delete-account";
 import { OrganizationsSection } from "@/components/settings/organizations-section";
 import { authClient } from "@/lib/auth/client";
-import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
+import {
+  useHidePersonalData,
+  useShowAgentStats,
+} from "@/lib/hooks/use-privacy-preferences";
 import { uploadFile } from "@/lib/upload/client";
 import { AccountPageSkeleton } from "./skeleton";
 
@@ -682,8 +685,14 @@ function ConnectedAccountsSection({
 }
 
 function PrivacySection() {
-  const { hidePersonalData, hasHydrated, setHidePersonalData } =
+  const { hidePersonalData, hasHydrated, isUpdating, setHidePersonalData } =
     useHidePersonalData();
+  const {
+    showAgentStats,
+    hasHydrated: statsHydrated,
+    isUpdating: statsUpdating,
+    setShowAgentStats,
+  } = useShowAgentStats();
 
   return (
     <TitleCard className="lg:col-span-2" heading="Privacy">
@@ -707,9 +716,39 @@ function PrivacySection() {
           </div>
           <Switch
             checked={hidePersonalData}
-            disabled={!hasHydrated}
+            disabled={!hasHydrated || isUpdating}
             id="hide-personal-data"
             onCheckedChange={setHidePersonalData}
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+          <div className="min-w-0 space-y-1">
+            <Label
+              className="cursor-pointer font-medium text-sm"
+              htmlFor="show-agent-stats"
+            >
+              Agent stats
+            </Label>
+            <p className="text-muted-foreground text-xs">
+              Show model, tokens per second, total tokens, and time to first
+              token under assistant messages. Inspired by{" "}
+              <a
+                className="underline underline-offset-2 hover:text-foreground"
+                href="https://t3.chat"
+                rel="noopener"
+                target="_blank"
+              >
+                t3.chat
+              </a>
+              .
+            </p>
+          </div>
+          <Switch
+            checked={showAgentStats}
+            disabled={!statsHydrated || statsUpdating}
+            id="show-agent-stats"
+            onCheckedChange={setShowAgentStats}
           />
         </div>
       </div>

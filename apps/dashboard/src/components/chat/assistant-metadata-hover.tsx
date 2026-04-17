@@ -6,6 +6,7 @@ import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
 import { Openai } from "@notra/ui/components/ui/svgs/openai";
 import { OpenaiDark } from "@notra/ui/components/ui/svgs/openaiDark";
 import type { ReactNode } from "react";
+import { useShowAgentStats } from "@/lib/hooks/use-privacy-preferences";
 import type {
   ChatMessageMetadata,
   ChatModel,
@@ -72,7 +73,9 @@ interface AssistantMetadataHoverProps {
 export function AssistantMetadataHover({
   metadata,
 }: AssistantMetadataHoverProps) {
-  if (!metadata) {
+  const { showAgentStats } = useShowAgentStats();
+
+  if (!(metadata && showAgentStats)) {
     return null;
   }
 
