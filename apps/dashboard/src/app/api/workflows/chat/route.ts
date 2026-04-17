@@ -109,6 +109,33 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const timing: { firstChunkAt: number | null } = { firstChunkAt: null };
   const usageSnapshot: ChatUsageSnapshot = {};
 
+  let buffer: UIMessageChunk[] = [];
+  let flushPromise: Promise<void> | null = null;
+
+  const flushBuffer = async () => {
+    while (buffer.length > 0) {
+      const batch = buffer;
+      buffer = [];
+      await channel.emit("ai.chunk", batch as never);
+    }
+  };
+
+  const scheduleFlush = () => {
+    if (flushPromise) {
+      return;
+    }
+    flushPromise = flushBuffer().finally(() => {
+      flushPromise = null;
+    });
+  };
+
+  const drainPendingFlushes = async () => {
+    if (flushPromise) {
+      await flushPromise;
+    }
+    await flushBuffer();
+  };
+
   try {
     stopAbortPolling = startChatAbortPolling({
       organizationId,
@@ -240,26 +267,6 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       },
     });
 
-    let buffer: UIMessageChunk[] = [];
-    let flushPromise: Promise<void> | null = null;
-
-    const flushBuffer = async () => {
-      while (buffer.length > 0) {
-        const batch = buffer;
-        buffer = [];
-        await channel.emit("ai.chunk", batch as never);
-      }
-    };
-
-    const scheduleFlush = () => {
-      if (flushPromise) {
-        return;
-      }
-      flushPromise = flushBuffer().finally(() => {
-        flushPromise = null;
-      });
-    };
-
     for await (const chunk of uiStream) {
       if (abortController.signal.aborted) {
         break;
@@ -276,14 +283,13 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       scheduleFlush();
     }
 
-    if (flushPromise) {
-      await flushPromise;
-    }
-    await flushBuffer();
+    await drainPendingFlushes();
   } catch (error) {
     const isAbort =
       abortController.signal.aborted ||
       (error instanceof Error && error.name === "AbortError");
+
+    await drainPendingFlushes();
 
     if (isAbort) {
       console.log("[Chat Workflow] Aborted by user:", { requestId, chatId });
