@@ -532,11 +532,17 @@ function StandaloneChatPageClient({
     );
   }, []);
 
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   const handleSend = useCallback(
     async (text: string) => {
       const isFirstMessage = !initialChatId;
       setWasStoppedByUser(false);
-      for (const message of messages) {
+      for (const message of messagesRef.current) {
+        if (message.role !== "assistant") {
+          continue;
+        }
         for (const part of message.parts) {
           if (isToolUIPart(part) && part.state === "approval-requested") {
             addToolApprovalResponse({
@@ -557,7 +563,6 @@ function StandaloneChatPageClient({
     [
       addToolApprovalResponse,
       initialChatId,
-      messages,
       organizationId,
       organizationSlug,
       queryClient,
