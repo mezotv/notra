@@ -491,19 +491,35 @@ function StandaloneChatPageClient({
     if (historyMessages?.length) {
       setMessages(historyMessages);
 
+      let modelRestored = false;
+      let thinkingLevelRestored = false;
+
       for (let index = historyMessages.length - 1; index >= 0; index -= 1) {
+        if (modelRestored && thinkingLevelRestored) {
+          break;
+        }
+
         const metadata = historyMessages[index]?.metadata;
         if (!metadata) {
           continue;
         }
-        if (metadata.model) {
-          setSelectedModel(metadata.model);
+
+        if (!modelRestored && metadata.model) {
+          const parsedModel = parseStoredChatModel(metadata.model);
+          if (parsedModel) {
+            setSelectedModel(parsedModel);
+            modelRestored = true;
+          }
         }
-        if (metadata.thinkingLevel) {
-          setThinkingLevel(metadata.thinkingLevel);
-        }
-        if (metadata.model || metadata.thinkingLevel) {
-          break;
+
+        if (!thinkingLevelRestored && metadata.thinkingLevel) {
+          const parsedThinkingLevel = parseStoredThinkingLevel(
+            metadata.thinkingLevel
+          );
+          if (parsedThinkingLevel) {
+            setThinkingLevel(parsedThinkingLevel);
+            thinkingLevelRestored = true;
+          }
         }
       }
     }
