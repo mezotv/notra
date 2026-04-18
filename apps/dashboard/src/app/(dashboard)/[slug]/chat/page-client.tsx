@@ -387,6 +387,10 @@ function StandaloneChatPageClient({
   }, []);
 
   useEffect(() => {
+    if (initialChatId) {
+      return;
+    }
+
     function syncChatPreferencesFromStorage() {
       const storedPreferences = readStoredChatPreferences();
       if (!storedPreferences) {
@@ -421,14 +425,18 @@ function StandaloneChatPageClient({
         syncChatPreferencesFromStorage
       );
     };
-  }, []);
+  }, [initialChatId]);
 
   useEffect(() => {
+    if (initialChatId) {
+      return;
+    }
+
     writeStoredChatPreferences({
       model: selectedModel,
       thinkingLevel,
     });
-  }, [selectedModel, thinkingLevel]);
+  }, [initialChatId, selectedModel, thinkingLevel]);
 
   const handleStop = useCallback(async () => {
     setIsStopping(true);
@@ -447,7 +455,11 @@ function StandaloneChatPageClient({
     }
   }, [organizationId, stableChatId, stop]);
 
-  const chatHistoryQuery = useQuery({
+  const chatHistoryQuery = useQuery<{
+    messages: ChatUIMessage[] | null;
+    lastResponseStopped: boolean;
+    activeStreamId: string | null;
+  } | null>({
     queryKey: ["chat-history", organizationId, initialChatId],
     queryFn: async () => {
       if (!initialChatId) {
@@ -475,8 +487,25 @@ function StandaloneChatPageClient({
     if (!chatHistoryQuery.data) {
       return;
     }
-    if (chatHistoryQuery.data.messages?.length) {
-      setMessages(chatHistoryQuery.data.messages);
+    const historyMessages = chatHistoryQuery.data.messages;
+    if (historyMessages?.length) {
+      setMessages(historyMessages);
+
+      for (let index = historyMessages.length - 1; index >= 0; index -= 1) {
+        const metadata = historyMessages[index]?.metadata;
+        if (!metadata) {
+          continue;
+        }
+        if (metadata.model) {
+          setSelectedModel(metadata.model);
+        }
+        if (metadata.thinkingLevel) {
+          setThinkingLevel(metadata.thinkingLevel);
+        }
+        if (metadata.model || metadata.thinkingLevel) {
+          break;
+        }
+      }
     }
     setWasStoppedByUser(Boolean(chatHistoryQuery.data.lastResponseStopped));
     if (chatHistoryQuery.data.activeStreamId) {
