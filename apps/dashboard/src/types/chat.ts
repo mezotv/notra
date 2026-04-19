@@ -36,10 +36,10 @@ export interface ChatUsageSnapshot {
   totalTokens?: number;
 }
 
-export type ChatInputHandle = {
+export interface ChatInputHandle {
   setText: (text: string) => void;
   focus: () => void;
-};
+}
 
 export interface BuildChatFinishMetadataInput {
   streamStartedAt: number;
