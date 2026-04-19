@@ -36,6 +36,11 @@ export interface ChatUsageSnapshot {
   totalTokens?: number;
 }
 
+export type ChatInputHandle = {
+  setText: (text: string) => void;
+  focus: () => void;
+};
+
 export interface BuildChatFinishMetadataInput {
   streamStartedAt: number;
   firstChunkAt: number | null;

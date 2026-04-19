@@ -40,12 +40,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  type Ref,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { FEATURES } from "@/constants/features";
 import { INPUT_SOURCES } from "@/lib/integrations/catalog";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { ContextItem } from "@/types/chat";
+import type { ChatInputHandle, ContextItem } from "@/types/chat";
 import type { GitHubRepository } from "@/types/integrations";
 import {
   buildIntegrationReferenceElement,
@@ -178,6 +185,7 @@ interface ChatInputAdvancedProps {
   onModelChange?: (model: string) => void;
   thinkingLevel?: ThinkingLevel;
   onThinkingLevelChange?: (level: ThinkingLevel) => void;
+  ref?: Ref<ChatInputHandle>;
 }
 
 const THINKING_LABELS: Record<ThinkingLevel, string> = {
@@ -203,6 +211,7 @@ export function ChatInputAdvanced({
   onModelChange,
   thinkingLevel = "medium",
   onThinkingLevelChange,
+  ref,
 }: ChatInputAdvancedProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
@@ -345,6 +354,31 @@ export function ChatInputAdvanced({
     }
     return (editor.innerText ?? "").replace(/\u00A0/g, " ");
   }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      setText: (text: string) => {
+        const editor = editorRef.current;
+        if (!editor) {
+          return;
+        }
+        editor.textContent = text;
+        setIsEmpty(text.trim().length === 0);
+        editor.focus();
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      },
+      focus: () => {
+        editorRef.current?.focus();
+      },
+    }),
+    [ref]
+  );
 
   const syncContextFromDOM = useCallback(() => {
     const editor = editorRef.current;

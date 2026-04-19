@@ -39,6 +39,7 @@ import {
   ChatInputAdvanced,
   type ThinkingLevel,
 } from "@/components/chat/chat-input";
+import { ChatSuggestions } from "@/components/chat/chat-suggestions";
 import { renderTextWithIntegrationReferences } from "@/components/chat/integration-reference";
 import { useAiChatExperiment } from "@/components/providers/databuddy-flags-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -48,7 +49,7 @@ import {
   chatErrorPayloadSchema,
   chatTransportRequestInputSchema,
 } from "@/schemas/chat";
-import type { ChatUIMessage, ContextItem } from "@/types/chat";
+import type { ChatInputHandle, ChatUIMessage, ContextItem } from "@/types/chat";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,
@@ -222,6 +223,11 @@ function StandaloneChatPageClient({
     DEFAULT_CHAT_PREFERENCES.thinkingLevel
   );
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const chatInputRef = useRef<ChatInputHandle | null>(null);
+
+  const handleSuggestionSelect = useCallback((text: string) => {
+    chatInputRef.current?.setText(text);
+  }, []);
 
   const contextRef = useRef(context);
   const hasCustomizedContextRef = useRef(hasCustomizedContext);
@@ -965,9 +971,14 @@ function StandaloneChatPageClient({
               onThinkingLevelChange={handleThinkingLevelChange}
               organizationId={organizationId}
               organizationSlug={organizationSlug}
+              ref={chatInputRef}
               thinkingLevel={thinkingLevel}
             />
           </div>
+          <ChatSuggestions
+            disabled={isLoading}
+            onSelect={handleSuggestionSelect}
+          />
         </div>
       </div>
     );
