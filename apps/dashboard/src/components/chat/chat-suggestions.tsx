@@ -3,11 +3,11 @@
 import type { ContentType } from "@notra/ai/schemas/content";
 import { OutputTypeIcon } from "@/utils/output-types";
 
-type Suggestion = {
+interface Suggestion {
   outputType: ContentType;
   label: string;
   prompt: string;
-};
+}
 
 const SUGGESTIONS: Suggestion[] = [
   {
@@ -36,10 +36,10 @@ const SUGGESTIONS: Suggestion[] = [
   },
 ];
 
-type ChatSuggestionsProps = {
+interface ChatSuggestionsProps {
   onSelect: (prompt: string) => void;
   disabled?: boolean;
-};
+}
 
 export function ChatSuggestions({ onSelect, disabled }: ChatSuggestionsProps) {
   return (

@@ -377,7 +377,7 @@ export function ChatInputAdvanced({
         editorRef.current?.focus();
       },
     }),
-    [ref]
+    []
   );
 
   const syncContextFromDOM = useCallback(() => {
