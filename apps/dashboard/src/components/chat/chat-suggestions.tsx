@@ -1,9 +1,10 @@
 "use client";
 
+import type { ContentType } from "@notra/ai/schemas/content";
 import { OutputTypeIcon } from "@/utils/output-types";
 
 type Suggestion = {
-  outputType: "blog_post" | "changelog" | "twitter_post" | "linkedin_post";
+  outputType: ContentType;
   label: string;
   prompt: string;
 };
