@@ -521,6 +521,7 @@ async function createDirectStandaloneChatResponse({
   if (log.fork) {
     log.fork("standalone_chat_stream", async () => {
       try {
+        // biome-ignore lint/correctness/useHookAtTopLevel: useLogger is an async-context accessor, not a React hook
         const response = await runStream(useLogger());
         responseReady.resolve(response);
         await streamDone.promise;
