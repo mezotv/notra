@@ -1,84 +1,20 @@
+import type {
+  ContributorsData,
+  GitHubIssue,
+  GitHubLabel,
+  GitHubPR,
+  GitHubRepo,
+  GitHubUser,
+  IssueTypeBadge,
+} from "~types/github";
+
 export const GITHUB_OWNER = "usenotra";
 export const GITHUB_REPO = "notra";
 export const GITHUB_REPO_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-// Cache tag for revalidating GitHub data on demand
 export const GITHUB_CACHE_TAG = "github-contributors";
 
-// Revalidate every hour (3600s). This is the key mechanism that prevents users
-// from being rate-limited: Next.js serves the cached response to all visitors
-// and refreshes it at most once per hour per host.
 const REVALIDATE_SECONDS = 3600;
-
-export interface GitHubUser {
-  login: string;
-  id: number;
-  avatar_url: string;
-  html_url: string;
-  contributions: number;
-  type: string;
-}
-
-export interface GitHubLabel {
-  name: string;
-  color: string;
-}
-
-interface GitHubUserRef {
-  login: string;
-  avatar_url: string;
-  html_url: string;
-}
-
-export interface GitHubIssue {
-  id: number;
-  number: number;
-  title: string;
-  html_url: string;
-  state: string;
-  user: GitHubUserRef;
-  created_at: string;
-  labels: GitHubLabel[];
-  pull_request?: { url: string };
-}
-
-export interface GitHubPR {
-  id: number;
-  number: number;
-  title: string;
-  html_url: string;
-  state: string;
-  user: GitHubUserRef;
-  created_at: string;
-  draft: boolean;
-}
-
-export interface GitHubRepo {
-  name: string;
-  full_name: string;
-  html_url: string;
-  stargazers_count: number;
-  forks_count: number;
-  open_issues_count: number;
-  language: string | null;
-  description: string | null;
-  private: boolean;
-}
-
-export interface ContributorsStats {
-  totalStars: number;
-  totalForks: number;
-  totalIssues: number;
-  totalContributors: number;
-}
-
-export interface ContributorsData {
-  repo: GitHubRepo | null;
-  contributors: GitHubUser[];
-  issues: GitHubIssue[];
-  prs: GitHubPR[];
-  stats: ContributorsStats;
-}
 
 const EMPTY_DATA: ContributorsData = {
   repo: null,
@@ -109,8 +45,6 @@ async function fetchJson<T>(url: string): Promise<T | null> {
   try {
     const res = await fetch(url, {
       headers: buildHeaders(),
-      // Next.js caches this response at the data-cache layer. A single upstream
-      // fetch per hour regardless of traffic avoids GitHub rate limits.
       next: {
         revalidate: REVALIDATE_SECONDS,
         tags: [GITHUB_CACHE_TAG],
@@ -125,6 +59,12 @@ async function fetchJson<T>(url: string): Promise<T | null> {
   }
 }
 
+function byNewest<T extends { created_at: string }>(a: T, b: T): number {
+  return (
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+}
+
 export async function fetchContributorsData(): Promise<ContributorsData> {
   const base = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
@@ -132,12 +72,14 @@ export async function fetchContributorsData(): Promise<ContributorsData> {
     fetchJson<GitHubRepo>(base),
     fetchJson<GitHubUser[]>(`${base}/contributors?per_page=100`),
     fetchJson<GitHubIssue[]>(
-      `${base}/issues?state=open&per_page=20&sort=created`
+      `${base}/issues?state=open&per_page=20&sort=created&direction=desc`
     ),
-    fetchJson<GitHubPR[]>(`${base}/pulls?state=open&per_page=5&sort=created`),
+    fetchJson<GitHubPR[]>(
+      `${base}/pulls?state=open&per_page=5&sort=created&direction=desc`
+    ),
   ]);
 
-  if (!repo && !contributorsRaw && !issuesRaw && !prsRaw) {
+  if (!(repo || contributorsRaw || issuesRaw || prsRaw)) {
     return EMPTY_DATA;
   }
 
@@ -147,9 +89,10 @@ export async function fetchContributorsData(): Promise<ContributorsData> {
 
   const issues = (issuesRaw ?? [])
     .filter((issue) => !issue.pull_request)
+    .sort(byNewest)
     .slice(0, 5);
 
-  const prs = (prsRaw ?? []).slice(0, 5);
+  const prs = (prsRaw ?? []).slice().sort(byNewest).slice(0, 5);
 
   return {
     repo,
@@ -174,10 +117,7 @@ export function formatGitHubDate(dateString: string): string {
   });
 }
 
-export function getIssueTypeFromLabels(labels: GitHubLabel[]): {
-  type: string;
-  className: string;
-} {
+export function getIssueTypeFromLabels(labels: GitHubLabel[]): IssueTypeBadge {
   const lowered = labels.map((l) => l.name.toLowerCase());
   if (lowered.some((name) => name.includes("bug"))) {
     return {
