@@ -15,10 +15,6 @@ export const MARKETING_NAV_LINKS = [
     href: "/changelog/notra",
     label: "What's New",
   },
-  {
-    href: "/contributors",
-    label: "Contributors",
-  },
 ] as const;
 
 export const FOOTER_EXTENSION_LINKS = [
@@ -52,6 +48,10 @@ export const FOOTER_PRODUCT_LINKS = [
   {
     href: "/changelog",
     label: "Changelog",
+  },
+  {
+    href: "/contributors",
+    label: "Contributors",
   },
   {
     href: "https://docs.usenotra.com",
