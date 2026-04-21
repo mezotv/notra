@@ -1,7 +1,7 @@
 "use client";
 
 import { useFlag } from "@databuddy/sdk/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
@@ -21,8 +21,6 @@ type CachedFlag = {
   variant: string | undefined;
 };
 
-type CachedEntry = { key: string; flag: CachedFlag };
-
 type CachedFlagState = {
   on: boolean;
   status: "loading" | "ready" | "error" | "pending";
@@ -30,6 +28,10 @@ type CachedFlagState = {
   value: boolean | string | number | undefined;
   variant: string | undefined;
 };
+
+export function getStorageKey(key: string): string {
+  return STORAGE_PREFIX + key;
+}
 
 function readCache(key: string): CachedFlag | null {
   if (typeof window === "undefined") {
@@ -89,28 +91,87 @@ export function clearCachedFlag(key: string): void {
   }
 }
 
+// Memoized cache reader for useSyncExternalStore. The hook requires snapshot
+// references to be stable across calls (returning a new object every read causes
+// infinite re-renders), so we cache the parsed entry per key and only return a
+// new reference when the underlying localStorage value changes.
+const snapshotCache = new Map<
+  string,
+  { raw: string | null; parsed: CachedFlag | null }
+>();
+
+function readCachedSnapshot(key: string): CachedFlag | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_PREFIX + key);
+  } catch {
+    return null;
+  }
+
+  const cached = snapshotCache.get(key);
+  if (cached && cached.raw === raw) {
+    return cached.parsed;
+  }
+
+  const parsed = readCache(key);
+  snapshotCache.set(key, { raw, parsed });
+  return parsed;
+}
+
+function getServerSnapshot(): CachedFlag | null {
+  return null;
+}
+
 export function useCachedFlag(key: string): CachedFlagState {
   const flag = useFlag(key);
-  const [cachedEntry, setCachedEntry] = useState<CachedEntry | null>(null);
 
-  useEffect(() => {
-    const value = readCache(key);
-    setCachedEntry(value ? { key, flag: value } : null);
-  }, [key]);
+  // Stable subscribe/getSnapshot functions for useSyncExternalStore — both
+  // need referential stability across renders or the store will resubscribe
+  // on every render.
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      if (typeof window === "undefined") {
+        return () => {
+          return;
+        };
+      }
+
+      const storageKey = STORAGE_PREFIX + key;
+      function handleStorage(event: StorageEvent) {
+        if (event.key === storageKey || event.key === null) {
+          notify();
+        }
+      }
+
+      window.addEventListener("storage", handleStorage);
+      return () => window.removeEventListener("storage", handleStorage);
+    },
+    [key]
+  );
+
+  const getSnapshot = useCallback(() => readCachedSnapshot(key), [key]);
+
+  // Read localStorage synchronously on every render so the first client render
+  // matches what's cached. This eliminates the flash from SSR default → cached
+  // value that previously happened in a useEffect after mount.
+  const cached = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   useEffect(() => {
     if (flag.status !== "ready") {
       return;
     }
 
-    const next: CachedFlag = {
+    writeCache(key, {
       on: flag.on,
       value: flag.value,
       variant: flag.variant,
-    };
-
-    writeCache(key, next);
-    setCachedEntry({ key, flag: next });
+    });
+    // Invalidate snapshot cache so subsequent reads pick up the fresh value.
+    snapshotCache.delete(key);
   }, [key, flag.status, flag.on, flag.value, flag.variant]);
 
   if (flag.status === "ready") {
@@ -122,8 +183,6 @@ export function useCachedFlag(key: string): CachedFlagState {
       variant: flag.variant,
     };
   }
-
-  const cached = cachedEntry?.key === key ? cachedEntry.flag : null;
 
   if (cached) {
     return {
