@@ -158,7 +158,11 @@ export function useCachedFlag(key: string): CachedFlagState {
   // Read localStorage synchronously on every render so the first client render
   // matches what's cached. This eliminates the flash from SSR default → cached
   // value that previously happened in a useEffect after mount.
-  const cached = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const cached = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
 
   useEffect(() => {
     if (flag.status !== "ready") {
