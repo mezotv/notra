@@ -60,9 +60,7 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 }
 
 function byNewest<T extends { created_at: string }>(a: T, b: T): number {
-  return (
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
 export async function fetchContributorsData(): Promise<ContributorsData> {

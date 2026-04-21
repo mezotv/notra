@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { GitHubIssue } from "~types/github";
 import { formatGitHubDate, getIssueTypeFromLabels } from "@/utils/github";
+import type { GitHubIssue } from "~types/github";
 
 export function IssueList({ issues }: { issues: GitHubIssue[] }) {
   if (issues.length === 0) {

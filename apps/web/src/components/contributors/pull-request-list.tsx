@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { GitHubPR } from "~types/github";
 import { formatGitHubDate } from "@/utils/github";
+import type { GitHubPR } from "~types/github";
 
 export function PullRequestList({ prs }: { prs: GitHubPR[] }) {
   if (prs.length === 0) {
