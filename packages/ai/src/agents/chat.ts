@@ -49,7 +49,8 @@ export async function createChatAgent(
 
 ## Workflow
 1. Use getMarkdown to see the document with line numbers
-2. Use editMarkdown to apply changes (work from bottom to top)
+2. Call listAvailableSkills. If any skill looks relevant to the user's request (for example, a "humanizer" skill when the user wants more natural writing, or an org-specific skill whose description matches the task), call getSkillByName to load it and follow its guidance before editing.
+3. Use editMarkdown to apply changes (work from bottom to top)
 
 ## Edit Operations
 - replaceLine: { op: "replaceLine", line: number, content: string }

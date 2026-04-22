@@ -35,11 +35,8 @@ import type {
   GitHubSelectionFilters,
 } from "@notra/ai/types/tools";
 import { addAnthropicPromptCaching } from "@notra/ai/utils/prompt-caching";
-import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import { skills } from "@notra/db/schema";
 import { stepCountIs, ToolLoopAgent } from "ai";
-import { and, eq } from "drizzle-orm";
 
 export interface BackgroundGenOptions {
   organizationId: string;
@@ -74,24 +71,30 @@ export interface BackgroundGenResult {
   usage?: AgentTokenUsage;
 }
 
-async function loadSkillContent(
-  organizationId: string,
-  skillName: string
-): Promise<string> {
-  const row = await db.query.skills.findFirst({
-    where: and(
-      eq(skills.organizationId, organizationId),
-      eq(skills.name, skillName)
-    ),
-  });
+function buildDispatcherInstructions(options: {
+  contentLabel: string;
+  contentType: string;
+  primarySkillName: string;
+}): string {
+  return `You are a content generation agent for this organization. Your task: produce ${options.contentLabel} (contentType: ${options.contentType}).
 
-  if (!row) {
-    throw new Error(
-      `Skill "${skillName}" not found for organization "${organizationId}". Has the skills table been seeded?`
-    );
-  }
+Skills drive your behavior — skill content is NOT injected into this prompt. You load skills on demand via tools.
 
-  return row.content;
+Do these steps in order:
+
+1. Call listAvailableSkills to see every writing skill this organization has. Study the names and descriptions.
+
+2. Identify the primary skill that matches your task. The hint from the trigger is "${options.primarySkillName}" — confirm it exists and is the right fit. If a differently-named skill looks like a better match based on its description, use that instead.
+
+3. Call getSkillByName to load the primary skill's full instructions. Read them carefully and follow them exactly — they override these dispatcher instructions on any overlap.
+
+4. Execute the primary skill: gather source data via the provided tools (brand references, GitHub, Linear), then draft the post according to the skill's format and rules.
+
+5. Before finalizing, scan the skill list again for supporting skills (e.g. a "humanizer" skill for polishing AI-sounding output, or any org-specific skill whose description applies). Load any that apply via getSkillByName and apply their guidance to your near-final draft.
+
+6. When the content is finalized, call createPost. If you cannot produce meaningful output, call fail with a concise reason. Do not return the content as plain text.
+
+Skills are the source of truth for how to write. This prompt only tells you how to orchestrate them.`;
 }
 
 export async function runBackgroundGen(
@@ -127,7 +130,11 @@ export async function runBackgroundGen(
     );
   }
 
-  const instructions = await loadSkillContent(organizationId, skillName);
+  const instructions = buildDispatcherInstructions({
+    contentLabel,
+    contentType,
+    primarySkillName: skillName,
+  });
 
   const model = createModel(
     organizationId,
