@@ -7,8 +7,8 @@ export const skillNameSchema = z
   .min(1, "Name is required")
   .max(64, "Name must be 64 characters or fewer")
   .regex(
-    /^[a-z0-9][a-z0-9-]*$/,
-    "Name must be lowercase, start with a letter or digit, and contain only letters, digits, and hyphens"
+    /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/,
+    "Name must be lowercase, start and end with a letter or digit, and contain only letters, digits, and hyphens"
   );
 
 export const skillDescriptionSchema = z

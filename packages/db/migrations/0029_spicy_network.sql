@@ -4,7 +4,6 @@ CREATE TABLE "skills" (
 	"name" text NOT NULL,
 	"description" text NOT NULL,
 	"content" text NOT NULL,
-	"allowed_tools" jsonb NOT NULL,
 	"is_system" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL

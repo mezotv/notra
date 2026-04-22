@@ -1,7 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import z from "zod";
 
 export interface SkillsToolContext {
@@ -50,16 +50,22 @@ export function listAvailableSkills(ctx: SkillsToolContext): Tool {
         .describe("The offset to start listing skills from"),
     }),
     execute: async ({ limit, offset }) => {
-      const rows = await db
-        .select({
-          name: skills.name,
-          description: skills.description,
-          isSystem: skills.isSystem,
-        })
-        .from(skills)
-        .where(eq(skills.organizationId, ctx.organizationId))
-        .limit(limit)
-        .offset(offset);
+      const [rows, totalResult] = await Promise.all([
+        db
+          .select({
+            name: skills.name,
+            description: skills.description,
+            isSystem: skills.isSystem,
+          })
+          .from(skills)
+          .where(eq(skills.organizationId, ctx.organizationId))
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ total: count() })
+          .from(skills)
+          .where(eq(skills.organizationId, ctx.organizationId)),
+      ]);
 
       return {
         skills: rows.map((row) => ({
@@ -67,7 +73,7 @@ export function listAvailableSkills(ctx: SkillsToolContext): Tool {
           description: row.description,
           isSystem: row.isSystem,
         })),
-        total: rows.length,
+        total: totalResult[0]?.total ?? 0,
       };
     },
   });

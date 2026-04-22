@@ -1,54 +1,16 @@
-import fs from "node:fs";
-import path from "node:path";
 import { getConversationalBlogPostPrompt } from "@notra/ai/prompts/blog_post/conversational";
 import { getConversationalChangelogPrompt } from "@notra/ai/prompts/changelog/conversational";
 import { getConversationalLinkedInPrompt } from "@notra/ai/prompts/linkedin/conversational";
 import { getConversationalTwitterPrompt } from "@notra/ai/prompts/twitter/conversational";
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
-import matter from "gray-matter";
 import { nanoid } from "nanoid";
+import { HUMANIZER_CONTENT } from "./humanizer-content";
 
 export interface SystemSkillDefinition {
   name: string;
   description: string;
   content: string;
-}
-
-function loadHumanizerContent(): string {
-  const candidates = [
-    path.join(
-      process.cwd(),
-      "packages",
-      "ai",
-      "src",
-      "skills",
-      "human-writer",
-      "SKILL.md"
-    ),
-    path.join(
-      process.cwd(),
-      "..",
-      "..",
-      "packages",
-      "ai",
-      "src",
-      "skills",
-      "human-writer",
-      "SKILL.md"
-    ),
-  ];
-
-  const found = candidates.find((candidate) => fs.existsSync(candidate));
-
-  if (!found) {
-    throw new Error(
-      `[skills seed] Humanizer SKILL.md not found. Checked: ${candidates.join(", ")}`
-    );
-  }
-
-  const raw = fs.readFileSync(found, "utf-8");
-  return matter(raw).content.trim();
 }
 
 export function buildSystemSkills(): SystemSkillDefinition[] {
@@ -81,7 +43,7 @@ export function buildSystemSkills(): SystemSkillDefinition[] {
       name: "humanizer",
       description:
         "Remove signs of AI-generated writing from text. Use as a sub-skill from other skills to humanize a near-final draft before publishing.",
-      content: loadHumanizerContent(),
+      content: HUMANIZER_CONTENT.trim(),
     },
   ];
 }
