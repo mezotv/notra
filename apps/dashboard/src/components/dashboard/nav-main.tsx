@@ -5,6 +5,7 @@ import {
   CorporateIcon,
   Home01Icon,
   Key01Icon,
+  MagicWand01Icon,
   Message01Icon,
   NoteIcon,
   Notification03Icon,
@@ -55,6 +56,12 @@ const navMainItems: NavMainItem[] = [
     link: "/content",
     icon: NoteIcon,
     label: "Content",
+    category: "workspace",
+  },
+  {
+    link: "/skills",
+    icon: MagicWand01Icon,
+    label: "Skills",
     category: "workspace",
   },
   {

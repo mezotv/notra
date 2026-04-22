@@ -30,6 +30,7 @@ import {
   sendWelcomeEmailAction,
 } from "@/lib/email/actions";
 import { redis } from "@/lib/redis";
+import { seedSystemSkills } from "@/lib/skills/seed";
 import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
 
@@ -392,6 +393,18 @@ export const auth = betterAuth({
     organization: {
       create: {
         after: async (org: { id: string; name: string }) => {
+          try {
+            await seedSystemSkills(org.id);
+          } catch (error) {
+            console.error(
+              "[Skills] Failed to seed system skills for new org:",
+              {
+                organizationId: org.id,
+                error,
+              }
+            );
+          }
+
           if (!autumn) {
             console.warn(
               "[Autumn] Skipping customer creation - AUTUMN_SECRET_KEY not configured"

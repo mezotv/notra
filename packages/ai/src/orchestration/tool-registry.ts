@@ -56,8 +56,8 @@ export function buildToolSet(
   const tools: Record<string, Tool> = {
     getMarkdown,
     editMarkdown,
-    listAvailableSkills: listAvailableSkills(),
-    getSkillByName: getSkillByName(),
+    listAvailableSkills: listAvailableSkills({ organizationId }),
+    getSkillByName: getSkillByName({ organizationId }),
   };
 
   const descriptions: string[] = [

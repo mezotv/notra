@@ -470,6 +470,29 @@ export const posts = pgTable(
   ]
 );
 
+export const skills = pgTable(
+  "skills",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    content: text("content").notNull(),
+    isSystem: boolean("is_system").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("skills_organizationId_idx").on(table.organizationId),
+    uniqueIndex("skills_org_name_uidx").on(table.organizationId, table.name),
+  ]
+);
+
 export interface PostSourceMetadata {
   triggerId: string;
   triggerSourceType: string;
@@ -521,6 +544,7 @@ export const organizationsRelations = relations(
     notificationSettings: one(organizationNotificationSettings),
     connectedSocialAccounts: many(connectedSocialAccounts),
     posts: many(posts),
+    skills: many(skills),
   })
 );
 
@@ -653,6 +677,13 @@ export const organizationNotificationSettingsRelations = relations(
 export const postsRelations = relations(posts, ({ one }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const skillsRelations = relations(skills, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [skills.organizationId],
     references: [organizations.id],
   }),
 }));

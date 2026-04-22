@@ -42,8 +42,8 @@ export async function createChatAgent(
     tools: {
       getMarkdown,
       editMarkdown,
-      listAvailableSkills: listAvailableSkills(),
-      getSkillByName: getSkillByName(),
+      listAvailableSkills: listAvailableSkills({ organizationId }),
+      getSkillByName: getSkillByName({ organizationId }),
     },
     instructions: `You are a content editor assistant. Help users edit their markdown documents.${brandContext}
 

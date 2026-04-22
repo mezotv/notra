@@ -204,6 +204,13 @@
       "when": 1776461491141,
       "tag": "0028_previous_tinkerer",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1776881435628,
+      "tag": "0029_groovy_harry_osborn",
+      "breakpoints": true
     }
   ]
 }

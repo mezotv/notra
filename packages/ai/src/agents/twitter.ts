@@ -1,178 +1,30 @@
-import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
-import { createModel } from "@notra/ai/model";
-import { getCasualTwitterPrompt } from "@notra/ai/prompts/twitter/casual";
-import { getConversationalTwitterPrompt } from "@notra/ai/prompts/twitter/conversational";
-import { getFormalTwitterPrompt } from "@notra/ai/prompts/twitter/formal";
-import { getProfessionalTwitterPrompt } from "@notra/ai/prompts/twitter/professional";
-import { getUserPrompt } from "@notra/ai/prompts/user";
-import { getValidToneProfile, type ToneProfile } from "@notra/ai/schemas/brand";
-import {
-  createGetBrandReferencesTool,
-  createSearchBrandReferencesTool,
-} from "@notra/ai/tools/brand-references";
-import { buildGitHubDataTools } from "@notra/ai/tools/github";
-import { buildLinearDataTools } from "@notra/ai/tools/linear";
-import {
-  createCreatePostTool,
-  createFailTool,
-  createUpdatePostTool,
-  createViewPostTool,
-} from "@notra/ai/tools/post";
-import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import { runBackgroundGen } from "@notra/ai/agents/background-gen";
 import type {
   TwitterAgentOptions,
   TwitterAgentResult,
 } from "@notra/ai/types/agents";
-import type {
-  PostToolsConfig,
-  PostToolsResult,
-} from "@notra/ai/types/post-tools";
-import { addAnthropicPromptCaching } from "@notra/ai/utils/prompt-caching";
-import { stepCountIs, ToolLoopAgent } from "ai";
-
-const twitterPromptByTone: Record<ToneProfile, () => string> = {
-  Conversational: getConversationalTwitterPrompt,
-  Professional: getProfessionalTwitterPrompt,
-  Casual: getCasualTwitterPrompt,
-  Formal: getFormalTwitterPrompt,
-};
 
 export async function generateTwitterPost(
   options: TwitterAgentOptions
 ): Promise<TwitterAgentResult> {
-  const {
-    organizationId,
-    voiceId,
-    repositories,
-    linearIntegrations,
-    tone = "Conversational",
-    promptInput,
-    sourceMetadata,
-    dataPointSettings,
-    selectionFilters,
-    commitWindow,
-    autoPublish,
-    resolveContext,
-    resolveLinearContext,
-    log,
-  } = options;
-
-  if (
-    (!repositories || repositories.length === 0) &&
-    (!linearIntegrations || linearIntegrations.length === 0)
-  ) {
-    throw new Error(
-      "At least one repository or Linear integration must be provided to generate a Twitter post."
-    );
-  }
-
-  const model = createModel(
-    organizationId,
-    AGENT_DEFAULT_MODEL,
-    undefined,
-    log
-  );
-
-  const resolvedTone = getValidToneProfile(tone, "Conversational");
-
-  const promptFactory =
-    twitterPromptByTone[resolvedTone] ?? twitterPromptByTone.Conversational;
-  const instructions = promptFactory();
-  const prompt = getUserPrompt("tweet", promptInput);
-
-  const allowedIntegrationIds = Array.from(
-    new Set((repositories ?? []).map((repo) => repo.integrationId))
-  );
-
-  const allowedLinearIntegrationIds = Array.from(
-    new Set((linearIntegrations ?? []).map((li) => li.integrationId))
-  );
-
-  const postToolsResult: PostToolsResult = {};
-  const postToolsConfig: PostToolsConfig = {
-    organizationId,
+  return runBackgroundGen({
+    organizationId: options.organizationId,
+    skillName: "twitter",
     contentType: "twitter_post",
-    sourceMetadata,
-    autoPublish,
-  };
-
-  const agent = new ToolLoopAgent({
-    model,
-    prepareStep: ({ messages }) => ({
-      messages: addAnthropicPromptCaching(messages, AGENT_DEFAULT_MODEL),
-    }),
-    providerOptions: {
-      anthropic: {
-        thinking: { type: "enabled", budgetTokens: 4096 },
-      },
-    },
-    tools: {
-      searchBrandReferences: createSearchBrandReferencesTool({
-        organizationId,
-        voiceId,
-        agentType: "twitter",
-      }),
-      getBrandReferences: createGetBrandReferencesTool({
-        organizationId,
-        voiceId,
-        agentType: "twitter",
-      }),
-      ...buildGitHubDataTools({
-        organizationId,
-        allowedIntegrationIds,
-        dataPointSettings,
-        selectionFilters,
-        commitWindow,
-        resolveContext,
-      }),
-      ...buildLinearDataTools({
-        organizationId,
-        allowedIntegrationIds: allowedLinearIntegrationIds,
-        dataPointSettings,
-        resolveContext: resolveLinearContext,
-      }),
-      listAvailableSkills: listAvailableSkills(),
-      getSkillByName: getSkillByName(),
-      createPost: createCreatePostTool(postToolsConfig, postToolsResult),
-      updatePost: createUpdatePostTool(postToolsConfig, postToolsResult),
-      viewPost: createViewPostTool(postToolsConfig),
-      fail: createFailTool(postToolsResult),
-    },
-    instructions,
-    stopWhen: stepCountIs(35),
+    brandAgentType: "twitter",
+    contentLabel: "tweet",
+    voiceId: options.voiceId,
+    repositories: options.repositories,
+    linearIntegrations: options.linearIntegrations,
+    promptInput: options.promptInput,
+    sourceMetadata: options.sourceMetadata,
+    dataPointSettings: options.dataPointSettings,
+    selectionFilters: options.selectionFilters,
+    commitWindow: options.commitWindow,
+    autoPublish: options.autoPublish,
+    resolveContext: options.resolveContext,
+    resolveLinearContext: options.resolveLinearContext,
+    log: options.log,
+    includeSearchBrandReferencesTool: true,
   });
-
-  const result = await agent.generate({ prompt });
-
-  if (postToolsResult.failReason) {
-    throw new Error(postToolsResult.failReason);
-  }
-
-  if (!postToolsResult.posts?.length) {
-    throw new Error(
-      "Twitter agent completed without creating a post. No createPost tool call was made."
-    );
-  }
-
-  const primaryPost = postToolsResult.posts[0];
-
-  if (!primaryPost) {
-    throw new Error("Twitter agent did not return a primary post.");
-  }
-
-  return {
-    postId: primaryPost.postId,
-    title: primaryPost.title,
-    posts: postToolsResult.posts,
-    usage: {
-      inputTokens: result.totalUsage.inputTokens ?? 0,
-      outputTokens: result.totalUsage.outputTokens ?? 0,
-      totalTokens: result.totalUsage.totalTokens ?? 0,
-      cacheReadTokens:
-        result.totalUsage.inputTokenDetails?.cacheReadTokens ?? 0,
-      cacheWriteTokens:
-        result.totalUsage.inputTokenDetails?.cacheWriteTokens ?? 0,
-      raw: result.totalUsage,
-    },
-  };
 }

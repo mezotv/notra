@@ -94,8 +94,8 @@ export function buildStandaloneToolSet(
     "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPostById"
   );
 
-  tools.listAvailableSkills = listAvailableSkills();
-  tools.getSkillByName = getSkillByName();
+  tools.listAvailableSkills = listAvailableSkills({ organizationId });
+  tools.getSkillByName = getSkillByName({ organizationId });
   descriptions.push(
     "**Skills**: Access knowledge and writing guidelines using listAvailableSkills and getSkillByName"
   );
