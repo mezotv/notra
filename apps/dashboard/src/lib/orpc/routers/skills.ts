@@ -138,16 +138,38 @@ export const skillsRouter = {
           eq(skills.organizationId, input.organizationId),
           eq(skills.name, input.name)
         ),
-        columns: { id: true },
+        columns: { id: true, isSystem: true },
       });
 
       if (!row) {
         throw notFound("Skill not found");
       }
 
+      const nextName = input.payload.name ?? input.name;
+      const isRename = nextName !== input.name;
+
+      if (isRename && row.isSystem) {
+        throw forbidden("System skills cannot be renamed");
+      }
+
+      if (isRename) {
+        const conflictRow = await db.query.skills.findFirst({
+          where: and(
+            eq(skills.organizationId, input.organizationId),
+            eq(skills.name, nextName)
+          ),
+          columns: { id: true },
+        });
+
+        if (conflictRow) {
+          throw conflict(`A skill named "${nextName}" already exists`);
+        }
+      }
+
       await db
         .update(skills)
         .set({
+          name: nextName,
           description: input.payload.description,
           content: input.payload.content,
         })
@@ -158,7 +180,7 @@ export const skillsRouter = {
           )
         );
 
-      return { success: true as const };
+      return { success: true as const, name: nextName };
     }),
 
   delete: authorizedProcedure

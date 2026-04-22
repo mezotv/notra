@@ -60,9 +60,11 @@ export default function PageClient({ slug, name }: PageClientProps) {
   );
 
   const [original, setOriginal] = useState<{
+    name: string;
     description: string;
     content: string;
   } | null>(null);
+  const [nameInput, setNameInput] = useState("");
   const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
 
@@ -80,9 +82,11 @@ export default function PageClient({ slug, name }: PageClientProps) {
   useEffect(() => {
     if (skill && !original) {
       setOriginal({
+        name: skill.name,
         description: skill.description,
         content: skill.content,
       });
+      setNameInput(skill.name);
       setDescription(skill.description);
       setContent(skill.content);
     }
@@ -90,7 +94,9 @@ export default function PageClient({ slug, name }: PageClientProps) {
 
   const hasChanges =
     !!original &&
-    (description !== original.description || content !== original.content);
+    (nameInput !== original.name ||
+      description !== original.description ||
+      content !== original.content);
 
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({
@@ -110,7 +116,12 @@ export default function PageClient({ slug, name }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
-      const parsed = updateSkillSchema.safeParse({ description, content });
+      const willRename = nameInput !== name;
+      const parsed = updateSkillSchema.safeParse({
+        name: willRename ? nameInput : undefined,
+        description,
+        content,
+      });
       if (!parsed.success) {
         throw new Error(parsed.error.issues[0]?.message ?? "Invalid input");
       }
@@ -120,10 +131,14 @@ export default function PageClient({ slug, name }: PageClientProps) {
         payload: parsed.data,
       });
     },
-    onSuccess: () => {
-      setOriginal({ description, content });
+    onSuccess: (data) => {
+      setOriginal({ name: data.name, description, content });
+      setNameInput(data.name);
       invalidate();
       toast.success("Skill saved");
+      if (data.name !== name) {
+        router.replace(`/${slug}/skills/${data.name}`);
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -158,6 +173,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
     if (!original) {
       return;
     }
+    setNameInput(original.name);
     setDescription(original.description);
     setContent(original.content);
   }, [original]);
@@ -242,12 +258,15 @@ export default function PageClient({ slug, name }: PageClientProps) {
               </h1>
               {skill?.isSystem && <Badge variant="secondary">System</Badge>}
             </div>
-            <p className="text-muted-foreground text-sm">
-              Name cannot be changed after creation.
-            </p>
+            {skill?.isSystem && (
+              <p className="text-muted-foreground text-sm">
+                System skills cannot be renamed.
+              </p>
+            )}
           </div>
           {skill && !skill.isSystem && (
             <Button
+              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               disabled={saveMutation.isPending || deleteMutation.isPending}
               onClick={() => setDeleteOpen(true)}
               variant="outline"
@@ -268,14 +287,25 @@ export default function PageClient({ slug, name }: PageClientProps) {
           <div className="space-y-4">
             <Field>
               <FieldLabel>Name</FieldLabel>
-              <Input disabled readOnly value={name} />
+              <Input
+                disabled={skill.isSystem || saveMutation.isPending}
+                onChange={(e) => setNameInput(e.target.value)}
+                readOnly={skill.isSystem}
+                value={nameInput}
+              />
+              {!skill.isSystem && (
+                <p className="text-muted-foreground text-xs">
+                  Lowercase letters, digits, and hyphens. Renaming may affect
+                  references to this skill by name.
+                </p>
+              )}
             </Field>
             <Field>
               <FieldLabel>
                 Description<span className="-ml-1 text-destructive">*</span>
               </FieldLabel>
               <Textarea
-                className="min-h-[5rem]"
+                className="max-h-[5rem] min-h-[4rem] overflow-y-auto"
                 disabled={saveMutation.isPending}
                 onChange={(e) => setDescription(e.target.value)}
                 value={description}
@@ -297,7 +327,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
                 </TabsList>
                 <TabsContent className="mt-2" value="edit">
                   <Textarea
-                    className="min-h-[24rem] font-mono text-sm"
+                    className="max-h-[20rem] min-h-[16rem] overflow-y-auto font-mono text-sm"
                     disabled={saveMutation.isPending}
                     onChange={(e) => setContent(e.target.value)}
                     value={content}
@@ -323,7 +353,8 @@ export default function PageClient({ slug, name }: PageClientProps) {
             </ResponsiveAlertDialogTitle>
             <ResponsiveAlertDialogDescription>
               This will permanently delete the skill "{name}". Schedules that
-              reference it by name will stop producing output.
+              reference it will still run, but without its guidance their output
+              may be lower quality.
             </ResponsiveAlertDialogDescription>
           </ResponsiveAlertDialogHeader>
           <ResponsiveAlertDialogFooter>

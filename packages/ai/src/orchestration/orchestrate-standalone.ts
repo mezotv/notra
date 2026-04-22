@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import {
@@ -38,7 +40,27 @@ import {
 
 const TRIVIAL_HISTORY_LIMIT = 6;
 const MINIMAL_STANDALONE_PROMPT =
-  "You are Notra, an AI assistant for content teams. Reply briefly and warmly. If the user asks what you can do, mention: creating and editing posts (changelogs, blog posts, Twitter, LinkedIn, investor updates), viewing brand identities, and reviewing GitHub/Linear activity. Do not call tools on this turn.";
+  "You are Notra, an AI assistant for content teams. Reply briefly and warmly. Do not call tools on this turn.";
+
+const CHAT_DEBUG_LOG_PATH = path.join(process.cwd(), ".chat-debug.log");
+
+function debugLogChatPrompt(entry: {
+  organizationId: string;
+  routingDecision: unknown;
+  systemPrompt: string;
+  modelMessages: unknown;
+  toolNames: string[];
+}): void {
+  try {
+    const line = `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      ...entry,
+    })}\n`;
+    fs.appendFile(CHAT_DEBUG_LOG_PATH, line, () => undefined);
+  } catch {
+    // Best-effort debug log; never let logging break chat.
+  }
+}
 
 export async function orchestrateStandaloneChat(
   input: StandaloneChatInput,
@@ -70,6 +92,7 @@ export async function orchestrateStandaloneChat(
 
   const lastUserMessage = getLastUserMessage(messages);
   const isTrivial = isTrivialMessage(lastUserMessage);
+  const mentionsSkills = /\bskills?\b/i.test(lastUserMessage);
   const isAuto = requestedModel === undefined || requestedModel === "auto";
 
   let selectedModel: string;
@@ -97,6 +120,11 @@ export async function orchestrateStandaloneChat(
     decisionReasoning = isTrivial
       ? "Trivial greeting/acknowledgement — minimal prompt, no tools, no thinking"
       : "User selected model explicitly";
+  }
+
+  if (mentionsSkills && !decisionRequiresTools) {
+    decisionRequiresTools = true;
+    decisionReasoning = `${decisionReasoning} (forced tools: message mentions skills)`;
   }
 
   const routingDecision = {
@@ -163,13 +191,23 @@ export async function orchestrateStandaloneChat(
     ? trimTrivialHistory(messages)
     : messages;
 
+  const modelMessages = await convertToModelMessages(messagesForModel, {
+    ignoreIncompleteToolCalls: true,
+  });
+
+  debugLogChatPrompt({
+    organizationId,
+    routingDecision,
+    systemPrompt,
+    modelMessages,
+    toolNames: Object.keys(tools ?? {}),
+  });
+
   let firstChunkFired = false;
   const stream = streamText({
     model: modelWithMemory,
     system: systemPrompt,
-    messages: await convertToModelMessages(messagesForModel, {
-      ignoreIncompleteToolCalls: true,
-    }),
+    messages: modelMessages,
     tools,
     stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
     experimental_transform: smoothStream(),

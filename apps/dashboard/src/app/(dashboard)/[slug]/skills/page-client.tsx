@@ -11,7 +11,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
@@ -31,6 +30,7 @@ import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
 
 interface PageClientProps {
@@ -90,6 +90,23 @@ export default function PageClient({ slug }: PageClientProps) {
     },
   });
 
+  const handlePasteFrontmatter = (
+    e: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const pasted = e.clipboardData.getData("text/plain");
+    const parsed = parseSkillFrontmatter(pasted);
+    if (!parsed) {
+      return;
+    }
+
+    e.preventDefault();
+    setForm((f) => ({
+      name: f.name || (parsed.name ?? ""),
+      description: f.description || (parsed.description ?? ""),
+      content: f.content || parsed.body,
+    }));
+  };
+
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -130,11 +147,8 @@ export default function PageClient({ slug }: PageClientProps) {
               >
                 <Card className="h-full gap-3 transition-all group-hover:ring-foreground/20">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-mono text-base">
+                    <CardTitle className="font-mono text-base">
                       {skill.name}
-                      {skill.isSystem && (
-                        <Badge variant="secondary">System</Badge>
-                      )}
                     </CardTitle>
                     <CardDescription className="line-clamp-3">
                       {skill.description}
@@ -168,12 +182,13 @@ export default function PageClient({ slug }: PageClientProps) {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, name: e.target.value }))
                 }
+                onPaste={handlePasteFrontmatter}
                 placeholder="my-skill"
                 value={form.name}
               />
               <p className="text-muted-foreground text-xs">
-                Lowercase letters, digits, and hyphens. Used by agents to load
-                this skill.
+                Lowercase letters, digits, and hyphens. Or paste a full skill
+                (frontmatter + body) here to auto-fill all fields.
               </p>
             </Field>
             <Field>
@@ -181,11 +196,12 @@ export default function PageClient({ slug }: PageClientProps) {
                 Description<span className="-ml-1 text-destructive">*</span>
               </FieldLabel>
               <Textarea
-                className="min-h-[5rem]"
+                className="max-h-[5rem] min-h-[4rem] overflow-y-auto"
                 disabled={createMutation.isPending}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, description: e.target.value }))
                 }
+                onPaste={handlePasteFrontmatter}
                 placeholder="What this skill does and when to use it."
                 value={form.description}
               />
@@ -195,11 +211,12 @@ export default function PageClient({ slug }: PageClientProps) {
                 Content<span className="-ml-1 text-destructive">*</span>
               </FieldLabel>
               <Textarea
-                className="min-h-[12rem] font-mono text-sm"
+                className="max-h-[14rem] min-h-[10rem] overflow-y-auto font-mono text-sm"
                 disabled={createMutation.isPending}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, content: e.target.value }))
                 }
+                onPaste={handlePasteFrontmatter}
                 placeholder="# My skill\n\nYou are..."
                 value={form.content}
               />

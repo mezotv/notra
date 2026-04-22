@@ -8,36 +8,6 @@ export interface SkillsToolContext {
   organizationId: string;
 }
 
-export interface SkillRecord {
-  name: string;
-  description: string;
-  content: string;
-}
-
-export function formatSkillAsDocument(skill: SkillRecord): string {
-  return `---
-name: ${skill.name}
-description: ${escapeFrontmatterValue(skill.description)}
----
-
-${skill.content.trim()}`;
-}
-
-function escapeFrontmatterValue(value: string): string {
-  const hasNewline = value.includes("\n");
-  const hasQuote = value.includes('"');
-
-  if (!(hasNewline || hasQuote)) {
-    return value;
-  }
-
-  const indented = value
-    .split("\n")
-    .map((line) => `  ${line}`)
-    .join("\n");
-  return `|\n${indented}`;
-}
-
 export function listAvailableSkills(ctx: SkillsToolContext): Tool {
   return tool({
     description:
@@ -82,7 +52,7 @@ export function listAvailableSkills(ctx: SkillsToolContext): Tool {
 export function getSkillByName(ctx: SkillsToolContext): Tool {
   return tool({
     description:
-      "Load a skill's full content by name. Returns a markdown document with YAML frontmatter (name, description) followed by the skill body. Call listAvailableSkills first to discover available names.",
+      "Load a skill's full content by name. Returns name, description, and the skill body. Call listAvailableSkills first to discover available names.",
     inputSchema: z.object({
       name: z.string().describe("The name of the skill to load."),
     }),
@@ -103,11 +73,7 @@ export function getSkillByName(ctx: SkillsToolContext): Tool {
       return {
         name: row.name,
         description: row.description,
-        document: formatSkillAsDocument({
-          name: row.name,
-          description: row.description,
-          content: row.content,
-        }),
+        content: row.content.trim(),
       };
     },
   });

@@ -637,8 +637,6 @@ export async function generateAndSetChatTitle(
       maxOutputTokens: 30,
     });
 
-    console.log()
-
     const aiTitle = text.replace(/^["']|["']$/g, "").trim();
     const title = normalizeChatTitle(aiTitle || fallbackTitle);
 

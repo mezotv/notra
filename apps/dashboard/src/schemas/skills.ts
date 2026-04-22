@@ -29,6 +29,7 @@ export const createSkillSchema = z.object({
 });
 
 export const updateSkillSchema = z.object({
+  name: skillNameSchema.optional(),
   description: skillDescriptionSchema,
   content: skillContentSchema,
 });
