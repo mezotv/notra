@@ -5,6 +5,7 @@ export interface ParsedSkillFrontmatter {
 }
 
 const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/;
+const BOM_REGEX = /^\uFEFF/;
 
 function stripQuotes(value: string): string {
   if (
@@ -19,7 +20,7 @@ function stripQuotes(value: string): string {
 export function parseSkillFrontmatter(
   input: string
 ): ParsedSkillFrontmatter | null {
-  const trimmed = input.replace(/^\uFEFF/, "").trimStart();
+  const trimmed = input.replace(BOM_REGEX, "").trimStart();
   if (!trimmed.startsWith("---")) {
     return null;
   }

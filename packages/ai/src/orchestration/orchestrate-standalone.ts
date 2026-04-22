@@ -38,6 +38,8 @@ import {
   getRepoContextFromIntegrations,
 } from "./standalone-tool-registry";
 
+const SKILLS_MENTION_REGEX = /\bskills?\b/i;
+
 const TRIVIAL_HISTORY_LIMIT = 6;
 const MINIMAL_STANDALONE_PROMPT =
   "You are Notra, an AI assistant for content teams. Reply briefly and warmly. Do not call tools on this turn.";
@@ -92,7 +94,7 @@ export async function orchestrateStandaloneChat(
 
   const lastUserMessage = getLastUserMessage(messages);
   const isTrivial = isTrivialMessage(lastUserMessage);
-  const mentionsSkills = /\bskills?\b/i.test(lastUserMessage);
+  const mentionsSkills = SKILLS_MENTION_REGEX.test(lastUserMessage);
   const isAuto = requestedModel === undefined || requestedModel === "auto";
 
   let selectedModel: string;

@@ -119,7 +119,7 @@ export default function PageClient({ slug }: PageClientProps) {
           </div>
           <Button onClick={() => setDialogOpen(true)}>
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            New skill
+            New Skill
           </Button>
         </div>
 

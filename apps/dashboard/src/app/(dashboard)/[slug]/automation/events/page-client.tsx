@@ -208,7 +208,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
             organizationId={organizationId ?? ""}
             trigger={
-              <Button size="sm" variant="default">
+              <Button variant="default">
                 <PlusIcon className="size-4" />
                 <span className="ml-1">New Event Trigger</span>
               </Button>
@@ -233,7 +233,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 }
                 organizationId={organizationId ?? ""}
                 trigger={
-                  <Button size="sm" variant="outline">
+                  <Button variant="outline">
                     <PlusIcon className="size-4" />
                     <span className="ml-1">New Event Trigger</span>
                   </Button>

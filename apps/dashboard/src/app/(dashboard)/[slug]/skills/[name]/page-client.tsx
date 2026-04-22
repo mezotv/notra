@@ -256,13 +256,19 @@ export default function PageClient({ slug, name }: PageClientProps) {
               <h1 className="font-bold font-mono text-3xl tracking-tight">
                 {name}
               </h1>
-              {skill?.isSystem && <Badge variant="secondary">System</Badge>}
+              {skill?.isSystem && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={<Badge variant="secondary">System</Badge>}
+                    />
+                    <TooltipContent>
+                      System skills cannot be renamed or deleted.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
-            {skill?.isSystem && (
-              <p className="text-muted-foreground text-sm">
-                System skills cannot be renamed.
-              </p>
-            )}
           </div>
           {skill && !skill.isSystem && (
             <Button
