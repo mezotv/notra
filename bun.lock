@@ -21,6 +21,7 @@
         "@notra/ai": "workspace:*",
         "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
+        "@notra/utils": "workspace:*",
         "@unkey/api": "^2.3.0",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.35.8",
@@ -66,6 +67,7 @@
         "@notra/db": "workspace:*",
         "@notra/email": "workspace:*",
         "@notra/ui": "workspace:*",
+        "@notra/utils": "workspace:*",
         "@orpc/client": "^1.13.9",
         "@orpc/server": "^1.13.9",
         "@orpc/tanstack-query": "^1.13.9",
@@ -295,6 +297,15 @@
         "@types/react-dom": "^19.2.3",
         "postcss": "^8.5.8",
         "tailwindcss": "^4",
+        "typescript": "5.9.2",
+      },
+    },
+    "packages/utils": {
+      "name": "@notra/utils",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "^22.15.3",
         "typescript": "5.9.2",
       },
     },
@@ -886,6 +897,8 @@
     "@notra/typescript-config": ["@notra/typescript-config@workspace:packages/typescript-config"],
 
     "@notra/ui": ["@notra/ui@workspace:packages/ui"],
+
+    "@notra/utils": ["@notra/utils@workspace:packages/utils"],
 
     "@octokit/auth-token": ["@octokit/auth-token@6.0.0", "", {}, "sha512-P4YJBPdPSpWTQ1NU4XYdvHvXJJDxM6YwpS0FZHRgP7YFkdVxsWcpWGy/NVqlAA7PcPCnMacXlRm1y2PFZRWL/w=="],
 

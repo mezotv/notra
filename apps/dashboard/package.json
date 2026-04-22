@@ -35,6 +35,7 @@
     "@notra/content-generation": "workspace:*",
     "@notra/db": "workspace:*",
     "@notra/email": "workspace:*",
+    "@notra/utils": "workspace:*",
     "@notra/ui": "workspace:*",
     "@orpc/client": "^1.13.9",
     "@orpc/server": "^1.13.9",

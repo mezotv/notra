@@ -18,7 +18,7 @@ import {
   LOOKBACK_WINDOWS,
   SUPPORTED_CONTENT_GENERATION_TYPES,
 } from "@notra/content-generation/schemas";
-import { assertPublicHttpUrl } from "../utils/url";
+import { assertPublicHttpUrl } from "@notra/utils/url";
 import { resourceIdSchema } from "./ids";
 
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;

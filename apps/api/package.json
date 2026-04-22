@@ -12,6 +12,7 @@
     "@notra/ai": "workspace:*",
     "@notra/content-generation": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/utils": "workspace:*",
     "@unkey/api": "^2.3.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",

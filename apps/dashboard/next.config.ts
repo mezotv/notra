@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
     "@notra/email",
     "@notra/ai",
     "@notra/content-generation",
+    "@notra/utils",
   ],
   async redirects() {
     return [

@@ -7,6 +7,7 @@ import {
 } from "@notra/ai/jobs/brand-analysis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
+import { assertPublicHttpUrl } from "@notra/utils/url";
 import type { WorkflowContext } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
@@ -43,7 +44,19 @@ interface BrandInfo {
 
 const brandAnalysisPayloadSchema = z.object({
   organizationId: z.string().min(1),
-  url: z.string().url(),
+  url: z
+    .string()
+    .url()
+    .superRefine((value, ctx) => {
+      try {
+        assertPublicHttpUrl(value);
+      } catch (error) {
+        ctx.addIssue({
+          code: "custom",
+          message: error instanceof Error ? error.message : "Invalid URL",
+        });
+      }
+    }),
   voiceId: z.string().optional(),
   jobId: z.string().optional(),
 });
