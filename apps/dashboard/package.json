@@ -65,6 +65,7 @@
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
     "evlog": "^2.13.0",
+    "isomorphic-dompurify": "^3.9.0",
     "lexical": "^0.39.0",
     "lucide-react": "^0.562.0",
     "mailchecker": "^6.0.19",

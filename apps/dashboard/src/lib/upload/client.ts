@@ -1,4 +1,5 @@
 import axios from "axios";
+import { SVG_MIME_TYPE } from "@/constants/upload";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   UploadFileProps,
@@ -32,11 +33,24 @@ async function uploadToR2(presignedUrl: string, file: File) {
   return response.data;
 }
 
+async function uploadSvgThroughServer(file: File): Promise<UploadFileResponse> {
+  const svg = await file.text();
+  const { key, publicUrl } = await dashboardOrpc.upload.uploadSvg.call({
+    type: "content",
+    svg,
+  });
+  return { url: publicUrl, key };
+}
+
 export async function uploadFile({
   file,
   type,
 }: UploadFileProps): Promise<UploadFileResponse> {
   try {
+    if (type === "content" && file.type === SVG_MIME_TYPE) {
+      return await uploadSvgThroughServer(file);
+    }
+
     const response = await getPresignedUrl(file, type);
 
     const { url: presignedUrl, key, publicUrl } = response;

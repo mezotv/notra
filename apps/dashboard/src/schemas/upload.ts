@@ -1,12 +1,12 @@
 import z from "zod";
 import {
-  ALLOWED_MIME_TYPES,
   ALLOWED_RASTER_MIME_TYPES,
-  type AllowedMimeType,
   type AllowedRasterMimeType,
   MAX_AVATAR_FILE_SIZE,
   MAX_CONTENT_FILE_SIZE,
   MAX_LOGO_FILE_SIZE,
+  MAX_SVG_CONTENT_SIZE,
+  SVG_MIME_TYPE,
 } from "@/constants/upload";
 import type { UploadType } from "@/types/upload/client";
 
@@ -52,6 +52,18 @@ export const uploadSchema = z.union([
   uploadMediaSchema,
 ]);
 
+export const uploadSvgSchema = z.object({
+  type: z.literal("content"),
+  svg: z
+    .string()
+    .min(1)
+    .max(MAX_SVG_CONTENT_SIZE, {
+      message: `SVG content must be less than ${MAX_SVG_CONTENT_SIZE / 1024 / 1024}MB`,
+    }),
+});
+
+export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
+
 const maxSizeByType = {
   avatar: MAX_AVATAR_FILE_SIZE,
   logo: MAX_LOGO_FILE_SIZE,
@@ -90,9 +102,16 @@ export function validateUpload({
       }
       break;
     case "content":
-      if (!ALLOWED_MIME_TYPES.includes(fileType as AllowedMimeType)) {
+      if (fileType === SVG_MIME_TYPE) {
         throw new Error(
-          `File type ${fileType} is not allowed. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`
+          "SVG uploads must use the dedicated SVG upload endpoint"
+        );
+      }
+      if (
+        !ALLOWED_RASTER_MIME_TYPES.includes(fileType as AllowedRasterMimeType)
+      ) {
+        throw new Error(
+          `File type ${fileType} is not allowed. Allowed types: ${ALLOWED_RASTER_MIME_TYPES.join(", ")}, ${SVG_MIME_TYPE}`
         );
       }
       break;
