@@ -432,6 +432,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                 customerId: trigger.organizationId,
                 featureId: FEATURES.AI_CREDITS,
                 value: 0,
+                properties: {
+                  source: "workflow_schedule",
+                  output_type: trigger.outputType,
+                  trigger_name: trigger.name,
+                  trigger_id: triggerId,
+                  run_id: runId,
+                  refund_reason: "rate_limited",
+                },
               });
             } catch (error) {
               console.error(
@@ -488,6 +496,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                   customerId: trigger.organizationId,
                   featureId: FEATURES.AI_CREDITS,
                   value: 0,
+                  properties: {
+                    source: "workflow_schedule",
+                    output_type: trigger.outputType,
+                    trigger_name: trigger.name,
+                    trigger_id: triggerId,
+                    run_id: runId,
+                    refund_reason: "unsupported_output_type",
+                  },
                 });
               } catch (error) {
                 console.error(
@@ -523,6 +539,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                   customerId: trigger.organizationId,
                   featureId: FEATURES.AI_CREDITS,
                   value: 0,
+                  properties: {
+                    source: "workflow_schedule",
+                    output_type: trigger.outputType,
+                    trigger_name: trigger.name,
+                    trigger_id: triggerId,
+                    run_id: runId,
+                    refund_reason: "generation_failed",
+                  },
                 });
               } catch (error) {
                 console.error(
@@ -931,6 +955,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               customerId: trigger.organizationId,
               featureId: FEATURES.AI_CREDITS,
               value: 0,
+              properties: {
+                source: "workflow_schedule",
+                output_type: trigger.outputType,
+                trigger_name: trigger.name,
+                trigger_id: triggerId,
+                run_id: runId,
+                refund_reason: "workflow_error",
+              },
             });
           } catch (refundError) {
             console.error(

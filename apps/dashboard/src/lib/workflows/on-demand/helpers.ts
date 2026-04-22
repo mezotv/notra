@@ -262,7 +262,8 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
 
 export async function refundReservedAiCredit(
   organizationId: string,
-  reserved: boolean
+  reserved: boolean,
+  properties?: Record<string, unknown>
 ) {
   if (!reserved || !autumn) {
     return;
@@ -273,6 +274,7 @@ export async function refundReservedAiCredit(
       customerId: organizationId,
       featureId: FEATURES.AI_CREDITS,
       value: 0,
+      ...(properties ? { properties } : {}),
     });
   } catch (error) {
     console.error("[OnDemandContent] Failed to refund AI credit", {

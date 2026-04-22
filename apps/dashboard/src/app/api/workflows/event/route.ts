@@ -309,6 +309,15 @@ export const { POST } = serve<EventWorkflowPayload>(
                 customerId: trigger.organizationId,
                 featureId: FEATURES.AI_CREDITS,
                 value: 0,
+                properties: {
+                  source: "workflow_event",
+                  output_type: trigger.outputType,
+                  trigger_name: trigger.name,
+                  trigger_id: triggerId,
+                  run_id: runId,
+                  event_type: eventType,
+                  refund_reason: "unsupported_output_type",
+                },
               });
             } catch (error) {
               console.error("[Event] Failed to refund AI credit:", error);
@@ -344,6 +353,15 @@ export const { POST } = serve<EventWorkflowPayload>(
                 customerId: trigger.organizationId,
                 featureId: FEATURES.AI_CREDITS,
                 value: 0,
+                properties: {
+                  source: "workflow_event",
+                  output_type: trigger.outputType,
+                  trigger_name: trigger.name,
+                  trigger_id: triggerId,
+                  run_id: runId,
+                  event_type: eventType,
+                  refund_reason: "generation_failed",
+                },
               });
             } catch (error) {
               console.error("[Event] Failed to refund AI credit:", error);
@@ -639,6 +657,15 @@ export const { POST } = serve<EventWorkflowPayload>(
               customerId: trigger.organizationId,
               featureId: FEATURES.AI_CREDITS,
               value: 0,
+              properties: {
+                source: "workflow_event",
+                output_type: trigger.outputType,
+                trigger_name: trigger.name,
+                trigger_id: triggerId,
+                run_id: runId,
+                event_type: eventType,
+                refund_reason: "workflow_error",
+              },
             });
           } catch (refundError) {
             console.error("[Event] Failed to refund AI credit:", refundError);
