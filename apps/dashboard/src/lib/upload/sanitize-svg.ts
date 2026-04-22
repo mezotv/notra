@@ -18,7 +18,7 @@ export function sanitizeSvg(input: string): string {
   const sanitized = DOMPurify.sanitize(input, {
     USE_PROFILES: { svg: true, svgFilters: true },
     FORBID_TAGS: ["script", "foreignObject", "iframe", "object", "embed"],
-    FORBID_ATTR: ["onload", "onerror", "onclick", "onmouseover", "href"],
+    FORBID_ATTR: ["href", "xlink:href"],
     KEEP_CONTENT: false,
   });
 

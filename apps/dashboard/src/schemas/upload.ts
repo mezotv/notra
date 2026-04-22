@@ -57,9 +57,12 @@ export const uploadSvgSchema = z.object({
   svg: z
     .string()
     .min(1)
-    .max(MAX_SVG_CONTENT_SIZE, {
-      message: `SVG content must be less than ${MAX_SVG_CONTENT_SIZE / 1024 / 1024}MB`,
-    }),
+    .refine(
+      (value) => Buffer.byteLength(value, "utf8") <= MAX_SVG_CONTENT_SIZE,
+      {
+        message: `SVG content must be less than ${MAX_SVG_CONTENT_SIZE / 1024 / 1024}MB`,
+      }
+    ),
 });
 
 export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
