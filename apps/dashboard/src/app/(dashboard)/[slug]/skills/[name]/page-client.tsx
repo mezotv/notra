@@ -148,11 +148,11 @@ export default function PageClient({ slug, name }: PageClientProps) {
   });
 
   const handleSave = useCallback(() => {
-    if (!hasChanges || saveMutation.isPending) {
+    if (!hasChanges || saveMutation.isPending || deleteMutation.isPending) {
       return;
     }
     saveMutation.mutate();
-  }, [hasChanges, saveMutation]);
+  }, [hasChanges, saveMutation, deleteMutation]);
 
   const handleDiscard = useCallback(() => {
     if (!original) {
