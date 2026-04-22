@@ -631,11 +631,13 @@ export async function generateAndSetChatTitle(
     const fallbackTitle = getFallbackTitle(userMessage);
 
     const { text } = await generateText({
-      model: gateway("openai/gpt-oss-120b"),
+      model: gateway("openai/gpt-5.4-nano"),
       system: `Generate a short, descriptive title (max 50 chars) for a chat conversation based on the user's first message. Return ONLY the title text, nothing else. No quotes, no prefix. Be specific and concise.`,
       prompt: userMessage,
       maxOutputTokens: 30,
     });
+
+    console.log()
 
     const aiTitle = text.replace(/^["']|["']$/g, "").trim();
     const title = normalizeChatTitle(aiTitle || fallbackTitle);
