@@ -170,29 +170,20 @@ export default function PageClient({ slug, name }: PageClientProps) {
   useEffect(() => {
     if (hasChanges && !saveToastIdRef.current) {
       saveToastIdRef.current = toast.custom(
-        (t) => (
+        () => (
           <div className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm">
             <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
               <span className="text-muted-foreground text-sm">
                 Unsaved changes
               </span>
               <Button
-                onClick={() => {
-                  handleDiscardRef.current?.();
-                  toast.dismiss(t);
-                }}
+                onClick={() => handleDiscardRef.current?.()}
                 size="sm"
                 variant="ghost"
               >
                 Discard
               </Button>
-              <Button
-                onClick={() => {
-                  handleSaveRef.current?.();
-                  toast.dismiss(t);
-                }}
-                size="sm"
-              >
+              <Button onClick={() => handleSaveRef.current?.()} size="sm">
                 Save
               </Button>
             </div>
