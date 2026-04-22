@@ -35,6 +35,7 @@ function isPrivateOrReservedIpv4(ip: string): boolean {
   const ranges: [number, number][] = [
     [0x00_00_00_00, 0x00_ff_ff_ff], // 0.0.0.0/8
     [0x0a_00_00_00, 0x0a_ff_ff_ff], // 10.0.0.0/8
+    [0x64_40_00_00, 0x64_7f_ff_ff], // 100.64.0.0/10 (CGNAT)
     [0x7f_00_00_00, 0x7f_ff_ff_ff], // 127.0.0.0/8
     [0xa9_fe_00_00, 0xa9_fe_ff_ff], // 169.254.0.0/16
     [0xac_10_00_00, 0xac_1f_ff_ff], // 172.16.0.0/12

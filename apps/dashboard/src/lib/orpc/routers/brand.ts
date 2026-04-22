@@ -372,10 +372,18 @@ export const brandRouter = {
             ...updates
           } = input;
 
+          const normalizedWebsiteUrl =
+            updates.websiteUrl === undefined
+              ? undefined
+              : normalizeBrandVoiceWebsiteUrl(updates.websiteUrl);
+
           await db
             .update(brandSettings)
             .set({
               ...updates,
+              ...(normalizedWebsiteUrl !== undefined
+                ? { websiteUrl: normalizedWebsiteUrl }
+                : {}),
               updatedAt: new Date(),
             })
             .where(eq(brandSettings.id, input.voiceId));
