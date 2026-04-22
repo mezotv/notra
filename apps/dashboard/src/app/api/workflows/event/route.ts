@@ -312,7 +312,7 @@ export const { POST } = serve<EventWorkflowPayload>(
                 properties: {
                   source: "workflow_event",
                   output_type: trigger.outputType,
-                  trigger_name: trigger.name,
+                  trigger_name: trigger.name.trim() || `${eventType} event`,
                   trigger_id: triggerId,
                   run_id: runId,
                   event_type: eventType,
@@ -356,7 +356,7 @@ export const { POST } = serve<EventWorkflowPayload>(
                 properties: {
                   source: "workflow_event",
                   output_type: trigger.outputType,
-                  trigger_name: trigger.name,
+                  trigger_name: trigger.name.trim() || `${eventType} event`,
                   trigger_id: triggerId,
                   run_id: runId,
                   event_type: eventType,
@@ -660,7 +660,7 @@ export const { POST } = serve<EventWorkflowPayload>(
               properties: {
                 source: "workflow_event",
                 output_type: trigger.outputType,
-                trigger_name: trigger.name,
+                trigger_name: trigger.name.trim() || `${eventType} event`,
                 trigger_id: triggerId,
                 run_id: runId,
                 event_type: eventType,

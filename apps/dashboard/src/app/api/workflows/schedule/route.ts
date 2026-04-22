@@ -435,7 +435,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                 properties: {
                   source: "workflow_schedule",
                   output_type: trigger.outputType,
-                  trigger_name: trigger.name,
+                  trigger_name: trigger.name.trim() || trigger.outputType,
                   trigger_id: triggerId,
                   run_id: runId,
                   refund_reason: "rate_limited",
@@ -499,7 +499,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                   properties: {
                     source: "workflow_schedule",
                     output_type: trigger.outputType,
-                    trigger_name: trigger.name,
+                    trigger_name: trigger.name.trim() || trigger.outputType,
                     trigger_id: triggerId,
                     run_id: runId,
                     refund_reason: "unsupported_output_type",
@@ -542,7 +542,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
                   properties: {
                     source: "workflow_schedule",
                     output_type: trigger.outputType,
-                    trigger_name: trigger.name,
+                    trigger_name: trigger.name.trim() || trigger.outputType,
                     trigger_id: triggerId,
                     run_id: runId,
                     refund_reason: "generation_failed",
@@ -958,7 +958,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               properties: {
                 source: "workflow_schedule",
                 output_type: trigger.outputType,
-                trigger_name: trigger.name,
+                trigger_name: trigger.name.trim() || trigger.outputType,
                 trigger_id: triggerId,
                 run_id: runId,
                 refund_reason: "workflow_error",

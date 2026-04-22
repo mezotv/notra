@@ -200,6 +200,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
         await refundReservedAiCredit(organizationId, aiCreditReserved, {
           source: "manual",
           output_type: contentType,
+          trigger_id: "manual_on_demand",
+          trigger_name: contentType,
           refund_reason: "no_sources",
           run_id: runId,
         });
@@ -451,6 +453,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           await refundReservedAiCredit(organizationId, aiCreditReserved, {
             source: "manual",
             output_type: contentType,
+            trigger_id: "manual_on_demand",
+            trigger_name: contentType,
             refund_reason: contentResult.status,
             run_id: runId,
           });
@@ -528,6 +532,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           await refundReservedAiCredit(organizationId, aiCreditReserved, {
             source: "manual",
             output_type: contentType,
+            trigger_id: "manual_on_demand",
+            trigger_name: contentType,
             refund_reason: "no_posts",
             run_id: runId,
           });
@@ -721,6 +727,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
         await refundReservedAiCredit(organizationId, aiCreditReserved, {
           source: "manual",
           output_type: contentType,
+          trigger_id: "manual_on_demand",
+          trigger_name: contentType,
           refund_reason: "workflow_error",
           run_id: runId,
         });
@@ -787,6 +795,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           {
             source: "manual",
             output_type: payload.contentType,
+            trigger_id: "manual_on_demand",
+            trigger_name: payload.contentType,
             refund_reason: "workflow_infrastructure_failure",
             run_id: payload.runId,
           }
