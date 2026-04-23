@@ -27,9 +27,9 @@ const IntegrationOrbit = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: "Notra - Turn your daily work into publish-ready content",
+  title: "Notra — Turn what your team ships into content that ships",
   description:
-    "Notra connects to GitHub and soon Slack and Linear to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+    "Your team ships every week. Notra turns merged PRs, Linear issues, and Slack threads into changelogs, launch posts, and social updates — in your voice.",
   alternates: {
     canonical: SITE_URL,
   },
@@ -43,7 +43,7 @@ const jsonLd = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description:
-    "Notra connects to GitHub, Linear and Slack to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+    "Notra turns merged PRs, Linear issues, and Slack threads into changelogs, launch posts, and social updates — in your voice.",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -65,8 +65,9 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
             <LandingPageHeadline className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24" />
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Notra connects to GitHub and soon Slack and Linear to turn shipped
-              work into ready-to-publish content.
+              Notra turns merged PRs, Linear issues, and Slack threads into
+              changelogs, launch posts, and social updates — in your voice,
+              without pulling anyone off shipping.
             </div>
           </div>
         </div>
@@ -119,13 +120,13 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-4 py-8 sm:px-6 sm:py-12 md:px-24 md:py-16">
             <div className="flex w-full max-w-146.5 flex-col items-center justify-start gap-3 sm:gap-4">
               <div className="w-full max-w-[29.53rem] text-balance text-center font-sans font-semibold text-foreground text-xl leading-tight tracking-tight sm:text-2xl md:text-3xl md:leading-15 lg:text-5xl">
-                Teams that ship faster,{" "}
-                <span className="text-primary">write less</span>
+                Fast-moving teams trust Notra to{" "}
+                <span className="text-primary">tell their story</span>
               </div>
               <div className="self-stretch text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
-                People at these companies use Notra to keep their{" "}
+                Startups use Notra to turn every shipped feature into{" "}
                 <br className="hidden sm:block" />
-                audience in the loop without slowing down development.
+                a changelog, post, or update — without hiring a writer.
               </div>
             </div>
           </div>
@@ -192,12 +193,12 @@ export default function LandingPage() {
             <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
               <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
                 Your team ships. Notra{" "}
-                <span className="text-primary">writes it up</span>
+                <span className="text-primary">tells the story</span>
               </div>
               <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
-                Notra watches your team's activity in the background
+                Notra quietly watches GitHub, Linear, and Slack, then drafts
                 <br />
-                and drafts content that matches your brand voice.
+                changelogs, posts, and announcements in your brand voice.
               </div>
             </div>
           </div>
@@ -209,11 +210,11 @@ export default function LandingPage() {
               <div className="flex flex-col items-start justify-start gap-4 border-border border-r-0 border-b p-4 sm:gap-6 sm:p-6 md:border-r md:p-8 lg:p-12">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-sans font-semibold text-foreground text-lg leading-tight sm:text-xl">
-                    Your work, automatically organized
+                    One timeline of everything you shipped
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    Every PR, issue, and conversation lands in one organized
-                    timeline your whole team can read.
+                    PRs, issues, and decisions from GitHub, Linear, and Slack
+                    in one place — so nothing worth writing about slips through.
                   </p>
                 </div>
                 <div className="relative flex w-full items-end justify-center overflow-hidden rounded-lg pt-4">
@@ -225,11 +226,11 @@ export default function LandingPage() {
               <div className="flex flex-col items-start justify-start gap-4 border-border border-b p-4 sm:gap-6 sm:p-6 md:p-8 lg:p-12">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-sans font-semibold text-foreground text-lg leading-tight sm:text-xl">
-                    Sounds like you, not a robot
+                    Drafts that don't sound like AI
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    Notra learns your tone and style so every draft sounds like
-                    your team wrote it.
+                    Notra learns your brand voice from your real posts and
+                    tweets. Every draft reads like your best writer wrote it.
                   </p>
                 </div>
                 <div className="w-full pt-2">
@@ -240,11 +241,11 @@ export default function LandingPage() {
               <div className="flex flex-col items-start justify-start gap-4 border-border border-r-0 bg-transparent p-4 sm:gap-6 sm:p-6 md:border-r md:p-8 lg:p-12">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-sans font-semibold text-foreground text-lg leading-tight sm:text-xl">
-                    Connected in under a minute
+                    Set up in under a minute
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    GitHub, Linear, Slack, and more plug in with a single click.
-                    You'll be connected in under a minute.
+                    One click connects GitHub, Linear, and Slack. No pipelines,
+                    no prompts to engineer, no Zapier spaghetti.
                   </p>
                 </div>
                 <div className="relative flex h-50 w-full items-center justify-center overflow-hidden rounded-lg sm:h-62.5 md:h-75">
@@ -255,11 +256,11 @@ export default function LandingPage() {
               <div className="flex flex-col items-start justify-start gap-4 p-4 sm:gap-6 sm:p-6 md:p-8 lg:p-12">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-sans font-semibold text-foreground text-lg leading-tight sm:text-xl">
-                    Teach it how you write
+                    Train it on your best writing
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    Add tweets, posts, or custom text as references so the AI
-                    matches your real writing style.
+                    Drop in your tweets, launch posts, or blog snippets. Notra
+                    matches tone, cadence, and vocabulary — yours, not ChatGPT's.
                   </p>
                 </div>
                 <div className="w-full pt-2">
@@ -285,8 +286,8 @@ export default function LandingPage() {
             <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
               <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
                 <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-                  Pick the plan that fits{" "}
-                  <span className="text-primary">your team</span>
+                  Pricing that scales with{" "}
+                  <span className="text-primary">what you ship</span>
                 </h2>
 
                 <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">

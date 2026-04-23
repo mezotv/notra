@@ -174,9 +174,9 @@ export function buildLandingMarkdown() {
   return [
     "# Notra",
     "",
-    "Turn your daily work into publish-ready content.",
+    "Turn what your team ships into content that ships.",
     "",
-    "Notra connects to GitHub and soon Slack and Linear to turn shipped work into ready-to-publish changelogs, blog posts, and social updates.",
+    "Your team ships every week. Notra turns merged PRs, Linear issues, and Slack threads into changelogs, launch posts, and social updates — in your voice, without pulling anyone off shipping.",
     "",
     "Primary CTA: [Start for free](https://app.usenotra.com/signup)",
     "",
@@ -187,19 +187,19 @@ export function buildLandingMarkdown() {
       "- [Changelog](https://usenotra.com/changelog.md)",
     ]),
     markdownSection("Social Proof", [
-      "Teams that ship faster, write less.",
-      "People at these companies use Notra to keep their audience in the loop without slowing down development.",
+      "Fast-moving teams trust Notra to tell their story.",
+      "Startups use Notra to turn every shipped feature into a changelog, post, or update — without hiring a writer.",
       "",
       ...socialProofLines,
     ]),
     markdownSection("Features", [
-      "Your team ships. Notra writes it up.",
-      "Notra watches your team's activity in the background and drafts content that matches your brand voice.",
+      "Your team ships. Notra tells the story.",
+      "Notra quietly watches GitHub, Linear, and Slack, then drafts changelogs, posts, and announcements in your brand voice.",
       "",
       "See the dedicated feature page: [Features](https://usenotra.com/features.md)",
     ]),
     markdownSection("Pricing", [
-      "Pick the plan that fits your team.",
+      "Pricing that scales with what you ship.",
       "Start with a 7-day free trial. Upgrade when you need more integrations, posts, or team seats.",
       "",
       "See the dedicated pricing page: [Pricing](https://usenotra.com/pricing.md)",
@@ -209,8 +209,8 @@ export function buildLandingMarkdown() {
       FAQ_ITEMS.flatMap((item) => [`### ${item.question}`, item.answer, ""])
     ),
     markdownSection("Call to Action", [
-      "Stop writing content from scratch.",
-      "Let Notra turn your team's shipped work into changelogs, blog posts, and social updates you can publish today.",
+      "Stop letting great work go unannounced.",
+      "Your team ships every week. Let Notra turn it into the changelogs, launch posts, and social updates your audience should be seeing.",
       "",
       "[Start for free](https://app.usenotra.com/signup)",
     ]),

@@ -16,9 +16,9 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "What is Notra and who is it for?",
+    question: "We're a small team. Is Notra overkill?",
     answer:
-      "Notra is a content automation tool for product and engineering teams. Connect your GitHub repos and Notra picks up merged PRs and shipped features to draft changelogs, blog posts, and social updates.",
+      "Notra is built for small, fast-moving teams who ship a lot but don't have a dedicated content writer. Connect your GitHub repos and Notra picks up merged PRs and shipped features to draft changelogs, launch posts, and social updates — so your audience (and your investors) actually hear about what you're building.",
   },
   {
     question: "What kind of content does Notra generate?",

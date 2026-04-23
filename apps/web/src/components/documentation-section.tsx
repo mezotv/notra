@@ -39,12 +39,12 @@ export default function DocumentationSection() {
         <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
           <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
             From shipped code to{" "}
-            <span className="text-primary">published content</span>
+            <span className="text-primary">published post — same day</span>
           </div>
           <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
-            Notra follows your workflow, picks up on what matters,
+            Notra follows your actual workflow, picks out what's worth announcing,
             <br />
-            and writes the first draft so you don't have to.
+            and hands you a first draft you can publish in minutes, not days.
           </div>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function DocumentationSection() {
                 <div className="self-stretch whitespace-pre-line font-normal font-sans text-[13px] text-muted-foreground leading-[22px]">
                   Every merged PR becomes a changelog entry.
                   {"\n"}
-                  No more manual release notes.
+                  Kill the "what did we ship this week?" meeting.
                 </div>
               </div>
             </button>
@@ -104,12 +104,12 @@ export default function DocumentationSection() {
               </div>
               <div className="flex w-full flex-col gap-2 px-6 py-5">
                 <div className="flex flex-col justify-center self-stretch font-sans font-semibold text-foreground text-sm leading-6">
-                  Draft blog posts from features
+                  Draft launch posts from features
                 </div>
                 <div className="self-stretch whitespace-pre-line font-normal font-sans text-[13px] text-muted-foreground leading-[22px]">
-                  Ship a feature and Notra writes the first
+                  Ship a feature, get a first-draft announcement
                   {"\n"}
-                  draft of the announcement post.
+                  post waiting for you. Review, polish, publish.
                 </div>
               </div>
             </button>
@@ -135,12 +135,12 @@ export default function DocumentationSection() {
               </div>
               <div className="flex w-full flex-col gap-2 px-6 py-5">
                 <div className="flex flex-col justify-center self-stretch font-sans font-semibold text-foreground text-sm leading-6">
-                  Social updates from milestones
+                  Social updates on autopilot
                 </div>
                 <div className="self-stretch whitespace-pre-line font-normal font-sans text-[13px] text-muted-foreground leading-[22px]">
-                  Releases and milestones become short social
+                  Milestones and releases become short posts for
                   {"\n"}
-                  posts you can review, tweak, and publish.
+                  X and LinkedIn. Stay visible without context-switching.
                 </div>
               </div>
             </button>

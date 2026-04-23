@@ -4,9 +4,9 @@ export const LANDING_PAGE_H1_EXPERIMENT_KEY = "landing-page-h1";
 export const LANDING_PAGE_H1_TEAM_MARKETER_VARIANT = "team-marketer";
 
 export const LANDING_PAGE_H1_CONTROL_COPY =
-  "Turn your daily work into publish-ready content";
+  "Your team ships every week. Your audience should hear about it.";
 export const LANDING_PAGE_H1_TEAM_MARKETER_COPY =
-  "Make everyone on your team a marketer";
+  "Turn every shipped feature into marketing — automatically.";
 
 export const DATABUDDY_SIGNUP_STARTED_EVENT = "signup_started";
 
