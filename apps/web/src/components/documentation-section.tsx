@@ -42,7 +42,8 @@ export default function DocumentationSection() {
             <span className="text-primary">published post, same day</span>
           </div>
           <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
-            Notra follows your actual workflow, picks out what's worth announcing,
+            Notra follows your actual workflow, picks out what's worth
+            announcing,
             <br />
             and hands you a first draft you can publish in minutes, not days.
           </div>
@@ -78,7 +79,7 @@ export default function DocumentationSection() {
                 <div className="self-stretch whitespace-pre-line font-normal font-sans text-[13px] text-muted-foreground leading-[22px]">
                   Every merged PR becomes a changelog entry.
                   {"\n"}
-                  Kill the "what did we ship this week?" meeting.
+                  Kill the “what did we ship this week?” meeting.
                 </div>
               </div>
             </button>
@@ -139,8 +140,7 @@ export default function DocumentationSection() {
                 </div>
                 <div className="self-stretch whitespace-pre-line font-normal font-sans text-[13px] text-muted-foreground leading-[22px]">
                   Milestones and releases become short posts for
-                  {"\n"}
-                  X and LinkedIn. Stay visible without context-switching.
+                  {"\n"}X and LinkedIn. Stay visible without context-switching.
                 </div>
               </div>
             </button>

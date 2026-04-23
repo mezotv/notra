@@ -65,8 +65,8 @@ export default function LandingPage() {
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
             <LandingPageHeadline className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24" />
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Notra turns shipped work into changelogs, launch posts, and
-              social updates in your voice.
+              Notra turns shipped work into changelogs, launch posts, and social
+              updates in your voice.
             </div>
           </div>
         </div>
@@ -122,10 +122,10 @@ export default function LandingPage() {
                 Fast-moving teams trust Notra to{" "}
                 <span className="text-primary">tell their story</span>
               </div>
-              <div className="self-stretch text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
-                Startups use Notra to turn every shipped feature into{" "}
+              <div className="self-stretch text-balance text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
+                Startups use Notra to turn every shipped feature{" "}
                 <br className="hidden sm:block" />
-                a changelog, post, or update, without hiring a writer.
+                into a changelog, post, or update, without hiring a writer.
               </div>
             </div>
           </div>
@@ -212,8 +212,8 @@ export default function LandingPage() {
                     One timeline of everything you shipped
                   </h3>
                   <p className="font-normal font-sans text-muted-foreground text-sm leading-relaxed md:text-base">
-                    PRs, issues, and decisions from GitHub, Linear, and Slack
-                    in one place, so nothing worth writing about slips through.
+                    PRs, issues, and decisions from GitHub, Linear, and Slack in
+                    one place, so nothing worth writing about slips through.
                   </p>
                 </div>
                 <div className="relative flex w-full items-end justify-center overflow-hidden rounded-lg pt-4">

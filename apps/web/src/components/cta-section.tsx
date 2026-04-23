@@ -15,9 +15,9 @@ export default function CTASection() {
               <span className="text-primary">go unannounced</span>
             </div>
             <div className="self-stretch text-center font-medium font-sans text-base text-muted-foreground leading-7">
-              Your team ships every week. Let Notra turn it into the changelogs,
+              Your team ships every week. Let Notra turn it into
               <br />
-              launch posts, and social updates your audience should be seeing.
+              the posts and announcements your audience should be seeing.
             </div>
           </div>
           <div className="flex w-full max-w-[497px] flex-col items-center justify-center gap-12">

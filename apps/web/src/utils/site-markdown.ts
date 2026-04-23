@@ -210,7 +210,7 @@ export function buildLandingMarkdown() {
     ),
     markdownSection("Call to Action", [
       "Stop letting great work go unannounced.",
-      "Your team ships every week. Let Notra turn it into the changelogs, launch posts, and social updates your audience should be seeing.",
+      "Your team ships every week. Let Notra turn it into the posts and announcements your audience should be seeing.",
       "",
       "[Start for free](https://app.usenotra.com/signup)",
     ]),
