@@ -174,7 +174,7 @@ export function buildLandingMarkdown() {
   return [
     "# Notra",
     "",
-    "Ship more. Write less.",
+    "Ship more. Write less. Reach more.",
     "",
     "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
     "",

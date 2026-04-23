@@ -27,7 +27,7 @@ export default function FooterSection() {
             </div>
           </div>
           <div className="font-medium font-sans text-foreground/90 text-sm leading-4.5">
-            Ship more. Write less.
+            Ship more. Write less. Reach more.
           </div>
           <div className="font-normal font-sans text-foreground/60 text-xs leading-5">
             {`© ${year} Notra. All rights reserved.`}

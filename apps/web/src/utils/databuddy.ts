@@ -3,7 +3,8 @@ import { createSerializer, parseAsString } from "nuqs";
 export const LANDING_PAGE_H1_EXPERIMENT_KEY = "landing-page-h1";
 export const LANDING_PAGE_H1_TEAM_MARKETER_VARIANT = "team-marketer";
 
-export const LANDING_PAGE_H1_CONTROL_COPY = "Ship more. Write less.";
+export const LANDING_PAGE_H1_CONTROL_COPY =
+  "Ship more. Write less. Reach more.";
 export const LANDING_PAGE_H1_TEAM_MARKETER_COPY =
   "Every feature, marketed automatically.";
 

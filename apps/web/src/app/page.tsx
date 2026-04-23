@@ -27,7 +27,7 @@ const IntegrationOrbit = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: "Notra. Ship more. Write less.",
+  title: "Notra. Ship more. Write less. Reach more.",
   description:
     "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
   alternates: {

@@ -36,7 +36,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Notra. Ship more. Write less.",
+    default: "Notra. Ship more. Write less. Reach more.",
     template: "%s - Notra",
   },
   description:
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Notra",
-    title: "Notra. Ship more. Write less.",
+    title: "Notra. Ship more. Write less. Reach more.",
     description:
       "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Notra. Ship more. Write less.",
+    title: "Notra. Ship more. Write less. Reach more.",
     description:
       "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
     images: [DEFAULT_SOCIAL_IMAGE.url],
