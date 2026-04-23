@@ -3,10 +3,9 @@ import { createSerializer, parseAsString } from "nuqs";
 export const LANDING_PAGE_H1_EXPERIMENT_KEY = "landing-page-h1";
 export const LANDING_PAGE_H1_TEAM_MARKETER_VARIANT = "team-marketer";
 
-export const LANDING_PAGE_H1_CONTROL_COPY =
-  "Your team ships every week. Your audience should hear about it.";
+export const LANDING_PAGE_H1_CONTROL_COPY = "Ship more. Write less.";
 export const LANDING_PAGE_H1_TEAM_MARKETER_COPY =
-  "Turn every shipped feature into marketing — automatically.";
+  "Every feature, marketed automatically.";
 
 export const DATABUDDY_SIGNUP_STARTED_EVENT = "signup_started";
 

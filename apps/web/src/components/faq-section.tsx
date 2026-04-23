@@ -18,7 +18,7 @@ const faqData: FAQItem[] = [
   {
     question: "We're a small team. Is Notra overkill?",
     answer:
-      "Notra is built for small, fast-moving teams who ship a lot but don't have a dedicated content writer. Connect your GitHub repos and Notra picks up merged PRs and shipped features to draft changelogs, launch posts, and social updates — so your audience (and your investors) actually hear about what you're building.",
+      "Notra is built for small, fast-moving teams who ship a lot but don't have a dedicated content writer. Connect your GitHub repos and Notra picks up merged PRs and shipped features to draft changelogs, launch posts, and social updates, so your audience (and your investors) actually hear about what you're building.",
   },
   {
     question: "What kind of content does Notra generate?",

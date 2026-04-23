@@ -39,7 +39,7 @@ export default function DocumentationSection() {
         <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
           <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
             From shipped code to{" "}
-            <span className="text-primary">published post — same day</span>
+            <span className="text-primary">published post, same day</span>
           </div>
           <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
             Notra follows your actual workflow, picks out what's worth announcing,

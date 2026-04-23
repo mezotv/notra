@@ -174,9 +174,9 @@ export function buildLandingMarkdown() {
   return [
     "# Notra",
     "",
-    "Turn what your team ships into content that ships.",
+    "Ship more. Write less.",
     "",
-    "Your team ships every week. Notra turns merged PRs, Linear issues, and Slack threads into changelogs, launch posts, and social updates — in your voice, without pulling anyone off shipping.",
+    "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
     "",
     "Primary CTA: [Start for free](https://app.usenotra.com/signup)",
     "",
@@ -188,7 +188,7 @@ export function buildLandingMarkdown() {
     ]),
     markdownSection("Social Proof", [
       "Fast-moving teams trust Notra to tell their story.",
-      "Startups use Notra to turn every shipped feature into a changelog, post, or update — without hiring a writer.",
+      "Startups use Notra to turn every shipped feature into a changelog, post, or update, without hiring a writer.",
       "",
       ...socialProofLines,
     ]),
