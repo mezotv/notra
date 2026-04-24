@@ -67,7 +67,8 @@ export async function uploadFile({
         size: file.size,
       });
     } catch (error) {
-      console.error("Failed to record chat attachment", { key, error });
+      await deleteChatUpload({ key }).catch(() => undefined);
+      throw error;
     }
   }
 

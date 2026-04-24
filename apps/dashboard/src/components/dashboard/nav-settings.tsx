@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Attachment01Icon,
   CreditCardIcon,
   Notification03Icon,
   Settings01Icon,
@@ -48,6 +49,11 @@ const organizationItems: NavSettingsItem[] = [
     label: "Notifications",
     url: "settings/notifications",
     icon: Notification03Icon,
+  },
+  {
+    label: "Attachments",
+    url: "settings/attachments",
+    icon: Attachment01Icon,
   },
   {
     label: "Billing & Usage",
