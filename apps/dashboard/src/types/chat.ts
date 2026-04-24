@@ -36,6 +36,13 @@ export interface ChatUsageSnapshot {
   totalTokens?: number;
 }
 
+export interface ChatImageAttachmentProps {
+  url: string;
+  filename: string | undefined;
+  mediaType: string;
+  onClick: () => void;
+}
+
 export interface ChatInputHandle {
   setText: (text: string) => void;
   focus: () => void;

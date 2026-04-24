@@ -65,6 +65,7 @@ import {
 } from "@/schemas/chat";
 import type {
   ChatAttachment,
+  ChatImageAttachmentProps,
   ChatInputHandle,
   ChatMessagePart,
   ChatUIMessage,
@@ -234,13 +235,6 @@ function isTerminalToolState(state: string): boolean {
     state === "output-error" ||
     state === "output-denied"
   );
-}
-
-interface ChatImageAttachmentProps {
-  url: string;
-  filename: string | undefined;
-  mediaType: string;
-  onClick: () => void;
 }
 
 function ChatImageAttachment({

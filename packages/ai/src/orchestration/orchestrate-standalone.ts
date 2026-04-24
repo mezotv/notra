@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import {
@@ -43,26 +41,6 @@ const SKILLS_MENTION_REGEX = /\bskills?\b/i;
 const TRIVIAL_HISTORY_LIMIT = 6;
 const MINIMAL_STANDALONE_PROMPT =
   "You are Notra, an AI assistant for content teams. Reply briefly and warmly. Do not call tools on this turn.";
-
-const CHAT_DEBUG_LOG_PATH = path.join(process.cwd(), ".chat-debug.log");
-
-function debugLogChatPrompt(entry: {
-  organizationId: string;
-  routingDecision: unknown;
-  systemPrompt: string;
-  modelMessages: unknown;
-  toolNames: string[];
-}): void {
-  try {
-    const line = `${JSON.stringify({
-      timestamp: new Date().toISOString(),
-      ...entry,
-    })}\n`;
-    fs.appendFile(CHAT_DEBUG_LOG_PATH, line, () => undefined);
-  } catch {
-    // Best-effort debug log; never let logging break chat.
-  }
-}
 
 export async function orchestrateStandaloneChat(
   input: StandaloneChatInput,
@@ -200,14 +178,6 @@ export async function orchestrateStandaloneChat(
 
   const modelMessages = await convertToModelMessages(messagesForModel, {
     ignoreIncompleteToolCalls: true,
-  });
-
-  debugLogChatPrompt({
-    organizationId,
-    routingDecision,
-    systemPrompt,
-    modelMessages,
-    toolNames: Object.keys(tools ?? {}),
   });
 
   let firstChunkFired = false;
