@@ -236,6 +236,50 @@ function isTerminalToolState(state: string): boolean {
   );
 }
 
+interface ChatImageAttachmentProps {
+  url: string;
+  filename: string | undefined;
+  mediaType: string;
+  onClick: () => void;
+}
+
+function ChatImageAttachment({
+  url,
+  filename,
+  mediaType,
+  onClick,
+}: ChatImageAttachmentProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="my-1 inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground text-xs">
+        <span className="truncate">
+          {filename ?? mediaType ?? "Attachment"} is unavailable
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      className="my-1 block w-fit overflow-hidden rounded-lg border border-border transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onClick={onClick}
+      type="button"
+    >
+      <Image
+        alt={filename ?? "attachment"}
+        className="block h-auto max-h-72 w-auto max-w-full"
+        height={480}
+        onError={() => setHasError(true)}
+        src={url}
+        unoptimized
+        width={640}
+      />
+    </button>
+  );
+}
+
 function StandaloneChatPageClient({
   organizationSlug,
   chatId: initialChatId,
@@ -1221,9 +1265,10 @@ function StandaloneChatPageClient({
       const fileKey = `${messageId}-file-${index}`;
       if (isImageMimeType(mediaType)) {
         return (
-          <button
-            className="my-1 block w-fit overflow-hidden rounded-lg border border-border transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <ChatImageAttachment
+            filename={filename}
             key={fileKey}
+            mediaType={mediaType}
             onClick={() =>
               setPreviewAttachment({
                 url,
@@ -1231,17 +1276,8 @@ function StandaloneChatPageClient({
                 mediaType,
               })
             }
-            type="button"
-          >
-            <Image
-              alt={filename ?? "attachment"}
-              className="block h-auto max-h-72 w-auto max-w-full"
-              height={480}
-              src={url}
-              unoptimized
-              width={640}
-            />
-          </button>
+            url={url}
+          />
         );
       }
       return (
