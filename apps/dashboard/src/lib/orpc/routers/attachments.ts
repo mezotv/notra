@@ -1,6 +1,6 @@
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { db } from "@notra/db/drizzle";
-import { chatAttachments } from "@notra/db/schema";
+import { chatAttachments, members } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
@@ -99,12 +99,30 @@ function buildPublicUrl(key: string) {
   return `${base}/${key}`;
 }
 
-function requireOrganizationId(organizationId: string | null | undefined) {
+async function requireOrganizationAccess(
+  userId: string,
+  organizationId: string | null | undefined
+) {
   if (!organizationId) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Active organization required",
     });
   }
+
+  const membership = await db.query.members.findFirst({
+    where: and(
+      eq(members.userId, userId),
+      eq(members.organizationId, organizationId)
+    ),
+    columns: { id: true },
+  });
+
+  if (!membership) {
+    throw new ORPCError("FORBIDDEN", {
+      message: "You do not have access to this organization",
+    });
+  }
+
   return organizationId;
 }
 
@@ -112,7 +130,8 @@ export const attachmentsRouter = {
   list: authorizedProcedure
     .input(listInputSchema)
     .handler(async ({ context, input }) => {
-      const organizationId = requireOrganizationId(
+      const organizationId = await requireOrganizationAccess(
+        context.user.id,
         context.session?.activeOrganizationId
       );
 
@@ -165,7 +184,8 @@ export const attachmentsRouter = {
   deleteMany: authorizedProcedure
     .input(deleteManyInputSchema)
     .handler(async ({ context, input }) => {
-      const organizationId = requireOrganizationId(
+      const organizationId = await requireOrganizationAccess(
+        context.user.id,
         context.session?.activeOrganizationId
       );
 

@@ -1230,7 +1230,26 @@ export function ChatInputAdvanced({
 
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
-      const pastedFiles = Array.from(event.clipboardData.files);
+      const pasteTimestamp = Date.now();
+      const pastedFiles = Array.from(event.clipboardData.files).map(
+        (file, index) => {
+          const hasMeaningfulName =
+            file.name && !/^image\.(jpe?g|png|gif|webp)$/i.test(file.name);
+          if (hasMeaningfulName) {
+            return file;
+          }
+          const extFromType = file.type.split("/")[1]?.split("+")[0];
+          const extFromName = file.name?.includes(".")
+            ? file.name.split(".").pop()
+            : undefined;
+          const ext = extFromName ?? extFromType ?? "png";
+          const suffix = index === 0 ? "" : `-${index}`;
+          return new File([file], `pasted-${pasteTimestamp}${suffix}.${ext}`, {
+            type: file.type,
+            lastModified: file.lastModified,
+          });
+        }
+      );
       if (pastedFiles.length > 0) {
         event.preventDefault();
         handleFilesSelected(pastedFiles).catch(() => undefined);

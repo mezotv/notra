@@ -1,3 +1,4 @@
+TRUNCATE TABLE "chat_attachments";--> statement-breakpoint
 DROP INDEX "chatAttachments_userId_createdAt_idx";--> statement-breakpoint
 ALTER TABLE "chat_attachments" ADD COLUMN "organization_id" text NOT NULL;--> statement-breakpoint
 ALTER TABLE "chat_attachments" ADD CONSTRAINT "chat_attachments_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

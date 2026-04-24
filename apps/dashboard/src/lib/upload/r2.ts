@@ -11,6 +11,12 @@ interface R2Env {
 let cachedR2Client: S3Client | undefined;
 let cachedR2Env: R2Env | undefined;
 
+function normalizeEndpoint(endpoint: string, bucketName: string) {
+  const trimmed = endpoint.replace(/\/+$/, "");
+  const suffix = `/${bucketName}`;
+  return trimmed.endsWith(suffix) ? trimmed.slice(0, -suffix.length) : trimmed;
+}
+
 function getR2Env() {
   if (cachedR2Env) {
     return cachedR2Env;
@@ -36,7 +42,7 @@ function getR2Env() {
     accessKeyId,
     secretAccessKey,
     bucketName,
-    endpoint,
+    endpoint: normalizeEndpoint(endpoint, bucketName),
     publicUrl,
   };
 
@@ -53,6 +59,7 @@ export function getR2Client() {
   cachedR2Client = new S3Client({
     region: "auto",
     endpoint: env.endpoint,
+    forcePathStyle: true,
     credentials: {
       accessKeyId: env.accessKeyId,
       secretAccessKey: env.secretAccessKey,
