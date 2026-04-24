@@ -3,7 +3,6 @@
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { PageContainer } from "@/components/layout/container";
 import { AttachmentsSection } from "@/components/settings/attachments/attachments-section";
-import { RetentionSection } from "@/components/settings/attachments/retention-section";
 
 export default function SettingsAttachmentsPage() {
   return (
@@ -22,9 +21,6 @@ export default function SettingsAttachmentsPage() {
         <div className="grid gap-6">
           <TitleCard heading="Files">
             <AttachmentsSection />
-          </TitleCard>
-          <TitleCard heading="Retention">
-            <RetentionSection />
           </TitleCard>
         </div>
       </div>

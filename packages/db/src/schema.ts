@@ -38,13 +38,15 @@ export const users = pgTable("users", {
   banExpires: timestamp("ban_expires"),
   hidePersonalData: boolean("hide_personal_data").default(false).notNull(),
   showAgentStats: boolean("show_agent_stats").default(false).notNull(),
-  chatAttachmentRetentionDays: integer("chat_attachment_retention_days"),
 });
 
 export const chatAttachments = pgTable(
   "chat_attachments",
   {
     id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -55,10 +57,11 @@ export const chatAttachments = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index("chatAttachments_userId_createdAt_idx").on(
-      table.userId,
+    index("chatAttachments_organizationId_createdAt_idx").on(
+      table.organizationId,
       table.createdAt
     ),
+    index("chatAttachments_userId_idx").on(table.userId),
   ]
 );
 
@@ -546,6 +549,10 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const chatAttachmentsRelations = relations(
   chatAttachments,
   ({ one }) => ({
+    organization: one(organizations, {
+      fields: [chatAttachments.organizationId],
+      references: [organizations.id],
+    }),
     user: one(users, {
       fields: [chatAttachments.userId],
       references: [users.id],
@@ -579,6 +586,7 @@ export const organizationsRelations = relations(
     connectedSocialAccounts: many(connectedSocialAccounts),
     posts: many(posts),
     skills: many(skills),
+    chatAttachments: many(chatAttachments),
   })
 );
 

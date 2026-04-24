@@ -39,13 +39,16 @@ async function assertUploadAccess({
   const { session, user } = await assertAuthenticated({ headers });
   const organizationId = session.activeOrganizationId;
 
-  if ((type === "logo" || type === "content") && !organizationId) {
+  const requiresOrganization =
+    type === "logo" || type === "content" || type === "chat";
+
+  if (requiresOrganization && !organizationId) {
     throw new ORPCError("UNAUTHORIZED", {
       message: "Active organization required for this upload type",
     });
   }
 
-  if ((type === "logo" || type === "content") && organizationId) {
+  if (requiresOrganization && organizationId) {
     const membership = await db.query.members.findFirst({
       where: and(
         eq(members.userId, user.id),
@@ -105,7 +108,7 @@ async function resolveUploadTarget({
       key = `organization/${organizationId}/content/${id}.${extension}`;
       break;
     case "chat":
-      key = `user/${userId}/chat/${id}.${extension}`;
+      key = `organization/${organizationId}/chat/${id}.${extension}`;
       break;
     default:
       throw new ORPCError("BAD_REQUEST", {
@@ -168,26 +171,32 @@ export async function deleteChatUpload({
   key: string;
   headers: Headers;
 }) {
-  const { userId } = await assertUploadAccess({
+  const { organizationId } = await assertUploadAccess({
     headers,
     type: "chat",
   });
 
-  // Delete DB row first, scoped by user. R2 only gets touched if the caller
-  // actually owned the row — avoids orphaned DB rows on R2 failure.
-  const deleted = await db
-    .delete(chatAttachments)
-    .where(
-      and(eq(chatAttachments.userId, userId), eq(chatAttachments.key, key))
-    )
-    .returning({ key: chatAttachments.key });
+  if (!organizationId) {
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "Active organization required for this upload type",
+    });
+  }
 
-  const expectedPrefix = `user/${userId}/chat/`;
-  if (deleted.length === 0 && !key.startsWith(expectedPrefix)) {
+  const expectedPrefix = `organization/${organizationId}/chat/`;
+  if (!key.startsWith(expectedPrefix)) {
     throw new ORPCError("FORBIDDEN", {
       message: "You do not have access to this chat upload",
     });
   }
+
+  await db
+    .delete(chatAttachments)
+    .where(
+      and(
+        eq(chatAttachments.organizationId, organizationId),
+        eq(chatAttachments.key, key)
+      )
+    );
 
   const { client: r2Client, bucketName } = getR2Config();
   await r2Client.send(
@@ -213,11 +222,18 @@ export async function recordChatAttachment({
   size: number;
   headers: Headers;
 }) {
-  const { userId } = await assertUploadAccess({
+  const { userId, organizationId } = await assertUploadAccess({
     headers,
     type: "chat",
   });
-  const expectedPrefix = `user/${userId}/chat/`;
+
+  if (!organizationId) {
+    throw new ORPCError("UNAUTHORIZED", {
+      message: "Active organization required for this upload type",
+    });
+  }
+
+  const expectedPrefix = `organization/${organizationId}/chat/`;
 
   if (!key.startsWith(expectedPrefix)) {
     throw new ORPCError("FORBIDDEN", {
@@ -241,6 +257,7 @@ export async function recordChatAttachment({
     .insert(chatAttachments)
     .values({
       id: nanoid(),
+      organizationId,
       userId,
       key,
       filename,
