@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { useState } from "react";
+import { serializeJsonLd } from "@/utils/jsonld";
 import type { FAQItem } from "~types/faq";
 
 const faqData: FAQItem[] = [
@@ -71,8 +72,8 @@ export default function FAQSection() {
   return (
     <div className="flex w-full items-start justify-center">
       <script
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-rendered JSON-LD
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
         type="application/ld+json"
       />
       <div className="flex flex-1 flex-col items-start justify-start gap-6 px-4 py-16 md:px-12 md:py-20 lg:flex-row lg:gap-12">

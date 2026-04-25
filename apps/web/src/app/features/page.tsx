@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { ActivityFeed } from "@/components/activity-feed";
 import BrandVoicePreview from "@/components/brand-voice-preview";
 import ReferencesPreview from "@/components/references-preview";
+import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
@@ -94,24 +95,10 @@ const featuresJsonLd = {
   })),
 };
 
-const breadcrumbJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    {
-      "@type": "ListItem",
-      position: 1,
-      name: "Home",
-      item: SITE_URL,
-    },
-    {
-      "@type": "ListItem",
-      position: 2,
-      name: "Features",
-      item: url,
-    },
-  ],
-};
+const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+  { name: "Home", url: SITE_URL },
+  { name: "Features", url },
+]);
 
 function FeatureVisual({
   kind,
@@ -155,34 +142,22 @@ export default function FeaturesPage() {
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(featuresJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(featuresJsonLd) }}
         type="application/ld+json"
       />
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
 
-      <section className="flex w-full items-center justify-center px-6 py-12 md:px-24 md:py-16">
-        <div className="flex w-full max-w-[586px] flex-col items-center gap-4">
-          <h1 className="text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-            Every shipped feature, <span className="text-primary">told</span>
-          </h1>
-          <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
-            Notra watches GitHub, Linear, and Slack, then drafts changelogs,
-            launch posts, and social updates in your brand voice.
-          </p>
-        </div>
-      </section>
-
-      <section className="flex w-full flex-col items-center justify-center border-border border-t">
+      <section className="flex w-full flex-col items-center justify-center">
         <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
           <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
-            <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
+            <h1 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
               Built around how your team{" "}
               <span className="text-primary">actually ships</span>
-            </h2>
+            </h1>
             <p className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
               No new dashboards to babysit. Notra fits the workflow you already
               have.
