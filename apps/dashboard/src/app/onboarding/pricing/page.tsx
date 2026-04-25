@@ -1,6 +1,3 @@
-import { db } from "@notra/db/drizzle";
-import { brandSettings } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
   getAllUserOrganizations,
@@ -8,8 +5,9 @@ import {
   getSession,
 } from "@/lib/auth/actions";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
+import { PricingClient } from "../pricing-client";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPricingPage() {
   const session = await getSession();
 
   if (!session?.user) {
@@ -24,19 +22,9 @@ export default async function OnboardingPage() {
   }
 
   const organization = await getLastActiveOrganization(session.user.id);
-
   if (!organization) {
     redirect("/onboarding/workspace");
   }
 
-  const brand = await db.query.brandSettings.findFirst({
-    where: eq(brandSettings.organizationId, organization.id),
-    columns: { id: true },
-  });
-
-  if (!brand) {
-    redirect("/onboarding/workspace");
-  }
-
-  redirect("/onboarding/socials");
+  return <PricingClient slug={organization.slug} />;
 }

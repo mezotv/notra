@@ -14,7 +14,6 @@ import {
 } from "better-auth/plugins";
 import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
-import { customAlphabet } from "nanoid";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { FEATURES } from "@/constants/features";
@@ -31,10 +30,7 @@ import {
 } from "@/lib/email/actions";
 import { redis } from "@/lib/redis";
 import { seedSystemSkills } from "@/lib/skills/seed";
-import { generateOrganizationAvatar } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
-
-const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
 
 async function enforceTeamMembersLimit(organizationId?: string | null) {
   if (!organizationId || !autumn) {
@@ -343,50 +339,8 @@ export const auth = betterAuth({
             });
           }
         },
-        after: async (user, ctx) => {
-          const email = user.email || "";
-          const raw = email.split("@")[0] || "";
-          const base = raw
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "")
-            .slice(0, 20);
-
-          const slug = `${base || "notra"}-${nanoid()}`;
-
-          try {
-            await auth.api.createOrganization({
-              body: {
-                name: "Personal",
-                slug,
-                userId: user.id,
-                logo: generateOrganizationAvatar(slug),
-              },
-            });
-          } catch (error) {
-            console.error("[Auth] Failed to auto-create org on signup:", {
-              userId: user.id,
-              slug,
-              error,
-            });
-            throw error;
-          }
-
-          const member = await db.query.members.findFirst({
-            where: eq(members.userId, user.id),
-            columns: { organizationId: true },
-          });
-          const session = await db.query.sessions.findFirst({
-            where: eq(sessions.userId, user.id),
-            orderBy: (s, { desc }) => [desc(s.createdAt)],
-            columns: { token: true },
-          });
-          if (member && session && ctx?.context?.internalAdapter) {
-            await ctx.context.internalAdapter.updateSession(session.token, {
-              activeOrganizationId: member.organizationId,
-            });
-          }
-
-          sendWelcomeEmailAction({ userEmail: email });
+        after: async (user) => {
+          sendWelcomeEmailAction({ userEmail: user.email ?? "" });
         },
       },
     },

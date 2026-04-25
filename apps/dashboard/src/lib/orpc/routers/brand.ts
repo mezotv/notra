@@ -931,7 +931,6 @@ export const brandRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
-        await assertActiveSubscription(input.organizationId);
 
         const { success: withinLimit } = await ratelimit.importTweets.limit(
           input.organizationId
