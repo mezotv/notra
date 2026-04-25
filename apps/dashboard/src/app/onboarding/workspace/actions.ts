@@ -47,6 +47,9 @@ export async function triggerOnboardingBrandAnalysis({
       organizationId,
       error,
     });
+    throw new Error(
+      "Couldn't kick off the brand analysis. Please try again in a moment."
+    );
   }
 
   return { success: true };

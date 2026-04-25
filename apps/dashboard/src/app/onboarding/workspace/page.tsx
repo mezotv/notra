@@ -1,3 +1,6 @@
+import { db } from "@notra/db/drizzle";
+import { brandSettings, organizations } from "@notra/db/schema";
+import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import {
   getAllUserOrganizations,
@@ -23,7 +26,22 @@ export default async function OnboardingWorkspacePage() {
 
   const existing = await getLastActiveOrganization(session.user.id);
   if (existing) {
-    redirect("/onboarding/socials");
+    const brand = await db.query.brandSettings.findFirst({
+      where: eq(brandSettings.organizationId, existing.id),
+      columns: { id: true },
+    });
+    if (brand) {
+      redirect("/onboarding/socials");
+    }
+
+    const existingOrgRow = await db.query.organizations.findFirst({
+      where: eq(organizations.id, existing.id),
+      columns: { id: true, slug: true, name: true },
+    });
+
+    if (existingOrgRow) {
+      return <WorkspaceForm existingOrg={existingOrgRow} />;
+    }
   }
 
   return <WorkspaceForm />;

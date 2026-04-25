@@ -28,14 +28,25 @@ function normalizeWebsite(value: string): string {
   return WEBSITE_PREFIX_REGEX.test(value) ? value : `https://${value}`;
 }
 
-export function WorkspaceForm() {
+interface ExistingOrg {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface WorkspaceFormProps {
+  existingOrg?: ExistingOrg;
+}
+
+export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isResuming = !!existingOrg;
 
   const form = useForm({
     defaultValues: {
-      name: "",
-      slug: "",
+      name: existingOrg?.name ?? "",
+      slug: existingOrg?.slug ?? "",
       websiteUrl: "",
     },
     onSubmit: async ({ value }) => {
@@ -57,28 +68,44 @@ export function WorkspaceForm() {
           return;
         }
 
-        const { data, error } = await authClient.organization.create({
-          name: parsed.data.name,
-          slug: parsed.data.slug,
-          logo: generateOrganizationAvatar(parsed.data.slug),
-        });
+        let organizationId: string;
+        let organizationSlug: string;
 
-        if (error || !data) {
-          toast.error(error?.message ?? "Failed to create org");
-          setIsSubmitting(false);
-          return;
+        if (existingOrg) {
+          organizationId = existingOrg.id;
+          organizationSlug = existingOrg.slug;
+        } else {
+          const { data, error } = await authClient.organization.create({
+            name: parsed.data.name,
+            slug: parsed.data.slug,
+            logo: generateOrganizationAvatar(parsed.data.slug),
+          });
+
+          if (error || !data) {
+            toast.error(error?.message ?? "Failed to create org");
+            setIsSubmitting(false);
+            return;
+          }
+
+          organizationId = data.id;
+          organizationSlug = data.slug;
+
+          await authClient.organization.setActive({
+            organizationId: data.id,
+          });
+          await setLastVisitedOrganization(data.slug);
         }
 
-        await authClient.organization.setActive({ organizationId: data.id });
-        await setLastVisitedOrganization(data.slug);
-
         await triggerOnboardingBrandAnalysis({
-          organizationId: data.id,
+          organizationId,
           websiteUrl: parsed.data.websiteUrl,
           name: parsed.data.name,
         });
 
         router.push("/onboarding/socials");
+        router.refresh();
+        // Keep button in submitting state during navigation
+        return;
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to create org"
@@ -96,11 +123,12 @@ export function WorkspaceForm() {
 
       <div className="space-y-2">
         <h1 className="font-semibold text-2xl tracking-tight">
-          Tell us about your org
+          {isResuming ? "Finish setting up your org" : "Tell us about your org"}
         </h1>
         <p className="text-muted-foreground text-sm">
-          We&apos;ll use your website to learn your brand voice while you set up
-          the rest.
+          {isResuming
+            ? "Your workspace is ready — enter your website so we can finish learning your brand voice."
+            : "We'll use your website to learn your brand voice while you set up the rest."}
         </p>
       </div>
 
@@ -127,8 +155,8 @@ export function WorkspaceForm() {
               </Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
-                autoFocus
-                disabled={isSubmitting}
+                autoFocus={!isResuming}
+                disabled={isSubmitting || isResuming}
                 id="name"
                 onBlur={field.handleBlur}
                 onChange={(e) => {
@@ -169,7 +197,7 @@ export function WorkspaceForm() {
               </Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isResuming}
                 id="slug"
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(slugify(e.target.value))}
@@ -219,6 +247,7 @@ export function WorkspaceForm() {
                   https://
                 </label>
                 <input
+                  autoFocus={isResuming}
                   className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={isSubmitting}
                   id="website"

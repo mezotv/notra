@@ -11,6 +11,85 @@ import { and, eq } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 import { getConfiguredWorkflowUrl } from "@/utils/url";
 
+const DEFAULT_BRAND_CONSTRAINT = "brandSettings_org_default_uidx";
+
+function isDefaultBrandConstraintViolation(error: unknown) {
+  if (!(typeof error === "object" && error !== null)) {
+    return false;
+  }
+  const candidates: unknown[] = [error];
+  if ("cause" in error) {
+    candidates.push((error as { cause: unknown }).cause);
+  }
+  return candidates.some((candidate) => {
+    if (!(typeof candidate === "object" && candidate !== null)) {
+      return false;
+    }
+    if (
+      "constraint_name" in candidate &&
+      candidate.constraint_name === DEFAULT_BRAND_CONSTRAINT
+    ) {
+      return true;
+    }
+    if (
+      "constraint" in candidate &&
+      candidate.constraint === DEFAULT_BRAND_CONSTRAINT
+    ) {
+      return true;
+    }
+    if (candidate instanceof Error) {
+      return candidate.message.includes(DEFAULT_BRAND_CONSTRAINT);
+    }
+    return false;
+  });
+}
+
+async function insertBrandIdentity({
+  organizationId,
+  brandName,
+  websiteUrl,
+}: {
+  organizationId: string;
+  brandName: string;
+  websiteUrl: string;
+}): Promise<{ id: string }> {
+  const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
+    where: eq(brandSettings.organizationId, organizationId),
+    columns: { id: true },
+  });
+
+  const baseValues = {
+    id: crypto.randomUUID(),
+    organizationId,
+    name: brandName,
+    websiteUrl,
+  };
+
+  try {
+    const [row] = await db
+      .insert(brandSettings)
+      .values({ ...baseValues, isDefault: !hasAnyBrandIdentity })
+      .returning({ id: brandSettings.id });
+    if (row) {
+      return row;
+    }
+  } catch (error) {
+    if (!isDefaultBrandConstraintViolation(error)) {
+      throw error;
+    }
+  }
+
+  const [fallback] = await db
+    .insert(brandSettings)
+    .values({ ...baseValues, id: crypto.randomUUID(), isDefault: false })
+    .returning({ id: brandSettings.id });
+
+  if (!fallback) {
+    throw new Error("Failed to create brand identity");
+  }
+  return fallback;
+}
+
 interface QueueBrandAnalysisInput {
   organizationId: string;
   websiteUrl: string;
@@ -34,30 +113,15 @@ export async function queueBrandAnalysisForOnboarding({
     return null;
   }
 
-  const brandIdentityId = crypto.randomUUID();
   const now = new Date().toISOString();
   const jobId = createBrandAnalysisJobId();
   const brandName = name?.trim() || "Untitled Brand Voice";
 
-  const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
-    where: eq(brandSettings.organizationId, organizationId),
-    columns: { id: true },
+  const brandIdentity = await insertBrandIdentity({
+    organizationId,
+    brandName,
+    websiteUrl,
   });
-
-  const [brandIdentity] = await db
-    .insert(brandSettings)
-    .values({
-      id: brandIdentityId,
-      organizationId,
-      name: brandName,
-      isDefault: !hasAnyBrandIdentity,
-      websiteUrl,
-    })
-    .returning({ id: brandSettings.id });
-
-  if (!brandIdentity) {
-    throw new Error("Failed to create brand identity");
-  }
 
   try {
     const job = await createBrandAnalysisJob(redis, {
