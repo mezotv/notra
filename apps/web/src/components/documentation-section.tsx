@@ -15,7 +15,9 @@ function ChangelogCard() {
             checklist.
           </p>
 
-          <h3>Configurable lookback windows for scheduled changelogs</h3>
+          <p className="font-semibold">
+            Configurable lookback windows for scheduled changelogs
+          </p>
           <p>
             Schedules now support five predefined time ranges (current day,
             yesterday, last 7/14/30 days) instead of hardcoded 7-day windows.
@@ -24,7 +26,9 @@ function ChangelogCard() {
             produced each post.
           </p>
 
-          <h3>Full table support in the rich-text editor</h3>
+          <p className="font-semibold">
+            Full table support in the rich-text editor
+          </p>
           <p>
             The Lexical editor can now insert, edit, and manipulate tables with
             a /table slash command and floating action menu. Markdown
@@ -33,7 +37,7 @@ function ChangelogCard() {
             load.
           </p>
 
-          <h3>Database-backed onboarding checklist</h3>
+          <p className="font-semibold">Database-backed onboarding checklist</p>
           <p>
             A collapsible checklist in the sidebar footer tracks brand identity,
             integration, and schedule setup. Progress is synced across all
@@ -41,7 +45,9 @@ function ChangelogCard() {
             persists via localStorage to reduce visual noise.
           </p>
 
-          <h3>Modular tone-specific changelog prompts</h3>
+          <p className="font-semibold">
+            Modular tone-specific changelog prompts
+          </p>
           <p>
             Changelog generation moved from a shared base prompt to
             self-contained, one-file-per-tone templates. This simplifies backend
@@ -49,7 +55,9 @@ function ChangelogCard() {
             profile resolution through Zod schemas.
           </p>
 
-          <h3>Point-in-time source metadata on generated content</h3>
+          <p className="font-semibold">
+            Point-in-time source metadata on generated content
+          </p>
           <p>
             Each post now stores a JSONB snapshot of its trigger, repositories,
             and lookback window. The content detail page displays this metadata
@@ -80,7 +88,9 @@ function BlogCard() {
             how it sounds.
           </p>
 
-          <h2>Generate what you actually want to ship</h2>
+          <p className="font-semibold">
+            Generate what you actually want to ship
+          </p>
           <p>
             For the first two months, Notra worked like this: set up a trigger,
             the AI looks at everything since last time, drafts appear. Fine if
@@ -94,7 +104,7 @@ function BlogCard() {
             releases on or off. Pick a time window. Scope to specific repos.
           </p>
 
-          <h2>Your voice, not a generic one</h2>
+          <p className="font-semibold">Your voice, not a generic one</p>
           <p>
             The other gap we kept hearing: content that looked good but sounded
             like nobody. Teams would edit our drafts because the tone felt off.
@@ -198,10 +208,10 @@ export default function DocumentationSection() {
     <div className="flex w-full flex-col items-center justify-center shadow-[inset_0_-1px_0_var(--border)]">
       <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 shadow-[inset_0_-1px_0_var(--border)] md:px-24 md:py-16">
         <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
-          <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
+          <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
             From shipped code to{" "}
             <span className="text-primary">published post, same day</span>
-          </div>
+          </h2>
           <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
             Notra follows your actual workflow, picks out what's worth
             announcing,

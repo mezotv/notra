@@ -5,6 +5,8 @@ import { listNotraChangelogPosts } from "@/utils/changelog";
 import { SITE_URL } from "@/utils/urls";
 import { getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "../utils/showcase";
 
+const STATIC_PAGE_LAST_MODIFIED = new Date("2026-04-24");
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const showcaseEntries = SHOWCASE_COMPANIES.flatMap((company) =>
     changelog
@@ -27,46 +29,79 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(post.updatedAt),
   }));
 
+  const latestNotraChangelog = notraChangelogEntries.reduce<Date>(
+    (latest, entry) =>
+      entry.lastModified > latest ? entry.lastModified : latest,
+    STATIC_PAGE_LAST_MODIFIED
+  );
+
+  const latestBlog = notraBlogEntries.reduce<Date>(
+    (latest, entry) =>
+      entry.lastModified > latest ? entry.lastModified : latest,
+    STATIC_PAGE_LAST_MODIFIED
+  );
+
+  const latestShowcaseByCompany = new Map<string, Date>();
+  for (const company of SHOWCASE_COMPANIES) {
+    const latest = changelog
+      .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
+      .reduce<Date>((acc, entry) => {
+        const entryDate = new Date(entry.date);
+        return entryDate > acc ? entryDate : acc;
+      }, STATIC_PAGE_LAST_MODIFIED);
+    latestShowcaseByCompany.set(company.slug, latest);
+  }
+
+  const latestShowcaseAny = [...latestShowcaseByCompany.values()].reduce<Date>(
+    (latest, date) => (date > latest ? date : latest),
+    STATIC_PAGE_LAST_MODIFIED
+  );
+
   return [
     {
       url: SITE_URL,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
+      url: `${SITE_URL}/features`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/pricing`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/contributors`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/privacy`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/terms`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/legal`,
-      lastModified: new Date(),
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
       url: `${SITE_URL}/blog`,
-      lastModified: new Date(),
+      lastModified: latestBlog,
     },
     {
       url: `${SITE_URL}/changelog`,
-      lastModified: new Date(),
+      lastModified: latestShowcaseAny,
     },
     {
       url: `${SITE_URL}/changelog/notra`,
-      lastModified: new Date(),
+      lastModified: latestNotraChangelog,
     },
     ...SHOWCASE_COMPANIES.map((company) => ({
       url: `${SITE_URL}/changelog/${company.slug}`,
-      lastModified: new Date(),
+      lastModified:
+        latestShowcaseByCompany.get(company.slug) ?? STATIC_PAGE_LAST_MODIFIED,
     })),
     ...showcaseEntries,
     ...notraChangelogEntries,

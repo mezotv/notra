@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import type { OfferLike } from "~types/jsonld";
 import PricingComparisonTable from "../../components/pricing-comparison-table";
 import { PricingCards } from "../../components/pricing-section";
+import { PRICING_PLANS } from "../../utils/constants";
+import {
+  buildBreadcrumbJsonLd,
+  buildProductJsonLd,
+  serializeJsonLd,
+} from "../../utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "../../utils/metadata";
 import { SITE_URL } from "../../utils/urls";
 
@@ -8,6 +15,40 @@ const title = "Pricing";
 const description =
   "Choose the right Notra plan for your team. Compare features across Basic, Pro, and Enterprise tiers.";
 const url = `${SITE_URL}/pricing`;
+
+const offers: OfferLike[] = Object.values(PRICING_PLANS).map((plan) => {
+  if (plan.pricing.monthly === null) {
+    return {
+      "@type": "Offer",
+      name: `${plan.name} plan`,
+      url,
+      availability: "https://schema.org/InStock",
+      category: plan.name,
+    };
+  }
+
+  return {
+    "@type": "Offer",
+    name: `${plan.name} plan`,
+    price: String(plan.pricing.monthly),
+    priceCurrency: "USD",
+    url,
+    availability: "https://schema.org/InStock",
+    category: plan.name,
+  };
+});
+
+const productJsonLd = buildProductJsonLd({
+  name: "Notra",
+  description,
+  url,
+  offers,
+});
+
+const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+  { name: "Home", url: SITE_URL },
+  { name: "Pricing", url },
+]);
 
 export const metadata: Metadata = {
   title,
@@ -36,6 +77,16 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
+        type="application/ld+json"
+      />
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
+        type="application/ld+json"
+      />
       <div className="flex w-full flex-col items-center justify-center gap-2">
         <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
           <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">

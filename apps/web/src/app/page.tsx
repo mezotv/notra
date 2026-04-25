@@ -118,10 +118,10 @@ export default function LandingPage() {
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-4 py-8 sm:px-6 sm:py-12 md:px-24 md:py-16">
             <div className="flex w-full max-w-146.5 flex-col items-center justify-start gap-3 sm:gap-4">
-              <div className="w-full max-w-[29.53rem] text-balance text-center font-sans font-semibold text-foreground text-xl leading-tight tracking-tight sm:text-2xl md:text-3xl md:leading-15 lg:text-5xl">
+              <h2 className="w-full max-w-[29.53rem] text-balance text-center font-sans font-semibold text-foreground text-xl leading-tight tracking-tight sm:text-2xl md:text-3xl md:leading-15 lg:text-5xl">
                 Fast-moving teams trust Notra to{" "}
                 <span className="text-primary">tell their story</span>
-              </div>
+              </h2>
               <div className="self-stretch text-balance text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
                 Startups use Notra to turn every shipped feature{" "}
                 <br className="hidden sm:block" />
@@ -190,10 +190,10 @@ export default function LandingPage() {
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
             <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
-              <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
+              <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
                 Your team ships. Notra{" "}
                 <span className="text-primary">tells the story</span>
-              </div>
+              </h2>
               <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
                 Notra quietly watches GitHub, Linear, and Slack, then drafts
                 <br />
@@ -285,8 +285,8 @@ export default function LandingPage() {
             <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
               <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
                 <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
-                  Pricing that scales with{" "}
-                  <span className="text-primary">what you ship</span>
+                  Pricing that grows with{" "}
+                  <span className="text-primary">your team</span>
                 </h2>
 
                 <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">

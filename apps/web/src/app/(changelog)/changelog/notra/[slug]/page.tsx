@@ -7,6 +7,11 @@ import {
   formatChangelogDate,
   getNotraChangelogPostBySlug,
 } from "@/utils/changelog";
+import {
+  buildArticleJsonLd,
+  buildBreadcrumbJsonLd,
+  serializeJsonLd,
+} from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 import type { ChangelogEntryPageProps } from "~types/changelog";
@@ -58,8 +63,34 @@ export default async function ChangelogEntryPage({
     notFound();
   }
 
+  const url = `${SITE_URL}/changelog/notra/${slug}`;
+  const articleJsonLd = buildArticleJsonLd({
+    url,
+    title: post.title,
+    description: post.excerpt,
+    imageUrl: `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`,
+    datePublished: post.createdAt,
+    dateModified: post.updatedAt,
+  });
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: "Changelog", url: `${SITE_URL}/changelog` },
+    { name: "Notra", url: `${SITE_URL}/changelog/notra` },
+    { name: post.title, url },
+  ]);
+
   return (
     <>
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
+        type="application/ld+json"
+      />
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
+        type="application/ld+json"
+      />
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
         href="/changelog/notra"

@@ -41,6 +41,7 @@ export default function FooterSection() {
               aria-label="Visit Notra on X"
               className={buttonVariants({ size: "icon", variant: "ghost" })}
               href={SOCIAL_LINKS.x}
+              rel="noopener noreferrer"
               target="_blank"
             >
               <XTwitter className="size-5" />
@@ -49,6 +50,7 @@ export default function FooterSection() {
               aria-label="Visit Notra on LinkedIn"
               className={buttonVariants({ size: "icon", variant: "ghost" })}
               href={SOCIAL_LINKS.linkedin}
+              rel="noopener noreferrer"
               target="_blank"
             >
               <Linkedin className="size-5" />
@@ -57,6 +59,7 @@ export default function FooterSection() {
               aria-label="Visit Notra on GitHub"
               className={buttonVariants({ size: "icon", variant: "ghost" })}
               href={SOCIAL_LINKS.github}
+              rel="noopener noreferrer"
               target="_blank"
             >
               <Github className="size-5" />
@@ -65,6 +68,7 @@ export default function FooterSection() {
               aria-label="Visit Notra on Discord"
               className={buttonVariants({ size: "icon", variant: "ghost" })}
               href={SOCIAL_LINKS.discord}
+              rel="noopener noreferrer"
               target="_blank"
             >
               <Discord className="size-5" />

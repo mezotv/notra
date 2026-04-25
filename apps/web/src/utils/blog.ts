@@ -9,7 +9,7 @@ import type { BlogTimelineItem, NotraBlogPost } from "~types/blog";
 const BLOG_CONTENT_TYPE = "blog_post";
 const BLOG_STATUS = "published";
 const DEFAULT_POST_LIMIT = 100;
-const FALLBACK_EXCERPT = "Insights, guides, and stories from the Notra team.";
+const FALLBACK_EXCERPT_MAX_LENGTH = 160;
 const BLOCK_SEPARATOR_REGEX = /\n\s*\n/;
 
 function getNotraBlogConfig() {
@@ -58,7 +58,7 @@ function stripMarkdownFormatting(value: string) {
     .trim();
 }
 
-function getPostExcerpt(markdown: string) {
+function getPostExcerpt(markdown: string, fallbackTitle: string) {
   const blocks = markdown
     .split(BLOCK_SEPARATOR_REGEX)
     .map((block) => block.trim())
@@ -71,11 +71,16 @@ function getPostExcerpt(markdown: string) {
 
     const excerpt = stripMarkdownFormatting(block);
     if (excerpt.length > 0) {
-      return excerpt;
+      return excerpt.slice(0, FALLBACK_EXCERPT_MAX_LENGTH);
     }
   }
 
-  return FALLBACK_EXCERPT;
+  const stripped = stripMarkdownFormatting(markdown);
+  if (stripped.length > 0) {
+    return stripped.slice(0, FALLBACK_EXCERPT_MAX_LENGTH);
+  }
+
+  return `${fallbackTitle} on the Notra blog.`;
 }
 
 function slugifySegment(value: string) {
@@ -106,7 +111,7 @@ function normalizePost(post: NotraApiPost): NotraBlogPost {
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     slug,
-    excerpt: getPostExcerpt(post.markdown),
+    excerpt: getPostExcerpt(post.markdown, post.title),
   };
 }
 

@@ -7,7 +7,6 @@ import {
   BLOG_WHITESPACE_REGEX,
   HTML_ENTITY_MAP,
   HTML_ENTITY_REGEX,
-  JSON_LD_SCRIPT_CLOSE_REGEX,
   NOTRA_LOGO_PATH,
 } from "@/utils/constants";
 import { SITE_URL } from "@/utils/urls";
@@ -192,8 +191,4 @@ export function buildBlogFaqJsonLd(post: NotraBlogPost) {
       },
     })),
   };
-}
-
-export function serializeJsonLd(value: unknown) {
-  return JSON.stringify(value).replace(JSON_LD_SCRIPT_CLOSE_REGEX, "<\\/$1");
 }

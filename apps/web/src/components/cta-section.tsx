@@ -10,10 +10,10 @@ export default function CTASection() {
 
         <div className="relative z-20 flex w-full max-w-[586px] flex-col items-center justify-start gap-6 overflow-hidden rounded-lg px-6 py-5 md:py-8">
           <div className="flex flex-col items-start justify-start gap-3 self-stretch">
-            <div className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[56px]">
+            <h2 className="self-stretch text-balance text-center font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[56px]">
               Stop letting great work{" "}
               <span className="text-primary">go unannounced</span>
-            </div>
+            </h2>
             <div className="self-stretch text-center font-medium font-sans text-base text-muted-foreground leading-7">
               Your team ships every week. Let Notra turn it into
               <br />

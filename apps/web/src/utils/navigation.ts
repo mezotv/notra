@@ -1,6 +1,6 @@
 export const MARKETING_NAV_LINKS = [
   {
-    href: "/#features",
+    href: "/features",
     label: "Features",
   },
   {
@@ -21,19 +21,19 @@ export const FOOTER_TOOL_LINKS = [
   {
     href: "https://www.framer.com/marketplace/plugins/notra/",
     label: "Framer",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
   {
     href: "https://www.raycast.com/dominikdev/notra",
     label: "Raycast",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
   {
     href: "https://docs.usenotra.com/integrations/mcp",
     label: "MCP Server",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
 ] as const;
@@ -42,20 +42,20 @@ export const FOOTER_INTEGRATION_LINKS = [
   {
     href: "https://github.com",
     label: "GitHub",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
   {
     href: "https://linear.app",
     label: "Linear",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
 ] as const;
 
 export const FOOTER_PRODUCT_LINKS = [
   {
-    href: "/#features",
+    href: "/features",
     label: "Features",
   },
   {
@@ -67,8 +67,12 @@ export const FOOTER_PRODUCT_LINKS = [
     label: "Blog",
   },
   {
-    href: "/changelog",
+    href: "/changelog/notra",
     label: "Changelog",
+  },
+  {
+    href: "/changelog",
+    label: "Examples",
   },
   {
     href: "/contributors",
@@ -77,7 +81,7 @@ export const FOOTER_PRODUCT_LINKS = [
   {
     href: "https://docs.usenotra.com",
     label: "Docs",
-    rel: "noreferrer",
+    rel: "noopener noreferrer",
     target: "_blank",
   },
 ] as const;

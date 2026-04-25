@@ -6,8 +6,8 @@ import { formatBlogDate, getNotraBlogPostBySlug } from "@/utils/blog";
 import {
   buildBlogArticleJsonLd,
   buildBlogFaqJsonLd,
-  serializeJsonLd,
 } from "@/utils/blog-jsonld";
+import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 import type { BlogEntryPageProps } from "~types/blog";
@@ -61,12 +61,22 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: "Home", url: SITE_URL },
+    { name: "Blog", url: `${SITE_URL}/blog` },
+    { name: post.title, url },
+  ]);
 
   return (
     <>
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD payload is server-built and script-close-escaped
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
+        type="application/ld+json"
+      />
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD payload is server-built and script-close-escaped
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
       {faqJsonLd ? (

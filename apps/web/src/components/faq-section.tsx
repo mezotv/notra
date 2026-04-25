@@ -8,11 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { useState } from "react";
-
-interface FAQItem {
-  question: string;
-  answer: string;
-}
+import type { FAQItem } from "~types/faq";
 
 const faqData: FAQItem[] = [
   {
@@ -52,6 +48,19 @@ const faqData: FAQItem[] = [
   },
 ];
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqData.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
 export default function FAQSection() {
   const [openItem, setOpenItem] = useState<string | null>(null);
 
@@ -61,14 +70,19 @@ export default function FAQSection() {
 
   return (
     <div className="flex w-full items-start justify-center">
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: server-rendered JSON-LD
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        type="application/ld+json"
+      />
       <div className="flex flex-1 flex-col items-start justify-start gap-6 px-4 py-16 md:px-12 md:py-20 lg:flex-row lg:gap-12">
         <div className="flex w-full flex-col items-start justify-center gap-4 lg:flex-1 lg:py-5">
-          <div className="flex w-full flex-col justify-center text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:leading-[44px]">
+          <h2 className="flex w-full flex-col justify-center text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:leading-[44px]">
             Frequently{" "}
             <span className="whitespace-nowrap text-primary">
               Asked Questions
             </span>
-          </div>
+          </h2>
           <div className="w-full font-normal font-sans text-base text-muted-foreground leading-7">
             Common questions about how Notra
             <br className="hidden md:block" /> turns your team's work into
@@ -89,9 +103,9 @@ export default function FAQSection() {
                   open={isOpen}
                 >
                   <CollapsibleTrigger className="flex w-full items-center justify-between gap-5 px-5 py-[18px] text-left transition-colors duration-200 hover:bg-foreground/2">
-                    <div className="flex-1 font-medium font-sans text-base text-foreground leading-6">
+                    <h3 className="flex-1 font-medium font-sans text-base text-foreground leading-6">
                       {item.question}
-                    </div>
+                    </h3>
                     <div className="flex items-center justify-center">
                       <HugeiconsIcon
                         className={`size-5 text-foreground/60 transition-transform duration-300 ease-in-out ${

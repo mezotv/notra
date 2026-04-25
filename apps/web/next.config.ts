@@ -1,19 +1,12 @@
 import path from "node:path";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
+import { SHOWCASE_COMPANIES } from "./src/utils/showcase";
 import { HOMEPAGE_LINK_HEADER } from "./src/utils/urls";
 
-const SHOWCASE_COMPANY_SLUGS = [
-  "autumn",
-  "better-auth",
-  "cal-com",
-  "databuddy",
-  "langfuse",
-  "marble",
-  "neon",
-  "openclaw",
-  "unkey",
-];
+const SHOWCASE_COMPANY_SLUGS = SHOWCASE_COMPANIES.map(
+  (company) => company.slug
+);
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -87,17 +80,6 @@ const nextConfig: NextConfig = {
         destination: "/blog/markdown",
       },
       {
-        source: "/blog/markdown",
-        destination: "/blog/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
         source: "/blog/:slug",
         destination: "/blog/:slug/markdown",
         has: [
@@ -124,34 +106,12 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/changelog/notra",
-        destination: "/changelog/notra/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/notra/:slug",
-        destination: "/changelog/notra/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
         source: "/changelog.md",
         destination: "/changelog/markdown",
       },
       {
-        source: "/changelog/markdown",
-        destination: "/changelog/markdown",
+        source: "/changelog/notra",
+        destination: "/changelog/notra/markdown",
         has: [
           {
             type: "header",
@@ -165,8 +125,8 @@ const nextConfig: NextConfig = {
         destination: "/changelog/notra/markdown",
       },
       {
-        source: "/changelog/notra/markdown",
-        destination: "/changelog/notra/markdown",
+        source: "/changelog/notra/:slug",
+        destination: "/changelog/notra/:slug/markdown",
         has: [
           {
             type: "header",
@@ -178,28 +138,6 @@ const nextConfig: NextConfig = {
       {
         source: "/changelog/notra/:slug.md",
         destination: "/changelog/notra/:slug/markdown",
-      },
-      {
-        source: "/changelog/notra/:slug/markdown",
-        destination: "/changelog/notra/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/:name/markdown",
-        destination: "/changelog/:name/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
       },
       {
         source: "/changelog/:name",
@@ -215,17 +153,6 @@ const nextConfig: NextConfig = {
       {
         source: "/changelog/:name.md",
         destination: "/changelog/:name/markdown",
-      },
-      {
-        source: "/changelog/:name/:slug/markdown",
-        destination: "/changelog/:name/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
       },
       {
         source: "/changelog/:name/:slug",
