@@ -4,6 +4,7 @@ const ROBOTS_TXT = `User-agent: *
 Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 Disallow: /.well-known/
+Disallow: /_next/
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `;
