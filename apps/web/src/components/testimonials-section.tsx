@@ -35,7 +35,7 @@ export default function TestimonialsSection() {
               Will De Ath
             </Link>
             <span className="font-normal font-sans text-muted-foreground text-sm">
-              Head of Growth, Consent
+              Head of Growth, Inth (P26)
             </span>
           </div>
         </div>

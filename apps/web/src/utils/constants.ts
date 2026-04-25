@@ -156,7 +156,7 @@ export const SOCIAL_PROOF_LOGOS: {
   {
     name: "inth",
     Component: Inth,
-    href: "https://inth.io?utm_source=notra",
+    href: "https://inth.com?utm_source=notra",
     className: "h-8",
   },
   {
