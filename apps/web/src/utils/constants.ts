@@ -1,5 +1,5 @@
-import { Consent } from "@notra/ui/components/ui/svgs/consent";
 import { DatabuddyWordmark } from "@notra/ui/components/ui/svgs/databuddyWordmark";
+import { Inth } from "@notra/ui/components/ui/svgs/inth";
 import { StackAuth } from "@notra/ui/components/ui/svgs/stack-auth";
 import { Stagewise } from "@notra/ui/components/ui/svgs/stagewise";
 import type { ComponentType, SVGProps } from "react";
@@ -154,10 +154,10 @@ export const SOCIAL_PROOF_LOGOS: {
   className?: string;
 }[] = [
   {
-    name: "Consent",
-    Component: Consent,
-    href: "https://consent.io?utm_source=notra",
-    className: "h-6",
+    name: "inth",
+    Component: Inth,
+    href: "https://inth.io?utm_source=notra",
+    className: "h-8",
   },
   {
     name: "Databuddy",
