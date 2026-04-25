@@ -13,10 +13,17 @@ import {
 import { SITE_URL } from "@/utils/urls";
 import type { BlogFaqEntry, BlogJsonLdInput, NotraBlogPost } from "~types/blog";
 
+interface BlogHeading {
+  level: number;
+  text: string;
+  index: number;
+  endIndex: number;
+}
+
 function decodeHtmlEntities(value: string) {
   return value.replace(
     HTML_ENTITY_REGEX,
-    (_, entity: string) => HTML_ENTITY_MAP[entity] ?? ""
+    (match, entity: string) => HTML_ENTITY_MAP[entity] ?? match
   );
 }
 
@@ -26,27 +33,47 @@ function stripHtml(value: string) {
     .trim();
 }
 
-function extractHeadings(html: string) {
-  const headings: { level: number; text: string; index: number }[] = [];
-  BLOG_HEADING_REGEX.lastIndex = 0;
+function extractHeadings(html: string): BlogHeading[] {
+  const headings: BlogHeading[] = [];
 
-  let match = BLOG_HEADING_REGEX.exec(html);
-  while (match !== null) {
-    const [, levelGroup, contentGroup] = match;
-    if (levelGroup && contentGroup !== undefined) {
-      const text = stripHtml(contentGroup);
-      if (text.length > 0) {
-        headings.push({
-          level: Number(levelGroup),
-          text,
-          index: match.index,
-        });
-      }
+  for (const match of html.matchAll(BLOG_HEADING_REGEX)) {
+    const [fullMatch, levelGroup, contentGroup] = match;
+    if (!(levelGroup && contentGroup !== undefined && fullMatch)) {
+      continue;
     }
-    match = BLOG_HEADING_REGEX.exec(html);
+
+    const text = stripHtml(contentGroup);
+    if (text.length === 0) {
+      continue;
+    }
+
+    const startIndex = match.index ?? 0;
+    headings.push({
+      level: Number(levelGroup),
+      text,
+      index: startIndex,
+      endIndex: startIndex + fullMatch.length,
+    });
   }
 
   return headings;
+}
+
+function extractParagraphs(html: string) {
+  const paragraphs: string[] = [];
+
+  for (const match of html.matchAll(BLOG_PARAGRAPH_REGEX)) {
+    const content = match[1];
+    if (content === undefined) {
+      continue;
+    }
+    const stripped = stripHtml(content);
+    if (stripped.length > 0) {
+      paragraphs.push(stripped);
+    }
+  }
+
+  return paragraphs;
 }
 
 export function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
@@ -65,57 +92,30 @@ export function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
     return [];
   }
 
-  const nextH2 = headings
-    .slice(faqHeadingIndex + 1)
-    .find((heading) => heading.level === 2);
-
-  const sectionStart = faqHeading.index;
-  const sectionEnd = nextH2?.index ?? html.length;
-  const section = html.slice(sectionStart, sectionEnd);
+  const sectionHeadings = headings.slice(faqHeadingIndex + 1);
+  const sectionEnd =
+    sectionHeadings.find((heading) => heading.level === 2)?.index ??
+    html.length;
 
   const entries: BlogFaqEntry[] = [];
-  BLOG_HEADING_REGEX.lastIndex = 0;
 
-  let questionMatch = BLOG_HEADING_REGEX.exec(section);
-  while (questionMatch !== null) {
-    const [fullMatch, levelGroup, contentGroup] = questionMatch;
-    if (!(levelGroup && contentGroup !== undefined && fullMatch)) {
-      questionMatch = BLOG_HEADING_REGEX.exec(section);
+  for (let i = 0; i < sectionHeadings.length; i += 1) {
+    const heading = sectionHeadings[i];
+    if (!heading || heading.level !== 3 || heading.index >= sectionEnd) {
       continue;
     }
 
-    if (Number(levelGroup) !== 3) {
-      questionMatch = BLOG_HEADING_REGEX.exec(section);
-      continue;
+    const nextHeading = sectionHeadings[i + 1];
+    const answerEnd = Math.min(nextHeading?.index ?? sectionEnd, sectionEnd);
+    const answerSlice = html.slice(heading.endIndex, answerEnd);
+    const answerParts = extractParagraphs(answerSlice);
+
+    if (heading.text.length > 0 && answerParts.length > 0) {
+      entries.push({
+        question: heading.text,
+        answer: answerParts.join(" "),
+      });
     }
-
-    const question = stripHtml(contentGroup);
-    const answerStart = questionMatch.index + fullMatch.length;
-    BLOG_HEADING_REGEX.lastIndex = answerStart;
-    const nextHeading = BLOG_HEADING_REGEX.exec(section);
-    const nextHeadingIndex = nextHeading?.index ?? section.length;
-
-    const answerSlice = section.slice(answerStart, nextHeadingIndex);
-    BLOG_PARAGRAPH_REGEX.lastIndex = 0;
-    const answerParts: string[] = [];
-    let paragraphMatch = BLOG_PARAGRAPH_REGEX.exec(answerSlice);
-    while (paragraphMatch !== null) {
-      const paragraphContent = paragraphMatch[1];
-      if (paragraphContent !== undefined) {
-        const paragraph = stripHtml(paragraphContent);
-        if (paragraph.length > 0) {
-          answerParts.push(paragraph);
-        }
-      }
-      paragraphMatch = BLOG_PARAGRAPH_REGEX.exec(answerSlice);
-    }
-
-    if (question.length > 0 && answerParts.length > 0) {
-      entries.push({ question, answer: answerParts.join(" ") });
-    }
-
-    BLOG_HEADING_REGEX.lastIndex = nextHeadingIndex;
-    questionMatch = BLOG_HEADING_REGEX.exec(section);
   }
 
   return entries;
