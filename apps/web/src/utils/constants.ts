@@ -11,6 +11,27 @@ export const SOCIAL_LINKS = {
   discord: "/discord",
 } as const;
 
+export const NOTRA_LOGO_PATH = "/notra-mark.svg";
+
+export const BLOG_HEADING_REGEX = /<h([2-3])[^>]*>([\s\S]*?)<\/h\1>/gi;
+export const BLOG_PARAGRAPH_REGEX = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+export const BLOG_TAG_REGEX = /<[^>]+>/g;
+export const BLOG_WHITESPACE_REGEX = /\s+/g;
+export const BLOG_FAQ_HEADING_REGEX =
+  /^(frequently asked questions|faqs?|q\s*&\s*a)$/i;
+export const BLOG_NUMBERED_HEADING_PREFIX_REGEX = /^\d+\.\s*/;
+export const JSON_LD_SCRIPT_CLOSE_REGEX = /<\/(script)/gi;
+export const HTML_ENTITY_REGEX = /&(amp|lt|gt|quot|#39|nbsp);/g;
+
+export const HTML_ENTITY_MAP: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  "#39": "'",
+  nbsp: " ",
+};
+
 export const PRICING_PLANS = {
   basic: {
     name: "Basic",

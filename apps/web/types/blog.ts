@@ -42,3 +42,14 @@ interface BlogHtmlArticleProps {
 export interface BlogEntryPageProps {
   params: Promise<{ slug: string }>;
 }
+
+export interface BlogFaqEntry {
+  question: string;
+  answer: string;
+}
+
+export interface BlogJsonLdInput {
+  post: NotraBlogPost;
+  url: string;
+  imageUrl: string;
+}

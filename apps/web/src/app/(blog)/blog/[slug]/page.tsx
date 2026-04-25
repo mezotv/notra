@@ -4,6 +4,11 @@ import { notFound } from "next/navigation";
 import { ChangelogHtmlArticle } from "@/components/changelog-html-article";
 import { NotraMark } from "@/components/notra-mark";
 import { formatBlogDate, getNotraBlogPostBySlug } from "@/utils/blog";
+import {
+  buildBlogArticleJsonLd,
+  buildBlogFaqJsonLd,
+  serializeJsonLd,
+} from "@/utils/blog-jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 import type { BlogEntryPageProps } from "~types/blog";
@@ -53,8 +58,26 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
     notFound();
   }
 
+  const url = `${SITE_URL}/blog/${slug}`;
+  const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
+  const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
+  const faqJsonLd = buildBlogFaqJsonLd(post);
+
   return (
     <>
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD payload is server-built and script-close-escaped
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
+        type="application/ld+json"
+      />
+      {faqJsonLd ? (
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD payload is server-built and script-close-escaped
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
+          type="application/ld+json"
+        />
+      ) : null}
+
       <Link
         className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
         href="/blog"
