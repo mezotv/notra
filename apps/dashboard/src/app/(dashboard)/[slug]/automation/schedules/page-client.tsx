@@ -164,12 +164,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           autoPublish: trigger.autoPublish,
         });
       } catch (error) {
+        const errorWithCode = error as Error & { code?: string };
         if (
-          error instanceof Error &&
-          error.message ===
-            "Cannot update enabled schedule: one or more integrations not found"
+          errorWithCode?.code === "INTEGRATION_NOT_FOUND" ||
+          (error instanceof Error &&
+            error.message.includes("integrations have been deleted"))
         ) {
-          const integrationError = new Error(error.message) as Error & {
+          const integrationError = new Error(
+            error instanceof Error ? error.message : "Integration not found"
+          ) as Error & {
             code?: string;
           };
           integrationError.code = "INTEGRATION_NOT_FOUND";

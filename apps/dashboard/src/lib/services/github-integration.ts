@@ -114,6 +114,43 @@ async function findRepositoryInOrganization(
   return existing ?? null;
 }
 
+export async function findConflictingRepositoryInOrganization(
+  organizationId: string,
+  owner: string,
+  repo: string,
+  excludeIntegrationId: string
+) {
+  const existing = await findRepositoryInOrganization(
+    organizationId,
+    owner,
+    repo
+  );
+
+  if (!existing || existing.id === excludeIntegrationId) {
+    return null;
+  }
+
+  return existing;
+}
+
+export async function validateRepositoryAccess(params: {
+  owner: string;
+  repo: string;
+  encryptedToken: string | null;
+}) {
+  const { owner, repo, encryptedToken } = params;
+  const token = encryptedToken ? decryptToken(encryptedToken) : undefined;
+  const octokit = createOctokit(token);
+
+  await octokit.request("GET /repos/{owner}/{repo}", {
+    owner,
+    repo,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+}
+
 export async function validateUserOrgAccess(
   userId: string,
   organizationId: string
@@ -418,7 +455,12 @@ export async function toggleGitHubIntegration(
 
 export async function updateGitHubIntegration(
   integrationId: string,
-  data: { enabled?: boolean; displayName?: string }
+  data: {
+    enabled?: boolean;
+    displayName?: string;
+    owner?: string;
+    repo?: string;
+  }
 ) {
   const [updated] = await db
     .update(githubIntegrations)

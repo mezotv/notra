@@ -146,10 +146,18 @@ export const outputIdParamSchema = z.object({
 });
 export type OutputIdParam = z.infer<typeof outputIdParamSchema>;
 
+const repoIdentifierSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => !value.includes("/"), "Cannot contain '/'");
+
 export const updateIntegrationBodySchema = z
   .object({
     enabled: z.boolean().optional(),
     displayName: z.string().trim().min(1).optional(),
+    owner: repoIdentifierSchema.optional(),
+    repo: repoIdentifierSchema.optional(),
     branch: z.string().trim().min(1).nullable().optional(),
     token: githubPersonalAccessTokenSchema.optional(),
   })
@@ -157,6 +165,8 @@ export const updateIntegrationBodySchema = z
     (value) =>
       value.enabled !== undefined ||
       value.displayName !== undefined ||
+      value.owner !== undefined ||
+      value.repo !== undefined ||
       value.branch !== undefined ||
       value.token !== undefined,
     {
@@ -168,6 +178,8 @@ export type UpdateIntegrationBody = z.infer<typeof updateIntegrationBodySchema>;
 export const editGitHubIntegrationFormSchema = z.object({
   displayName: z.string().min(1, "Display name is required"),
   enabled: z.boolean(),
+  owner: z.string().trim().min(1, "Owner is required"),
+  repo: z.string().trim().min(1, "Repository name is required"),
   branch: z.string().optional().nullable(),
 });
 export type EditGitHubIntegrationFormValues = z.infer<

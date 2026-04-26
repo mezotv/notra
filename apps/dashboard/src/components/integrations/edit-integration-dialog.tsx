@@ -42,8 +42,11 @@ export function EditIntegrationDialog({
   onOpenChange: controlledOnOpenChange,
   trigger,
 }: EditIntegrationDialogProps) {
+  const firstRepository = integration.repositories[0];
   const primaryRepository =
-    integration.repositories.length === 1 ? integration.repositories[0] : null;
+    integration.repositories.length === 1 && firstRepository
+      ? firstRepository
+      : null;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
@@ -51,12 +54,25 @@ export function EditIntegrationDialog({
 
   const mutation = useMutation({
     mutationFn: async (values: EditGitHubIntegrationFormValues) => {
+      const trimmedOwner = values.owner.trim();
+      const trimmedRepo = values.repo.trim();
+      const ownerChanged =
+        primaryRepository !== null && trimmedOwner !== primaryRepository.owner;
+      const repoChanged =
+        primaryRepository !== null && trimmedRepo !== primaryRepository.repo;
+
       return dashboardOrpc.integrations.update.call({
         organizationId,
         integrationId: integration.id,
         displayName: values.displayName,
         enabled: values.enabled,
-        ...(primaryRepository ? { branch: values.branch?.trim() || null } : {}),
+        ...(primaryRepository
+          ? {
+              ...(ownerChanged ? { owner: trimmedOwner } : {}),
+              ...(repoChanged ? { repo: trimmedRepo } : {}),
+              branch: values.branch?.trim() || null,
+            }
+          : {}),
       });
     },
     onSuccess: () => {
@@ -83,6 +99,8 @@ export function EditIntegrationDialog({
     defaultValues: {
       displayName: integration.displayName,
       enabled: integration.enabled,
+      owner: primaryRepository?.owner ?? "",
+      repo: primaryRepository?.repo ?? "",
       branch: primaryRepository?.defaultBranch ?? "",
     },
     onSubmit: ({ value }) => {
@@ -168,20 +186,85 @@ export function EditIntegrationDialog({
               </form.Field>
 
               {primaryRepository ? (
-                <form.Field name="branch">
-                  {(field) => (
-                    <Field>
-                      <FieldLabel>Default Branch</FieldLabel>
-                      <Input
-                        disabled={mutation.isPending}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="main"
-                        value={field.state.value ?? ""}
-                      />
-                    </Field>
-                  )}
-                </form.Field>
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <form.Field
+                      name="owner"
+                      validators={{
+                        onChange: editGitHubIntegrationFormSchema.shape.owner,
+                      }}
+                    >
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Owner</FieldLabel>
+                          <Input
+                            disabled={mutation.isPending}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="owner"
+                            value={field.state.value}
+                          />
+                          {field.state.meta.errors.length > 0 ? (
+                            <p className="mt-1 text-destructive text-sm">
+                              {typeof field.state.meta.errors[0] === "string"
+                                ? field.state.meta.errors[0]
+                                : ((
+                                    field.state.meta.errors[0] as {
+                                      message?: string;
+                                    }
+                                  )?.message ?? "Invalid value")}
+                            </p>
+                          ) : null}
+                        </Field>
+                      )}
+                    </form.Field>
+                    <form.Field
+                      name="repo"
+                      validators={{
+                        onChange: editGitHubIntegrationFormSchema.shape.repo,
+                      }}
+                    >
+                      {(field) => (
+                        <Field>
+                          <FieldLabel>Repository</FieldLabel>
+                          <Input
+                            disabled={mutation.isPending}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            placeholder="repo"
+                            value={field.state.value}
+                          />
+                          {field.state.meta.errors.length > 0 ? (
+                            <p className="mt-1 text-destructive text-sm">
+                              {typeof field.state.meta.errors[0] === "string"
+                                ? field.state.meta.errors[0]
+                                : ((
+                                    field.state.meta.errors[0] as {
+                                      message?: string;
+                                    }
+                                  )?.message ?? "Invalid value")}
+                            </p>
+                          ) : null}
+                        </Field>
+                      )}
+                    </form.Field>
+                  </div>
+
+                  <form.Field name="branch">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>Default Branch</FieldLabel>
+                        <Input
+                          disabled={mutation.isPending}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="main"
+                          value={field.state.value ?? ""}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                </>
               ) : null}
             </div>
             <ResponsiveDialogFooter>
