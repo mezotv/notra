@@ -5,6 +5,24 @@ export const triggerIdQuerySchema = z.object({
   triggerId: z.string().min(1),
 });
 
+export const webhookLogSourceFilterSchema = z.enum([
+  "all",
+  "github",
+  "linear",
+  "slack",
+  "webhook",
+  "manual",
+  "schedule",
+  "events",
+]);
+
+export const webhookLogStatusFilterSchema = z.enum([
+  "all",
+  "success",
+  "failed",
+  "pending",
+]);
+
 export const webhookLogsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
@@ -20,6 +38,9 @@ export const webhookLogsQuerySchema = z.object({
     ])
     .default("github"),
   integrationId: z.string().nullish(),
+  source: webhookLogSourceFilterSchema.default("all"),
+  status: webhookLogStatusFilterSchema.default("all"),
+  search: z.string().max(200).default(""),
 });
 
 export const contentListQuerySchema = z.object({

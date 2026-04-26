@@ -13,12 +13,42 @@ function paginateLogs(logs: Log[], page: number, pageSize: number) {
   return logs.slice(startIndex, endIndex);
 }
 
+function filterLogs(
+  logs: Log[],
+  filters: {
+    source: z.infer<typeof webhookLogsQuerySchema.shape.source>;
+    status: z.infer<typeof webhookLogsQuerySchema.shape.status>;
+    search: string;
+  }
+) {
+  const search = filters.search.trim().toLowerCase();
+  return logs.filter((log) => {
+    if (filters.source !== "all" && log.integrationType !== filters.source) {
+      return false;
+    }
+    if (filters.status !== "all" && log.status !== filters.status) {
+      return false;
+    }
+    if (search.length > 0) {
+      const inTitle = log.title.toLowerCase().includes(search);
+      const inError = log.errorMessage?.toLowerCase().includes(search) ?? false;
+      if (!(inTitle || inError)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
 const listWebhookLogsInputSchema = z.object({
   organizationId: organizationIdSchema,
   page: webhookLogsQuerySchema.shape.page,
   pageSize: webhookLogsQuerySchema.shape.pageSize,
   integrationType: webhookLogsQuerySchema.shape.integrationType,
   integrationId: z.string().nullish(),
+  source: webhookLogsQuerySchema.shape.source,
+  status: webhookLogsQuerySchema.shape.status,
+  search: webhookLogsQuerySchema.shape.search,
 });
 
 export const logsRouter = {
@@ -38,15 +68,28 @@ export const logsRouter = {
           input.integrationId === "all" ? null : (input.integrationId ?? null)
         );
 
-        const paginatedLogs = paginateLogs(logs, input.page, input.pageSize);
+        const filteredLogs = filterLogs(logs, {
+          source: input.source,
+          status: input.status,
+          search: input.search,
+        });
+
+        const paginatedLogs = paginateLogs(
+          filteredLogs,
+          input.page,
+          input.pageSize
+        );
 
         const response: LogsResponse = {
           logs: paginatedLogs,
           pagination: {
             page: input.page,
             pageSize: input.pageSize,
-            totalCount: logs.length,
-            totalPages: Math.max(1, Math.ceil(logs.length / input.pageSize)),
+            totalCount: filteredLogs.length,
+            totalPages: Math.max(
+              1,
+              Math.ceil(filteredLogs.length / input.pageSize)
+            ),
           },
         };
 

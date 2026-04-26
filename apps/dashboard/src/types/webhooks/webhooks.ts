@@ -33,6 +33,10 @@ export type IntegrationType =
   | "schedule"
   | "events";
 
+export type LogSourceFilter = "all" | IntegrationType;
+
+export type LogStatusFilter = "all" | WebhookLogStatus;
+
 export interface Log {
   id: string;
   referenceId: string | null;
