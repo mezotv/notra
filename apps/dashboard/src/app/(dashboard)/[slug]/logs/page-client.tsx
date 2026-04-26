@@ -20,6 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import {
@@ -73,18 +74,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     setSearchInput(search);
   }, [search]);
 
-  useEffect(() => {
-    if (searchInput === search) {
-      return;
-    }
-    const id = window.setTimeout(() => {
-      setSearch(searchInput);
+  const commitSearch = useDebouncedCallback(
+    (value: string) => {
+      setSearch(value);
       if (page !== 1) {
         setPage(1);
       }
-    }, SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(id);
-  }, [searchInput]);
+    },
+    { wait: SEARCH_DEBOUNCE_MS }
+  );
 
   const has30DayRetention = customer
     ? check({ featureId: FEATURES.LOG_RETENTION_30_DAYS }).allowed
@@ -163,7 +161,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <Input
               aria-label="Search logs"
               className="pl-8"
-              onChange={(e) => setSearchInput(e.target.value)}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+                commitSearch(e.target.value);
+              }}
               placeholder="Search by title or error message"
               type="search"
               value={searchInput}
