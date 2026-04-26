@@ -14,6 +14,7 @@ import {
   deleteRepository,
   findConflictingRepositoryInOrganization,
   GitHubBranchNotFoundError,
+  GitHubRepositoryNotFoundError,
   generateWebhookSecretForRepository,
   getGitHubIntegrationById,
   getOutputById,
@@ -265,6 +266,12 @@ function mapKnownIntegrationError(error: unknown): never {
     throw badRequest(error.message);
   }
 
+  if (error instanceof GitHubRepositoryNotFoundError) {
+    throw badRequest(
+      "Unable to access repository. It may be private and require a Personal Access Token, or the name is incorrect."
+    );
+  }
+
   if (error instanceof Error) {
     throw badRequest(error.message);
   }
@@ -359,10 +366,6 @@ export const integrationsRouter = {
 
       try {
         if (isRenaming) {
-          if (!repository) {
-            throw notFound("Repository not found");
-          }
-
           const conflictingRepo = await findConflictingRepositoryInOrganization(
             input.organizationId,
             effectiveOwner,
@@ -374,17 +377,12 @@ export const integrationsRouter = {
             throw conflict("Repository already connected");
           }
 
-          try {
-            await validateRepositoryAccess({
-              owner: effectiveOwner,
-              repo: effectiveRepo,
-              encryptedToken: integration.encryptedToken,
-            });
-          } catch (_error) {
-            throw badRequest(
-              "Unable to access repository. It may be private and require a Personal Access Token, or the name is incorrect."
-            );
-          }
+          await validateRepositoryAccess({
+            owner: effectiveOwner,
+            repo: effectiveRepo,
+            token: input.token,
+            encryptedToken: integration.encryptedToken,
+          });
 
           await updateGitHubIntegration(input.integrationId, {
             owner: effectiveOwner,
