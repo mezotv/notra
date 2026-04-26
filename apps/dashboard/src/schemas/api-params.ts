@@ -9,7 +9,6 @@ export const webhookLogSourceFilterSchema = z.enum([
   "all",
   "github",
   "linear",
-  "slack",
   "webhook",
   "manual",
   "schedule",

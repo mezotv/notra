@@ -28,7 +28,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "nuqs";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEATURES } from "@/constants/features";
@@ -44,6 +44,8 @@ import { getSourceLabel, getStatusLabel } from "@/utils/logs";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { LogsPageSkeleton } from "./skeleton";
+
+const SEARCH_DEBOUNCE_MS = 150;
 
 interface PageClientProps {
   organizationSlug: string;
@@ -65,6 +67,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     "status",
     parseAsStringLiteral(STATUS_VALUES).withDefault("all")
   );
+  const [searchInput, setSearchInput] = useState(search);
+
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
+
+  useEffect(() => {
+    if (searchInput === search) {
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setSearch(searchInput);
+      if (page !== 1) {
+        setPage(1);
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(id);
+  }, [searchInput]);
 
   const has30DayRetention = customer
     ? check({ featureId: FEATURES.LOG_RETENTION_30_DAYS }).allowed
@@ -74,11 +94,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     : false;
   const logRetentionDays = has30DayRetention ? 30 : has14DayRetention ? 14 : 7;
 
-  useEffect(() => {
+  const resetPage = () => {
     if (page !== 1) {
       setPage(1);
     }
-  }, [search, source, status]);
+  };
 
   const { data, isPending } = useQuery<LogsResponse>({
     ...dashboardOrpc.logs.webhooks.list.queryOptions({
@@ -100,9 +120,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     source !== "all" || status !== "all" || search.length > 0;
 
   const resetFilters = () => {
+    setSearchInput("");
     setSearch("");
     setSource("all");
     setStatus("all");
+    resetPage();
   };
 
   return (
@@ -141,13 +163,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <Input
               aria-label="Search logs"
               className="pl-8"
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search by title or error message"
               type="search"
-              value={search}
+              value={searchInput}
             />
           </div>
-          <Select onValueChange={(value) => setSource(value)} value={source}>
+          <Select
+            onValueChange={(value) => {
+              setSource(value);
+              resetPage();
+            }}
+            value={source}
+          >
             <SelectTrigger aria-label="Filter by source" className="sm:w-44">
               <SelectValue>
                 {(value: string) => getSourceLabel(value)}
@@ -161,7 +189,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               ))}
             </SelectContent>
           </Select>
-          <Select onValueChange={(value) => setStatus(value)} value={status}>
+          <Select
+            onValueChange={(value) => {
+              setStatus(value);
+              resetPage();
+            }}
+            value={status}
+          >
             <SelectTrigger aria-label="Filter by status" className="sm:w-40">
               <SelectValue>
                 {(value: string) => getStatusLabel(value)}

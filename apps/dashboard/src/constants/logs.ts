@@ -24,7 +24,6 @@ export const SOURCE_LABELS: Record<LogSourceFilter, string> = {
   all: "All sources",
   github: "GitHub",
   linear: "Linear",
-  slack: "Slack",
   webhook: "Webhook",
   manual: "Manual",
   schedule: "Schedule",

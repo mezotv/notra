@@ -33,7 +33,7 @@ export type IntegrationType =
   | "schedule"
   | "events";
 
-export type LogSourceFilter = "all" | IntegrationType;
+export type LogSourceFilter = "all" | Exclude<IntegrationType, "slack">;
 
 export type LogStatusFilter = "all" | WebhookLogStatus;
 
