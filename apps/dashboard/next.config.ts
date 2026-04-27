@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
+  serverExternalPackages: ["@resvg/resvg-js"],
   experimental: {
     turbopackFileSystemCacheForDev: false,
     useCache: true,

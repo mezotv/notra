@@ -4,6 +4,7 @@ import {
   Calendar03Icon,
   CorporateIcon,
   Home01Icon,
+  Image01Icon,
   Key01Icon,
   MagicWand01Icon,
   Message01Icon,
@@ -69,6 +70,13 @@ const navMainItems: NavMainItem[] = [
     icon: MagicWand01Icon,
     label: "Skills",
     category: "workspace",
+  },
+  {
+    link: "/repo-image",
+    icon: Image01Icon,
+    label: "Repo Image",
+    category: "workspace",
+    badge: "Beta",
   },
   {
     link: "/automation/schedule",
