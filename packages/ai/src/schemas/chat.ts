@@ -1,8 +1,8 @@
 import type { UIMessage } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
-import { standaloneChatContextSchema } from "./standalone-chat";
 import { CHAT_TITLE_MAX_LENGTH } from "../constants/chat";
+import { standaloneChatContextSchema } from "./standalone-chat";
 
 export const chatModelSchema = z.enum([
   "auto",

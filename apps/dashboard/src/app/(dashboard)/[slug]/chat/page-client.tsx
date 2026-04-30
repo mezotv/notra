@@ -7,6 +7,7 @@ import {
   chatErrorPayloadSchema,
   chatTransportRequestInputSchema,
 } from "@notra/ai/schemas/chat";
+import type { ContentType } from "@notra/ai/schemas/content";
 import type {
   ChatAttachment,
   ChatImageAttachmentProps,
@@ -15,7 +16,6 @@ import type {
   ChatUIMessage,
   ContextItem,
 } from "@notra/ai/types/chat";
-import type { ContentType } from "@notra/ai/schemas/content";
 import {
   Message,
   MessageContent,

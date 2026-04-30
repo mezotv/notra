@@ -1,16 +1,16 @@
 "use client";
 
 import {
+  chatSessionResponseSchema,
+  chatSessionsListResponseSchema,
+} from "@notra/ai/schemas/chat";
+import type { ChatSessionSummary } from "@notra/ai/types/chat";
+import {
   chatSessionPath,
   chatSessionsPath,
   chatSessionsQueryKey,
   sortChatSessions,
 } from "@notra/ai/utils/chat";
-import {
-  chatSessionResponseSchema,
-  chatSessionsListResponseSchema,
-} from "@notra/ai/schemas/chat";
-import type { ChatSessionSummary } from "@notra/ai/types/chat";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { toast } from "sonner";

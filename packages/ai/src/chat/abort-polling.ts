@@ -1,13 +1,6 @@
 import { CHAT_ABORT_POLL_INTERVAL_MS } from "../constants/chat";
+import type { StartChatAbortPollingArgs } from "../types/chat";
 import { isChatAborted } from "./history";
-
-interface StartChatAbortPollingArgs {
-  organizationId: string;
-  chatId: string;
-  streamId: string;
-  onAbort: () => void;
-  intervalMs?: number;
-}
 
 export function startChatAbortPolling({
   organizationId,

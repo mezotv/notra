@@ -1,10 +1,7 @@
 import { Redis } from "@upstash/redis";
+import type { ChatConfig } from "../types/chat";
 
 let redisClient: Redis | null | undefined;
-
-export interface ChatConfig {
-  redis: Redis | null;
-}
 
 export function configureChat(config: Partial<ChatConfig>) {
   if (config.redis !== undefined) {

@@ -9,10 +9,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_TITLE_MAX_LENGTH } from "@notra/ai/constants/chat";
-import {
-  formatChatIdFallback,
-  normalizeChatTitle,
-} from "@notra/ai/utils/chat";
+import { formatChatIdFallback, normalizeChatTitle } from "@notra/ai/utils/chat";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,

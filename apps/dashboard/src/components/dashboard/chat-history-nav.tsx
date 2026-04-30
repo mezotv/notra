@@ -10,8 +10,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_TITLE_MAX_LENGTH } from "@notra/ai/constants/chat";
-import { normalizeChatTitle } from "@notra/ai/utils/chat";
 import type { ChatSessionSummary } from "@notra/ai/types/chat";
+import { normalizeChatTitle } from "@notra/ai/utils/chat";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,

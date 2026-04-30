@@ -1,9 +1,6 @@
+import type { Redis } from "@upstash/redis";
 import type { LanguageModelUsage, UIMessage } from "ai";
 import type { z } from "zod";
-import type {
-  ContextItem as OrchestrationContextItem,
-  TextSelection as OrchestrationTextSelection,
-} from "./orchestration";
 import type {
   chatMessageMetadataSchema,
   chatModelSchema,
@@ -14,6 +11,10 @@ import type {
   thinkingLevelSchema,
   updateChatSessionSchema,
 } from "../schemas/chat";
+import type {
+  ContextItem as OrchestrationContextItem,
+  TextSelection as OrchestrationTextSelection,
+} from "./orchestration";
 
 export type TextSelection = OrchestrationTextSelection;
 export type ContextItem = OrchestrationContextItem;
@@ -76,4 +77,16 @@ export interface BuildChatFinishMetadataInput {
   requestedModel?: ChatModel | string;
   thinkingLevel?: ThinkingLevel;
   requestedThinkingLevel?: ThinkingLevel;
+}
+
+export interface ChatConfig {
+  redis: Redis | null;
+}
+
+export interface StartChatAbortPollingArgs {
+  organizationId: string;
+  chatId: string;
+  streamId: string;
+  onAbort: () => void;
+  intervalMs?: number;
 }

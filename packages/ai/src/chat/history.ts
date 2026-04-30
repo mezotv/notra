@@ -2,11 +2,11 @@ import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull } from "drizzle-orm";
-import { gateway } from "../gateway";
-import { getChatRedis } from "./config";
 import { CHAT_ABORT_FLAG_TTL_SECONDS } from "../constants/chat";
-import { normalizeChatTitle, sortChatSessions } from "../utils/chat";
+import { gateway } from "../gateway";
 import type { ChatSessionSummary } from "../types/chat";
+import { normalizeChatTitle, sortChatSessions } from "../utils/chat";
+import { getChatRedis } from "./config";
 
 function activeStreamKey(organizationId: string, chatId: string) {
   return `chat:stream:${organizationId}:${chatId}`;
