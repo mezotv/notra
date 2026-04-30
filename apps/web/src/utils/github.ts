@@ -106,10 +106,12 @@ export async function fetchContributorsData(): Promise<ContributorsData> {
   };
 }
 
+const TRAILING_ZERO_DECIMAL = /\.0$/;
+
 export function formatContributionCount(count: number): string {
   if (count >= 1000) {
     const thousands = count / 1000;
-    return `${thousands.toFixed(thousands >= 10 ? 0 : 1).replace(/\.0$/, "")}k`;
+    return `${thousands.toFixed(thousands >= 10 ? 0 : 1).replace(TRAILING_ZERO_DECIMAL, "")}k`;
   }
   return count.toString();
 }
