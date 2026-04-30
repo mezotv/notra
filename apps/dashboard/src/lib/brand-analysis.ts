@@ -4,19 +4,19 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { redis } from "@notra/ai/utils/redis";
+import { getConfiguredWorkflowUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { Client as WorkflowClient } from "@upstash/workflow";
 import { eq } from "drizzle-orm";
 import { after } from "next/server";
-import { redis } from "@/lib/redis";
 import type {
   DispatchBrandAnalysisInput,
   InsertBrandIdentityInput,
   QueueBrandAnalysisInput,
   QueueBrandAnalysisResult,
 } from "@/types/brand-analysis";
-import { getConfiguredWorkflowUrl } from "@/utils/url";
 
 const DEFAULT_BRAND_CONSTRAINT = "brandSettings_org_default_uidx";
 

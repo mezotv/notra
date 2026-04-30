@@ -6,6 +6,7 @@ import {
   CheckmarkCircle02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import Counter from "@notra/ui/components/Counter";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
@@ -38,7 +39,6 @@ import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { FEATURES } from "@/constants/features";
 import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
 

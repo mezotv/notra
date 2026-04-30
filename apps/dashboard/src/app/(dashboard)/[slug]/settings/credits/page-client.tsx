@@ -3,6 +3,7 @@
 import { Add01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import { Button } from "@notra/ui/components/ui/button";
 import type { ChartConfig } from "@notra/ui/components/ui/chart";
 import {
@@ -42,7 +43,6 @@ import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { PageContainer } from "@/components/layout/container";
-import { FEATURES } from "@/constants/features";
 import {
   CREDIT_RANGE_LABELS,
   CREDIT_RANGES,

@@ -1,11 +1,3 @@
-import { db } from "@notra/db/drizzle";
-import { contentTriggers } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { assertActiveSubscription } from "@/lib/billing/subscription";
-import { baseProcedure } from "@/lib/orpc/base";
 import {
   addRepository,
   configureOutput,
@@ -27,15 +19,23 @@ import {
   updateRepository,
   validateRepositoryAccess,
   validateRepositoryBranchExists,
-} from "@/lib/services/github-integration";
-import { getIntegrationsByOrganization } from "@/lib/services/integrations";
+} from "@notra/ai/integrations/github";
 import {
   deleteLinearIntegration,
   getLinearIntegrationById,
   getLinearIntegrationsByOrganization,
   updateLinearIntegration,
-} from "@/lib/services/linear-integration";
-import { deleteQstashSchedule } from "@/lib/triggers/qstash";
+} from "@notra/ai/integrations/linear";
+import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
+import { db } from "@notra/db/drizzle";
+import { contentTriggers } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
+import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { assertActiveSubscription } from "@/lib/billing/subscription";
+import { baseProcedure } from "@/lib/orpc/base";
+import { getIntegrationsByOrganization } from "@/lib/services/integrations";
 import {
   addRepositoryRequestSchema,
   configureOutputBodySchema,

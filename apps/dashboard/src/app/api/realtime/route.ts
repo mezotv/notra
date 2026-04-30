@@ -1,6 +1,6 @@
+import { realtime } from "@notra/ai/realtime";
 import { handle } from "@upstash/realtime";
 import { getServerSession } from "@/lib/auth/session";
-import { realtime } from "@/lib/realtime";
 
 const handler = realtime
   ? handle({

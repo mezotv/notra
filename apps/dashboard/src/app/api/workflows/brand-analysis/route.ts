@@ -5,6 +5,8 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { getBaseUrl } from "@notra/ai/qstash/triggers";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { assertPublicHttpUrl } from "@notra/utils/url";
@@ -17,8 +19,6 @@ import { createAILogger } from "evlog/ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { getFirecrawlClient } from "@/lib/firecrawl";
-import { redis } from "@/lib/redis";
-import { getBaseUrl } from "@/lib/triggers/qstash";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 import type {
   ProgressData,

@@ -2,6 +2,7 @@
 
 import { InformationCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import {
   Context,
   ContextContent,
@@ -19,7 +20,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import { useMemo, useState } from "react";
-import { FEATURES } from "@/constants/features";
 import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;

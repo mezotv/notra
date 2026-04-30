@@ -1,6 +1,6 @@
+import { redis } from "@notra/ai/utils/redis";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
-import { redis } from "@/lib/redis";
 
 export async function GET(request: NextRequest) {
   const baseUrl =

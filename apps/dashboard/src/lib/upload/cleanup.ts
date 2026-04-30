@@ -1,9 +1,9 @@
 import { DeleteObjectsCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { purgeOrganizationChatData } from "@notra/ai/chat/history";
+import { log } from "@notra/ai/evlog";
 import { db } from "@notra/db/drizzle";
 import { chatAttachments } from "@notra/db/schema";
 import { inArray } from "drizzle-orm";
-import { log } from "@/lib/evlog";
 import { getR2Config } from "./r2";
 
 const TRAILING_SLASH_REGEX = /\/$/;

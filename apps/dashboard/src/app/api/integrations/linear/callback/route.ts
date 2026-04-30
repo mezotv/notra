@@ -1,9 +1,9 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
 import {
   createLinearIntegration,
   getLinearIntegrationsByOrganization,
-} from "@/lib/services/linear-integration";
+} from "@notra/ai/integrations/linear";
+import { redis } from "@notra/ai/utils/redis";
+import { type NextRequest, NextResponse } from "next/server";
 import type {
   LinearOAuthState,
   LinearOrganizationResponse,

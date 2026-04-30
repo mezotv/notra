@@ -1,4 +1,10 @@
 import crypto from "node:crypto";
+import {
+  buildCronExpression,
+  createQstashSchedule,
+  deleteQstashSchedule,
+  normalizeCronConfig,
+} from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
@@ -17,12 +23,6 @@ import {
   ManualTriggerRunError,
   triggerManualAutomationRun,
 } from "@/lib/triggers/manual-run";
-import {
-  buildCronExpression,
-  createQstashSchedule,
-  deleteQstashSchedule,
-  normalizeCronConfig,
-} from "@/lib/triggers/qstash";
 import {
   configureScheduleBodySchema,
   configureTriggerBodySchema,

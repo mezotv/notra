@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
+import { getWebhookSecretByRepositoryId } from "@notra/ai/integrations/github";
+import { triggerEventNow } from "@notra/ai/qstash/triggers";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
-import { redis } from "@/lib/redis";
-import { getWebhookSecretByRepositoryId } from "@/lib/services/github-integration";
-import { triggerEventNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
   type GitHubEventType,

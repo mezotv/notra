@@ -5,10 +5,10 @@ import {
   setChatAbortFlag,
   setLastResponseStopped,
 } from "@notra/ai/chat/history";
+import { realtime } from "@notra/ai/realtime";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { realtime } from "@/lib/realtime";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;

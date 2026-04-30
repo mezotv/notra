@@ -1,3 +1,6 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { calculateTokenCostCents } from "@notra/ai/billing/token-pricing";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
   clearActiveChatStream,
@@ -6,7 +9,18 @@ import {
   loadChatHistory,
   replaceChatHistory,
 } from "@notra/ai/chat/history";
+import {
+  getGitHubIntegrationById,
+  getGitHubIntegrationsByOrganization,
+  getGitHubToolRepositoryContextByIntegrationId,
+} from "@notra/ai/integrations/github";
+import {
+  getLinearIntegrationById,
+  getLinearIntegrationsByOrganization,
+  getLinearToolContextByIntegrationId,
+} from "@notra/ai/integrations/linear";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
+import { realtime } from "@notra/ai/realtime";
 import { chatWorkflowPayloadSchema } from "@notra/ai/schemas/chat";
 import type {
   ChatUsageSnapshot,
@@ -17,20 +31,6 @@ import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { serve } from "@upstash/workflow/nextjs";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
-import { FEATURES } from "@/constants/features";
-import { autumn } from "@/lib/billing/autumn";
-import { calculateTokenCostCents } from "@/lib/billing/token-pricing";
-import { realtime } from "@/lib/realtime";
-import {
-  getGitHubIntegrationById,
-  getGitHubIntegrationsByOrganization,
-  getGitHubToolRepositoryContextByIntegrationId,
-} from "@/lib/services/github-integration";
-import {
-  getLinearIntegrationById,
-  getLinearIntegrationsByOrganization,
-  getLinearToolContextByIntegrationId,
-} from "@/lib/services/linear-integration";
 
 export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const parseResult = chatWorkflowPayloadSchema.safeParse(

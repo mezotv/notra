@@ -11,6 +11,7 @@ import {
   Upload04Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import type {
   ChatAttachment,
   ChatInputHandle,
@@ -62,7 +63,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { FEATURES } from "@/constants/features";
 import {
   MAX_CHAT_ATTACHMENTS,
   MAX_CHAT_FILE_SIZE,

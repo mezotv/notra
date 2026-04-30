@@ -1,3 +1,6 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { members, organizations, sessions } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
@@ -16,8 +19,6 @@ import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
-import { FEATURES } from "@/constants/features";
-import { autumn } from "@/lib/billing/autumn";
 import {
   TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
   TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
@@ -28,7 +29,6 @@ import {
   sendVerificationEmailAction,
   sendWelcomeEmailAction,
 } from "@/lib/email/actions";
-import { redis } from "@/lib/redis";
 import { seedSystemSkills } from "@/lib/skills/seed";
 import { organizationSlugSchema } from "@/schemas/organization";
 

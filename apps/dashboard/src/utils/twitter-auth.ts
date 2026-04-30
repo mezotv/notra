@@ -1,7 +1,7 @@
+import { decryptToken, encryptToken } from "@notra/ai/crypto/token-encryption";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
-import { decryptToken, encryptToken } from "@/lib/crypto/token-encryption";
 
 interface TokenResponse {
   access_token: string;

@@ -1,24 +1,24 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import {
+  calculateTokenCostCents,
+  shouldApplyMarkup,
+} from "@notra/ai/billing/token-pricing";
+import { useLogger, withEvlog } from "@notra/ai/evlog";
+import {
+  getGitHubIntegrationById,
+  getGitHubToolRepositoryContextByIntegrationId,
+} from "@notra/ai/integrations/github";
+import {
+  getLinearIntegrationById,
+  getLinearToolContextByIntegrationId,
+} from "@notra/ai/integrations/linear";
 import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
 import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { FEATURES } from "@/constants/features";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { autumn } from "@/lib/billing/autumn";
-import {
-  calculateTokenCostCents,
-  shouldApplyMarkup,
-} from "@/lib/billing/token-pricing";
-import { useLogger, withEvlog } from "@/lib/evlog";
-import {
-  getGitHubIntegrationById,
-  getGitHubToolRepositoryContextByIntegrationId,
-} from "@/lib/services/github-integration";
-import {
-  getLinearIntegrationById,
-  getLinearToolContextByIntegrationId,
-} from "@/lib/services/linear-integration";
 import { chatRequestSchema } from "@/schemas/content";
 
 interface RouteContext {

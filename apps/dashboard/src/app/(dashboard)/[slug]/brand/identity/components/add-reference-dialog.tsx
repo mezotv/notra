@@ -10,6 +10,7 @@ import {
   TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -37,7 +38,6 @@ import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FEATURES } from "@/constants/features";
 import {
   type ConnectedAccount,
   useConnectedAccounts,

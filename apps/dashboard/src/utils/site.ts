@@ -1,4 +1,4 @@
-import { getConfiguredAppUrl } from "@/utils/url";
+import { getConfiguredAppUrl } from "@notra/ai/utils/url";
 
 export const SITE_CONFIG = {
   title: "Notra",

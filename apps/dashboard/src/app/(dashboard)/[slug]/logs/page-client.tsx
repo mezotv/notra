@@ -6,6 +6,7 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import {
@@ -32,7 +33,6 @@ import {
 import { useEffect, useState } from "react";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { FEATURES } from "@/constants/features";
 import {
   SOURCE_LABELS,
   SOURCE_VALUES,

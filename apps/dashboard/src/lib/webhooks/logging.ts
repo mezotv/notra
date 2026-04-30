@@ -1,4 +1,4 @@
-import { redis } from "@/lib/redis";
+import { redis } from "@notra/ai/utils/redis";
 import type {
   IntegrationType,
   Log,
