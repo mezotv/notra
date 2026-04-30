@@ -6,6 +6,10 @@ import {
   CheckmarkSquare01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  CHAT_LINKEDIN_PREVIEW_TRUNCATION_LIMIT,
+  CHAT_PREVIEW_SAVE_TIMEOUT_MS,
+} from "@notra/ai/chat/constants";
 import { LinkedInPostPreview } from "@notra/ui/components/ai-elements/linkedin-post-preview";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
@@ -16,10 +20,6 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import {
-  CHAT_LINKEDIN_PREVIEW_TRUNCATION_LIMIT,
-  CHAT_PREVIEW_SAVE_TIMEOUT_MS,
-} from "@/constants/chat";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 type IncomingState = "draft" | "finished";

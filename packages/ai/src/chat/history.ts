@@ -1,12 +1,12 @@
-import { gateway } from "@notra/ai/gateway";
 import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull } from "drizzle-orm";
-import { CHAT_ABORT_FLAG_TTL_SECONDS } from "@/constants/chat";
-import type { ChatSessionSummary } from "@/types/chat";
-import { normalizeChatTitle, sortChatSessions } from "@/utils/chat";
-import { redis } from "./redis";
+import { gateway } from "../gateway";
+import { getChatRedis } from "./config";
+import { CHAT_ABORT_FLAG_TTL_SECONDS } from "./constants";
+import { normalizeChatTitle, sortChatSessions } from "./metadata";
+import type { ChatSessionSummary } from "./types";
 
 function activeStreamKey(organizationId: string, chatId: string) {
   return `chat:stream:${organizationId}:${chatId}`;
@@ -208,6 +208,7 @@ export async function getActiveChatStream(
   organizationId: string,
   chatId: string
 ): Promise<string | null> {
+  const redis = getChatRedis();
   if (!redis) {
     return null;
   }
@@ -222,6 +223,7 @@ export async function setActiveChatStream(
   chatId: string,
   streamId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -232,6 +234,7 @@ export async function clearActiveChatStream(
   organizationId: string,
   chatId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -243,6 +246,7 @@ export async function setChatAbortFlag(
   chatId: string,
   streamId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -256,6 +260,7 @@ export async function isChatAborted(
   chatId: string,
   streamId: string
 ): Promise<boolean> {
+  const redis = getChatRedis();
   if (!redis) {
     return false;
   }
@@ -270,6 +275,7 @@ export async function clearChatAbortFlag(
   chatId: string,
   streamId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -280,6 +286,7 @@ export async function setLastResponseStopped(
   organizationId: string,
   chatId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -290,6 +297,7 @@ export async function getLastResponseStopped(
   organizationId: string,
   chatId: string
 ): Promise<boolean> {
+  const redis = getChatRedis();
   if (!redis) {
     return false;
   }
@@ -301,6 +309,7 @@ export async function clearLastResponseStopped(
   organizationId: string,
   chatId: string
 ) {
+  const redis = getChatRedis();
   if (!redis) {
     return;
   }
@@ -422,6 +431,7 @@ export async function deleteChatSession(
     return false;
   }
 
+  const redis = getChatRedis();
   if (redis) {
     const streamId = await getActiveChatStream(organizationId, chatId);
     await Promise.allSettled([

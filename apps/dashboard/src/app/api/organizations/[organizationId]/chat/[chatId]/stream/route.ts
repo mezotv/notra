@@ -1,11 +1,11 @@
+import {
+  getActiveChatStream,
+  getChatStreamChannelName,
+} from "@notra/ai/chat/history";
 import type { UIMessageChunk } from "ai";
 import { UI_MESSAGE_STREAM_HEADERS } from "ai";
 import type { NextRequest } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import {
-  getActiveChatStream,
-  getChatStreamChannelName,
-} from "@/lib/chat-history";
 import { realtime } from "@/lib/realtime";
 
 interface RouteContext {

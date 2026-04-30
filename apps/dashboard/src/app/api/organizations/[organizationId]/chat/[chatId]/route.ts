@@ -1,6 +1,3 @@
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteChatSession,
   getActiveChatStream,
@@ -9,8 +6,11 @@ import {
   loadChatHistory,
   renameChatSession,
   setChatSessionPinned,
-} from "@/lib/chat-history";
-import { updateChatSessionSchema } from "@/schemas/chat";
+} from "@notra/ai/chat/history";
+import { updateChatSessionSchema } from "@notra/ai/chat/schemas";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;

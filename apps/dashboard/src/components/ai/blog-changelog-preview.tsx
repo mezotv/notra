@@ -6,6 +6,7 @@ import {
   CheckmarkSquare01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/chat/constants";
 import type { ContentType } from "@notra/ai/schemas/content";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { Badge } from "@notra/ui/components/ui/badge";
@@ -17,7 +18,6 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@/constants/chat";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 type IncomingState = "draft" | "finished";

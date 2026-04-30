@@ -11,6 +11,11 @@ import {
   Upload04Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type {
+  ChatAttachment,
+  ChatInputHandle,
+  ContextItem,
+} from "@notra/ai/chat/types";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
@@ -79,11 +84,6 @@ import {
   isAllowedChatMimeType,
   isImageMimeType,
 } from "@/lib/upload/mime";
-import type {
-  ChatAttachment,
-  ChatInputHandle,
-  ContextItem,
-} from "@/types/chat";
 import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import type { QueuedMessage } from "./chat-queue";

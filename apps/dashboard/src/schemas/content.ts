@@ -1,3 +1,4 @@
+import { UI_MESSAGES_MAX, uiMessageSchema } from "@notra/ai/chat/schemas";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_MARKDOWN_MAX_LENGTH,
@@ -6,7 +7,6 @@ import {
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-import { UI_MESSAGES_MAX, uiMessageSchema } from "./chat";
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_SCHEDULE_OUTPUT_TYPES,

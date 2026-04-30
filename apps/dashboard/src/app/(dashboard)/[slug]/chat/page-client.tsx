@@ -3,6 +3,18 @@
 import { useChat } from "@ai-sdk/react";
 import { ArrowDown01Icon, X } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  chatErrorPayloadSchema,
+  chatTransportRequestInputSchema,
+} from "@notra/ai/chat/schemas";
+import type {
+  ChatAttachment,
+  ChatImageAttachmentProps,
+  ChatInputHandle,
+  ChatMessagePart,
+  ChatUIMessage,
+  ContextItem,
+} from "@notra/ai/chat/types";
 import type { ContentType } from "@notra/ai/schemas/content";
 import {
   Message,
@@ -58,18 +70,6 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
-import {
-  chatErrorPayloadSchema,
-  chatTransportRequestInputSchema,
-} from "@/schemas/chat";
-import type {
-  ChatAttachment,
-  ChatImageAttachmentProps,
-  ChatInputHandle,
-  ChatMessagePart,
-  ChatUIMessage,
-  ContextItem,
-} from "@/types/chat";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,

@@ -1,20 +1,20 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
-import { toast } from "sonner";
-import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import {
-  chatSessionResponseSchema,
-  chatSessionsListResponseSchema,
-} from "@/schemas/chat";
-import type { ChatSessionSummary } from "@/types/chat";
 import {
   chatSessionPath,
   chatSessionsPath,
   chatSessionsQueryKey,
   sortChatSessions,
-} from "@/utils/chat";
+} from "@notra/ai/chat/metadata";
+import {
+  chatSessionResponseSchema,
+  chatSessionsListResponseSchema,
+} from "@notra/ai/chat/schemas";
+import type { ChatSessionSummary } from "@notra/ai/chat/types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
+import { toast } from "sonner";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
 export function useChatSessions() {
   const { activeOrganization } = useOrganizationsContext();

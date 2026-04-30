@@ -9,6 +9,9 @@ import {
   PinOffIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CHAT_TITLE_MAX_LENGTH } from "@notra/ai/chat/constants";
+import { normalizeChatTitle } from "@notra/ai/chat/metadata";
+import type { ChatSessionSummary } from "@notra/ai/chat/types";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -48,14 +51,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { CHAT_TITLE_MAX_LENGTH } from "@/constants/chat";
 import {
   useChatSessionMutations,
   useChatSessions,
 } from "@/lib/hooks/use-chat-sessions";
 import { cn } from "@/lib/utils";
-import type { ChatSessionSummary } from "@/types/chat";
-import { normalizeChatTitle } from "@/utils/chat";
 
 export function ChatHistoryNav() {
   const { activeOrganization } = useOrganizationsContext();

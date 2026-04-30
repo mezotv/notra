@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { SentIcon, TextIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { ContextItem, TextSelection } from "@notra/ai/chat/types";
 import {
   Avatar,
   AvatarFallback,
@@ -34,7 +35,6 @@ import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { sourceMetadataSchema } from "@/schemas/content";
-import type { ContextItem, TextSelection } from "@/types/chat";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";

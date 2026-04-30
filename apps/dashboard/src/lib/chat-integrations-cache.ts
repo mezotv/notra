@@ -1,5 +1,5 @@
+import { CHAT_INTEGRATIONS_CACHE_TTL_SECONDS } from "@notra/ai/chat/constants";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
-import { CHAT_INTEGRATIONS_CACHE_TTL_SECONDS } from "@/constants/chat";
 import {
   getGitHubIntegrationsByOrganization,
   getGitHubToolRepositoryContextByIntegrationId,

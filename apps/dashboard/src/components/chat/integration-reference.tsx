@@ -1,8 +1,8 @@
+import type { ContextItem } from "@notra/ai/chat/types";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { ContextItem } from "@/types/chat";
 
 const REFERENCE_ATTR = "data-integration-reference";
 

@@ -21,7 +21,8 @@
     "./types/*": "./src/types/*.ts",
     "./schemas/*": "./src/schemas/*.ts",
     "./utils/*": "./src/utils/*.ts",
-    "./constants/*": "./src/constants/*.ts"
+    "./constants/*": "./src/constants/*.ts",
+    "./chat/*": "./src/chat/*.ts"
   },
   "dependencies": {
     "@ai-sdk-tools/cache": "^1.2.0",

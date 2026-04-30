@@ -1,9 +1,9 @@
+import type { LanguageModelUsage, UIMessage } from "ai";
+import type { z } from "zod";
 import type {
   ContextItem as OrchestrationContextItem,
   TextSelection as OrchestrationTextSelection,
-} from "@notra/ai/types/orchestration";
-import type { LanguageModelUsage, UIMessage } from "ai";
-import type { z } from "zod";
+} from "../types/orchestration";
 import type {
   chatMessageMetadataSchema,
   chatModelSchema,
@@ -13,7 +13,7 @@ import type {
   storedChatPreferencesSchema,
   thinkingLevelSchema,
   updateChatSessionSchema,
-} from "@/schemas/chat";
+} from "./schemas";
 
 export type TextSelection = OrchestrationTextSelection;
 export type ContextItem = OrchestrationContextItem;

@@ -2,6 +2,11 @@
 
 import { Clock01Icon, CpuIcon, FlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type {
+  ChatMessageMetadata,
+  ChatModel,
+  ThinkingLevel,
+} from "@notra/ai/chat/types";
 import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
 import { Openai } from "@notra/ui/components/ui/svgs/openai";
 import { OpenaiDark } from "@notra/ui/components/ui/svgs/openaiDark";
@@ -12,11 +17,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import type { ReactNode } from "react";
 import { useShowAgentStats } from "@/lib/hooks/use-privacy-preferences";
-import type {
-  ChatMessageMetadata,
-  ChatModel,
-  ThinkingLevel,
-} from "@/types/chat";
 
 const MODEL_LABELS = {
   auto: "Auto",
