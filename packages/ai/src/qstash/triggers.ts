@@ -1,0 +1,198 @@
+import { Client as QStashClient } from "@upstash/qstash";
+import { Client as WorkflowClient } from "@upstash/workflow";
+import {
+  getConfiguredAppUrl,
+  getConfiguredWorkflowUrl,
+  requireConfiguredAppUrl,
+} from "../utils/url";
+
+export type WorkflowDelay =
+  | number
+  | `${bigint}s`
+  | `${bigint}m`
+  | `${bigint}h`
+  | `${bigint}d`;
+
+export interface CreateQstashScheduleProps {
+  triggerId: string;
+  cron: string;
+  scheduleId?: string;
+}
+
+export interface TriggerCronConfig {
+  frequency: "daily" | "weekly" | "monthly";
+  hour?: number;
+  minute?: number;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+}
+
+export interface EventWorkflowPayloadInput {
+  triggerId: string;
+  eventType: string;
+  eventAction: string;
+  eventData: Record<string, unknown>;
+  repositoryId: string;
+  deliveryId?: string;
+}
+
+function getQstashToken() {
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) {
+    throw new Error("QSTASH_TOKEN is not configured");
+  }
+  return token;
+}
+
+export function getAppUrl() {
+  return requireConfiguredAppUrl();
+}
+
+export function getBaseUrl() {
+  return getConfiguredWorkflowUrl() ?? getConfiguredAppUrl();
+}
+
+function getQStashClient() {
+  return new QStashClient({ token: getQstashToken() });
+}
+
+function getWorkflowClient() {
+  return new WorkflowClient({ token: getQstashToken() });
+}
+
+export function buildCronExpression(config?: TriggerCronConfig) {
+  const normalizedConfig = normalizeCronConfig(config);
+
+  if (!normalizedConfig) {
+    return null;
+  }
+
+  const minute = normalizedConfig.minute;
+  const hour = normalizedConfig.hour;
+
+  if (normalizedConfig.frequency === "weekly") {
+    const dayOfWeek =
+      "dayOfWeek" in normalizedConfig ? normalizedConfig.dayOfWeek : 1;
+    return `${minute} ${hour} * * ${dayOfWeek}`;
+  }
+
+  if (normalizedConfig.frequency === "monthly") {
+    const dayOfMonth =
+      "dayOfMonth" in normalizedConfig ? normalizedConfig.dayOfMonth : 1;
+    return `${minute} ${hour} ${dayOfMonth} * *`;
+  }
+
+  return `${minute} ${hour} * * *`;
+}
+
+export function normalizeCronConfig(config?: TriggerCronConfig) {
+  if (!config) {
+    return undefined;
+  }
+
+  const base = {
+    frequency: config.frequency,
+    hour: config.hour ?? 0,
+    minute: config.minute ?? 0,
+  } as const;
+
+  if (config.frequency === "weekly") {
+    return {
+      ...base,
+      dayOfWeek: config.dayOfWeek ?? 1,
+    };
+  }
+
+  if (config.frequency === "monthly") {
+    return {
+      ...base,
+      dayOfMonth: config.dayOfMonth ?? 1,
+    };
+  }
+
+  return base;
+}
+
+export async function createQstashSchedule({
+  triggerId,
+  cron,
+  scheduleId,
+}: CreateQstashScheduleProps) {
+  const client = getQStashClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/schedule`;
+
+  const result = await client.schedules.create({
+    ...(scheduleId && { scheduleId }),
+    destination,
+    cron,
+    body: JSON.stringify({ triggerId }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const resolvedScheduleId = result.scheduleId ?? scheduleId;
+
+  if (!resolvedScheduleId) {
+    throw new Error("QStash schedule id was not returned");
+  }
+
+  return resolvedScheduleId;
+}
+
+export async function deleteQstashSchedule(scheduleId: string) {
+  const client = getQStashClient();
+  await client.schedules.delete(scheduleId);
+}
+
+export async function triggerScheduleNow(
+  triggerId: string,
+  options?: { delay?: WorkflowDelay; manual?: boolean }
+) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/schedule`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: { triggerId, ...(options?.manual && { manual: true }) },
+    ...(options?.delay && { delay: options.delay }),
+  });
+
+  return result.workflowRunId;
+}
+
+export async function triggerEventNow(
+  payload: EventWorkflowPayloadInput,
+  options?: { delay?: WorkflowDelay }
+) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/event`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: payload,
+    ...(options?.delay && { delay: options.delay }),
+  });
+
+  return result.workflowRunId;
+}
+
+export async function triggerOnDemandContent(payload: unknown) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/on-demand-content`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: payload,
+  });
+
+  return result.workflowRunId;
+}

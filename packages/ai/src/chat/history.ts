@@ -187,6 +187,54 @@ export async function loadChatHistory(
   return row.messages as UIMessage[];
 }
 
+export async function createChatSession(
+  organizationId: string,
+  options?: { id?: string; title?: string }
+): Promise<ChatSessionSummary> {
+  const id = options?.id ?? generateChatId();
+  const title = normalizeChatTitle(options?.title ?? "New chat") || "New chat";
+
+  const [row] = await db
+    .insert(chatSessions)
+    .values({
+      id,
+      organizationId,
+      title,
+      messages: [] as unknown as Record<string, unknown>,
+    })
+    .returning();
+
+  if (!row) {
+    throw new Error("Failed to create chat session");
+  }
+
+  return toSessionSummary(row);
+}
+
+export async function getChatSession(
+  organizationId: string,
+  chatId: string
+): Promise<ChatSessionSummary | null> {
+  const row = await db
+    .select()
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.deletedAt)
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0]);
+
+  if (!row) {
+    return null;
+  }
+
+  return toSessionSummary(row);
+}
+
 export async function listChatSessions(
   organizationId: string
 ): Promise<ChatSessionSummary[]> {

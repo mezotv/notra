@@ -205,6 +205,16 @@
                   "PATCH /v1/schedules/{scheduleId}",
                   "DELETE /v1/schedules/{scheduleId}"
                 ]
+              },
+              {
+                "group": "Chats",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/chats",
+                  "POST /v1/chats",
+                  "GET /v1/chats/{chatId}",
+                  "POST /v1/chats/{chatId}"
+                ]
               }
             ]
           }

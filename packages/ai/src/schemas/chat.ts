@@ -15,6 +15,7 @@ export const chatModelSchema = z.enum([
 export const thinkingLevelSchema = z.enum(["off", "low", "medium", "high"]);
 
 export const chatMessageMetadataSchema = z.object({
+  chatId: z.string().min(1).optional(),
   model: chatModelSchema.optional(),
   requestedModel: chatModelSchema.optional(),
   thinkingLevel: thinkingLevelSchema.optional(),
