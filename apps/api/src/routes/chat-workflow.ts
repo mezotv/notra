@@ -4,6 +4,6 @@ import { chatWorkflowHandler } from "../lib/chat/workflow-handler";
 
 export const chatWorkflowRoutes = new OpenAPIHono();
 
-chatWorkflowRoutes.post("/workflows/chat", (c: Context) =>
+chatWorkflowRoutes.post("/internal/workflows/chat", (c: Context) =>
   chatWorkflowHandler(c)
 );

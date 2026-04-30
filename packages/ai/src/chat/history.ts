@@ -216,7 +216,13 @@ export async function getChatSession(
   chatId: string
 ): Promise<ChatSessionSummary | null> {
   const row = await db
-    .select()
+    .select({
+      id: chatSessions.id,
+      title: chatSessions.title,
+      createdAt: chatSessions.createdAt,
+      updatedAt: chatSessions.updatedAt,
+      pinnedAt: chatSessions.pinnedAt,
+    })
     .from(chatSessions)
     .where(
       and(
@@ -232,7 +238,13 @@ export async function getChatSession(
     return null;
   }
 
-  return toSessionSummary(row);
+  return {
+    chatId: row.id,
+    title: row.title,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    pinnedAt: row.pinnedAt?.toISOString() ?? null,
+  };
 }
 
 export async function listChatSessions(

@@ -7,7 +7,7 @@ import {
   clearLastResponseStopped,
   generateAndSetChatTitle,
   generateChatId,
-  isChatDeleted,
+  getChatSession,
   loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
@@ -89,8 +89,11 @@ export async function runChatMessage({
 
   const chatId = existingChatId ?? generateChatId();
 
-  if (existingChatId && (await isChatDeleted(organizationId, chatId))) {
-    return c.json({ error: "Chat not found" }, 404);
+  if (existingChatId) {
+    const existingChat = await getChatSession(organizationId, chatId);
+    if (!existingChat) {
+      return c.json({ error: "Chat not found" }, 404);
+    }
   }
 
   const existingMessages = existingChatId
@@ -145,7 +148,7 @@ export async function runChatMessage({
     }
 
     await getWorkflowClient().trigger({
-      url: `${getBaseUrl()}/v1/workflows/chat`,
+      url: `${getBaseUrl()}/internal/workflows/chat`,
       body: {
         requestId,
         organizationId,

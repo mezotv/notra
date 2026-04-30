@@ -338,15 +338,15 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
         }
       }
 
-      await clearActiveChatStream(organizationId, chatId);
       if (!isAbort) {
         throw error;
       }
     } finally {
       stopAbortPolling?.();
-      await clearChatAbortFlag(organizationId, chatId, latestMessage.id).catch(
-        () => undefined
-      );
+      await Promise.allSettled([
+        clearActiveChatStream(organizationId, chatId),
+        clearChatAbortFlag(organizationId, chatId, latestMessage.id),
+      ]);
     }
   }
 );

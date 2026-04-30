@@ -121,7 +121,7 @@ app.route("/v1", brandIdentitiesRoutes);
 app.route("/v1", integrationsRoutes);
 app.route("/v1", schedulesRoutes);
 app.route("/v1", chatsRoutes);
-app.route("/v1", chatWorkflowRoutes);
+app.route("/", chatWorkflowRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
   type: "http",
