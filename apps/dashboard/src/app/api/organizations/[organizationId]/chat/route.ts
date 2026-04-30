@@ -10,9 +10,9 @@ import {
   replaceChatHistory,
   setActiveChatStream,
 } from "@notra/ai/chat/history";
-import { buildChatFinishMetadata } from "@notra/ai/chat/metadata";
-import { standaloneChatRequestSchema } from "@notra/ai/chat/schemas";
-import type { ChatUsageSnapshot } from "@notra/ai/chat/types";
+import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { standaloneChatRequestSchema } from "@notra/ai/schemas/chat";
+import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";

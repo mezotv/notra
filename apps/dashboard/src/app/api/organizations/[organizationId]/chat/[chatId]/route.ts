@@ -7,7 +7,7 @@ import {
   renameChatSession,
   setChatSessionPinned,
 } from "@notra/ai/chat/history";
-import { updateChatSessionSchema } from "@notra/ai/chat/schemas";
+import { updateChatSessionSchema } from "@notra/ai/schemas/chat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";

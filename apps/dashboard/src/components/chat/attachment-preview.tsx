@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChatAttachment } from "@notra/ai/chat/types";
+import type { ChatAttachment } from "@notra/ai/types/chat";
 import {
   Dialog,
   DialogContent,

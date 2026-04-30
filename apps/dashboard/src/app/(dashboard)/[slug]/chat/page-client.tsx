@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   chatErrorPayloadSchema,
   chatTransportRequestInputSchema,
-} from "@notra/ai/chat/schemas";
+} from "@notra/ai/schemas/chat";
 import type {
   ChatAttachment,
   ChatImageAttachmentProps,
@@ -14,7 +14,7 @@ import type {
   ChatMessagePart,
   ChatUIMessage,
   ContextItem,
-} from "@notra/ai/chat/types";
+} from "@notra/ai/types/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
 import {
   Message,

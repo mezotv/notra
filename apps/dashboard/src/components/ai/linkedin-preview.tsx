@@ -9,7 +9,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   CHAT_LINKEDIN_PREVIEW_TRUNCATION_LIMIT,
   CHAT_PREVIEW_SAVE_TIMEOUT_MS,
-} from "@notra/ai/chat/constants";
+} from "@notra/ai/constants/chat";
 import { LinkedInPostPreview } from "@notra/ui/components/ai-elements/linkedin-post-preview";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";

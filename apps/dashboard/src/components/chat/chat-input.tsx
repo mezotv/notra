@@ -15,7 +15,7 @@ import type {
   ChatAttachment,
   ChatInputHandle,
   ContextItem,
-} from "@notra/ai/chat/types";
+} from "@notra/ai/types/chat";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,

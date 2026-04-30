@@ -2,7 +2,7 @@ import type {
   ChatModel,
   ContextItem,
   TextSelection,
-} from "@notra/ai/chat/types";
+} from "@notra/ai/types/chat";
 import type { GitHubRepository } from "@/types/integrations";
 
 export type ChatModelProvider = "anthropic" | "openai" | "auto";

@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { SentIcon, TextIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { ContextItem, TextSelection } from "@notra/ai/chat/types";
+import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
 import {
   Avatar,
   AvatarFallback,

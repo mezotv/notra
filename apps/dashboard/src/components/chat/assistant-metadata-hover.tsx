@@ -6,7 +6,7 @@ import type {
   ChatMessageMetadata,
   ChatModel,
   ThinkingLevel,
-} from "@notra/ai/chat/types";
+} from "@notra/ai/types/chat";
 import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
 import { Openai } from "@notra/ui/components/ui/svgs/openai";
 import { OpenaiDark } from "@notra/ui/components/ui/svgs/openaiDark";

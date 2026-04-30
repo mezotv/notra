@@ -1,4 +1,4 @@
-import { CHAT_ABORT_POLL_INTERVAL_MS } from "./constants";
+import { CHAT_ABORT_POLL_INTERVAL_MS } from "../constants/chat";
 import { isChatAborted } from "./history";
 
 interface StartChatAbortPollingArgs {

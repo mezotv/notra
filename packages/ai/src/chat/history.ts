@@ -4,9 +4,9 @@ import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull } from "drizzle-orm";
 import { gateway } from "../gateway";
 import { getChatRedis } from "./config";
-import { CHAT_ABORT_FLAG_TTL_SECONDS } from "./constants";
-import { normalizeChatTitle, sortChatSessions } from "./metadata";
-import type { ChatSessionSummary } from "./types";
+import { CHAT_ABORT_FLAG_TTL_SECONDS } from "../constants/chat";
+import { normalizeChatTitle, sortChatSessions } from "../utils/chat";
+import type { ChatSessionSummary } from "../types/chat";
 
 function activeStreamKey(organizationId: string, chatId: string) {
   return `chat:stream:${organizationId}:${chatId}`;

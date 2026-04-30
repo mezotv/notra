@@ -1,5 +1,5 @@
-import { CHAT_TITLE_MAX_LENGTH } from "./constants";
-import type { BuildChatFinishMetadataInput, ChatSessionSummary } from "./types";
+import { CHAT_TITLE_MAX_LENGTH } from "../constants/chat";
+import type { BuildChatFinishMetadataInput, ChatSessionSummary } from "../types/chat";
 
 export function buildChatFinishMetadata({
   streamStartedAt,

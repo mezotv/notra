@@ -1,4 +1,4 @@
-import type { ContextItem } from "@notra/ai/chat/types";
+import type { ContextItem } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";

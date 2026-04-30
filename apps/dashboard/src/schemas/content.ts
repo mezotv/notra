@@ -1,4 +1,4 @@
-import { UI_MESSAGES_MAX, uiMessageSchema } from "@notra/ai/chat/schemas";
+import { UI_MESSAGES_MAX, uiMessageSchema } from "@notra/ai/schemas/chat";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_MARKDOWN_MAX_LENGTH,

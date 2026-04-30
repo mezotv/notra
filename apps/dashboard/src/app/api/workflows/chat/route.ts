@@ -6,12 +6,12 @@ import {
   loadChatHistory,
   replaceChatHistory,
 } from "@notra/ai/chat/history";
-import { buildChatFinishMetadata } from "@notra/ai/chat/metadata";
-import { chatWorkflowPayloadSchema } from "@notra/ai/chat/schemas";
+import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { chatWorkflowPayloadSchema } from "@notra/ai/schemas/chat";
 import type {
   ChatUsageSnapshot,
   ChatWorkflowPayload,
-} from "@notra/ai/chat/types";
+} from "@notra/ai/types/chat";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
 import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
 import { serve } from "@upstash/workflow/nextjs";

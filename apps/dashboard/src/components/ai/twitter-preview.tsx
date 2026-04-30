@@ -6,7 +6,7 @@ import {
   CheckmarkSquare01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/chat/constants";
+import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/constants/chat";
 import { TwitterPostPreview } from "@notra/ui/components/ai-elements/twitter-post-preview";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";

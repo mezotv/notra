@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type {
   ContextItem as OrchestrationContextItem,
   TextSelection as OrchestrationTextSelection,
-} from "../types/orchestration";
+} from "./orchestration";
 import type {
   chatMessageMetadataSchema,
   chatModelSchema,
@@ -13,7 +13,7 @@ import type {
   storedChatPreferencesSchema,
   thinkingLevelSchema,
   updateChatSessionSchema,
-} from "./schemas";
+} from "../schemas/chat";
 
 export type TextSelection = OrchestrationTextSelection;
 export type ContextItem = OrchestrationContextItem;
