@@ -7,6 +7,7 @@ import {
   generateAndSetChatTitle,
   generateChatId,
   getChatSession,
+  getChatSessionByExternalChannel,
   loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
@@ -81,20 +82,38 @@ export async function runChatMessage({
     thinkingLevel,
     timezone,
     context: inputContext,
+    externalChannelId,
   } = body;
 
-  const chatId = existingChatId ?? generateChatId();
+  let resolvedChatId = existingChatId;
+  let isNewChat = resolvedChatId === null;
 
-  if (existingChatId) {
-    const existingChat = await getChatSession(organizationId, chatId);
+  if (resolvedChatId) {
+    const existingChat = await getChatSession(organizationId, resolvedChatId);
     if (!existingChat) {
       return c.json({ error: "Chat not found" }, 404);
     }
+  } else if (
+    externalChannelId &&
+    externalChannelId.source !== "dashboard" &&
+    externalChannelId.id
+  ) {
+    const existingByChannel = await getChatSessionByExternalChannel(
+      organizationId,
+      externalChannelId.source,
+      externalChannelId.id
+    );
+    if (existingByChannel) {
+      resolvedChatId = existingByChannel.chatId;
+      isNewChat = false;
+    }
   }
 
-  const existingMessages = existingChatId
-    ? await loadChatHistory(organizationId, chatId)
-    : [];
+  const chatId = resolvedChatId ?? generateChatId();
+
+  const existingMessages = isNewChat
+    ? []
+    : await loadChatHistory(organizationId, chatId);
 
   const userMessage: UIMessage = {
     id: nanoid(),
@@ -111,7 +130,12 @@ export async function runChatMessage({
     deriveContextFromValidatedIntegrations(validatedIntegrations);
 
   const [historySaved] = await Promise.all([
-    replaceChatHistory(organizationId, chatId, messages),
+    replaceChatHistory(
+      organizationId,
+      chatId,
+      messages,
+      isNewChat ? externalChannelId : undefined
+    ),
     setActiveChatStream(organizationId, chatId, userMessage.id),
     clearLastResponseStopped(organizationId, chatId),
   ]);
@@ -138,5 +162,6 @@ export async function runChatMessage({
     thinkingLevel,
     timezone,
     abortSignal: c.req.raw.signal,
+    externalChannelId,
   });
 }

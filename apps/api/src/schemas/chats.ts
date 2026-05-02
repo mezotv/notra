@@ -1,6 +1,24 @@
 import { z } from "@hono/zod-openapi";
-import { chatModelSchema, thinkingLevelSchema } from "@notra/ai/schemas/chat";
+import {
+  chatModelSchema,
+  externalChannelLookupSourceSchema,
+  externalChannelSourceSchema,
+  thinkingLevelSchema,
+} from "@notra/ai/schemas/chat";
 import { standaloneChatContextSchema } from "@notra/ai/schemas/standalone-chat";
+
+export const externalChannelIdSchema = z
+  .object({
+    source: externalChannelSourceSchema,
+    id: z.string().min(1).max(200).optional(),
+  })
+  .refine(
+    (value) =>
+      value.source === "dashboard" ||
+      (typeof value.id === "string" && value.id.length > 0),
+    { message: "id is required for discord and slack sources" }
+  )
+  .openapi("ExternalChannelId");
 
 export const chatSessionSummarySchema = z
   .object({
@@ -9,6 +27,7 @@ export const chatSessionSummarySchema = z
     createdAt: z.string(),
     updatedAt: z.string(),
     pinnedAt: z.string().nullable(),
+    externalChannelId: externalChannelIdSchema.nullable().optional(),
   })
   .openapi("ChatSessionSummary");
 
@@ -32,8 +51,24 @@ export const sendChatMessageRequestSchema = z
     thinkingLevel: thinkingLevelSchema.optional(),
     timezone: z.string().min(1).max(100).optional(),
     context: z.array(standaloneChatContextSchema).optional(),
+    externalChannelId: externalChannelIdSchema.optional(),
   })
   .openapi("SendChatMessageRequest");
+
+export const getChatByExternalQuerySchema = z.object({
+  source: externalChannelLookupSourceSchema.openapi({
+    param: { name: "source", in: "query" },
+    example: "discord",
+  }),
+  id: z
+    .string()
+    .min(1)
+    .max(200)
+    .openapi({
+      param: { name: "id", in: "query" },
+      example: "channel_123",
+    }),
+});
 
 export const sendChatParamsSchema = z.object({
   chatId: z

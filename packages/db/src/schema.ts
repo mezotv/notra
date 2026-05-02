@@ -51,6 +51,8 @@ export const chatSessions = pgTable(
     messages: jsonb("messages").notNull().default(sql`'[]'::jsonb`),
     pinnedAt: timestamp("pinned_at"),
     deletedAt: timestamp("deleted_at"),
+    externalChannelSource: text("external_channel_source"),
+    externalChannelId: text("external_channel_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -63,6 +65,15 @@ export const chatSessions = pgTable(
       table.organizationId,
       table.deletedAt
     ),
+    uniqueIndex("chatSessions_org_externalChannel_uidx")
+      .on(
+        table.organizationId,
+        table.externalChannelSource,
+        table.externalChannelId
+      )
+      .where(
+        sql`${table.externalChannelSource} IS NOT NULL AND ${table.externalChannelId} IS NOT NULL AND ${table.deletedAt} IS NULL`
+      ),
   ]
 );
 

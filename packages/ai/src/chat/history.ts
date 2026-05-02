@@ -4,7 +4,11 @@ import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull } from "drizzle-orm";
 import { CHAT_ABORT_FLAG_TTL_SECONDS } from "../constants/chat";
 import { gateway } from "../gateway";
-import type { ChatSessionSummary } from "../types/chat";
+import type {
+  ChatSessionSummary,
+  ExternalChannelId,
+  ExternalChannelLookupSource,
+} from "../types/chat";
 import { normalizeChatTitle, sortChatSessions } from "../utils/chat";
 import { getChatRedis } from "./config";
 
@@ -36,6 +40,22 @@ export function generateChatId() {
   return crypto.randomUUID();
 }
 
+function toExternalChannelId(
+  source: string | null,
+  id: string | null
+): ExternalChannelId | null {
+  if (!source) {
+    return null;
+  }
+  if (source === "dashboard") {
+    return { source };
+  }
+  if ((source === "discord" || source === "slack") && id) {
+    return { source, id };
+  }
+  return null;
+}
+
 function toSessionSummary(
   row: typeof chatSessions.$inferSelect
 ): ChatSessionSummary {
@@ -45,6 +65,10 @@ function toSessionSummary(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     pinnedAt: row.pinnedAt?.toISOString() ?? null,
+    externalChannelId: toExternalChannelId(
+      row.externalChannelSource,
+      row.externalChannelId
+    ),
   };
 }
 
@@ -75,7 +99,8 @@ async function upsertChatSession(
   organizationId: string,
   chatId: string,
   messages: UIMessage[],
-  mode: "append" | "replace"
+  mode: "append" | "replace",
+  externalChannelId?: ExternalChannelId | null
 ) {
   const existingRow = await db
     .select({
@@ -131,6 +156,8 @@ async function upsertChatSession(
       organizationId,
       title,
       messages: messages as unknown as Record<string, unknown>,
+      externalChannelSource: externalChannelId?.source ?? null,
+      externalChannelId: externalChannelId?.id ?? null,
     });
   }
 
@@ -156,9 +183,16 @@ export async function saveChatMessages(
 export async function replaceChatHistory(
   organizationId: string,
   chatId: string,
-  messages: UIMessage[]
+  messages: UIMessage[],
+  externalChannelId?: ExternalChannelId | null
 ): Promise<boolean> {
-  return upsertChatSession(organizationId, chatId, messages, "replace");
+  return upsertChatSession(
+    organizationId,
+    chatId,
+    messages,
+    "replace",
+    externalChannelId
+  );
 }
 
 export async function loadChatHistory(
@@ -189,7 +223,11 @@ export async function loadChatHistory(
 
 export async function createChatSession(
   organizationId: string,
-  options?: { id?: string; title?: string }
+  options?: {
+    id?: string;
+    title?: string;
+    externalChannelId?: ExternalChannelId | null;
+  }
 ): Promise<ChatSessionSummary> {
   const id = options?.id ?? generateChatId();
   const title = normalizeChatTitle(options?.title ?? "New chat") || "New chat";
@@ -201,6 +239,8 @@ export async function createChatSession(
       organizationId,
       title,
       messages: [] as unknown as Record<string, unknown>,
+      externalChannelSource: options?.externalChannelId?.source ?? null,
+      externalChannelId: options?.externalChannelId?.id ?? null,
     })
     .returning();
 
@@ -222,6 +262,8 @@ export async function getChatSession(
       createdAt: chatSessions.createdAt,
       updatedAt: chatSessions.updatedAt,
       pinnedAt: chatSessions.pinnedAt,
+      externalChannelSource: chatSessions.externalChannelSource,
+      externalChannelId: chatSessions.externalChannelId,
     })
     .from(chatSessions)
     .where(
@@ -244,7 +286,37 @@ export async function getChatSession(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     pinnedAt: row.pinnedAt?.toISOString() ?? null,
+    externalChannelId: toExternalChannelId(
+      row.externalChannelSource,
+      row.externalChannelId
+    ),
   };
+}
+
+export async function getChatSessionByExternalChannel(
+  organizationId: string,
+  source: ExternalChannelLookupSource,
+  id: string
+): Promise<ChatSessionSummary | null> {
+  const row = await db
+    .select()
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.externalChannelSource, source),
+        eq(chatSessions.externalChannelId, id),
+        isNull(chatSessions.deletedAt)
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0]);
+
+  if (!row) {
+    return null;
+  }
+
+  return toSessionSummary(row);
 }
 
 export async function listChatSessions(

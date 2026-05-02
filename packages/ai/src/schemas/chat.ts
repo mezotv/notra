@@ -14,6 +14,26 @@ export const chatModelSchema = z.enum([
 
 export const thinkingLevelSchema = z.enum(["off", "low", "medium", "high"]);
 
+export const externalChannelSourceSchema = z.enum([
+  "discord",
+  "slack",
+  "dashboard",
+]);
+
+export const externalChannelLookupSourceSchema = z.enum(["discord", "slack"]);
+
+export const externalChannelIdSchema = z
+  .object({
+    source: externalChannelSourceSchema,
+    id: z.string().min(1).max(200).optional(),
+  })
+  .refine(
+    (value) =>
+      value.source === "dashboard" ||
+      (typeof value.id === "string" && value.id.length > 0),
+    { message: "id is required for discord and slack sources" }
+  );
+
 export const chatMessageMetadataSchema = z.object({
   chatId: z.string().min(1).optional(),
   model: chatModelSchema.optional(),
@@ -27,6 +47,7 @@ export const chatMessageMetadataSchema = z.object({
   generationDurationMs: z.number().nonnegative().optional(),
   tokensPerSecond: z.number().nonnegative().optional(),
   createdAt: z.number().int().nonnegative().optional(),
+  externalChannelId: externalChannelIdSchema.optional(),
 });
 
 export const UI_MESSAGE_ID_MAX_LENGTH = 200;
@@ -133,6 +154,7 @@ export const chatSessionSummarySchema = z.object({
   updatedAt: z.string().min(1),
   createdAt: z.string().min(1),
   pinnedAt: z.string().min(1).nullable(),
+  externalChannelId: externalChannelIdSchema.nullable().optional(),
 });
 
 export const chatSessionResponseSchema = z.object({

@@ -29,6 +29,7 @@ export async function createDirectStandaloneChatResponse({
   thinkingLevel,
   timezone,
   abortSignal,
+  externalChannelId,
 }: DirectStandaloneChatArgs): Promise<Response> {
   const autumnClient = autumn;
   const streamId = messages.at(-1)?.id;
@@ -163,6 +164,7 @@ export async function createDirectStandaloneChatResponse({
             thinkingLevel: effectiveThinkingLevel,
             requestedThinkingLevel: thinkingLevel,
             createdAt: streamStartedAt,
+            ...(externalChannelId ? { externalChannelId } : {}),
           };
         }
 

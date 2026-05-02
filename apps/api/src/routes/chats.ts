@@ -1,6 +1,7 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import {
   getChatSession,
+  getChatSessionByExternalChannel,
   listChatSessions,
   loadChatHistory,
 } from "@notra/ai/chat/history";
@@ -9,6 +10,8 @@ import type { Context } from "hono";
 import { nanoid } from "nanoid";
 import { runChatMessage } from "../lib/chat/run";
 import {
+  chatSessionSummarySchema,
+  getChatByExternalQuerySchema,
   getChatParamsSchema,
   getChatResponseSchema,
   getChatsResponseSchema,
@@ -33,6 +36,26 @@ const listChatsRoute = createRoute({
     },
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
+    503: errorResponse("Authentication service unavailable"),
+  },
+});
+
+const getChatByExternalRoute = createRoute({
+  method: "get",
+  path: "/chats/by-external",
+  tags: ["Chats"],
+  operationId: "getChatByExternalChannel",
+  summary: "Get a chat by external channel id",
+  request: { query: getChatByExternalQuerySchema },
+  responses: {
+    200: {
+      description: "Chat fetched successfully",
+      content: { "application/json": { schema: chatSessionSummarySchema } },
+    },
+    400: errorResponse("Invalid query params"),
+    401: errorResponse("Missing or invalid API key"),
+    403: errorResponse("Forbidden"),
+    404: errorResponse("Chat not found"),
     503: errorResponse("Authentication service unavailable"),
   },
 });
@@ -68,6 +91,25 @@ chatsRoutes.openapi(listChatsRoute, async (c) => {
 
   const chats = await listChatSessions(orgId);
   return c.json({ chats }, 200);
+});
+
+chatsRoutes.openapi(getChatByExternalRoute, async (c) => {
+  const orgId = getOrganizationId(c);
+  if (!orgId) {
+    return c.json(
+      { error: "Forbidden: API key must be scoped to an organization" },
+      403
+    );
+  }
+
+  const { source, id } = c.req.valid("query");
+  const chat = await getChatSessionByExternalChannel(orgId, source, id);
+
+  if (!chat) {
+    return c.json({ error: "Chat not found" }, 404);
+  }
+
+  return c.json(chat, 200);
 });
 
 chatsRoutes.openapi(getChatRoute, async (c) => {

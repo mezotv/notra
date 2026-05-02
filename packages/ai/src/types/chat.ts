@@ -7,6 +7,9 @@ import type {
   chatSessionSummarySchema,
   chatTransportRequestInputSchema,
   chatWorkflowPayloadSchema,
+  externalChannelIdSchema,
+  externalChannelLookupSourceSchema,
+  externalChannelSourceSchema,
   storedChatPreferencesSchema,
   thinkingLevelSchema,
   updateChatSessionSchema,
@@ -25,6 +28,11 @@ export type ChatMessageMetadata = z.infer<typeof chatMessageMetadataSchema>;
 export type ChatUIMessage = UIMessage<ChatMessageMetadata>;
 export type StoredChatPreferences = z.infer<typeof storedChatPreferencesSchema>;
 export type ChatSessionSummary = z.infer<typeof chatSessionSummarySchema>;
+export type ExternalChannelSource = z.infer<typeof externalChannelSourceSchema>;
+export type ExternalChannelLookupSource = z.infer<
+  typeof externalChannelLookupSourceSchema
+>;
+export type ExternalChannelId = z.infer<typeof externalChannelIdSchema>;
 export type UpdateChatSessionInput = z.infer<typeof updateChatSessionSchema>;
 export type ChatWorkflowPayload = z.infer<typeof chatWorkflowPayloadSchema>;
 export type ChatTransportRequestInput = z.infer<
