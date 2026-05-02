@@ -72,7 +72,7 @@ export const chatSessions = pgTable(
         table.externalChannelId
       )
       .where(
-        sql`${table.externalChannelSource} IS NOT NULL AND ${table.externalChannelId} IS NOT NULL AND ${table.deletedAt} IS NULL`
+        sql`${table.externalChannelSource} IN ('discord', 'slack') AND ${table.externalChannelId} IS NOT NULL AND ${table.deletedAt} IS NULL`
       ),
   ]
 );

@@ -25,7 +25,7 @@ export const externalChannelLookupSourceSchema = z.enum(["discord", "slack"]);
 export const externalChannelIdSchema = z
   .object({
     source: externalChannelSourceSchema,
-    id: z.string().min(1).max(200).optional(),
+    id: z.string().max(200).optional(),
   })
   .refine(
     (value) =>

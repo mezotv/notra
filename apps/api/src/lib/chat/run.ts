@@ -3,11 +3,11 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import {
+  claimChatSessionForExternalChannel,
   clearLastResponseStopped,
   generateAndSetChatTitle,
   generateChatId,
   getChatSession,
-  getChatSessionByExternalChannel,
   loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
@@ -87,6 +87,7 @@ export async function runChatMessage({
 
   let resolvedChatId = existingChatId;
   let isNewChat = resolvedChatId === null;
+  let externalChannelClaimed = false;
 
   if (resolvedChatId) {
     const existingChat = await getChatSession(organizationId, resolvedChatId);
@@ -98,15 +99,15 @@ export async function runChatMessage({
     externalChannelId.source !== "dashboard" &&
     externalChannelId.id
   ) {
-    const existingByChannel = await getChatSessionByExternalChannel(
+    const claim = await claimChatSessionForExternalChannel(
       organizationId,
       externalChannelId.source,
-      externalChannelId.id
+      externalChannelId.id,
+      generateChatId()
     );
-    if (existingByChannel) {
-      resolvedChatId = existingByChannel.chatId;
-      isNewChat = false;
-    }
+    resolvedChatId = claim.chatId;
+    isNewChat = claim.created;
+    externalChannelClaimed = true;
   }
 
   const chatId = resolvedChatId ?? generateChatId();
@@ -129,12 +130,15 @@ export async function runChatMessage({
     inputContext ??
     deriveContextFromValidatedIntegrations(validatedIntegrations);
 
+  const externalChannelIdForInsert =
+    isNewChat && !externalChannelClaimed ? externalChannelId : undefined;
+
   const [historySaved] = await Promise.all([
     replaceChatHistory(
       organizationId,
       chatId,
       messages,
-      isNewChat ? externalChannelId : undefined
+      externalChannelIdForInsert
     ),
     setActiveChatStream(organizationId, chatId, userMessage.id),
     clearLastResponseStopped(organizationId, chatId),

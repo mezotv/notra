@@ -1,5 +1,5 @@
 {
-  "id": "66461fb7-b1ca-4c56-8b04-a2277c7c8939",
+  "id": "425982be-a34e-4a7e-b2a8-8843c7518062",
   "prevId": "fb59f25f-786b-4e0f-9996-5ce64a68e14c",
   "version": "7",
   "dialect": "postgresql",
@@ -683,7 +683,7 @@
             }
           ],
           "isUnique": true,
-          "where": "\"chat_sessions\".\"external_channel_source\" IS NOT NULL AND \"chat_sessions\".\"external_channel_id\" IS NOT NULL AND \"chat_sessions\".\"deleted_at\" IS NULL",
+          "where": "\"chat_sessions\".\"external_channel_source\" IN ('discord', 'slack') AND \"chat_sessions\".\"external_channel_id\" IS NOT NULL AND \"chat_sessions\".\"deleted_at\" IS NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}

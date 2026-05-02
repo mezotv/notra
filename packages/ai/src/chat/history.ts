@@ -293,6 +293,44 @@ export async function getChatSession(
   };
 }
 
+export async function claimChatSessionForExternalChannel(
+  organizationId: string,
+  source: ExternalChannelLookupSource,
+  id: string,
+  newChatId: string
+): Promise<{ chatId: string; created: boolean }> {
+  const inserted = await db
+    .insert(chatSessions)
+    .values({
+      id: newChatId,
+      organizationId,
+      title: "New chat",
+      messages: [] as unknown as Record<string, unknown>,
+      externalChannelSource: source,
+      externalChannelId: id,
+    })
+    .onConflictDoNothing()
+    .returning({ id: chatSessions.id });
+
+  if (inserted.length > 0) {
+    return { chatId: newChatId, created: true };
+  }
+
+  const existing = await getChatSessionByExternalChannel(
+    organizationId,
+    source,
+    id
+  );
+
+  if (!existing) {
+    throw new Error(
+      "Chat insert conflicted but no matching external-channel chat found"
+    );
+  }
+
+  return { chatId: existing.chatId, created: false };
+}
+
 export async function getChatSessionByExternalChannel(
   organizationId: string,
   source: ExternalChannelLookupSource,
