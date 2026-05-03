@@ -1,3 +1,4 @@
+import "./tcc";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";

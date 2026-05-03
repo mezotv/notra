@@ -1,4 +1,5 @@
 import type { AILogTarget } from "@notra/ai/observability";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { streamText, UIMessage } from "ai";
 
 export interface ValidatedGitHubIntegration {
@@ -105,6 +106,7 @@ export interface OrchestrateInput {
   maxSteps?: number;
   log?: AILogTarget;
   timezone?: string;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface OrchestrateResult {

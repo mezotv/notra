@@ -45,7 +45,8 @@
     "AXIOM_AI_DATASET",
     "AXIOM_ORG_ID",
     "SKILLS_SH_API_KEY",
-    "FEEDBACK_EMAIL_TO"
+    "FEEDBACK_EMAIL_TO",
+    "TCC_API_KEY"
   ],
   "envMode": "strict",
   "tasks": {

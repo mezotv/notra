@@ -28,6 +28,7 @@ import { standaloneChatRequestSchema } from "@notra/ai/schemas/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
 import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import type { UIMessage } from "ai";
 import type { CheckResponse } from "autumn-js";
@@ -35,6 +36,7 @@ import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -157,6 +159,12 @@ export const POST = withEvlog(async function POST(
     }
 
     const canUseWorkflowStreaming = canUseUpstashWorkflowStreaming();
+    const telemetryMetadata = buildStandaloneChatTelemetryMetadata({
+      chatId,
+      organizationId,
+      routeName: "/api/organizations/[organizationId]/chat",
+      userId: auth.context.user.id,
+    });
 
     if (!canUseWorkflowStreaming) {
       return createDirectStandaloneChatResponse({
@@ -173,6 +181,7 @@ export const POST = withEvlog(async function POST(
         thinkingLevel: parseResult.data.thinkingLevel,
         timezone: parseResult.data.timezone,
         abortSignal: request.signal,
+        telemetryMetadata,
       });
     }
 
@@ -303,6 +312,7 @@ async function createDirectStandaloneChatResponse({
   thinkingLevel,
   timezone,
   abortSignal,
+  telemetryMetadata,
 }: {
   organizationId: string;
   chatId: string;
@@ -317,6 +327,7 @@ async function createDirectStandaloneChatResponse({
   thinkingLevel?: "off" | "low" | "medium" | "high";
   timezone?: string;
   abortSignal?: AbortSignal;
+  telemetryMetadata: TccMetadata;
 }) {
   const autumnClient = autumn;
   const streamId = messages.at(-1)?.id;
@@ -374,6 +385,7 @@ async function createDirectStandaloneChatResponse({
         thinkingLevel,
         timezone,
         abortSignal: combinedAbortSignal,
+        telemetryMetadata,
       },
       {
         preValidatedIntegrations: validatedIntegrations,

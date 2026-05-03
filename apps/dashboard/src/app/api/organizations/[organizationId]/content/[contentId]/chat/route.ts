@@ -132,6 +132,16 @@ export const POST = withEvlog(async function POST(
         maxSteps: 50,
         log,
         timezone,
+        telemetryMetadata: {
+          contentId,
+          contentType: contentType ?? "unknown",
+          feature: "content_chat",
+          organizationId,
+          routeName:
+            "/api/organizations/[organizationId]/content/[contentId]/chat",
+          "tcc.conversational": "true",
+          userId: auth.context.user.id,
+        },
       },
       {
         integrationFetchers: {

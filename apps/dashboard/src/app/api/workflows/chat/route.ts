@@ -144,6 +144,15 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         enableThinking,
         thinkingLevel,
         timezone,
+        telemetryMetadata: {
+          chatId,
+          feature: "standalone_chat",
+          organizationId,
+          routeName: "/api/workflows/chat",
+          "tcc.conversational": "true",
+          "tcc.sessionId": chatId,
+          userId: parseResult.data.userId,
+        },
       },
       {
         integrationFetchers: {

@@ -17,6 +17,7 @@ import type {
   StandaloneChatDeps,
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
   isToolUIPart,
@@ -58,6 +59,7 @@ export async function orchestrateStandaloneChat(
     thinkingLevel = "medium",
     abortSignal,
     timezone,
+    telemetryMetadata,
   } = input;
 
   const log = deps?.log ?? inputLog;
@@ -95,7 +97,9 @@ export async function orchestrateStandaloneChat(
     const decision = await routeMessage(
       lastUserMessage,
       hasGitHub || hasLinear,
-      log
+      log,
+      hasNonTextPartsOnLatestTurn,
+      telemetryMetadata
     );
     const auto = selectAutoModel(decision);
     selectedModel = auto.model;
@@ -196,6 +200,7 @@ export async function orchestrateStandaloneChat(
       messages: addAnthropicPromptCaching(stepMessages, routingDecision.model),
     }),
     abortSignal,
+    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     onChunk({ chunk }) {
       if (firstChunkFired) {
         return;

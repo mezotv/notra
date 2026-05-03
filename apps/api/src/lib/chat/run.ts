@@ -21,6 +21,7 @@ import { nanoid } from "nanoid";
 import type { sendChatMessageRequestSchema } from "../../schemas/chats";
 import { deriveContextFromValidatedIntegrations } from "./context";
 import { createDirectStandaloneChatResponse } from "./direct-stream";
+import { buildApiChatTelemetryMetadata } from "./tcc";
 
 type SendChatMessageInput = z.infer<typeof sendChatMessageRequestSchema>;
 
@@ -111,6 +112,7 @@ export async function runChatMessage({
   }
 
   const chatId = resolvedChatId ?? generateChatId();
+  const auth = c.get("auth") as { keyId?: string } | undefined;
 
   const existingMessages = isNewChat
     ? []
@@ -167,5 +169,13 @@ export async function runChatMessage({
     timezone,
     abortSignal: c.req.raw.signal,
     externalChannelId,
+    telemetryMetadata: buildApiChatTelemetryMetadata({
+      apiKeyId: auth?.keyId,
+      chatId,
+      externalChannelId: externalChannelId?.id,
+      externalChannelSource: externalChannelId?.source,
+      existingChatId,
+      organizationId,
+    }),
   });
 }

@@ -30,6 +30,7 @@ export async function createDirectStandaloneChatResponse({
   timezone,
   abortSignal,
   externalChannelId,
+  telemetryMetadata,
 }: DirectStandaloneChatArgs): Promise<Response> {
   const autumnClient = autumn;
   const streamId = messages.at(-1)?.id;
@@ -84,6 +85,7 @@ export async function createDirectStandaloneChatResponse({
         thinkingLevel,
         timezone,
         abortSignal: combinedAbortSignal,
+        telemetryMetadata,
       },
       {
         preValidatedIntegrations: validatedIntegrations,
