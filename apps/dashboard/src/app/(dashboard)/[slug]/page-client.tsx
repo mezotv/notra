@@ -50,7 +50,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const greeting = getGreeting(new Date());
   const userName = session?.user?.name?.trim();
   const greetingText = userName ? `${greeting}, ${userName}!` : `${greeting}!`;
-  const posts = data?.pages.flatMap((page) => page.posts) ?? [];
+  const posts = data?.posts ?? [];
   const visibleGenerations = activeGenerations?.slice(0, 3) ?? [];
   const hasActiveGenerations = visibleGenerations.length > 0;
   const maxPreviewPosts = Math.max(0, 3 - visibleGenerations.length);

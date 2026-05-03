@@ -43,8 +43,8 @@ export const webhookLogsQuerySchema = z.object({
 });
 
 export const contentListQuerySchema = z.object({
-  cursor: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(12),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(12),
   date: z.string().optional(),
 });
 
