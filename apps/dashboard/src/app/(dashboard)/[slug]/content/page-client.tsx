@@ -134,10 +134,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
 
-  const [page, setPage] = useQueryState(
+  const [rawPage, setPage] = useQueryState(
     "page",
     parseAsInteger.withDefault(1).withOptions({ clearOnDefault: true })
   );
+  const page = Math.max(1, rawPage);
 
   const { data, isPending } = usePosts(organizationId, page);
   const { data: activeGenerations } = useActiveGenerations(organizationId);
