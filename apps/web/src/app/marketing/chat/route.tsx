@@ -126,7 +126,9 @@ export async function GET(request: NextRequest) {
 
   const fontText = `${dateStr} ${headline} ${SUGGESTIONS.map(
     (s) => `${s.title} ${s.prompt}`
-  ).join(" ")} Send a message... (type @ to add context) Add context Medium Auto Send N ↵ …`;
+  ).join(
+    " "
+  )} Send a message... (type @ to add context) Add context Medium Auto Send N ↵ …`;
 
   const [interRegular, interMedium, interSemibold, bgJpg, notraSvg] =
     await Promise.all([
@@ -308,7 +310,9 @@ export async function GET(request: NextRequest) {
                   <span>Add context</span>
                 </div>
 
-                <div style={{ display: "flex", marginLeft: "auto", gap: "6px" }}>
+                <div
+                  style={{ display: "flex", marginLeft: "auto", gap: "6px" }}
+                >
                   <div
                     style={{
                       display: "flex",
@@ -378,8 +382,7 @@ export async function GET(request: NextRequest) {
                   display: "flex",
                   flexDirection: "column",
                   padding: "10px 4px",
-                  borderTop:
-                    i === 0 ? "none" : "1px solid rgba(0, 0, 0, 0.1)",
+                  borderTop: i === 0 ? "none" : "1px solid rgba(0, 0, 0, 0.1)",
                 }}
               >
                 <div
