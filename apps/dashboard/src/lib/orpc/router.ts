@@ -7,6 +7,7 @@ import { feedbackRouter } from "./routers/feedback";
 import { githubRouter } from "./routers/github";
 import { integrationsRouter } from "./routers/integrations";
 import { logsRouter } from "./routers/logs";
+import { marketingChatRouter } from "./routers/marketing-chat";
 import { notificationsRouter } from "./routers/notifications";
 import { onboardingRouter } from "./routers/onboarding";
 import { searchRouter } from "./routers/search";
@@ -25,6 +26,7 @@ export const dashboardRouter = {
   github: githubRouter,
   integrations: integrationsRouter,
   logs: logsRouter,
+  marketingChat: marketingChatRouter,
   notifications: notificationsRouter,
   onboarding: onboardingRouter,
   search: searchRouter,
