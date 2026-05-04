@@ -17,7 +17,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.redirect(`${baseUrl}/?error=invalid_request`);
+      const missingOrganization = parsed.error.issues.some(
+        (issue) => issue.path[0] === "organizationId"
+      );
+      const errorParam = missingOrganization
+        ? "missing_organization"
+        : "invalid_request";
+      return NextResponse.redirect(`${baseUrl}/?error=${errorParam}`);
     }
 
     const { organizationId, callbackPath } = parsed.data;

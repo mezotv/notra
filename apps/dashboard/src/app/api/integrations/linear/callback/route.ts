@@ -40,8 +40,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?error=expired_state`);
     }
 
-    await redis.del(`linear_oauth:${state}`);
-
     const oauthState: LinearOAuthState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
 
@@ -63,6 +61,8 @@ export async function GET(request: NextRequest) {
       }
       throw error;
     }
+
+    await redis.del(`linear_oauth:${state}`);
 
     const clientId = process.env.LINEAR_CLIENT_ID;
     const clientSecret = process.env.LINEAR_CLIENT_SECRET;
