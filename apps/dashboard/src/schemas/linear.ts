@@ -41,3 +41,9 @@ export const linearIntegrationIdParamSchema = z.object({
 export type LinearIntegrationIdParam = z.infer<
   typeof linearIntegrationIdParamSchema
 >;
+
+export const linearAuthorizeQuerySchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  callbackPath: z.string().min(1).default("/"),
+});
+export type LinearAuthorizeQuery = z.infer<typeof linearAuthorizeQuerySchema>;

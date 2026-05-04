@@ -3,7 +3,11 @@ import {
   getLinearIntegrationsByOrganization,
 } from "@notra/ai/integrations/linear";
 import { redis } from "@notra/ai/utils/redis";
+import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { getServerSession } from "@/lib/auth/session";
+import { linearOAuthErrorParam } from "@/lib/integrations/linear/oauth-errors";
 import type {
   LinearOAuthState,
   LinearOrganizationResponse,
@@ -40,6 +44,25 @@ export async function GET(request: NextRequest) {
 
     const oauthState: LinearOAuthState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
+
+    const { session } = await getServerSession({ headers: request.headers });
+    if (!session?.userId || session.userId !== oauthState.userId) {
+      return NextResponse.redirect(`${baseUrl}/?error=session_mismatch`);
+    }
+
+    try {
+      await assertOrganizationAccess({
+        headers: request.headers,
+        organizationId: oauthState.organizationId,
+      });
+    } catch (error) {
+      if (error instanceof ORPCError) {
+        return NextResponse.redirect(
+          `${baseUrl}/?error=${linearOAuthErrorParam(error.status, "forbidden")}`
+        );
+      }
+      throw error;
+    }
 
     const clientId = process.env.LINEAR_CLIENT_ID;
     const clientSecret = process.env.LINEAR_CLIENT_SECRET;

@@ -1,6 +1,9 @@
 import { redis } from "@notra/ai/utils/redis";
+import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "@/lib/auth/session";
+import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { linearOAuthErrorParam } from "@/lib/integrations/linear/oauth-errors";
+import { linearAuthorizeQuerySchema } from "@/schemas/linear";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -8,16 +11,31 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get("organizationId");
-    const callbackPath = searchParams.get("callbackPath") ?? "/";
+    const parsed = linearAuthorizeQuerySchema.safeParse({
+      organizationId: searchParams.get("organizationId") ?? undefined,
+      callbackPath: searchParams.get("callbackPath") ?? undefined,
+    });
 
-    if (!organizationId) {
+    if (!parsed.success) {
       return NextResponse.redirect(`${baseUrl}/?error=missing_organization`);
     }
 
-    const { session } = await getServerSession({ headers: request.headers });
-    if (!session?.userId) {
-      return NextResponse.redirect(`${baseUrl}/?error=not_authenticated`);
+    const { organizationId, callbackPath } = parsed.data;
+
+    let userId: string;
+    try {
+      const access = await assertOrganizationAccess({
+        headers: request.headers,
+        organizationId,
+      });
+      userId = access.user.id;
+    } catch (error) {
+      if (error instanceof ORPCError) {
+        return NextResponse.redirect(
+          `${baseUrl}/?error=${linearOAuthErrorParam(error.status)}`
+        );
+      }
+      throw error;
     }
 
     const clientId = process.env.LINEAR_CLIENT_ID;
@@ -32,7 +50,7 @@ export async function GET(request: NextRequest) {
       `linear_oauth:${state}`,
       JSON.stringify({
         organizationId,
-        userId: session.userId,
+        userId,
         callbackPath,
       }),
       { ex: 600 }
