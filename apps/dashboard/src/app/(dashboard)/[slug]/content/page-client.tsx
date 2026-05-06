@@ -430,7 +430,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               </PaginationItem>
               {getPageNumbers(page, totalPages).map((pageNumber, i) =>
                 pageNumber === "ellipsis" ? (
-                  <PaginationItem key={`ellipsis-${i}`}>
+                  <PaginationItem key={`ellipsis-${page}-${i}`}>
                     <PaginationEllipsis />
                   </PaginationItem>
                 ) : (

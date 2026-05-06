@@ -3,6 +3,9 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 
+const BRAND_IDENTITY_CARDS = ["overview", "voice"];
+const BRAND_IDENTITY_LINES = ["one", "two", "three", "four", "summary"];
+
 export function BrandIdentityPageSkeleton() {
   const id = useId();
   return (
@@ -13,19 +16,19 @@ export function BrandIdentityPageSkeleton() {
           <Skeleton className="h-5 w-80" />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
+          {BRAND_IDENTITY_CARDS.map((card) => (
             <div
               className="rounded-lg border border-border/80 bg-muted/80 p-2"
-              key={`${id}-card-${i}`}
+              key={`${id}-card-${card}`}
             >
               <div className="px-2 py-1.5">
                 <Skeleton className="h-6 w-32" />
               </div>
               <div className="space-y-3 rounded-lg border border-border/80 bg-background px-4 py-3">
-                {Array.from({ length: 5 }).map((_, j) => (
+                {BRAND_IDENTITY_LINES.map((line) => (
                   <Skeleton
-                    className={`h-4 ${j === 4 ? "w-2/3" : "w-full"}`}
-                    key={`${id}-line-${i}-${j}`}
+                    className={`h-4 ${line === "summary" ? "w-2/3" : "w-full"}`}
+                    key={`${id}-line-${card}-${line}`}
                   />
                 ))}
               </div>

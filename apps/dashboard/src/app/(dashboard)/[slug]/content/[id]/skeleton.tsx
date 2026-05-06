@@ -3,6 +3,17 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 
+const CONTENT_DETAIL_LINES = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "summary",
+];
+
 export function ContentDetailSkeleton() {
   const id = useId();
   return (
@@ -17,10 +28,10 @@ export function ContentDetailSkeleton() {
             <Skeleton className="h-6 w-32" />
           </div>
           <div className="space-y-3 rounded-lg border border-border/80 bg-background px-4 py-3">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {CONTENT_DETAIL_LINES.map((line) => (
               <Skeleton
-                className={`h-4 ${i === 7 ? "w-2/3" : "w-full"}`}
-                key={`${id}-line-${i}`}
+                className={`h-4 ${line === "summary" ? "w-2/3" : "w-full"}`}
+                key={`${id}-line-${line}`}
               />
             ))}
           </div>

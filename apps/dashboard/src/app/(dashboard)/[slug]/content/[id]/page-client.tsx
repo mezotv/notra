@@ -618,6 +618,12 @@ export default function PageClient({
   }
 
   const content = data.content;
+  let statusButtonLabel = "Publish";
+  if (isTogglingStatus) {
+    statusButtonLabel = "Updating...";
+  } else if (content.status === "published") {
+    statusButtonLabel = "Move to draft";
+  }
 
   return (
     <>
@@ -790,11 +796,7 @@ export default function PageClient({
                   className="size-4"
                   icon={content.status === "published" ? TextIcon : SentIcon}
                 />
-                {isTogglingStatus
-                  ? "Updating..."
-                  : content.status === "published"
-                    ? "Move to draft"
-                    : "Publish"}
+                {statusButtonLabel}
               </Button>
               {content.contentType === "linkedin_post" && (
                 <Button

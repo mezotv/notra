@@ -25,6 +25,28 @@ export default async function InvitePage(props: {
   );
 }
 
+const INVITATION_STATUS_ERRORS: Record<string, string> = {
+  accepted: "This invitation has already been accepted.",
+  rejected: "This invitation has been declined.",
+};
+
+function getInvitationError(
+  invitationData: Awaited<ReturnType<typeof getInvitationById>>
+) {
+  if (!invitationData) {
+    return null;
+  }
+
+  if (invitationData.expired) {
+    return "This invitation has expired.";
+  }
+
+  return (
+    INVITATION_STATUS_ERRORS[invitationData.status] ??
+    "This invitation is no longer valid."
+  );
+}
+
 async function InvitePageComponent({ invitationId }: { invitationId: string }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -41,15 +63,7 @@ async function InvitePageComponent({ invitationId }: { invitationId: string }) {
   if (invitationData.expired || invitationData.status !== "pending") {
     return (
       <PageClient
-        initialError={
-          invitationData.expired
-            ? "This invitation has expired."
-            : invitationData.status === "accepted"
-              ? "This invitation has already been accepted."
-              : invitationData.status === "rejected"
-                ? "This invitation has been declined."
-                : "This invitation is no longer valid."
-        }
+        initialError={getInvitationError(invitationData)}
         invitation={invitationData}
         invitationId={invitationId}
         user={session?.user ?? null}

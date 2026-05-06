@@ -25,13 +25,14 @@ if (!websiteId) {
   );
 }
 
-export const databuddy = apiKey && websiteId
-  ? new Databuddy({
-      websiteId,
-      apiKey,
-      enableBatching: false,
-    })
-  : null;
+export const databuddy =
+  apiKey && websiteId
+    ? new Databuddy({
+        websiteId,
+        apiKey,
+        enableBatching: false,
+      })
+    : null;
 
 const isDevelopment = process.env.NODE_ENV === "development";
 

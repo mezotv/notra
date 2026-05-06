@@ -27,11 +27,11 @@ function getNumber(value: unknown, key: string): number | undefined {
   return typeof entry === "number" ? entry : undefined;
 }
 
-type ToolCopy = {
+interface ToolCopy {
   verbs: readonly [present: string, past: string];
   noun: string;
   suffix?: (input: unknown, output: unknown) => string | undefined;
-};
+}
 
 function idSuffix(input: unknown, keys: readonly string[]): string | undefined {
   for (const key of keys) {

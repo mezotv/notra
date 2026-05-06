@@ -3,16 +3,27 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 
+const CONTENT_SKELETON_CARDS = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+];
+
 export function ContentPageSkeleton() {
   const id = useId();
   return (
     <div className="space-y-6">
       <Skeleton className="h-7 w-64" />
       <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {CONTENT_SKELETON_CARDS.map((card) => (
           <div
             className="flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2"
-            key={`${id}-card-${i}`}
+            key={`${id}-card-${card}`}
           >
             <div className="flex items-center justify-between gap-4 px-2 py-1.5">
               <Skeleton className="h-5 w-32" />
