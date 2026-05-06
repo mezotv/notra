@@ -28,11 +28,7 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  DefaultChatTransport,
-  isToolUIPart,
-  lastAssistantMessageIsCompleteWithApprovalResponses,
-} from "ai";
+import { DefaultChatTransport, isToolUIPart } from "ai";
 import { motion } from "motion/react";
 import { nanoid } from "nanoid";
 import dynamic from "next/dynamic";
@@ -79,6 +75,7 @@ import {
   writeStoredChatPreferences,
 } from "@/utils/chat-preferences";
 import { formatLongDate, getGreeting } from "@/utils/dashboard-greeting";
+import { getOutputTypeLabel } from "@/utils/output-types";
 
 const BlogChangelogPreview = dynamic(
   () =>
@@ -238,6 +235,82 @@ function isTerminalToolState(state: string): boolean {
   );
 }
 
+function hasSendableParts(message: ChatUIMessage): boolean {
+  return Array.isArray(message.parts) && message.parts.length > 0;
+}
+
+function normalizeToolApprovalsForSend(
+  messages: ChatUIMessage[]
+): ChatUIMessage[] {
+  return messages.map((message) => {
+    if (!Array.isArray(message.parts)) {
+      return message;
+    }
+
+    let changed = false;
+    const parts = message.parts.map((part) => {
+      if (
+        isToolUIPart(part) &&
+        part.state === "approval-responded" &&
+        part.approval.approved === false
+      ) {
+        changed = true;
+        return {
+          ...part,
+          approval: {
+            ...part.approval,
+            approved: false,
+          },
+          state: "output-denied" as const,
+        } as ChatUIMessage["parts"][number];
+      }
+
+      return part;
+    });
+
+    return changed ? { ...message, parts } : message;
+  }) as ChatUIMessage[];
+}
+
+function getSendableMessages(messages: ChatUIMessage[]): ChatUIMessage[] {
+  return normalizeToolApprovalsForSend(messages).filter(hasSendableParts);
+}
+
+function shouldContinueAfterApprovalResponse({
+  messages,
+}: {
+  messages: ChatUIMessage[];
+}): boolean {
+  const message = messages.at(-1);
+
+  if (!message || message.role !== "assistant") {
+    return false;
+  }
+
+  const lastStepStartIndex = message.parts.reduce((lastIndex, part, index) => {
+    return part.type === "step-start" ? index : lastIndex;
+  }, -1);
+
+  const toolParts = message.parts
+    .slice(lastStepStartIndex + 1)
+    .filter(isToolUIPart);
+
+  const approvalResponses = toolParts.filter(
+    (part) => part.state === "approval-responded"
+  );
+
+  return (
+    approvalResponses.length > 0 &&
+    approvalResponses.every((part) => part.approval.approved) &&
+    toolParts.every(
+      (part) =>
+        part.state === "output-available" ||
+        part.state === "output-error" ||
+        part.state === "approval-responded"
+    )
+  );
+}
+
 function ChatImageAttachment({
   url,
   filename,
@@ -346,7 +419,7 @@ function StandaloneChatPageClient({
         prepareSendMessagesRequest: ({ id, messages }) => ({
           body: {
             chatId: id,
-            messages,
+            messages: getSendableMessages(messages),
             context: hasCustomizedContextRef.current
               ? contextRef.current
               : undefined,
@@ -471,7 +544,7 @@ function StandaloneChatPageClient({
     resume: Boolean(initialChatId && pendingMessageId),
     experimental_throttle: 90,
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
+    sendAutomaticallyWhen: shouldContinueAfterApprovalResponse,
     onFinish: handleFinish,
     onError: handleChatError,
   });
@@ -1047,6 +1120,10 @@ function StandaloneChatPageClient({
 
   const dispatchMessage = useCallback(
     async (text: string, attachments: ChatAttachment[] = []) => {
+      if (text.trim().length === 0 && attachments.length === 0) {
+        return;
+      }
+
       const isFirstMessage = !initialChatId && !hasUpdatedUrlRef.current;
       if (messagesRef.current.length === 0) {
         triggerFirstMessageTransition();
@@ -1388,14 +1465,6 @@ function StandaloneChatPageClient({
 
   const handleClearError = useCallback(() => setChatError(null), []);
 
-  const contentAuthor = useMemo(
-    () => ({
-      name: organization?.name ?? "Your Name",
-      avatar: organization?.logo ?? undefined,
-    }),
-    [organization?.name, organization?.logo]
-  );
-
   function renderPart(
     part: { type: string; [key: string]: unknown },
     messageId: string,
@@ -1495,7 +1564,7 @@ function StandaloneChatPageClient({
         toolCallId: string;
         input?: { title?: string; markdown?: string };
         output?: { postId?: string; status?: string };
-        approval?: { id: string };
+        approval?: { id: string; approved?: boolean; reason?: string };
       };
       const toolName = toolPart.type.replace("tool-", "");
 
@@ -1529,8 +1598,20 @@ function StandaloneChatPageClient({
           return null;
         }
 
+        if (toolPart.approval?.reason === "discard") {
+          return null;
+        }
+
         const previewState: "draft" | "finished" =
-          toolPart.state === "output-available" ? "finished" : "draft";
+          toolPart.state === "output-available" ||
+          toolPart.approval?.reason === "manual-draft" ||
+          toolPart.approval?.reason === "manual-published"
+            ? "finished"
+            : "draft";
+        const persistedStatus: "draft" | "published" =
+          toolPart.approval?.reason === "manual-published"
+            ? "published"
+            : "draft";
 
         const approvalId = toolPart.approval?.id;
         const handleApprove = approvalId
@@ -1545,17 +1626,66 @@ function StandaloneChatPageClient({
               addToolApprovalResponse({
                 id: approvalId,
                 approved: false,
+                reason: "discard",
               })
+          : undefined;
+        const handlePersist = approvalId
+          ? async (
+              status: "draft" | "published",
+              payload: { title: string; markdown: string }
+            ) => {
+              const response = await fetch(
+                `/api/organizations/${organizationId}/chat/posts`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ...payload,
+                    contentType,
+                    status,
+                  }),
+                }
+              );
+              if (!response.ok) {
+                throw new Error("Failed to save post");
+              }
+              await addToolApprovalResponse({
+                id: approvalId,
+                approved: false,
+                reason:
+                  status === "published" ? "manual-published" : "manual-draft",
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["chat-sessions", organizationId],
+              });
+            }
+          : undefined;
+        const handleRegenerate = approvalId
+          ? (
+              instructions: string,
+              payload: { title: string; markdown: string }
+            ) => {
+              addToolApprovalResponse({
+                id: approvalId,
+                approved: false,
+                reason: "discard",
+              });
+              sendMessage({
+                text: `Regenerate the ${getOutputTypeLabel(contentType)} with these changes: ${instructions}\n\nCurrent title: ${payload.title}\n\nCurrent draft:\n${payload.markdown}`,
+              });
+            }
           : undefined;
 
         if (contentType === "twitter_post") {
           return (
             <TwitterPreview
-              author={contentAuthor}
               key={toolPart.toolCallId}
               markdown={markdown}
               onApprove={handleApprove}
               onDeny={handleDeny}
+              onPersist={handlePersist}
+              onRegenerate={handleRegenerate}
+              persistedStatus={persistedStatus}
               state={previewState}
               title={title}
             />
@@ -1565,11 +1695,13 @@ function StandaloneChatPageClient({
         if (contentType === "linkedin_post") {
           return (
             <LinkedInPreview
-              author={contentAuthor}
               key={toolPart.toolCallId}
               markdown={markdown}
               onApprove={handleApprove}
               onDeny={handleDeny}
+              onPersist={handlePersist}
+              onRegenerate={handleRegenerate}
+              persistedStatus={persistedStatus}
               state={previewState}
               title={title}
             />
@@ -1583,6 +1715,9 @@ function StandaloneChatPageClient({
             markdown={markdown}
             onApprove={handleApprove}
             onDeny={handleDeny}
+            onPersist={handlePersist}
+            onRegenerate={handleRegenerate}
+            persistedStatus={persistedStatus}
             state={previewState}
             title={title}
           />

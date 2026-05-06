@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowReloadHorizontalIcon,
   ArrowRight01Icon,
   Cancel01Icon,
   CheckmarkSquare01Icon,
@@ -8,7 +9,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/constants/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
-import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
@@ -16,13 +16,27 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@notra/ui/components/ui/tabs";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { BrailleLoader } from "@/components/braille-loader";
+import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 type IncomingState = "draft" | "finished";
 type EffectiveState = "draft" | "loading" | "finished";
-type UserAction = "none" | "saving" | "save-failed";
+type UserAction =
+  | "none"
+  | "saving"
+  | "publishing"
+  | "generating"
+  | "save-failed";
 
 interface BlogChangelogPreviewProps {
   state: IncomingState;
@@ -32,8 +46,17 @@ interface BlogChangelogPreviewProps {
     ContentType,
     "blog_post" | "changelog" | "investor_update"
   >;
+  persistedStatus?: "draft" | "published";
   onApprove?: () => void;
   onDeny?: () => void;
+  onPersist?: (
+    status: "draft" | "published",
+    payload: { title: string; markdown: string }
+  ) => Promise<void>;
+  onRegenerate?: (
+    instructions: string,
+    payload: { title: string; markdown: string }
+  ) => void;
 }
 
 export function BlogChangelogPreview({
@@ -41,16 +64,28 @@ export function BlogChangelogPreview({
   title,
   markdown,
   contentType,
+  persistedStatus = "draft",
   onApprove,
   onDeny,
+  onPersist,
+  onRegenerate,
 }: BlogChangelogPreviewProps) {
   const [userAction, setUserAction] = useState<UserAction>("none");
+  const [draftTitle, setDraftTitle] = useState(title);
+  const [draftMarkdown, setDraftMarkdown] = useState(markdown);
+  const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const [regenerateInstructions, setRegenerateInstructions] = useState("");
+  const [isOpen, setIsOpen] = useState(incomingState !== "finished");
 
   const effectiveState: EffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
     }
-    if (userAction === "saving") {
+    if (
+      userAction === "saving" ||
+      userAction === "publishing" ||
+      userAction === "generating"
+    ) {
       return "loading";
     }
     if (userAction === "save-failed") {
@@ -69,23 +104,66 @@ export function BlogChangelogPreview({
     return () => window.clearTimeout(timer);
   }, [userAction]);
 
-  const handleApprove = useCallback(() => {
+  const handleApprove = useCallback(async () => {
     setUserAction("saving");
-    onApprove?.();
-  }, [onApprove]);
+    setIsOpen(false);
+    const toastId = toast.loading("Saving draft...");
+    try {
+      if (onPersist) {
+        await onPersist("draft", {
+          title: draftTitle,
+          markdown: draftMarkdown,
+        });
+      } else {
+        onApprove?.();
+      }
+      toast.success("Saved as draft", { id: toastId });
+    } catch {
+      setUserAction("save-failed");
+      toast.error("Failed to save draft", { id: toastId });
+    }
+  }, [draftMarkdown, draftTitle, onApprove, onPersist]);
+
+  const handlePublish = useCallback(async () => {
+    setUserAction("publishing");
+    setIsOpen(false);
+    const toastId = toast.loading("Publishing post...");
+    try {
+      await onPersist?.("published", {
+        title: draftTitle,
+        markdown: draftMarkdown,
+      });
+      toast.success("Post published", { id: toastId });
+    } catch {
+      setUserAction("save-failed");
+      toast.error("Failed to publish post", { id: toastId });
+    }
+  }, [draftMarkdown, draftTitle, onPersist]);
 
   const handleDeny = useCallback(() => {
     onDeny?.();
+    toast("Canceled");
   }, [onDeny]);
 
+  const handleRegenerate = useCallback(() => {
+    const instructions = regenerateInstructions.trim();
+    if (!instructions) {
+      setRegenerateOpen(true);
+      return;
+    }
+    setUserAction("generating");
+    toast("Generating post...");
+    onRegenerate?.(instructions, {
+      title: draftTitle,
+      markdown: draftMarkdown,
+    });
+  }, [draftMarkdown, draftTitle, onRegenerate, regenerateInstructions]);
+
   const isFinished = effectiveState === "finished";
-  const showDraftBadge = isFinished && userAction !== "save-failed";
+  const showStatusBadge = isFinished && userAction !== "save-failed";
 
   return (
-    <Collapsible
-      defaultOpen={!isFinished}
-      key={isFinished ? "collapsed" : "open"}
-    >
+    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <div className="ml-px max-w-xl">
         <div className="rounded-lg border border-border bg-muted/80">
           <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 [&[data-panel-open]>svg]:rotate-90">
@@ -94,12 +172,12 @@ export function BlogChangelogPreview({
               icon={ArrowRight01Icon}
             />
             <span className="min-w-0 truncate text-left font-medium text-sm">
-              {title}
+              {draftTitle}
             </span>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              {showDraftBadge && (
+              {showStatusBadge && (
                 <Badge className="text-[0.625rem]" variant="outline">
-                  draft
+                  {persistedStatus}
                 </Badge>
               )}
               <Badge
@@ -113,27 +191,95 @@ export function BlogChangelogPreview({
           </CollapsibleTrigger>
 
           <CollapsibleContent>
-            <div className="mx-2 mb-2">
-              <div className="max-h-[24rem] overflow-y-auto rounded-lg border border-border/80 bg-background px-4 py-3">
-                <MessageResponse className="text-sm leading-relaxed [&_ol]:pl-5 [&_ul]:pl-5 [&_ul]:marker:text-muted-foreground">
-                  {markdown}
-                </MessageResponse>
-              </div>
+            <div className="mx-2 mb-2 space-y-2">
+              {!isFinished && (
+                <input
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onChange={(event) => setDraftTitle(event.target.value)}
+                  value={draftTitle}
+                />
+              )}
+              <Tabs defaultValue="markdown">
+                <TabsList variant="line">
+                  <TabsTrigger value="markdown">Markdown</TabsTrigger>
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                </TabsList>
+                <TabsContent className="mt-2" value="markdown">
+                  <textarea
+                    className="min-h-72 w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    onChange={(event) => setDraftMarkdown(event.target.value)}
+                    readOnly={isFinished}
+                    value={draftMarkdown}
+                  />
+                </TabsContent>
+                <TabsContent className="mt-2" value="preview">
+                  <div className="max-h-[24rem] overflow-y-auto rounded-lg border border-border/80 bg-background px-4 py-3">
+                    <LexicalEditor
+                      editable={!isFinished}
+                      initialMarkdown={draftMarkdown}
+                      onChange={setDraftMarkdown}
+                      onSelectionChange={() => null}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+              {regenerateOpen && !isFinished && (
+                <input
+                  autoFocus
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onChange={(event) =>
+                    setRegenerateInstructions(event.target.value)
+                  }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleRegenerate();
+                    }
+                  }}
+                  placeholder="What should change?"
+                  value={regenerateInstructions}
+                />
+              )}
             </div>
           </CollapsibleContent>
 
-          {!isFinished && (
-            <div className="flex items-center justify-end gap-2 px-3 pb-2">
+          {!isFinished && isOpen && (
+            <div className="flex items-center gap-2 px-3 pb-2">
+              {userAction === "generating" && (
+                <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
+                  <BrailleLoader className="text-sm" variant="shimmer" />
+                  <span className="truncate">Generating post...</span>
+                </div>
+              )}
               {effectiveState === "draft" && (
-                <Button onClick={handleDeny} size="sm" variant="ghost">
-                  <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
-                  Discard
-                </Button>
+                <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
+                  <BrailleLoader className="text-sm" variant="shimmer" />
+                  <span className="truncate">Waiting for response</span>
+                </div>
+              )}
+              {effectiveState === "draft" && (
+                <>
+                  <Button
+                    onClick={() => setRegenerateOpen((open) => !open)}
+                    size="sm"
+                    variant="ghost"
+                  >
+                    <HugeiconsIcon
+                      className="size-4"
+                      icon={ArrowReloadHorizontalIcon}
+                    />
+                    Regenerate
+                  </Button>
+                  <Button onClick={handleDeny} size="sm" variant="ghost">
+                    <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
+                    Discard
+                  </Button>
+                </>
               )}
               <Button
                 disabled={effectiveState === "loading"}
                 onClick={handleApprove}
                 size="sm"
+                variant="secondary"
               >
                 {effectiveState === "loading" ? (
                   <>
@@ -148,6 +294,20 @@ export function BlogChangelogPreview({
                     />
                     Save as draft
                   </>
+                )}
+              </Button>
+              <Button
+                disabled={effectiveState === "loading"}
+                onClick={handlePublish}
+                size="sm"
+              >
+                {effectiveState === "loading" && userAction === "publishing" ? (
+                  <>
+                    <Loader2Icon className="size-4 animate-spin" />
+                    Publishing
+                  </>
+                ) : (
+                  "Publish"
                 )}
               </Button>
             </div>
