@@ -30,7 +30,9 @@ export async function POST(request: Request, { params }: RouteContext) {
     organizationId,
   });
 
-  const parsed = createChatPostSchema.safeParse(await request.json());
+  const parsed = createChatPostSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid post payload", details: parsed.error.issues },

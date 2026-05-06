@@ -252,7 +252,8 @@ function normalizeToolApprovalsForSend(
       if (
         isToolUIPart(part) &&
         part.state === "approval-responded" &&
-        part.approval.approved === false
+        part.approval.approved === false &&
+        part.approval.reason === "discard"
       ) {
         changed = true;
         return {
@@ -1661,11 +1662,11 @@ function StandaloneChatPageClient({
             }
           : undefined;
         const handleRegenerate = approvalId
-          ? (
+          ? async (
               instructions: string,
               payload: { title: string; markdown: string }
             ) => {
-              addToolApprovalResponse({
+              await addToolApprovalResponse({
                 id: approvalId,
                 approved: false,
                 reason: "discard",

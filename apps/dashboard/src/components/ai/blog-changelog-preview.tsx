@@ -77,6 +77,14 @@ export function BlogChangelogPreview({
   const [regenerateInstructions, setRegenerateInstructions] = useState("");
   const [isOpen, setIsOpen] = useState(incomingState !== "finished");
 
+  useEffect(() => {
+    setDraftTitle(title);
+  }, [title]);
+
+  useEffect(() => {
+    setDraftMarkdown(markdown);
+  }, [markdown]);
+
   const effectiveState: EffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
@@ -95,7 +103,11 @@ export function BlogChangelogPreview({
   })();
 
   useEffect(() => {
-    if (userAction !== "saving") {
+    if (
+      userAction !== "saving" &&
+      userAction !== "publishing" &&
+      userAction !== "generating"
+    ) {
       return;
     }
     const timer = window.setTimeout(() => {
@@ -129,10 +141,16 @@ export function BlogChangelogPreview({
     setIsOpen(false);
     const toastId = toast.loading("Publishing post...");
     try {
-      await onPersist?.("published", {
+      if (!onPersist) {
+        setUserAction("save-failed");
+        toast.error("Publish is not available", { id: toastId });
+        return;
+      }
+      await onPersist("published", {
         title: draftTitle,
         markdown: draftMarkdown,
       });
+      setUserAction("none");
       toast.success("Post published", { id: toastId });
     } catch {
       setUserAction("save-failed");
