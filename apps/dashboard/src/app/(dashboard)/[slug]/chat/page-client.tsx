@@ -253,7 +253,7 @@ function normalizeToolApprovalsForSend(
         isToolUIPart(part) &&
         part.state === "approval-responded" &&
         part.approval.approved === false &&
-        part.approval.reason === "discard"
+        (part.approval.reason === "discard" || part.approval.reason == null)
       ) {
         changed = true;
         return {
@@ -1650,12 +1650,21 @@ function StandaloneChatPageClient({
               if (!response.ok) {
                 throw new Error("Failed to save post");
               }
-              await addToolApprovalResponse({
-                id: approvalId,
-                approved: false,
-                reason:
-                  status === "published" ? "manual-published" : "manual-draft",
-              });
+              try {
+                await addToolApprovalResponse({
+                  id: approvalId,
+                  approved: false,
+                  reason:
+                    status === "published"
+                      ? "manual-published"
+                      : "manual-draft",
+                });
+              } catch (error) {
+                console.error(
+                  "[Chat] Failed to mark persisted post approval:",
+                  error
+                );
+              }
               queryClient.invalidateQueries({
                 queryKey: ["chat-sessions", organizationId],
               });
