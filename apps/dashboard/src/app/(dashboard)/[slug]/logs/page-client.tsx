@@ -240,9 +240,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                     onActionClick: resetFilters,
                   }
                 : {
-                    title: "No webhook events yet",
+                    title: "No logs yet",
                     description:
-                      "Events will appear here after connected integrations deliver activity.",
+                      "Activity from your integrations and automations will show up here.",
                   }
             }
             onPageChange={setPage}
