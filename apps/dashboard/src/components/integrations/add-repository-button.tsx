@@ -5,7 +5,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import type { AddRepositoryButtonProps } from "@/types/integrations";
 
-export function AddRepositoryButton({ onAdd }: AddRepositoryButtonProps) {
+export function AddRepositoryButton({
+  onAdd,
+  label = "Add",
+}: AddRepositoryButtonProps) {
   return (
     <Button
       className="h-6 shrink-0 gap-1 rounded px-2 text-xs"
@@ -14,7 +17,7 @@ export function AddRepositoryButton({ onAdd }: AddRepositoryButtonProps) {
       type="button"
     >
       <HugeiconsIcon className="size-3" icon={Add01Icon} />
-      Add
+      {label}
     </Button>
   );
 }

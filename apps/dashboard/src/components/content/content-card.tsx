@@ -140,7 +140,9 @@ const ContentCard = memo(function ContentCard({
       )}
     >
       <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
-        <p className="min-w-0 truncate font-medium text-lg">{title}</p>
+        <p className="line-clamp-2 min-w-0 font-medium text-lg leading-snug">
+          {title}
+        </p>
         <div className="flex shrink-0 items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -185,10 +187,10 @@ const ContentCard = memo(function ContentCard({
           </DropdownMenu>
         </div>
       </div>
-      <div className="flex-1 rounded-[0.75rem] border border-border/80 bg-background px-4 py-3">
+      <div className="flex-1 rounded-md bg-background/60 px-3 py-2.5">
         <p className="line-clamp-3 text-muted-foreground text-sm">{preview}</p>
       </div>
-      <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="flex items-center gap-2 px-2 py-2">
         <Badge
           className="capitalize"
           variant={status === "published" ? "default" : "outline"}

@@ -70,7 +70,7 @@ const navMainItems: NavMainItem[] = [
     category: "workspace",
   },
   {
-    link: "/automation/schedule",
+    link: "/automation/schedules",
     icon: Calendar03Icon,
     label: "Schedules",
     category: "automation",
@@ -191,9 +191,10 @@ export function NavMain() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className="cursor-help border border-sidebar-border/60"
+                aria-label="Open command palette"
+                className="cursor-pointer border border-sidebar-border/60"
                 onClick={() => setCommandPaletteOpen(true)}
-                tooltip="Search"
+                tooltip="Open command palette"
               >
                 <HugeiconsIcon icon={SearchIcon} />
                 <span>Search</span>

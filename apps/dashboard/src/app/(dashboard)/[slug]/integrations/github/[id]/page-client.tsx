@@ -416,7 +416,7 @@ function SchedulesSection({
           </p>
         </div>
         {slug && (
-          <Link href={`/${slug}/automation/schedule`}>
+          <Link href={`/${slug}/automation/schedules`}>
             <Button size="sm" variant="outline">
               View All
               <HugeiconsIcon
@@ -461,7 +461,7 @@ function SchedulesSection({
             <div className="px-4 py-2 text-center">
               <Link
                 className="text-muted-foreground text-xs hover:underline"
-                href={`/${slug}/automation/schedule`}
+                href={`/${slug}/automation/schedules`}
               >
                 +{schedules.length - 5} more schedules
               </Link>

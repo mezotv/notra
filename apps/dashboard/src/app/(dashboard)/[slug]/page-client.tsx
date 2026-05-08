@@ -105,7 +105,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     return (
       <EmptyState
         className="p-6"
-        description="Check back later or start a new post from the content page."
+        description="You have no new posts today. Create one now or review your existing drafts on the content page."
         title="No content created today"
       />
     );
