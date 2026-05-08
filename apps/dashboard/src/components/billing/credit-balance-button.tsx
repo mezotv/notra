@@ -34,7 +34,11 @@ export function CreditBalanceButton({ className }: { className?: string }) {
         <TooltipTrigger
           render={
             <Button
-              aria-label="Available credits"
+              aria-label={
+                balance !== null
+                  ? `Available credits: ${formatDollars(balance)}`
+                  : "Available credits"
+              }
               className={cn("gap-1.5 tabular-nums", className)}
               onClick={() => setOpen(true)}
               size="sm"
