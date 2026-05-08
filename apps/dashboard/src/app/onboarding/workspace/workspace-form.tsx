@@ -51,7 +51,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       setIsSubmitting(true);
 
       try {
-        const websiteUrl = normalizeWebsite(value.websiteUrl);
+        const trimmedWebsite = value.websiteUrl.trim();
+        const websiteUrl = trimmedWebsite
+          ? normalizeWebsite(trimmedWebsite)
+          : undefined;
         const parsed = onboardingWorkspaceSchema.safeParse({
           name: value.name,
           slug: value.slug,
@@ -94,21 +97,22 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           await setLastVisitedOrganization(data.slug);
         }
 
-        const brandAnalysisPromise = triggerOnboardingBrandAnalysis({
-          organizationId,
-          websiteUrl: parsed.data.websiteUrl,
-          name: parsed.data.name,
-        });
-
-        brandAnalysisPromise.catch((error) => {
-          console.error("[Onboarding] Background brand analysis failed", {
+        if (parsed.data.websiteUrl) {
+          const brandAnalysisPromise = triggerOnboardingBrandAnalysis({
             organizationId,
-            error,
+            websiteUrl: parsed.data.websiteUrl,
+            name: parsed.data.name,
           });
-        });
+
+          brandAnalysisPromise.catch((error) => {
+            console.error("[Onboarding] Background brand analysis failed", {
+              organizationId,
+              error,
+            });
+          });
+        }
 
         window.location.assign("/onboarding/socials");
-        // Keep button in submitting state during navigation
         return;
       } catch (err) {
         toast.error(
@@ -131,8 +135,8 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         </h1>
         <p className="text-muted-foreground text-sm">
           {isResuming
-            ? "Your workspace is ready — enter your website so we can finish learning your brand voice."
-            : "We'll use your website to learn your brand voice while you set up the rest."}
+            ? "Your workspace is ready. Add a website if you want us to learn your brand voice automatically."
+            : "Add a website and we'll learn your brand voice while you set up the rest. You can always add it later."}
         </p>
       </div>
 
@@ -227,9 +231,9 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           validators={{
             onChange: ({ value }) => {
               if (!value || value.trim() === "") {
-                return "Website is required";
+                return;
               }
-              const candidate = normalizeWebsite(value);
+              const candidate = normalizeWebsite(value.trim());
               return onboardingWorkspaceSchema.shape.websiteUrl.safeParse(
                 candidate
               ).error?.issues[0]?.message;
@@ -239,7 +243,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           {(field) => (
             <div className="grid gap-2">
               <Label htmlFor="website">
-                Website <span className="text-destructive">*</span>
+                Website{" "}
+                <span className="text-muted-foreground text-xs">
+                  (optional)
+                </span>
               </Label>
               <div
                 className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}

@@ -64,7 +64,8 @@ export const onboardingWorkspaceSchema = z.object({
     .refine(isValidPublicWebsiteUrl, {
       message:
         "Please enter a valid public website URL (e.g., https://example.com)",
-    }),
+    })
+    .optional(),
 });
 
 export type OnboardingWorkspaceInput = z.infer<
