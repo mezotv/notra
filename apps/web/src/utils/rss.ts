@@ -47,7 +47,7 @@ function buildItem(item: RssFeedItem) {
   ].join("\n");
 }
 
-export function buildRssFeed(options: RssFeedOptions) {
+function buildRssFeed(options: RssFeedOptions) {
   const items = options.items.map(buildItem).join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>

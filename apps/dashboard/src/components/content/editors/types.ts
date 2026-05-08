@@ -1,7 +1,7 @@
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import type { TextSelection } from "@/schemas/content";
 
-export interface ContentData {
+interface ContentData {
   id: string;
   title: string;
   slug: string | null;
@@ -11,7 +11,7 @@ export interface ContentData {
   sourceMetadata: unknown;
 }
 
-export interface EditorState {
+interface EditorState {
   editedMarkdown: string | null;
   originalMarkdown: string;
   editingTitle: string | null;
@@ -24,7 +24,7 @@ export interface EditorState {
   hasSlugChanges: boolean;
 }
 
-export interface EditorActions {
+interface EditorActions {
   setEditedMarkdown: (markdown: string | null) => void;
   setOriginalMarkdown: (markdown: string) => void;
   setEditingTitle: (title: string | null) => void;
@@ -33,7 +33,7 @@ export interface EditorActions {
   onSelectionChange: (selection: TextSelection | null) => void;
 }
 
-export interface OrganizationInfo {
+interface OrganizationInfo {
   name: string;
   logo: string | null;
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const notraApiPostSchema = z.object({
+const notraApiPostSchema = z.object({
   id: z.string(),
   title: z.string(),
   content: z.string(),

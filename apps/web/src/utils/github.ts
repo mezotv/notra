@@ -8,11 +8,11 @@ import type {
   IssueTypeBadge,
 } from "~types/github";
 
-export const GITHUB_OWNER = "usenotra";
-export const GITHUB_REPO = "notra";
+const GITHUB_OWNER = "usenotra";
+const GITHUB_REPO = "notra";
 export const GITHUB_REPO_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-export const GITHUB_CACHE_TAG = "github-contributors";
+const GITHUB_CACHE_TAG = "github-contributors";
 
 const REVALIDATE_SECONDS = 3600;
 

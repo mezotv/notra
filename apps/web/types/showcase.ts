@@ -9,7 +9,7 @@ export interface ShowcaseCompany {
   accentColor: string;
 }
 
-export interface ShowcaseOverviewCard {
+interface ShowcaseOverviewCard {
   slug: string;
   name: string;
   description: string;

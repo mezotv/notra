@@ -62,6 +62,9 @@
     "check-types": {
       "dependsOn": ["transit"]
     },
+    "knip": {
+      "dependsOn": ["transit"]
+    },
     "dev": {
       "cache": false,
       "persistent": true

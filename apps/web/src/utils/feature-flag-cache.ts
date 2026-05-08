@@ -79,18 +79,6 @@ function writeCache(key: string, flag: CachedFlag): void {
   }
 }
 
-export function clearCachedFlag(key: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(STORAGE_PREFIX + key);
-  } catch {
-    return;
-  }
-}
-
 // Memoized cache reader for useSyncExternalStore. The hook requires snapshot
 // references to be stable across calls (returning a new object every read causes
 // infinite re-renders), so we cache the parsed entry per key and only return a

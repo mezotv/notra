@@ -88,7 +88,7 @@ function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
   );
 }
 
-export function getReferenceValue(item: ContextItem): string {
+function getReferenceValue(item: ContextItem): string {
   if (item.type === "github-repo") {
     return `@integration/github/${item.integrationId}/${item.owner}/${item.repo}`;
   }
@@ -257,7 +257,7 @@ interface IntegrationReferenceProps {
   kind: ReferenceKind;
 }
 
-export function IntegrationReference({
+function IntegrationReference({
   value,
   display,
   kind,

@@ -7,13 +7,13 @@ import { skills } from "@notra/db/schema";
 import { nanoid } from "nanoid";
 import { HUMANIZER_CONTENT } from "./humanizer-content";
 
-export interface SystemSkillDefinition {
+interface SystemSkillDefinition {
   name: string;
   description: string;
   content: string;
 }
 
-export function buildSystemSkills(): SystemSkillDefinition[] {
+function buildSystemSkills(): SystemSkillDefinition[] {
   return [
     {
       name: "changelog",

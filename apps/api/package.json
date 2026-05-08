@@ -5,7 +5,8 @@
     "dev": "bun --watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.mjs",
-    "check-types": "bunx tsc --noEmit"
+    "check-types": "bunx tsc --noEmit",
+    "knip": "knip"
   },
   "dependencies": {
     "@contextcompany/otel": "^1.0.16",
@@ -20,6 +21,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
+    "ai": "^6.0.168",
     "autumn-js": "^1.2.5",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.0",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@types/sanitize-html": "^2.16.0",
     "@notra/typescript-config": "workspace:*",
+    "knip": "^6.12.1",
     "typescript": "^5"
   }
 }

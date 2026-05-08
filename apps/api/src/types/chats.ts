@@ -5,9 +5,9 @@ import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { UIMessage } from "ai";
 
-export type ChatLogger = ReturnType<typeof useLogger>;
+type ChatLogger = ReturnType<typeof useLogger>;
 
-export type ChatThinkingLevel = "off" | "low" | "medium" | "high";
+type ChatThinkingLevel = "off" | "low" | "medium" | "high";
 
 export interface DirectStandaloneChatArgs {
   organizationId: string;

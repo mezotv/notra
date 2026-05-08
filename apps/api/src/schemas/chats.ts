@@ -7,7 +7,7 @@ import {
 } from "@notra/ai/schemas/chat";
 import { standaloneChatContextSchema } from "@notra/ai/schemas/standalone-chat";
 
-export const externalChannelIdSchema = z
+const externalChannelIdSchema = z
   .object({
     source: externalChannelSourceSchema,
     id: z.string().max(200).optional(),

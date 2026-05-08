@@ -75,7 +75,7 @@ function extractParagraphs(html: string) {
   return paragraphs;
 }
 
-export function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
+function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
   const headings = extractHeadings(html);
   const faqHeadingIndex = headings.findIndex(
     (heading) =>
@@ -120,7 +120,7 @@ export function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
   return entries;
 }
 
-export function extractBlogAboutEntities(html: string) {
+function extractBlogAboutEntities(html: string) {
   return extractHeadings(html)
     .filter(
       (heading) =>

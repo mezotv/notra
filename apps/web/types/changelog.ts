@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export interface NotraSourceRepository {
+interface NotraSourceRepository {
   owner: string;
   repo: string;
 }
