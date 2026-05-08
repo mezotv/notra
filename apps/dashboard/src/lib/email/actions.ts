@@ -182,7 +182,7 @@ export async function sendWelcomeEmailAction({
 }: SendWelcomeEmailProps) {
   if (!resend && isDevelopment) {
     return sendDevEmail({
-      from: "Dominik from Notra <dominik@usenotra.com>",
+      from: "Dominik from Notra <dominik@hello.usenotra.com>",
       to: userEmail,
       text: "This is a mock welcome email from the founder",
       subject: "Welcome to Notra",
