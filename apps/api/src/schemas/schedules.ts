@@ -97,9 +97,8 @@ export const createScheduleRequestSchema = z.object({
   lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
 });
 
-export const patchScheduleRequestSchema = createScheduleRequestSchema.extend(
-  {}
-);
+export const patchScheduleRequestSchema =
+  createScheduleRequestSchema.openapi("PatchScheduleRequest");
 
 const scheduleSchema = z.object({
   id: z.string(),
