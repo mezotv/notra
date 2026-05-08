@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import satori from "satori";
 import { html as parseHtml } from "satori-html";
 
-export const REPO_IMAGE_WIDTH = 1200;
-export const REPO_IMAGE_HEIGHT = 630;
+const REPO_IMAGE_WIDTH = 1200;
+const REPO_IMAGE_HEIGHT = 630;
 
 const GOOGLE_FONT_URL_REGEX =
   /src: url\((.+?)\) format\('(opentype|truetype)'\)/;

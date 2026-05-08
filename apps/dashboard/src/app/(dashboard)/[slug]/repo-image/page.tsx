@@ -49,6 +49,8 @@ const MODE_LABELS: Record<RepoImageMode, string> = {
   commit: "Commit",
 };
 
+const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
+
 type GitHubIntegrationOption = {
   id: string;
   displayName: string;
@@ -145,7 +147,7 @@ export default function RepoImagePage() {
         payload = { ...base, prNumber: num };
       } else {
         const sha = commitSha.trim();
-        if (!/^[0-9a-f]{7,40}$/i.test(sha)) {
+        if (!COMMIT_SHA_REGEX.test(sha)) {
           throw new Error("Enter a valid commit SHA (7–40 hex chars)");
         }
         payload = { ...base, commitSha: sha };
@@ -406,9 +408,11 @@ export default function RepoImagePage() {
                 ) : previewUrl ? (
                   // biome-ignore lint/performance/noImgElement: dynamic data-URL PNG, not a static asset
                   <img
-                    alt="Generated repository image preview"
+                    alt="Generated repository preview"
                     className="aspect-[1200/630] w-full object-contain"
+                    height={630}
                     src={previewUrl}
+                    width={1200}
                   />
                 ) : (
                   <div className="flex aspect-[1200/630] w-full items-center justify-center text-muted-foreground">
