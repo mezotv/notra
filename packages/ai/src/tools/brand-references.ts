@@ -2,11 +2,11 @@ import type { BrandReferencesConfig } from "@notra/ai/types/brand-references";
 import { serializeBrandReference } from "@notra/ai/utils/brand-references";
 import { toolDescription } from "@notra/ai/utils/description";
 import { db } from "@notra/db/drizzle";
+import { brandReferences, brandSettings } from "@notra/db/schema";
 import {
   getBrandReferenceIdFromSearchResult,
   searchBrandReferenceMemories,
 } from "@notra/db/utils/supermemory";
-import { brandReferences, brandSettings } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
 import { and, desc, eq } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
