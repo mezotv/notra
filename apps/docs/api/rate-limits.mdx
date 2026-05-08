@@ -1,0 +1,73 @@
+---
+title: "Rate Limits"
+description: "Per-key rate limits on generation, integration, and update endpoints."
+---
+
+The Notra API enforces rate limits on a small set of write-heavy endpoints to protect the service. Read endpoints (listing posts, fetching brand identities, etc.) are not currently rate limited.
+
+Limits are scoped per API key, with a sliding window. If your request would exceed the limit, the API returns `429 Too Many Requests` and the request is not executed.
+
+## Limits
+
+| Endpoint | Limit |
+| --- | --- |
+| `POST /v1/posts/generate` | 10 requests / minute |
+| `PATCH /v1/posts/{postId}` | 60 requests / minute |
+| `POST /v1/brand-identities/generate` | 5 requests / minute |
+| `POST /v1/integrations/github` | 20 requests / minute |
+
+All other endpoints (post list/get/delete, brand list/get/delete, integrations list/remove, schedules) have no rate limit at this time.
+
+<Note>
+  Limits are tracked per API key. If a request arrives without an authenticated key, the limit is applied per IP instead. Each endpoint has its own bucket, so hitting the post-generation limit does not affect post updates.
+</Note>
+
+## Response headers
+
+Every rate-limited response (success or failure) includes both the IETF draft and legacy `X-` header names:
+
+| Header | Meaning |
+| --- | --- |
+| `RateLimit-Limit` / `X-RateLimit-Limit` | Maximum requests allowed in the window |
+| `RateLimit-Remaining` / `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `RateLimit-Reset` | Seconds until the window resets |
+| `X-RateLimit-Reset` | Unix timestamp (seconds) when the window resets |
+| `Retry-After` | Seconds to wait before retrying (only sent on `429`) |
+
+## 429 response
+
+When a request is rejected, the API returns:
+
+```json
+{
+  "error": "Rate limit exceeded",
+  "limit": 10,
+  "remaining": 0,
+  "reset": 1709654400000
+}
+```
+
+`reset` is a Unix timestamp in **milliseconds**. The `Retry-After` header gives you the same value in seconds and is the simplest field to act on.
+
+## Best practices
+
+- Read `RateLimit-Remaining` proactively and slow down before you hit zero.
+- On `429`, wait for `Retry-After` seconds before retrying. Do not retry immediately.
+- Use exponential backoff with jitter for `5xx` responses; treat `429` as a hard wait, not a retry signal.
+- For bulk work (e.g. backfilling many posts), space requests evenly across the window rather than bursting.
+
+## Need higher limits?
+
+If your workload genuinely needs higher limits, reach out via [GitHub](https://github.com/usenotra/notra) and describe the use case and expected volume.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api/getting-started">
+    Explore available endpoints
+  </Card>
+
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn about API key management
+  </Card>
+</CardGroup>

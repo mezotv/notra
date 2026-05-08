@@ -34,7 +34,6 @@ import type {
   CommitWindow,
   GitHubSelectionFilters,
 } from "@notra/ai/types/tools";
-import { addAnthropicPromptCaching } from "@notra/ai/utils/prompt-caching";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import { stepCountIs, ToolLoopAgent } from "ai";
 
@@ -187,9 +186,6 @@ export async function runBackgroundGen(
 
   const agent = new ToolLoopAgent({
     model,
-    prepareStep: ({ messages }) => ({
-      messages: addAnthropicPromptCaching(messages, AGENT_DEFAULT_MODEL),
-    }),
     providerOptions: {
       anthropic: {
         thinking: { type: "enabled", budgetTokens: 4096 },

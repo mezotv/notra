@@ -1,25 +1,24 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import {
+  calculateTokenCostCents,
+  shouldApplyMarkup,
+} from "@notra/ai/billing/token-pricing";
+import { useLogger, withEvlog } from "@notra/ai/evlog";
+import {
+  getGitHubIntegrationById,
+  getGitHubToolRepositoryContextByIntegrationId,
+} from "@notra/ai/integrations/github";
+import {
+  getLinearIntegrationById,
+  getLinearToolContextByIntegrationId,
+} from "@notra/ai/integrations/linear";
 import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
 import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { FEATURES } from "@/constants/features";
-import { isAiChatExperimentEnabled } from "@/lib/ai-chat-experiment";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { autumn } from "@/lib/billing/autumn";
-import {
-  calculateTokenCostCents,
-  shouldApplyMarkup,
-} from "@/lib/billing/token-pricing";
-import { useLogger, withEvlog } from "@/lib/evlog";
-import {
-  getGitHubIntegrationById,
-  getGitHubToolRepositoryContextByIntegrationId,
-} from "@/lib/services/github-integration";
-import {
-  getLinearIntegrationById,
-  getLinearToolContextByIntegrationId,
-} from "@/lib/services/linear-integration";
 import { chatRequestSchema } from "@/schemas/content";
 
 interface RouteContext {
@@ -51,20 +50,6 @@ export const POST = withEvlog(async function POST(
       return auth.response;
     }
 
-    const aiChatEnabled = await isAiChatExperimentEnabled({
-      userId: auth.context.user.id,
-      email: auth.context.user.email,
-      organizationId,
-    });
-
-    if (!aiChatEnabled) {
-      return NextResponse.json(
-        { error: "AI chat is not enabled for this organization" },
-        { status: 403 }
-      );
-    }
-
-    // Check billing if Autumn is configured
     let useMarkup = false;
     if (autumn) {
       console.log("[Autumn] Checking feature access:", {
@@ -144,9 +129,19 @@ export const POST = withEvlog(async function POST(
         contentType,
         selection,
         context,
-        maxSteps: 5,
+        maxSteps: 50,
         log,
         timezone,
+        telemetryMetadata: {
+          contentId,
+          contentType: contentType ?? "unknown",
+          feature: "content_chat",
+          organizationId,
+          routeName:
+            "/api/organizations/[organizationId]/content/[contentId]/chat",
+          "tcc.conversational": "true",
+          userId: auth.context.user.id,
+        },
       },
       {
         integrationFetchers: {

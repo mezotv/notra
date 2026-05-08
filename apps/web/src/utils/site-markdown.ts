@@ -106,9 +106,9 @@ export function buildFeaturesMarkdown() {
       "Releases and milestones become short social posts you can review, tweak, and publish.",
     ]),
     markdownSection("Next Steps", [
-      "- [Pricing](https://usenotra.com/pricing.md)",
-      "- [Blog](https://usenotra.com/blog.md)",
-      "- [Changelog examples](https://usenotra.com/changelog.md)",
+      "- [Pricing](https://www.usenotra.com/pricing.md)",
+      "- [Blog](https://www.usenotra.com/blog.md)",
+      "- [Changelog examples](https://www.usenotra.com/changelog.md)",
       "- [Start for free](https://app.usenotra.com/signup)",
     ]),
   ].join("\n");
@@ -174,10 +174,10 @@ export function buildLandingMarkdown() {
     "Primary CTA: [Start for free](https://app.usenotra.com/signup)",
     "",
     markdownSection("Explore in Markdown", [
-      "- [Features](https://usenotra.com/features.md)",
-      "- [Pricing](https://usenotra.com/pricing.md)",
-      "- [Blog](https://usenotra.com/blog.md)",
-      "- [Changelog](https://usenotra.com/changelog.md)",
+      "- [Features](https://www.usenotra.com/features.md)",
+      "- [Pricing](https://www.usenotra.com/pricing.md)",
+      "- [Blog](https://www.usenotra.com/blog.md)",
+      "- [Changelog](https://www.usenotra.com/changelog.md)",
     ]),
     markdownSection("Social Proof", [
       "Fast-moving teams trust Notra to tell their story.",
@@ -189,13 +189,13 @@ export function buildLandingMarkdown() {
       "Your team ships. Notra tells the story.",
       "Notra quietly watches GitHub, Linear, and Slack, then drafts changelogs, posts, and announcements in your brand voice.",
       "",
-      "See the dedicated feature page: [Features](https://usenotra.com/features.md)",
+      "See the dedicated feature page: [Features](https://www.usenotra.com/features.md)",
     ]),
     markdownSection("Pricing", [
       "Pricing that scales with what you ship.",
       "Start with a 7-day free trial. Upgrade when you need more integrations, posts, or team seats.",
       "",
-      "See the dedicated pricing page: [Pricing](https://usenotra.com/pricing.md)",
+      "See the dedicated pricing page: [Pricing](https://www.usenotra.com/pricing.md)",
     ]),
     markdownSection(
       "FAQ",

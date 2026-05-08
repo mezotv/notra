@@ -1,0 +1,260 @@
+---
+title: "Team Management"
+description: "Invite team members and manage roles and permissions in your workspace"
+---
+
+## Overview
+
+Notra workspaces support team collaboration with role-based access control. Invite team members, assign roles, and manage permissions to control who can access and modify your content and settings.
+
+## Inviting Team Members
+
+Add new members to your workspace through email invitations.
+
+<Steps>
+  <Step title="Navigate to Members page">
+    Go to **Settings > Members** in your workspace.
+  </Step>
+
+  <Step title="Send invitation">
+    Click **Invite Member** and enter the team member's email address.
+  </Step>
+
+  <Step title="Select role">
+    Choose the appropriate role for the new member (Member or Admin).
+  </Step>
+
+  <Step title="Send invite">
+    Click **Send Invitation**. The recipient will receive an email with a link to join your workspace.
+  </Step>
+</Steps>
+
+<Info>
+  Invitations are sent to the email address provided. Recipients must create a Notra account or log in with an existing account to accept the invitation.
+</Info>
+
+### Team Member Limits
+
+The number of team members you can invite depends on your plan:
+
+* **Free Plan**: Limited team members
+* **Pro Plan**: More team members included
+
+If you reach your plan limit, you'll need to upgrade to invite additional members.
+
+<Note>
+  When you reach your team member limit, you'll see a prompt to upgrade your plan. Click **View plans** to compare options.
+</Note>
+
+## Roles and Permissions
+
+Notra uses a role-based permission system with three levels of access:
+
+### Owner
+
+The workspace creator and primary administrator.
+
+**Permissions:**
+
+* Full access to all workspace features
+* Manage organization settings (name, slug, logo)
+* Add and remove team members
+* Assign and modify roles
+* Delete the workspace
+* Manage billing and subscriptions
+* Configure integrations and API keys
+* Create and manage content
+* Set up automations and workflows
+
+<Warning>
+  Only the owner can delete the workspace. Ownership cannot currently be transferred.
+</Warning>
+
+### Admin
+
+Administrators have broad access to manage workspace operations.
+
+**Permissions:**
+
+* Manage team members (invite, remove, change roles)
+* Configure workspace settings
+* Manage brand identity
+* Create and manage content
+* Set up automations and workflows
+* Configure integrations
+* Manage API keys
+* View usage and analytics
+
+**Cannot:**
+
+* Delete the workspace
+* Manage billing (owner-only)
+* Remove the workspace owner
+
+### Member
+
+Standard team members with access to core content features.
+
+**Permissions:**
+
+* Create and edit content
+* Use AI tools for content generation
+* View content and automations
+* Access workspace integrations
+
+**Cannot:**
+
+* Invite or remove team members
+* Change workspace settings
+* Modify brand identity
+* Manage billing
+* Configure integrations
+* Delete content created by others (admin approval may be required)
+
+## Managing Team Members
+
+View and manage your team from the **Settings > Members** page.
+
+### Viewing Members
+
+The Members page displays:
+
+* User name and profile picture
+* Email address
+* Current role
+* Member actions
+
+The member list shows all active team members with their assigned roles.
+
+### Changing Member Roles
+
+To update a team member's role:
+
+1. Navigate to **Settings > Members**
+2. Find the member in the list
+3. Click the action menu (three dots) next to their name
+4. Select **Change Role**
+5. Choose the new role (Member or Admin)
+6. Confirm the change
+
+<Info>
+  Role changes take effect immediately. The team member will have access to new permissions right away.
+</Info>
+
+### Removing Team Members
+
+To remove a member from your workspace:
+
+1. Navigate to **Settings > Members**
+2. Find the member in the list
+3. Click the action menu next to their name
+4. Select **Remove Member**
+5. Confirm the removal
+
+<Warning>
+  Removing a member revokes their access immediately. They will no longer be able to access the workspace or its content.
+</Warning>
+
+## Pending Invitations
+
+Track and manage outstanding invitations from the Members page.
+
+### Viewing Pending Invitations
+
+1. Go to **Settings > Members**
+2. Click the **Pending** tab
+
+You'll see:
+
+* Invited email address
+* Role assigned
+* Invitation status
+* Date sent
+
+### Managing Invitations
+
+**Resend an invitation:**
+
+1. Find the invitation in the Pending list
+2. Click **Resend**
+3. A new invitation email will be sent
+
+**Cancel an invitation:**
+
+1. Find the invitation in the Pending list
+2. Click the action menu
+3. Select **Cancel Invitation**
+4. The invitation link will be invalidated
+
+<Note>
+  Invitation links expire after a certain period. If a team member hasn't accepted, you can resend the invitation.
+</Note>
+
+## Accepting Invitations
+
+When you receive a workspace invitation:
+
+<Steps>
+  <Step title="Check your email">
+    Look for an invitation email from Notra with the subject "You've been invited to join \[Organization Name]"
+  </Step>
+
+  <Step title="Click the invitation link">
+    Open the email and click **Accept Invitation**
+  </Step>
+
+  <Step title="Create account or log in">
+    If you don't have a Notra account, you'll be prompted to create one. Existing users can log in.
+  </Step>
+
+  <Step title="Access the workspace">
+    After accepting, you'll be added to the workspace with the assigned role and can start collaborating.
+  </Step>
+</Steps>
+
+## Team Collaboration Best Practices
+
+<Tip>
+  **Assign roles appropriately** - Give team members the minimum permissions they need. Use the Member role for content creators and Admin for team leads who need to manage settings.
+</Tip>
+
+<Tip>
+  **Review team members regularly** - Periodically audit your team list and remove members who no longer need access to maintain security.
+</Tip>
+
+<Tip>
+  **Use descriptive email invitations** - When inviting members, ensure they understand which workspace they're joining, especially if your organization has multiple workspaces.
+</Tip>
+
+<Tip>
+  **Document your team structure** - For larger teams, maintain a record of who has which roles and why, making it easier to manage permissions as your team grows.
+</Tip>
+
+## Multiple Organizations
+
+Team members can belong to multiple Notra workspaces with different roles in each.
+
+### Switching Organizations
+
+If you're a member of multiple workspaces:
+
+1. Click your current organization name in the sidebar
+2. Select a different organization from the dropdown
+3. Your view will switch to the selected workspace
+
+### Managing Your Memberships
+
+View all workspaces you belong to:
+
+1. Go to **Settings > Account**
+2. Scroll to the **Organizations** section
+3. See all workspaces where you're a member
+
+**Actions available:**
+
+* **View** - Switch to that workspace
+* **Leave** - Remove yourself from a workspace you don't own
+
+<Warning>
+  If you leave a workspace, you'll need to be re-invited by an admin to regain access.
+</Warning>

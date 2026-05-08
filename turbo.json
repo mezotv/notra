@@ -1,5 +1,5 @@
 {
-  "$schema": "https://v2-9-6.turborepo.dev/schema.json",
+  "$schema": "https://v2-9-10.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "AI_GATEWAY_API_KEY",
@@ -25,6 +25,7 @@
     "UPSTASH_REDIS_REST_TOKEN",
     "UPSTASH_REDIS_REST_URL",
     "DATABUDDY_API_KEY",
+    "DATABUDDY_DASHBOARD_WEBSITE_ID",
     "CLOUDFLARE_SECRET_ACCESS_KEY",
     "CLOUDFLARE_ACCESS_KEY_ID",
     "CLOUDFLARE_S3_ENDPOINT",
@@ -46,7 +47,8 @@
     "AXIOM_ORG_ID",
     "SKILLS_SH_API_KEY",
     "FEEDBACK_EMAIL_TO",
-    "UPSTASH_BOX_API_KEY"
+    "UPSTASH_BOX_API_KEY",
+    "TCC_API_KEY"
   ],
   "envMode": "strict",
   "tasks": {
@@ -59,6 +61,9 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
     },
     "check-types": {
+      "dependsOn": ["transit"]
+    },
+    "knip": {
       "dependsOn": ["transit"]
     },
     "dev": {

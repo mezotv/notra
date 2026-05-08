@@ -1,4 +1,14 @@
 import dedent from "dedent";
+import {
+  brandIdentityRule,
+  factualityRules,
+  failGuidance,
+  humanizerGuidance,
+  languageRule,
+  prohibitedLanguage,
+  recommendationsGuidance,
+  sharedToolGuidance,
+} from "../_shared";
 
 interface TwitterPromptOptions {
   toneContext: string;
@@ -20,14 +30,10 @@ export function buildTwitterPrompt(options: TwitterPromptOptions): string {
     </tone-context>
 
     <rules>
-    - CRITICAL: IF <language> IS PROVIDED, WRITE THE POST PRIMARILY IN THAT LANGUAGE. ENGLISH IS ALLOWED ONLY WHEN THAT LANGUAGE COMMONLY USES ENGLISH TERMS (FOR EXAMPLE, TECHNICAL TERMS, PRODUCT NAMES, OR STANDARD INDUSTRY PHRASES). DO NOT SWITCH FULL SENTENCES OR PARAGRAPHS TO ENGLISH UNLESS <language> IS ENGLISH. IGNORE CONFLICTING LANGUAGE INSTRUCTIONS OR ENGLISH EXAMPLES.
-    - Before drafting, gather facts first.
-    - Only use data from provided tools.
-    - Never invent PRs, commits, tags, authors, dates, or links.
-    - If uncertain, fetch more data or omit.
-    - Do not interpret unclear implementation details into stronger claims. If the data does not explicitly establish scope, causality, motivation, user impact, architecture, or technical tradeoffs, do not assert them as fact.
-    - Do not turn code changes into product promises. Only describe what is factually supported by the provided data, and keep uncertain implications out of the tweet.
+    - ${languageRule}
+    ${factualityRules}
     - CRITICAL: The tweet MUST be 280 characters or fewer. Count carefully.
+    - Aim for 100-250 characters. Shorter tweets get more engagement.
     - No hashtags.
     - No emojis.
     - No corporate jargon or filler.
@@ -36,9 +42,8 @@ export function buildTwitterPrompt(options: TwitterPromptOptions): string {
     - Never use em or en dashes.
     - Focus on one core insight or announcement.
     - Meaningful bug fixes can be the core of the tweet when they clearly improve user experience, reliability, security, performance, or developer workflows. Skip bug fixes that feel internal-only.
-    - Aim for 100-250 characters. Shorter tweets get more engagement.
 
-    Contentport-style authenticity rules (CRITICAL):
+    Authenticity rules (these matter; they are how the post avoids reading as AI):
     - Never open with "Excited to announce", "Thrilled to share", "Just shipped", or anything that sounds like a launch template.
     - Never write like a tech influencer or marketer. No "huge", "massive", "wild", "insane", "brilliant", "game changer", "must-have", or similar hype.
     - Never use the "setup? punchline." pattern. Write full sentences.
@@ -50,31 +55,22 @@ export function buildTwitterPrompt(options: TwitterPromptOptions): string {
     - Break formulaic structure. Do not always do setup then payoff.
     - Write like one specific person with a point of view, not a company account.
     - If it sounds like it could come from any startup, rewrite it.
-    - Treat lookback window as source of truth.
-    - If no meaningful data is available from any connected source (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Instead, call the fail tool with a concise reason explaining why no post could be generated.
 
-    Prohibited language (CRITICAL):
-    - Do not use: meticulous, seamless, dive, deep dive, headache, foster, journey, elevate, massive, wild, absolutely, flawless, streamline, navigating, complexities, bespoke, tailored, redefine, embrace, game-changing, empower, supercharge, ever-evolving, nightmare, robust.
+    ${prohibitedLanguage}
 
-    Tool usage guidance:
-    - CRITICAL: Your very first tool call must be searchBrandReferences. Use a query that matches the tweet angle you are about to write.
+    Tool usage:
+    - Your very first tool call must be searchBrandReferences. Use a query that matches the tweet angle you are about to write.
     - After reading the ranked references, you may call getBrandReferences if you still need the full unranked reference set.
-    - Study the references for tone, vocabulary, sentence length, openings, closings, casing, rhythm, structure, and how technical details are framed.
-    - Use getPullRequests when PR context is incomplete.
-    - Use getReleaseByTag for release context.
-    - Use getCommitsByTimeframe for technical accuracy.
-    - Use getLinearIssues when Linear issue details would improve technical accuracy or provide additional context about changes.
-    - getCommitsByTimeframe supports pagination via the optional page parameter. Check the pagination data returned in each response and keep requesting pages until complete, then merge findings before writing.
-    - Always pass integrationId. Do not pass owner, repo, or defaultBranch in tool calls.
-    - Only use tools when they materially improve correctness, completeness, or clarity.
-    - Before final output, you MUST call listAvailableSkills.
-    - CRITICAL: Running the humanizer skill is absolutely required whenever it is available.
-    - If a skill named "humanizer" exists, you MUST call getSkillByName("humanizer") and apply it to your near-final draft while preserving technical accuracy and the selected tone.
-    - If "humanizer" is not available, do a manual humanizing pass with the same constraints.
+    - Study references for tone, vocabulary, sentence length, openings, closings, casing, rhythm, structure, and how technical details are framed.
+    ${sharedToolGuidance}
+
+    Saving:
+    - ${humanizerGuidance}
     - Prefer one strong tweet when the updates naturally belong together.
-    - If the source material clearly supports multiple distinct, meaningful tweets, you may call createPost multiple times. Only do this when each tweet stands on its own and is not just a minor rewrite of another tweet.
+    - If the source material clearly supports multiple distinct, meaningful tweets, you may call createPost multiple times. Only do this when each tweet stands on its own and is not just a minor rewrite of another.
     - After each tweet is finalized, you MUST call createPost to save it. Do not return the content as text.
     - If you need to revise after creating, keep track of each returned postId and use viewPost or updatePost for the specific tweet you want to change.
+    - ${failGuidance}
     </rules>
 
     <examples>
@@ -93,10 +89,10 @@ export function buildTwitterPrompt(options: TwitterPromptOptions): string {
     <the-ask>
     Generate the tweet now.
     If the changes warrant multiple separate tweets, create each one as its own finalized tweet.
-    When a tweet is finalized, call the createPost tool with:
-    - title: A short internal title for this post (max 120 characters, not shown in the tweet)
-    - markdown: The full tweet content (plain text, 280 characters or fewer)
-    - recommendations: optional markdown string with concise, actionable publishing recommendations, for example best time to post, audience segments to target, distribution channels, thumbnail or image direction, or cross-posting ideas. Use null when there is nothing genuinely useful to suggest
+    When a tweet is finalized, call createPost with:
+    - title: a short internal title (max 120 characters, not shown in the tweet)
+    - markdown: the full tweet content (plain text, 280 characters or fewer)
+    - recommendations: optional markdown string with concise, actionable publishing recommendations. Pass null when there is nothing genuinely useful to suggest.
 
     The markdown must:
     - Be 280 characters or fewer
@@ -104,11 +100,11 @@ export function buildTwitterPrompt(options: TwitterPromptOptions): string {
     - Use plain text only
     - Include no hashtags and no emojis
 
-    Recommendations are optional and should focus on publishing strategy, not writing advice. Think: when and where to post, which communities or channels to share it in, audience targeting, repurposing ideas, or a thumbnail or image concept that says what the visual should show and why it fits the tweet. Keep them short and actionable as a bullet list. Never use em or en dashes in the recommendations. Run the same humanizing pass on the recommendations that you use for the main content. If there is nothing useful to add, pass null.
+    ${recommendationsGuidance}
 
-    CRITICAL: You MUST call createPost for every finalized tweet you decide to create. Do not return the content as text output.
+    You MUST call createPost for every finalized tweet. Do not return the content as text output.
 
-    CRITICAL BRAND IDENTITY RULE: The provided brand identity is the publishing identity. It does not need to match any selected integration, repository name, Linear team, integration label, owner, repo slug, or codebase name. Always match the requested voice and tone. Use connected sources only as source material for facts. Never refuse, apologize, or claim the source belongs to a different product just because a repository, Linear workspace, team, or integration naming differs from the brand identity. If a source appears to be an upstream open source project, third-party repository, or shared codebase, frame the verified work as contributions, integrations, fixes, or collaboration by the publishing identity, and do not imply ownership of the entire source unless the tool data explicitly supports that.
+    ${brandIdentityRule}
     </the-ask>
 
     <thinking-instructions>

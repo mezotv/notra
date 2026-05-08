@@ -9,11 +9,11 @@ export const REPO_IMAGE_HEIGHT = 630;
 const GOOGLE_FONT_URL_REGEX =
   /src: url\((.+?)\) format\('(opentype|truetype)'\)/;
 
-type FontSpec = {
+interface FontSpec {
   name: string;
   weight: 400 | 500 | 700;
   family: string;
-};
+}
 
 const FONT_SPECS: FontSpec[] = [
   { name: "Inter", weight: 400, family: "Inter" },
@@ -59,7 +59,7 @@ async function loadGoogleFont(familySpec: string): Promise<ArrayBuffer> {
 }
 
 async function loadAllFonts() {
-  const loaded = await Promise.all(
+  const results = await Promise.allSettled(
     FONT_SPECS.map(async (spec) => ({
       name: spec.name,
       weight: spec.weight,
@@ -67,20 +67,36 @@ async function loadAllFonts() {
       data: await loadGoogleFont(spec.family),
     }))
   );
+  const loaded = results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+
+  if (loaded.length === 0) {
+    throw new Error("Failed to load any fonts for repo image rendering");
+  }
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.warn("Failed to load repo-image font", result.reason);
+    }
+  }
+
   return loaded;
 }
 
-type VNode = {
+interface VNode {
   type?: string;
   props?: {
     style?: Record<string, unknown>;
     children?: unknown;
   };
-};
+}
 
 const SATORI_VALID_DISPLAY = new Set(["flex", "contents", "none"]);
 
 const STYLE_ATTR_RE = /style\s*=\s*(['"])([\s\S]*?)\1/i;
+const DISPLAY_STYLE_RE = /(^|;)\s*display\s*:/i;
+const LEADING_STYLE_SEPARATOR_RE = /^\s*;?/;
 
 function injectDisplayFlexInHtml(htmlSource: string): string {
   return htmlSource.replace(/<div\b([^>]*)>/gi, (match, rawAttrs: string) => {
@@ -89,10 +105,13 @@ function injectDisplayFlexInHtml(htmlSource: string): string {
     if (styleMatch) {
       const quote = styleMatch[1] ?? '"';
       const styleBody = styleMatch[2] ?? "";
-      if (/(^|;)\s*display\s*:/i.test(styleBody)) {
+      if (DISPLAY_STYLE_RE.test(styleBody)) {
         return match;
       }
-      const newStyle = `display:flex;${styleBody.replace(/^\s*;?/, "")}`;
+      const newStyle = `display:flex;${styleBody.replace(
+        LEADING_STYLE_SEPARATOR_RE,
+        ""
+      )}`;
       const newAttrs = rawAttrs.replace(
         STYLE_ATTR_RE,
         `style=${quote}${newStyle}${quote}`
@@ -132,8 +151,14 @@ function enforceSatoriDisplay(node: unknown) {
     return;
   }
 
-  const props = (node.props ??= {});
-  const style = (props.style ??= {});
+  if (!node.props) {
+    node.props = {};
+  }
+  const props = node.props;
+  if (!props.style) {
+    props.style = {};
+  }
+  const style = props.style;
   const display = style.display;
   if (typeof display !== "string" || !SATORI_VALID_DISPLAY.has(display)) {
     style.display = "flex";

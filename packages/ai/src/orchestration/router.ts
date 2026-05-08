@@ -10,6 +10,10 @@ import type {
   RoutingDecision,
   RoutingResult,
 } from "@notra/ai/types/orchestration";
+import {
+  buildExperimentalTelemetry,
+  type TccMetadata,
+} from "@notra/ai/utils/tcc";
 import { generateText, Output } from "ai";
 
 const MODELS = {
@@ -75,7 +79,8 @@ export async function routeMessage(
   userMessage: string,
   hasIntegrationContext: boolean,
   log?: AILogTarget,
-  hasAttachments = false
+  hasAttachments = false,
+  telemetryMetadata?: TccMetadata
 ): Promise<RoutingDecision> {
   const fastPath = matchTrivialFastPath(
     userMessage,
@@ -99,6 +104,7 @@ export async function routeMessage(
     prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
+    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });
 
   return output;
@@ -115,13 +121,15 @@ export async function routeAndSelectModel(
   userMessage: string,
   hasIntegrationContext: boolean,
   log?: AILogTarget,
-  hasAttachments = false
+  hasAttachments = false,
+  telemetryMetadata?: TccMetadata
 ): Promise<RoutingResult> {
   const decision = await routeMessage(
     userMessage,
     hasIntegrationContext,
     log,
-    hasAttachments
+    hasAttachments,
+    telemetryMetadata
   );
   const model = selectModel(decision);
 

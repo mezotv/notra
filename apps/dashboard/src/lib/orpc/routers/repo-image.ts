@@ -1,3 +1,4 @@
+import { GitHubBranchNotFoundError } from "@notra/ai/integrations/github";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
@@ -5,7 +6,6 @@ import {
   internalServerError,
   notFound,
 } from "@/lib/orpc/utils/errors";
-import { GitHubBranchNotFoundError } from "@/lib/services/github-integration";
 import { generateRepoImage, RepoImageError } from "@/lib/services/repo-image";
 import { generateRepoImageInputSchema } from "@/schemas/repo-image";
 
@@ -28,8 +28,14 @@ export const repoImageRouter = {
           throw badRequest(error.message);
         }
         if (error instanceof RepoImageError) {
-          if (error.code === "missing_config") {
+          if (error.code === "not_found") {
             throw notFound(error.message);
+          }
+          if (
+            error.code === "missing_config" ||
+            error.code === "agent_failed"
+          ) {
+            throw internalServerError(error.message, error);
           }
           throw badRequest(error.message);
         }

@@ -1,3 +1,8 @@
+import {
+  getDecryptedToken,
+  getGitHubIntegrationById,
+  validateRepositoryBranchExists,
+} from "@notra/ai/integrations/github";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { Agent, Box } from "@upstash/box";
 import {
@@ -5,13 +10,8 @@ import {
   REPO_IMAGE_OUTPUT_HTML_PATH,
 } from "@/lib/repo-image/prompt";
 import { renderHtmlToImages } from "@/lib/repo-image/render";
-import { configureLongFetchTimeouts } from "@/lib/repo-image/undici-dispatcher";
+import { withLongFetchTimeouts } from "@/lib/repo-image/undici-dispatcher";
 import { shortSha } from "@/lib/repo-image/utils";
-import {
-  getDecryptedToken,
-  getGitHubIntegrationById,
-  validateRepositoryBranchExists,
-} from "@/lib/services/github-integration";
 import type {
   GenerateRepoImageInput,
   GenerateRepoImageResult,
@@ -21,13 +21,29 @@ import type {
 const AGENT_TIMEOUT_MS = 480_000;
 
 export class RepoImageError extends Error {
-  readonly code: "missing_config" | "agent_failed";
+  readonly code:
+    | "missing_config"
+    | "agent_failed"
+    | "invalid_source"
+    | "not_found";
 
-  constructor(code: "missing_config" | "agent_failed", message: string) {
+  constructor(
+    code: "missing_config" | "agent_failed" | "invalid_source" | "not_found",
+    message: string
+  ) {
     super(message);
     this.name = "RepoImageError";
     this.code = code;
   }
+}
+
+function getErrorStatus(error: unknown) {
+  return typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof error.status === "number"
+    ? error.status
+    : undefined;
 }
 
 async function buildSourceContext(params: {
@@ -49,21 +65,42 @@ async function buildSourceContext(params: {
 
   if (mode === "pr") {
     const prNumber = params.prNumber as number;
-    const [{ data: pr }, { data: files }] = await Promise.all([
-      octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
-        owner,
-        repo,
-        pull_number: prNumber,
-        headers: { "X-GitHub-Api-Version": "2022-11-28" },
-      }),
-      octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
-        owner,
-        repo,
-        pull_number: prNumber,
-        per_page: 10,
-        headers: { "X-GitHub-Api-Version": "2022-11-28" },
-      }),
-    ]);
+    let pr: Awaited<
+      ReturnType<
+        typeof octokit.request<"GET /repos/{owner}/{repo}/pulls/{pull_number}">
+      >
+    >["data"];
+    let files: Awaited<
+      ReturnType<
+        typeof octokit.request<"GET /repos/{owner}/{repo}/pulls/{pull_number}/files">
+      >
+    >["data"];
+
+    try {
+      [{ data: pr }, { data: files }] = await Promise.all([
+        octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}", {
+          owner,
+          repo,
+          pull_number: prNumber,
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        }),
+        octokit.request("GET /repos/{owner}/{repo}/pulls/{pull_number}/files", {
+          owner,
+          repo,
+          pull_number: prNumber,
+          per_page: 10,
+          headers: { "X-GitHub-Api-Version": "2022-11-28" },
+        }),
+      ]);
+    } catch (error) {
+      if (getErrorStatus(error) === 404) {
+        throw new RepoImageError(
+          "invalid_source",
+          `Pull request #${prNumber} was not found`
+        );
+      }
+      throw error;
+    }
 
     return {
       mode,
@@ -78,15 +115,28 @@ async function buildSourceContext(params: {
   }
 
   const sha = params.commitSha as string;
-  const { data: commit } = await octokit.request(
-    "GET /repos/{owner}/{repo}/commits/{ref}",
-    {
-      owner,
-      repo,
-      ref: sha,
-      headers: { "X-GitHub-Api-Version": "2022-11-28" },
+  let commit: Awaited<
+    ReturnType<
+      typeof octokit.request<"GET /repos/{owner}/{repo}/commits/{ref}">
+    >
+  >["data"];
+
+  try {
+    ({ data: commit } = await octokit.request(
+      "GET /repos/{owner}/{repo}/commits/{ref}",
+      {
+        owner,
+        repo,
+        ref: sha,
+        headers: { "X-GitHub-Api-Version": "2022-11-28" },
+      }
+    ));
+  } catch (error) {
+    if (getErrorStatus(error) === 404) {
+      throw new RepoImageError("invalid_source", `Commit ${sha} was not found`);
     }
-  );
+    throw error;
+  }
 
   return {
     mode,
@@ -104,8 +154,6 @@ export async function generateRepoImage(params: {
 }): Promise<GenerateRepoImageResult> {
   const { input, userId } = params;
 
-  configureLongFetchTimeouts();
-
   if (!process.env.UPSTASH_BOX_API_KEY) {
     throw new RepoImageError(
       "missing_config",
@@ -114,14 +162,18 @@ export async function generateRepoImage(params: {
   }
 
   const integration = await getGitHubIntegrationById(input.integrationId);
-  if (!integration || integration.organizationId !== input.organizationId) {
-    throw new RepoImageError("missing_config", "Integration not found");
+  if (
+    !integration ||
+    integration.organizationId !== input.organizationId ||
+    !integration.enabled
+  ) {
+    throw new RepoImageError("not_found", "Integration not found");
   }
 
   const repository = integration.repositories[0];
-  if (!repository) {
+  if (!repository || !repository.enabled) {
     throw new RepoImageError(
-      "missing_config",
+      "not_found",
       "Integration has no repository configured"
     );
   }
@@ -145,67 +197,72 @@ export async function generateRepoImage(params: {
     token,
   });
 
-  const box = await Box.create({
-    apiKey: process.env.UPSTASH_BOX_API_KEY,
-    runtime: "node",
-    git: {
-      ...(token ? { token } : {}),
-      userName: "notra-bot",
-      userEmail: "bot@usenotra.com",
-    },
-    agent: {
-      harness: Agent.OpenCode,
-      model: "openrouter/anthropic/claude-sonnet-4-6",
-    },
-    timeout: AGENT_TIMEOUT_MS,
-  });
-
-  let html: string;
-
-  try {
-    await box.git.clone({
-      repo: `https://github.com/${repository.owner}/${repository.repo}.git`,
-      branch: input.branch,
-    });
-
-    const stream = await box.agent.stream({
-      prompt: buildExtractionPrompt({
-        owner: repository.owner,
-        repo: repository.repo,
-        branch: input.branch,
-        source,
-      }),
+  return await withLongFetchTimeouts(async () => {
+    const box = await Box.create({
+      apiKey: process.env.UPSTASH_BOX_API_KEY,
+      runtime: "node",
+      git: {
+        ...(token ? { token } : {}),
+        userName: "notra-bot",
+        userEmail: "bot@usenotra.com",
+      },
+      agent: {
+        harness: Agent.OpenCode,
+        model: "openrouter/anthropic/claude-sonnet-4-6",
+      },
       timeout: AGENT_TIMEOUT_MS,
     });
 
-    for await (const chunk of stream) {
-      if (chunk.type === "tool-call") {
-        console.log(`[repo-image] tool: ${chunk.toolName}`);
+    let html: string;
+
+    try {
+      await box.git.clone({
+        repo: `https://github.com/${repository.owner}/${repository.repo}.git`,
+        branch: input.branch,
+      });
+
+      const stream = await box.agent.stream({
+        prompt: buildExtractionPrompt({
+          owner: repository.owner,
+          repo: repository.repo,
+          branch: input.branch,
+          source,
+        }),
+        timeout: AGENT_TIMEOUT_MS,
+      });
+
+      for await (const chunk of stream) {
+        if (chunk.type === "tool-call") {
+          console.log(`[repo-image] tool: ${chunk.toolName}`);
+        }
       }
+
+      const existsRun = await box.exec.command(
+        `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
+      );
+      if (existsRun.result.trim() !== "ok") {
+        const diag = await box.exec.command(
+          `ls -la /workspace/home/ 2>&1 | head -50; echo ---; find /workspace/home -maxdepth 4 -name "output.html" 2>/dev/null`
+        );
+        console.error(
+          "[repo-image] missing output.html, /workspace/home contents:\n",
+          diag.result
+        );
+        throw new RepoImageError(
+          "agent_failed",
+          `Agent did not produce ${REPO_IMAGE_OUTPUT_HTML_PATH}`
+        );
+      }
+
+      html = await box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH);
+    } finally {
+      await box.delete().catch((error: unknown) => {
+        console.error("Failed to delete repo-image box", error);
+      });
     }
 
-    const existsRun = await box.exec.command(
-      `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
-    );
-    if (existsRun.result.trim() !== "ok") {
-      const diag = await box.exec.command(
-        `ls -la /workspace/home/ 2>&1 | head -50; echo ---; find /workspace/home -maxdepth 4 -name "output.html" 2>/dev/null`
-      );
-      console.error("[repo-image] missing output.html, /workspace/home contents:\n", diag.result);
-      throw new RepoImageError(
-        "agent_failed",
-        `Agent did not produce ${REPO_IMAGE_OUTPUT_HTML_PATH}`
-      );
-    }
+    const { svg, pngBase64 } = await renderHtmlToImages(html);
 
-    html = await box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH);
-  } finally {
-    await box.delete().catch((error: unknown) => {
-      console.error("Failed to delete repo-image box", error);
-    });
-  }
-
-  const { svg, pngBase64 } = await renderHtmlToImages(html);
-
-  return { pngBase64, svg, html };
+    return { pngBase64, svg, html };
+  });
 }

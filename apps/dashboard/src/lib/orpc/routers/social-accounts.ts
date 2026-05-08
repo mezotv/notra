@@ -1,3 +1,4 @@
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -5,7 +6,6 @@ import { and, eq } from "drizzle-orm";
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { redis } from "@/lib/redis";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   badRequest,

@@ -17,6 +17,7 @@ import type {
   StandaloneChatDeps,
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
   isToolUIPart,
@@ -25,7 +26,6 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
-import { addAnthropicPromptCaching } from "../utils/prompt-caching";
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -58,6 +58,7 @@ export async function orchestrateStandaloneChat(
     thinkingLevel = "medium",
     abortSignal,
     timezone,
+    telemetryMetadata,
   } = input;
 
   const log = deps?.log ?? inputLog;
@@ -95,7 +96,9 @@ export async function orchestrateStandaloneChat(
     const decision = await routeMessage(
       lastUserMessage,
       hasGitHub || hasLinear,
-      log
+      log,
+      hasNonTextPartsOnLatestTurn,
+      telemetryMetadata
     );
     const auto = selectAutoModel(decision);
     selectedModel = auto.model;
@@ -192,10 +195,8 @@ export async function orchestrateStandaloneChat(
     stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
-    prepareStep: ({ messages: stepMessages }) => ({
-      messages: addAnthropicPromptCaching(stepMessages, routingDecision.model),
-    }),
     abortSignal,
+    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     onChunk({ chunk }) {
       if (firstChunkFired) {
         return;
@@ -260,10 +261,17 @@ function getLastUserMessage(messages: UIMessage[]): string {
   return "";
 }
 
+// Tool-part states that are "complete" from the user's perspective and must
+// survive history trimming before `convertToModelMessages` runs. Missing
+// `approval-responded` here previously dropped the user's approval payload,
+// leaving the conversation ending on an assistant turn — which Bedrock-routed
+// Anthropic (Sonnet 4.6 / Opus 4.7 via AI Gateway) rejects with
+// "This model does not support assistant message prefill".
 const TERMINAL_TOOL_STATES = new Set([
   "output-available",
   "output-error",
   "output-denied",
+  "approval-responded",
 ]);
 
 const STRIP_TAIL_SCAN_DEPTH = 2;

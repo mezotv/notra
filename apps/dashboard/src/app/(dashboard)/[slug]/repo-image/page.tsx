@@ -52,6 +52,7 @@ const MODE_LABELS: Record<RepoImageMode, string> = {
 type GitHubIntegrationOption = {
   id: string;
   displayName: string;
+  enabled: boolean;
   owner: string;
   repo: string;
   defaultBranch: string | null;
@@ -78,16 +79,19 @@ export default function RepoImagePage() {
   const githubIntegrations: GitHubIntegrationOption[] = useMemo(() => {
     const list = integrationsData?.integrations ?? [];
     return list
-      .filter((integration) => integration.type === "github")
+      .filter(
+        (integration) => integration.type === "github" && integration.enabled
+      )
       .flatMap((integration) => {
         const repository = integration.repositories[0];
-        if (!repository) {
+        if (!repository || !repository.enabled) {
           return [];
         }
         return [
           {
             id: integration.id,
             displayName: integration.displayName,
+            enabled: integration.enabled,
             owner: repository.owner,
             repo: repository.repo,
             defaultBranch: repository.defaultBranch,

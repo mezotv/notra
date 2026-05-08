@@ -39,9 +39,10 @@ export const EMAIL_CONFIG = {
   replyTo: "support@usenotra.com",
 
   /**
-   * From email address
+   * From email address for automated notification emails.
+   * Use a subdomain sender so notification mail does not share the apex domain.
    */
-  from: "Notra <notifications@usenotra.com>",
+  from: "Notra <notifications@notifications.usenotra.com>",
 
   /**
    * Physical mailing address for CAN-SPAM compliance

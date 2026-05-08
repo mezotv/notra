@@ -59,7 +59,7 @@ export default async function AuthCallback(props: {
     }
   }
 
-  const organization = await getLastActiveOrganization(session.user.id);
+  const organization = await getLastActiveOrganization();
 
   if (!organization) {
     redirect("/onboarding");
@@ -71,7 +71,7 @@ export default async function AuthCallback(props: {
     redirect(`/${organization.slug}`);
   }
 
-  const allOrgs = await getAllUserOrganizations(session.user.id);
+  const allOrgs = await getAllUserOrganizations();
   for (const org of allOrgs) {
     if (
       org.id !== organization.id &&

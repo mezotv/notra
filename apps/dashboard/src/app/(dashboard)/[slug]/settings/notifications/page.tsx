@@ -19,6 +19,7 @@ interface PageProps {
 interface NotificationSettings {
   scheduledContentCreation: boolean;
   scheduledContentFailed: boolean;
+  marketingEmails: boolean;
 }
 
 export default function NotificationsSettingsPage({ params }: PageProps) {
@@ -147,6 +148,38 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
                   id="scheduled-content-failed"
                   onCheckedChange={(checked) =>
                     updateSettings({ scheduledContentFailed: checked })
+                  }
+                />
+              </div>
+              {!isOwner && (
+                <p className="text-muted-foreground text-xs">
+                  Only the organization owner can manage notification settings.
+                </p>
+              )}
+            </div>
+          )}
+        </TitleCard>
+
+        <TitleCard heading="Marketing Emails">
+          {isLoadingSettings ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="marketing-emails">Product updates</Label>
+                  <p className="text-muted-foreground text-xs">
+                    Receive emails about new features, tips, and announcements
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.marketingEmails ?? true}
+                  disabled={!isOwner || isUpdating}
+                  id="marketing-emails"
+                  onCheckedChange={(checked) =>
+                    updateSettings({ marketingEmails: checked })
                   }
                 />
               </div>

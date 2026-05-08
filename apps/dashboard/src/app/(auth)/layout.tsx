@@ -11,7 +11,7 @@ export default async function AuthLayout({
   const session = await getSession();
 
   if (session?.user) {
-    const organization = await getLastActiveOrganization(session.user.id);
+    const organization = await getLastActiveOrganization();
 
     if (organization) {
       redirect(`/${organization.slug}`);

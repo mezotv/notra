@@ -133,7 +133,7 @@ const fetchBlogPosts = unstable_cache(
   },
   ["notra-blog-posts"],
   {
-    revalidate: 300,
+    revalidate: 3000,
   }
 );
 

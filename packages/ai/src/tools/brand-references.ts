@@ -2,12 +2,13 @@ import type { BrandReferencesConfig } from "@notra/ai/types/brand-references";
 import { serializeBrandReference } from "@notra/ai/utils/brand-references";
 import { toolDescription } from "@notra/ai/utils/description";
 import { db } from "@notra/db/drizzle";
+import { brandReferences, brandSettings } from "@notra/db/schema";
 import {
   getBrandReferenceIdFromSearchResult,
   searchBrandReferenceMemories,
 } from "@notra/db/utils/supermemory";
 import { type Tool, tool } from "ai";
-import { sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { getAICachedTools } from "./tool-cache";
@@ -18,11 +19,22 @@ type BrandReferenceRecord = Awaited<
 
 async function resolveSettingsId(config: BrandReferencesConfig) {
   if (config.voiceId) {
-    return config.voiceId;
+    const voice = await db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.id, config.voiceId),
+        eq(brandSettings.organizationId, config.organizationId)
+      ),
+      columns: { id: true },
+    });
+
+    return voice?.id;
   }
 
   const defaultVoice = await db.query.brandSettings.findFirst({
-    where: sql`organization_id = ${config.organizationId} and is_default = true`,
+    where: and(
+      eq(brandSettings.organizationId, config.organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
     columns: { id: true },
   });
 
@@ -37,8 +49,8 @@ async function getFilteredReferences(config: BrandReferencesConfig) {
   }
 
   const refs = await db.query.brandReferences.findMany({
-    where: sql`brand_settings_id = ${settingsId}`,
-    orderBy: [sql`created_at desc`],
+    where: eq(brandReferences.brandSettingsId, settingsId),
+    orderBy: [desc(brandReferences.createdAt)],
   });
 
   const agentType = config.agentType;

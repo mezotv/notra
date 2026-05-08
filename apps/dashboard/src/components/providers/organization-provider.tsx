@@ -1,7 +1,6 @@
 "use client";
 
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { useCustomer } from "autumn-js/react";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -54,7 +53,6 @@ export function OrganizationsProvider({
 }) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
-  const { refetch: refetchCustomer } = useCustomer();
   const hasAutoSelectedRef = useRef(false);
   const lastSyncedSlugRef = useRef<string | null>(null);
   const syncInProgressRef = useRef(false);
@@ -255,8 +253,8 @@ export function OrganizationsProvider({
       return;
     }
 
-    refetchCustomer();
-  }, [contextValue.activeOrganization?.id, refetchCustomer]);
+    queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
+  }, [contextValue.activeOrganization?.id, queryClient]);
 
   return (
     <OrganizationsContext.Provider value={contextValue}>

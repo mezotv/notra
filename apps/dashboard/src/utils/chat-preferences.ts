@@ -4,8 +4,8 @@ import {
   chatModelSchema,
   storedChatPreferencesSchema,
   thinkingLevelSchema,
-} from "@/schemas/chat";
-import type { StoredChatPreferences } from "@/types/chat";
+} from "@notra/ai/schemas/chat";
+import type { StoredChatPreferences } from "@notra/ai/types/chat";
 
 const CHAT_PREFERENCES_STORAGE_VERSION = "v1";
 

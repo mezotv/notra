@@ -5,7 +5,7 @@ const CONTRIBUTORS_SKELETON_KEYS = Array.from(
 );
 const ISSUE_SKELETON_KEYS = ["i1", "i2", "i3", "i4", "i5"] as const;
 
-export function StatsSkeleton() {
+function StatsSkeleton() {
   return (
     <div className="grid w-full grid-cols-2 gap-0 border-border border-y md:grid-cols-4">
       {STATS_SKELETON_KEYS.map((key) => (
@@ -18,7 +18,7 @@ export function StatsSkeleton() {
   );
 }
 
-export function ContributorsSkeleton() {
+function ContributorsSkeleton() {
   return (
     <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
       {CONTRIBUTORS_SKELETON_KEYS.map((key) => (
@@ -31,7 +31,7 @@ export function ContributorsSkeleton() {
   );
 }
 
-export function IssueListSkeleton() {
+function IssueListSkeleton() {
   return (
     <div className="space-y-3">
       {ISSUE_SKELETON_KEYS.map((key) => (

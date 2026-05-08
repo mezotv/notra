@@ -44,7 +44,7 @@ export const getSchedulesQuerySchema = z.object({
     }),
 });
 
-export const cronConfigSchema = z
+const cronConfigSchema = z
   .object({
     frequency: z.enum(CRON_FREQUENCIES),
     hour: z.number().int().min(0).max(23),
@@ -97,7 +97,9 @@ export const createScheduleRequestSchema = z.object({
   lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
 });
 
-export const patchScheduleRequestSchema = createScheduleRequestSchema;
+export const patchScheduleRequestSchema = createScheduleRequestSchema.openapi(
+  "PatchScheduleRequest"
+);
 
 const scheduleSchema = z.object({
   id: z.string(),

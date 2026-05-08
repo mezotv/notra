@@ -9,6 +9,9 @@ import {
   PinOffIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CHAT_TITLE_MAX_LENGTH } from "@notra/ai/constants/chat";
+import type { ChatSessionSummary } from "@notra/ai/types/chat";
+import { normalizeChatTitle } from "@notra/ai/utils/chat";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -47,23 +50,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useAiChatExperiment } from "@/components/providers/databuddy-flags-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { CHAT_TITLE_MAX_LENGTH } from "@/constants/chat";
 import {
   useChatSessionMutations,
   useChatSessions,
 } from "@/lib/hooks/use-chat-sessions";
 import { cn } from "@/lib/utils";
-import type { ChatSessionSummary } from "@/types/chat";
-import { normalizeChatTitle } from "@/utils/chat";
 
 export function ChatHistoryNav() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const aiChatExperiment = useAiChatExperiment();
   const { state: sidebarState, isMobile } = useSidebar();
   const isCollapsed = sidebarState === "collapsed" && !isMobile;
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
@@ -105,9 +103,7 @@ export function ChatHistoryNav() {
     });
   }
 
-  const { sessions, isLoading } = useChatSessions({
-    enabled: aiChatExperiment.on,
-  });
+  const { sessions, isLoading } = useChatSessions();
   const shouldReduceMotion = useReducedMotion();
   const { renameChat, togglePinned, deleteChat } = useChatSessionMutations();
 
@@ -334,7 +330,7 @@ export function ChatHistoryNav() {
     );
   }
 
-  if (!slug || !aiChatExperiment.on) {
+  if (!slug) {
     return null;
   }
 

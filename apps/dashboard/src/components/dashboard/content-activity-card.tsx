@@ -49,7 +49,7 @@ export const ContentActivityCard = () => {
   }
 
   return (
-    <div className="w-fit rounded-lg border border-border/80 bg-background px-4 py-3">
+    <div className="w-full overflow-x-auto rounded-lg border border-border/80 bg-background px-4 py-3">
       {data?.graph?.activity ? (
         <ContributionGraph
           blockMargin={3}
@@ -106,6 +106,7 @@ export const ContentActivityCard = () => {
             <ContributionGraphTotalCount>
               {({ totalCount }) => (
                 <span className="text-muted-foreground text-sm">
+                  This year:{" "}
                   <span className="font-semibold text-foreground">
                     {totalCount.toLocaleString()}
                   </span>{" "}

@@ -16,7 +16,7 @@ export default async function CliAuthorizePage({
 }: {
   searchParams: Promise<{ cli_session?: string }>;
 }) {
-  const { user } = await requireAuth();
+  await requireAuth();
   const { cli_session: rawSessionId } = await searchParams;
 
   const parsed = rawSessionId
@@ -40,7 +40,7 @@ export default async function CliAuthorizePage({
     );
   }
 
-  const memberships = await getAllUserOrganizations(user.id);
+  const memberships = await getAllUserOrganizations();
   const orgRows =
     memberships.length > 0
       ? await db.query.organizations.findMany({

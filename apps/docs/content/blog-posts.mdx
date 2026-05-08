@@ -1,0 +1,308 @@
+---
+title: "Blog Posts"
+description: "Generate in-depth technical blog posts from your development work and product updates"
+---
+
+Notra can transform significant features, architectural decisions, and product milestones into comprehensive blog posts that tell the story behind your work.
+
+## Overview
+
+Blog posts in Notra are designed for deeper storytelling than changelogs. They're ideal for:
+
+* **Feature announcements**: Deep dives into major new capabilities
+* **Technical deep dives**: Architecture decisions, performance optimizations, and engineering challenges
+* **Release highlights**: Combining multiple features into a cohesive product update
+* **Behind-the-scenes**: The story of how and why you built something
+
+<Info>
+  Blog posts pull from the same GitHub data as changelogs but use a different narrative structure focused on storytelling and context rather than comprehensive change lists.
+</Info>
+
+## Content Type
+
+In Notra's database, blog posts are stored with the content type `blog_post`:
+
+```typescript
+contentType: "blog_post"
+```
+
+This distinguishes them from other content types like:
+
+* `changelog`: Comprehensive update lists
+* `linkedin_post`: Social media updates
+* `twitter_post`: Short-form social content
+* `investor_update`: Investor updates
+
+## How Blog Posts Differ from Changelogs
+
+| Aspect        | Changelog                     | Blog Post                             |
+| ------------- | ----------------------------- | ------------------------------------- |
+| **Purpose**   | Comprehensive list of changes | Narrative around specific features    |
+| **Scope**     | All changes in a timeframe    | Selected highlights worth exploring   |
+| **Structure** | Summary + categorized lists   | Introduction + deep dive + conclusion |
+| **Tone**      | Informative and complete      | Engaging and explanatory              |
+| **Length**    | 500-1500 words                | 1000-3000+ words                      |
+| **Frequency** | Regular (weekly/monthly)      | Occasional (as needed)                |
+
+## Generation Options
+
+### Manual Triggers
+
+Blog posts work best when triggered manually for specific features or milestones:
+
+1. Navigate to **Content** in your dashboard
+2. Click **Create** → **Blog Post**
+3. Select relevant repositories and timeframe
+4. Provide context about what to focus on
+5. Let Notra's AI generate the first draft
+
+<Tip>
+  The more context you provide, the better the output. Include details about user impact, technical challenges overcome, and the "why" behind decisions.
+</Tip>
+
+### Event-Based Triggers
+
+You can also configure blog post generation for major releases:
+
+```json
+{
+  "sourceType": "github_webhook",
+  "sourceConfig": {
+    "eventTypes": ["release"]
+  },
+  "outputType": "blog_post",
+  "targets": {
+    "repositoryIds": ["repo-id-1"]
+  }
+}
+```
+
+<Note>
+  Event-based blog post generation is best suited for major releases where you want automatic draft creation. You'll still review and refine before publishing.
+</Note>
+
+## Writing with AI Assistance
+
+Notra's AI editor helps you craft compelling blog posts:
+
+### Expand on Technical Details
+
+Select a section and ask the AI to:
+
+* "Explain the technical implementation in more detail"
+* "Add code examples for this feature"
+* "Describe the performance improvements with metrics"
+
+### Adjust Tone and Audience
+
+* "Make this section more accessible for non-technical readers"
+* "Add more technical depth for a developer audience"
+* "Rewrite this in a more conversational tone"
+
+### Improve Structure
+
+* "Add a section about migration steps"
+* "Include a comparison with the previous approach"
+* "Add a conclusion section with next steps"
+
+## Best Practices
+
+### Focus on One Main Topic
+
+Unlike changelogs that cover everything, blog posts should have a clear narrative thread:
+
+**Good**: "How We Reduced API Response Time by 60%"\
+**Poor**: "March 2026 Product Updates"
+
+### Include Context and Motivation
+
+Help readers understand:
+
+* **The problem**: What challenge were you solving?
+* **The solution**: How did you approach it?
+* **The impact**: What changed for users?
+* **The learnings**: What would you do differently?
+
+### Use Your GitHub Data Strategically
+
+Notra can pull:
+
+* PR descriptions for implementation details
+* Commit messages for technical context
+* Release notes for version history
+* Issue discussions for problem background
+
+But you decide what to highlight and how to frame it.
+
+### Add Visual Context
+
+While Notra generates the text, consider adding:
+
+* Architecture diagrams
+* Before/after screenshots
+* Performance charts
+* Code snippets
+
+<Info>
+  You can upload images to your Notra workspace and reference them in your blog posts using standard Markdown image syntax.
+</Info>
+
+### Plan Your Publishing Workflow
+
+Blog posts typically need more review and polish than changelogs:
+
+1. **Generate**: Let Notra create the first draft
+2. **Structure**: Verify the narrative flow and organization
+3. **Expand**: Use AI to add detail where needed
+4. **Polish**: Refine tone, add examples, check technical accuracy
+5. **Review**: Get team feedback on technical accuracy
+6. **Publish**: Copy the Markdown to your blog platform
+
+## Example Blog Post Structure
+
+````markdown
+# Introducing Email Link Verification: Secure, Seamless User Onboarding
+
+## The Challenge
+
+User registration flows have always presented a tension between
+security and user experience. Traditional password-based flows
+require users to...
+
+[Context about the problem and user pain points]
+
+## Our Solution
+
+We built a passwordless email verification system that balances
+security with convenience...
+
+[Technical overview of the approach]
+
+### How It Works
+
+1. User enters their email address
+2. System generates a secure, time-limited verification token
+3. Email is sent with a magic link
+4. User clicks link and is authenticated
+
+[Detailed technical implementation]
+
+### Security Considerations
+
+We implemented several safeguards:
+
+- **Time-limited tokens**: Links expire after 15 minutes
+- **Single-use tokens**: Each link can only be used once
+- **Rate limiting**: Prevents enumeration attacks
+- **Secure token generation**: Cryptographically random tokens
+
+[Deep dive into security measures]
+
+## Implementation Details
+
+```typescript
+// Example code showing key implementation
+````
+
+\[Technical details developers care about]
+
+## Impact
+
+Since launching email verification:
+
+* 40% increase in registration completion
+* 60% reduction in password reset requests
+* 95% user satisfaction score
+
+\[Metrics and user feedback]
+
+## What's Next
+
+We're already working on social authentication and passkey support...
+
+\[Future roadmap and next steps]
+
+```
+
+## Publishing Workflow
+
+Generated blog posts are available in the dashboard as Markdown. Review the draft, make any edits, then copy the Markdown to your blog platform or CMS.
+
+Output publishing integrations such as Webflow and Framer are planned, but generated content is currently reviewed and published manually.
+
+## Common Use Cases
+
+### Feature Announcements
+
+**When to use**: You've shipped a major new capability
+
+**Focus on**:
+- What the feature does and why it matters
+- How users benefit
+- Quick start guide
+- Migration steps (if applicable)
+
+### Technical Deep Dives
+
+**When to use**: You've solved an interesting technical challenge
+
+**Focus on**:
+- The problem and constraints
+- Solution evaluation and decision-making
+- Implementation details
+- Performance results
+- Lessons learned
+
+### Architecture Changes
+
+**When to use**: Major refactoring or architectural improvements
+
+**Focus on**:
+- Why the change was needed
+- Alternative approaches considered
+- Migration strategy
+- Performance and reliability impacts
+
+### Release Highlights
+
+**When to use**: Major version releases with multiple significant features
+
+**Focus on**:
+- Top 3-5 most important features
+- Theme connecting the features
+- Upgrade instructions
+- Deprecation notices
+
+## Tips for Better Blog Posts
+
+### Start with a Strong Hook
+
+First paragraph should grab attention:
+- State the problem you solved
+- Share a surprising metric
+- Ask a relatable question
+- Make a bold statement
+
+### Use Subheadings Strategically
+
+Break up long sections with descriptive subheadings that:
+- Guide readers through the narrative
+- Allow scanning for specific topics
+- Create natural breaking points
+
+### Show, Don't Just Tell
+
+Instead of "We improved performance," say:
+"We reduced API response time from 450ms to 180ms by implementing request coalescing and aggressive caching."
+
+### End with a Call to Action
+
+- Try the new feature
+- Read related documentation
+- Share feedback
+- Contribute to the project
+
+<Note>
+  Blog posts are drafts until you publish them. Take your time refining the content - this is storytelling, not just documentation.
+</Note>
+```

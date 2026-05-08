@@ -22,7 +22,7 @@ export async function GET(_: Request, { params }: RouteProps) {
     )
     .map(
       (entry) =>
-        `- [${entry.title}](https://usenotra.com/changelog/${name}/${getShowcaseEntrySlug(entry.info.path)}.md) (${entry.date})`
+        `- [${entry.title}](https://www.usenotra.com/changelog/${name}/${getShowcaseEntrySlug(entry.info.path)}.md) (${entry.date})`
     )
     .join("\n");
 

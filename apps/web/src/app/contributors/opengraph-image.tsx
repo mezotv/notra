@@ -131,7 +131,6 @@ export default async function Image() {
               src={c.avatar_url}
               style={{
                 borderRadius: "9999px",
-                border: "0.1875rem solid #1a1a1a",
               }}
               width={96}
             />

@@ -1,0 +1,115 @@
+---
+title: "Automation Overview"
+description: "Learn how Notra automates content generation with event-based and scheduled workflows"
+---
+
+Notra offers two powerful automation modes to turn your development work into content: **event-based** and **scheduled** automation. Each mode serves different use cases and content strategies.
+
+## Automation Modes
+
+<CardGroup cols={2}>
+  <Card title="Event-Based" icon="bolt" href="/automation/event-based">
+    Generate content automatically when specific events occur in your repositories
+  </Card>
+
+  <Card title="Scheduled" icon="clock" href="/automation/scheduled">
+    Create content on a regular schedule with customizable frequency
+  </Card>
+</CardGroup>
+
+## How It Works
+
+Notra's automation system monitors your development activity and generates content using AI-powered workflows:
+
+<Steps>
+  <Step title="Configure Triggers">
+    Set up automation rules based on GitHub events or time schedules
+  </Step>
+
+  <Step title="Select Output Type">
+    Choose what content to generate: changelogs, blog posts, Twitter posts, or LinkedIn posts
+  </Step>
+
+  <Step title="Automatic Generation">
+    Notra analyzes your work and generates content matching your brand voice
+  </Step>
+
+  <Step title="Review & Publish">
+    Review generated content and publish to your chosen destinations
+  </Step>
+</Steps>
+
+## Supported Output Types
+
+Automation supports multiple content formats. Changelogs, blog posts, Twitter posts, and LinkedIn posts are active in scheduled workflows; investor updates are represented in the product as a distinct content type but are not available for scheduled workflows yet.
+
+* **Changelogs**: Customer-facing release notes and feature updates
+* **LinkedIn Posts**: Professional updates about your product progress
+* **Blog Posts**: In-depth articles about features and improvements
+* **Investor Updates**: Progress summaries for stakeholders and investors
+
+<Note>
+  All content is generated using your configured brand voice, tone, and custom instructions to ensure consistency.
+</Note>
+
+## Choosing the Right Mode
+
+Select your automation approach based on your content strategy:
+
+<Tabs>
+  <Tab title="Event-Based">
+    **Best for:**
+
+    * Immediate responses to releases or deployments
+    * Real-time changelog generation
+    * Announcing new features as they ship
+    * Marketing moments around launches
+
+    **Example scenarios:**
+
+    * Generate a LinkedIn post when you publish a GitHub release
+    * Create a changelog when code is merged to production
+    * Announce feature updates immediately after deployment
+  </Tab>
+
+  <Tab title="Scheduled">
+    **Best for:**
+
+    * Regular content cadence (weekly, monthly)
+    * Digest-style updates covering multiple changes
+    * Consistent social media presence
+    * Periodic investor communication
+
+    **Example scenarios:**
+
+    * Weekly product update LinkedIn posts
+    * Monthly changelog roundups
+    * Regular investor progress updates
+    * Consistent blog publishing schedule
+  </Tab>
+</Tabs>
+
+## Trigger Management
+
+Each automation can be:
+
+* **Enabled/Disabled**: Turn automations on or off without deleting configuration
+* **Customized**: Configure event types, schedules, and target repositories
+* **Tested**: Manually trigger any automation to test output before enabling
+* **Monitored**: View logs and history of all automation runs
+
+<Info>
+  You can combine both automation modes. For example, use event-based automation for immediate release announcements and scheduled automation for weekly progress summaries.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Set Up Event-Based Automation" icon="webhook" href="/automation/event-based">
+    Learn how to trigger content generation from GitHub webhooks
+  </Card>
+
+  <Card title="Configure Scheduled Automation" icon="calendar" href="/automation/scheduled">
+    Set up recurring content generation on your schedule
+  </Card>
+</CardGroup>

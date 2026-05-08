@@ -38,66 +38,113 @@
   "api": {
     "url": "full"
   },
+  "metadata": {
+    "timestamp": true
+  },
+  "seo": {
+    "metatags": {
+      "twitter:site": "@usenotra"
+    }
+  },
+  "search": {
+    "prompt": "Search the Notra docs..."
+  },
+  "errors": {
+    "404": {
+      "redirect": false,
+      "title": "This page is on a content pipeline of its own",
+      "description": "Looks like this page hasn't shipped yet. Try the [quickstart](/quickstart) or head back to the [overview](/overview)."
+    }
+  },
   "contextual": {
-    "options": [
-      "copy",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      {
-        "title": "Open in T3 Chat",
-        "description": "Ask questions about this page",
-        "icon": "https://t3.chat/favicon.ico",
-        "href": {
-          "base": "https://t3.chat/new",
-          "query": [
-            {
-              "key": "q",
-              "value": "Read from https://docs.usenotra.com/$path so I can ask questions about it."
-            }
-          ]
-        }
-      }
-    ]
+    "options": ["copy", "assistant", "mcp", "chatgpt", "claude", "perplexity"]
   },
   "navigation": {
     "tabs": [
       {
         "tab": "Documentation",
-        "pages": [
+        "groups": [
           {
-            "group": "Getting Started",
-            "pages": ["overview"]
+            "group": "Get Started",
+            "pages": ["overview", "quickstart"]
           },
           {
-            "group": "Developer & Productivity Tools",
-            "pages": ["integrations/mcp"]
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/how-it-works",
+              "concepts/content-pipeline",
+              "concepts/brand-voice"
+            ]
           },
           {
             "group": "Integrations",
             "pages": [
+              "integrations/overview",
               "integrations/github",
               "integrations/linear",
+              "integrations/slack",
               "integrations/framer",
               "integrations/featul",
               "integrations/kontentspace"
             ]
+          },
+          {
+            "group": "Developer Tools",
+            "pages": ["devtools/cli", "devtools/mcp", "devtools/raycast"]
+          },
+          {
+            "group": "Automation",
+            "pages": [
+              "automation/overview",
+              "automation/event-based",
+              "automation/scheduled"
+            ]
+          },
+          {
+            "group": "Content Types",
+            "pages": [
+              "content/changelogs",
+              "content/blog-posts",
+              "content/social-media"
+            ]
+          },
+          {
+            "group": "Organization",
+            "pages": [
+              "organization/workspace-setup",
+              "organization/team-management",
+              "organization/billing"
+            ]
           }
-        ],
-        "root": "overview"
+        ]
       },
       {
-        "tab": "API & SDK",
-        "pages": [
-          "api/getting-started",
-          "api/rust-sdk",
-          "api/authentication",
-          "api/caching",
-          "api/common-tasks",
-          "api/pagination",
-          "api/types",
+        "tab": "API Reference",
+        "groups": [
           {
-            "group": "Routes",
+            "group": "Getting Started",
+            "pages": [
+              "api/getting-started",
+              "api/authentication",
+              "api/rate-limits"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "api/rust-sdk",
+              "api/caching",
+              "api/common-tasks",
+              "api/pagination",
+              "api/types"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": ["api/webhooks/overview", "api/webhooks/events"]
+          },
+          {
+            "group": "Endpoints",
             "expanded": true,
             "openapi": {
               "source": "https://api.usenotra.com/openapi.json",
@@ -158,11 +205,20 @@
                   "PATCH /v1/schedules/{scheduleId}",
                   "DELETE /v1/schedules/{scheduleId}"
                 ]
+              },
+              {
+                "group": "Chats",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/chats",
+                  "POST /v1/chats",
+                  "GET /v1/chats/{chatId}",
+                  "POST /v1/chats/{chatId}"
+                ]
               }
             ]
           }
-        ],
-        "root": "api/getting-started"
+        ]
       }
     ],
     "global": {
@@ -178,6 +234,12 @@
   "logo": {
     "light": "favicon.svg",
     "dark": "favicon.svg"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/usenotra/notra"
+    }
   },
   "footer": {
     "socials": {

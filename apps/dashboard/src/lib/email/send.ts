@@ -217,7 +217,7 @@ export async function sendWelcomeEmail(
   return sendWithRetry(
     resend,
     {
-      from: "Dominik from Notra <dominik@usenotra.com>",
+      from: "Dominik from Notra <dominik@hello.usenotra.com>",
       replyTo: "dominik@usenotra.com",
       to: userEmail,
       subject: "Welcome to Notra",

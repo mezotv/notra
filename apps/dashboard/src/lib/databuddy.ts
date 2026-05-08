@@ -11,6 +11,7 @@ import {
 } from "@notra/content-generation/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
+const websiteId = process.env.DATABUDDY_DASHBOARD_WEBSITE_ID;
 
 if (!apiKey) {
   console.warn(
@@ -18,13 +19,20 @@ if (!apiKey) {
   );
 }
 
-export const databuddy = apiKey
-  ? new Databuddy({
-      websiteId: process.env.DATABUDDY_DASHBOARD_WEBSITE_ID,
-      apiKey,
-      enableBatching: false,
-    })
-  : null;
+if (!websiteId) {
+  console.warn(
+    "DATABUDDY_DASHBOARD_WEBSITE_ID not configured. Server-side Databuddy tracking will be disabled."
+  );
+}
+
+export const databuddy =
+  apiKey && websiteId
+    ? new Databuddy({
+        websiteId,
+        apiKey,
+        enableBatching: false,
+      })
+    : null;
 
 const isDevelopment = process.env.NODE_ENV === "development";
 

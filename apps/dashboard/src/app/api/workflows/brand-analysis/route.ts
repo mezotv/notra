@@ -5,6 +5,8 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { getBaseUrl } from "@notra/ai/qstash/triggers";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { assertPublicHttpUrl } from "@notra/utils/url";
@@ -17,13 +19,13 @@ import { createAILogger } from "evlog/ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { getFirecrawlClient } from "@/lib/firecrawl";
-import { redis } from "@/lib/redis";
-import { getBaseUrl } from "@/lib/triggers/qstash";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
-import type {
-  ProgressData,
-  ProgressStatus,
-} from "@/types/hooks/brand-analysis";
+import type { ProgressData } from "@/types/hooks/brand-analysis";
+import {
+  getStepFromCurrentStep,
+  getStepFromStatus,
+  updateDefaultBrandSettings,
+} from "@/utils/brand-settings";
 
 const PROGRESS_TTL = 300;
 
@@ -102,14 +104,7 @@ async function setJobProgress(jobId: string | undefined, data: ProgressData) {
 
   if (data.status === "failed") {
     await setBrandAnalysisJobStatus(redis, jobId, "failed", {
-      step:
-        data.currentStep === 1
-          ? "scraping"
-          : data.currentStep === 2
-            ? "extracting"
-            : data.currentStep === 3
-              ? "saving"
-              : null,
+      step: getStepFromCurrentStep(data),
       currentStep: data.currentStep,
       totalSteps: data.totalSteps,
       error: data.error ?? "Brand analysis failed",
@@ -129,12 +124,7 @@ async function setJobProgress(jobId: string | undefined, data: ProgressData) {
 
   await updateBrandAnalysisJob(redis, jobId, {
     status: "running",
-    step:
-      data.status === "scraping" ||
-      data.status === "extracting" ||
-      data.status === "saving"
-        ? data.status
-        : null,
+    step: getStepFromStatus(data.status),
     currentStep: data.currentStep,
     totalSteps: data.totalSteps,
     error: null,
@@ -206,7 +196,11 @@ export const { POST } = serve<BrandAnalysisPayload>(
 
               if (
                 detailMessages.includes("Invalid URL") ||
-                error.message?.includes("Invalid URL")
+                detailMessages.some((message) =>
+                  message.includes("valid top-level domain")
+                ) ||
+                error.message?.includes("Invalid URL") ||
+                error.message?.includes("valid top-level domain")
               ) {
                 return { success: false, error: "Invalid URL", fatal: true };
               }
@@ -355,50 +349,10 @@ Extract the following information:
               .set(brandData)
               .where(eq(brandSettings.id, voiceId));
           } else {
-            const defaultVoice = await db.query.brandSettings.findFirst({
-              where: and(
-                eq(brandSettings.organizationId, organizationId),
-                eq(brandSettings.isDefault, true)
-              ),
-            });
-
-            if (defaultVoice) {
-              await db
-                .update(brandSettings)
-                .set(brandData)
-                .where(eq(brandSettings.id, defaultVoice.id));
-            } else {
-              await db.insert(brandSettings).values({
-                id: crypto.randomUUID(),
-                organizationId,
-                name: "Default",
-                isDefault: true,
-                ...brandData,
-              });
-            }
+            await updateDefaultBrandSettings(organizationId, brandData);
           }
         } else {
-          const existing = await db.query.brandSettings.findFirst({
-            where: and(
-              eq(brandSettings.organizationId, organizationId),
-              eq(brandSettings.isDefault, true)
-            ),
-          });
-
-          if (existing) {
-            await db
-              .update(brandSettings)
-              .set(brandData)
-              .where(eq(brandSettings.id, existing.id));
-          } else {
-            await db.insert(brandSettings).values({
-              id: crypto.randomUUID(),
-              organizationId,
-              name: "Default",
-              isDefault: true,
-              ...brandData,
-            });
-          }
+          await updateDefaultBrandSettings(organizationId, brandData);
         }
       });
 

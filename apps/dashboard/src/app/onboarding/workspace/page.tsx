@@ -17,14 +17,14 @@ export default async function OnboardingWorkspacePage() {
     redirect("/login");
   }
 
-  const allOrgs = await getAllUserOrganizations(session.user.id);
+  const allOrgs = await getAllUserOrganizations();
   for (const org of allOrgs) {
     if (await hasPaidSubscriptionHistory(org.id)) {
       redirect(`/${org.slug}`);
     }
   }
 
-  const existing = await getLastActiveOrganization(session.user.id);
+  const existing = await getLastActiveOrganization();
   if (existing) {
     const brand = await db.query.brandSettings.findFirst({
       where: eq(brandSettings.organizationId, existing.id),

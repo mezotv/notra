@@ -3,10 +3,10 @@ import { SHOWCASE_COMPANIES } from "@/utils/showcase";
 
 export async function GET() {
   const list = [
-    "- [Notra](https://usenotra.com/changelog/notra.md)",
+    "- [Notra](https://www.usenotra.com/changelog/notra.md)",
     ...SHOWCASE_COMPANIES.map(
       (company) =>
-        `- [${company.name}](https://usenotra.com/changelog/${company.slug}.md)`
+        `- [${company.name}](https://www.usenotra.com/changelog/${company.slug}.md)`
     ),
   ].join("\n");
 

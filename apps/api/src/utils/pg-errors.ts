@@ -1,4 +1,4 @@
-export function getPgConstraintName(error: unknown) {
+function getPgConstraintName(error: unknown) {
   if (!(typeof error === "object" && error !== null)) {
     return null;
   }

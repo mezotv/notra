@@ -10,6 +10,7 @@ import type {
   OrchestrateInput,
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
   type LanguageModelUsage,
@@ -17,7 +18,6 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
-import { addAnthropicPromptCaching } from "../utils/prompt-caching";
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -55,6 +55,7 @@ export async function orchestrateChat(
     maxSteps = 1,
     log: inputLog,
     timezone,
+    telemetryMetadata,
   } = input;
 
   const log = deps?.log ?? inputLog;
@@ -75,7 +76,8 @@ export async function orchestrateChat(
     lastUserMessage,
     hasIntegrationContext,
     log,
-    hasAttachments
+    hasAttachments,
+    telemetryMetadata
   );
 
   const isSimpleNoTools =
@@ -129,9 +131,7 @@ export async function orchestrateChat(
     }),
     tools,
     stopWhen: stepCountIs(maxSteps),
-    prepareStep: ({ messages: stepMessages }) => ({
-      messages: addAnthropicPromptCaching(stepMessages, routingDecision.model),
-    }),
+    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     async onFinish({ totalUsage }) {
       await deps?.onUsage?.(totalUsage, routingDecision.model);
     },

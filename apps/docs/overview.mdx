@@ -1,38 +1,202 @@
 ---
-title: "Overview"
-description: "Welcome to Notra, the content pipeline for teams."
+title: "Welcome to Notra"
+description: "Turn your team's work into ready-to-publish content with AI-powered automation"
 ---
 
-Notra helps teams create, manage, and publish content at scale. Whether you're building changelogs, release notes, or other content workflows, Notra connects your sources and delivers them where you need them.
+Notra helps teams transform daily work, including merged pull requests, releases, commits, and Linear issues, into polished content for changelogs, blog posts, and social media updates.
 
 <img
   src="/images/dashboard/dashboard-light.webp"
   alt="Notra Dashboard"
-  className="block dark:hidden"
+  className="block dark:hidden rounded-lg border"
 />
 <img
   src="/images/dashboard/dashboard-dark.webp"
   alt="Notra Dashboard"
-  className="hidden dark:block"
+  className="hidden dark:block rounded-lg border"
 />
 
-## How to use these docs
+## What is Notra?
+
+Notra is a SaaS platform that automates content creation by connecting to your team's tools and using AI to analyze activity and generate drafts. It eliminates manual effort by working in the background and adapting content to match your brand voice.
 
 <CardGroup cols={2}>
-  <Card title="API" icon="book-open" href="/api/getting-started">
-    Use the REST API to fetch posts, filter by status, and paginate through results.
+  <Card title="Connect your tools" icon="plug">
+    Integrate GitHub and Linear to pull product and engineering activity. Slack support is planned.
   </Card>
-  <Card title="SDK" icon="code" href="/sdk/getting-started">
-    Use the official TypeScript SDK for a simpler, type-safe integration.
+  <Card title="AI-powered analysis" icon="sparkles">
+    Automatically identify high-signal updates worth sharing with your audience.
   </Card>
-  <Card title="MCP Server" icon="sparkles" href="/integrations/mcp">
-    Let AI agents manage brand identity, generate content, manage integrations, and control schedules through the hosted MCP endpoint.
+  <Card title="Generate content" icon="pen-fancy">
+    Create drafts for changelogs, blog posts, and social media in your brand voice.
+  </Card>
+  <Card title="Automate workflows" icon="bolt">
+    Set up event-driven triggers or scheduled workflows to run in the background.
   </Card>
 </CardGroup>
 
-## Quick links
+## Get started
 
-- [Authentication](/api/authentication) — Create and manage API keys
-- [MCP Server](/integrations/mcp) — Let AI agents manage Notra work on your behalf
-- [API Routes](/api-reference/content/list-posts) — Browse available endpoints
-- [SDK Methods](/sdk-reference/content/list-posts) — Browse SDK methods
+<Steps>
+  <Step title="Create your organization">
+    Sign up and create your organization workspace to get started with Notra.
+  </Step>
+  <Step title="Connect GitHub">
+    Link your first GitHub repository to start tracking meaningful activity.
+  </Step>
+  <Step title="Set your brand voice">
+    Configure your brand identity so AI generates content that sounds like you.
+  </Step>
+  <Step title="Generate content">
+    Create your first changelog or blog post from recent GitHub activity.
+  </Step>
+</Steps>
+
+<Card
+  title="Quickstart guide"
+  icon="rocket"
+  href="/quickstart"
+  horizontal
+>
+  Follow our step-by-step guide to generate your first content in minutes.
+</Card>
+
+## How Notra works
+
+Notra runs as an event-driven content pipeline that transforms technical activity into audience-ready content.
+
+### Generation pipeline
+
+<CardGroup cols={3}>
+  <Card title="Ingest activity" icon="download">
+    Pull updates from GitHub and Linear into a normalized format.
+  </Card>
+  <Card title="Analyze context" icon="magnifying-glass">
+    AI identifies what changed, why it matters, and what's worth sharing.
+  </Card>
+  <Card title="Generate drafts" icon="file-lines">
+    Create structured content for changelogs, blog posts, and social media.
+  </Card>
+</CardGroup>
+
+### Brand and publishing
+
+<CardGroup cols={2}>
+  <Card title="Apply brand voice" icon="microphone">
+    Adapt output to your preferred tone while keeping technical accuracy.
+  </Card>
+  <Card title="Review and publish" icon="check">
+    Access ready-to-review content in your dashboard and copy it for publishing.
+  </Card>
+</CardGroup>
+
+## Core features
+
+### Integrations
+
+Connect the tools your team already uses to automatically track product updates.
+
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="/integrations/github">
+    Track pull requests, releases, and repository activity.
+  </Card>
+  <Card title="Linear" icon="list-check" href="/integrations/linear">
+    Monitor issue status and project progress.
+  </Card>
+  <Card title="Slack" icon="slack" href="/integrations/slack">
+    Capture important conversations and announcements. Coming soon.
+  </Card>
+</CardGroup>
+
+### Automation
+
+Set up workflows that run automatically without manual intervention.
+
+<CardGroup cols={2}>
+  <Card title="Event-based triggers" icon="bolt" href="/automation/event-based">
+    React to GitHub webhooks and generate content when releases are published or commits are pushed to the default branch.
+  </Card>
+  <Card title="Scheduled workflows" icon="clock" href="/automation/scheduled">
+    Run daily, weekly, or monthly summaries on a cron schedule.
+  </Card>
+</CardGroup>
+
+### Content types
+
+Generate multiple content formats from the same source activity.
+
+<CardGroup cols={2}>
+  <Card title="Changelogs" icon="list" href="/content/changelogs">
+    Technical release notes for developers and product teams.
+  </Card>
+  <Card title="Blog posts" icon="newspaper" href="/content/blog-posts">
+    Feature announcements and product updates for your blog.
+  </Card>
+  <Card title="Social media" icon="share-nodes" href="/content/social-media">
+    Twitter and LinkedIn posts optimized for engagement.
+  </Card>
+  <Card title="Investor updates" icon="chart-line">
+    Planned progress summaries for stakeholders and investors.
+  </Card>
+</CardGroup>
+
+### Brand identity
+
+Train Notra to write in your unique voice and style.
+
+<Info>
+  Configure your **company profile**, **tone settings**, and **target audience** in the Brand Identity section to ensure all generated content matches your brand.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Company profile" icon="building">
+    Set your company name, description, and website URL.
+  </Card>
+  <Card title="Tone and language" icon="volume-high">
+    Choose from preset tones or define custom voice guidelines.
+  </Card>
+  <Card title="Target audience" icon="users">
+    Describe who you're writing for to optimize messaging.
+  </Card>
+  <Card title="Custom instructions" icon="list-check">
+    Add specific rules for AI-generated content.
+  </Card>
+</CardGroup>
+
+## What you can build
+
+<AccordionGroup>
+  <Accordion title="Automated weekly changelogs" icon="calendar">
+    Set up a **scheduled workflow** that runs every Friday at 5 PM UTC to generate a changelog from the week's merged PRs across your repositories. Content is created in draft status for review and manual publishing.
+  </Accordion>
+
+  <Accordion title="Instant release notes" icon="rocket">
+    Configure an **event-based trigger** that listens for GitHub release events and immediately generates formatted release notes with feature highlights, bug fixes, and breaking changes.
+  </Accordion>
+
+  <Accordion title="Social media pipeline" icon="megaphone">
+    Create **multiple content types** from the same source activity. When a release is published, generate a technical changelog entry, a blog post draft, and Twitter/LinkedIn announcements.
+  </Accordion>
+
+  <Accordion title="Monthly product summaries" icon="chart-simple">
+    Schedule a **monthly summary** that analyzes activity across all repositories and generates a blog post or changelog highlighting shipped work and key achievements.
+  </Accordion>
+</AccordionGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Generate your first content in under 5 minutes.
+  </Card>
+  <Card title="API reference" icon="code" href="/api/getting-started">
+    Programmatically access content and trigger workflows.
+  </Card>
+  <Card title="MCP server" icon="sparkles" href="/devtools/mcp">
+    Let AI agents manage Notra on your behalf.
+  </Card>
+</CardGroup>
+
+<Note>
+  **Need help getting started?** Check out our [Quickstart guide](/quickstart) or explore our [GitHub repository](https://github.com/usenotra/notra) to see the open-source codebase.
+</Note>

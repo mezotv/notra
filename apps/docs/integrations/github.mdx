@@ -1,21 +1,243 @@
 ---
-title: "GitHub"
-description: "Integrate GitHub with Notra to pull information from GitHub into Notra."
+title: "GitHub Integration"
+description: "Connect GitHub repositories to automatically generate content from your development activity"
 ---
 
+The GitHub integration pulls data from your repositories to generate changelogs, blog posts, social media updates, and more. Notra analyzes pull requests, issues, releases, and commits to create compelling content about your product.
+
+## What Notra Accesses
+
+When you connect a GitHub repository, Notra can access:
+
+* **Pull Requests**: Titles, descriptions, labels, and merge status
+* **Issues**: Titles, descriptions, labels, and closure status
+* **Releases**: Version tags, release notes, and published dates
+* **Commits**: Commit messages and authors on your default branch
+* **Repository metadata**: Name, description, and default branch
+
+<Warning>
+  Notra has **read-only access**. We cannot modify your code, create issues, or perform any write operations on your repositories.
+</Warning>
+
+## Setup Instructions
+
+<Steps>
+  <Step title="Navigate to Integrations">
+    From your organization dashboard, click **Integrations** in the sidebar, then select **GitHub**.
+  </Step>
+
+  <Step title="Add Repository">
+    Click **Add GitHub Integration** and enter your repository URL in one of these formats:
+
+    * `https://github.com/facebook/react`
+    * `github.com/facebook/react`
+    * `facebook/react`
+
+    Notra will automatically detect your default branch (usually `main` or `master`).
+  </Step>
+
+  <Step title="Configure Access (Private Repos Only)">
+    For private repositories, you'll need to provide a Personal Access Token:
+
+    1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens/new?scopes=repo\&description=Notra%20Integration)
+    2. Click **Generate new token (classic)**
+    3. Set description to "Notra Integration"
+    4. Select the `repo` scope (full repository access)
+    5. Click **Generate token**
+    6. Copy the token and paste it into Notra
+
+    <Info>
+      Public repositories work without a token. Only provide one if your repository is private.
+    </Info>
+  </Step>
+
+  <Step title="Set Up Webhook (Optional)">
+    After adding your repository, Notra will prompt you to configure a webhook. This enables real-time content generation when events occur.
+
+    Copy the **Payload URL** and **Secret** from Notra, then:
+
+    1. Go to your repository settings on GitHub
+    2. Click **Webhooks** → **Add webhook**
+    3. Paste the Payload URL
+    4. Set Content type to `application/json`
+    5. Paste the Secret
+    6. Select "Let me select individual events"
+    7. Choose: **Pushes** and **Releases**
+    8. Click **Add webhook**
+
+    <Note>
+      Webhooks enable automatic triggers. Without a webhook, you can still generate content manually or on a schedule.
+    </Note>
+  </Step>
+
+  <Step title="Enable Content Types">
+    Choose which types of content to generate from this repository:
+
+    * **Changelog**: Release notes from merged PRs and releases
+    * **Blog Post**: Feature announcements and technical deep-dives
+    * **Twitter Post**: Short updates about new releases
+    * **LinkedIn Post**: Professional updates for your network
+
+    Toggle each content type on or off based on your needs.
+  </Step>
+</Steps>
+
+## Supported Content Types
+
+Here's what Notra can generate from your GitHub activity:
+
+<CardGroup cols={2}>
+  <Card title="Changelog" icon="list-check">
+    **Best for**: Release notes, version updates
+
+    Automatically generated from merged pull requests and published releases. Organizes changes into features, bug fixes, and improvements.
+  </Card>
+
+  <Card title="Blog Post" icon="newspaper">
+    **Best for**: Feature announcements, technical explanations
+
+    Creates in-depth articles about significant features or releases. Includes context, benefits, and usage examples.
+  </Card>
+
+  <Card title="Twitter Post" icon="twitter">
+    **Best for**: Quick announcements, engagement
+
+    Short-form updates optimized for Twitter's character limit. Perfect for announcing new releases or features.
+  </Card>
+
+  <Card title="LinkedIn Post" icon="linkedin">
+    **Best for**: Professional updates, team achievements
+
+    Formal updates suitable for professional networks. Highlights product progress and engineering milestones.
+  </Card>
+</CardGroup>
+
+## Managing Your Integration
+
+### Update Repository Settings
+
+You can modify your integration after setup:
+
+* **Change default branch**: Update which branch Notra monitors
+* **Enable/disable the integration**: Temporarily pause content generation
+* **Update display name**: Customize how the integration appears in your dashboard
+* **Toggle content types**: Enable or disable specific output types
+
+### Update Access Token
+
+If your Personal Access Token expires or is revoked:
+
+1. Generate a new token on GitHub (same process as initial setup)
+2. Go to your integration settings in Notra
+3. Update the token in the integration configuration
+
+### Remove the Integration
+
+To disconnect a repository:
+
+1. Navigate to the integration in your dashboard
+2. Click the **Delete** or **Remove** button
+3. Confirm the removal
+
+<Warning>
+  Removing an integration will disable all associated automations. Any scheduled content generation or webhook triggers for this repository will stop working.
+</Warning>
+
+## Permissions Required
+
+Notra requires these GitHub permissions:
+
+| Permission  | Scope               | Purpose                                  |
+| ----------- | ------------------- | ---------------------------------------- |
+| Read access | Repository contents | Access commit messages and file metadata |
+| Read access | Pull requests       | Analyze merged features and changes      |
+| Read access | Issues              | Track bug fixes and feature requests     |
+| Read access | Releases            | Detect new versions and release notes    |
+| Read access | Repository metadata | Get repository name and description      |
+
+<Info>
+  The `repo` scope in Personal Access Tokens grants read access to all of the above for private repositories. Public repositories don't require a token.
+</Info>
+
+## Webhook Events
+
+If you configured a webhook, Notra listens for these events:
+
+* **Push to default branch**: Triggers content generation based on recent commits
+* **Release published**: Automatically creates release notes and announcements
+
 <Note>
-  This is a stub for the GitHub integration.
+  Webhooks send payloads to Notra in real-time. The webhook secret ensures that requests are coming from GitHub and not malicious actors.
 </Note>
 
-You can find the GitHub integration on the **Integrations** page in your dashboard.
+## Troubleshooting
 
-<img
-  src="/images/integrations/integrations-light.webp"
-  alt="Integrations page showing GitHub"
-  className="block dark:hidden"
-/>
-<img
-  src="/images/integrations/integrations-dark.webp"
-  alt="Integrations page showing GitHub"
-  className="hidden dark:block"
-/>
+### Repository Not Found
+
+**Problem**: Notra can't access your repository
+
+**Solutions**:
+
+* Verify the repository URL is correct
+* For private repositories, ensure your Personal Access Token has the `repo` scope
+* Check that the token hasn't expired
+* Confirm you have access to the repository on GitHub
+
+### Webhook Not Working
+
+**Problem**: Automations aren't triggering when expected
+
+**Solutions**:
+
+* Go to your repository's webhook settings on GitHub
+* Check recent deliveries for errors
+* Verify the Payload URL and Secret match what Notra provided
+* Ensure Content type is set to `application/json`
+* Confirm you selected the correct events (Pushes and Releases)
+
+### No Content Generated
+
+**Problem**: Content isn't being created from repository activity
+
+**Solutions**:
+
+* Ensure at least one content type is enabled
+* Check that your automation triggers are properly configured
+* Verify there's been recent activity (merged PRs or published releases)
+* Review your automation settings for the correct repository
+
+## Best Practices
+
+<Steps>
+  <Step title="Use Descriptive PR Titles">
+    Notra uses PR titles and descriptions to understand what changed. Clear, descriptive titles result in better content.
+
+    **Good**: "Add dark mode support to dashboard"
+
+    **Bad**: "Fixed stuff"
+  </Step>
+
+  <Step title="Write Meaningful Release Notes">
+    When publishing GitHub releases, include details about what's new. Notra enhances these with PR context, but good source material produces better results.
+  </Step>
+
+  <Step title="Use Labels Consistently">
+    Apply labels like `bug`, `enhancement`, and `feature` to PRs and issues. Notra uses these to categorize changes in changelogs.
+  </Step>
+
+  <Step title="Keep One Integration Per Repository">
+    Avoid connecting the same repository multiple times unless you need different configurations for different teams.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Set Up Automation" icon="wand-magic-sparkles" href="/automation/overview">
+    Create triggers to automatically generate content from GitHub events
+  </Card>
+
+  <Card title="Manual Generation" icon="play" href="/content/blog-posts">
+    Learn how to manually generate content from your repository
+  </Card>
+</CardGroup>

@@ -1,53 +1,33 @@
 "use client";
 
-import {
-  CheckmarkCircle02Icon,
-  NewTwitterIcon,
-} from "@hugeicons/core-free-icons";
+import { ArrowDown01Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@notra/ui/components/ui/collapsible";
 import { Loader2Icon } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { OnboardingProgress } from "@/components/onboarding/progress";
-import { useImportTweets } from "@/lib/hooks/use-brand-references";
+import { ImportButtonContent } from "@/components/onboarding/socials/import-button-content";
+import { ImportedTweetCard } from "@/components/onboarding/socials/imported-tweet-card";
 import {
-  type ConnectedAccount,
-  useConnectTwitter,
-} from "@/lib/hooks/use-connected-accounts";
-
-interface SocialsClientProps {
-  organizationId: string;
-  voiceId: string | null;
-  initialAccount: ConnectedAccount | null;
-}
-
-function ImportButtonContent({
-  isPending,
-  isSuccess,
-}: {
-  isPending: boolean;
-  isSuccess: boolean;
-}) {
-  if (isPending) {
-    return (
-      <>
-        <Loader2Icon className="size-4 animate-spin" />
-        Importing tweets...
-      </>
-    );
-  }
-  if (isSuccess) {
-    return (
-      <>
-        <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} />
-        Tweets imported
-      </>
-    );
-  }
-  return "Import recent tweets";
-}
+  useDeleteReference,
+  useImportTweets,
+} from "@/lib/hooks/use-brand-references";
+import { useConnectTwitter } from "@/lib/hooks/use-connected-accounts";
+import { ONBOARDING_IMPORT_COUNT } from "@/lib/onboarding/constants";
+import type { SocialsClientProps } from "@/types/components/socials-onboarding";
+import type { BrandReference } from "@/types/hooks/brand-references";
 
 export function SocialsClient({
   organizationId,
@@ -55,17 +35,17 @@ export function SocialsClient({
   initialAccount,
 }: SocialsClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const justConnected = searchParams.get("twitterConnected") === "true";
 
   const connectTwitter = useConnectTwitter(organizationId);
   const importTweets = useImportTweets(organizationId, voiceId ?? "");
-
-  useEffect(() => {
-    if (justConnected) {
-      toast.success("X account connected");
-    }
-  }, [justConnected]);
+  const deleteReference = useDeleteReference(organizationId, voiceId ?? "");
+  const [importedReferences, setImportedReferences] = useState<
+    BrandReference[]
+  >([]);
+  const [deletingReferenceId, setDeletingReferenceId] = useState<string | null>(
+    null
+  );
+  const [importsExpanded, setImportsExpanded] = useState(true);
 
   async function handleConnect() {
     try {
@@ -85,8 +65,9 @@ export function SocialsClient({
     try {
       const result = await importTweets.mutateAsync({
         accountId: initialAccount.id,
-        maxResults: 20,
+        maxResults: ONBOARDING_IMPORT_COUNT,
       });
+      setImportedReferences(result.references);
       toast.success(`Imported ${result.count} tweets into your brand voice`);
     } catch (err) {
       toast.error(
@@ -95,12 +76,30 @@ export function SocialsClient({
     }
   }
 
+  async function handleDeleteImportedTweet(reference: BrandReference) {
+    setDeletingReferenceId(reference.id);
+
+    try {
+      await deleteReference.mutateAsync(reference.id);
+      setImportedReferences((current) =>
+        current.filter((item) => item.id !== reference.id)
+      );
+      toast.success("Tweet removed from your brand voice");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove tweet"
+      );
+    } finally {
+      setDeletingReferenceId(null);
+    }
+  }
+
   function handleContinue() {
     router.push("/onboarding/pricing");
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-4 py-12">
       <div className="mb-6">
         <OnboardingProgress current={2} />
       </div>
@@ -125,11 +124,17 @@ export function SocialsClient({
               <p className="font-medium text-sm">X (Twitter)</p>
               {initialAccount ? (
                 <p className="flex items-center gap-1 text-muted-foreground text-xs">
-                  <HugeiconsIcon
-                    className="text-emerald-500"
-                    icon={CheckmarkCircle02Icon}
-                    size={12}
-                  />
+                  {initialAccount.profileImageUrl ? (
+                    <Avatar
+                      className="size-4 rounded-full after:rounded-full"
+                      size="sm"
+                    >
+                      <AvatarImage src={initialAccount.profileImageUrl} />
+                      <AvatarFallback>
+                        {initialAccount.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : null}
                   Connected as @{initialAccount.username}
                 </p>
               ) : (
@@ -156,18 +161,61 @@ export function SocialsClient({
 
           {initialAccount && voiceId ? (
             <div className="mt-4 border-t pt-4">
+              <p className="mb-3 text-muted-foreground text-xs">
+                Import up to {ONBOARDING_IMPORT_COUNT} recent tweets to seed
+                your brand voice.
+              </p>
               <Button
                 className="w-full"
-                disabled={importTweets.isPending || importTweets.isSuccess}
+                disabled={importTweets.isPending}
                 onClick={handleImport}
                 size="sm"
                 variant="secondary"
               >
                 <ImportButtonContent
+                  importedCount={importedReferences.length}
                   isPending={importTweets.isPending}
-                  isSuccess={importTweets.isSuccess}
                 />
               </Button>
+
+              {importedReferences.length > 0 ? (
+                <Collapsible
+                  className="mt-4"
+                  defaultOpen
+                  onOpenChange={setImportsExpanded}
+                  open={importsExpanded}
+                >
+                  <CollapsibleTrigger
+                    className="group/trigger flex w-full cursor-pointer items-center justify-between gap-3 rounded-md py-1 text-left hover:opacity-80"
+                    type="button"
+                  >
+                    <span className="flex items-center gap-2">
+                      <HugeiconsIcon
+                        className="size-4 text-muted-foreground transition-transform group-data-[panel-open]/trigger:rotate-180"
+                        icon={ArrowDown01Icon}
+                      />
+                      <span className="font-medium text-sm">
+                        Imported tweets ({importedReferences.length})
+                      </span>
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      Remove any you do not want to use.
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3 h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0">
+                    <div className="columns-1 gap-3 space-y-3 sm:columns-2">
+                      {importedReferences.map((reference) => (
+                        <ImportedTweetCard
+                          isDeleting={deletingReferenceId === reference.id}
+                          key={reference.id}
+                          onDelete={handleDeleteImportedTweet}
+                          reference={reference}
+                        />
+                      ))}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : null}
             </div>
           ) : null}
         </div>

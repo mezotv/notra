@@ -1,0 +1,46 @@
+---
+title: "Raycast Extension"
+description: "Search posts, copy content, and manage workflows from Raycast."
+---
+
+The Notra Raycast extension brings your workspace into Raycast so you can browse posts, copy content, and manage workflows without leaving your launcher.
+
+<Card
+  title="View on Raycast Store"
+  icon="bolt"
+  href="https://www.raycast.com/dominikdev/notra"
+  horizontal
+>
+  Install the Notra extension from the Raycast Store.
+</Card>
+
+## Setup
+
+<Steps>
+  <Step title="Install the Notra extension">
+    Open the Raycast Store, search for **Notra**, and install the extension.
+  </Step>
+
+  <Step title="Create a read and write API key">
+    Head to **API Keys** in your dashboard, create a new key with read and write permissions, and copy it.
+
+    See [Authentication](/api/authentication) for details on creating and managing keys.
+  </Step>
+
+  <Step title="Configure the extension">
+    Open Raycast, run any Notra command, and paste your API key when prompted.
+  </Step>
+
+  <Step title="Start using Notra in Raycast">
+    Search and browse your posts, copy content, and manage workflows, all from Raycast.
+  </Step>
+</Steps>
+
+<Tip>
+  Use a read and write key so the extension can perform the full set of actions, like updating drafts and triggering generation.
+</Tip>
+
+## Notes
+
+- Treat the API key as a secret. Raycast stores it locally in its secure preferences store.
+- Revoke and replace the key immediately if it is exposed.

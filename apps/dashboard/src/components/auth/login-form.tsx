@@ -9,10 +9,14 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Google } from "@notra/ui/components/ui/svgs/google";
+import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import type { FormEvent } from "react";
+import { useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
+import type { AuthMethod } from "@/types/auth/method";
 
 export interface LoginFormProps {
   title?: string;
@@ -32,19 +36,22 @@ export function LoginForm({
   showForgotPasswordLink = true,
 }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(false);
+  const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
+  const authInFlightRef = useRef(false);
   const lastMethod = authClient.getLastUsedLoginMethod();
+  const isAuthLoading = authMethod !== null;
 
   const callbackURL = returnTo
     ? `/callback?returnTo=${encodeURIComponent(returnTo)}`
     : "/callback";
 
   async function handleSocialLogin(provider: "google" | "github") {
-    if (isAuthLoading) {
+    if (authInFlightRef.current) {
       return;
     }
 
-    setIsAuthLoading(true);
+    authInFlightRef.current = true;
+    flushSync(() => setAuthMethod(provider));
 
     try {
       await authClient.signIn.social({
@@ -54,19 +61,24 @@ export function LoginForm({
     } catch (error) {
       console.error("Social login error:", error);
       toast.error("Failed to sign in. Please try again.");
-      setIsAuthLoading(false);
+      authInFlightRef.current = false;
+      setAuthMethod(null);
     }
   }
 
-  async function handleEmailLogin(formData: FormData) {
+  async function handleEmailLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    if (!(email && password) || isAuthLoading) {
+    if (!(email && password) || authInFlightRef.current) {
       return;
     }
 
-    setIsAuthLoading(true);
+    authInFlightRef.current = true;
+    flushSync(() => setAuthMethod("email"));
     try {
       const result = await authClient.signIn.email({
         email,
@@ -77,7 +89,8 @@ export function LoginForm({
         toast.error(
           result.error.message ?? "Failed to sign in. Please try again."
         );
-        setIsAuthLoading(false);
+        authInFlightRef.current = false;
+        setAuthMethod(null);
         return;
       }
 
@@ -90,7 +103,8 @@ export function LoginForm({
     } catch (error) {
       console.error("Email login error:", error);
       toast.error("Failed to sign in. Please try again.");
-      setIsAuthLoading(false);
+      authInFlightRef.current = false;
+      setAuthMethod(null);
     }
   }
 
@@ -125,7 +139,11 @@ export function LoginForm({
               type="button"
               variant="outline"
             >
-              <Google className="mr-2 size-4" />
+              {authMethod === "google" ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Google className="mr-2 size-4" />
+              )}
               Google
             </Button>
           </div>
@@ -145,7 +163,11 @@ export function LoginForm({
               type="button"
               variant="outline"
             >
-              <Github className="mr-2 size-4" />
+              {authMethod === "github" ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : (
+                <Github className="mr-2 size-4" />
+              )}
               GitHub
             </Button>
           </div>
@@ -159,7 +181,7 @@ export function LoginForm({
           <span className="inline-block h-px w-full border-t bg-border" />
         </div>
 
-        <form action={handleEmailLogin}>
+        <form aria-busy={isAuthLoading} onSubmit={handleEmailLogin}>
           <div className="grid gap-3">
             <div className="grid gap-1">
               <Label className="sr-only" htmlFor="email">
@@ -214,7 +236,14 @@ export function LoginForm({
               </Badge>
             )}
             <Button className="w-full" disabled={isAuthLoading} type="submit">
-              {isAuthLoading ? "Loading…" : "Continue"}
+              {authMethod === "email" ? (
+                <>
+                  <Loader2Icon className="mr-2 size-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                "Continue"
+              )}
             </Button>
           </div>
         </form>

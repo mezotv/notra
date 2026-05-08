@@ -138,6 +138,7 @@ export interface WebhookSetupDialogProps {
 
 export interface AddRepositoryButtonProps {
   onAdd?: () => void;
+  label?: string;
 }
 
 export interface CreateLinearIntegrationParams {

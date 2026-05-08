@@ -29,7 +29,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { memo } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
-import { useAiChatExperiment } from "@/components/providers/databuddy-flags-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
 
@@ -79,7 +78,7 @@ const navMainItems: NavMainItem[] = [
     badge: "Beta",
   },
   {
-    link: "/automation/schedule",
+    link: "/automation/schedules",
     icon: Calendar03Icon,
     label: "Schedules",
     category: "automation",
@@ -183,7 +182,6 @@ const categories = Object.keys(categoryLabels) as Exclude<
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
-  const aiChatExperiment = useAiChatExperiment();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const isApplePlatform = useIsApplePlatform();
 
@@ -192,9 +190,7 @@ export function NavMain() {
   }
 
   const slug = activeOrganization.slug;
-  const rootItems = itemsByCategory.none.filter(
-    (item) => item.link !== "/chat" || aiChatExperiment.on
-  );
+  const rootItems = itemsByCategory.none;
 
   return (
     <>
@@ -203,9 +199,10 @@ export function NavMain() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                className="cursor-help border border-sidebar-border/60"
+                aria-label="Open command palette"
+                className="cursor-pointer border border-sidebar-border/60"
                 onClick={() => setCommandPaletteOpen(true)}
-                tooltip="Search"
+                tooltip="Open command palette"
               >
                 <HugeiconsIcon icon={SearchIcon} />
                 <span>Search</span>

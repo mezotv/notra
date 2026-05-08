@@ -7,7 +7,7 @@ const BLOCKED_HOSTNAMES = new Set([
 ]);
 
 const BLOCKED_HOSTNAME_SUFFIXES = [".internal", ".local", ".localhost"];
-const IPV4_MAPPED_IPV6_REGEX = /::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/;
+const HEXTET_REGEX = /^[0-9a-f]{1,4}$/;
 
 function ipv4ToNumber(ip: string): number | null {
   const parts = ip.split(".");
@@ -46,31 +46,128 @@ function isPrivateOrReservedIpv4(ip: string): boolean {
   return ranges.some(([start, end]) => value >= start && value <= end);
 }
 
-function isPrivateOrReservedIpv6(ip: string): boolean {
-  const normalized = ip.toLowerCase();
+type Ipv6Hextets = [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
 
-  if (normalized === "::" || normalized === "::1") {
-    return true;
+function expandIpv6Hextets(ip: string): Ipv6Hextets | null {
+  let address = ip.toLowerCase();
+
+  const zoneIndex = address.indexOf("%");
+  if (zoneIndex !== -1) {
+    address = address.slice(0, zoneIndex);
   }
 
-  if (normalized.startsWith("fe80:") || normalized.startsWith("fe80::")) {
-    return true;
-  }
-
-  const firstByte = Number.parseInt(normalized.split(":")[0] ?? "", 16);
-  if (Number.isFinite(firstByte)) {
-    // biome-ignore lint/suspicious/noBitwiseOperators: <>
-    const isUniqueLocal = (firstByte & 0xfe_00) === 0xfc_00;
-    // biome-ignore lint/suspicious/noBitwiseOperators: <>
-    const isReserved = (firstByte & 0xff_00) === 0xff_00;
-    if (isUniqueLocal || isReserved) {
-      return true;
+  const lastColon = address.lastIndexOf(":");
+  const tail = lastColon === -1 ? address : address.slice(lastColon + 1);
+  if (tail.includes(".")) {
+    const ipv4Value = ipv4ToNumber(tail);
+    if (ipv4Value === null) {
+      return null;
     }
+    const high = Math.floor(ipv4Value / 0x1_00_00);
+    const low = ipv4Value % 0x1_00_00;
+    address = `${address.slice(0, lastColon + 1)}${high.toString(16)}:${low.toString(16)}`;
   }
 
-  const mappedMatch = normalized.match(IPV4_MAPPED_IPV6_REGEX);
-  if (mappedMatch?.[1]) {
-    return isPrivateOrReservedIpv4(mappedMatch[1]);
+  const parts = address.split("::");
+  if (parts.length > 2) {
+    return null;
+  }
+
+  let hextetStrings: string[];
+  if (parts.length === 2) {
+    const headPart = parts[0] ?? "";
+    const trailPart = parts[1] ?? "";
+    const head = headPart === "" ? [] : headPart.split(":");
+    const trail = trailPart === "" ? [] : trailPart.split(":");
+    const fill = 8 - head.length - trail.length;
+    if (fill < 0) {
+      return null;
+    }
+    hextetStrings = [...head, ...new Array(fill).fill("0"), ...trail];
+  } else {
+    hextetStrings = address.split(":");
+  }
+
+  if (hextetStrings.length !== 8) {
+    return null;
+  }
+
+  const hextets: number[] = [];
+  for (const part of hextetStrings) {
+    if (!HEXTET_REGEX.test(part)) {
+      return null;
+    }
+    hextets.push(Number.parseInt(part, 16));
+  }
+
+  if (
+    hextets[0] === undefined ||
+    hextets[1] === undefined ||
+    hextets[2] === undefined ||
+    hextets[3] === undefined ||
+    hextets[4] === undefined ||
+    hextets[5] === undefined ||
+    hextets[6] === undefined ||
+    hextets[7] === undefined
+  ) {
+    return null;
+  }
+
+  return [
+    hextets[0],
+    hextets[1],
+    hextets[2],
+    hextets[3],
+    hextets[4],
+    hextets[5],
+    hextets[6],
+    hextets[7],
+  ];
+}
+
+function hextetsToIpv4(high: number, low: number): string {
+  const value = high * 0x1_00_00 + low;
+  const a = Math.floor(value / 0x1_00_00_00) % 256;
+  const b = Math.floor(value / 0x1_00_00) % 256;
+  const c = Math.floor(value / 0x1_00) % 256;
+  const d = value % 256;
+  return `${a}.${b}.${c}.${d}`;
+}
+
+function isPrivateOrReservedIpv6(ip: string): boolean {
+  const hextets = expandIpv6Hextets(ip);
+  if (hextets === null) {
+    return true;
+  }
+
+  const [h0, h1, h2, h3, h4, h5, h6, h7] = hextets;
+
+  const hasZeroPrefix =
+    h0 === 0 && h1 === 0 && h2 === 0 && h3 === 0 && h4 === 0;
+  if (hasZeroPrefix && (h5 === 0xff_ff || h5 === 0)) {
+    return isPrivateOrReservedIpv4(hextetsToIpv4(h6, h7));
+  }
+
+  // biome-ignore lint/suspicious/noBitwiseOperators: bitmask range checks
+  if ((h0 & 0xff_c0) === 0xfe_80) {
+    return true;
+  }
+  // biome-ignore lint/suspicious/noBitwiseOperators: bitmask range checks
+  if ((h0 & 0xfe_00) === 0xfc_00) {
+    return true;
+  }
+  // biome-ignore lint/suspicious/noBitwiseOperators: bitmask range checks
+  if ((h0 & 0xff_00) === 0xff_00) {
+    return true;
   }
 
   return false;

@@ -1,7 +1,3 @@
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { isAiChatExperimentEnabled } from "@/lib/ai-chat-experiment";
-import { withOrganizationAuth } from "@/lib/auth/organization";
 import {
   deleteChatSession,
   getActiveChatStream,
@@ -10,8 +6,11 @@ import {
   loadChatHistory,
   renameChatSession,
   setChatSessionPinned,
-} from "@/lib/chat-history";
-import { updateChatSessionSchema } from "@/schemas/chat";
+} from "@notra/ai/chat/history";
+import { updateChatSessionSchema } from "@notra/ai/schemas/chat";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { withOrganizationAuth } from "@/lib/auth/organization";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;
@@ -23,19 +22,6 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   if (!auth.success) {
     return auth.response;
-  }
-
-  const aiChatEnabled = await isAiChatExperimentEnabled({
-    userId: auth.context.user.id,
-    email: auth.context.user.email,
-    organizationId,
-  });
-
-  if (!aiChatEnabled) {
-    return NextResponse.json(
-      { error: "AI chat is not enabled for this organization" },
-      { status: 403 }
-    );
   }
 
   if (await isChatDeleted(organizationId, chatId)) {
@@ -61,19 +47,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
   if (!auth.success) {
     return auth.response;
-  }
-
-  const aiChatEnabled = await isAiChatExperimentEnabled({
-    userId: auth.context.user.id,
-    email: auth.context.user.email,
-    organizationId,
-  });
-
-  if (!aiChatEnabled) {
-    return NextResponse.json(
-      { error: "AI chat is not enabled for this organization" },
-      { status: 403 }
-    );
   }
 
   const body = await request.json();
@@ -108,19 +81,6 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
   if (!auth.success) {
     return auth.response;
-  }
-
-  const aiChatEnabled = await isAiChatExperimentEnabled({
-    userId: auth.context.user.id,
-    email: auth.context.user.email,
-    organizationId,
-  });
-
-  if (!aiChatEnabled) {
-    return NextResponse.json(
-      { error: "AI chat is not enabled for this organization" },
-      { status: 403 }
-    );
   }
 
   const deleted = await deleteChatSession(organizationId, chatId);

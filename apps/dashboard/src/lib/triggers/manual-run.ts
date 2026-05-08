@@ -1,8 +1,8 @@
+import { triggerEventNow, triggerScheduleNow } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
-import { triggerEventNow, triggerScheduleNow } from "@/lib/triggers/qstash";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 
 interface TriggerRecord {

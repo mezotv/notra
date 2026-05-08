@@ -914,11 +914,18 @@ export function CreateContentDialog({
                         <Label htmlFor={field.name}>Integrations</Label>
                         {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                         {!isLoadingRepos && integrationOptions.length === 0 && (
-                          <div className="flex items-center gap-2 rounded-md border border-dashed p-3">
-                            <span className="flex-1 text-muted-foreground text-xs">
-                              No integrations connected.
-                            </span>
+                          <div className="flex items-start justify-between gap-3 rounded-md border border-dashed p-4">
+                            <div className="flex-1 space-y-1">
+                              <p className="font-medium text-sm">
+                                No integrations connected
+                              </p>
+                              <p className="text-muted-foreground text-xs">
+                                Connect GitHub or Linear so Notra can pull
+                                recent activity for this content.
+                              </p>
+                            </div>
                             <AddRepositoryButton
+                              label="Connect"
                               onAdd={handleOpenAddRepositoryFlow}
                             />
                           </div>
@@ -1283,7 +1290,14 @@ export function CreateContentDialog({
             {/* ── Footer ── */}
             <div className="shrink-0 rounded-b-xl border-t bg-muted/50 p-4">
               {step === "configure" && (
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-between gap-3">
+                  {repositoryIds.length === 0 ? (
+                    <p className="text-muted-foreground text-xs">
+                      Select or add an integration to continue.
+                    </p>
+                  ) : (
+                    <span />
+                  )}
                   <Button
                     disabled={repositoryIds.length === 0}
                     onClick={handleContinue}

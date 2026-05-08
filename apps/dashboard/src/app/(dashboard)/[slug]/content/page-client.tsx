@@ -12,7 +12,15 @@ import type { ContentType } from "@notra/ai/schemas/content";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { ButtonGroup } from "@notra/ui/components/ui/button-group";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@notra/ui/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -26,8 +34,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { cn } from "@notra/ui/lib/utils";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { parseAsInteger, useQueryState } from "nuqs";
+import { useMemo, useState } from "react";
 import {
   ContentCard,
   getContentTypeLabel,
@@ -41,6 +51,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useLocalStorage } from "@/lib/utils/local-storage";
 import type { Post, PostStatus } from "@/schemas/content";
+import { getPageNumbers } from "@/utils/content-preview";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
 
@@ -123,51 +134,29 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
 
-  const { data, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
-    usePosts(organizationId);
+  const [rawPage, setPage] = useQueryState(
+    "page",
+    parseAsInteger.withDefault(1).withOptions({ clearOnDefault: true })
+  );
+  const page = Math.max(1, rawPage);
+
+  const { data, isPending } = usePosts(organizationId, page);
   const { data: activeGenerations } = useActiveGenerations(organizationId);
 
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const posts = useMemo(() => data?.posts ?? [], [data?.posts]);
+  const totalPages = data?.pagination.totalPages ?? 1;
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
-  const allPosts = useMemo(
-    () => data?.pages.flatMap((page) => page.posts) ?? [],
-    [data?.pages]
-  );
-
-  const groupedPosts = useMemo(() => groupPostsByDate(allPosts), [allPosts]);
+  const groupedPosts = useMemo(() => groupPostsByDate(posts), [posts]);
 
   const previewsByPostId = useMemo(() => {
     const map = new Map<string, string>();
-    for (const post of allPosts) {
+    for (const post of posts) {
       map.set(post.id, getPreview(post.markdown));
     }
     return map;
-  }, [allPosts]);
+  }, [posts]);
 
   const sortedPosts = useMemo(() => {
-    const posts = viewMode === "table" ? allPosts : [];
     if (viewMode !== "table" || posts.length === 0) {
       return posts;
     }
@@ -187,7 +176,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       });
     }
     return posts;
-  }, [allPosts, viewMode, createdSortOrder, updatedSortOrder]);
+  }, [posts, viewMode, createdSortOrder, updatedSortOrder]);
 
   function getSortIcon(isSorted: false | "asc" | "desc") {
     if (isSorted === "asc") {
@@ -255,7 +244,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         </div>
         {isPending && <ContentPageSkeleton />}
         {!isPending &&
-          allPosts.length === 0 &&
+          posts.length === 0 &&
           !(activeGenerations && activeGenerations.length > 0) && (
             <EmptyState
               className="p-8"
@@ -264,7 +253,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             />
           )}
         {!isPending &&
-          (allPosts.length > 0 ||
+          (posts.length > 0 ||
             (activeGenerations && activeGenerations.length > 0)) &&
           viewMode === "grid" &&
           (() => {
@@ -273,10 +262,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               activeGenerations && activeGenerations.length > 0;
             const entries = Array.from(groupedPosts.entries());
             const todayExists = entries.some(([key]) => key === todayKey);
+            const showActiveGensOnThisPage = hasActiveGens && page === 1;
 
             return (
               <>
-                {hasActiveGens && !todayExists && (
+                {showActiveGensOnThisPage && !todayExists && (
                   <section className="space-y-4" key="today-generating">
                     <h2 className="font-semibold text-lg">
                       {formatDateHeading(todayKey)}
@@ -292,13 +282,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                     </div>
                   </section>
                 )}
-                {entries.map(([dateKey, posts]) => (
+                {entries.map(([dateKey, datePosts]) => (
                   <section className="space-y-4" key={dateKey}>
                     <h2 className="font-semibold text-lg">
                       {formatDateHeading(dateKey)}
                     </h2>
                     <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {hasActiveGens &&
+                      {showActiveGensOnThisPage &&
                         dateKey === todayKey &&
                         activeGenerations.map((gen) => (
                           <ContentSkeletonCard
@@ -307,7 +297,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                             source={gen.source}
                           />
                         ))}
-                      {posts.map((post) => (
+                      {datePosts.map((post) => (
                         <ContentCard
                           contentType={post.contentType as ContentType}
                           href={`/${organizationSlug}/content/${post.id}`}
@@ -325,7 +315,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               </>
             );
           })()}
-        {!isPending && allPosts.length > 0 && viewMode === "table" && (
+        {!isPending && posts.length > 0 && viewMode === "table" && (
           <div className="overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
@@ -426,13 +416,51 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </Table>
           </div>
         )}
-        <div className="h-10" ref={loadMoreRef}>
-          {isFetchingNextPage && (
-            <div className="flex items-center justify-center">
-              <Skeleton className="size-6 rounded-full" />
-            </div>
-          )}
-        </div>
+        {!isPending && totalPages > 1 && (
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  className={cn(page === 1 && "pointer-events-none opacity-50")}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(Math.max(1, page - 1));
+                  }}
+                />
+              </PaginationItem>
+              {getPageNumbers(page, totalPages).map((pageNumber, i) =>
+                pageNumber === "ellipsis" ? (
+                  <PaginationItem key={`ellipsis-${i}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      isActive={pageNumber === page}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPage(pageNumber);
+                      }}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              )}
+              <PaginationItem>
+                <PaginationNext
+                  className={cn(
+                    page === totalPages && "pointer-events-none opacity-50"
+                  )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(Math.min(totalPages, page + 1));
+                  }}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        )}
       </div>
     </PageContainer>
   );

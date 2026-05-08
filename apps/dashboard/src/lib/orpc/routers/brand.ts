@@ -1,4 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { getWorkflowClient } from "@notra/ai/qstash/client";
+import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {
   brandReferences,
@@ -11,15 +16,10 @@ import { assertPublicHttpUrl } from "@notra/utils/url";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
-import { FEATURES } from "@/constants/features";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { autumn } from "@/lib/billing/autumn";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
-import { getWorkflowClient } from "@/lib/qstash";
-import { redis } from "@/lib/redis";
-import { deleteQstashSchedule, getAppUrl } from "@/lib/triggers/qstash";
 import {
   analyzeBrandSchema,
   createReferenceSchema,
@@ -70,6 +70,8 @@ const voiceCreateInputSchema = organizationIdInputSchema.extend({
   name: z.string().optional(),
   websiteUrl: z.string().min(1, "Website URL is required"),
 });
+
+const FREE_IMPORTED_TWEET_REFERENCE_LIMIT = 10;
 
 const voiceUpdateInputSchema = organizationIdInputSchema
   .extend({
@@ -944,37 +946,7 @@ export const brandRouter = {
 
         await verifyVoiceOwnership(input.organizationId, input.voiceId);
 
-        let maxResults = input.maxResults;
-
-        if (autumn) {
-          let data: {
-            allowed?: boolean;
-            balance?: { unlimited?: boolean; remaining?: number } | null;
-          } | null = null;
-
-          try {
-            data = await autumn.check({
-              customerId: input.organizationId,
-              featureId: FEATURES.REFERENCES,
-              requiredBalance: 1,
-            });
-          } catch {
-            data = null;
-          }
-
-          if (!data?.allowed) {
-            throw forbidden(
-              "Reference limit reached. Upgrade your plan to import more."
-            );
-          }
-
-          if (
-            !data.balance?.unlimited &&
-            typeof data.balance?.remaining === "number"
-          ) {
-            maxResults = Math.min(maxResults, data.balance.remaining);
-          }
-        }
+        const maxResults = input.maxResults;
 
         const socialAccount = await db.query.connectedSocialAccounts.findFirst({
           where: and(
@@ -1115,13 +1087,79 @@ export const brandRouter = {
             .filter(Boolean)
         );
 
-        const newTweets = tweets.filter(
+        let newTweets = tweets.filter(
           (tweet) => !existingTweetIds.has(tweet.id)
         );
 
         if (newTweets.length === 0) {
           return { count: 0, references: [] };
         }
+
+        const importedTweetCountRows = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(brandReferences)
+          .innerJoin(
+            brandSettings,
+            eq(brandSettings.id, brandReferences.brandSettingsId)
+          )
+          .where(
+            and(
+              eq(brandSettings.organizationId, input.organizationId),
+              eq(brandReferences.type, "twitter_post"),
+              sql`${brandReferences.metadata}->>'tweetId' IS NOT NULL`
+            )
+          );
+        const existingImportedTweetCount =
+          importedTweetCountRows[0]?.count ?? 0;
+
+        const freeImportsRemaining = Math.max(
+          0,
+          FREE_IMPORTED_TWEET_REFERENCE_LIMIT - existingImportedTweetCount
+        );
+        const freeImportCount = Math.min(
+          newTweets.length,
+          freeImportsRemaining
+        );
+        const tweetsRequiringEntitlement = newTweets.length - freeImportCount;
+        let paidImportCount = 0;
+
+        if (tweetsRequiringEntitlement > 0) {
+          if (autumn) {
+            let data: {
+              allowed?: boolean;
+              balance?: { unlimited?: boolean; remaining?: number } | null;
+            } | null = null;
+
+            try {
+              data = await autumn.check({
+                customerId: input.organizationId,
+                featureId: FEATURES.REFERENCES,
+                requiredBalance: 1,
+              });
+            } catch {
+              data = null;
+            }
+
+            if (data?.allowed) {
+              if (data.balance?.unlimited) {
+                paidImportCount = tweetsRequiringEntitlement;
+              } else if (typeof data.balance?.remaining === "number") {
+                paidImportCount = Math.min(
+                  tweetsRequiringEntitlement,
+                  data.balance.remaining
+                );
+              }
+            }
+          }
+
+          if (freeImportCount === 0 && paidImportCount === 0) {
+            throw forbidden(
+              "Reference limit reached. Upgrade your plan to import more."
+            );
+          }
+        }
+
+        newTweets = newTweets.slice(0, freeImportCount + paidImportCount);
 
         const values = newTweets.map((tweet) => ({
           id: randomUUID(),
@@ -1148,7 +1186,12 @@ export const brandRouter = {
           .values(values)
           .returning();
 
+        const freeReferenceIds = new Set(
+          inserted.slice(0, freeImportCount).map((reference) => reference.id)
+        );
+
         let syncedCount = 0;
+        let syncedBillableCount = 0;
 
         for (const reference of inserted) {
           let createdDocumentId: string | null = null;
@@ -1171,6 +1214,9 @@ export const brandRouter = {
               })
               .where(eq(brandReferences.id, reference.id));
             syncedCount += 1;
+            if (!freeReferenceIds.has(reference.id)) {
+              syncedBillableCount += 1;
+            }
           } catch (error) {
             console.error(
               "Error syncing imported tweet to Supermemory:",
@@ -1202,11 +1248,11 @@ export const brandRouter = {
           }
         }
 
-        if (autumn && syncedCount > 0) {
+        if (autumn && syncedBillableCount > 0) {
           await autumn.track({
             customerId: input.organizationId,
             featureId: FEATURES.REFERENCES,
-            value: syncedCount,
+            value: syncedBillableCount,
           });
         }
 

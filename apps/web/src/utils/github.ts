@@ -8,11 +8,11 @@ import type {
   IssueTypeBadge,
 } from "~types/github";
 
-export const GITHUB_OWNER = "usenotra";
-export const GITHUB_REPO = "notra";
+const GITHUB_OWNER = "usenotra";
+const GITHUB_REPO = "notra";
 export const GITHUB_REPO_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`;
 
-export const GITHUB_CACHE_TAG = "github-contributors";
+const GITHUB_CACHE_TAG = "github-contributors";
 
 const REVALIDATE_SECONDS = 3600;
 
@@ -104,6 +104,16 @@ export async function fetchContributorsData(): Promise<ContributorsData> {
       totalContributors: contributors.length,
     },
   };
+}
+
+const TRAILING_ZERO_DECIMAL = /\.0$/;
+
+export function formatContributionCount(count: number): string {
+  if (count >= 1000) {
+    const thousands = count / 1000;
+    return `${thousands.toFixed(thousands >= 10 ? 0 : 1).replace(TRAILING_ZERO_DECIMAL, "")}k`;
+  }
+  return count.toString();
 }
 
 export function formatGitHubDate(dateString: string): string {

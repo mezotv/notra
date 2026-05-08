@@ -1,7 +1,7 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { ORPCError } from "@orpc/server";
-import { PAID_OR_LEGACY_PLAN_IDS } from "@/constants/features";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
-import { autumn } from "./autumn";
 
 export async function assertActiveSubscription(
   organizationId: string

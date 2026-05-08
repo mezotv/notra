@@ -1,0 +1,3 @@
+ALTER TABLE "chat_sessions" ADD COLUMN "external_channel_source" text;--> statement-breakpoint
+ALTER TABLE "chat_sessions" ADD COLUMN "external_channel_id" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "chatSessions_org_externalChannel_uidx" ON "chat_sessions" USING btree ("organization_id","external_channel_source","external_channel_id") WHERE "chat_sessions"."external_channel_source" IN ('discord', 'slack') AND "chat_sessions"."external_channel_id" IS NOT NULL AND "chat_sessions"."deleted_at" IS NULL;

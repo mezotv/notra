@@ -1,0 +1,11 @@
+{
+  "name": "deepsec-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "deepsec scanning workspace",
+  "type": "module",
+  "workspaces": [],
+  "dependencies": {
+    "deepsec": "^1.1.11"
+  }
+}

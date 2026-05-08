@@ -13,7 +13,7 @@ function describeSource(source: RepoImageSourceContext): string {
   if (source.mode === "prompt") {
     return [
       `User prompt: "${source.prompt}"`,
-      "If the prompt names a feature/page/route/component (e.g. \"chat\", \"billing\", \"editor\"), find that feature in the repo and copy ITS visual style. Otherwise use the landing page.",
+      'If the prompt names a feature/page/route/component (e.g. "chat", "billing", "editor"), find that feature in the repo and copy ITS visual style. Otherwise use the landing page.',
     ].join("\n");
   }
   if (source.mode === "pr") {
@@ -49,7 +49,7 @@ The repo is cloned at /workspace/home/${repo}. Read whatever you need from there
 
 ═════════════════════ STUDY ═════════════════════
 
-1. Tokens: Read /workspace/home/${repo}/app/globals.css OR /workspace/home/${repo}/src/app/globals.css OR styles/globals.css. Pull --background, --foreground, --primary, --accent, --radius. Convert oklch/hsl to hex.
+1. Tokens: Read /workspace/home/${repo}/app/globals.css OR /workspace/home/${repo}/src/app/globals.css OR /workspace/home/${repo}/styles/globals.css. Pull --background, --foreground, --primary, --accent, --radius. Convert oklch/hsl to hex.
 2. Brand assets: \`find /workspace/home/${repo} -maxdepth 5 \\( -iname "*logo*" -o -iname "*brand*" -o -ipath "*branding*" \\) -type f 2>/dev/null | head -10\`. If you find a logo SVG/PNG you want to embed, base64-encode it and inline as an <img src="data:..."> in the HTML.
 3. Feature: ${describeSource(source)}
    To find feature files: \`grep -ril "<keyword>" /workspace/home/${repo}/app /workspace/home/${repo}/src --include="*.tsx" 2>/dev/null | head -10\`. Open 2–4 of the top hits and study layout, headings, primary CTA, surface colors.

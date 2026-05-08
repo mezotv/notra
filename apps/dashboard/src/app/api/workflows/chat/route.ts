@@ -1,34 +1,36 @@
-import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
-import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
-import { serve } from "@upstash/workflow/nextjs";
-import type { UIMessageChunk } from "ai";
-import { nanoid } from "nanoid";
-import { FEATURES } from "@/constants/features";
-import { isAiChatExperimentEnabled } from "@/lib/ai-chat-experiment";
-import { autumn } from "@/lib/billing/autumn";
-import { calculateTokenCostCents } from "@/lib/billing/token-pricing";
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { calculateTokenCostCents } from "@notra/ai/billing/token-pricing";
+import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
   clearActiveChatStream,
   clearChatAbortFlag,
   getChatStreamChannelName,
   loadChatHistory,
   replaceChatHistory,
-} from "@/lib/chat-history";
-import { realtime } from "@/lib/realtime";
+} from "@notra/ai/chat/history";
 import {
   getGitHubIntegrationById,
   getGitHubIntegrationsByOrganization,
   getGitHubToolRepositoryContextByIntegrationId,
-} from "@/lib/services/github-integration";
+} from "@notra/ai/integrations/github";
 import {
   getLinearIntegrationById,
   getLinearIntegrationsByOrganization,
   getLinearToolContextByIntegrationId,
-} from "@/lib/services/linear-integration";
-import { chatWorkflowPayloadSchema } from "@/schemas/chat";
-import type { ChatUsageSnapshot, ChatWorkflowPayload } from "@/types/chat";
-import { buildChatFinishMetadata } from "@/utils/chat";
-import { startChatAbortPolling } from "@/utils/chat-abort-polling.server";
+} from "@notra/ai/integrations/linear";
+import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
+import { realtime } from "@notra/ai/realtime";
+import { chatWorkflowPayloadSchema } from "@notra/ai/schemas/chat";
+import type {
+  ChatUsageSnapshot,
+  ChatWorkflowPayload,
+} from "@notra/ai/types/chat";
+import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
+import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { serve } from "@upstash/workflow/nextjs";
+import type { UIMessageChunk } from "ai";
+import { nanoid } from "nanoid";
 
 export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const parseResult = chatWorkflowPayloadSchema.safeParse(
@@ -48,8 +50,6 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     requestId,
     organizationId,
     chatId,
-    userId,
-    userEmail,
     context: standaloneContext,
     useMarkup,
     model,
@@ -57,17 +57,6 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     thinkingLevel,
     timezone,
   } = parseResult.data;
-
-  const aiChatEnabled = await isAiChatExperimentEnabled({
-    userId,
-    email: userEmail,
-    organizationId,
-  });
-
-  if (!aiChatEnabled) {
-    await context.cancel();
-    return;
-  }
 
   const messages = await context.run("load-chat-history", () =>
     loadChatHistory(organizationId, chatId)
@@ -155,6 +144,15 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         enableThinking,
         thinkingLevel,
         timezone,
+        telemetryMetadata: {
+          chatId,
+          feature: "standalone_chat",
+          organizationId,
+          routeName: "/api/workflows/chat",
+          "tcc.conversational": "true",
+          "tcc.sessionId": chatId,
+          userId: parseResult.data.userId,
+        },
       },
       {
         integrationFetchers: {
@@ -266,7 +264,17 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       },
       onFinish: async ({ messages: responseMessages }) => {
         try {
-          await replaceChatHistory(organizationId, chatId, responseMessages);
+          const saved = await replaceChatHistory(
+            organizationId,
+            chatId,
+            responseMessages
+          );
+          if (!saved) {
+            console.warn(
+              "[Chat Workflow] Skipped saving response: chat was deleted",
+              { requestId, organizationId, chatId }
+            );
+          }
         } finally {
           await clearActiveChatStream(organizationId, chatId);
         }

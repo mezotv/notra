@@ -1,0 +1,330 @@
+---
+title: "Brand Voice"
+description: "Learn how Notra adapts generated content to match your team's tone, style, and audience preferences."
+---
+
+Brand voice is what makes your content sound like *you*. Notra ensures every generated draft reflects your team's unique communication style through brand settings and AI-powered adaptation.
+
+## What is Brand Voice?
+
+Your brand voice encompasses:
+
+* **Tone**: The emotional quality of your writing (friendly, formal, casual, authoritative)
+* **Style**: How you structure sentences and use language
+* **Terminology**: The words you choose and technical level
+* **Audience awareness**: Who you're speaking to and what they care about
+
+Notra learns your brand voice and applies it consistently across all generated content, whether it's a technical changelog for developers or a LinkedIn post for a broader audience.
+
+## How Notra Learns Your Brand
+
+You can configure brand voice in two ways:
+
+### Manual Configuration
+
+Navigate to Brand Settings in your dashboard and provide:
+
+* **Company name**: Your product or company name
+* **Company description**: What you build and why it matters (2-4 sentences)
+* **Tone profile**: Choose from Conversational, Professional, Casual, or Formal
+* **Target audience**: Who you're writing for (e.g., "developers and engineering teams")
+* **Custom instructions**: Additional guidelines specific to your needs
+
+### Automated Analysis
+
+Notra can analyze your website to extract brand identity automatically:
+
+<Steps>
+  <Step title="Enter your website URL">
+    Provide the URL to your homepage, about page, or product page.
+  </Step>
+
+  <Step title="Scraping">
+    Notra uses Firecrawl to extract clean markdown content from the page, focusing on main content and filtering out navigation and footer elements.
+  </Step>
+
+  <Step title="AI extraction">
+    Claude analyzes the content to identify:
+
+    * Company name and mission
+    * Communication tone and style patterns
+    * Target audience based on messaging
+    * Key value propositions and differentiators
+  </Step>
+
+  <Step title="Save settings">
+    Extracted information populates your brand settings. You can review and refine before saving.
+  </Step>
+</Steps>
+
+<Info>
+  Website analysis takes 10-30 seconds. The system analyzes content deeply to understand not just what you say, but how you say it.
+</Info>
+
+## Tone Profiles Explained
+
+Notra offers four preset tone profiles. Each uses a different AI prompt template optimized for that style:
+
+### Conversational
+
+**Best for**: Developer tools, startups, open source projects
+
+**Characteristics**:
+
+* Warm and authentic
+* Direct address ("we" and "you")
+* Clear and specific without being dry
+* Founder-to-community feel
+
+**Example**:
+
+> We've shipped some meaningful improvements this week. The new cache component support catches unsupported auth calls early and provides clear migration guidance. Email verification flows now support secure link completion with proper error handling for expired links.
+
+### Professional
+
+**Best for**: Enterprise products, B2B SaaS, corporate communications
+
+**Characteristics**:
+
+* Clear and confident
+* Polished without being stiff
+* Focus on business value
+* Authoritative tone
+
+**Example**:
+
+> This release delivers significant enhancements to the platform. New cache component validation ensures proper auth implementation with actionable error guidance. Email verification workflows now include comprehensive link-based completion flows.
+
+### Casual
+
+**Best for**: Consumer apps, community-driven products, creative tools
+
+**Characteristics**:
+
+* Friendly and approachable
+* Relaxed language
+* Enthusiasm visible
+* Emojis acceptable (if requested)
+
+**Example**:
+
+> Hey folks! We've been busy this week. The cache system is now way smarter about catching auth issues before they become problems. Plus, email verification links actually work the way you'd expect, nice and reliable.
+
+### Formal
+
+**Best for**: Finance, healthcare, compliance-heavy industries, academic tools
+
+**Characteristics**:
+
+* Precise and structured
+* Traditional language
+* Complete sentences
+* Conservative terminology
+
+**Example**:
+
+> The engineering team has completed several deliverables for this release cycle. Runtime validation capabilities have been enhanced to detect unsupported authentication patterns in cached contexts. Email-based verification procedures have been implemented with comprehensive error state handling.
+
+<Tip>
+  You can switch tone profiles at any time. New content will use the updated profile, but existing drafts remain unchanged.
+</Tip>
+
+## Target Audience Impact
+
+Who you're writing for dramatically affects content structure and detail:
+
+### Developer Audience
+
+When your audience is "developers", "engineers", or "technical teams":
+
+* **PR links included**: Every change references the pull request number with link
+* **Technical terminology**: Uses proper technical terms without over-explaining
+* **Implementation details**: Mentions APIs, components, and architectural changes
+* **Author attribution**: Credits contributors with GitHub handles
+
+**Example**:
+
+> **Cache component support with actionable error guidance** [#423](https://github.com/org/repo/pull/423) - Runtime guardrails now catch unsupported auth calls in cached contexts and provide clear migration guidance with the correct usage pattern. (Author: [@alex](https://github.com/alex/))
+
+### Non-Developer Audience
+
+When your audience is "customers", "end users", or "stakeholders":
+
+* **No PR links**: Technical references removed
+* **Plain language**: Explains what changed in terms of user benefits
+* **Outcome focus**: Emphasizes what users can now do
+* **Author attribution still included**: Credits contributors but without PR numbers
+
+**Example**:
+
+> **Improved error messages**: When you use authentication features incorrectly, you'll now see helpful guidance on how to fix it. (Author: [@alex](https://github.com/alex/))
+
+## Custom Instructions
+
+Custom instructions let you add specific guidelines beyond the tone profile:
+
+**Common use cases**:
+
+```
+Avoid cryptocurrency and blockchain jargon
+Emphasize security and compliance improvements  
+Include performance metrics when available
+Mention customer impact explicitly for each feature
+Use "we" instead of "the team" or third person
+Keep technical accuracy while being approachable
+```
+
+Custom instructions are injected into the AI prompt and applied during content generation.
+
+<Note>
+  Be specific with custom instructions. "Use simple language" is vague. "Explain technical concepts using analogies from everyday life" gives the AI clearer direction.
+</Note>
+
+## How Brand Voice is Applied
+
+When generating content, here's what happens behind the scenes:
+
+1. **Context injection**: Brand settings are formatted into structured XML tags
+2. **Prompt assembly**: System prompt includes tone-specific guidelines
+3. **User prompt**: Includes company context, audience, and custom instructions
+4. **AI generation**: Model generates content following all constraints
+5. **Humanization**: Optional "humanizer" skill polishes the output further
+
+**Technical view of prompt structure**:
+
+```xml
+<task-context>
+You are generating a changelog for developers.
+</task-context>
+
+<tone-context>
+Write with warmth and authenticity. Keep the writing conversational, 
+clear, and specific.
+</tone-context>
+
+<background-data>
+<company>Acme Corp - Building developer tools for modern web apps</company>
+<target-audience>Software developers and engineering teams</target-audience>
+</background-data>
+
+<custom-instructions>
+Keep technical accuracy while being approachable
+Include PR links for all changes  
+Emphasize security and performance improvements
+</custom-instructions>
+```
+
+The AI uses this structured context to make decisions about:
+
+* Word choice ("shipped" vs "delivered" vs "released")
+* Sentence structure (short and punchy vs longer and descriptive)
+* Detail level (deep technical explanation vs high-level summary)
+* Formatting (bullet points vs paragraphs, headings vs inline)
+
+## Maintaining Consistency
+
+Notra ensures consistency across all your content:
+
+**Same voice everywhere**:
+
+* Changelogs use the same tone as LinkedIn posts
+* Event-triggered content matches scheduled content
+* Multi-repository updates maintain unified style
+
+**Consistent structure**:
+
+* Changelogs always follow the same outline (Summary → Highlights → More Updates)
+* Categories appear in priority order (Security → Features → Bug Fixes...)
+* Metadata formatting is standardized
+
+**Quality controls**:
+
+* Strict word count limits prevent rambling (120-180 words for summaries)
+* No emojis in headings (unless explicitly requested)
+* No made-up PR numbers or commit details
+* Technical accuracy preserved even in casual tones
+
+## Examples Across Tones
+
+Same feature, four different tones:
+
+**Feature**: New GitHub webhook verification for enhanced security
+
+<AccordionGroup>
+  <Accordion title="Conversational">
+    We've added webhook signature verification to make sure incoming GitHub events are actually from GitHub. If a webhook fails verification, we'll reject it and log the attempt. This prevents potential security issues from forged webhook payloads.
+  </Accordion>
+
+  <Accordion title="Professional">
+    GitHub webhook signature verification has been implemented to ensure all incoming events are cryptographically authenticated. Invalid signatures are rejected with appropriate logging, preventing unauthorized webhook delivery attempts.
+  </Accordion>
+
+  <Accordion title="Casual">
+    Your webhooks just got a lot more secure! We're now checking signatures on every GitHub event to make sure it's legit. Sketchy requests get blocked at the door.
+  </Accordion>
+
+  <Accordion title="Formal">
+    Cryptographic signature validation has been implemented for all GitHub webhook payloads. The system verifies request authenticity prior to processing and maintains audit logs of verification failures in accordance with security best practices.
+  </Accordion>
+</AccordionGroup>
+
+## Updating Your Brand Voice
+
+Your communication style may evolve over time. Update brand settings whenever:
+
+* You rebrand or change positioning
+* Your target audience shifts
+* You want to experiment with different tones
+* You refine your company description
+
+All future content generation will use the new settings. Existing drafts in your dashboard remain unchanged. They reflect the brand voice settings that were active when they were created.
+
+<Tip>
+  Run a test changelog after updating brand settings to see how the changes affect output before switching back to event-driven automation.
+</Tip>
+
+## Best Practices
+
+**For tone selection**:
+
+* Match your existing marketing and documentation tone
+* Consider your industry norms (fintech tends toward formal, dev tools toward conversational)
+* Test different profiles with sample generations
+* Be consistent, as frequent tone changes confuse your audience
+
+**For custom instructions**:
+
+* Start simple, add specificity over time
+* Reference concrete examples: "like this" not "avoid being vague"
+* Update instructions based on manual edits you make to drafts
+* Keep instructions focused on style, not content (content comes from your actual work)
+
+**For audience definition**:
+
+* Be specific: "Senior engineering leaders at enterprise companies" vs "technical people"
+* Consider what they care about: outcomes, implementation details, business impact?
+* Align with where you publish: developer blog = dev audience, company blog = broader
+
+## Troubleshooting Voice Issues
+
+If generated content doesn't match your expectations:
+
+**Too technical / not technical enough**:
+
+* Adjust target audience description
+* Add custom instructions about detail level
+* Review examples in generated drafts and specify what to change
+
+**Wrong tone**:
+
+* Verify tone profile selection matches intent
+* Check that custom instructions don't contradict the tone
+* Consider that content type affects tone (changelogs are naturally more technical)
+
+**Inconsistent style**:
+
+* Ensure brand settings are complete (missing fields reduce quality)
+* Check that multiple team members aren't making conflicting updates
+* Review custom instructions for clarity and specificity
+
+Your brand voice is powerful. Notra ensures it shines through in every piece of content.

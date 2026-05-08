@@ -13,22 +13,26 @@ const buildQueryUrl = (base: string, query: string) =>
 export const AI_SUMMARY_LINKS = [
   {
     name: "ChatGPT",
+    slug: "chatgpt",
     Icon: Openai,
     href: buildQueryUrl("https://chatgpt.com/?q=", AI_SUMMARY_QUERY),
     iconClassName: "dark:invert",
   },
   {
     name: "Perplexity",
+    slug: "perplexity",
     Icon: Perplexity,
     href: buildQueryUrl("https://www.perplexity.ai/?q=", AI_SUMMARY_QUERY),
   },
   {
     name: "Claude",
+    slug: "claude",
     Icon: ClaudeAiIcon,
     href: buildQueryUrl("https://claude.ai/new?q=", AI_SUMMARY_QUERY),
   },
   {
     name: "Gemini",
+    slug: "gemini",
     Icon: Gemini,
     href: buildQueryUrl(
       "https://www.google.com/search?udm=50&q=",

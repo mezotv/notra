@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "c15t": {
+      "source": "c15t/skills",
+      "sourceType": "github",
+      "skillPath": "c15t/SKILL.md",
+      "computedHash": "031b918ecb7f15c96e690412c79e2ebb8f4a2bcea5c5fac3d87d9752d4153660"
+    }
+  }
+}

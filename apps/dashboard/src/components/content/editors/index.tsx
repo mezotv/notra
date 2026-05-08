@@ -5,14 +5,6 @@ import { LinkedInEditor } from "./linkedin-editor";
 import { TwitterEditor } from "./twitter-editor";
 import type { ContentEditorProps } from "./types";
 
-export type {
-  ContentData,
-  ContentEditorProps,
-  EditorActions,
-  EditorState,
-  OrganizationInfo,
-} from "./types";
-
 interface ContentEditorSwitchProps extends ContentEditorProps {
   contentType: string;
 }

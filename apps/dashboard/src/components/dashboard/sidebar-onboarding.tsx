@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 
-const STORAGE_KEY = "onboarding-collapsed";
+const STORAGE_KEY_BASE = "onboarding-collapsed";
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
 export function SidebarOnboarding() {
@@ -31,17 +31,29 @@ export function SidebarOnboarding() {
   });
   const [collapsed, setCollapsed] = useState(false);
 
+  const storageKey = orgId ? `${STORAGE_KEY_BASE}:${orgId}` : STORAGE_KEY_BASE;
+
   useEffect(() => {
-    setCollapsed(localStorage.getItem(STORAGE_KEY) === "true");
-  }, []);
+    const stored = localStorage.getItem(storageKey);
+    if (stored !== null) {
+      setCollapsed(stored === "true");
+      return;
+    }
+    if (!data) {
+      return;
+    }
+    const hasCompletedStep =
+      data.hasBrandIdentity || data.hasIntegration || data.hasSchedule;
+    setCollapsed(hasCompletedStep);
+  }, [storageKey, data]);
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
       const next = !prev;
-      localStorage.setItem(STORAGE_KEY, String(next));
+      localStorage.setItem(storageKey, String(next));
       return next;
     });
-  }, []);
+  }, [storageKey]);
 
   const hasActiveSubscription = customer?.subscriptions.some(
     (subscription) => !subscription.addOn && subscription.status === "active"
@@ -68,7 +80,7 @@ export function SidebarOnboarding() {
     },
     {
       label: "Create a schedule",
-      href: `/${slug}/automation/schedule`,
+      href: `/${slug}/automation/schedules`,
       completed: data.hasSchedule,
     },
   ];
@@ -134,7 +146,10 @@ export function SidebarOnboarding() {
               key="expanded"
               transition={MORPH_TRANSITION}
             >
-              <OnboardingChecklist onClose={toggleCollapsed}>
+              <OnboardingChecklist
+                className="bg-sidebar-accent/40 py-2 ring-0"
+                onClose={toggleCollapsed}
+              >
                 <OnboardingChecklistHeader>
                   <motion.div
                     layoutId="onboarding-title"

@@ -1,5 +1,6 @@
 import { Cancel01Icon, TextSelectionIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import {
@@ -7,7 +8,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import type { ContextItem, TextSelection } from "@/types/chat";
 import { getSelectionPreview } from "@/utils/chat-input";
 
 function ContextBadge({

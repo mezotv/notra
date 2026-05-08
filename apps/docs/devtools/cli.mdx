@@ -1,0 +1,259 @@
+---
+title: "CLI"
+description: "Manage posts, brand identities, integrations, and schedules from the terminal."
+---
+
+The Notra CLI gives you scriptable access to your workspace when installed. This repository currently does not include a CLI package, so treat these commands as the intended public CLI interface rather than local monorepo commands.
+
+## Install
+
+<CodeGroup>
+```bash bun
+bun add -g notra
+```
+
+```bash npm
+npm install -g notra
+```
+
+```bash pnpm
+pnpm add -g notra
+```
+
+```bash yarn
+yarn global add notra
+```
+</CodeGroup>
+
+You can also run any command without installing using `bunx notra <command>` or `npx notra <command>`.
+
+Verify the install:
+
+```bash
+notra --version
+```
+
+## Authentication
+
+The CLI authenticates with a Notra API key. You have three options.
+
+### Browser-based login
+
+```bash
+notra auth login
+```
+
+This opens the dashboard, has you confirm the new key, and writes it to local config.
+
+<Tip>
+  Use `notra auth login --no-browser` on a remote machine to print the URL instead of opening a browser.
+</Tip>
+
+### Paste an existing key
+
+```bash
+notra init
+```
+
+Prompts for your API key interactively, or pass it directly:
+
+```bash
+notra init --api-key ntra_xxxxxxxxxxxxxxxxxxxxxx
+```
+
+### Per-command override
+
+Skip stored config entirely with the `NOTRA_API_KEY` env var or a `--api-key` flag:
+
+```bash
+NOTRA_API_KEY=ntra_xxx notra posts list
+notra posts list --api-key ntra_xxx
+```
+
+Manage keys yourself in **Developer → API Keys** in the dashboard. See [Authentication](/api/authentication) for details.
+
+## Configuration
+
+Local config lives at `~/Library/Preferences/notra-cli-nodejs/config.json` (macOS) or the platform equivalent.
+
+```bash
+notra config path
+notra config get
+notra config get api-key
+notra config set base-url https://api.usenotra.com
+notra config set api-key ntra_xxx
+```
+
+Sign out to remove the stored key:
+
+```bash
+notra auth logout
+```
+
+## Quickstart
+
+```bash
+notra auth login
+notra integrations github --owner usenotra --repo notra
+notra brands generate --website-url https://usenotra.com --wait
+notra posts generate --content-type changelog --lookback last_7_days --wait
+notra posts list --status draft --limit 10
+```
+
+## Posts
+
+Manage generated content.
+
+| Command | Description |
+| --- | --- |
+| `notra posts list` | List posts in the current organization |
+| `notra posts get <postId>` | Fetch a single post |
+| `notra posts generate` | Queue an async post-generation job |
+| `notra posts status <jobId>` | Read the status of a generation job |
+| `notra posts update <postId>` | Update title, slug, markdown, or status |
+| `notra posts delete <postId>` | Delete a post |
+
+### List with filters
+
+```bash
+notra posts list --status draft --limit 10
+notra posts list --content-type changelog,blog_post --sort desc
+notra posts list --brand brand_abc --json
+```
+
+### Read a post
+
+```bash
+notra posts get post_abc123
+notra posts get post_abc123 --markdown > post.md
+```
+
+### Generate content
+
+```bash
+notra posts generate \
+  --content-type changelog \
+  --brand brand_abc \
+  --github-integration integration_xyz \
+  --lookback last_7_days \
+  --wait
+```
+
+`--wait` polls until the job finishes. Drop it to return the `jobId` immediately and check later with `notra posts status <jobId> --watch`.
+
+### Update content
+
+```bash
+notra posts update post_abc123 --title "New title" --status published
+notra posts update post_abc123 --markdown-file ./post.md
+cat post.md | notra posts update post_abc123 --markdown-file -
+```
+
+### Delete
+
+```bash
+notra posts delete post_abc123 --yes
+```
+
+## Brand identities
+
+Manage brand identities and run brand-identity generation jobs.
+
+| Command | Description |
+| --- | --- |
+| `notra brands list` | List brand identities |
+| `notra brands get <brandId>` | Fetch a single brand identity |
+| `notra brands generate` | Queue an async brand-identity generation from a website URL |
+| `notra brands status <jobId>` | Read the status of a brand-identity generation job |
+| `notra brands update <brandId>` | Update name, tone, instructions, or default flag |
+| `notra brands delete <brandId>` | Delete a non-default brand identity |
+
+### Generate from a website
+
+```bash
+notra brands generate --website-url https://acme.com --name Acme --wait
+```
+
+### Update settings
+
+```bash
+notra brands update brand_abc --tone Professional
+notra brands update brand_abc --custom-instructions "Always include PR links"
+notra brands update brand_abc --default
+```
+
+Tone options: `Conversational`, `Professional`, `Casual`, `Formal`.
+
+## Integrations
+
+Connect GitHub repositories and manage existing Linear integrations. Slack is planned.
+
+| Command | Description |
+| --- | --- |
+| `notra integrations list` | List GitHub and Linear integrations |
+| `notra integrations github` | Connect a GitHub repository |
+| `notra integrations remove <integrationId>` | Disconnect a GitHub or Linear integration |
+
+### Connect a repository
+
+```bash
+notra integrations github --owner usenotra --repo notra
+notra integrations github --owner acme --repo website --branch develop
+notra integrations github --owner acme --repo private-app --token ghp_xxx
+```
+
+A token is only required for private repos without an installed GitHub App.
+
+## Schedules
+
+Manage cron-based content-generation schedules.
+
+| Command | Description |
+| --- | --- |
+| `notra schedules list` | List schedules |
+| `notra schedules create` | Create a new schedule |
+| `notra schedules update <scheduleId>` | Replace a schedule (PATCH semantics) |
+| `notra schedules delete <scheduleId>` | Delete a schedule |
+
+### Create a schedule
+
+```bash
+notra schedules create \
+  --name "Daily changelog" \
+  --frequency daily --hour 9 --minute 0 \
+  --output-type changelog \
+  --repository repo_abc \
+  --lookback yesterday \
+  --enabled
+```
+
+For weekly/monthly schedules, pass `--day-of-week` (0-6) or `--day-of-month` (1-31).
+
+### From a JSON file
+
+```bash
+notra schedules create --config-file ./schedule.json
+cat schedule.json | notra schedules create --config-file -
+```
+
+## Global flags
+
+These work on every command:
+
+| Flag | Description |
+| --- | --- |
+| `--json` | Print machine-readable JSON instead of a formatted table |
+| `--api-key <value>` | Override the configured key (or `NOTRA_API_KEY` env var) |
+| `--base-url <value>` | Override the API base URL (or `NOTRA_BASE_URL` env var) |
+
+<Tip>
+  Pipe `--json` output through `jq` for scripting:
+
+  ```bash
+  notra posts list --status draft --json | jq -r '.posts[].id'
+  ```
+</Tip>
+
+## Source
+
+The CLI is open source and lives alongside the rest of Notra. See the [Notra GitHub repository](https://github.com/usenotra/notra) for the source and to report issues.

@@ -4,55 +4,26 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { redis } from "@notra/ai/utils/redis";
+import { getConfiguredWorkflowUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { Client as WorkflowClient } from "@upstash/workflow";
-import { and, eq } from "drizzle-orm";
-import { redis } from "@/lib/redis";
-import { getConfiguredWorkflowUrl } from "@/utils/url";
-
-const DEFAULT_BRAND_CONSTRAINT = "brandSettings_org_default_uidx";
-
-function isDefaultBrandConstraintViolation(error: unknown) {
-  if (!(typeof error === "object" && error !== null)) {
-    return false;
-  }
-  const candidates: unknown[] = [error];
-  if ("cause" in error) {
-    candidates.push((error as { cause: unknown }).cause);
-  }
-  return candidates.some((candidate) => {
-    if (!(typeof candidate === "object" && candidate !== null)) {
-      return false;
-    }
-    if (
-      "constraint_name" in candidate &&
-      candidate.constraint_name === DEFAULT_BRAND_CONSTRAINT
-    ) {
-      return true;
-    }
-    if (
-      "constraint" in candidate &&
-      candidate.constraint === DEFAULT_BRAND_CONSTRAINT
-    ) {
-      return true;
-    }
-    if (candidate instanceof Error) {
-      return candidate.message.includes(DEFAULT_BRAND_CONSTRAINT);
-    }
-    return false;
-  });
-}
+import { eq } from "drizzle-orm";
+import { after } from "next/server";
+import type {
+  DispatchBrandAnalysisInput,
+  InsertBrandIdentityInput,
+  QueueBrandAnalysisInput,
+  QueueBrandAnalysisResult,
+} from "@/types/brand-analysis";
+import { isDefaultBrandConstraintViolation } from "@/utils/brand-settings";
 
 async function insertBrandIdentity({
   organizationId,
   brandName,
   websiteUrl,
-}: {
-  organizationId: string;
-  brandName: string;
-  websiteUrl: string;
-}): Promise<{ id: string }> {
+}: InsertBrandIdentityInput): Promise<{ id: string }> {
   const hasAnyBrandIdentity = await db.query.brandSettings.findFirst({
     where: eq(brandSettings.organizationId, organizationId),
     columns: { id: true },
@@ -90,44 +61,26 @@ async function insertBrandIdentity({
   return fallback;
 }
 
-interface QueueBrandAnalysisInput {
-  organizationId: string;
-  websiteUrl: string;
-  name?: string;
-}
-
-interface QueueBrandAnalysisResult {
-  jobId: string;
-  brandIdentityId: string;
-}
-
-export async function queueBrandAnalysisForOnboarding({
+async function dispatchBrandAnalysisWorkflow({
   organizationId,
   websiteUrl,
-  name,
-}: QueueBrandAnalysisInput): Promise<QueueBrandAnalysisResult | null> {
+  brandIdentityId,
+  jobId,
+}: DispatchBrandAnalysisInput) {
   const token = process.env.QSTASH_TOKEN;
   const workflowBaseUrl = getConfiguredWorkflowUrl();
 
   if (!(redis && token && workflowBaseUrl)) {
-    return null;
+    return;
   }
 
   const now = new Date().toISOString();
-  const jobId = createBrandAnalysisJobId();
-  const brandName = name?.trim() || "Untitled Brand Voice";
-
-  const brandIdentity = await insertBrandIdentity({
-    organizationId,
-    brandName,
-    websiteUrl,
-  });
 
   try {
-    const job = await createBrandAnalysisJob(redis, {
+    await createBrandAnalysisJob(redis, {
       id: jobId,
       organizationId,
-      brandIdentityId: brandIdentity.id,
+      brandIdentityId,
       status: "queued",
       step: null,
       currentStep: 0,
@@ -145,7 +98,7 @@ export async function queueBrandAnalysisForOnboarding({
       body: {
         organizationId,
         url: websiteUrl,
-        voiceId: brandIdentity.id,
+        voiceId: brandIdentityId,
         jobId,
       },
     });
@@ -153,28 +106,57 @@ export async function queueBrandAnalysisForOnboarding({
     await updateBrandAnalysisJob(redis, jobId, {
       workflowRunId: result.workflowRunId,
     });
-
-    return { jobId: job.id, brandIdentityId: brandIdentity.id };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to trigger workflow";
 
-    await setBrandAnalysisJobStatus(redis, jobId, "failed", {
-      step: null,
-      currentStep: 0,
-      totalSteps: 3,
+    console.error("[Onboarding] Brand analysis workflow dispatch failed", {
+      organizationId,
+      brandIdentityId,
+      jobId,
       error: message,
     });
 
-    await db
-      .delete(brandSettings)
-      .where(
-        and(
-          eq(brandSettings.id, brandIdentity.id),
-          eq(brandSettings.organizationId, organizationId)
-        )
-      );
-
-    throw error;
+    if (redis) {
+      await setBrandAnalysisJobStatus(redis, jobId, "failed", {
+        step: null,
+        currentStep: 0,
+        totalSteps: 3,
+        error: message,
+      });
+    }
   }
+}
+
+export async function queueBrandAnalysisForOnboarding({
+  organizationId,
+  websiteUrl,
+  name,
+}: QueueBrandAnalysisInput): Promise<QueueBrandAnalysisResult | null> {
+  const token = process.env.QSTASH_TOKEN;
+  const workflowBaseUrl = getConfiguredWorkflowUrl();
+
+  if (!(redis && token && workflowBaseUrl)) {
+    return null;
+  }
+
+  const jobId = createBrandAnalysisJobId();
+  const brandName = name?.trim() || "Untitled Brand Voice";
+
+  const brandIdentity = await insertBrandIdentity({
+    organizationId,
+    brandName,
+    websiteUrl,
+  });
+
+  after(() =>
+    dispatchBrandAnalysisWorkflow({
+      organizationId,
+      websiteUrl,
+      brandIdentityId: brandIdentity.id,
+      jobId,
+    })
+  );
+
+  return { jobId, brandIdentityId: brandIdentity.id };
 }

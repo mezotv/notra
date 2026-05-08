@@ -63,7 +63,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     keywords: ["cron", "recurring", "automation", "calendar"],
     icon: Calendar03Icon,
     section: "Automation",
-    path: (slug) => `/${slug}/automation/schedule`,
+    path: (slug) => `/${slug}/automation/schedules`,
   },
   {
     id: "automation-events",

@@ -1,18 +1,10 @@
 "use client";
 
-import { FlagsProvider, useFlag } from "@databuddy/sdk/react";
+import { FlagsProvider } from "@databuddy/sdk/react";
 import type { ReactNode } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
-import {
-  AI_CHAT_EXPERIMENT_FLAG_KEY,
-  DATABUDDY_DASHBOARD_CLIENT_ID,
-} from "@/lib/databuddy-config";
-
-interface AiChatExperimentFlag {
-  on: boolean;
-  loading: boolean;
-}
+import { DATABUDDY_DASHBOARD_CLIENT_ID } from "@/lib/databuddy-config";
 
 export function DatabuddyFlagsProvider({ children }: { children: ReactNode }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -42,17 +34,4 @@ export function DatabuddyFlagsProvider({ children }: { children: ReactNode }) {
       {children}
     </FlagsProvider>
   );
-}
-
-export function useAiChatExperiment(): AiChatExperimentFlag {
-  const flag = useFlag(AI_CHAT_EXPERIMENT_FLAG_KEY);
-
-  if (process.env.NODE_ENV === "development") {
-    return { on: true, loading: false };
-  }
-
-  return {
-    on: Boolean(flag?.on),
-    loading: Boolean(flag?.loading),
-  };
 }

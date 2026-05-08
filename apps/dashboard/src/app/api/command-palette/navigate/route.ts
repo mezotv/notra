@@ -1,4 +1,5 @@
 import { gateway } from "@notra/ai/gateway";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import {
   brandReferences,
@@ -293,6 +294,13 @@ export async function POST(request: NextRequest) {
         `User query: ${query}`,
       ].join("\n"),
       abortSignal: request.signal,
+      experimental_telemetry: buildExperimentalTelemetry({
+        feature: "command_palette",
+        organizationId,
+        routeName: "/api/command-palette/navigate",
+        slug,
+        userId: user.id,
+      }),
     });
 
     const normalizedPath = object.path ?? null;

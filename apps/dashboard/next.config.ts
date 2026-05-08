@@ -27,6 +27,14 @@ const nextConfig: NextConfig = {
     "@notra/content-generation",
     "@notra/utils",
   ],
+  async rewrites() {
+    return [
+      {
+        source: "/api/c15t/:path*",
+        destination: `${process.env.NEXT_PUBLIC_C15T_BACKEND_URL}/:path*`,
+      },
+    ];
+  },
   async redirects() {
     return [
       {

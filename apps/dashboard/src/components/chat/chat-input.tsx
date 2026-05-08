@@ -11,6 +11,12 @@ import {
   Upload04Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
+import type {
+  ChatAttachment,
+  ChatInputHandle,
+  ContextItem,
+} from "@notra/ai/types/chat";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
@@ -18,6 +24,14 @@ import {
   CardFooter,
   CardHeader,
 } from "@notra/ui/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@notra/ui/components/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +44,14 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notra/ui/components/ui/popover";
 import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { KimiIcon } from "@notra/ui/components/ui/svgs/kimiIcon";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Notra } from "@notra/ui/components/ui/svgs/notra";
 import { Openai } from "@notra/ui/components/ui/svgs/openai";
@@ -57,7 +77,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { FEATURES } from "@/constants/features";
 import {
   MAX_CHAT_ATTACHMENTS,
   MAX_CHAT_FILE_SIZE,
@@ -79,11 +98,6 @@ import {
   isAllowedChatMimeType,
   isImageMimeType,
 } from "@/lib/upload/mime";
-import type {
-  ChatAttachment,
-  ChatInputHandle,
-  ContextItem,
-} from "@/types/chat";
 import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import type { QueuedMessage } from "./chat-queue";
@@ -135,6 +149,20 @@ export const AVAILABLE_MODELS = [
     pricing: "$2.50 input / $15 output per 1M",
     provider: "openai",
   },
+  {
+    id: "openai/gpt-5.5",
+    label: "GPT-5.5",
+    description: "Latest OpenAI flagship",
+    pricing: "$5 input / $30 output per 1M",
+    provider: "openai",
+  },
+  {
+    id: "moonshotai/kimi-k2.6",
+    label: "Kimi K2.6",
+    description: "Long-context Moonshot model",
+    pricing: "$0.95 input / $4 output per 1M",
+    provider: "moonshotai",
+  },
 ] as const;
 
 type ModelProvider = (typeof AVAILABLE_MODELS)[number]["provider"];
@@ -156,6 +184,9 @@ export function ModelIcon({
   }
   if (provider === "auto") {
     return <Notra className={className} />;
+  }
+  if (provider === "moonshotai") {
+    return <KimiIcon className={className} />;
   }
   return <ClaudeAiIcon className={className} />;
 }
@@ -320,6 +351,7 @@ export function ChatInputAdvanced({
   const currentModel =
     AVAILABLE_MODELS.find((availableModel) => availableModel.id === model) ??
     AVAILABLE_MODELS[0];
+  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const [internalError, setInternalError] = useState<string | null>(null);
@@ -1581,15 +1613,15 @@ export function ChatInputAdvanced({
                   )}
                 </div>
               )}
-              <div className="relative flex flex-col rounded-t-[13px] bg-background">
-                <div className="flex w-full items-center rounded-t-[12px]">
-                  <div className="relative flex flex-1 cursor-text transition-colors [--lh:1lh]">
+              <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
+                <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
+                  <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
                     {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
                     <div
                       aria-disabled={isUsageBlocked || isQueued}
                       aria-label="Send a message"
                       aria-multiline="true"
-                      className="wrap-break-word relative max-h-50 min-h-12 w-full overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
+                      className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
                       contentEditable={!(isUsageBlocked || isQueued)}
                       data-empty={isEmpty ? "true" : "false"}
                       data-placeholder={
@@ -1765,8 +1797,11 @@ export function ChatInputAdvanced({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger
+                <Popover
+                  onOpenChange={setIsModelPickerOpen}
+                  open={isModelPickerOpen}
+                >
+                  <PopoverTrigger
                     render={
                       <Button
                         className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
@@ -1783,55 +1818,63 @@ export function ChatInputAdvanced({
                       />
                       {currentModel.label}
                     </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Model</DropdownMenuLabel>
-                    </DropdownMenuGroup>
-                    {AVAILABLE_MODELS.map((m) => (
-                      <DropdownMenuItem
-                        key={m.id}
-                        onClick={() => {
-                          if (
-                            m.id === "openai/gpt-5.4" &&
-                            attachmentsRef.current.some(
-                              (attachment) =>
-                                !isAllowedChatMimeType(
-                                  attachment.mediaType,
-                                  m.id
-                                )
-                            )
-                          ) {
-                            toast.error(
-                              getUnsupportedAttachmentMessage(m.label)
-                            );
-                            return;
-                          }
-                          onModelChange?.(m.id);
-                        }}
-                      >
-                        <ModelIcon
-                          className="size-4 shrink-0"
-                          provider={m.provider}
-                        />
-                        <div className="flex min-w-0 flex-col">
-                          <span className="text-sm">{m.label}</span>
-                          <span className="text-muted-foreground text-xs">
-                            {m.description}
-                          </span>
-                          <span className="text-[0.625rem] text-muted-foreground/70">
-                            {m.pricing}
-                          </span>
-                        </div>
-                        {model === m.id && (
-                          <span className="ml-auto shrink-0 text-primary text-xs">
-                            ✓
-                          </span>
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="start"
+                    className="w-72 p-0"
+                    sideOffset={6}
+                  >
+                    <Command>
+                      <CommandInput placeholder="Search models..." />
+                      <CommandList>
+                        <CommandEmpty>No models found.</CommandEmpty>
+                        <CommandGroup>
+                          {AVAILABLE_MODELS.map((m) => (
+                            <CommandItem
+                              data-checked={model === m.id}
+                              key={m.id}
+                              keywords={[m.label, m.provider, m.description]}
+                              onSelect={() => {
+                                if (
+                                  m.id === "openai/gpt-5.4" &&
+                                  attachmentsRef.current.some(
+                                    (attachment) =>
+                                      !isAllowedChatMimeType(
+                                        attachment.mediaType,
+                                        m.id
+                                      )
+                                  )
+                                ) {
+                                  toast.error(
+                                    getUnsupportedAttachmentMessage(m.label)
+                                  );
+                                  return;
+                                }
+                                onModelChange?.(m.id);
+                                setIsModelPickerOpen(false);
+                              }}
+                              value={m.id}
+                            >
+                              <ModelIcon
+                                className="size-4 shrink-0"
+                                provider={m.provider}
+                              />
+                              <div className="flex min-w-0 flex-col">
+                                <span className="text-sm">{m.label}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {m.description}
+                                </span>
+                                <span className="text-[0.625rem] text-muted-foreground/70">
+                                  {m.pricing}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger

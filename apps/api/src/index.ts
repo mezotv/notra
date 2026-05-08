@@ -1,9 +1,12 @@
+import "./tcc";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
+import { chatWorkflowRoutes } from "./routes/chat-workflow";
+import { chatsRoutes } from "./routes/chats";
 import { integrationsRoutes } from "./routes/integrations";
 import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
@@ -118,6 +121,8 @@ app.route("/v1", postsRoutes);
 app.route("/v1", brandIdentitiesRoutes);
 app.route("/v1", integrationsRoutes);
 app.route("/v1", schedulesRoutes);
+app.route("/v1", chatsRoutes);
+app.route("/", chatWorkflowRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
   type: "http",
@@ -151,6 +156,11 @@ app.doc31("/openapi.json", (_c) => ({
       name: "Schedules",
       description:
         "Manage scheduled content generation. Organization is inferred from the API key (identity.externalId).",
+    },
+    {
+      name: "Chats",
+      description:
+        "Manage chat sessions. Organization is inferred from the API key (identity.externalId).",
     },
   ],
 }));

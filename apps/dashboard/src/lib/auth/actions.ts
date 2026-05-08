@@ -28,7 +28,7 @@ export async function validateOrganizationAccess(slug: string) {
   });
 
   if (!organization || organization.members.length === 0) {
-    const fallbackOrganization = await getLastActiveOrganization(
+    const fallbackOrganization = await getLastActiveOrganizationForUser(
       session.user.id
     );
     if (fallbackOrganization && fallbackOrganization.slug !== slug) {
@@ -67,7 +67,7 @@ export async function requireAuth() {
   };
 }
 
-export async function getLastActiveOrganization(userId: string) {
+async function getLastActiveOrganizationForUser(userId: string) {
   const cookieStore = await cookies();
   const lastVisitedOrgSlug = cookieStore.get(
     LAST_VISITED_ORGANIZATION_COOKIE
@@ -110,7 +110,19 @@ export async function getLastActiveOrganization(userId: string) {
   return;
 }
 
-export async function getAllUserOrganizations(userId: string) {
+export async function getLastActiveOrganization() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    return;
+  }
+
+  return getLastActiveOrganizationForUser(session.user.id);
+}
+
+async function getAllOrganizationsForUser(userId: string) {
   const userMemberships = await db.query.members.findMany({
     where: eq(members.userId, userId),
     columns: { organizationId: true },
@@ -128,6 +140,18 @@ export async function getAllUserOrganizations(userId: string) {
   return orgs.filter(
     (org): org is { slug: string; id: string } => org !== undefined
   );
+}
+
+export async function getAllUserOrganizations() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    return [];
+  }
+
+  return getAllOrganizationsForUser(session.user.id);
 }
 
 export async function getInvitationById(

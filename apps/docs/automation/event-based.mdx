@@ -1,0 +1,320 @@
+---
+title: "Event-Based Automation"
+description: "Trigger content generation automatically when events occur in your repositories"
+---
+
+Event-based automation generates content in response to specific GitHub events like releases, pushes to production, or other repository activities. This enables real-time content creation that keeps your audience informed as changes happen.
+
+## How Event-Based Triggers Work
+
+Notra receives webhooks from GitHub and processes them through intelligent workflows:
+
+<Steps>
+  <Step title="GitHub Event Occurs">
+    A trigger event happens in your repository (release published, code pushed, etc.)
+  </Step>
+
+  <Step title="Webhook Received">
+    GitHub sends a secure webhook to Notra with event details
+  </Step>
+
+  <Step title="Event Validation">
+    Notra validates the webhook signature and filters based on your configuration
+  </Step>
+
+  <Step title="Content Generation">
+    AI analyzes the event context and repository activity to generate relevant content
+  </Step>
+
+  <Step title="Ready to Publish">
+    Generated content appears in your dashboard for review and publishing
+  </Step>
+</Steps>
+
+## Supported Event Types
+
+<Tabs>
+  <Tab title="Release">
+    Triggers when you publish a GitHub release.
+
+    **Event Actions:**
+
+    * `published`: A release is published (not a draft)
+    * `prereleased`: A prerelease is published
+
+    **Use Cases:**
+
+    * Generate changelogs for each release
+    * Create LinkedIn announcements for major versions
+    * Draft blog posts about new features
+
+    **What Gets Analyzed:**
+
+    * Release notes and description
+    * Tag name and version
+    * Commits included in the release
+    * Recent repository activity around the release time
+
+    <CodeGroup>
+      ```json Event Data Example
+      {
+        "eventType": "release",
+        "eventAction": "published",
+        "data": {
+          "tagName": "v2.1.0",
+          "name": "Version 2.1.0",
+          "prerelease": false,
+          "publishedAt": "2026-03-02T14:30:00Z"
+        }
+      }
+      ```
+    </CodeGroup>
+  </Tab>
+
+  <Tab title="Push">
+    Triggers when code is pushed to your default branch.
+
+    **Event Actions:**
+
+    * `pushed`: Commits pushed to the default branch
+
+    **Use Cases:**
+
+    * Generate content when deploying to production
+    * Create updates for continuous deployment workflows
+    * Track progress for investor updates
+
+    **What Gets Analyzed:**
+
+    * Commit messages and authors
+    * Files changed in the push
+    * Timestamp range of commits
+    * Related issues and pull requests
+
+    <Info>
+      Only pushes to your repository's default branch (usually `main` or `master`) trigger automation. Feature branch pushes are ignored.
+    </Info>
+
+    <CodeGroup>
+      ```json Event Data Example
+      {
+        "eventType": "push",
+        "eventAction": "pushed",
+        "data": {
+          "branch": "main",
+          "commitCount": 3,
+          "commitIds": ["abc123", "def456", "ghi789"],
+          "firstCommitTimestamp": "2026-03-02T10:00:00Z",
+          "lastCommitTimestamp": "2026-03-02T14:00:00Z"
+        }
+      }
+      ```
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+## Configuring Event-Based Triggers
+
+Set up event automation through the Notra dashboard:
+
+<Steps>
+  <Step title="Navigate to Automations">
+    Go to your workspace settings and select the Automations tab
+  </Step>
+
+  <Step title="Create Event Trigger">
+    Click "New Automation" and select "Event-Based"
+  </Step>
+
+  <Step title="Select Repositories">
+    Choose which repositories should trigger this automation
+  </Step>
+
+  <Step title="Choose Event Types">
+    Select which GitHub events should trigger content generation:
+
+    * Release events (published/prereleased)
+    * Push events (to default branch)
+  </Step>
+
+  <Step title="Configure Output">
+    Select the content type to generate: changelog, blog post, LinkedIn post, or Twitter post
+  </Step>
+
+  <Step title="Enable Trigger">
+    Enable the trigger to start receiving webhooks
+  </Step>
+</Steps>
+
+<Note>
+  GitHub webhooks are automatically configured when you connect a repository. No manual webhook setup required.
+</Note>
+
+## Content Generation Context
+
+When an event triggers content generation, Notra analyzes:
+
+* **Event Details**: Type, action, and metadata from the GitHub webhook
+* **Repository Activity**: Commits, pull requests, and releases around the event time
+* **Time Window**: Typically 1 hour before and after the event
+* **Brand Voice**: Your configured tone, audience, and custom instructions
+
+The AI uses this context to generate relevant, accurate content that reflects what actually happened.
+
+<CodeGroup>
+  ```typescript Workflow Context
+  interface EventGenerationContext {
+    eventType: "release" | "push";
+    eventAction: string;
+    eventData: Record<string, unknown>;
+    repositoryOwner: string;
+    repositoryName: string;
+    organizationId: string;
+    tone: ToneProfile;
+    brand: {
+      companyName?: string;
+      companyDescription?: string;
+      audience?: string;
+      customInstructions?: string;
+    };
+  }
+  ```
+</CodeGroup>
+
+## Security & Validation
+
+Notra ensures webhook security through multiple layers:
+
+<AccordionGroup>
+  <Accordion title="Signature Verification">
+    All webhooks are verified using HMAC SHA-256 signatures. Requests without valid signatures are rejected.
+
+    ```typescript
+    // Webhook signature verification
+    const signature = request.headers.get("x-hub-signature-256");
+    const isValid = verifySignature(payload, signature, webhookSecret);
+    ```
+  </Accordion>
+
+  <Accordion title="Duplicate Detection">
+    Webhook deliveries are deduplicated using delivery IDs stored in Redis. The same event won't trigger multiple generations.
+  </Accordion>
+
+  <Accordion title="Payload Sanitization">
+    Event data is sanitized and validated before being passed to AI agents. This prevents injection attacks and ensures data integrity.
+  </Accordion>
+
+  <Accordion title="Repository Matching">
+    Triggers only fire for events from repositories explicitly configured in your automation settings.
+  </Accordion>
+</AccordionGroup>
+
+## Testing Event Triggers
+
+You can manually trigger any event-based automation to test output:
+
+1. Navigate to the automation in your dashboard
+2. Click "Run Now" to manually trigger the workflow
+3. The system simulates the event and generates content
+4. Review the generated content before enabling automatic triggering
+
+<Warning>
+  Manual test runs use the current state of your repository. The generated content may differ from what would be created during an actual event.
+</Warning>
+
+## Monitoring & Logs
+
+View detailed logs for all webhook deliveries and automation runs:
+
+* **Webhook Status**: Success, failed, or filtered events
+* **Delivery ID**: GitHub's unique identifier for each webhook
+* **Event Details**: Type, action, and payload summary
+* **Generation Status**: Success, rate-limited, or failed
+* **Workflow Run ID**: Unique identifier for tracking the automation execution
+
+Logs are retained based on your subscription plan.
+
+## Common Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Release Announcements" icon="megaphone">
+    Automatically generate LinkedIn posts when publishing releases to announce new features to your audience.
+  </Card>
+
+  <Card title="Production Changelogs" icon="list">
+    Create customer-facing changelogs when code is merged to your production branch.
+  </Card>
+
+  <Card title="Launch Marketing" icon="rocket">
+    Generate blog posts for major releases to support product launches.
+  </Card>
+
+  <Card title="Investor Updates" icon="briefcase">
+    Draft investor-focused blog posts or social updates when significant milestones are deployed.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Filter Strategically">
+    Use specific event types to avoid generating content for every small change. For example, trigger on `release.published` for major announcements, not every push.
+  </Accordion>
+
+  <Accordion title="Test Before Enabling">
+    Always test event triggers manually before enabling automatic generation to ensure output quality.
+  </Accordion>
+
+  <Accordion title="Combine with Scheduling">
+    Use event-based automation for immediate announcements and scheduled automation for regular digests.
+  </Accordion>
+
+  <Accordion title="Monitor Webhook Health">
+    Regularly check webhook logs to ensure events are being received and processed correctly.
+  </Accordion>
+
+  <Accordion title="Customize Brand Voice">
+    Set specific custom instructions for event-based content to ensure the right tone for time-sensitive announcements.
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Webhooks Not Received">
+    **Check:**
+
+    * Repository webhook is configured in GitHub settings
+    * Webhook URL is correct in GitHub
+    * Repository is connected in Notra
+    * Network connectivity between GitHub and Notra
+
+    View webhook delivery attempts in your GitHub repository settings under Webhooks.
+  </Accordion>
+
+  <Accordion title="Content Not Generated">
+    **Check:**
+
+    * Event type matches your trigger configuration
+    * Event action is supported (e.g., `published` for releases)
+    * Repository is in your trigger's target list
+    * Trigger is enabled
+    * Check automation logs for error messages
+  </Accordion>
+
+  <Accordion title="Rate Limiting">
+    If GitHub API rate limits are hit, content generation is automatically retried after the rate limit resets. This is logged with status `rate_limited`.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Scheduled Automation" icon="calendar" href="/automation/scheduled">
+    Learn about time-based content generation
+  </Card>
+
+  <Card title="Brand Voice Configuration" icon="palette" href="/concepts/brand-voice">
+    Customize how your content sounds
+  </Card>
+</CardGroup>

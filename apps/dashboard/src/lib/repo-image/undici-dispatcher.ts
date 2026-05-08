@@ -1,19 +1,21 @@
-import { Agent, setGlobalDispatcher } from "undici";
+import { Agent, getGlobalDispatcher, setGlobalDispatcher } from "undici";
 
 const TEN_MINUTES_MS = 600_000;
 
-let configured = false;
+export async function withLongFetchTimeouts<T>(callback: () => Promise<T>) {
+  const previousDispatcher = getGlobalDispatcher();
+  const dispatcher = new Agent({
+    headersTimeout: TEN_MINUTES_MS,
+    bodyTimeout: TEN_MINUTES_MS,
+    keepAliveTimeout: 60_000,
+  });
 
-export function configureLongFetchTimeouts() {
-  if (configured) {
-    return;
+  setGlobalDispatcher(dispatcher);
+
+  try {
+    return await callback();
+  } finally {
+    setGlobalDispatcher(previousDispatcher);
+    await dispatcher.close();
   }
-  setGlobalDispatcher(
-    new Agent({
-      headersTimeout: TEN_MINUTES_MS,
-      bodyTimeout: TEN_MINUTES_MS,
-      keepAliveTimeout: 60_000,
-    })
-  );
-  configured = true;
 }

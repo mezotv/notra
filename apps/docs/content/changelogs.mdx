@@ -1,0 +1,266 @@
+---
+title: "Changelogs"
+description: "Auto-generate comprehensive changelogs from your GitHub activity with AI-powered formatting and customization"
+---
+
+Notra automatically generates changelogs from your GitHub pull requests, commits, and releases. Transform your development activity into polished, well-organized updates that keep your users informed.
+
+## How It Works
+
+Notra analyzes your repository activity and creates structured changelogs with intelligent categorization and prioritization.
+
+<Steps>
+  <Step title="Connect Your Repository">
+    Link your GitHub repository to Notra. The system will start tracking pull requests, commits, and releases.
+  </Step>
+
+  <Step title="Configure Your Schedule">
+    Set up automatic changelog generation on a schedule (daily, weekly, or monthly) or trigger it manually based on events like releases.
+  </Step>
+
+  <Step title="AI Analyzes Activity">
+    Notra's AI agent examines your repository activity within the specified lookback window, categorizing changes by type and impact.
+  </Step>
+
+  <Step title="Review and Publish">
+    Generated changelogs appear as drafts in your dashboard. Review, edit with AI assistance, and publish when ready.
+  </Step>
+</Steps>
+
+## Changelog Structure
+
+Every changelog follows a consistent, reader-friendly format:
+
+### Summary
+
+A concise overview (120-180 words) that captures the essence of what changed and why it matters.
+
+### Highlights
+
+Up to five most important changes, selected based on:
+
+* Security fixes and improvements
+* Breaking changes
+* Major new features
+* Reliability and performance improvements
+
+<Note>
+  Highlights are filtered for high-signal updates with clear user impact. Low-impact maintenance work is automatically excluded.
+</Note>
+
+### More Updates
+
+Remaining changes organized by category:
+
+* **Security**: Security patches and improvements
+* **Features & Enhancements**: New capabilities and improvements
+* **Bug Fixes**: Resolved issues
+* **Performance Improvements**: Speed and efficiency gains
+* **Infrastructure**: Backend and deployment changes
+* **Internal Changes**: Refactoring and code quality
+* **Testing**: Test coverage and quality improvements
+* **Documentation**: Docs updates and additions
+
+## Lookback Windows
+
+Control how far back Notra looks for changes when generating scheduled changelogs:
+
+| Window         | Description             | Best For                |
+| -------------- | ----------------------- | ----------------------- |
+| `current_day`  | Today's changes only    | Real-time daily updates |
+| `yesterday`    | Previous day's activity | Morning recaps          |
+| `last_7_days`  | Past week               | Weekly team updates     |
+| `last_14_days` | Past two weeks          | Bi-weekly releases      |
+| `last_30_days` | Past month              | Monthly summaries       |
+
+<Info>
+  For event-based triggers (like GitHub releases), Notra automatically determines the relevant timeframe by comparing the current release with the previous one.
+</Info>
+
+## Tone Customization
+
+Choose the tone that matches your brand voice:
+
+**Conversational** (Default)\
+Warm and authentic, like a founder sharing updates with the developer community.
+
+**Professional**\
+Polished and precise, ideal for enterprise audiences.
+
+**Casual**\
+Friendly and approachable, great for community-driven projects.
+
+**Formal**\
+Structured and technical, perfect for regulated industries.
+
+<Tip>
+  Set your organization's tone profile in **Settings** → **Brand Voice**. All generated content will automatically match your selected tone.
+</Tip>
+
+## Configuration Options
+
+### Output Settings
+
+Customize how changelogs are generated:
+
+```json
+{
+  "outputType": "changelog",
+  "outputConfig": {
+    "brandVoiceId": "brand-voice-id" // Optional: apply a specific brand voice profile
+  }
+}
+```
+
+### Source Configuration
+
+Control what triggers changelog generation:
+
+**Event-Based Triggers**
+
+```json
+{
+  "sourceType": "github_webhook",
+  "sourceConfig": {
+    "eventTypes": ["release", "push"]
+  }
+}
+```
+
+**Scheduled Generation**
+
+```json
+{
+  "sourceType": "cron",
+  "sourceConfig": {
+    "cron": {
+      "frequency": "weekly",
+      "hour": 9,
+      "minute": 0,
+      "dayOfWeek": 1 // Monday
+    }
+  },
+  "lookbackWindow": "last_7_days"
+}
+```
+
+## Best Practices
+
+### Write Meaningful PR Titles and Descriptions
+
+Notra uses your PR titles and descriptions as source material. Clear, descriptive PRs lead to better changelogs.
+
+**Good PR Title**\
+`Add email verification flow with expiration handling`
+
+**Poor PR Title**\
+`Fix bug`
+
+### Use Labels for Better Categorization
+
+While Notra intelligently categorizes changes, GitHub labels help ensure accuracy:
+
+* `security`: Security-related changes
+* `breaking-change`: Breaking changes
+* `enhancement`: New features
+* `bug`: Bug fixes
+* `performance`: Performance improvements
+
+### Set Appropriate Lookback Windows
+
+Match your lookback window to your release cadence:
+
+* Ship daily? Use `yesterday` or `current_day`
+* Weekly releases? Use `last_7_days`
+* Monthly updates? Use `last_30_days`
+
+### Review Before Publishing
+
+All changelogs are created as drafts. Review them to:
+
+* Verify technical accuracy
+* Add context that GitHub activity might not capture
+* Adjust highlights for your audience
+* Use the AI editor to refine specific sections
+
+<Info>
+  The AI editor can help you expand sections, adjust tone, or simplify technical language for non-technical readers.
+</Info>
+
+## Example Changelog
+
+Here's what a generated changelog looks like:
+
+```markdown
+# Product Updates - Week of March 2, 2026
+
+This week brought significant improvements to developer experience and
+reliability. We shipped enhanced error handling for cached components,
+improved email verification flows, and optimized authentication state
+management. The team also focused on security hardening with rotated
+webhook secret handling and cross-browser UI consistency improvements.
+
+## Highlights
+
+### Cache component support with actionable error guidance
+Runtime guardrails now catch unsupported auth calls in cached contexts
+and provide clear migration guidance with the correct usage pattern.
+
+### Email link verification for signup flows
+Signup verification now supports secure email-link completion flows
+with clear status handling for expiration and mismatch cases.
+
+### Async initial state support for modern React apps
+Initial auth state can resolve asynchronously at hook usage points,
+reducing root layout complexity and keeping top-level rendering predictable.
+
+## More Updates
+
+### Security
+- **Rotated webhook signing secret handling** [#131](https://github.com/org/repo/pull/131) -
+  Improves secret lifecycle controls. (Author: [@lee](https://github.com/lee/))
+
+### Bug Fixes
+- **Fixed null-state crash in trigger editor** [#140](https://github.com/org/repo/pull/140) -
+  Prevents editor crashes for partially configured triggers. (Author: [@sam](https://github.com/sam/))
+
+### Features & Enhancements
+- **Added repository filter presets** [#142](https://github.com/org/repo/pull/142) -
+  Speeds up common workflow setup. (Author: [@alex](https://github.com/alex/))
+```
+
+## Common Issues
+
+### Changelog is Too Short or Missing Expected Changes
+
+**Cause**: Lookback window might not cover the relevant timeframe, or PRs lack sufficient detail.
+
+**Solution**:
+
+1. Verify your lookback window settings match your release cadence
+2. Check that PRs have descriptive titles and descriptions
+3. Ensure releases are published or commits are pushed within the lookback period
+
+### Too Many Low-Impact Items in Highlights
+
+**Cause**: Limited high-impact changes during the timeframe.
+
+**Solution**:
+
+* Notra automatically limits highlights to truly important changes
+* If you see maintenance items in highlights, adjust your brand voice settings to be more selective
+* Consider a longer lookback window to capture more significant work
+
+### Changes from Private Repositories Not Appearing
+
+**Cause**: Missing or expired GitHub token.
+
+**Solution**:
+
+1. Navigate to **Integrations** → **GitHub**
+2. Re-authenticate your GitHub connection
+3. Ensure the token has access to private repositories
+
+<Tip>
+  Need help? Check out [Brand Voice Configuration](/concepts/brand-voice) to customize how your changelogs are written and prioritized.
+</Tip>

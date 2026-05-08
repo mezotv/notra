@@ -3,9 +3,10 @@
   "type": "module",
   "scripts": {
     "dev": "mint dev --port 3005 --no-open",
+    "open": "mint dev --port 3005",
     "openapi:check": "mint openapi-check openapi/openapi.json"
   },
   "devDependencies": {
-    "mint": "^4.2.391"
+    "mint": "^4.2.536"
   }
 }

@@ -6,12 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
-
-interface TriggerOnboardingBrandAnalysisInput {
-  organizationId: string;
-  websiteUrl: string;
-  name?: string;
-}
+import type { TriggerOnboardingBrandAnalysisInput } from "@/types/brand-analysis";
 
 export async function triggerOnboardingBrandAnalysis({
   organizationId,

@@ -1,7 +1,7 @@
 "use client";
 
+import { FEATURES } from "@notra/ai/billing/features";
 import { useCustomer } from "autumn-js/react";
-import { FEATURES } from "@/constants/features";
 
 export function useCreditBalance() {
   const { data: customer, isLoading } = useCustomer({

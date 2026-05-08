@@ -52,6 +52,10 @@ const NON_ORG_PATHS: string[] = [];
 const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
   billing: { label: "Billing & Usage" },
   automation: { href: null },
+  brand: { href: null },
+  "api-keys": { label: "API Keys" },
+  identity: { label: "Identity & References" },
+  schedules: { label: "Schedules" },
 };
 
 export function SiteHeader() {

@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -18,16 +17,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
-
-interface DataTableProps<TData> {
-  // biome-ignore lint/suspicious/noExplicitAny: TanStack Table columns have varying value types
-  columns: ColumnDef<TData, any>[];
-  data: TData[];
-  page: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  isLoading?: boolean;
-}
+import type { DataTableProps } from "@/types/logs/data-table";
 
 export function DataTable<TData>({
   columns,
@@ -36,6 +26,7 @@ export function DataTable<TData>({
   totalPages,
   onPageChange,
   isLoading,
+  emptyState,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -102,39 +93,63 @@ export function DataTable<TData>({
             {!(isLoading || table.getRowModel().rows?.length) && (
               <TableRow>
                 <TableCell
-                  className="h-24 text-center"
+                  className="h-32 text-center"
                   colSpan={columns.length}
                 >
-                  No results.
+                  {emptyState ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-2">
+                      <p className="font-medium text-sm">{emptyState.title}</p>
+                      {emptyState.description && (
+                        <p className="text-muted-foreground text-sm">
+                          {emptyState.description}
+                        </p>
+                      )}
+                      {emptyState.actionLabel && emptyState.onActionClick && (
+                        <Button
+                          className="mt-2"
+                          onClick={emptyState.onActionClick}
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                        >
+                          {emptyState.actionLabel}
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    "No results."
+                  )}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between py-4">
-        <span className="text-muted-foreground text-sm">
-          Page {page} of {totalPages}
-        </span>
-        <div className="flex items-center space-x-2">
-          <Button
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
-            size="sm"
-            variant="outline"
-          >
-            Previous
-          </Button>
-          <Button
-            disabled={page >= totalPages}
-            onClick={() => onPageChange(page + 1)}
-            size="sm"
-            variant="outline"
-          >
-            Next
-          </Button>
+      {(totalPages > 1 || data.length > 0) && (
+        <div className="flex items-center justify-between py-4">
+          <span className="text-muted-foreground text-sm">
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex items-center space-x-2">
+            <Button
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+              size="sm"
+              variant="outline"
+            >
+              Previous
+            </Button>
+            <Button
+              disabled={page >= totalPages}
+              onClick={() => onPageChange(page + 1)}
+              size="sm"
+              variant="outline"
+            >
+              Next
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -16,14 +16,14 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  const allOrgs = await getAllUserOrganizations(session.user.id);
+  const allOrgs = await getAllUserOrganizations();
   for (const org of allOrgs) {
     if (await hasPaidSubscriptionHistory(org.id)) {
       redirect(`/${org.slug}`);
     }
   }
 
-  const organization = await getLastActiveOrganization(session.user.id);
+  const organization = await getLastActiveOrganization();
 
   if (!organization) {
     redirect("/onboarding/workspace");

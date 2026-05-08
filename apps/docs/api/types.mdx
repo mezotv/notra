@@ -16,7 +16,7 @@ import type {
 ```
 
 <Tip>
-  The SDK ships with full type definitions — no need to maintain your own. The types below are only needed if you're calling the API with raw `fetch`.
+  The SDK ships with full type definitions, so there is no need to maintain your own. The types below are only needed if you're calling the API with raw `fetch`.
 </Tip>
 
 ---
@@ -65,28 +65,22 @@ const updateData: NotraPostUpdateResponse = await updateResponse.json();
 Copy these types into your project:
 
 ```typescript
-export type SourceMetadata = {
-  triggerId: string;
-  repositories: Array<{
-    owner: string;
-    repo: string;
-  }>;
-  lookbackRange: {
-    start: string; // ISO datetime
-    end: string; // ISO datetime
-  };
-  lookbackWindow: string;
-  triggerSourceType: string;
+export type Organization = {
+  id: string;
+  slug: string;
+  name: string;
+  logo: string | null;
 };
 
 export type Post = {
   id: string;
   title: string;
-  content: string; // HTML string
+  slug: string | null;
+  content: string;
   markdown: string;
   recommendations: string | null;
   contentType: string;
-  sourceMetadata: SourceMetadata | null;
+  sourceMetadata: unknown | null;
   status: "draft" | "published";
   createdAt: string;
   updatedAt: string;
@@ -97,28 +91,24 @@ export type Pagination = {
   currentPage: number;
   nextPage: number | null;
   previousPage: number | null;
-  totalItems: number;
   totalPages: number;
+  totalItems: number;
 };
 
 export type NotraPostListResponse = {
+  organization: Organization;
   posts: Post[];
   pagination: Pagination;
 };
 
 export type NotraPostResponse = {
+  organization: Organization;
   post: Post | null;
-};
-
-export type Organization = {
-  id: string;
-  slug: string;
-  name: string;
-  logo: string | null;
 };
 
 export type NotraPostUpdateRequest = {
   title?: string;
+  slug?: string | null;
   markdown?: string;
   status?: "draft" | "published";
 };
@@ -140,53 +130,6 @@ For runtime validation, you can use these Zod schemas:
 ```typescript
 import * as z from "zod";
 
-export const SourceMetadataSchema = z.object({
-  triggerId: z.string(),
-  repositories: z.array(
-    z.object({
-      owner: z.string(),
-      repo: z.string(),
-    })
-  ),
-  lookbackRange: z.object({
-    start: z.string().datetime(),
-    end: z.string().datetime(),
-  }),
-  lookbackWindow: z.string(),
-  triggerSourceType: z.string(),
-});
-
-export const PostSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  content: z.string(), // HTML string
-  markdown: z.string(),
-  recommendations: z.string().nullable(),
-  contentType: z.string(),
-  sourceMetadata: SourceMetadataSchema.nullable(),
-  status: z.enum(["draft", "published"]),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
-});
-
-export const PaginationSchema = z.object({
-  limit: z.number(),
-  currentPage: z.number(),
-  nextPage: z.number().nullable(),
-  previousPage: z.number().nullable(),
-  totalItems: z.number(),
-  totalPages: z.number(),
-});
-
-export const PostListResponseSchema = z.object({
-  posts: z.array(PostSchema),
-  pagination: PaginationSchema,
-});
-
-export const PostResponseSchema = z.object({
-  post: PostSchema.nullable(),
-});
-
 export const OrganizationSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -194,11 +137,57 @@ export const OrganizationSchema = z.object({
   logo: z.string().nullable(),
 });
 
-export const PostUpdateRequestSchema = z.object({
-  title: z.string().min(1).max(120).optional(),
-  markdown: z.string().min(1).optional(),
-  status: z.enum(["draft", "published"]).optional(),
+export const PostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string().nullable(),
+  content: z.string(),
+  markdown: z.string(),
+  recommendations: z.string().nullable(),
+  contentType: z.string(),
+  sourceMetadata: z.unknown().nullable(),
+  status: z.enum(["draft", "published"]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
 });
+
+export const PaginationSchema = z.object({
+  limit: z.number().int().min(1),
+  currentPage: z.number().int().min(1),
+  nextPage: z.number().int().min(1).nullable(),
+  previousPage: z.number().int().min(1).nullable(),
+  totalPages: z.number().int().min(1),
+  totalItems: z.number().int().min(0),
+});
+
+export const PostListResponseSchema = z.object({
+  organization: OrganizationSchema,
+  posts: z.array(PostSchema),
+  pagination: PaginationSchema,
+});
+
+export const PostResponseSchema = z.object({
+  organization: OrganizationSchema,
+  post: PostSchema.nullable(),
+});
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export const PostUpdateRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    slug: z.string().trim().min(1).max(160).regex(SLUG_REGEX).nullable().optional(),
+    markdown: z.string().min(1).max(100_000).optional(),
+    status: z.enum(["draft", "published"]).optional(),
+  })
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.slug !== undefined ||
+      data.markdown !== undefined ||
+      data.status !== undefined,
+    { message: "At least one field must be provided" }
+  );
 
 export const PostUpdateResponseSchema = z.object({
   organization: OrganizationSchema,

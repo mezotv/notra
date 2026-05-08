@@ -1,0 +1,445 @@
+---
+title: "Scheduled Automation"
+description: "Generate content automatically on a regular schedule with customizable frequency and lookback windows"
+---
+
+Scheduled automation generates content at regular intervals based on repository activity over a defined time period. This is perfect for creating consistent content like weekly updates, monthly changelogs, or regular social media posts.
+
+## How Scheduled Triggers Work
+
+Notra uses cron-based scheduling to trigger content generation at your preferred frequency:
+
+<Steps>
+  <Step title="Schedule Configuration">
+    Define when content should be generated (daily, weekly, or monthly)
+  </Step>
+
+  <Step title="Automatic Trigger">
+    At the scheduled time, Notra initiates the content generation workflow
+  </Step>
+
+  <Step title="Activity Analysis">
+    AI analyzes repository activity within your configured lookback window
+  </Step>
+
+  <Step title="Content Generation">
+    Generated content summarizes changes and progress from the time period
+  </Step>
+
+  <Step title="Review & Publish">
+    Content appears in your dashboard for review and publishing
+  </Step>
+</Steps>
+
+## Schedule Frequencies
+
+<Tabs>
+  <Tab title="Daily">
+    Generate content every day at a specified time.
+
+    **Configuration:**
+
+    * Hour (0-23)
+    * Minute (0-59)
+
+    **Best For:**
+
+    * High-velocity teams with frequent releases
+    * Daily standup summaries
+    * Active social media presence
+    * Real-time progress tracking
+
+    **Example Use Cases:**
+
+    * Daily LinkedIn posts about product progress
+    * End-of-day changelog updates
+    * Daily social posts during intensive development periods
+  </Tab>
+
+  <Tab title="Weekly">
+    Generate content once per week on a specific day and time.
+
+    **Configuration:**
+
+    * Day of week (0-6, where 0 = Sunday)
+    * Hour (0-23)
+    * Minute (0-59)
+
+    **Best For:**
+
+    * Regular content cadence without overwhelming your audience
+    * Weekly progress summaries
+    * Consistent social media schedule
+    * Team and investor updates
+
+    **Example Use Cases:**
+
+    * Monday morning changelog roundups
+    * Friday afternoon LinkedIn updates
+    * Weekly blog posts about features shipped
+
+    <CodeGroup>
+      ```json Weekly Schedule Example
+      {
+        "frequency": "weekly",
+        "dayOfWeek": 1,  // Monday
+        "hour": 9,
+        "minute": 0
+      }
+      ```
+    </CodeGroup>
+  </Tab>
+
+  <Tab title="Monthly">
+    Generate content once per month on a specific day and time.
+
+    **Configuration:**
+
+    * Day of month (1-31)
+    * Hour (0-23)
+    * Minute (0-59)
+
+    **Best For:**
+
+    * Comprehensive monthly recaps
+    * Investor updates
+    * Monthly blog publishing schedules
+    * Long-form content about major milestones
+
+    **Example Use Cases:**
+
+    * Monthly product update blog posts
+    * End-of-month product recaps
+    * Monthly changelog newsletters
+
+    <Note>
+      If you select a day that doesn't exist in a given month (e.g., day 31 in February), the schedule will run on the last day of that month.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Lookback Windows
+
+Scheduled automations analyze repository activity over a configurable time period:
+
+<ParamField path="current_day" type="string">
+  Activity from midnight UTC today to now
+</ParamField>
+
+<ParamField path="yesterday" type="string">
+  Activity from the previous calendar day (midnight to midnight UTC)
+</ParamField>
+
+<ParamField path="last_7_days" type="string" default>
+  Activity from the past 7 days (default)
+</ParamField>
+
+<ParamField path="last_14_days" type="string">
+  Activity from the past 14 days
+</ParamField>
+
+<ParamField path="last_30_days" type="string">
+  Activity from the past 30 days
+</ParamField>
+
+<Info>
+  Choose a lookback window that matches your schedule frequency. For weekly schedules, `last_7_days` works well. For monthly schedules, consider `last_30_days`.
+</Info>
+
+## Supported Output Types
+
+Scheduled automation currently supports:
+
+<CardGroup cols={2}>
+  <Card title="Changelogs" icon="list-check">
+    Customer-facing summaries of features, fixes, and improvements shipped during the time period.
+  </Card>
+
+  <Card title="Blog Posts" icon="newspaper">
+    Long-form feature announcements and product updates generated from recent activity.
+  </Card>
+
+  <Card title="LinkedIn Posts" icon="linkedin">
+    Professional updates about product progress and achievements, optimized for LinkedIn's format.
+  </Card>
+
+  <Card title="Twitter Posts" icon="twitter">
+    Short social updates for releases, feature announcements, and product progress.
+  </Card>
+</CardGroup>
+
+## Configuring Scheduled Triggers
+
+Set up scheduled automation through the Notra dashboard:
+
+<Steps>
+  <Step title="Navigate to Automations">
+    Go to your workspace settings and select the Automations tab
+  </Step>
+
+  <Step title="Create Schedule">
+    Click "New Automation" and select "Scheduled"
+  </Step>
+
+  <Step title="Name Your Schedule">
+    Give your schedule a descriptive name (e.g., "Weekly LinkedIn Update")
+  </Step>
+
+  <Step title="Select Repositories">
+    Choose which repositories to analyze for content generation
+  </Step>
+
+  <Step title="Set Frequency">
+    Configure when content should be generated:
+
+    * Daily: Select time
+    * Weekly: Select day and time
+    * Monthly: Select day of month and time
+  </Step>
+
+  <Step title="Choose Lookback Window">
+    Select how far back to analyze repository activity
+  </Step>
+
+  <Step title="Configure Output">
+    Select the content type: changelog, blog post, LinkedIn post, or Twitter post
+  </Step>
+
+  <Step title="Enable Schedule">
+    Enable the schedule to begin automatic generation
+  </Step>
+</Steps>
+
+## Content Generation Context
+
+When a schedule triggers content generation, Notra analyzes:
+
+* **Time Range**: Activity within your configured lookback window
+* **Repositories**: All selected repositories' combined activity
+* **Commits & PRs**: Merged pull requests and commit history
+* **Linear issues**: Completed issues from connected Linear workspaces, when selected
+* **Releases**: Published releases during the period
+* **Brand Voice**: Your configured tone, audience, and custom instructions
+
+<CodeGroup>
+  ```typescript Schedule Context
+  interface ContentGenerationContext {
+    organizationId: string;
+    repositories: Array<{
+      integrationId: string;
+      owner: string;
+      repo: string;
+      defaultBranch: string | null;
+    }>;
+    tone: ToneProfile;
+    promptInput: {
+      sourceTargets: string;
+      todayUtc: string;
+      lookbackLabel: string;
+      lookbackStartIso: string;
+      lookbackEndIso: string;
+      companyName?: string;
+      companyDescription?: string;
+      audience?: string;
+      customInstructions?: string | null;
+    };
+  }
+  ```
+</CodeGroup>
+
+## Cron Expression Format
+
+Notra automatically generates cron expressions from your configuration:
+
+<CodeGroup>
+  ```bash Daily Schedule
+  # Daily at 9:00 AM UTC
+  0 9 * * *
+  ```
+
+  ```bash Weekly Schedule
+  # Every Monday at 9:00 AM UTC
+  0 9 * * 1
+  ```
+
+  ```bash Monthly Schedule
+  # 1st of every month at 9:00 AM UTC
+  0 9 1 * *
+  ```
+</CodeGroup>
+
+<Info>
+  All schedules run in UTC timezone. Plan your schedule times accordingly based on your target audience's timezone.
+</Info>
+
+## Testing Schedules
+
+You can manually trigger any schedule to test output before enabling:
+
+1. Navigate to the schedule in your dashboard
+2. Click "Run Now" to manually trigger content generation
+3. The system analyzes the current lookback window and generates content
+4. Review the output to ensure quality and relevance
+
+<Warning>
+  Manual test runs use the current time and lookback window. If you test a weekly schedule on Tuesday, it will analyze the past 7 days from Tuesday, not from your configured day.
+</Warning>
+
+## Schedule Management
+
+Manage your schedules through the dashboard:
+
+* **Edit**: Update frequency, lookback window, or output type
+* **Enable/Disable**: Turn schedules on or off without deleting configuration
+* **Duplicate**: Copy a schedule to create variations quickly
+* **Delete**: Remove schedules you no longer need
+
+<Note>
+  When you edit a schedule's frequency or time, the changes take effect immediately. The next run will use the new schedule.
+</Note>
+
+## Monitoring & Logs
+
+View execution history for all scheduled runs:
+
+* **Run Status**: Success, failed, or rate-limited
+* **Execution Time**: When the schedule triggered
+* **Content Generated**: Link to the generated post
+* **Workflow Run ID**: Unique identifier for troubleshooting
+* **Generation Details**: What repositories and time range were analyzed
+
+Logs help you:
+
+* Verify schedules are running as expected
+* Debug generation failures
+* Track content output over time
+* Identify patterns in your development activity
+
+## Common Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Weekly Product Updates" icon="calendar-week">
+    Generate LinkedIn posts every Monday summarizing the previous week's progress.
+  </Card>
+
+  <Card title="Monthly Changelogs" icon="file-lines">
+    Create comprehensive monthly changelogs for customers on the 1st of each month.
+  </Card>
+
+  <Card title="Daily Standup Content" icon="mug-hot">
+    Generate daily summaries for high-velocity teams shipping continuously.
+  </Card>
+
+  <Card title="Investor Updates" icon="chart-line">
+    Use scheduled blog posts or changelogs as investor-focused product progress updates.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Match Frequency to Activity">
+    Choose a schedule frequency that aligns with your development pace. High-velocity teams might use weekly schedules, while teams with monthly releases might prefer monthly schedules.
+  </Accordion>
+
+  <Accordion title="Align Lookback with Frequency">
+    Use lookback windows that match your schedule frequency:
+
+    * Daily schedule → `current_day` or `yesterday`
+    * Weekly schedule → `last_7_days`
+    * Monthly schedule → `last_30_days`
+  </Accordion>
+
+  <Accordion title="Consider Your Audience's Timezone">
+    Schedule content generation to post when your audience is most active. Remember all times are in UTC.
+  </Accordion>
+
+  <Accordion title="Combine Multiple Schedules">
+    Create different schedules for different content types. For example:
+
+    * Weekly changelog for customers
+    * Weekly LinkedIn post for general audience
+    * Monthly blog post for investors
+  </Accordion>
+
+  <Accordion title="Review Generated Content">
+    Treat scheduled content as drafts. Always review before publishing to ensure accuracy and relevance.
+  </Accordion>
+
+  <Accordion title="Name Schedules Descriptively">
+    Use clear names like "Weekly Monday Changelog" instead of generic names like "Schedule 1".
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Schedule Not Running">
+    **Check:**
+
+    * Schedule is enabled in the dashboard
+    * Cron configuration is valid
+    * QStash service is operational (check status page)
+    * Your subscription includes scheduled automation
+
+    View the schedule's execution log to see if runs are being attempted.
+  </Accordion>
+
+  <Accordion title="No Content Generated">
+    **Check:**
+
+    * Repositories have activity in the lookback window
+    * Repositories are still connected and accessible
+    * Target repositories exist in your configuration
+    * GitHub API access is working
+
+    If there's no activity in the lookback window, the AI may not generate content.
+  </Accordion>
+
+  <Accordion title="Content Quality Issues">
+    **Check:**
+
+    * Lookback window is appropriate for your activity level
+    * Brand voice and custom instructions are configured
+    * You're analyzing the right repositories
+    * Repository activity is sufficient for meaningful content
+
+    Adjust your lookback window or custom instructions to improve output.
+  </Accordion>
+
+  <Accordion title="Rate Limiting">
+    If GitHub API rate limits are hit during scheduled generation, the workflow automatically retries after the rate limit resets. Check logs for `rate_limited` status.
+  </Accordion>
+</AccordionGroup>
+
+## Infrastructure Details
+
+Notra uses [Upstash QStash](https://upstash.com/docs/qstash) for reliable scheduled workflow execution:
+
+* **Reliability**: QStash ensures schedules run even if your infrastructure is temporarily unavailable
+* **Retries**: Automatic retries on transient failures
+* **Monitoring**: Built-in observability for all scheduled runs
+* **Scalability**: Handles any number of concurrent schedules
+
+<CodeGroup>
+  ```typescript QStash Integration
+  // Create a schedule
+  await client.schedules.create({
+    destination: `${appUrl}/api/workflows/schedule`,
+    cron: "0 9 * * 1", // Every Monday at 9 AM UTC
+    body: JSON.stringify({ triggerId }),
+  });
+  ```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Event-Based Automation" icon="bolt" href="/automation/event-based">
+    Learn about webhook-triggered content generation
+  </Card>
+
+  <Card title="Brand Voice Configuration" icon="palette" href="/concepts/brand-voice">
+    Customize tone and style for your scheduled content
+  </Card>
+</CardGroup>

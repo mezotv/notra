@@ -6,6 +6,7 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { FEATURES } from "@notra/ai/billing/features";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import {
@@ -32,7 +33,6 @@ import {
 import { useEffect, useState } from "react";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { FEATURES } from "@/constants/features";
 import {
   SOURCE_LABELS,
   SOURCE_VALUES,
@@ -231,6 +231,20 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           <DataTable
             columns={columns}
             data={data?.logs ?? []}
+            emptyState={
+              filtersActive
+                ? {
+                    title: "No logs match your filters",
+                    description: "Try a different search, source, or status.",
+                    actionLabel: "Reset filters",
+                    onActionClick: resetFilters,
+                  }
+                : {
+                    title: "No logs yet",
+                    description:
+                      "Activity from your integrations and automations will show up here.",
+                  }
+            }
             onPageChange={setPage}
             page={page}
             totalPages={data?.pagination.totalPages ?? 1}

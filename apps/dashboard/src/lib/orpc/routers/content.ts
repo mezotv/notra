@@ -1,3 +1,12 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
+import {
+  getDecryptedLinearToken,
+  getLinearIntegrationsByOrganization,
+} from "@notra/ai/integrations/linear";
+import { triggerOnDemandContent } from "@notra/ai/qstash/triggers";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
@@ -7,17 +16,7 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations, posts } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
-import {
-  and,
-  desc,
-  eq,
-  gte,
-  type InferSelectModel,
-  inArray,
-  lt,
-  lte,
-  or,
-} from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
@@ -26,11 +25,8 @@ import {
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
-import { FEATURES } from "@/constants/features";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { autumn } from "@/lib/billing/autumn";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
-import { shouldApplyMarkup } from "@/lib/billing/token-pricing";
 import {
   addActiveGeneration,
   clearCompletedGeneration,
@@ -39,12 +35,6 @@ import {
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
 import { baseProcedure } from "@/lib/orpc/base";
-import { getTokenForIntegrationId } from "@/lib/services/github-integration";
-import {
-  getDecryptedLinearToken,
-  getLinearIntegrationsByOrganization,
-} from "@/lib/services/linear-integration";
-import { triggerOnDemandContent } from "@/lib/triggers/qstash";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
 import { updateContentSchema } from "@/schemas/content";
@@ -77,13 +67,6 @@ const previewRequestSchema = z.object({
   includeReleases: z.boolean().default(true),
   linearIntegrationIds: z.array(z.string().min(1)).optional(),
 });
-
-type PostRecord = InferSelectModel<typeof posts>;
-
-interface CursorData {
-  createdAt: string;
-  id: string;
-}
 
 function serializePost(post: {
   content: string;
@@ -204,20 +187,6 @@ export interface RepositoryPreviewFailure {
   repo: string | null;
   repositoryId: string;
   stage: PreviewFailureStage;
-}
-
-function encodeCursor(createdAt: Date, id: string): string {
-  const data: CursorData = { createdAt: createdAt.toISOString(), id };
-  return Buffer.from(JSON.stringify(data)).toString("base64url");
-}
-
-function decodeCursor(cursor: string): CursorData | null {
-  try {
-    const decoded = Buffer.from(cursor, "base64url").toString("utf-8");
-    return JSON.parse(decoded) as CursorData;
-  } catch {
-    return null;
-  }
 }
 
 function getDateRange(dateParam: string | null) {
@@ -504,51 +473,30 @@ export const contentRouter = {
         );
       }
 
-      let results: PostRecord[];
+      const whereClause = and(...baseFilters);
+      const offset = (input.page - 1) * input.pageSize;
 
-      if (input.cursor) {
-        const cursorData = decodeCursor(input.cursor);
-
-        if (!cursorData) {
-          throw badRequest("Invalid cursor");
-        }
-
-        const cursorDate = new Date(cursorData.createdAt);
-
-        if (Number.isNaN(cursorDate.getTime())) {
-          throw badRequest("Invalid cursor");
-        }
-
-        results = await db.query.posts.findMany({
-          where: and(
-            ...baseFilters,
-            or(
-              lt(posts.createdAt, cursorDate),
-              and(eq(posts.createdAt, cursorDate), lt(posts.id, cursorData.id))
-            )
-          ),
+      const [items, totalCountResult] = await Promise.all([
+        db.query.posts.findMany({
+          where: whereClause,
           orderBy: [desc(posts.createdAt), desc(posts.id)],
-          limit: input.limit + 1,
-        });
-      } else {
-        results = await db.query.posts.findMany({
-          where: and(...baseFilters),
-          orderBy: [desc(posts.createdAt), desc(posts.id)],
-          limit: input.limit + 1,
-        });
-      }
+          limit: input.pageSize,
+          offset,
+        }),
+        db.select({ value: count() }).from(posts).where(whereClause),
+      ]);
 
-      const hasMore = results.length > input.limit;
-      const items = hasMore ? results.slice(0, input.limit) : results;
-      const lastItem = items.at(-1);
-      const nextCursor =
-        hasMore && lastItem
-          ? encodeCursor(lastItem.createdAt, lastItem.id)
-          : null;
+      const totalCount = totalCountResult[0]?.value ?? 0;
+      const totalPages = Math.max(1, Math.ceil(totalCount / input.pageSize));
 
       return {
         posts: items.map(serializePost),
-        nextCursor,
+        pagination: {
+          page: input.page,
+          pageSize: input.pageSize,
+          totalCount,
+          totalPages,
+        },
       };
     }),
   get: baseProcedure

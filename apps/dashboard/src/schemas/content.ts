@@ -1,3 +1,4 @@
+import { UI_MESSAGES_MAX, uiMessageSchema } from "@notra/ai/schemas/chat";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_MARKDOWN_MAX_LENGTH,
@@ -6,7 +7,6 @@ import {
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-import { UI_MESSAGES_MAX, uiMessageSchema } from "./chat";
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_SCHEDULE_OUTPUT_TYPES,
@@ -73,9 +73,18 @@ export const postSchema = z.object({
 
 export type Post = z.infer<typeof postSchema>;
 
+export const postsPaginationSchema = z.object({
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  totalCount: z.number().int().min(0),
+  totalPages: z.number().int().min(1),
+});
+
+export type PostsPagination = z.infer<typeof postsPaginationSchema>;
+
 export const postsResponseSchema = z.object({
   posts: z.array(postSchema),
-  nextCursor: z.string().nullable(),
+  pagination: postsPaginationSchema,
 });
 
 export type PostsResponse = z.infer<typeof postsResponseSchema>;

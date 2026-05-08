@@ -5,6 +5,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { DropdownMenuItem } from "@notra/ui/components/ui/dropdown-menu";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { cn } from "@notra/ui/lib/utils";
 import { useState } from "react";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
@@ -25,15 +30,27 @@ export function CreditBalanceButton({ className }: { className?: string }) {
 
   return (
     <>
-      <Button
-        className={cn("gap-1.5 tabular-nums", className)}
-        onClick={() => setOpen(true)}
-        size="sm"
-        variant="outline"
-      >
-        <HugeiconsIcon icon={Wallet01Icon} size={16} />
-        {balance !== null ? formatDollars(balance) : "-"}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={
+                balance !== null
+                  ? `Available credits: ${formatDollars(balance)}`
+                  : "Available credits"
+              }
+              className={cn("gap-1.5 tabular-nums", className)}
+              onClick={() => setOpen(true)}
+              size="sm"
+              variant="outline"
+            >
+              <HugeiconsIcon icon={Wallet01Icon} size={16} />
+              {balance !== null ? formatDollars(balance) : "-"}
+            </Button>
+          }
+        />
+        <TooltipContent>Available credits</TooltipContent>
+      </Tooltip>
       <CreditTopupModal onOpenChange={setOpen} open={open} />
     </>
   );

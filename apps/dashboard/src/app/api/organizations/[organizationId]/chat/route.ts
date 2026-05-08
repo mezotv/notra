@@ -1,19 +1,10 @@
-import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
-import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
-import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
-import type { UIMessage } from "ai";
-import type { CheckResponse } from "autumn-js";
-import { nanoid } from "nanoid";
-import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { FEATURES } from "@/constants/features";
-import { isAiChatExperimentEnabled } from "@/lib/ai-chat-experiment";
-import { withOrganizationAuth } from "@/lib/auth/organization";
-import { autumn } from "@/lib/billing/autumn";
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
 import {
   calculateTokenCostCents,
   shouldApplyMarkup,
-} from "@/lib/billing/token-pricing";
+} from "@notra/ai/billing/token-pricing";
+import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
   clearActiveChatStream,
   clearChatAbortFlag,
@@ -24,18 +15,28 @@ import {
   loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
-} from "@/lib/chat-history";
-import { getStandaloneChatIntegrations } from "@/lib/chat-integrations-cache";
-import { useLogger, withEvlog } from "@/lib/evlog";
-import { getWorkflowClient } from "@/lib/qstash";
-import { realtime } from "@/lib/realtime";
-import { getGitHubToolRepositoryContextByIntegrationId } from "@/lib/services/github-integration";
-import { getLinearToolContextByIntegrationId } from "@/lib/services/linear-integration";
-import { getBaseUrl } from "@/lib/triggers/qstash";
-import { standaloneChatRequestSchema } from "@/schemas/chat";
-import type { ChatUsageSnapshot } from "@/types/chat";
-import { buildChatFinishMetadata } from "@/utils/chat";
-import { startChatAbortPolling } from "@/utils/chat-abort-polling.server";
+} from "@notra/ai/chat/history";
+import { getStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
+import { useLogger, withEvlog } from "@notra/ai/evlog";
+import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
+import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
+import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
+import { getWorkflowClient } from "@notra/ai/qstash/client";
+import { getBaseUrl } from "@notra/ai/qstash/triggers";
+import { realtime } from "@notra/ai/realtime";
+import { standaloneChatRequestSchema } from "@notra/ai/schemas/chat";
+import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
+import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
+import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
+import type { TccMetadata } from "@notra/ai/types/tcc";
+import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import type { UIMessage } from "ai";
+import type { CheckResponse } from "autumn-js";
+import { nanoid } from "nanoid";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { withOrganizationAuth } from "@/lib/auth/organization";
+import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 
 interface RouteContext {
   params: Promise<{ organizationId: string }>;
@@ -65,19 +66,6 @@ export const POST = withEvlog(async function POST(
 
     if (!auth.success) {
       return auth.response;
-    }
-
-    const aiChatEnabled = await isAiChatExperimentEnabled({
-      userId: auth.context.user.id,
-      email: auth.context.user.email,
-      organizationId,
-    });
-
-    if (!aiChatEnabled) {
-      return NextResponse.json(
-        { error: "AI chat is not enabled for this organization" },
-        { status: 403 }
-      );
     }
 
     let useMarkup = false;
@@ -156,17 +144,27 @@ export const POST = withEvlog(async function POST(
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
 
-    await Promise.all([
+    const [historySaved] = await Promise.all([
       replaceChatHistory(organizationId, chatId, messages),
       setActiveChatStream(organizationId, chatId, latestMessage.id),
       clearLastResponseStopped(organizationId, chatId),
     ]);
+
+    if (!historySaved) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
 
     if (messages.length === 1 && latestMessage.role === "user") {
       await generateAndSetChatTitle(organizationId, chatId, latestMessage);
     }
 
     const canUseWorkflowStreaming = canUseUpstashWorkflowStreaming();
+    const telemetryMetadata = buildStandaloneChatTelemetryMetadata({
+      chatId,
+      organizationId,
+      routeName: "/api/organizations/[organizationId]/chat",
+      userId: auth.context.user.id,
+    });
 
     if (!canUseWorkflowStreaming) {
       return createDirectStandaloneChatResponse({
@@ -183,6 +181,7 @@ export const POST = withEvlog(async function POST(
         thinkingLevel: parseResult.data.thinkingLevel,
         timezone: parseResult.data.timezone,
         abortSignal: request.signal,
+        telemetryMetadata,
       });
     }
 
@@ -313,6 +312,7 @@ async function createDirectStandaloneChatResponse({
   thinkingLevel,
   timezone,
   abortSignal,
+  telemetryMetadata,
 }: {
   organizationId: string;
   chatId: string;
@@ -327,6 +327,7 @@ async function createDirectStandaloneChatResponse({
   thinkingLevel?: "off" | "low" | "medium" | "high";
   timezone?: string;
   abortSignal?: AbortSignal;
+  telemetryMetadata: TccMetadata;
 }) {
   const autumnClient = autumn;
   const streamId = messages.at(-1)?.id;
@@ -384,6 +385,7 @@ async function createDirectStandaloneChatResponse({
         thinkingLevel,
         timezone,
         abortSignal: combinedAbortSignal,
+        telemetryMetadata,
       },
       {
         preValidatedIntegrations: validatedIntegrations,
@@ -484,7 +486,17 @@ async function createDirectStandaloneChatResponse({
       },
       onFinish: async ({ messages: responseMessages }) => {
         try {
-          await replaceChatHistory(organizationId, chatId, responseMessages);
+          const saved = await replaceChatHistory(
+            organizationId,
+            chatId,
+            responseMessages
+          );
+          if (!saved) {
+            console.warn(
+              "[Standalone Chat] Skipped saving response: chat was deleted",
+              { requestId, organizationId, chatId }
+            );
+          }
         } finally {
           await cleanup();
           streamDone.resolve();

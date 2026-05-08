@@ -50,7 +50,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const greeting = getGreeting(new Date());
   const userName = session?.user?.name?.trim();
   const greetingText = userName ? `${greeting}, ${userName}!` : `${greeting}!`;
-  const posts = data?.pages.flatMap((page) => page.posts) ?? [];
+  const posts = data?.posts ?? [];
   const visibleGenerations = activeGenerations?.slice(0, 3) ?? [];
   const hasActiveGenerations = visibleGenerations.length > 0;
   const maxPreviewPosts = Math.max(0, 3 - visibleGenerations.length);
@@ -105,7 +105,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     return (
       <EmptyState
         className="p-6"
-        description="Check back later or start a new post from the content page."
+        description="You have no new posts today. Create one now or review your existing drafts on the content page."
         title="No content created today"
       />
     );

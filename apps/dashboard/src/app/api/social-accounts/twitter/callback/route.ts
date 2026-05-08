@@ -1,10 +1,10 @@
+import { encryptToken } from "@notra/ai/crypto/token-encryption";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
-import { encryptToken } from "@/lib/crypto/token-encryption";
-import { redis } from "@/lib/redis";
 
 interface TwitterTokenResponse {
   access_token: string;

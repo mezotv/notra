@@ -1,26 +1,22 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef } from "react";
-import { toast } from "sonner";
-import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   chatSessionResponseSchema,
   chatSessionsListResponseSchema,
-} from "@/schemas/chat";
-import type { ChatSessionSummary } from "@/types/chat";
+} from "@notra/ai/schemas/chat";
+import type { ChatSessionSummary } from "@notra/ai/types/chat";
 import {
   chatSessionPath,
   chatSessionsPath,
   chatSessionsQueryKey,
   sortChatSessions,
-} from "@/utils/chat";
+} from "@notra/ai/utils/chat";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRef } from "react";
+import { toast } from "sonner";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
-export function useChatSessions({
-  enabled = true,
-}: {
-  enabled?: boolean;
-} = {}) {
+export function useChatSessions() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
   const queryKey = chatSessionsQueryKey(organizationId);
@@ -40,7 +36,7 @@ export function useChatSessions({
       );
       return parsed.success ? (parsed.data.sessions ?? []) : [];
     },
-    enabled: Boolean(organizationId) && enabled,
+    enabled: Boolean(organizationId),
     staleTime: 1000 * 60,
   });
 

@@ -31,8 +31,14 @@ export const FOOTER_TOOL_LINKS = [
     target: "_blank",
   },
   {
-    href: "https://docs.usenotra.com/integrations/mcp",
+    href: "https://docs.usenotra.com/devtools/mcp",
     label: "MCP Server",
+    rel: "noopener noreferrer",
+    target: "_blank",
+  },
+  {
+    href: "https://docs.usenotra.com/devtools/cli",
+    label: "CLI",
     rel: "noopener noreferrer",
     target: "_blank",
   },

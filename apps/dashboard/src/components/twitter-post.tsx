@@ -229,7 +229,7 @@ function TwitterPost({
             {isEditable ? (
               <div className="space-y-1">
                 <Textarea
-                  className="min-h-[4rem] resize-none rounded-none border-none bg-transparent p-0 text-[0.9375rem] leading-snug shadow-none focus-visible:ring-0"
+                  className="min-h-[4rem] resize-none rounded-none border-none bg-transparent p-0 text-[0.9375rem] leading-snug shadow-none focus-visible:ring-0 dark:bg-transparent"
                   onChange={(e) => {
                     const value = e.target.value;
                     setLocalValue(value);

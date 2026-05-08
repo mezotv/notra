@@ -1,8 +1,8 @@
+import type { ContextItem } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { ContextItem } from "@/types/chat";
 
 const REFERENCE_ATTR = "data-integration-reference";
 
@@ -88,7 +88,7 @@ function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
   );
 }
 
-export function getReferenceValue(item: ContextItem): string {
+function getReferenceValue(item: ContextItem): string {
   if (item.type === "github-repo") {
     return `@integration/github/${item.integrationId}/${item.owner}/${item.repo}`;
   }
@@ -257,7 +257,7 @@ interface IntegrationReferenceProps {
   kind: ReferenceKind;
 }
 
-export function IntegrationReference({
+function IntegrationReference({
   value,
   display,
   kind,

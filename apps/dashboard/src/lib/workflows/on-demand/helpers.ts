@@ -1,9 +1,9 @@
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { FEATURES } from "@/constants/features";
-import { autumn } from "@/lib/billing/autumn";
 import type { SelectedItems } from "@/schemas/content";
 
 export async function resolveBrandVoiceForManualGeneration(

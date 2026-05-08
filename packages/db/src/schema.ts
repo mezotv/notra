@@ -40,6 +40,43 @@ export const users = pgTable("users", {
   showAgentStats: boolean("show_agent_stats").default(false).notNull(),
 });
 
+export const chatSessions = pgTable(
+  "chat_sessions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    messages: jsonb("messages").notNull().default(sql`'[]'::jsonb`),
+    pinnedAt: timestamp("pinned_at"),
+    deletedAt: timestamp("deleted_at"),
+    externalChannelSource: text("external_channel_source"),
+    externalChannelId: text("external_channel_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("chatSessions_organizationId_idx").on(table.organizationId),
+    index("chatSessions_organizationId_deletedAt_idx").on(
+      table.organizationId,
+      table.deletedAt
+    ),
+    uniqueIndex("chatSessions_org_externalChannel_uidx")
+      .on(
+        table.organizationId,
+        table.externalChannelSource,
+        table.externalChannelId
+      )
+      .where(
+        sql`${table.externalChannelSource} IN ('discord', 'slack') AND ${table.externalChannelId} IS NOT NULL AND ${table.deletedAt} IS NULL`
+      ),
+  ]
+);
+
 export const chatAttachments = pgTable(
   "chat_attachments",
   {
@@ -450,6 +487,7 @@ export const organizationNotificationSettings = pgTable(
     scheduledContentFailed: boolean("scheduled_content_failed")
       .default(true)
       .notNull(),
+    marketingEmails: boolean("marketing_emails").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -546,6 +584,13 @@ export const usersRelations = relations(users, ({ many }) => ({
   chatAttachments: many(chatAttachments),
 }));
 
+export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [chatSessions.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 export const chatAttachmentsRelations = relations(
   chatAttachments,
   ({ one }) => ({
@@ -586,6 +631,7 @@ export const organizationsRelations = relations(
     connectedSocialAccounts: many(connectedSocialAccounts),
     posts: many(posts),
     skills: many(skills),
+    chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
   })
 );

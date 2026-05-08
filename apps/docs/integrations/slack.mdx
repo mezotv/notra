@@ -1,0 +1,220 @@
+---
+title: "Slack Integration"
+description: "Track updates and announcements from Slack to generate automated content"
+---
+
+<Note>
+  The Slack integration is **coming soon**. This feature is under active development and will be available in a future release.
+</Note>
+
+The Slack integration will enable Notra to monitor your workspace for important updates, announcements, and decisions that can be transformed into external-facing content.
+
+## Planned Features
+
+When the Slack integration launches, you'll be able to:
+
+* **Monitor specific channels**: Track announcement channels, product updates, or engineering discussions
+* **Capture decisions**: Turn internal discussions into external-facing content
+* **Track milestones**: Monitor team achievements and product launches
+* **Aggregate updates**: Compile weekly or monthly summaries from Slack activity
+
+## What Content Can Be Generated
+
+The Slack integration will support these content types:
+
+<CardGroup cols={2}>
+  <Card title="Blog Post" icon="newspaper">
+    Transform internal product updates and launch announcements into customer-facing blog posts.
+  </Card>
+
+  <Card title="Changelog" icon="list-check">
+    Convert engineering updates and release notes into formatted changelogs.
+  </Card>
+
+  <Card title="Social Posts" icon="share-nodes">
+    Create Twitter and LinkedIn posts from team announcements and achievements.
+  </Card>
+
+  <Card title="Investor Update" icon="chart-line">
+    Compile milestone updates and progress summaries for investors.
+  </Card>
+</CardGroup>
+
+## Expected Setup Process
+
+When available, connecting Slack will involve:
+
+<Steps>
+  <Step title="Install Slack App">
+    Add the Notra app to your Slack workspace using the Slack App Directory.
+  </Step>
+
+  <Step title="Select Channels">
+    Choose which channels Notra can monitor. Typically announcement or product update channels.
+  </Step>
+
+  <Step title="Configure Triggers">
+    Set up keywords or emoji reactions that signal content-worthy updates.
+  </Step>
+
+  <Step title="Set Content Preferences">
+    Choose what types of content to generate from Slack activity and how to handle mentions or threads.
+  </Step>
+</Steps>
+
+## Planned Permissions
+
+The Slack integration will request:
+
+* **Read access to messages**: View messages in channels you authorize
+* **Read channel information**: Access channel names and descriptions
+* **Read user profiles**: Attribute quotes and updates to team members
+
+<Warning>
+  Notra will **never** read private messages or direct messages. Only public channels you explicitly authorize will be accessible.
+</Warning>
+
+## Use Cases
+
+### Product Launch Announcements
+
+Turn internal launch announcements into external content:
+
+1. Team announces a new feature in `#product-updates`
+2. Message is tagged with a specific emoji (e.g., 📢)
+3. Notra generates a customer-facing blog post
+4. Content includes feature benefits, screenshots, and usage examples
+
+### Weekly Engineering Updates
+
+Aggregate engineering progress into changelogs:
+
+1. Engineers post daily updates in `#engineering`
+2. At week's end, Notra compiles all updates
+3. Generate a formatted changelog of shipped features
+4. Publish to your documentation or blog
+
+### Investor Reporting
+
+Create quarterly updates from milestone announcements:
+
+1. Monitor `#milestones` channel for key achievements
+2. Track metrics shared in `#analytics`
+3. Aggregate into quarterly summary
+4. Generate a comprehensive investor update with context and supporting details
+
+## How Content Selection Will Work
+
+Several mechanisms will help Notra identify content-worthy updates:
+
+### Emoji Reactions
+
+React to messages with a specific emoji (e.g., 📝 or ✨) to flag them for content generation.
+
+### Keywords
+
+Configure keywords like "shipped", "launched", or "released" that trigger content creation.
+
+### Thread Detection
+
+Important discussions in threads can be transformed into blog posts or documentation.
+
+### Channel Monitoring
+
+Monitor entire channels dedicated to announcements or updates.
+
+<Info>
+  You'll have full control over what gets turned into content. Notra will show you the source messages and let you approve or reject suggestions.
+</Info>
+
+## Data Privacy and Security
+
+Slack integration will prioritize privacy:
+
+<Steps>
+  <Step title="Explicit Authorization">
+    You choose exactly which channels Notra can access. No blanket workspace access.
+  </Step>
+
+  <Step title="No DM Access">
+    Notra will never access direct messages or private channels unless explicitly shared.
+  </Step>
+
+  <Step title="Content Review">
+    All generated content will be reviewable before publishing. Internal discussions stay internal until you approve.
+  </Step>
+
+  <Step title="Token Security">
+    Slack authentication tokens will be encrypted and can be revoked at any time.
+  </Step>
+</Steps>
+
+## Webhook Events
+
+Planned events that will trigger content generation:
+
+* **Message posted in monitored channel**: With matching keywords or emoji reactions
+* **Thread marked as important**: Using specific emoji or slash commands
+* **Scheduled aggregation**: Daily or weekly summaries of channel activity
+
+## Filtering and Control
+
+You'll have fine-grained control over what gets processed:
+
+| Filter Type           | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| **Channel whitelist** | Only monitor specific channels                   |
+| **User filtering**    | Ignore or prioritize messages from certain users |
+| **Keyword matching**  | Trigger on specific words or phrases             |
+| **Emoji reactions**   | Flag messages for content generation             |
+| **Time-based**        | Only process messages during business hours      |
+
+## Best Practices (When Available)
+
+To get the most from the Slack integration:
+
+<Steps>
+  <Step title="Use Dedicated Channels">
+    Create channels specifically for announcements that should become external content. For example, `#public-updates` or `#changelog-items`.
+  </Step>
+
+  <Step title="Write Clear Messages">
+    When posting updates you want to share externally, write them clearly and professionally. Notra will enhance them, but starting with quality content helps.
+  </Step>
+
+  <Step title="Establish Emoji Conventions">
+    Agree on team conventions for flagging content. For example, 📝 means "turn this into a blog post" and 📋 means "add to changelog".
+  </Step>
+
+  <Step title="Review Before Publishing">
+    Always review Slack-sourced content before publishing. Internal tone might need adjustment for external audiences.
+  </Step>
+</Steps>
+
+## Get Notified
+
+Interested in early access to the Slack integration?
+
+<CardGroup cols={1}>
+  <Card title="Join the Waitlist" icon="envelope">
+    Sign up to be notified when Slack integration is ready. We'll give waitlist members early access.
+  </Card>
+</CardGroup>
+
+## Current Alternatives
+
+While Slack integration is in development:
+
+<CardGroup cols={2}>
+  <Card title="GitHub Integration" icon="github" href="/integrations/github">
+    Connect GitHub to generate content from development activity
+  </Card>
+
+  <Card title="Manual Content" icon="play" href="/content/blog-posts">
+    Create content manually from any source
+  </Card>
+</CardGroup>
+
+<Info>
+  Many product updates that appear in Slack are related to code changes. The [GitHub integration](/integrations/github) can automatically generate content when those changes are merged and released.
+</Info>

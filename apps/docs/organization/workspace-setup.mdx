@@ -1,0 +1,184 @@
+---
+title: "Workspace Setup"
+description: "Create and configure your workspace to get started with Notra"
+---
+
+## Creating Your First Workspace
+
+When you first sign up for Notra, you'll be prompted to create an organization workspace. This workspace is your team's home base where all content, automations, and integrations are managed.
+
+<Steps>
+  <Step title="Enter organization details">
+    Provide your organization name, a unique slug for URLs, and optionally your website URL. The slug will be used in all your workspace URLs: `app.usenotra.com/your-slug`
+  </Step>
+
+  <Step title="Configure workspace settings">
+    After creation, customize your workspace logo, name, and URL slug from the **Settings > General** page.
+  </Step>
+
+  <Step title="Set up your brand identity">
+    Navigate to **Brand > Identity** to configure your company profile and tone of voice for AI-generated content.
+  </Step>
+</Steps>
+
+## Organization Settings
+
+Manage your workspace settings from the **Settings > General** page.
+
+### Basic Information
+
+<ParamField path="Name" type="string" required>
+  The display name of your organization as it appears across the platform. Must be between 2-100 characters.
+</ParamField>
+
+<ParamField path="Slug" type="string" required>
+  A URL-friendly identifier used in workspace URLs. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.
+
+  <Warning>Reserved slugs like `api`, `auth`, `admin`, `settings`, and `dashboard` cannot be used.</Warning>
+</ParamField>
+
+<ParamField path="Logo" type="image">
+  Upload a custom logo for your organization. Accepted formats: JPEG, PNG, GIF, WebP, AVIF.
+</ParamField>
+
+<ParamField path="Organization ID" type="string">
+  A unique identifier for your organization. This is read-only and used for API integrations.
+</ParamField>
+
+### Updating Workspace Settings
+
+1. Navigate to **Settings > General**
+2. Click on the logo to upload a new image
+3. Update the name or slug fields
+4. Click **Save Changes** to apply
+
+<Note>
+  Changing your organization slug will update all workspace URLs. Make sure to update any bookmarks or links.
+</Note>
+
+## Brand Identity Configuration
+
+Notra uses AI to generate content that matches your brand voice. Configure your brand settings to ensure all generated content is on-brand.
+
+### Website Analysis
+
+Notra can automatically extract your brand identity from your website:
+
+<Steps>
+  <Step title="Enter your website URL">
+    Go to **Brand > Identity** and enter your website URL (e.g., `example.com`)
+  </Step>
+
+  <Step title="Run analysis">
+    Click **Analyze** to start the automated brand extraction process. This typically takes 30-60 seconds.
+  </Step>
+
+  <Step title="Review extracted information">
+    Notra will extract your company name, description, and tone from your website content.
+  </Step>
+</Steps>
+
+### Manual Configuration
+
+You can also manually configure your brand identity:
+
+#### Company Profile
+
+<ParamField path="Company Name" type="string" required>
+  Your official company or brand name.
+</ParamField>
+
+<ParamField path="Website" type="url">
+  Your company website URL. Used for brand analysis and reference.
+</ParamField>
+
+<ParamField path="Description" type="string">
+  A short overview of your company, what you do, and who you serve. This helps AI understand your business context.
+</ParamField>
+
+#### Tone & Language
+
+Choose how AI should write on behalf of your brand:
+
+**Tone Profile** (preset options):
+
+* **Conversational** - Friendly, approachable, and casual
+* **Professional** - Polished and business-appropriate
+* **Casual** - Relaxed and informal
+* **Formal** - Traditional and authoritative
+
+**Custom Tone**:
+Provide specific instructions about your brand voice (e.g., "Friendly but authoritative, use technical terms but explain them clearly")
+
+<ParamField path="Custom Instructions" type="string">
+  Add specific guidelines for AI-generated content, such as:
+
+  * Phrases to avoid
+  * Required terminology
+  * Formatting preferences
+  * Brand-specific requirements
+</ParamField>
+
+#### Target Audience
+
+<ParamField path="Target Audience" type="string">
+  Describe who you're writing for - their interests, pain points, expertise level, and what matters to them. This ensures content resonates with your readers.
+</ParamField>
+
+<Info>
+  All brand settings auto-save as you edit. Changes apply immediately to new content generation.
+</Info>
+
+### Re-analyzing Your Brand
+
+If your website or brand has changed, you can re-run the analysis:
+
+1. Go to **Brand > Identity**
+2. Click **Re-analyze** next to the Company Profile heading
+3. Wait for the analysis to complete
+4. Review and adjust any auto-populated fields
+
+## Workspace Management
+
+### Switching Between Workspaces
+
+If you're a member of multiple organizations:
+
+1. Click your organization name in the sidebar
+2. Select a different organization from the dropdown
+3. The workspace will switch automatically
+
+Your last visited workspace is remembered for your next session.
+
+### Deleting a Workspace
+
+<Warning>
+  Deleting a workspace permanently removes all associated data including content, automations, integrations, and team members. This action cannot be undone.
+</Warning>
+
+To delete a workspace:
+
+1. Navigate to **Settings > General**
+2. Scroll to the **Danger Zone** section
+3. Click **Delete Organization**
+4. Confirm the deletion
+
+**Requirements:**
+
+* You must be the workspace owner
+* You must have at least one other organization to switch to
+* If other members exist, you'll be warned before deletion
+
+## Best Practices
+
+<Tip>
+  **Choose a memorable slug** - Your organization slug appears in all workspace URLs. Pick something short, recognizable, and related to your brand.
+</Tip>
+
+<Tip>
+  **Complete your brand profile** - The more detailed your brand identity, the better AI-generated content will match your voice and style.
+</Tip>
+
+<Tip>
+  **Update brand settings regularly** - As your brand evolves, keep your Notra settings current by re-running website analysis or updating manual fields.
+</Tip>

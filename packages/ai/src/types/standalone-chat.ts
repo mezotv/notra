@@ -1,5 +1,6 @@
 import type { AILogTarget } from "@notra/ai/observability";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { LanguageModelUsage, UIMessage } from "ai";
 import type {
   ResolveIntegrationContext,
@@ -22,6 +23,7 @@ export interface StandaloneChatInput {
   thinkingLevel?: "off" | "low" | "medium" | "high";
   abortSignal?: AbortSignal;
   timezone?: string;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface StandaloneChatDeps {

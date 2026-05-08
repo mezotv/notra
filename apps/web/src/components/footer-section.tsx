@@ -13,6 +13,7 @@ import {
 } from "@/utils/navigation";
 import { SOCIAL_LINKS } from "../utils/constants";
 import { NotraMark } from "./notra-mark";
+import { TrackedAiSummaryLink } from "./tracked-ai-summary-link";
 
 export default function FooterSection() {
   const year = new Date().getFullYear();
@@ -167,22 +168,23 @@ export default function FooterSection() {
           Summarize with AI
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          {AI_SUMMARY_LINKS.map(({ name, Icon, href, iconClassName }) => (
-            <Link
-              aria-label={`Summarize Notra with ${name}`}
-              className="flex items-center gap-2 text-foreground transition-colors hover:text-primary"
+          {AI_SUMMARY_LINKS.map(({ name, slug, Icon, href, iconClassName }) => (
+            <TrackedAiSummaryLink
               href={href}
               key={name}
-              rel="noopener noreferrer"
-              target="_blank"
+              name={name}
+              slug={slug}
             >
               <Icon
-                className={cn("size-5 shrink-0 grayscale", iconClassName)}
+                className={cn(
+                  "size-5 shrink-0 grayscale transition-[filter] group-hover:grayscale-0",
+                  iconClassName
+                )}
               />
               <span className="font-normal font-sans text-sm leading-5">
                 {name}
               </span>
-            </Link>
+            </TrackedAiSummaryLink>
           ))}
         </div>
       </div>

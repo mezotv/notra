@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChatAttachment } from "@notra/ai/types/chat";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import {
   isPdfMimeType,
   isTextMimeType,
 } from "@/lib/upload/mime";
-import type { ChatAttachment } from "@/types/chat";
 import { formatBytes } from "@/utils/format";
 
 function TextPreview({ url }: { url: string }) {

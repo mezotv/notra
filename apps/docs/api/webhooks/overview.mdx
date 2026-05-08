@@ -1,0 +1,228 @@
+---
+title: "Webhooks Overview"
+description: "Learn how to receive real-time notifications from GitHub using webhooks"
+---
+
+Webhooks allow Notra to receive real-time notifications when events occur in your connected integrations. Instead of polling for changes, webhooks push data to Notra immediately when events happen.
+
+## How Webhooks Work
+
+When you connect a GitHub integration to Notra, webhooks are automatically configured to send event notifications to your organization's webhook endpoint:
+
+```text
+POST https://api.usenotra.com/api/webhooks/{provider}/{organizationId}/{integrationId}/{repositoryId}
+```
+
+### Supported Providers
+
+Notra currently supports webhooks from GitHub. Other integrations (such as Linear) connect via direct API access and do not use webhooks.
+
+<CardGroup cols={1}>
+  <Card title="GitHub" icon="github">
+    Receive notifications for pushes, releases, and more
+  </Card>
+</CardGroup>
+
+## Webhook Security
+
+All webhook requests are secured using cryptographic signatures to ensure they originate from legitimate sources.
+
+### GitHub Signature Verification
+
+GitHub webhooks use HMAC SHA-256 signatures sent in the `X-Hub-Signature-256` header. Notra automatically verifies these signatures before processing any webhook payload.
+
+<CodeGroup>
+  ```typescript Signature Verification
+  import crypto from 'node:crypto';
+
+  function verifySignature(payload: string, signature: string, secret: string) {
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = `sha256=${hmac.update(payload).digest('hex')}`;
+    const digestBuffer = Buffer.from(digest);
+    const signatureBuffer = Buffer.from(signature);
+    
+    if (digestBuffer.length !== signatureBuffer.length) {
+      return false;
+    }
+    
+    return crypto.timingSafeEqual(digestBuffer, signatureBuffer);
+  }
+  ```
+
+  ```bash Expected Header
+  X-Hub-Signature-256: sha256=7d38cdd689735b008b3c702edd92eea23791c5f6
+  ```
+</CodeGroup>
+
+<Note>
+  Webhook secrets are automatically generated and managed by Notra when you connect an integration. You don't need to manually configure them.
+</Note>
+
+## Setting Up Webhooks
+
+Webhooks are automatically configured when you:
+
+1. **Connect an Integration** - Navigate to your organization settings and connect GitHub
+2. **Add a Repository** - Add specific repositories you want to track
+3. **Enable Event Triggers** - Configure which events should trigger workflows
+
+<Warning>
+  Make sure your integration is enabled. Webhooks from disabled integrations will be rejected with a 403 status code.
+</Warning>
+
+## Webhook Delivery
+
+### Duplicate Prevention
+
+Notra automatically prevents duplicate webhook processing using the delivery ID:
+
+* **GitHub**: Uses the `X-GitHub-Delivery` header to track deliveries
+* Deliveries are cached for 24 hours to prevent reprocessing
+* Duplicate deliveries return a success response without reprocessing
+
+<CodeGroup>
+  ```typescript Deduplication Check
+  const DELIVERY_TTL_SECONDS = 60 * 60 * 24; // 24 hours
+
+  async function isDeliveryProcessed(deliveryId: string) {
+    const key = `webhook:delivery:${deliveryId}`;
+    const exists = await redis.exists(key);
+    return exists === 1;
+  }
+  ```
+
+  ```json Duplicate Response
+  {
+    "received": true,
+    "message": "Webhook already processed (duplicate delivery)",
+    "data": {
+      "event": "push",
+      "delivery": "12345678-1234-1234-1234-123456789abc",
+      "duplicate": true
+    }
+  }
+  ```
+</CodeGroup>
+
+## Webhook Responses
+
+### Success Response
+
+When a webhook is successfully processed:
+
+```json
+{
+  "received": true,
+  "message": "Processed push event (pushed)",
+  "data": {
+    "event": "push",
+    "delivery": "12345678-1234-1234-1234-123456789abc",
+    "processed": {
+      "type": "push",
+      "action": "pushed",
+      "data": { ... }
+    },
+    "repository": {
+      "id": 123456,
+      "fullName": "owner/repo"
+    }
+  }
+}
+```
+
+### Error Responses
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid webhook parameters, missing headers, or malformed payload
+</ResponseField>
+
+<ResponseField name="401 Unauthorized" type="error">
+  Invalid webhook signature - the request could not be authenticated
+</ResponseField>
+
+<ResponseField name="403 Forbidden" type="error">
+  Integration disabled, or repository doesn't belong to the integration
+</ResponseField>
+
+<ResponseField name="404 Not Found" type="error">
+  Integration or repository not found
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error while processing the webhook
+</ResponseField>
+
+<CodeGroup>
+  ```json Invalid Signature
+  {
+    "error": "Invalid webhook signature"
+  }
+  ```
+
+  ```json Integration Disabled
+  {
+    "error": "Integration is disabled"
+  }
+  ```
+
+  ```json Missing Event Header
+  {
+    "error": "Missing X-GitHub-Event header"
+  }
+  ```
+</CodeGroup>
+
+## Webhook Logging
+
+Notra automatically logs all webhook deliveries for debugging and monitoring:
+
+* **Retention Period**: 7 or 30 days depending on your plan
+* **Log Details**: Status, payload, timestamps, error messages
+* **Access**: View logs in your organization dashboard under Integrations
+
+```typescript
+await appendWebhookLog({
+  organizationId,
+  integrationId,
+  integrationType: 'github',
+  title: 'Processed push event',
+  status: 'success',
+  statusCode: 200,
+  referenceId: delivery,
+  payload: { event, action, data },
+  retentionDays: 30
+});
+```
+
+## Testing Webhooks
+
+### Ping Event
+
+GitHub automatically sends a `ping` event when a webhook is first configured. Notra responds to ping events to confirm the webhook is set up correctly:
+
+```json Ping Response
+{
+  "received": true,
+  "message": "Pong! Webhook configured successfully",
+  "data": {
+    "event": "ping",
+    "delivery": "12345678-1234-1234-1234-123456789abc"
+  }
+}
+```
+
+<Note>
+  You can manually trigger a ping event from your GitHub repository settings under Webhooks to test connectivity.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Event Types" icon="bell" href="/api/webhooks/events">
+    Learn about specific event types and their payloads
+  </Card>
+
+  <Card title="Triggers" icon="workflow" href="/automation/event-based">
+    Configure automated workflows based on webhook events
+  </Card>
+</CardGroup>

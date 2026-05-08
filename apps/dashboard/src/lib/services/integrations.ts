@@ -1,10 +1,10 @@
+import { getGitHubIntegrationsByOrganization } from "@notra/ai/integrations/github";
+import { getLinearIntegrationsByOrganization } from "@notra/ai/integrations/linear";
 import type { IntegrationType } from "@/schemas/integrations";
 import type {
   IntegrationFetcher,
   IntegrationsResponse,
 } from "@/types/services/integrations";
-import { getGitHubIntegrationsByOrganization } from "./github-integration";
-import { getLinearIntegrationsByOrganization } from "./linear-integration";
 
 const integrationFetchers: Partial<
   Record<IntegrationType, IntegrationFetcher>

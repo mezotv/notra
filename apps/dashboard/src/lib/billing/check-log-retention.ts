@@ -1,6 +1,6 @@
-import { FEATURES } from "@/constants/features";
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
-import { autumn } from "./autumn";
 
 export async function checkLogRetention(
   organizationId: string

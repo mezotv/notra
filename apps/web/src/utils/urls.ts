@@ -1,4 +1,4 @@
-export const SITE_URL = "https://usenotra.com";
+export const SITE_URL = "https://www.usenotra.com";
 
 export const API_URL = "https://api.usenotra.com";
 

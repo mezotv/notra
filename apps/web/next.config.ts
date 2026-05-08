@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
   rewrites: async () => ({
     beforeFiles: [
       {
+        source: "/api/c15t/:path*",
+        destination: `${process.env.NEXT_PUBLIC_C15T_BACKEND_URL}/:path*`,
+      },
+      {
         source: "/",
         destination: "/markdown",
         has: [
@@ -261,11 +265,11 @@ const nextConfig: NextConfig = {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' databuddy.cc *.databuddy.cc",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' databuddy.cc *.databuddy.cc va.vercel-scripts.com",
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self'",
             "img-src 'self' data: blob: databuddy.cc *.databuddy.cc avatars.githubusercontent.com",
-            "connect-src 'self' databuddy.cc *.databuddy.cc",
+            "connect-src 'self' databuddy.cc *.databuddy.cc *.inth.app *.c15t.com *.c15t.dev",
             "frame-src 'none'",
             "frame-ancestors 'none'",
             "object-src 'none'",

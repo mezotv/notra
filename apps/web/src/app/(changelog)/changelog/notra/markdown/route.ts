@@ -10,7 +10,7 @@ export async function GET() {
   const list = posts
     .map(
       (post) =>
-        `- [${post.title}](https://usenotra.com${getChangelogPostHref(post.slug)}.md) (${post.createdAt})`
+        `- [${post.title}](https://www.usenotra.com${getChangelogPostHref(post.slug)}.md) (${post.createdAt})`
     )
     .join("\n");
 

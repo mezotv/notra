@@ -1,9 +1,9 @@
-import type { NextRequest } from "next/server";
 import {
   getGitHubIntegrationById,
   getRepositoryById,
-} from "@/lib/services/github-integration";
-import { getLinearIntegrationById } from "@/lib/services/linear-integration";
+} from "@notra/ai/integrations/github";
+import { getLinearIntegrationById } from "@notra/ai/integrations/linear";
+import type { NextRequest } from "next/server";
 import { handleGitHubWebhook } from "@/lib/webhooks/github";
 import { handleLinearWebhook } from "@/lib/webhooks/linear";
 import type { InputIntegrationType } from "@/schemas/integrations";
