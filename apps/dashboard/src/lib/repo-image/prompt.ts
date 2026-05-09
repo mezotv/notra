@@ -34,7 +34,7 @@ export function buildExtractionPrompt(params: {
 }) {
   const { owner, repo, branch, source } = params;
 
-  return `Design a 1200×630 marketing image for ${owner}/${repo}@${branch} and write it as ONE HTML file.
+  return `Design a 1200x630 marketing image for ${owner}/${repo}@${branch} and write it as ONE HTML file.
 
 THE ONLY DELIVERABLE - your task ends ONLY after this file exists:
 
