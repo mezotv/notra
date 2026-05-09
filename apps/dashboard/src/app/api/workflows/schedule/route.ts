@@ -31,6 +31,7 @@ import { GITHUB_RATE_LIMIT_RETRY_DELAY } from "@/constants/workflows";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
+  trackScheduledContentSkipped,
 } from "@/lib/databuddy";
 import {
   sendScheduledContentCreatedEmail,
@@ -696,6 +697,94 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         return;
       }
 
+      if (contentResult.status === "skipped") {
+        const autumnClient = autumn;
+        if (aiCreditReservation.reserved && autumnClient) {
+          await context.run(
+            "refund-ai-credit-after-generation-skip",
+            async () => {
+              try {
+                await autumnClient.track({
+                  customerId: trigger.organizationId,
+                  featureId: FEATURES.AI_CREDITS,
+                  value: 0,
+                  properties: {
+                    source: "workflow_schedule",
+                    output_type: trigger.outputType,
+                    trigger_name: trigger.name.trim() || trigger.outputType,
+                    trigger_id: triggerId,
+                    run_id: runId,
+                    refund_reason: "skipped",
+                  },
+                });
+              } catch (error) {
+                console.error(
+                  "[Schedule] Failed to refund AI credit after generation skip",
+                  {
+                    triggerId,
+                    organizationId: trigger.organizationId,
+                    reason: contentResult.reason,
+                    error,
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        console.log(
+          `[Schedule] Content generation skipped for trigger ${triggerId}: ${contentResult.reason}`
+        );
+
+        await context.run("track-generation-end-skipped", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || trigger.outputType,
+            status: "skipped",
+            reason: contentResult.reason,
+            completedAt: new Date().toISOString(),
+          });
+        });
+
+        await context.run("log-generation-skipped", async () => {
+          await appendWebhookLog({
+            organizationId: trigger.organizationId,
+            integrationId: triggerId,
+            integrationType: manual ? "manual" : "schedule",
+            title: `Schedule "${trigger.name.trim() || trigger.outputType}" skipped content generation`,
+            status: "skipped",
+            statusCode: null,
+            errorMessage: contentResult.reason,
+          });
+        });
+
+        await context.run("track-content-skipped", async () => {
+          try {
+            await trackScheduledContentSkipped({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              outputType: trigger.outputType,
+              creationMode,
+              reason: contentResult.reason,
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "schedule",
+            });
+          } catch (trackingError) {
+            console.warn("[Schedule] Failed to track generation skip", {
+              triggerId,
+              organizationId: trigger.organizationId,
+              error: trackingError,
+            });
+          }
+        });
+
+        await context.cancel();
+        return;
+      }
+
       const createdPosts = contentResult.posts;
 
       if (createdPosts.length === 0) {
@@ -877,14 +966,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       }
 
       const autumnClientSuccess = autumn;
-      if (
-        aiCreditReservation.reserved &&
-        autumnClientSuccess &&
-        contentResult.usage
-      ) {
+      const contentUsage = contentResult.usage;
+      if (aiCreditReservation.reserved && autumnClientSuccess && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
-            contentResult.usage!,
+            contentUsage,
             "anthropic/claude-haiku-4.5",
             aiCreditReservation.useMarkup
           );

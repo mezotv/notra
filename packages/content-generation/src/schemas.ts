@@ -132,6 +132,7 @@ export const contentGenerationJobStatusSchema = z.enum([
   "running",
   "completed",
   "failed",
+  "skipped",
 ]);
 
 export const contentGenerationJobEventSchema = z.object({
@@ -146,6 +147,7 @@ export const contentGenerationJobEventSchema = z.object({
     "post_created",
     "completed",
     "failed",
+    "skipped",
   ]),
   message: z.string(),
   createdAt: z.string(),

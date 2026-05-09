@@ -83,6 +83,7 @@ export type EventGenerationResult =
       posts: PostSummary[];
       usage?: AgentTokenUsage;
     }
+  | { status: "skipped"; reason: string }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };
 

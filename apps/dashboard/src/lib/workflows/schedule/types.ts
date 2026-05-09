@@ -55,6 +55,7 @@ export type ContentGenerationResult =
       posts: PostSummary[];
       usage?: AgentTokenUsage;
     }
+  | { status: "skipped"; reason: string }
   | { status: "rate_limited"; retryAfterSeconds?: number }
   | { status: "generation_failed"; reason: string }
   | { status: "unsupported_output_type"; outputType: string };

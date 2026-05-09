@@ -12,7 +12,7 @@ export interface GenerationResult {
   triggerId: string;
   outputType: string;
   triggerName: string;
-  status: "success" | "failed";
+  status: "success" | "failed" | "skipped";
   title?: string;
   reason?: string;
   completedAt: string;

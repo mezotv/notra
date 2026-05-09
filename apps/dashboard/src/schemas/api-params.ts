@@ -20,6 +20,7 @@ export const webhookLogStatusFilterSchema = z.enum([
   "success",
   "failed",
   "pending",
+  "skipped",
 ]);
 
 export const webhookLogsQuerySchema = z.object({

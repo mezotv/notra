@@ -15,12 +15,13 @@ export type WebhookHandler = (
   context: WebhookContext
 ) => Response | Promise<Response>;
 
-export type WebhookLogStatus = "success" | "failed" | "pending";
+export type WebhookLogStatus = "success" | "failed" | "pending" | "skipped";
 
 export type StatusWithCode =
   | { label: "pending"; code: number | null }
   | { label: "success"; code: number }
-  | { label: "failed"; code: number };
+  | { label: "failed"; code: number }
+  | { label: "skipped"; code: number | null };
 
 export type LogDirection = "incoming" | "outgoing";
 
@@ -82,7 +83,7 @@ export interface WebhookLogInput {
   integrationId: string;
   integrationType: IntegrationType;
   title: string;
-  status: "success" | "failed" | "pending";
+  status: WebhookLogStatus;
   statusCode: number | null;
   referenceId?: string | null;
   errorMessage?: string | null;

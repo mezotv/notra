@@ -75,6 +75,14 @@ export function useActiveGenerations(organizationId: string) {
           toast.success(
             result.title ? `"${result.title}" generated` : "Content generated"
           );
+        } else if (result.status === "skipped") {
+          toast.info("Content generation skipped", {
+            action: {
+              label: "View logs",
+              onClick: () => router.push(logsPath),
+            },
+            description: result.reason ?? "No meaningful content was found.",
+          });
         } else {
           toast.error("Content generation failed", {
             action: {

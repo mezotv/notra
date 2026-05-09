@@ -382,7 +382,7 @@ export function createFailTool(result: PostToolsResult): Tool {
       toolName: "fail",
       intro: "Signals that you cannot complete the task and provides a reason.",
       whenToUse:
-        "When you determine that you cannot generate meaningful content, for example if there are no changes, no data available, or the request is impossible to fulfill.",
+        "When an actual error, invalid input, tool/API failure, or impossible request prevents generation. Do not use this for expected no-op cases with no meaningful source material; use skip instead.",
       usageNotes:
         "Provide a concise 1-2 sentence reason explaining why you cannot complete the task. This reason will be shown to the user.",
     }),
@@ -397,6 +397,32 @@ export function createFailTool(result: PostToolsResult): Tool {
     execute: async ({ reason }) => {
       result.failReason = reason;
       return { status: "failed", reason };
+    },
+  });
+}
+
+export function createSkipTool(result: PostToolsResult): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: "skip",
+      intro:
+        "Signals that generation should be skipped because there is no meaningful source material.",
+      whenToUse:
+        "When source lookup succeeds but there are no commits, pull requests, releases, Linear issues, or other meaningful changes worth turning into content.",
+      usageNotes:
+        "Use this instead of fail for expected no-op cases. Provide a concise 1-2 sentence reason that can be shown in workflow logs.",
+    }),
+    inputSchema: z.object({
+      reason: z
+        .string()
+        .max(300)
+        .describe(
+          "A concise 1-2 sentence explanation of why generation was skipped"
+        ),
+    }),
+    execute: async ({ reason }) => {
+      result.skipReason = reason;
+      return { status: "skipped", reason };
     },
   });
 }

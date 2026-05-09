@@ -15,4 +15,5 @@ export interface PostToolsResult {
   title?: string;
   posts?: PostSummary[];
   failReason?: string;
+  skipReason?: string;
 }
