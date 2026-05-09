@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+  <body style="margin:0">
+    <div
+      style="width:1200px;height:630px;display:flex;flex-direction:row;background:#f5f3ef;font-family:Geist;position:relative"
+    >
+      <!-- Left panel: headline + subtext + pills -->
+      <div
+        style="display:flex;flex-direction:column;justify-content:center;padding:80px 60px 80px 80px;width:580px"
+      >
+        <!-- Eyebrow label -->
+        <div
+          style="display:flex;flex-direction:row;align-items:center;margin-bottom:28px"
+        >
+          <span
+            style="font-size:13px;font-weight:500;letter-spacing:0.06em;color:#6b8fff;text-transform:uppercase"
+            >Consent Infrastructure</span
+          >
+        </div>
+
+        <!-- Headline -->
+        <h1
+          style="font-size:62px;font-weight:700;line-height:1.06;letter-spacing:-0.03em;color:#1e1b18;margin:0 0 24px 0"
+        >
+          Privacy-first
+          <br>
+          consent,
+          <br>
+          built for devs.
+        </h1>
+
+        <!-- Subtext with code highlight -->
+        <div
+          style="display:flex;flex-direction:column;gap:0;margin-bottom:40px"
+        >
+          <p
+            style="font-size:18px;font-weight:400;line-height:1.6;color:#6b6560;margin:0 0 16px 0"
+          >
+            Drop in a composable consent banner in minutes — fully typed,
+            headless, and framework-agnostic.
+          </p>
+          <div
+            style="display:flex;flex-direction:row;align-items:center;gap:8px"
+          >
+            <div
+              style="display:flex;flex-direction:row;align-items:center;background:#1e1b18;border-radius:8px;padding:10px 16px"
+            >
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#6b8fff"
+                >import</span
+              >
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#ededed"
+              > </span>
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#62CAB5"
+                >&#123; ConsentBanner &#125;</span
+              >
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#ededed"
+              > </span>
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#6b8fff"
+                >from</span
+              >
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#ededed"
+              > </span>
+              <span
+                style="font-family:JetBrains Mono;font-size:14px;font-weight:400;color:#f6a35a"
+                >'@c15t/react'</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature pills -->
+        <div style="display:flex;flex-direction:row;gap:10px">
+          <div
+            style="display:flex;flex-direction:row;align-items:center;background:#ffffff;border:1px solid #e0ddd8;border-radius:999px;padding:8px 18px"
+          >
+            <span
+              style="font-size:14px;font-weight:500;color:#3d3a36;letter-spacing:-0.01em"
+              >GDPR &amp; CCPA ready</span
+            >
+          </div>
+          <div
+            style="display:flex;flex-direction:row;align-items:center;background:#ffffff;border:1px solid #e0ddd8;border-radius:999px;padding:8px 18px"
+          >
+            <span
+              style="font-size:14px;font-weight:500;color:#3d3a36;letter-spacing:-0.01em"
+              >Type-safe API</span
+            >
+          </div>
+          <div
+            style="display:flex;flex-direction:row;align-items:center;background:#eef1ff;border:1px solid #c4ceff;border-radius:999px;padding:8px 18px"
+          >
+            <span
+              style="font-size:14px;font-weight:500;color:#3355ff;letter-spacing:-0.01em"
+              >Open source</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Right panel: dark-mode consent banner mockup -->
+      <div
+        style="display:flex;flex-direction:column;justify-content:center;align-items:center;flex:1;padding:60px 70px 60px 40px"
+      >
+        <!-- Browser chrome simulation -->
+        <div
+          style="display:flex;flex-direction:column;width:400px;border-radius:14px;border:1px solid #333333;background:#121212;overflow:hidden"
+        >
+          <!-- Browser toolbar -->
+          <div
+            style="display:flex;flex-direction:row;align-items:center;background:#1a1a1a;border-bottom:1px solid #2a2a2a;padding:12px 16px;gap:8px"
+          >
+            <div style="display:flex;flex-direction:row;gap:6px">
+              <div
+                style="width:10px;height:10px;border-radius:50%;background:#ff5f57"
+              ></div>
+              <div
+                style="width:10px;height:10px;border-radius:50%;background:#febc2e"
+              ></div>
+              <div
+                style="width:10px;height:10px;border-radius:50%;background:#28c840"
+              ></div>
+            </div>
+            <div
+              style="display:flex;flex-direction:row;align-items:center;background:#2a2a2a;border-radius:6px;padding:4px 12px;flex:1;margin-left:8px"
+            >
+              <span
+                style="font-size:11px;font-weight:400;color:#666666;font-family:JetBrains Mono"
+                >app.example.com</span
+              >
+            </div>
+          </div>
+
+          <!-- Page content (blurred/faded simulation) -->
+          <div
+            style="display:flex;flex-direction:column;padding:24px 20px 16px 20px;gap:8px;background:#121212"
+          >
+            <div
+              style="display:flex;flex-direction:row;gap:10px;align-items:center;margin-bottom:4px"
+            >
+              <div
+                style="width:28px;height:28px;border-radius:6px;background:#1f1f1f;border:1px solid #2a2a2a"
+              ></div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div
+                  style="width:90px;height:7px;border-radius:4px;background:#222222"
+                ></div>
+                <div
+                  style="width:60px;height:5px;border-radius:4px;background:#1c1c1c"
+                ></div>
+              </div>
+            </div>
+            <div
+              style="width:100%;height:5px;border-radius:4px;background:#1d1d1d"
+            ></div>
+            <div
+              style="width:85%;height:5px;border-radius:4px;background:#1d1d1d"
+            ></div>
+            <div
+              style="width:92%;height:5px;border-radius:4px;background:#1d1d1d"
+            ></div>
+            <div
+              style="width:70%;height:5px;border-radius:4px;background:#1d1d1d"
+            ></div>
+          </div>
+
+          <!-- Consent Banner Card -->
+          <div
+            style="display:flex;flex-direction:column;margin:0 14px 14px 14px;border-radius:10px;border:1px solid #333333;background:#0f0f0f;overflow:hidden"
+          >
+            <!-- Banner header -->
+            <div
+              style="display:flex;flex-direction:column;padding:16px 18px 14px 18px;gap:6px"
+            >
+              <span
+                style="font-size:15px;font-weight:600;color:#ededed;letter-spacing:-0.015em;line-height:1.3"
+                >We value your privacy</span
+              >
+              <span
+                style="font-size:12px;font-weight:400;color:#999999;line-height:1.5"
+                >We use cookies to enhance your browsing experience and analyze
+                site traffic. You can choose your preferences below.</span
+              >
+            </div>
+
+            <!-- Divider -->
+            <div style="height:1px;background:#222222"></div>
+
+            <!-- Banner footer -->
+            <div
+              style="display:flex;flex-direction:column;background:#161616;padding:14px 18px;gap:8px"
+            >
+              <div style="display:flex;flex-direction:row;gap:8px">
+                <!-- Reject button -->
+                <div
+                  style="display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;border:1px solid #333333;border-radius:7px;padding:8px 0;background:#1e1e1e"
+                >
+                  <span style="font-size:12px;font-weight:500;color:#aaaaaa"
+                    >Reject all</span
+                  >
+                </div>
+                <!-- Customize button -->
+                <div
+                  style="display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;border:1px solid #333333;border-radius:7px;padding:8px 0;background:#1e1e1e"
+                >
+                  <span style="font-size:12px;font-weight:500;color:#aaaaaa"
+                    >Customize</span
+                  >
+                </div>
+                <!-- Accept button -->
+                <div
+                  style="display:flex;flex-direction:row;align-items:center;justify-content:center;flex:1;border:1px solid #4466ff;border-radius:7px;padding:8px 0;background:#3355ff"
+                >
+                  <span style="font-size:12px;font-weight:600;color:#ffffff"
+                    >Accept all</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- c15t wordmark below card -->
+        <div
+          style="display:flex;flex-direction:row;align-items:center;margin-top:24px;gap:8px"
+        >
+          <span
+            style="font-family:JetBrains Mono;font-size:16px;font-weight:600;letter-spacing:-0.02em;color:#2c2822"
+            >c15t</span
+          >
+          <span style="font-size:13px;font-weight:400;color:#9e9890"
+            >— consent infrastructure</span
+          >
+        </div>
+      </div>
+
+      <!-- Subtle vertical divider -->
+      <div
+        style="position:absolute;left:580px;top:60px;width:1px;height:510px;background:#e0ddd8"
+      ></div>
+    </div>
+  </body>
+</html>
