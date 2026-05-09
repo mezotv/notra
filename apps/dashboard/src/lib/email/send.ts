@@ -4,6 +4,7 @@ import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
 import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
+import { ScheduledContentSkippedEmail } from "@notra/email/emails/schedule-content-skipped";
 import { VerifyUserEmail } from "@notra/email/emails/verify";
 import { WelcomeEmail } from "@notra/email/emails/welcome";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
@@ -15,6 +16,7 @@ import type {
   SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
+  SendScheduledContentSkippedEmailProps,
 } from "@/types/email/send";
 
 // --- Retry & Idempotency ---
@@ -259,6 +261,40 @@ export async function sendScheduledContentFailedEmail(
       tags: [{ name: "category", value: "schedule-content-failed" }],
     },
     `notra:schedule-content-failed:${recipientEmail}:${scheduleName}:${Date.now()}`
+  );
+}
+
+export async function sendScheduledContentSkippedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    scheduleName,
+    reason,
+    organizationSlug,
+    subject,
+  }: SendScheduledContentSkippedEmailProps
+) {
+  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject:
+        subject ?? `Your ${scheduleName} schedule skipped content generation`,
+      react: ScheduledContentSkippedEmail({
+        organizationName,
+        organizationSlug,
+        scheduleName,
+        reason,
+        settingsLink,
+      }),
+      tags: [{ name: "category", value: "schedule-content-skipped" }],
+    },
+    `notra:schedule-content-skipped:${recipientEmail}:${scheduleName}:${Date.now()}`
   );
 }
 

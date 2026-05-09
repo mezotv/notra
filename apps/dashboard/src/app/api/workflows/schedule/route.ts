@@ -36,6 +36,7 @@ import {
 import {
   sendScheduledContentCreatedEmail,
   sendScheduledContentFailedEmail,
+  sendScheduledContentSkippedEmail,
 } from "@/lib/email/send";
 import {
   addActiveGeneration,
@@ -780,6 +781,83 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             });
           }
         });
+
+        const skippedNotificationData = await context.run<{
+          enabled: boolean;
+          ownerEmails: string[];
+          organizationName: string;
+          organizationSlug: string;
+        }>("fetch-skipped-notification-data", async () => {
+          const notificationSettings =
+            await db.query.organizationNotificationSettings.findFirst({
+              where: eq(
+                organizationNotificationSettings.organizationId,
+                trigger.organizationId
+              ),
+            });
+
+          if (!notificationSettings?.scheduledContentSkipped) {
+            return {
+              enabled: false,
+              ownerEmails: [],
+              organizationName: "",
+              organizationSlug: "",
+            };
+          }
+
+          const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, trigger.organizationId),
+            columns: { name: true, slug: true },
+          });
+
+          const ownerMemberships = await db.query.members.findMany({
+            where: and(
+              eq(members.organizationId, trigger.organizationId),
+              eq(members.role, "owner")
+            ),
+            with: { users: { columns: { email: true } } },
+          });
+
+          return {
+            enabled: true,
+            ownerEmails: ownerMemberships.map((m) => m.users.email),
+            organizationName: org?.name ?? "Your organization",
+            organizationSlug: org?.slug ?? "",
+          };
+        });
+
+        if (
+          skippedNotificationData.enabled &&
+          skippedNotificationData.ownerEmails.length > 0
+        ) {
+          await context.run("send-skipped-notification-emails", async () => {
+            const resend = getResend();
+            if (!resend) {
+              return;
+            }
+
+            const scheduleName = trigger.name.trim() || trigger.outputType;
+
+            await Promise.allSettled(
+              skippedNotificationData.ownerEmails.map((email) =>
+                sendScheduledContentSkippedEmail(resend, {
+                  recipientEmail: email,
+                  organizationName: skippedNotificationData.organizationName,
+                  organizationSlug: skippedNotificationData.organizationSlug,
+                  scheduleName,
+                  reason: contentResult.reason,
+                }).then((result) => {
+                  if (result.error) {
+                    console.warn(
+                      `[Schedule] Failed to send skipped notification to ${email}:`,
+                      result.error
+                    );
+                  }
+                })
+              )
+            );
+          });
+        }
 
         await context.cancel();
         return;

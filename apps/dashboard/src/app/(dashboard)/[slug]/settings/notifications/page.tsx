@@ -19,6 +19,7 @@ interface PageProps {
 interface NotificationSettings {
   scheduledContentCreation: boolean;
   scheduledContentFailed: boolean;
+  scheduledContentSkipped: boolean;
   marketingEmails: boolean;
 }
 
@@ -148,6 +149,25 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
                   id="scheduled-content-failed"
                   onCheckedChange={(checked) =>
                     updateSettings({ scheduledContentFailed: checked })
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="scheduled-content-skipped">
+                    Scheduled content skips
+                  </Label>
+                  <p className="text-muted-foreground text-xs">
+                    Receive an email when scheduled content generation is
+                    skipped
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.scheduledContentSkipped ?? false}
+                  disabled={!isOwner || isUpdating}
+                  id="scheduled-content-skipped"
+                  onCheckedChange={(checked) =>
+                    updateSettings({ scheduledContentSkipped: checked })
                   }
                 />
               </div>
