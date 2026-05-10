@@ -1,6 +1,7 @@
 "use client";
 
-const TOAST_DEDUPE_STORAGE_KEY = "notra:deduped-toasts";
+import { sessionStorageKeys } from "@/constants/storage";
+
 const TOAST_DEDUPE_LIMIT = 100;
 
 const dedupedToastKeys = new Set<string>();
@@ -11,7 +12,9 @@ function loadDedupedToastKeys() {
   }
 
   try {
-    const stored = window.sessionStorage.getItem(TOAST_DEDUPE_STORAGE_KEY);
+    const stored = window.sessionStorage.getItem(
+      sessionStorageKeys.toastDedupe
+    );
     const parsed = stored ? JSON.parse(stored) : [];
     if (Array.isArray(parsed)) {
       for (const toastKey of parsed) {
@@ -21,7 +24,7 @@ function loadDedupedToastKeys() {
       }
     }
   } catch {
-    window.sessionStorage.removeItem(TOAST_DEDUPE_STORAGE_KEY);
+    window.sessionStorage.removeItem(sessionStorageKeys.toastDedupe);
   }
 }
 
@@ -47,7 +50,7 @@ export function markToastShown(toastKey: string) {
   }
 
   window.sessionStorage.setItem(
-    TOAST_DEDUPE_STORAGE_KEY,
+    sessionStorageKeys.toastDedupe,
     JSON.stringify(recentToastKeys)
   );
 }

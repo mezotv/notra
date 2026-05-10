@@ -1,8 +1,9 @@
 import { parseAsString, parseAsStringLiteral } from "nuqs";
+import { sessionStorageKeys } from "@/constants/storage";
 import { marketingAttributionUrlKeys } from "./marketing-attribution-keys";
 
 export const MARKETING_ATTRIBUTION_STORAGE_KEY =
-  "notra_marketing_signup_attribution";
+  sessionStorageKeys.marketingAttribution;
 
 export const marketingAttributionSearchParams = {
   dbLandingPageH1Copy: parseAsString,

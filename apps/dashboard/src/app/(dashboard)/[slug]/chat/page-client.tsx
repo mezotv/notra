@@ -63,6 +63,7 @@ import {
   UserMessageEditor,
 } from "@/components/chat/user-message-actions";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
@@ -785,7 +786,7 @@ function StandaloneChatPageClient({
     setGeneratedChatId(crypto.randomUUID());
   }, [initialChatId, setMessages]);
 
-  const queueStorageKey = `chat-queue:${stableChatId}`;
+  const queueStorageKey = localStorageKeys.chatQueue(stableChatId);
   const loadedQueueKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
