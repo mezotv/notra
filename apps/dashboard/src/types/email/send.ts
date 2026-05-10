@@ -35,6 +35,15 @@ export interface SendScheduledContentFailedEmailProps {
   subject?: string;
 }
 
+export interface SendScheduledContentSkippedEmailProps {
+  recipientEmail: string;
+  organizationName: string;
+  organizationSlug: string;
+  scheduleName: string;
+  reason: string;
+  subject?: string;
+}
+
 export interface ScheduledCreatedContentItem {
   title: string;
   contentLink: string;

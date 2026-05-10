@@ -25,6 +25,7 @@ import { createRequestLogger } from "evlog";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
+  trackScheduledContentSkipped,
 } from "@/lib/databuddy";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
@@ -49,7 +50,7 @@ import type {
 
 async function setTrackedJobStatus(
   jobId: string | undefined,
-  status: "running" | "completed" | "failed",
+  status: "running" | "completed" | "failed" | "skipped",
   updates?: { postId?: string | null; error?: string | null }
 ) {
   if (!(jobId && redis)) {
@@ -70,7 +71,8 @@ async function appendTrackedJobEvent(
     | "generating_content"
     | "post_created"
     | "completed"
-    | "failed",
+    | "failed"
+    | "skipped",
   message: string,
   metadata?: Record<string, unknown> | null
 ) {
@@ -410,17 +412,93 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
         }
       );
 
+      if (contentResult.status === "skipped") {
+        await context.run("complete-skipped", async () => {
+          await completeActiveGeneration(organizationId, {
+            runId,
+            triggerId: "manual_on_demand",
+            outputType: contentType,
+            triggerName: contentType,
+            status: "skipped",
+            reason: contentResult.reason,
+            completedAt: new Date().toISOString(),
+            source,
+          });
+          await setTrackedJobStatus(jobId, "skipped", {
+            error: contentResult.reason,
+          });
+          await appendTrackedJobEvent(jobId, "skipped", contentResult.reason);
+        });
+
+        await context.run("log-generation-skipped", async () => {
+          await appendWebhookLog({
+            organizationId,
+            integrationId: "manual_on_demand",
+            integrationType: "manual",
+            title: `On-demand generation skipped for ${contentType.replaceAll("_", " ")}`,
+            status: "skipped",
+            statusCode: null,
+            errorMessage: contentResult.reason,
+          });
+        });
+
+        await context.run("refund-skipped", async () => {
+          await refundReservedAiCredit(organizationId, aiCreditReserved, {
+            source: "manual",
+            output_type: contentType,
+            trigger_id: "manual_on_demand",
+            trigger_name: contentType,
+            refund_reason: "skipped",
+            run_id: runId,
+          });
+        });
+
+        await context.run("track-content-skipped", async () => {
+          try {
+            await trackScheduledContentSkipped({
+              triggerId: "manual_on_demand",
+              organizationId,
+              outputType: contentType,
+              creationMode: "manual",
+              reason: contentResult.reason,
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "on_demand",
+            });
+          } catch (trackingError) {
+            console.error("[OnDemandContent] Failed to track generation skip", {
+              organizationId,
+              contentType,
+              error: trackingError,
+            });
+          }
+        });
+
+        console.log(
+          `[OnDemandContent] Generation skipped: ${contentResult.reason}`,
+          {
+            organizationId,
+            contentType,
+          }
+        );
+
+        await context.cancel();
+        return;
+      }
+
       if (
         contentResult.status === "rate_limited" ||
         contentResult.status === "unsupported_output_type" ||
         contentResult.status === "generation_failed"
       ) {
-        const reason =
-          contentResult.status === "rate_limited"
-            ? "GitHub API rate limit reached"
-            : contentResult.status === "unsupported_output_type"
-              ? `Unsupported content type: ${contentResult.outputType}`
-              : contentResult.reason;
+        let reason: string;
+        if (contentResult.status === "rate_limited") {
+          reason = "GitHub API rate limit reached";
+        } else if (contentResult.status === "unsupported_output_type") {
+          reason = `Unsupported content type: ${contentResult.outputType}`;
+        } else {
+          reason = contentResult.reason;
+        }
 
         await context.run("complete-failed", async () => {
           await completeActiveGeneration(organizationId, {
@@ -604,10 +682,11 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       });
 
       const autumnClient = autumn;
-      if (aiCreditReserved && autumnClient && contentResult.usage) {
+      const contentUsage = contentResult.usage;
+      if (aiCreditReserved && autumnClient && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
-            contentResult.usage!,
+            contentUsage,
             "anthropic/claude-haiku-4.5",
             aiCreditMarkup
           );

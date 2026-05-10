@@ -28,6 +28,7 @@ import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
+  trackScheduledContentSkipped,
 } from "@/lib/databuddy";
 import { sendScheduledContentCreatedEmail } from "@/lib/email/send";
 import {
@@ -410,6 +411,84 @@ export const { POST } = serve<EventWorkflowPayload>(
         return;
       }
 
+      if (contentResult.status === "skipped") {
+        await context.run("track-generation-end-skipped", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || `${eventType} event`,
+            status: "skipped",
+            reason: contentResult.reason,
+            completedAt: new Date().toISOString(),
+          });
+        });
+
+        const autumnClient = autumn;
+        if (aiCreditReservation.reserved && autumnClient) {
+          await context.run("refund-ai-credit-skipped", async () => {
+            try {
+              await autumnClient.track({
+                customerId: trigger.organizationId,
+                featureId: FEATURES.AI_CREDITS,
+                value: 0,
+                properties: {
+                  source: "workflow_event",
+                  output_type: trigger.outputType,
+                  trigger_name: trigger.name.trim() || `${eventType} event`,
+                  trigger_id: triggerId,
+                  run_id: runId,
+                  event_type: eventType,
+                  refund_reason: "skipped",
+                },
+              });
+            } catch (error) {
+              console.error("[Event] Failed to refund AI credit:", error);
+            }
+          });
+        }
+
+        await context.run("log-generation-skipped", async () => {
+          await appendWebhookLog({
+            organizationId: trigger.organizationId,
+            integrationId: triggerId,
+            integrationType: "events",
+            title: `Event "${trigger.name.trim() || eventType}" skipped content generation`,
+            status: "skipped",
+            statusCode: null,
+            errorMessage: contentResult.reason,
+            retentionDays: logRetentionDays,
+          });
+        });
+
+        await context.run("track-content-skipped", async () => {
+          try {
+            await trackScheduledContentSkipped({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              outputType: trigger.outputType,
+              creationMode: "automatic",
+              reason: contentResult.reason,
+              lookbackWindow,
+              repositoryCount: 1,
+              source: "event",
+            });
+          } catch (trackingError) {
+            console.warn("[Event] Failed to track content generation skip", {
+              triggerId,
+              organizationId: trigger.organizationId,
+              error: trackingError,
+            });
+          }
+        });
+
+        console.log(
+          `[Event] Content generation skipped for trigger ${triggerId}: ${contentResult.reason}`
+        );
+        await context.cancel();
+        return;
+      }
+
       const createdPosts = contentResult.posts;
 
       if (createdPosts.length === 0) {
@@ -503,14 +582,11 @@ export const { POST } = serve<EventWorkflowPayload>(
       });
 
       const autumnClientSuccess = autumn;
-      if (
-        aiCreditReservation.reserved &&
-        autumnClientSuccess &&
-        contentResult.usage
-      ) {
+      const contentUsage = contentResult.usage;
+      if (aiCreditReservation.reserved && autumnClientSuccess && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
-            contentResult.usage!,
+            contentUsage,
             "anthropic/claude-haiku-4.5",
             aiCreditReservation.useMarkup
           );

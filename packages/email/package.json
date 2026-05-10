@@ -7,6 +7,7 @@
     "./emails/reset": "./src/emails/reset.tsx",
     "./emails/schedule-content-created": "./src/emails/schedule-content-created.tsx",
     "./emails/schedule-content-failed": "./src/emails/schedule-content-failed.tsx",
+    "./emails/schedule-content-skipped": "./src/emails/schedule-content-skipped.tsx",
     "./emails/verify": "./src/emails/verify.tsx",
     "./emails/welcome": "./src/emails/welcome.tsx",
     "./types/feedback": "./src/types/feedback.ts",

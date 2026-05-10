@@ -15,9 +15,9 @@ import { useCustomer } from "autumn-js/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { localStorageKeys } from "@/constants/storage";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 
-const STORAGE_KEY_BASE = "onboarding-collapsed";
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
 export function SidebarOnboarding() {
@@ -31,7 +31,7 @@ export function SidebarOnboarding() {
   });
   const [collapsed, setCollapsed] = useState(false);
 
-  const storageKey = orgId ? `${STORAGE_KEY_BASE}:${orgId}` : STORAGE_KEY_BASE;
+  const storageKey = localStorageKeys.sidebarOnboardingCollapsed(orgId);
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey);

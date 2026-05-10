@@ -1,25 +1,30 @@
 "use client";
 
-import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { Switch } from "@notra/ui/components/ui/switch";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { use } from "react";
+import { use, useMemo } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { NotificationFooter } from "@/components/settings/notification-footer";
+import {
+  NotificationToggleRow,
+  NotificationToggleRowSkeleton,
+} from "@/components/settings/notification-toggle-row";
 import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import { NOTIFICATION_TOGGLE_GROUPS } from "@/lib/settings/notification-toggles";
+import type { NotificationSettings } from "@/types/settings/notifications";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-interface NotificationSettings {
-  scheduledContentCreation: boolean;
-  scheduledContentFailed: boolean;
-  marketingEmails: boolean;
+interface MemberRow {
+  userId: string;
+  role: string;
+  user?: { email?: string | null };
 }
 
 export default function NotificationsSettingsPage({ params }: PageProps) {
@@ -33,7 +38,7 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
 
   const { data: session } = authClient.useSession();
 
-  const { data: membersData } = useQuery({
+  const { data: membersData, isPending: isLoadingMembers } = useQuery({
     queryKey: ["members", organization?.id],
     queryFn: async () => {
       const { data, error } = await authClient.organization.listMembers({
@@ -47,10 +52,19 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
     enabled: !!organization?.id,
   });
 
-  const currentMember = membersData?.members?.find(
-    (m: { userId: string }) => m.userId === session?.user?.id
-  );
+  const members = (membersData?.members ?? []) as MemberRow[];
+
+  const currentMember = members.find((m) => m.userId === session?.user?.id);
   const isOwner = currentMember?.role === "owner";
+
+  const ownerEmails = useMemo(
+    () =>
+      members
+        .filter((m) => m.role === "owner")
+        .map((m) => m.user?.email)
+        .filter((email): email is string => Boolean(email)),
+    [members]
+  );
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
     ...dashboardOrpc.notifications.get.queryOptions({
@@ -92,11 +106,14 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
             <Skeleton className="h-9 w-48" />
             <Skeleton className="h-5 w-72" />
           </div>
-          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
         </div>
       </PageContainer>
     );
   }
+
+  const controlsDisabled = !isOwner || isUpdating;
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -108,89 +125,41 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
           </p>
         </div>
 
-        <TitleCard heading="Email Notifications">
-          {isLoadingSettings ? (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <Label htmlFor="scheduled-content-creation">
-                    Scheduled content creation
-                  </Label>
-                  <p className="text-muted-foreground text-xs">
-                    Receive an email when scheduled content is created
-                  </p>
-                </div>
-                <Switch
-                  checked={settings?.scheduledContentCreation ?? false}
-                  disabled={!isOwner || isUpdating}
-                  id="scheduled-content-creation"
-                  onCheckedChange={(checked) =>
-                    updateSettings({ scheduledContentCreation: checked })
-                  }
-                />
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <Label htmlFor="scheduled-content-failed">
-                    Scheduled content failures
-                  </Label>
-                  <p className="text-muted-foreground text-xs">
-                    Receive an email when scheduled content generation fails
-                  </p>
-                </div>
-                <Switch
-                  checked={settings?.scheduledContentFailed ?? false}
-                  disabled={!isOwner || isUpdating}
-                  id="scheduled-content-failed"
-                  onCheckedChange={(checked) =>
-                    updateSettings({ scheduledContentFailed: checked })
-                  }
-                />
-              </div>
-              {!isOwner && (
-                <p className="text-muted-foreground text-xs">
-                  Only the organization owner can manage notification settings.
-                </p>
+        {NOTIFICATION_TOGGLE_GROUPS.map((group) => (
+          <TitleCard
+            contentClassName="px-2 py-2"
+            heading={group.heading}
+            key={group.heading}
+          >
+            <div className="flex flex-col gap-1">
+              {group.toggles.map((toggle) =>
+                isLoadingSettings ? (
+                  <NotificationToggleRowSkeleton
+                    key={`${group.heading}-${toggle.key}`}
+                  />
+                ) : (
+                  <NotificationToggleRow
+                    checked={settings?.[toggle.key] ?? toggle.defaultValue}
+                    config={toggle}
+                    disabled={controlsDisabled}
+                    key={toggle.key}
+                    onCheckedChange={(checked) =>
+                      updateSettings({ [toggle.key]: checked })
+                    }
+                  />
+                )
               )}
             </div>
-          )}
-        </TitleCard>
+          </TitleCard>
+        ))}
 
-        <TitleCard heading="Marketing Emails">
-          {isLoadingSettings ? (
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="space-y-0.5">
-                  <Label htmlFor="marketing-emails">Product updates</Label>
-                  <p className="text-muted-foreground text-xs">
-                    Receive emails about new features, tips, and announcements
-                  </p>
-                </div>
-                <Switch
-                  checked={settings?.marketingEmails ?? true}
-                  disabled={!isOwner || isUpdating}
-                  id="marketing-emails"
-                  onCheckedChange={(checked) =>
-                    updateSettings({ marketingEmails: checked })
-                  }
-                />
-              </div>
-              {!isOwner && (
-                <p className="text-muted-foreground text-xs">
-                  Only the organization owner can manage notification settings.
-                </p>
-              )}
-            </div>
-          )}
-        </TitleCard>
+        {!(isLoadingMembers || isOwner) && (
+          <p className="text-muted-foreground text-xs">
+            Only the organization owner can manage notification settings.
+          </p>
+        )}
+
+        {!isLoadingMembers && <NotificationFooter emails={ownerEmails} />}
       </div>
     </PageContainer>
   );

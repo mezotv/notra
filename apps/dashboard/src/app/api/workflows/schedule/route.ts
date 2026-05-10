@@ -31,10 +31,12 @@ import { GITHUB_RATE_LIMIT_RETRY_DELAY } from "@/constants/workflows";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
+  trackScheduledContentSkipped,
 } from "@/lib/databuddy";
 import {
   sendScheduledContentCreatedEmail,
   sendScheduledContentFailedEmail,
+  sendScheduledContentSkippedEmail,
 } from "@/lib/email/send";
 import {
   addActiveGeneration,
@@ -696,6 +698,171 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         return;
       }
 
+      if (contentResult.status === "skipped") {
+        const autumnClient = autumn;
+        if (aiCreditReservation.reserved && autumnClient) {
+          await context.run(
+            "refund-ai-credit-after-generation-skip",
+            async () => {
+              try {
+                await autumnClient.track({
+                  customerId: trigger.organizationId,
+                  featureId: FEATURES.AI_CREDITS,
+                  value: 0,
+                  properties: {
+                    source: "workflow_schedule",
+                    output_type: trigger.outputType,
+                    trigger_name: trigger.name.trim() || trigger.outputType,
+                    trigger_id: triggerId,
+                    run_id: runId,
+                    refund_reason: "skipped",
+                  },
+                });
+              } catch (error) {
+                console.error(
+                  "[Schedule] Failed to refund AI credit after generation skip",
+                  {
+                    triggerId,
+                    organizationId: trigger.organizationId,
+                    reason: contentResult.reason,
+                    error,
+                  }
+                );
+              }
+            }
+          );
+        }
+
+        console.log(
+          `[Schedule] Content generation skipped for trigger ${triggerId}: ${contentResult.reason}`
+        );
+
+        await context.run("track-generation-end-skipped", async () => {
+          await completeActiveGeneration(trigger.organizationId, {
+            runId,
+            triggerId,
+            outputType: trigger.outputType,
+            triggerName: trigger.name.trim() || trigger.outputType,
+            status: "skipped",
+            reason: contentResult.reason,
+            completedAt: new Date().toISOString(),
+          });
+        });
+
+        await context.run("log-generation-skipped", async () => {
+          await appendWebhookLog({
+            organizationId: trigger.organizationId,
+            integrationId: triggerId,
+            integrationType: manual ? "manual" : "schedule",
+            title: `Schedule "${trigger.name.trim() || trigger.outputType}" skipped content generation`,
+            status: "skipped",
+            statusCode: null,
+            errorMessage: contentResult.reason,
+          });
+        });
+
+        await context.run("track-content-skipped", async () => {
+          try {
+            await trackScheduledContentSkipped({
+              triggerId: trigger.id,
+              organizationId: trigger.organizationId,
+              outputType: trigger.outputType,
+              creationMode,
+              reason: contentResult.reason,
+              lookbackWindow,
+              repositoryCount: repositories.length,
+              source: "schedule",
+            });
+          } catch (trackingError) {
+            console.warn("[Schedule] Failed to track generation skip", {
+              triggerId,
+              organizationId: trigger.organizationId,
+              error: trackingError,
+            });
+          }
+        });
+
+        const skippedNotificationData = await context.run<{
+          enabled: boolean;
+          ownerEmails: string[];
+          organizationName: string;
+          organizationSlug: string;
+        }>("fetch-skipped-notification-data", async () => {
+          const notificationSettings =
+            await db.query.organizationNotificationSettings.findFirst({
+              where: eq(
+                organizationNotificationSettings.organizationId,
+                trigger.organizationId
+              ),
+            });
+
+          if (!notificationSettings?.scheduledContentSkipped) {
+            return {
+              enabled: false,
+              ownerEmails: [],
+              organizationName: "",
+              organizationSlug: "",
+            };
+          }
+
+          const org = await db.query.organizations.findFirst({
+            where: eq(organizations.id, trigger.organizationId),
+            columns: { name: true, slug: true },
+          });
+
+          const ownerMemberships = await db.query.members.findMany({
+            where: and(
+              eq(members.organizationId, trigger.organizationId),
+              eq(members.role, "owner")
+            ),
+            with: { users: { columns: { email: true } } },
+          });
+
+          return {
+            enabled: true,
+            ownerEmails: ownerMemberships.map((m) => m.users.email),
+            organizationName: org?.name ?? "Your organization",
+            organizationSlug: org?.slug ?? "",
+          };
+        });
+
+        if (
+          skippedNotificationData.enabled &&
+          skippedNotificationData.ownerEmails.length > 0
+        ) {
+          await context.run("send-skipped-notification-emails", async () => {
+            const resend = getResend();
+            if (!resend) {
+              return;
+            }
+
+            const scheduleName = trigger.name.trim() || trigger.outputType;
+
+            await Promise.allSettled(
+              skippedNotificationData.ownerEmails.map((email) =>
+                sendScheduledContentSkippedEmail(resend, {
+                  recipientEmail: email,
+                  organizationName: skippedNotificationData.organizationName,
+                  organizationSlug: skippedNotificationData.organizationSlug,
+                  scheduleName,
+                  reason: contentResult.reason,
+                }).then((result) => {
+                  if (result.error) {
+                    console.warn(
+                      `[Schedule] Failed to send skipped notification to ${email}:`,
+                      result.error
+                    );
+                  }
+                })
+              )
+            );
+          });
+        }
+
+        await context.cancel();
+        return;
+      }
+
       const createdPosts = contentResult.posts;
 
       if (createdPosts.length === 0) {
@@ -877,14 +1044,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       }
 
       const autumnClientSuccess = autumn;
-      if (
-        aiCreditReservation.reserved &&
-        autumnClientSuccess &&
-        contentResult.usage
-      ) {
+      const contentUsage = contentResult.usage;
+      if (aiCreditReservation.reserved && autumnClientSuccess && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
-            contentResult.usage!,
+            contentUsage,
             "anthropic/claude-haiku-4.5",
             aiCreditReservation.useMarkup
           );

@@ -75,7 +75,7 @@ export function buildChangelogPrompt(options: ChangelogPromptOptions): string {
     - Only call createPost after the content is finalized and you have at least one meaningful, audience-relevant change worth publishing. Do not return the content as text.
     - If you need to revise after creating, call viewPost to review and updatePost to make changes.
     - ${failGuidance}
-    - If data exists but every candidate change is filtered out as low-signal, internal-only, maintenance-only, or otherwise not worth mentioning to <target-audience>, do NOT call createPost. Call the fail tool instead. The reason for filtering matters more than reaching a minimum count.
+    - If data exists but every candidate change is filtered out as low-signal, internal-only, maintenance-only, or otherwise not worth mentioning to <target-audience>, do NOT call createPost. Call the skip tool instead. The reason for filtering matters more than reaching a minimum count.
     </rules>
 
     <examples>
@@ -137,7 +137,7 @@ export function buildChangelogPrompt(options: ChangelogPromptOptions): string {
     - Format PR entries as:
       - **[Descriptive Title]** [#\${number}](https://github.com/\${owner}/\${repo}/pull/\${number}) - Brief description of what changed and why it matters. (Author: [@\${author}](https://github.com/\${author}/))
 
-    If a change reads as a maintenance update, an internal change, or a new package added or updated, omit it from the changelog completely. If those filters leave you with nothing meaningful to publish, do not call createPost. Call fail instead with a concise reason.
+    If a change reads as a maintenance update, an internal change, or a new package added or updated, omit it from the changelog completely. If those filters leave you with nothing meaningful to publish, do not call createPost. Call skip instead with a concise reason.
 
     ${recommendationsGuidance}
 

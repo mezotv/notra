@@ -636,6 +636,7 @@ const contentGenerationStatusSchema = z.enum([
   "running",
   "completed",
   "failed",
+  "skipped",
 ]);
 
 const contentGenerationLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
@@ -805,6 +806,7 @@ const contentGenerationJobEventSchema = z.object({
     "post_created",
     "completed",
     "failed",
+    "skipped",
   ]),
   message: z.string(),
   createdAt: z.string(),

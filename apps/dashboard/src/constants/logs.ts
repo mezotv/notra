@@ -18,6 +18,7 @@ export const STATUS_VALUES = [
   "success",
   "failed",
   "pending",
+  "skipped",
 ] as const satisfies readonly LogStatusFilter[];
 
 export const SOURCE_LABELS: Record<LogSourceFilter, string> = {
@@ -35,4 +36,5 @@ export const STATUS_LABELS: Record<LogStatusFilter, string> = {
   success: "Success",
   failed: "Failed",
   pending: "Pending",
+  skipped: "Skipped",
 };

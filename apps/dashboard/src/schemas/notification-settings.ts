@@ -4,6 +4,7 @@ import * as z from "zod";
 export const updateNotificationSettingsSchema = z.object({
   scheduledContentCreation: z.boolean().optional(),
   scheduledContentFailed: z.boolean().optional(),
+  scheduledContentSkipped: z.boolean().optional(),
   marketingEmails: z.boolean().optional(),
 });
 

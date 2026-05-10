@@ -60,9 +60,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               </RealtimeProvider>
               {databuddyClientID && (
                 <Databuddy
-                  clientId={
-                    process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID
-                  }
+                  clientId={databuddyClientID}
                   trackAttributes={true}
                   trackErrors={true}
                   trackHashChanges={true}

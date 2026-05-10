@@ -1,3 +1,4 @@
+import { ContentGenerationSkippedError } from "@notra/ai/agents/background-gen";
 import { generateChangelog } from "@notra/ai/agents/changelog";
 import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import type {
@@ -28,6 +29,13 @@ export async function handleChangelog(
 
     return { status: "ok", postId, title, posts, usage };
   } catch (error) {
+    if (error instanceof ContentGenerationSkippedError) {
+      return {
+        status: "skipped",
+        reason: error.message,
+      };
+    }
+
     if (isGitHubRateLimitError(error)) {
       return {
         status: "rate_limited",

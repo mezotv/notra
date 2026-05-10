@@ -1,3 +1,4 @@
+import { ContentGenerationSkippedError } from "@notra/ai/agents/background-gen";
 import { generateBlogPost } from "@notra/ai/agents/blog-post";
 import { generateChangelog } from "@notra/ai/agents/changelog";
 import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
@@ -60,6 +61,13 @@ export async function generateEventBasedContent(
       usage: result.usage,
     };
   } catch (error) {
+    if (error instanceof ContentGenerationSkippedError) {
+      return {
+        status: "skipped",
+        reason: error.message,
+      };
+    }
+
     return {
       status: "generation_failed",
       reason: error instanceof Error ? error.message : String(error),

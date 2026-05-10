@@ -98,11 +98,11 @@ export default function RootLayout({
           title={RSS_FEED_TITLE}
           type="application/rss+xml"
         />
+        <C15tPrefetch backendURL="/api/c15t" />
       </head>
       <body
         className={`${inter.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <C15tPrefetch backendURL="/api/c15t" />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

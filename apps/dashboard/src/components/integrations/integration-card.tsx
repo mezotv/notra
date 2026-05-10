@@ -226,8 +226,11 @@ export function IntegrationCard({
               <p>No repositories configured</p>
             ) : (
               <p>
-                {integration.repositories.length} repository
-                {integration.repositories.length !== 1 ? "ies" : ""} configured
+                {integration.repositories.length}{" "}
+                {integration.repositories.length === 1
+                  ? "repository"
+                  : "repositories"}{" "}
+                configured
               </p>
             )}
           </div>

@@ -2,16 +2,19 @@ import { Databuddy } from "@databuddy/sdk/node";
 import type {
   ContentCreatedTrackingEvent,
   ContentFailedTrackingEvent,
+  ContentSkippedTrackingEvent,
 } from "@notra/content-generation/databuddy";
 import {
   buildContentCreatedDatabuddyProperties,
   buildContentFailedDatabuddyProperties,
+  buildContentSkippedDatabuddyProperties,
   CONTENT_CREATED_DATABUDDY_EVENT,
   CONTENT_FAILED_DATABUDDY_EVENT,
+  CONTENT_SKIPPED_DATABUDDY_EVENT,
 } from "@notra/content-generation/databuddy";
 
 const apiKey = process.env.DATABUDDY_API_KEY;
-const websiteId = process.env.DATABUDDY_DASHBOARD_WEBSITE_ID;
+const websiteId = process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID;
 
 if (!apiKey) {
   console.warn(
@@ -21,7 +24,7 @@ if (!apiKey) {
 
 if (!websiteId) {
   console.warn(
-    "DATABUDDY_DASHBOARD_WEBSITE_ID not configured. Server-side Databuddy tracking will be disabled."
+    "NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID not configured. Server-side Databuddy tracking will be disabled."
   );
 }
 
@@ -93,6 +96,37 @@ export async function trackScheduledContentFailed(
   } catch (error) {
     if (isDevelopment) {
       console.warn("[Databuddy] scheduled_content_failed error", {
+        triggerId: event.triggerId,
+        error,
+      });
+    }
+  }
+}
+
+export async function trackScheduledContentSkipped(
+  event: ContentSkippedTrackingEvent
+): Promise<void> {
+  if (!databuddy) {
+    return;
+  }
+
+  try {
+    const result = await databuddy.track({
+      name: CONTENT_SKIPPED_DATABUDDY_EVENT,
+      namespace: "workflows",
+      source: event.source ?? "schedule",
+      properties: buildContentSkippedDatabuddyProperties(event),
+    });
+
+    if (!result.success && isDevelopment) {
+      console.warn("[Databuddy] scheduled_content_skipped failed", {
+        triggerId: event.triggerId,
+        error: result.error,
+      });
+    }
+  } catch (error) {
+    if (isDevelopment) {
+      console.warn("[Databuddy] scheduled_content_skipped error", {
         triggerId: event.triggerId,
         error,
       });

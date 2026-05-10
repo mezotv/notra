@@ -4,7 +4,9 @@ import { FlagsProvider } from "@databuddy/sdk/react";
 import type { ReactNode } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
-import { DATABUDDY_DASHBOARD_CLIENT_ID } from "@/lib/databuddy-config";
+
+const databuddyClientId =
+  process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID ?? "";
 
 export function DatabuddyFlagsProvider({ children }: { children: ReactNode }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -13,8 +15,8 @@ export function DatabuddyFlagsProvider({ children }: { children: ReactNode }) {
   return (
     <FlagsProvider
       cacheTtl={5 * 60 * 1000}
-      clientId={DATABUDDY_DASHBOARD_CLIENT_ID}
-      disabled={!DATABUDDY_DASHBOARD_CLIENT_ID}
+      clientId={databuddyClientId}
+      disabled={!databuddyClientId}
       isPending={isPending}
       skipStorage
       staleTime={5 * 60 * 1000}

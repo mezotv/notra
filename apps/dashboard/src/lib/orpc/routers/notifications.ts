@@ -41,6 +41,7 @@ export const notificationsRouter = {
         settings: settings ?? {
           scheduledContentCreation: false,
           scheduledContentFailed: false,
+          scheduledContentSkipped: false,
           marketingEmails: true,
         },
       };
@@ -73,6 +74,10 @@ export const notificationsRouter = {
         updates.scheduledContentFailed = input.scheduledContentFailed;
       }
 
+      if (input.scheduledContentSkipped !== undefined) {
+        updates.scheduledContentSkipped = input.scheduledContentSkipped;
+      }
+
       if (input.marketingEmails !== undefined) {
         updates.marketingEmails = input.marketingEmails;
       }
@@ -84,6 +89,7 @@ export const notificationsRouter = {
           organizationId: input.organizationId,
           scheduledContentCreation: input.scheduledContentCreation ?? false,
           scheduledContentFailed: input.scheduledContentFailed ?? false,
+          scheduledContentSkipped: input.scheduledContentSkipped ?? false,
           marketingEmails: input.marketingEmails ?? true,
         })
         .onConflictDoUpdate({

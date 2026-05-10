@@ -56,6 +56,7 @@ function StatusBadge({ status }: { status: StatusWithCode }) {
     success: "default",
     failed: "destructive",
     pending: "secondary",
+    skipped: "secondary",
   };
 
   return (

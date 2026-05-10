@@ -140,7 +140,7 @@ export async function setContentGenerationJobStatus(
   return updateContentGenerationJob(redis, jobId, {
     ...updates,
     status,
-    ...(status === "completed" || status === "failed"
+    ...(status === "completed" || status === "failed" || status === "skipped"
       ? { completedAt: new Date().toISOString() }
       : {}),
   });

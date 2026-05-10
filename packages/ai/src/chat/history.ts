@@ -1,7 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { generateText, type UIMessage } from "ai";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { CHAT_ABORT_FLAG_TTL_SECONDS } from "../constants/chat";
 import { gateway } from "../gateway";
 import type {
@@ -103,6 +103,32 @@ async function upsertChatSession(
   mode: "append" | "replace",
   externalChannelId?: ExternalChannelId | null
 ) {
+  if (mode === "append") {
+    const insertedOrUpdated = await db
+      .insert(chatSessions)
+      .values({
+        id: chatId,
+        organizationId,
+        title: normalizeChatTitle(getChatTitle(messages) ?? "New chat"),
+        messages: sql`${JSON.stringify(messages)}::jsonb`,
+        externalChannelSource: externalChannelId?.source ?? null,
+        externalChannelId: externalChannelId?.id ?? null,
+      })
+      .onConflictDoUpdate({
+        target: chatSessions.id,
+        set: {
+          messages: sql`${chatSessions.messages} || ${JSON.stringify(messages)}::jsonb`,
+        },
+        setWhere: and(
+          eq(chatSessions.organizationId, organizationId),
+          isNull(chatSessions.deletedAt)
+        ),
+      })
+      .returning({ id: chatSessions.id });
+
+    return insertedOrUpdated.length > 0;
+  }
+
   const existingRow = await db
     .select({
       messages: chatSessions.messages,

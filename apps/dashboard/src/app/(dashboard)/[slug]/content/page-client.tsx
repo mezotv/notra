@@ -48,14 +48,13 @@ import { CreateContentDialog } from "@/components/content/create-content-dialog"
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { localStorageKeys } from "@/constants/storage";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useLocalStorage } from "@/lib/utils/local-storage";
 import type { Post, PostStatus } from "@/schemas/content";
 import { getPageNumbers } from "@/utils/content-preview";
 import { usePosts } from "../../../../lib/hooks/use-posts";
 import { ContentPageSkeleton } from "./skeleton";
-
-const CONTENT_VIEW_STORAGE_KEY = "notra:content-view";
 
 type ViewMode = "grid" | "table";
 
@@ -124,7 +123,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organizationId = organization?.id ?? "";
   const router = useRouter();
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>(
-    CONTENT_VIEW_STORAGE_KEY,
+    localStorageKeys.contentView,
     "grid"
   );
   const [createdSortOrder, setCreatedSortOrder] = useState<

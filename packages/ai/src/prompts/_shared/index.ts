@@ -42,5 +42,5 @@ export const brandIdentityRule = dedent`
 `;
 
 export const failGuidance = dedent`
-  If no meaningful data is available from any connected source (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Call the fail tool instead with a concise reason explaining why no post could be generated.
+  If no meaningful data is available from any connected source (no commits, no PRs, no releases in the lookback window), do NOT call createPost. Call the skip tool instead with a concise reason explaining why no post should be generated. Reserve fail for actual errors, rate limits, invalid inputs, or impossible requests.
 `;

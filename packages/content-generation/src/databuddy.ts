@@ -1,5 +1,6 @@
 export const CONTENT_CREATED_DATABUDDY_EVENT = "scheduled_content_created";
 export const CONTENT_FAILED_DATABUDDY_EVENT = "scheduled_content_failed";
+export const CONTENT_SKIPPED_DATABUDDY_EVENT = "scheduled_content_skipped";
 
 export type ContentCreationMode = "automatic" | "manual";
 export type DatabuddyWorkflowSource = "schedule" | "event" | "on_demand";
@@ -24,6 +25,12 @@ export interface ContentFailedTrackingEvent extends BaseContentTrackingEvent {
   repositoryCount?: number;
 }
 
+export interface ContentSkippedTrackingEvent extends BaseContentTrackingEvent {
+  reason: string;
+  lookbackWindow?: string;
+  repositoryCount?: number;
+}
+
 export function buildContentCreatedDatabuddyProperties(
   event: ContentCreatedTrackingEvent
 ) {
@@ -40,6 +47,20 @@ export function buildContentCreatedDatabuddyProperties(
 
 export function buildContentFailedDatabuddyProperties(
   event: ContentFailedTrackingEvent
+) {
+  return {
+    trigger_id: event.triggerId,
+    organization_id: event.organizationId,
+    output_type: event.outputType,
+    creation_mode: event.creationMode,
+    reason: event.reason,
+    lookback_window: event.lookbackWindow,
+    repository_count: event.repositoryCount,
+  };
+}
+
+export function buildContentSkippedDatabuddyProperties(
+  event: ContentSkippedTrackingEvent
 ) {
   return {
     trigger_id: event.triggerId,
