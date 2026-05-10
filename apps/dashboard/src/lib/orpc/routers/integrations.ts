@@ -782,11 +782,11 @@ export const integrationsRouter = {
         const integration = await getLinearIntegrationById(input.integrationId);
 
         if (!integration) {
-          return notFound("Linear integration not found");
+          throw notFound("Linear integration not found");
         }
 
         if (integration.organizationId !== input.organizationId) {
-          return notFound("Linear integration not found");
+          throw notFound("Linear integration not found");
         }
 
         return {
@@ -819,7 +819,7 @@ export const integrationsRouter = {
 
         const existing = await getLinearIntegrationById(input.integrationId);
         if (!existing || existing.organizationId !== input.organizationId) {
-          return notFound("Linear integration not found");
+          throw notFound("Linear integration not found");
         }
 
         const updated = await updateLinearIntegration(input.integrationId, {
@@ -841,7 +841,7 @@ export const integrationsRouter = {
 
         const existing = await getLinearIntegrationById(input.integrationId);
         if (!existing || existing.organizationId !== input.organizationId) {
-          return notFound("Linear integration not found");
+          throw notFound("Linear integration not found");
         }
 
         await deleteLinearIntegration(input.integrationId);
