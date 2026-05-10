@@ -1,3 +1,5 @@
+import type { IconSvgElement } from "@hugeicons/react";
+
 export interface NotificationSettings {
   scheduledContentCreation: boolean;
   scheduledContentFailed: boolean;
@@ -12,6 +14,7 @@ export interface NotificationToggleConfig {
   label: string;
   description: string;
   defaultValue: boolean;
+  icon: IconSvgElement;
 }
 
 export interface NotificationToggleGroup {
@@ -26,7 +29,6 @@ export interface NotificationToggleRowProps {
   onCheckedChange: (checked: boolean) => void;
 }
 
-export interface NotificationRecipientsProps {
+export interface NotificationFooterProps {
   emails: string[];
-  isLoading: boolean;
 }

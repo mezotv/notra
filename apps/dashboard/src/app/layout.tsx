@@ -50,10 +50,12 @@ export default function RootLayout({
       lang="en"
       suppressHydrationWarning
     >
+      <head>
+        <C15tPrefetch backendURL="/api/c15t" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <C15tPrefetch backendURL="/api/c15t" />
         <Providers>
           <ConsentManager>{children}</ConsentManager>
         </Providers>

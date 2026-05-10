@@ -7,8 +7,11 @@ import { use, useMemo } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { NotificationRecipients } from "@/components/settings/notification-recipients";
-import { NotificationToggleRow } from "@/components/settings/notification-toggle-row";
+import { NotificationFooter } from "@/components/settings/notification-footer";
+import {
+  NotificationToggleRow,
+  NotificationToggleRowSkeleton,
+} from "@/components/settings/notification-toggle-row";
 import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { NOTIFICATION_TOGGLE_GROUPS } from "@/lib/settings/notification-toggles";
@@ -103,8 +106,8 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
             <Skeleton className="h-9 w-48" />
             <Skeleton className="h-5 w-72" />
           </div>
-          <Skeleton className="h-16 w-full rounded-lg" />
           <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
         </div>
       </PageContainer>
     );
@@ -122,25 +125,19 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
           </p>
         </div>
 
-        <NotificationRecipients
-          emails={ownerEmails}
-          isLoading={isLoadingMembers}
-        />
-
         {NOTIFICATION_TOGGLE_GROUPS.map((group) => (
-          <TitleCard heading={group.heading} key={group.heading}>
-            {isLoadingSettings ? (
-              <div className="space-y-2">
-                {group.toggles.map((toggle) => (
-                  <Skeleton
-                    className="h-10 w-full"
+          <TitleCard
+            contentClassName="px-2 py-2"
+            heading={group.heading}
+            key={group.heading}
+          >
+            <div className="flex flex-col gap-1">
+              {group.toggles.map((toggle) =>
+                isLoadingSettings ? (
+                  <NotificationToggleRowSkeleton
                     key={`${group.heading}-${toggle.key}`}
                   />
-                ))}
-              </div>
-            ) : (
-              <div className="divide-y divide-border/60">
-                {group.toggles.map((toggle) => (
+                ) : (
                   <NotificationToggleRow
                     checked={settings?.[toggle.key] ?? toggle.defaultValue}
                     config={toggle}
@@ -150,9 +147,9 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
                       updateSettings({ [toggle.key]: checked })
                     }
                   />
-                ))}
-              </div>
-            )}
+                )
+              )}
+            </div>
           </TitleCard>
         ))}
 
@@ -161,6 +158,8 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
             Only the organization owner can manage notification settings.
           </p>
         )}
+
+        {!isLoadingMembers && <NotificationFooter emails={ownerEmails} />}
       </div>
     </PageContainer>
   );
