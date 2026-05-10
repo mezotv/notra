@@ -8,6 +8,7 @@ import type {
   ActiveGeneration,
   GenerationResult,
 } from "@/types/generations/tracking";
+import { hasShownToast, markToastShown } from "@/utils/toast-dedupe";
 import { dashboardOrpc } from "../orpc/query";
 
 const ACTIVE_POLL_INTERVAL = 3000;
@@ -23,7 +24,6 @@ export function useActiveGenerations(organizationId: string) {
   const pathname = usePathname();
   const router = useRouter();
   const previousCountRef = useRef<number | null>(null);
-  const toastedResultsRef = useRef(new Set<string>());
   const slug = pathname.split("/").filter(Boolean)[0];
   const logsPath = slug ? `/${slug}/logs` : "/logs";
 
@@ -65,31 +65,34 @@ export function useActiveGenerations(organizationId: string) {
   const processResults = useCallback(
     (results: GenerationResult[]) => {
       for (const result of results) {
-        if (toastedResultsRef.current.has(result.runId)) {
+        const toastKey = `generation-result:${result.runId}`;
+
+        if (hasShownToast(toastKey)) {
           continue;
         }
 
-        toastedResultsRef.current.add(result.runId);
+        markToastShown(toastKey);
 
         if (result.status === "success") {
           toast.success(
-            result.title ? `"${result.title}" generated` : "Content generated"
+            result.title ? `"${result.title}" generated` : "Content generated",
+            { id: result.runId }
           );
         } else if (result.status === "skipped") {
           toast.info("Content generation skipped", {
+            id: result.runId,
             action: {
               label: "View logs",
               onClick: () => router.push(logsPath),
             },
-            description: result.reason ?? "No meaningful content was found.",
           });
         } else {
           toast.error("Content generation failed", {
+            id: result.runId,
             action: {
               label: "View logs",
               onClick: () => router.push(logsPath),
             },
-            description: "Check the logs page for details.",
           });
         }
 
