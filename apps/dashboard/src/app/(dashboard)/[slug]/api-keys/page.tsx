@@ -40,6 +40,7 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import {
   Select,
   SelectContent,
@@ -62,6 +63,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useForm } from "@tanstack/react-form";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   KeyResponseData,
@@ -262,6 +264,11 @@ export default function ApiKeysPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<ApiKeyListItem | null>(null);
+
+  useHotkey("C", () => setDialogOpen(true), {
+    enabled: !(dialogOpen || editDialogOpen || !!deletingKey),
+  });
+
   const [createdSortOrder, setCreatedSortOrder] = useState<
     false | "asc" | "desc"
   >(false);
@@ -476,7 +483,10 @@ export default function ApiKeysPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={() => setDialogOpen(true)}>Create API Key</Button>
+            <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+              Create API Key
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+            </Button>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger

@@ -26,9 +26,11 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@notra/ui/components/ui/input-group";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
@@ -50,6 +52,9 @@ export default function PageClient({ slug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickstartUrl, setQuickstartUrl] = useState("");
+
+  useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
+
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -157,9 +162,10 @@ export default function PageClient({ slug }: PageClientProps) {
               Reusable instructions your agents load when generating content.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            New Skill
+            Create Skill
+            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
 

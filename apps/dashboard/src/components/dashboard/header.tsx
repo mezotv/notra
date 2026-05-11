@@ -71,7 +71,7 @@ export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileFeedbackOpen, setMobileFeedbackOpen] = useState(false);
 
-  function triggerBookCall() {
+  function triggerScheduleDemo() {
     const btn = document.querySelector<HTMLButtonElement>(
       '[data-cal-namespace="15min"]'
     );
@@ -120,8 +120,8 @@ export function SiteHeader() {
     })();
   }, []);
 
-  useHotkey("C", () => {
-    triggerBookCall();
+  useHotkey("D", () => {
+    triggerScheduleDemo();
   });
 
   useHotkey("F", () => {
@@ -224,8 +224,8 @@ export function SiteHeader() {
               variant="outline"
             >
               <HugeiconsIcon icon={Calendar03Icon} size={16} />
-              Book a Call
-              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+              Schedule a Demo
+              <Kbd className="ml-1 hidden sm:inline-flex">D</Kbd>
             </Button>
           </div>
           <DropdownMenu onOpenChange={setMobileMenuOpen} open={mobileMenuOpen}>
@@ -257,11 +257,11 @@ export function SiteHeader() {
                 className="cursor-pointer"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  triggerBookCall();
+                  triggerScheduleDemo();
                 }}
               >
                 <HugeiconsIcon icon={Calendar03Icon} />
-                Book a Call
+                Schedule a Demo
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

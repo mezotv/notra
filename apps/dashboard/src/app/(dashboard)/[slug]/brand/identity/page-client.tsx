@@ -16,12 +16,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -103,6 +105,18 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [activeTab, setActiveTab] = useQueryState(
     "view",
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
+  );
+
+  useHotkey(
+    "C",
+    () => {
+      if (activeTab === "identity") {
+        setAddIdentityOpen(true);
+      } else {
+        setAddReferenceOpen(true);
+      }
+    },
+    { enabled: !(addIdentityOpen || addReferenceOpen) }
   );
 
   const selectedVoice =
@@ -375,14 +389,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           {activeTab === "identity" ? (
-            <Button onClick={() => setAddIdentityOpen(true)} size="sm">
+            <Button
+              className="gap-1.5"
+              onClick={() => setAddIdentityOpen(true)}
+              size="sm"
+            >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
-              Add Identity
+              Create Identity
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
             </Button>
           ) : (
-            <Button onClick={() => setAddReferenceOpen(true)} size="sm">
+            <Button
+              className="gap-1.5"
+              onClick={() => setAddReferenceOpen(true)}
+              size="sm"
+            >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
-              Add Reference
+              Create Reference
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
             </Button>
           )}
         </div>

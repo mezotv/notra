@@ -37,6 +37,7 @@ import {
   ComboboxList,
   useComboboxAnchor,
 } from "@notra/ui/components/ui/combobox";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Label } from "@notra/ui/components/ui/label";
 import {
   Pagination,
@@ -58,6 +59,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { cn } from "@notra/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStore } from "@tanstack/react-store";
 import { useParams, useRouter } from "next/navigation";
@@ -128,6 +130,17 @@ export function CreateContentDialog({
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  useHotkey(
+    "C",
+    () => {
+      if (organizationId) {
+        setOpen(true);
+      }
+    },
+    { enabled: !open }
+  );
+
   const [addRepoOpen, setAddRepoOpen] = useState(false);
   const [addRepoMode, setAddRepoMode] = useState<
     "integration" | "repository" | null
@@ -774,9 +787,10 @@ export function CreateContentDialog({
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         <ResponsiveDialogTrigger
           render={
-            <Button disabled={!organizationId} size="sm">
+            <Button className="gap-1.5" disabled={!organizationId} size="sm">
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
               Create Content
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
             </Button>
           }
         />
