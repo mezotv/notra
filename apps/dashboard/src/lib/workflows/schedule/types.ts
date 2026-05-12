@@ -7,6 +7,7 @@ import type {
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "@/types/posts";
@@ -45,6 +46,7 @@ export interface ContentGenerationContext {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }
 
 export type ContentGenerationResult =

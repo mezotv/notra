@@ -6,7 +6,7 @@ const title = "Subprocessors";
 const description =
   "Current subprocessors Notra uses to provide hosting, analytics, authentication, billing, email, AI, and integrations.";
 const url = `${SITE_URL}/subprocessors`;
-const currentAsOf = "May 11, 2026";
+const currentAsOf = "May 12, 2026";
 
 const subprocessors = [
   {
@@ -44,6 +44,12 @@ const subprocessors = [
     purpose: "AI model access for content generation",
     location: "United States",
     website: "https://vercel.com/ai-gateway",
+  },
+  {
+    name: "The Context Company",
+    purpose: "AI observability, tracing, and generation monitoring",
+    location: "United States",
+    website: "https://www.thecontext.company",
   },
   {
     name: "Autumn",

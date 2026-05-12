@@ -7,6 +7,7 @@ import {
 } from "@notra/ai/jobs/brand-analysis";
 import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { assertPublicHttpUrl } from "@notra/utils/url";
@@ -279,6 +280,13 @@ Extract the following information:
 4. audience: A description of their target audience (1-2 sentences)
 5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
               system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
+              experimental_telemetry: buildExperimentalTelemetry({
+                feature: "brand_analysis",
+                jobId,
+                organizationId,
+                routeName: "/api/workflows/brand-analysis",
+                voiceId,
+              }),
             });
 
             return { success: true, brandInfo: output as BrandInfo };

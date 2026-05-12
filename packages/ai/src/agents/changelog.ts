@@ -25,5 +25,6 @@ export async function generateChangelog(
     resolveContext: options.resolveContext,
     resolveLinearContext: options.resolveLinearContext,
     log: options.log,
+    telemetryMetadata: options.telemetryMetadata,
   });
 }

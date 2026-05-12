@@ -25,6 +25,7 @@ export async function generateTwitterPost(
     resolveContext: options.resolveContext,
     resolveLinearContext: options.resolveLinearContext,
     log: options.log,
+    telemetryMetadata: options.telemetryMetadata,
     includeSearchBrandReferencesTool: true,
   });
 }

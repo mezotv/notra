@@ -31,10 +31,12 @@ import type {
 } from "@notra/ai/types/post-tools";
 import type { PostSummary } from "@notra/ai/types/posts";
 import type { BaseTonePromptInput } from "@notra/ai/types/prompts";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import type {
   CommitWindow,
   GitHubSelectionFilters,
 } from "@notra/ai/types/tools";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import { stepCountIs, ToolLoopAgent } from "ai";
 
@@ -61,6 +63,7 @@ export interface BackgroundGenOptions {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
   includeSearchBrandReferencesTool?: boolean;
 }
 
@@ -128,6 +131,7 @@ export async function runBackgroundGen(
     resolveContext,
     resolveLinearContext,
     log,
+    telemetryMetadata,
     includeSearchBrandReferencesTool,
   } = options;
 
@@ -225,6 +229,7 @@ export async function runBackgroundGen(
     },
     instructions,
     stopWhen: stepCountIs(35),
+    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });
 
   const result = await agent.generate({ prompt });

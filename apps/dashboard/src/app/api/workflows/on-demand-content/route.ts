@@ -405,6 +405,18 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
               resolveContext: getGitHubToolRepositoryContextByIntegrationId,
               resolveLinearContext: getLinearToolContextByIntegrationId,
               log,
+              telemetryMetadata: {
+                contentType,
+                feature: "content_generation",
+                generationMode: "manual",
+                jobId,
+                organizationId,
+                routeName: "/api/workflows/on-demand-content",
+                runId,
+                source,
+                triggerId: "manual_on_demand",
+                voiceId: brand?.id,
+              },
             });
           } finally {
             log.emit();

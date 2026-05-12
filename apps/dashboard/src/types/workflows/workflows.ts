@@ -3,6 +3,7 @@ import type {
   AgentTokenUsage,
   ResolveIntegrationContext,
 } from "@notra/ai/types/agents";
+import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "@/types/posts";
 
@@ -73,6 +74,7 @@ export interface EventGenerationContext {
   sourceMetadata: PostSourceMetadata;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
+  telemetryMetadata?: TccMetadata;
 }
 
 export type EventGenerationResult =
