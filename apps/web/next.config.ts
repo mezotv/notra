@@ -1,8 +1,9 @@
 import path from "node:path";
+import { withDualmark } from "@dualmark/nextjs";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 import { SHOWCASE_COMPANIES } from "./src/utils/showcase";
-import { HOMEPAGE_LINK_HEADER } from "./src/utils/urls";
+import { SITE_URL } from "./src/utils/urls";
 
 const SHOWCASE_COMPANY_SLUGS = SHOWCASE_COMPANIES.map(
   (company) => company.slug
@@ -22,156 +23,6 @@ const nextConfig: NextConfig = {
       {
         source: "/api/c15t/:path*",
         destination: `${process.env.NEXT_PUBLIC_C15T_BACKEND_URL}/:path*`,
-      },
-      {
-        source: "/",
-        destination: "/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/index.md",
-        destination: "/markdown",
-      },
-      {
-        source: "/pricing",
-        destination: "/pricing/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/pricing.md",
-        destination: "/pricing/markdown",
-      },
-      {
-        source: "/features",
-        destination: "/features/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/features.md",
-        destination: "/features/markdown",
-      },
-      {
-        source: "/blog",
-        destination: "/blog/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/blog.md",
-        destination: "/blog/markdown",
-      },
-      {
-        source: "/blog/:slug",
-        destination: "/blog/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/blog/:slug.md",
-        destination: "/blog/:slug/markdown",
-      },
-      {
-        source: "/changelog",
-        destination: "/changelog/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog.md",
-        destination: "/changelog/markdown",
-      },
-      {
-        source: "/changelog/notra",
-        destination: "/changelog/notra/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/notra.md",
-        destination: "/changelog/notra/markdown",
-      },
-      {
-        source: "/changelog/notra/:slug",
-        destination: "/changelog/notra/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/notra/:slug.md",
-        destination: "/changelog/notra/:slug/markdown",
-      },
-      {
-        source: "/changelog/:name",
-        destination: "/changelog/:name/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/:name.md",
-        destination: "/changelog/:name/markdown",
-      },
-      {
-        source: "/changelog/:name/:slug",
-        destination: "/changelog/:name/:slug/markdown",
-        has: [
-          {
-            type: "header",
-            key: "accept",
-            value: ".*text/markdown.*",
-          },
-        ],
-      },
-      {
-        source: "/changelog/:name/:slug.md",
-        destination: "/changelog/:name/:slug/markdown",
       },
     ],
     afterFiles: [],
@@ -225,15 +76,6 @@ const nextConfig: NextConfig = {
     },
   ],
   headers: async () => [
-    {
-      source: "/",
-      headers: [
-        {
-          key: "Link",
-          value: HOMEPAGE_LINK_HEADER,
-        },
-      ],
-    },
     {
       source: "/(.*)",
       headers: [
@@ -294,4 +136,6 @@ const nextConfig: NextConfig = {
 
 const withMDX = createMDX();
 
-export default withMDX(nextConfig);
+export default withDualmark(withMDX(nextConfig), {
+  siteUrl: SITE_URL,
+});

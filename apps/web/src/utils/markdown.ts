@@ -1,15 +1,5 @@
 const FRONTMATTER_REGEX = /^---\n[\s\S]*?\n---\n?/;
 
-export function markdownResponse(content: string, status = 200) {
-  return new Response(content, {
-    status,
-    headers: {
-      "content-type": "text/markdown; charset=utf-8",
-      vary: "accept",
-    },
-  });
-}
-
 export function textResponse(content: string, status = 200) {
   return new Response(content, {
     status,
