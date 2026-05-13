@@ -11,6 +11,7 @@ import { integrationsRoutes } from "./routes/integrations";
 import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
+import { skillsRoutes } from "./routes/skills";
 import { assertRequiredEnv } from "./utils/env";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
@@ -122,6 +123,7 @@ app.route("/v1", brandIdentitiesRoutes);
 app.route("/v1", integrationsRoutes);
 app.route("/v1", schedulesRoutes);
 app.route("/v1", chatsRoutes);
+app.route("/v1", skillsRoutes);
 app.route("/", chatWorkflowRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
@@ -161,6 +163,11 @@ app.doc31("/openapi.json", (_c) => ({
       name: "Chats",
       description:
         "Manage chat sessions. Organization is inferred from the API key (identity.externalId).",
+    },
+    {
+      name: "Skills",
+      description:
+        "Manage reusable writing skills. Organization is inferred from the API key (identity.externalId).",
     },
   ],
 }));
