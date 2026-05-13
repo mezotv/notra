@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { skills } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   ORGANIZATION_SCOPED_API_KEY_ERROR,
@@ -151,7 +151,8 @@ skillsRoutes.openapi(listSkillsRoute, async (c) => {
       updatedAt: skills.updatedAt,
     })
     .from(skills)
-    .where(eq(skills.organizationId, organizationId));
+    .where(eq(skills.organizationId, organizationId))
+    .orderBy(asc(skills.name));
 
   return c.json({ skills: rows.map(serializeSkillSummary) }, 200);
 });
