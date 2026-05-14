@@ -1,3 +1,4 @@
+// biome-ignore-all lint/performance/noBarrelFile: Package entrypoint intentionally re-exports the public Kiwi API.
 import { buildSceneFromElement } from "./dom-to-scene";
 import {
   ByteWriter,
@@ -8,6 +9,7 @@ import {
 import { packBuffer, packHtml } from "./packer";
 import { getSchemaBytes } from "./schema";
 
+export type { BuildSceneFromElementOptions } from "./dom-to-scene";
 export { buildSceneFromElement } from "./dom-to-scene";
 export type { Definition, FieldDef, KiwiValue } from "./kiwi";
 export {
@@ -24,10 +26,13 @@ export type {
   AddFrameOptions,
   AddTextOptions,
   Color,
+  DerivedTextData,
   Guid,
   RGBA,
   SceneNode,
   SolidFill,
+  TextBaseline,
+  TextGlyph,
   Transform,
 } from "./scene-builder";
 export {
@@ -38,14 +43,21 @@ export {
 } from "./scene-builder";
 export { getSchemaBytes } from "./schema";
 
+export interface BuildFigmaPasteHtmlOptions {
+  name?: string;
+  fileKey?: string;
+  label?: string;
+}
+
 export async function buildFigmaPasteHtml(
-  element: HTMLElement
+  element: HTMLElement,
+  options: BuildFigmaPasteHtmlOptions = {}
 ): Promise<string> {
   const schemaBytes = getSchemaBytes();
   const defs = parseSchema(schemaBytes);
   const messageIdx = findDefinition(defs, "Message");
 
-  const sb = buildSceneFromElement(element);
+  const sb = await buildSceneFromElement(element, { name: options.name });
   const message = sb.toMessage();
 
   const writer = new ByteWriter();
@@ -54,13 +66,21 @@ export async function buildFigmaPasteHtml(
 
   const buffer = await packBuffer(schemaBytes, dataBytes);
   return packHtml(
-    { fileKey: "html-to-figma", pasteID: sb.pasteID, dataType: "scene" },
-    buffer
+    {
+      fileKey: options.fileKey ?? "html-to-figma",
+      pasteID: sb.pasteID,
+      dataType: "scene",
+    },
+    buffer,
+    options.label ?? options.name
   );
 }
 
-export async function copyAsFigma(element: HTMLElement): Promise<void> {
-  const html = await buildFigmaPasteHtml(element);
+export async function copyAsFigma(
+  element: HTMLElement,
+  options: BuildFigmaPasteHtmlOptions = {}
+): Promise<void> {
+  const html = await buildFigmaPasteHtml(element, options);
   const blob = new Blob([html], { type: "text/html" });
   const item = new ClipboardItem({ "text/html": blob });
   await navigator.clipboard.write([item]);

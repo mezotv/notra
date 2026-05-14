@@ -1,10 +1,16 @@
+import type { Font } from "opentype.js";
+import { loadTextFont } from "./fonts/loader";
 import type { Guid } from "./scene-builder";
 import { SceneBuilder, solidFill } from "./scene-builder";
 import type { PathSubpath } from "./svg-path";
 import { parseSvgPath } from "./svg-path";
+import { TextLayoutCache } from "./text-layout";
 
 const RGB_RE = /rgba?\(([^)]+)\)/;
 const HEX_RE = /^#([0-9a-f]{3,8})$/i;
+const LAYER_WORD_SPLIT_RE = /[-_\s]+/;
+const WHITESPACE_RE = /\s+/;
+const WHITESPACE_GLOBAL_RE = /\s+/g;
 
 const WEIGHT_TO_STYLE: Record<string, string> = {
   "100": "Thin",
@@ -30,9 +36,15 @@ const TEXT_ALIGN_MAP: Record<string, string> = {
 };
 
 const IGNORED_TAGS = new Set(["script", "style", "meta", "link", "head"]);
+const MAX_LAYER_NAME_LENGTH = 80;
+
+export interface BuildSceneFromElementOptions {
+  name?: string;
+}
 
 interface ElementInfo {
   kind: "element";
+  name: string;
   tag: string;
   x: number;
   y: number;
@@ -40,13 +52,25 @@ interface ElementInfo {
   height: number;
   background: string;
   cornerRadii: [number, number, number, number];
-  borderColor: string;
-  borderWidth: number;
+  borders: BoxBorders;
   children: LayoutNode[];
+}
+
+interface BorderSide {
+  color: string;
+  width: number;
+}
+
+interface BoxBorders {
+  top: BorderSide;
+  right: BorderSide;
+  bottom: BorderSide;
+  left: BorderSide;
 }
 
 interface TextInfo {
   kind: "text";
+  name: string;
   text: string;
   x: number;
   y: number;
@@ -73,6 +97,7 @@ interface SvgShape {
 
 interface SvgInfo {
   kind: "svg";
+  name: string;
   x: number;
   y: number;
   width: number;
@@ -113,6 +138,190 @@ function parseColor(s: string): [number, number, number, number] | null {
   const b = Number.parseFloat(bs) / 255;
   const a = as !== undefined ? Number.parseFloat(as) : 1;
   return [r, g, b, a];
+}
+
+function cleanLayerName(input: string | null | undefined): string | null {
+  const cleaned = input?.replace(WHITESPACE_GLOBAL_RE, " ").trim();
+  if (!cleaned) {
+    return null;
+  }
+  if (cleaned.length <= MAX_LAYER_NAME_LENGTH) {
+    return cleaned;
+  }
+  return `${cleaned.slice(0, MAX_LAYER_NAME_LENGTH - 3).trim()}...`;
+}
+
+function titleCase(input: string): string {
+  return input
+    .split(LAYER_WORD_SPLIT_RE)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function leadingCommentName(el: Element): string | null {
+  let sibling = el.previousSibling;
+  while (sibling) {
+    if (sibling.nodeType === Node.TEXT_NODE) {
+      if ((sibling.textContent ?? "").trim() === "") {
+        sibling = sibling.previousSibling;
+        continue;
+      }
+      return null;
+    }
+    if (sibling.nodeType === Node.COMMENT_NODE) {
+      return cleanLayerName(sibling.textContent);
+    }
+    return null;
+  }
+  return null;
+}
+
+function explicitElementName(el: Element): string | null {
+  return (
+    cleanLayerName(el.getAttribute("data-figma-name")) ??
+    cleanLayerName(el.getAttribute("data-layer-name")) ??
+    cleanLayerName(el.getAttribute("aria-label")) ??
+    cleanLayerName(el.getAttribute("title"))
+  );
+}
+
+function compactText(input: string | null | undefined): string | null {
+  return cleanLayerName(input);
+}
+
+function compactElementText(el: Element): string | null {
+  const text = compactText(el.textContent);
+  if (!text) {
+    return null;
+  }
+  if (text.length > 48) {
+    return null;
+  }
+  if (el.children.length > 1 && text.length > 24) {
+    return null;
+  }
+  return text;
+}
+
+function numericFontWeight(fontWeight: string): number {
+  if (fontWeight === "bold") {
+    return 700;
+  }
+  if (fontWeight === "normal") {
+    return 400;
+  }
+  const parsed = Number.parseInt(fontWeight, 10);
+  return Number.isFinite(parsed) ? parsed : 400;
+}
+
+function textLayerName(
+  text: string,
+  fontSize: number,
+  fontWeight: string,
+  parentTag: string
+): string {
+  const label = compactText(text) ?? "Text";
+  const weight = numericFontWeight(fontWeight);
+  if (fontSize >= 28) {
+    return `Heading - ${label}`;
+  }
+  if (parentTag === "p") {
+    return `Paragraph - ${label}`;
+  }
+  if (weight >= 600 || parentTag === "button") {
+    return `Label - ${label}`;
+  }
+  return `Text - ${label}`;
+}
+
+function elementFallbackName(
+  el: Element,
+  tag: string,
+  style: CSSStyleDeclaration,
+  rect: DOMRect,
+  cornerRadii: [number, number, number, number],
+  borders: BoxBorders
+): string {
+  const role = cleanLayerName(el.getAttribute("role"));
+  if (role) {
+    return titleCase(role);
+  }
+
+  const text = compactElementText(el);
+  if (tag === "p") {
+    return text ? `Paragraph - ${text}` : "Paragraph";
+  }
+  if (tag === "span") {
+    if (!text && el.children.length === 0) {
+      return "Spacer";
+    }
+    return text ? `Text Wrapper - ${text}` : "Text Wrapper";
+  }
+  if (tag === "button") {
+    return text ? `Button - ${text}` : "Button";
+  }
+  if (tag === "a") {
+    return text ? `Link - ${text}` : "Link";
+  }
+  if (tag !== "div") {
+    return titleCase(tag);
+  }
+
+  const bg = parseColor(style.backgroundColor);
+  const hasBackground = Boolean(bg && bg[3] > 0);
+  const hasBorder = Boolean(uniformBorder(borders));
+  const maxRadius = Math.max(...cornerRadii);
+  const isDot =
+    rect.width <= 18 &&
+    rect.height <= 18 &&
+    maxRadius >= Math.min(rect.width, rect.height) / 2 - 0.5;
+  const isLine =
+    hasBackground && rect.height <= 16 && rect.width >= rect.height * 4;
+
+  if (text) {
+    return `Group - ${text}`;
+  }
+  if (isDot) {
+    return "Browser Dot";
+  }
+  if (isLine) {
+    return "Content Line";
+  }
+  if (hasBorder && hasBackground) {
+    return "Card";
+  }
+  if (hasBorder) {
+    return "Container";
+  }
+  if (hasBackground && el.children.length === 0) {
+    if (rect.width >= 100 && rect.height >= 100) {
+      return "Background Block";
+    }
+    return "Shape";
+  }
+  if (hasBackground) {
+    return "Background";
+  }
+  if (style.display === "flex" || style.display === "inline-flex") {
+    return style.flexDirection === "row" ? "Row" : "Stack";
+  }
+  return "Group";
+}
+
+function elementLayerName(
+  el: Element,
+  tag: string,
+  style: CSSStyleDeclaration,
+  rect: DOMRect,
+  cornerRadii: [number, number, number, number],
+  borders: BoxBorders
+): string {
+  return (
+    explicitElementName(el) ??
+    leadingCommentName(el) ??
+    elementFallbackName(el, tag, style, rect, cornerRadii, borders)
+  );
 }
 
 const CSS_GENERIC_FONTS = new Set([
@@ -177,13 +386,42 @@ function parseLineHeight(s: string, fontSize: number): number {
 
 function parseCornerRadius(s: string): number {
   if (!s) return 0;
-  const first = s.trim().split(/\s+/)[0];
+  const first = s.trim().split(WHITESPACE_RE)[0];
   return first ? parsePx(first) : 0;
+}
+
+function borderSide(width: string, color: string, style: string): BorderSide {
+  const parsedWidth = parsePx(width);
+  return {
+    color: parsedWidth > 0 && style !== "none" ? color : "",
+    width: parsedWidth > 0 && style !== "none" ? parsedWidth : 0,
+  };
+}
+
+function sameBorderSide(a: BorderSide, b: BorderSide): boolean {
+  return a.width === b.width && a.color === b.color;
+}
+
+function uniformBorder(borders: BoxBorders): BorderSide | null {
+  const { top, right, bottom, left } = borders;
+  if (top.width <= 0 || !top.color) {
+    return null;
+  }
+  if (
+    sameBorderSide(top, right) &&
+    sameBorderSide(top, bottom) &&
+    sameBorderSide(top, left)
+  ) {
+    return top;
+  }
+  return null;
 }
 
 function extractLayout(node: Node): LayoutNode | null {
   if (node.nodeType === Node.TEXT_NODE) {
-    const text = (node.nodeValue ?? "").replace(/\s+/g, " ").trim();
+    const text = (node.nodeValue ?? "")
+      .replace(WHITESPACE_GLOBAL_RE, " ")
+      .trim();
     if (!text) return null;
     const parent = node.parentElement;
     if (!parent) return null;
@@ -196,6 +434,12 @@ function extractLayout(node: Node): LayoutNode | null {
     const style = getComputedStyle(parent);
     return {
       kind: "text",
+      name: textLayerName(
+        text,
+        Number.parseFloat(style.fontSize),
+        style.fontWeight,
+        parent.tagName.toLowerCase()
+      ),
       text,
       x: rect.left,
       y: rect.top,
@@ -265,6 +509,7 @@ function extractLayout(node: Node): LayoutNode | null {
 
     return {
       kind: "svg",
+      name: explicitElementName(svg) ?? leadingCommentName(svg) ?? "Icon",
       x: rect.left,
       y: rect.top,
       width: rect.width,
@@ -291,14 +536,32 @@ function extractLayout(node: Node): LayoutNode | null {
     parseCornerRadius(style.borderBottomLeftRadius),
   ];
 
-  const borderWidth = parsePx(style.borderTopWidth);
-  const borderColor =
-    borderWidth > 0 && style.borderTopStyle !== "none"
-      ? style.borderTopColor
-      : "";
+  const borders: BoxBorders = {
+    top: borderSide(
+      style.borderTopWidth,
+      style.borderTopColor,
+      style.borderTopStyle
+    ),
+    right: borderSide(
+      style.borderRightWidth,
+      style.borderRightColor,
+      style.borderRightStyle
+    ),
+    bottom: borderSide(
+      style.borderBottomWidth,
+      style.borderBottomColor,
+      style.borderBottomStyle
+    ),
+    left: borderSide(
+      style.borderLeftWidth,
+      style.borderLeftColor,
+      style.borderLeftStyle
+    ),
+  };
 
   return {
     kind: "element",
+    name: elementLayerName(el, tag, style, rect, cornerRadii, borders),
     tag,
     x: rect.left,
     y: rect.top,
@@ -306,8 +569,7 @@ function extractLayout(node: Node): LayoutNode | null {
     height: rect.height,
     background: style.backgroundColor,
     cornerRadii,
-    borderColor,
-    borderWidth,
+    borders,
     children,
   };
 }
@@ -319,94 +581,207 @@ function emitSvg(
   parentX: number,
   parentY: number
 ): void {
-  for (const shape of svgNode.shapes) {
-    let minX = Number.POSITIVE_INFINITY;
-    let minY = Number.POSITIVE_INFINITY;
-    let maxX = Number.NEGATIVE_INFINITY;
-    let maxY = Number.NEGATIVE_INFINITY;
-    for (const sub of shape.subpaths) {
-      for (const p of sub.points) {
-        if (p.x < minX) minX = p.x;
-        if (p.y < minY) minY = p.y;
-        if (p.x > maxX) maxX = p.x;
-        if (p.y > maxY) maxY = p.y;
+  const frameGuid = sb.addFrame({
+    parent,
+    name: svgNode.name,
+    x: svgNode.x - parentX,
+    y: svgNode.y - parentY,
+    width: svgNode.width,
+    height: svgNode.height,
+    fill: null,
+  });
+
+  for (let index = 0; index < svgNode.shapes.length; index += 1) {
+    const shape = svgNode.shapes[index];
+    if (!shape) {
+      continue;
+    }
+    const suffix = svgNode.shapes.length > 1 ? ` ${index + 1}` : "";
+    emitSvgSubpaths(
+      sb,
+      shape,
+      shape.subpaths,
+      frameGuid,
+      svgNode.x,
+      svgNode.y,
+      `${svgNode.name} Shape${suffix}`
+    );
+  }
+}
+
+function emitSvgSubpaths(
+  sb: SceneBuilder,
+  shape: SvgShape,
+  subpaths: PathSubpath[],
+  parent: Guid,
+  parentX: number,
+  parentY: number,
+  name: string
+): void {
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+  for (const sub of subpaths) {
+    for (const p of sub.points) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!Number.isFinite(minX)) {
+    return;
+  }
+  const width = Math.max(1, maxX - minX);
+  const height = Math.max(1, maxY - minY);
+
+  const vertices: Array<{ x: number; y: number }> = [];
+  const segments: Array<{ vStart: number; vEnd: number }> = [];
+  const loops: Array<{ segmentIndices: number[] }> = [];
+
+  for (const sub of subpaths) {
+    const startIdx = vertices.length;
+    const pts = sub.points;
+    let count = pts.length;
+    if (count >= 2) {
+      const first = pts[0];
+      const last = pts[count - 1];
+      if (
+        first &&
+        last &&
+        Math.hypot(first.x - last.x, first.y - last.y) < 0.0001
+      ) {
+        count -= 1;
       }
     }
-    if (!Number.isFinite(minX)) continue;
-    const width = Math.max(1, maxX - minX);
-    const height = Math.max(1, maxY - minY);
-
-    const vertices: Array<{ x: number; y: number }> = [];
-    const segments: Array<{ vStart: number; vEnd: number }> = [];
-    const loops: Array<{ segmentIndices: number[] }> = [];
-
-    for (const sub of shape.subpaths) {
-      const startIdx = vertices.length;
-      const pts = sub.points;
-      let count = pts.length;
-      if (count >= 2) {
-        const first = pts[0];
-        const last = pts[count - 1];
-        if (
-          sub.closed &&
-          first &&
-          last &&
-          Math.hypot(first.x - last.x, first.y - last.y) < 0.0001
-        ) {
-          count -= 1;
-        }
+    for (let i = 0; i < count; i += 1) {
+      const p = pts[i];
+      if (!p) {
+        continue;
       }
-      for (let i = 0; i < count; i += 1) {
-        const p = pts[i];
-        if (!p) continue;
-        vertices.push({ x: p.x - minX, y: p.y - minY });
-      }
-      const numVerts = vertices.length - startIdx;
-      if (numVerts < 2) continue;
-      const segStart = segments.length;
-      const lastIdx = numVerts - 1;
-      for (let i = 0; i < lastIdx; i += 1) {
-        segments.push({ vStart: startIdx + i, vEnd: startIdx + i + 1 });
-      }
-      if (sub.closed) {
-        segments.push({ vStart: startIdx + lastIdx, vEnd: startIdx });
-      }
-      const loopSegs: number[] = [];
-      for (let i = segStart; i < segments.length; i += 1) loopSegs.push(i);
-      loops.push({ segmentIndices: loopSegs });
+      vertices.push({ x: p.x - minX, y: p.y - minY });
     }
+    const numVerts = vertices.length - startIdx;
+    if (numVerts < 3) {
+      continue;
+    }
+    const segStart = segments.length;
+    const lastIdx = numVerts - 1;
+    for (let i = 0; i < lastIdx; i += 1) {
+      segments.push({ vStart: startIdx + i, vEnd: startIdx + i + 1 });
+    }
+    segments.push({ vStart: startIdx + lastIdx, vEnd: startIdx });
+    const loopSegs: number[] = [];
+    for (let i = segStart; i < segments.length; i += 1) {
+      loopSegs.push(i);
+    }
+    loops.push({ segmentIndices: loopSegs });
+  }
 
-    if (vertices.length < 2 || loops.length === 0) continue;
+  if (vertices.length < 3 || loops.length === 0) {
+    return;
+  }
 
-    const shapeColor = parseColor(shape.fill);
-    const fill = shapeColor
-      ? solidFill(shapeColor[0], shapeColor[1], shapeColor[2], shapeColor[3])
-      : solidFill(0.35, 0.35, 0.4, 1);
+  const shapeColor = parseColor(shape.fill);
+  const fill = shapeColor
+    ? solidFill(shapeColor[0], shapeColor[1], shapeColor[2], shapeColor[3])
+    : solidFill(0.35, 0.35, 0.4, 1);
 
-    sb.addVector({
-      parent,
-      name: "path",
-      x: minX - parentX,
-      y: minY - parentY,
+  sb.addVector({
+    parent,
+    name,
+    x: minX - parentX,
+    y: minY - parentY,
+    width,
+    height,
+    fill,
+    network: {
+      vertices,
+      segments,
+      regions: [
+        {
+          loops,
+          windingRule: shape.fillRule === "evenodd" ? "ODD" : "NONZERO",
+        },
+      ],
+    },
+  });
+}
+
+function emitPartialBorders(
+  sb: SceneBuilder,
+  borders: BoxBorders,
+  parent: Guid,
+  width: number,
+  height: number
+): void {
+  const sides: Array<{
+    border: BorderSide;
+    height: number;
+    name: string;
+    width: number;
+    x: number;
+    y: number;
+  }> = [
+    {
+      border: borders.top,
+      height: borders.top.width,
+      name: "border-top",
       width,
+      x: 0,
+      y: 0,
+    },
+    {
+      border: borders.right,
       height,
-      fill,
-      network: {
-        vertices,
-        segments,
-        regions: [
-          {
-            loops,
-            windingRule: shape.fillRule === "evenodd" ? "ODD" : "NONZERO",
-          },
-        ],
-      },
+      name: "border-right",
+      width: borders.right.width,
+      x: width - borders.right.width,
+      y: 0,
+    },
+    {
+      border: borders.bottom,
+      height: borders.bottom.width,
+      name: "border-bottom",
+      width,
+      x: 0,
+      y: height - borders.bottom.width,
+    },
+    {
+      border: borders.left,
+      height,
+      name: "border-left",
+      width: borders.left.width,
+      x: 0,
+      y: 0,
+    },
+  ];
+
+  for (const side of sides) {
+    if (side.border.width <= 0) {
+      continue;
+    }
+    const color = parseColor(side.border.color);
+    if (!color || color[3] <= 0) {
+      continue;
+    }
+    sb.addFrame({
+      parent,
+      name: side.name,
+      x: side.x,
+      y: side.y,
+      width: side.width,
+      height: side.height,
+      fill: solidFill(color[0], color[1], color[2], color[3]),
     });
   }
 }
 
 function emitElement(
   sb: SceneBuilder,
+  textLayout: TextLayoutCache | null,
+  textFont: Font | null,
   node: ElementInfo,
   parent: Guid,
   parentX: number,
@@ -416,15 +791,16 @@ function emitElement(
   const relY = node.y - parentY;
   const bg = parseColor(node.background);
   const fill = bg && bg[3] > 0 ? solidFill(bg[0], bg[1], bg[2], bg[3]) : null;
-  const borderRgba = node.borderColor ? parseColor(node.borderColor) : null;
+  const uniformStroke = uniformBorder(node.borders);
+  const borderRgba = uniformStroke ? parseColor(uniformStroke.color) : null;
   const stroke =
-    borderRgba && borderRgba[3] > 0 && node.borderWidth > 0
+    borderRgba && borderRgba[3] > 0 && uniformStroke
       ? solidFill(borderRgba[0], borderRgba[1], borderRgba[2], borderRgba[3])
       : null;
 
   const frameGuid = sb.addFrame({
     parent,
-    name: node.tag,
+    name: node.name,
     x: relX,
     y: relY,
     width: node.width,
@@ -432,7 +808,7 @@ function emitElement(
     fill,
     cornerRadii: node.cornerRadii,
     stroke,
-    strokeWeight: node.borderWidth,
+    strokeWeight: uniformStroke?.width,
   });
 
   for (const child of node.children) {
@@ -441,6 +817,7 @@ function emitElement(
       const fontFamily = pickAvailableFont(child.fontFamily, child.fontSize);
       const weightStyle =
         WEIGHT_TO_STYLE[String(child.fontWeight)] ?? "Regular";
+      const fontWeight = Number.parseInt(child.fontWeight, 10);
       const lineHeight = parseLineHeight(child.lineHeight, child.fontSize);
       const letterSpacing = parsePx(child.letterSpacing);
       const align = TEXT_ALIGN_MAP[child.textAlign] ?? "LEFT";
@@ -454,9 +831,25 @@ function emitElement(
       const textWidth = child.wrapped ? child.parentWidth : child.width;
       const textHeight = child.height;
       const autoResize = child.wrapped ? "HEIGHT" : "WIDTH_AND_HEIGHT";
+      const derivedTextData =
+        textLayout && textFont
+          ? textLayout.layout({
+              text: child.text,
+              fontFamily,
+              fontStyle: weightStyle,
+              fontWeight: Number.isFinite(fontWeight) ? fontWeight : 400,
+              fontSize: child.fontSize,
+              lineHeight,
+              letterSpacing,
+              maxWidth: textWidth,
+              wrap: child.wrapped,
+              font: textFont,
+            })
+          : null;
 
       sb.addText({
         parent: frameGuid,
+        name: child.name,
         text: child.text,
         x: textX,
         y: textY,
@@ -470,16 +863,24 @@ function emitElement(
         color,
         alignHorizontal: align,
         autoResize,
+        derivedTextData: derivedTextData ?? undefined,
       });
     } else if (child.kind === "svg") {
       emitSvg(sb, child, frameGuid, node.x, node.y);
     } else {
-      emitElement(sb, child, frameGuid, node.x, node.y);
+      emitElement(sb, textLayout, textFont, child, frameGuid, node.x, node.y);
     }
+  }
+
+  if (!uniformStroke) {
+    emitPartialBorders(sb, node.borders, frameGuid, node.width, node.height);
   }
 }
 
-export function buildSceneFromElement(element: HTMLElement): SceneBuilder {
+export async function buildSceneFromElement(
+  element: HTMLElement,
+  options: BuildSceneFromElementOptions = {}
+): Promise<SceneBuilder> {
   const layout = extractLayout(element);
   if (!layout || layout.kind !== "element") {
     throw new Error("Element produced no extractable layout");
@@ -493,6 +894,12 @@ export function buildSceneFromElement(element: HTMLElement): SceneBuilder {
   }
 
   const sb = new SceneBuilder();
-  emitElement(sb, root, sb.canvasGuid, root.x, root.y);
+  const textFont = await loadTextFont();
+  const textLayout = textFont ? new TextLayoutCache(sb) : null;
+  const requestedName = cleanLayerName(options.name);
+  if (requestedName) {
+    root = { ...root, name: requestedName };
+  }
+  emitElement(sb, textLayout, textFont, root, sb.canvasGuid, root.x, root.y);
   return sb;
 }

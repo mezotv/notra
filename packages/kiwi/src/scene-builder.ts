@@ -32,6 +32,40 @@ export interface SolidFill {
 
 export type RGBA = [number, number, number, number];
 
+export interface TextBaseline {
+  position: { x: number; y: number };
+  width: number;
+  lineY: number;
+  lineHeight: number;
+  lineAscent: number;
+  firstCharacter: number;
+  endCharacter: number;
+}
+
+export interface TextGlyph {
+  commandsBlob: number;
+  position: { x: number; y: number };
+  fontSize: number;
+  firstCharacter: number;
+  advance: number;
+  rotation: number;
+}
+
+export interface DerivedTextData {
+  layoutSize: { x: number; y: number };
+  baselines: TextBaseline[];
+  glyphs: TextGlyph[];
+  fontMetaData?: Array<{
+    key: { family: string; style: string; postscript: string };
+    fontLineHeight: number;
+    fontStyle: string;
+    fontWeight: number;
+  }>;
+  truncationStartIndex?: number;
+  truncatedHeight?: number;
+  logicalIndexToCharacterOffsetMap?: number[];
+}
+
 export interface SceneNode {
   [key: string]: unknown;
   guid: Guid;
@@ -55,6 +89,7 @@ export interface AddFrameOptions {
 
 export interface AddTextOptions {
   parent: Guid;
+  name?: string;
   text: string;
   x?: number;
   y?: number;
@@ -69,6 +104,7 @@ export interface AddTextOptions {
   alignHorizontal?: string;
   alignVertical?: string;
   autoResize?: string;
+  derivedTextData?: DerivedTextData;
 }
 
 export interface AddVectorOptions {
@@ -125,7 +161,7 @@ export class SceneBuilder {
   blobs: Uint8Array[] = [];
 
   private nextLocal = 1;
-  private childCounts = new Map<string, number>();
+  private readonly childCounts = new Map<string, number>();
 
   constructor(options?: {
     sessionID?: number;
@@ -295,7 +331,7 @@ export class SceneBuilder {
         position: this.nextChildPosition(options.parent),
       },
       type: "TEXT",
-      name: options.text ? options.text.slice(0, 30) : "Text",
+      name: options.name ?? (options.text ? options.text.slice(0, 30) : "Text"),
       visible: true,
       opacity: 1,
       size: { x: options.width ?? 0, y: options.height ?? 0 },
@@ -317,6 +353,7 @@ export class SceneBuilder {
           },
         ],
       },
+      derivedTextData: options.derivedTextData,
       fontName: { family: fontFamily, style: fontStyle, postscript: "" },
       fontSize,
       fontVariations: [],
@@ -334,12 +371,18 @@ export class SceneBuilder {
       textBidiVersion: 1,
       textExplicitLayoutVersion: 1,
       textUserLayoutVersion: 4,
-      autoRename: true,
+      autoRename: !options.name,
       detachOpticalSizeFromFontSize: true,
       stackChildAlignSelf: "AUTO",
     };
     this.nodes.push(node);
     return guid;
+  }
+
+  addBlob(bytes: Uint8Array): number {
+    const index = this.blobs.length;
+    this.blobs.push(bytes);
+    return index;
   }
 
   addVector(options: AddVectorOptions): Guid {

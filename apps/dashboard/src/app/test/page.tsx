@@ -2,7 +2,6 @@
 
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { buildFigmaPasteHtml } from "@notra/kiwi";
 import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -17,7 +16,9 @@ export default function FigmaCopyTestPage() {
     queryKey: ["test-index-copy-html"],
     queryFn: async () => {
       const res = await fetch("/index-copy.html");
-      if (!res.ok) throw new Error(`Failed to load HTML: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(`Failed to load HTML: ${res.status}`);
+      }
       const text = await res.text();
       const doc = new DOMParser().parseFromString(text, "text/html");
       return doc.body.innerHTML;
@@ -27,12 +28,16 @@ export default function FigmaCopyTestPage() {
   const copyMutation = useMutation({
     mutationFn: async () => {
       const el = designRef.current;
-      if (!el) throw new Error("Design not ready");
+      if (!el) {
+        throw new Error("Design not ready");
+      }
+      const { buildFigmaPasteHtml } = await import("@notra/kiwi");
+      const html = await buildFigmaPasteHtml(el, {
+        name: "C15t Twitter Post",
+      });
       await navigator.clipboard.write([
         new ClipboardItem({
-          "text/html": buildFigmaPasteHtml(el).then(
-            (built) => new Blob([built], { type: "text/html" })
-          ),
+          "text/html": new Blob([html], { type: "text/html" }),
         }),
       ]);
     },

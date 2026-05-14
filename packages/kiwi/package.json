@@ -15,8 +15,12 @@
     "./schema": "./src/schema.ts"
   },
   "devDependencies": {
+    "@types/opentype.js": "^1.3.9",
     "@notra/typescript-config": "workspace:*",
     "@types/node": "^22.15.3",
     "typescript": "5.9.2"
+  },
+  "dependencies": {
+    "opentype.js": "^2.0.0"
   }
 }
