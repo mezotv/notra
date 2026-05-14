@@ -1,0 +1,22 @@
+{
+  "name": "@notra/kiwi",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./kiwi": "./src/kiwi.ts",
+    "./packer": "./src/packer.ts",
+    "./scene-builder": "./src/scene-builder.ts",
+    "./dom-to-scene": "./src/dom-to-scene.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "typescript": "5.9.2"
+  }
+}

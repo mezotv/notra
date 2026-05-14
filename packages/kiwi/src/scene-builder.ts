@@ -1,0 +1,403 @@
+import type { VectorNetwork } from "./vector-network";
+import { encodeVectorNetwork } from "./vector-network";
+
+export interface Guid {
+  sessionID: number;
+  localID: number;
+}
+
+export interface Transform {
+  m00: number;
+  m01: number;
+  m02: number;
+  m10: number;
+  m11: number;
+  m12: number;
+}
+
+export interface Color {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}
+
+export interface SolidFill {
+  type: "SOLID";
+  color: Color;
+  opacity: number;
+  visible: boolean;
+  blendMode: string;
+}
+
+export type RGBA = [number, number, number, number];
+
+export interface SceneNode {
+  [key: string]: unknown;
+  guid: Guid;
+}
+
+export interface AddFrameOptions {
+  parent?: Guid;
+  name?: string;
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  fill?: SolidFill | null;
+  stroke?: SolidFill | null;
+  strokeWeight?: number;
+  cornerRadii?: [number, number, number, number];
+  stackMode?: string;
+  stackSpacing?: number;
+  padding?: [number, number, number, number];
+}
+
+export interface AddTextOptions {
+  parent: Guid;
+  text: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fontFamily?: string;
+  fontStyle?: string;
+  fontSize?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+  color?: RGBA;
+  alignHorizontal?: string;
+  alignVertical?: string;
+  autoResize?: string;
+}
+
+export interface AddVectorOptions {
+  parent: Guid;
+  name?: string;
+  x?: number;
+  y?: number;
+  width: number;
+  height: number;
+  fill?: SolidFill | null;
+  stroke?: SolidFill | null;
+  strokeWeight?: number;
+  network: VectorNetwork;
+}
+
+const IDENTITY_TRANSFORM: Transform = {
+  m00: 1,
+  m01: 0,
+  m02: 0,
+  m10: 0,
+  m11: 1,
+  m12: 0,
+};
+
+export function positionFor(index: number): string {
+  if (index < 94) return String.fromCharCode(0x21 + index);
+  throw new Error("more than 94 siblings not yet supported");
+}
+
+export function solidFill(r: number, g: number, b: number, a = 1): SolidFill {
+  return {
+    type: "SOLID",
+    color: { r, g, b, a },
+    opacity: 1,
+    visible: true,
+    blendMode: "NORMAL",
+  };
+}
+
+export function transformAt(x: number, y: number): Transform {
+  return { m00: 1, m01: 0, m02: x, m10: 0, m11: 1, m12: y };
+}
+
+function cloneTransform(t: Transform): Transform {
+  return { ...t };
+}
+
+export class SceneBuilder {
+  sessionID: number;
+  pasteID: number;
+  pasteFileKey: string;
+
+  nodes: SceneNode[] = [];
+  blobs: Uint8Array[] = [];
+
+  private nextLocal = 1;
+  private childCounts = new Map<string, number>();
+
+  constructor(options?: {
+    sessionID?: number;
+    pasteID?: number;
+    pasteFileKey?: string;
+  }) {
+    this.sessionID = options?.sessionID ?? 100;
+    this.pasteID =
+      options?.pasteID ?? Math.floor(Math.random() * 0x7f_ff_ff_ff) + 1;
+    this.pasteFileKey = options?.pasteFileKey ?? "scene-from-html";
+
+    this.nodes.push(this.documentNode());
+    this.nodes.push(this.canvasNode());
+    this.nodes.push(this.internalCanvasNode());
+  }
+
+  get canvasGuid(): Guid {
+    return { sessionID: this.sessionID, localID: 0 };
+  }
+
+  private documentNode(): SceneNode {
+    return {
+      guid: { sessionID: 0, localID: 0 },
+      phase: "CREATED",
+      type: "DOCUMENT",
+      name: "Document",
+      visible: true,
+      opacity: 1,
+      transform: cloneTransform(IDENTITY_TRANSFORM),
+      slideThemeMap: { entries: [] },
+    };
+  }
+
+  private canvasNode(): SceneNode {
+    return {
+      guid: { sessionID: this.sessionID, localID: 0 },
+      phase: "CREATED",
+      parentIndex: {
+        guid: { sessionID: 0, localID: 0 },
+        position: "!",
+      },
+      type: "CANVAS",
+      name: "Page 1",
+      visible: true,
+      opacity: 1,
+      transform: cloneTransform(IDENTITY_TRANSFORM),
+      backgroundOpacity: 1,
+      backgroundEnabled: true,
+    };
+  }
+
+  private internalCanvasNode(): SceneNode {
+    return {
+      guid: { sessionID: 20_000_297, localID: 2 },
+      phase: "CREATED",
+      parentIndex: {
+        guid: { sessionID: 0, localID: 0 },
+        position: "~",
+      },
+      type: "CANVAS",
+      name: "Internal Only Canvas",
+      visible: false,
+      opacity: 1,
+      transform: cloneTransform(IDENTITY_TRANSFORM),
+      backgroundOpacity: 1,
+      backgroundEnabled: true,
+      internalOnly: true,
+    };
+  }
+
+  private allocLocal(): number {
+    const id = this.nextLocal;
+    this.nextLocal += 1;
+    return id;
+  }
+
+  private nextChildPosition(parent: Guid): string {
+    const key = `${parent.sessionID}:${parent.localID}`;
+    const idx = this.childCounts.get(key) ?? 0;
+    this.childCounts.set(key, idx + 1);
+    return positionFor(idx);
+  }
+
+  addFrame(options: AddFrameOptions): Guid {
+    const parent = options.parent ?? this.canvasGuid;
+    const guid: Guid = {
+      sessionID: this.sessionID,
+      localID: this.allocLocal(),
+    };
+    const [padTop, padRight, padBottom, padLeft] = options.padding ?? [
+      0, 0, 0, 0,
+    ];
+    const radii = options.cornerRadii ?? [0, 0, 0, 0];
+    const [tl, tr, br, bl] = radii;
+    const hasRadius = tl > 0 || tr > 0 || br > 0 || bl > 0;
+    const uniformRadius = tl === tr && tr === br && br === bl;
+
+    const hasStroke = options.stroke != null;
+    const node: SceneNode = {
+      guid,
+      phase: "CREATED",
+      parentIndex: { guid: parent, position: this.nextChildPosition(parent) },
+      type: "FRAME",
+      name: options.name ?? "Frame",
+      visible: true,
+      opacity: 1,
+      size: { x: options.width, y: options.height },
+      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      strokeWeight: hasStroke ? (options.strokeWeight ?? 1) : 1,
+      strokeAlign: "INSIDE",
+      strokeJoin: "MITER",
+      fillPaints: options.fill ? [options.fill] : [],
+      effects: [],
+      horizontalConstraint: "MIN",
+      verticalConstraint: "MIN",
+      stackMode: options.stackMode ?? "NONE",
+      stackSpacing: options.stackSpacing ?? 0,
+      stackHorizontalPadding: padLeft,
+      stackVerticalPadding: padTop,
+      stackPaddingRight: padRight,
+      stackPaddingBottom: padBottom,
+      stackPrimaryAlignItems: "MIN",
+      stackCounterAlignItems: "MIN",
+      stackReverseZIndex: false,
+      stackCounterSizing: "FIXED",
+      frameMaskDisabled: true,
+    };
+
+    if (hasRadius) {
+      if (uniformRadius) {
+        node.cornerRadius = tl;
+      } else {
+        node.rectangleTopLeftCornerRadius = tl;
+        node.rectangleTopRightCornerRadius = tr;
+        node.rectangleBottomRightCornerRadius = br;
+        node.rectangleBottomLeftCornerRadius = bl;
+        node.rectangleCornerRadiiIndependent = true;
+      }
+    }
+
+    if (hasStroke) {
+      node.strokePaints = [options.stroke as SolidFill];
+      node.bordersTakeSpace = true;
+    }
+
+    this.nodes.push(node);
+    return guid;
+  }
+
+  addText(options: AddTextOptions): Guid {
+    const guid: Guid = {
+      sessionID: this.sessionID,
+      localID: this.allocLocal(),
+    };
+    const color = options.color ?? [0, 0, 0, 1];
+    const lineHeight = options.lineHeight ?? 0;
+    const letterSpacing = options.letterSpacing ?? 0;
+    const fontFamily = options.fontFamily ?? "Inter";
+    const fontStyle = options.fontStyle ?? "Regular";
+    const fontSize = options.fontSize ?? 16;
+
+    const node: SceneNode = {
+      guid,
+      phase: "CREATED",
+      parentIndex: {
+        guid: options.parent,
+        position: this.nextChildPosition(options.parent),
+      },
+      type: "TEXT",
+      name: options.text ? options.text.slice(0, 30) : "Text",
+      visible: true,
+      opacity: 1,
+      size: { x: options.width ?? 0, y: options.height ?? 0 },
+      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      strokeWeight: 1,
+      strokeAlign: "OUTSIDE",
+      strokeJoin: "MITER",
+      fillPaints: [solidFill(color[0], color[1], color[2], color[3])],
+      textData: {
+        characters: options.text,
+        lines: [
+          {
+            lineType: "PLAIN",
+            styleId: 0,
+            indentationLevel: 0,
+            sourceDirectionality: "AUTO",
+            listStartOffset: 0,
+            isFirstLineOfList: false,
+          },
+        ],
+      },
+      fontName: { family: fontFamily, style: fontStyle, postscript: "" },
+      fontSize,
+      fontVariations: [],
+      fontVersion: "",
+      fontVariantCommonLigatures: true,
+      fontVariantContextualLigatures: true,
+      lineHeight: {
+        value: lineHeight,
+        units: lineHeight === 0 ? "RAW" : "PIXELS",
+      },
+      letterSpacing: { value: letterSpacing, units: "PIXELS" },
+      textAlignHorizontal: options.alignHorizontal ?? "LEFT",
+      textAlignVertical: options.alignVertical ?? "TOP",
+      textAutoResize: options.autoResize ?? "WIDTH_AND_HEIGHT",
+      textBidiVersion: 1,
+      textExplicitLayoutVersion: 1,
+      textUserLayoutVersion: 4,
+      autoRename: true,
+      detachOpticalSizeFromFontSize: true,
+      stackChildAlignSelf: "AUTO",
+    };
+    this.nodes.push(node);
+    return guid;
+  }
+
+  addVector(options: AddVectorOptions): Guid {
+    const guid: Guid = {
+      sessionID: this.sessionID,
+      localID: this.allocLocal(),
+    };
+    const blob = encodeVectorNetwork(options.network);
+    const blobIndex = this.blobs.length;
+    this.blobs.push(blob);
+
+    const hasStroke = options.stroke != null;
+    const node: SceneNode = {
+      guid,
+      phase: "CREATED",
+      parentIndex: {
+        guid: options.parent,
+        position: this.nextChildPosition(options.parent),
+      },
+      type: "VECTOR",
+      name: options.name ?? "Vector",
+      visible: true,
+      opacity: 1,
+      size: { x: options.width, y: options.height },
+      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      strokeWeight: hasStroke ? (options.strokeWeight ?? 1) : 0,
+      strokeAlign: "CENTER",
+      strokeCap: "NONE",
+      strokeJoin: "MITER",
+      fillPaints: options.fill ? [options.fill] : [],
+      horizontalConstraint: "MIN",
+      verticalConstraint: "MIN",
+      frameMaskDisabled: true,
+      vectorData: { vectorNetworkBlob: blobIndex },
+    };
+
+    if (hasStroke) {
+      node.strokePaints = [options.stroke as SolidFill];
+    }
+
+    this.nodes.push(node);
+    return guid;
+  }
+
+  toMessage(): Record<string, unknown> {
+    return {
+      type: "NODE_CHANGES",
+      sessionID: 0,
+      ackID: 0,
+      pasteID: this.pasteID,
+      pasteFileKey: this.pasteFileKey,
+      pasteEditorType: "DESIGN",
+      pasteIsPartiallyOutsideEnclosingFrame: false,
+      publishedAssetGuids: [],
+      pastePageId: { sessionID: 0, localID: 1 },
+      isCut: false,
+      nodeChanges: this.nodes,
+      blobs: this.blobs.map((bytes) => ({ bytes })),
+    };
+  }
+}
