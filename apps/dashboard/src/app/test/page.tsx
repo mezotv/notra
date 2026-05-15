@@ -49,9 +49,11 @@ export default function FigmaCopyTestPage() {
   });
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-8 bg-[#e6e8f5] p-8">
+    <div className="flex min-h-screen flex-col items-center gap-8 bg-background p-8 text-foreground">
       <div className="flex flex-col items-center gap-2">
-        <h1 className="font-semibold text-2xl">Figma clipboard test</h1>
+        <h1 className="font-semibold text-2xl text-foreground">
+          Figma clipboard test
+        </h1>
         <p className="text-muted-foreground text-sm">
           Loads <code>public/index-copy.html</code>. Click "Copy as Figma", then
           paste (Cmd+V) into Figma.
