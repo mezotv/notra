@@ -198,23 +198,31 @@ function getLinearTeamList(integrations: ValidatedIntegration[]): string {
 export function getRepoContextFromIntegrations(
   integrations: ValidatedIntegration[]
 ): RepoContext[] {
-  return Array.from(
-    new Set(
-      integrations
-        .filter((integration) => integration.type === "github")
-        .map((integration) => integration.id)
-    )
-  ).map((integrationId) => ({ integrationId }));
+  return integrations.flatMap((integration) => {
+    if (integration.type !== "github") {
+      return [];
+    }
+
+    return integration.repositories.map((repository) => ({
+      integrationId: integration.id,
+      owner: repository.owner,
+      repo: repository.repo,
+    }));
+  });
 }
 
 export function getLinearContextFromIntegrations(
   integrations: ValidatedIntegration[]
 ): LinearContext[] {
-  return Array.from(
-    new Set(
-      integrations
-        .filter((integration) => integration.type === "linear")
-        .map((integration) => integration.id)
-    )
-  ).map((integrationId) => ({ integrationId }));
+  return integrations.flatMap((integration) => {
+    if (integration.type !== "linear") {
+      return [];
+    }
+
+    return {
+      integrationId: integration.id,
+      teamName: integration.linearTeamName ?? undefined,
+      displayName: integration.displayName,
+    };
+  });
 }

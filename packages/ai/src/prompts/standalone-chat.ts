@@ -16,14 +16,19 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     ? `\n\n## Available Capabilities\n${toolDescriptions.map((d) => `- ${d}`).join("\n")}`
     : "";
 
+  const integrationResolutionSection =
+    hasGitHubEnabled || hasLinearEnabled
+      ? "\n\n## Integration Context Resolution\nBefore using GitHub or Linear tools, check whether the user's request clearly names or implies exactly one available integration from the prompt, attached context, or current conversation. Match against repository owner/name for GitHub and team/display name for Linear.\n- If exactly one integration clearly matches, use that integrationId.\n- If multiple integrations could match, ask the user which integration or repository/team they want before calling tools.\n- If no integration clearly matches but the request needs GitHub or Linear data, ask the user for the missing integration/context before calling tools or creating content.\n- Do not guess a default integration for PR, commit, release, issue, project, or social-content generation requests."
+      : "";
+
   const githubSection =
     hasGitHubEnabled && repoContext?.length
-      ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
+      ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- ${formatRepoContext(c)}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
       : "";
 
   const linearSection =
     hasLinearEnabled && linearContext?.length
-      ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
+      ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- ${formatLinearContext(c)}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
       : "";
 
   const { formatted: currentDate, timezone: resolvedTimezone } =
@@ -69,6 +74,26 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - Never use em dashes or en dashes in content. Use hyphens or rewrite the sentence.
     - When creating posts, always use the matching create tool instead of only outputting content as text.
     - When you create a post, tell the user the post title and that it was saved as a draft.
-    ${capabilitiesSection}${githubSection}${linearSection}
+    ${capabilitiesSection}${integrationResolutionSection}${githubSection}${linearSection}
   `;
+}
+
+function formatRepoContext(
+  context: NonNullable<StandaloneChatPromptParams["repoContext"]>[number]
+) {
+  const repository =
+    context.owner && context.repo
+      ? `repository: ${context.owner}/${context.repo}; `
+      : "";
+  return `${repository}integrationId: ${context.integrationId}`;
+}
+
+function formatLinearContext(
+  context: NonNullable<StandaloneChatPromptParams["linearContext"]>[number]
+) {
+  const team = context.teamName ? `team: ${context.teamName}; ` : "";
+  const displayName = context.displayName
+    ? `displayName: ${context.displayName}; `
+    : "";
+  return `${team}${displayName}integrationId: ${context.integrationId}`;
 }
