@@ -28,6 +28,9 @@ const RGB_RE = /rgba?\(([^)]+)\)/;
 const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const WHITESPACE_GLOBAL_RE = /\s+/g;
 const FONT_FAMILY_QUOTES_RE = /^["']|["']$/g;
+const COLLAPSIBLE_TEXT_RE = /[ \t\n\f\r]+/g;
+const PRE_LINE_BREAK_RE = /\r?\n/;
+const PRE_LINE_SPACE_RE = /[ \t\f\r]+/g;
 
 interface OklchColor {
   alpha?: number;
@@ -522,6 +525,23 @@ function textStyles(style: CSSStyleDeclaration): Record<string, string> {
   };
 }
 
+function normalizeTextValue(text: string, style: CSSStyleDeclaration): string {
+  switch (style.whiteSpace) {
+    case "pre":
+    case "pre-wrap":
+    case "break-spaces":
+      return text;
+    case "pre-line":
+      return text
+        .split(PRE_LINE_BREAK_RE)
+        .map((line) => line.replaceAll(PRE_LINE_SPACE_RE, " ").trim())
+        .filter(Boolean)
+        .join("\n");
+    default:
+      return text.replaceAll(COLLAPSIBLE_TEXT_RE, " ").trim();
+  }
+}
+
 function paintFromCss(value: string): PaperPaint | null {
   const parsed = parseColor(value);
   if (!parsed || parsed[3] <= 0) {
@@ -671,9 +691,6 @@ function buildPaperEmbedData(
   };
 
   function addTextNode(text: string, parentElement: Element): string | null {
-    if (!text.trim()) {
-      return null;
-    }
     const view = parentElement.ownerDocument.defaultView;
     if (!view) {
       return null;
@@ -681,20 +698,25 @@ function buildPaperEmbedData(
 
     const id = createId();
     const style = view.getComputedStyle(parentElement);
+    const textValue = normalizeTextValue(text, style);
+    if (!textValue) {
+      return null;
+    }
+
     nodes[id] = {
       "~": false,
       component: "Text",
       id,
       labelIsModified: true,
       label: textLayerName(
-        text,
+        textValue,
         Number.parseFloat(style.fontSize || "0"),
         style.fontWeight,
         parentElement.tagName.toLowerCase()
       ),
       styleMeta: textStyleMeta(style),
       styles: textStyles(style),
-      textValue: text,
+      textValue,
     };
     return id;
   }
