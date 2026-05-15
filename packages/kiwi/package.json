@@ -10,6 +10,7 @@
     ".": "./src/index.ts",
     "./kiwi": "./src/kiwi.ts",
     "./packer": "./src/packer.ts",
+    "./paper": "./src/paper.ts",
     "./scene-builder": "./src/scene-builder.ts",
     "./dom-to-scene": "./src/dom-to-scene.ts",
     "./schema": "./src/schema.ts"

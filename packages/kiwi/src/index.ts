@@ -22,6 +22,8 @@ export {
 } from "./kiwi";
 export type { FigmaMetadata } from "./packer";
 export { packBuffer, packHtml, unpackBuffer, unpackHtml } from "./packer";
+export type { BuildPaperPasteHtmlOptions } from "./paper";
+export { buildPaperPasteHtml, copyAsPaper } from "./paper";
 export type {
   AddFrameOptions,
   AddTextOptions,

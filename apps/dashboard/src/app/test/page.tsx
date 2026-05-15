@@ -9,6 +9,11 @@ import { Loader2Icon } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 
+const PREVIEW_SCALE = 0.5;
+const PREVIEW_WIDTH = 1200;
+const PREVIEW_HEIGHT = 630;
+const EXPORT_NAME = "C15t Twitter Post";
+
 export default function FigmaCopyTestPage() {
   const designRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +30,7 @@ export default function FigmaCopyTestPage() {
     },
   });
 
-  const copyMutation = useMutation({
+  const copyFigmaMutation = useMutation({
     mutationFn: async () => {
       const el = designRef.current;
       if (!el) {
@@ -33,7 +38,7 @@ export default function FigmaCopyTestPage() {
       }
       const { buildFigmaPasteHtml } = await import("@notra/kiwi");
       const html = await buildFigmaPasteHtml(el, {
-        name: "C15t Twitter Post",
+        name: EXPORT_NAME,
       });
       await navigator.clipboard.write([
         new ClipboardItem({
@@ -48,38 +53,88 @@ export default function FigmaCopyTestPage() {
     },
   });
 
+  const copyPaperMutation = useMutation({
+    mutationFn: async () => {
+      const el = designRef.current;
+      if (!el) {
+        throw new Error("Design not ready");
+      }
+      const { copyAsPaper } = await import("@notra/kiwi");
+      await copyAsPaper(el, { name: EXPORT_NAME });
+    },
+    onSuccess: () => toast.success("Copied. Now paste into Paper (Cmd+V)"),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Copy failed: ${message}`);
+    },
+  });
+
+  const isCopying = copyFigmaMutation.isPending || copyPaperMutation.isPending;
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-background p-8 text-foreground">
       <div className="flex flex-col items-center gap-2">
         <h1 className="font-semibold text-2xl text-foreground">
-          Figma clipboard test
+          Clipboard export test
         </h1>
         <p className="text-muted-foreground text-sm">
-          Loads <code>public/index-copy.html</code>. Click "Copy as Figma", then
-          paste (Cmd+V) into Figma.
+          Loads <code>public/index-copy.html</code>. Copy it for Figma or Paper,
+          then paste (Cmd+V).
         </p>
-        <Button
-          className="mt-4"
-          disabled={isLoading || copyMutation.isPending || !html}
-          onClick={() => copyMutation.mutate()}
-        >
-          {copyMutation.isPending ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : (
-            <HugeiconsIcon className="size-4" icon={Copy01Icon} />
-          )}
-          Copy as Figma
-        </Button>
+        <div className="mt-4 flex items-center gap-2">
+          <Button
+            disabled={isLoading || isCopying || !html}
+            onClick={() => copyFigmaMutation.mutate()}
+          >
+            {copyFigmaMutation.isPending ? (
+              <Loader2Icon className="size-4 animate-spin" />
+            ) : (
+              <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+            )}
+            Copy as Figma
+          </Button>
+          <Button
+            className="hover:opacity-90"
+            disabled={isLoading || isCopying || !html}
+            onClick={() => copyPaperMutation.mutate()}
+            style={{ backgroundColor: "#81ACEC", color: "#ffffff" }}
+          >
+            {copyPaperMutation.isPending ? (
+              <Loader2Icon className="size-4 animate-spin" />
+            ) : (
+              <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+            )}
+            Copy to Paper
+          </Button>
+        </div>
       </div>
 
       {isLoading || !html ? (
-        <Skeleton className="h-[39.375rem] w-[75rem]" />
+        <Skeleton className="h-[19.6875rem] w-[37.5rem] max-w-full" />
       ) : (
-        <div
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: test page renders local static HTML
-          dangerouslySetInnerHTML={{ __html: html }}
-          ref={designRef}
-        />
+        <>
+          <div
+            className="relative max-w-full overflow-hidden rounded-lg border bg-muted/20 shadow-sm"
+            style={{
+              height: PREVIEW_HEIGHT * PREVIEW_SCALE,
+              width: PREVIEW_WIDTH * PREVIEW_SCALE,
+            }}
+          >
+            <div
+              className="origin-top-left"
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: test page renders local static HTML
+              dangerouslySetInnerHTML={{ __html: html }}
+              style={{ transform: `scale(${PREVIEW_SCALE})` }}
+            />
+          </div>
+          <div
+            aria-hidden="true"
+            className="-left-[10000px] pointer-events-none fixed top-0 opacity-0"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: hidden unscaled copy source for Figma export
+            dangerouslySetInnerHTML={{ __html: html }}
+            ref={designRef}
+          />
+        </>
       )}
     </div>
   );
