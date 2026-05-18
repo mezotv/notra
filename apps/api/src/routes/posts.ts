@@ -728,12 +728,8 @@ postsRoutes.openapi(getPostGenerationRoute, async (c) => {
   const { jobId } = c.req.valid("param");
   const job = await getContentGenerationJob(redis, jobId);
 
-  if (!job) {
+  if (!job || job.organizationId !== orgId) {
     return c.json({ error: "Generation job not found" }, 404);
-  }
-
-  if (job.organizationId !== orgId) {
-    return c.json({ error: "Forbidden: organization access denied" }, 403);
   }
 
   const events = await listContentGenerationJobEvents(redis, jobId);
