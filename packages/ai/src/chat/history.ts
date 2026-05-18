@@ -2,7 +2,10 @@ import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { CHAT_ABORT_FLAG_TTL_SECONDS } from "../constants/chat";
+import {
+  CHAT_ABORT_FLAG_TTL_SECONDS,
+  CHAT_LAST_STOPPED_TTL_SECONDS,
+} from "../constants/chat";
 import { gateway } from "../gateway";
 import type {
   ChatSessionSummary,
@@ -487,7 +490,9 @@ export async function setLastResponseStopped(
   if (!redis) {
     return;
   }
-  await redis.set(lastStoppedKey(organizationId, chatId), "1");
+  await redis.set(lastStoppedKey(organizationId, chatId), "1", {
+    ex: CHAT_LAST_STOPPED_TTL_SECONDS,
+  });
 }
 
 export async function getLastResponseStopped(
