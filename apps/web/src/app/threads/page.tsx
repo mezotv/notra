@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ThreadBuilder from "@/components/thread-builder";
+import ThreadBuilder from "@/components/threads/thread-builder";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
