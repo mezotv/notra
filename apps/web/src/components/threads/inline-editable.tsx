@@ -47,11 +47,20 @@ export function InlineEditable({
     if (!editing) {
       return;
     }
-    const measuredWidth = measureRef.current?.getBoundingClientRect().width;
-    if (measuredWidth) {
-      setInputWidth(Math.ceil(measuredWidth));
+    const el = measureRef.current;
+    if (!el) {
+      return;
     }
-  });
+    setInputWidth(Math.ceil(el.getBoundingClientRect().width));
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setInputWidth(Math.ceil(entry.contentRect.width));
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [editing]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" || event.key === "Escape") {
