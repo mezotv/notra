@@ -15,5 +15,8 @@ const SEED_CONTENT = [
 ] as const;
 
 export function createSeedThread(): ThreadPost[] {
-  return SEED_CONTENT.map((content) => ({ id: createPostId(), content }));
+  return SEED_CONTENT.map((content, index) => ({
+    id: `seed-${index + 1}`,
+    content,
+  }));
 }

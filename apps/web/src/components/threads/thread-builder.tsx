@@ -20,6 +20,7 @@ import {
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
+import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   type ChangeEvent,
   type KeyboardEvent,
@@ -29,6 +30,10 @@ import {
   useState,
 } from "react";
 import { createEmptyPost, createSeedThread } from "@/lib/threads/posts";
+import {
+  createTwitterPostUrl,
+  TWITTER_BRAND_COLOR,
+} from "@/lib/threads/twitter";
 import type { ThreadPost } from "@/types/threads";
 import { SortableThreadPost } from "./sortable-thread-post";
 
@@ -85,6 +90,9 @@ export default function ThreadBuilder() {
         .join("")
     : "";
   const hasMultiplePosts = posts.length > 1;
+  const firstPostContent =
+    posts.find((post) => post.content.trim().length > 0)?.content.trim() ?? "";
+  const canPostToX = firstPostContent.length > 0;
 
   const registerTextarea = useCallback(
     (id: string) => (el: HTMLTextAreaElement | null) => {
@@ -247,15 +255,35 @@ export default function ThreadBuilder() {
       </DndContext>
 
       <div className="mt-8 flex flex-col-reverse items-stretch gap-3 sm:flex-col sm:items-center sm:justify-between">
-        <Button
-          className="sm:w-auto"
-          onClick={() => addPostAfter()}
-          size="sm"
-          type="button"
-        >
-          <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
-          <span>Add post</span>
-        </Button>
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-center">
+          <Button
+            className="sm:w-auto"
+            onClick={() => addPostAfter()}
+            size="sm"
+            type="button"
+          >
+            <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+            <span>Add post</span>
+          </Button>
+          {canPostToX && (
+            <Button
+              className="text-white hover:opacity-90 sm:w-auto"
+              nativeButton={false}
+              render={
+                <a
+                  href={createTwitterPostUrl(firstPostContent)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <XTwitter className="size-3.5" />
+                  <span>Post to X</span>
+                </a>
+              }
+              size="sm"
+              style={{ backgroundColor: TWITTER_BRAND_COLOR }}
+            />
+          )}
+        </div>
         <p className="hidden font-normal font-sans text-muted-foreground/70 text-xs leading-5 sm:block">
           <span suppressHydrationWarning>{addPostShortcut}</span> when an input
           is focused adds a post.

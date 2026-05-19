@@ -69,13 +69,11 @@ export default function ThreadsPage() {
         <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-8 sm:py-10 md:px-24 md:py-12">
           <div className="flex w-full max-w-[42rem] flex-col items-center justify-start gap-3">
             <h1 className="self-stretch text-balance text-center font-normal font-serif text-2xl text-foreground leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-[2.75rem] lg:leading-[1.15]">
-              Write X threads that{" "}
-              <span className="text-primary">actually get read</span>
+              X <span className="text-primary">(Twitter)</span> Threads Creator
             </h1>
             <p className="self-stretch text-balance text-center font-normal font-sans text-muted-foreground text-sm leading-6 sm:text-base sm:leading-7">
-              Write a post, add it to your thread, and drag the cards when the
-              order's off. The preview shows what it'll look like on X before
-              you post.
+              Write, reorder, and preview your thread in one place. Free, no
+              sign-up.
             </p>
           </div>
         </div>

@@ -111,7 +111,7 @@ export function SortableThreadPost({
       ref={setNodeRef}
       style={style}
     >
-      {showConnector && (
+      {showConnector && !isDragging && (
         <div
           aria-hidden
           className="-translate-x-1/2 pointer-events-none absolute top-13 bottom-[-1.375rem] left-8 w-px bg-border"
