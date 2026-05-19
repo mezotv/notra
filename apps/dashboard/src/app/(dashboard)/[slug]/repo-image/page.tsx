@@ -31,7 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -63,6 +63,7 @@ type GitHubIntegrationOption = {
 export default function RepoImagePage() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
+  const exportRef = useRef<HTMLDivElement>(null);
 
   const [integrationId, setIntegrationId] = useState<string | null>(null);
   const [branch, setBranch] = useState("");
@@ -164,6 +165,16 @@ export default function RepoImagePage() {
 
   const result = mutation.data ?? null;
   const previewUrl = result ? pngBase64ToDataUrl(result.pngBase64) : null;
+  const exportHtml = useMemo(() => {
+    if (!result) {
+      return null;
+    }
+    const doc = new DOMParser().parseFromString(result.html, "text/html");
+    return doc.body.innerHTML || result.html;
+  }, [result]);
+  const exportName = selectedIntegration
+    ? `${selectedIntegration.owner}/${selectedIntegration.repo} Repo Image`
+    : "Repo Image";
 
   function downloadFile(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
@@ -196,22 +207,6 @@ export default function RepoImagePage() {
     );
   }
 
-  async function handleCopyHtml() {
-    if (!result) {
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(result.html);
-      toast.success("HTML copied — paste into Figma's html.to.design plugin");
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? `Couldn't copy: ${error.message}`
-          : "Couldn't copy HTML"
-      );
-    }
-  }
-
   async function handleCopySvg() {
     if (!result) {
       return;
@@ -228,7 +223,45 @@ export default function RepoImagePage() {
     }
   }
 
+  const copyFigmaMutation = useMutation({
+    mutationFn: async () => {
+      const el = exportRef.current;
+      if (!el) {
+        throw new Error("Design not ready");
+      }
+      const { buildFigmaPasteHtml } = await import("@notra/kiwi");
+      const html = await buildFigmaPasteHtml(el, { name: exportName });
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+        }),
+      ]);
+    },
+    onSuccess: () => toast.success("Copied. Now paste into Figma (Cmd+V)"),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Copy failed: ${message}`);
+    },
+  });
+
+  const copyPaperMutation = useMutation({
+    mutationFn: async () => {
+      const el = exportRef.current;
+      if (!el) {
+        throw new Error("Design not ready");
+      }
+      const { copyAsPaper } = await import("@notra/kiwi");
+      await copyAsPaper(el, { name: exportName });
+    },
+    onSuccess: () => toast.success("Copied. Now paste into Paper (Cmd+V)"),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error(`Copy failed: ${message}`);
+    },
+  });
+
   const isGenerating = mutation.isPending;
+  const isCopying = copyFigmaMutation.isPending || copyPaperMutation.isPending;
   const canGenerate =
     !!organizationId &&
     !!selectedIntegration &&
@@ -397,7 +430,7 @@ export default function RepoImagePage() {
               <CardTitle>Preview</CardTitle>
               <CardDescription>
                 {previewUrl
-                  ? "1200×630. Copy the HTML and paste it into Figma's html.to.design plugin to get clean Auto Layout frames — or download SVG/PNG."
+                  ? "1200×630. Copy it directly into Figma or Paper, or download SVG/PNG."
                   : "Your generated image will appear here."}
               </CardDescription>
             </CardHeader>
@@ -423,9 +456,29 @@ export default function RepoImagePage() {
 
               {result ? (
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button onClick={handleCopyHtml}>
-                    <HugeiconsIcon className="size-4" icon={Copy01Icon} />
-                    Copy HTML for Figma
+                  <Button
+                    disabled={isCopying}
+                    onClick={() => copyFigmaMutation.mutate()}
+                  >
+                    {copyFigmaMutation.isPending ? (
+                      <Loader2Icon className="size-4 animate-spin" />
+                    ) : (
+                      <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+                    )}
+                    Copy as Figma
+                  </Button>
+                  <Button
+                    className="hover:opacity-90"
+                    disabled={isCopying}
+                    onClick={() => copyPaperMutation.mutate()}
+                    style={{ backgroundColor: "#81ACEC", color: "#ffffff" }}
+                  >
+                    {copyPaperMutation.isPending ? (
+                      <Loader2Icon className="size-4 animate-spin" />
+                    ) : (
+                      <HugeiconsIcon className="size-4" icon={Copy01Icon} />
+                    )}
+                    Copy to Paper
                   </Button>
                   <Button onClick={handleCopySvg} variant="outline">
                     <HugeiconsIcon className="size-4" icon={Copy01Icon} />
@@ -440,6 +493,15 @@ export default function RepoImagePage() {
                     PNG
                   </Button>
                 </div>
+              ) : null}
+              {exportHtml ? (
+                <div
+                  aria-hidden="true"
+                  className="-left-[10000px] pointer-events-none fixed top-0 opacity-0"
+                  // biome-ignore lint/security/noDangerouslySetInnerHtml: generated repo image HTML is rendered off-screen as the clipboard export source
+                  dangerouslySetInnerHTML={{ __html: exportHtml }}
+                  ref={exportRef}
+                />
               ) : null}
             </CardContent>
           </Card>

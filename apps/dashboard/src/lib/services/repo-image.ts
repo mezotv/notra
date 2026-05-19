@@ -4,7 +4,7 @@ import {
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
 import { createOctokit } from "@notra/ai/utils/octokit";
-import { Agent, Box } from "@upstash/box";
+import { Agent, Box, OpenCodeModel } from "@upstash/box";
 import {
   buildExtractionPrompt,
   REPO_IMAGE_OUTPUT_HTML_PATH,
@@ -19,6 +19,7 @@ import type {
 } from "@/types/repo-image";
 
 const AGENT_TIMEOUT_MS = 480_000;
+const RECOVERY_AGENT_TIMEOUT_MS = 180_000;
 
 export class RepoImageError extends Error {
   readonly code:
@@ -44,6 +45,43 @@ function getErrorStatus(error: unknown) {
     typeof error.status === "number"
     ? error.status
     : undefined;
+}
+
+async function runRepoImageAgentStream(params: {
+  box: Awaited<ReturnType<typeof Box.create>>;
+  prompt: string;
+  timeout: number;
+  label: string;
+}) {
+  const stream = await params.box.agent.stream({
+    prompt: params.prompt,
+    timeout: params.timeout,
+  });
+
+  for await (const chunk of stream) {
+    if (chunk.type === "tool-call") {
+      console.log(`[repo-image] ${params.label} tool: ${chunk.toolName}`);
+    }
+  }
+}
+
+async function hasRepoImageOutput(box: Awaited<ReturnType<typeof Box.create>>) {
+  const existsRun = await box.exec.command(
+    `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
+  );
+  return existsRun.result.trim() === "ok";
+}
+
+function buildMissingOutputRecoveryPrompt() {
+  return `Your previous run ended without creating the required deliverable.
+
+You MUST now create this exact file:
+
+  ${REPO_IMAGE_OUTPUT_HTML_PATH}
+
+Do not do more research unless absolutely necessary. If you already made a draft HTML file, copy or rewrite that final HTML to ${REPO_IMAGE_OUTPUT_HTML_PATH}. If no draft exists, immediately create a valid 1200x630 single HTML document that follows the original instructions.
+
+Use the Write tool or shell redirection to create ${REPO_IMAGE_OUTPUT_HTML_PATH}. After the file exists, stop.`;
 }
 
 async function buildSourceContext(params: {
@@ -208,7 +246,7 @@ export async function generateRepoImage(params: {
       },
       agent: {
         harness: Agent.OpenCode,
-        model: "openrouter/anthropic/claude-sonnet-4-6",
+        model: OpenCodeModel.Claude_Sonnet_4_6,
       },
       timeout: AGENT_TIMEOUT_MS,
     });
@@ -221,7 +259,8 @@ export async function generateRepoImage(params: {
         branch: input.branch,
       });
 
-      const stream = await box.agent.stream({
+      await runRepoImageAgentStream({
+        box,
         prompt: buildExtractionPrompt({
           owner: repository.owner,
           repo: repository.repo,
@@ -229,18 +268,22 @@ export async function generateRepoImage(params: {
           source,
         }),
         timeout: AGENT_TIMEOUT_MS,
+        label: "initial",
       });
 
-      for await (const chunk of stream) {
-        if (chunk.type === "tool-call") {
-          console.log(`[repo-image] tool: ${chunk.toolName}`);
-        }
+      if (!(await hasRepoImageOutput(box))) {
+        console.warn(
+          `[repo-image] missing ${REPO_IMAGE_OUTPUT_HTML_PATH}; asking agent to recover`
+        );
+        await runRepoImageAgentStream({
+          box,
+          prompt: buildMissingOutputRecoveryPrompt(),
+          timeout: RECOVERY_AGENT_TIMEOUT_MS,
+          label: "recovery",
+        });
       }
 
-      const existsRun = await box.exec.command(
-        `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
-      );
-      if (existsRun.result.trim() !== "ok") {
+      if (!(await hasRepoImageOutput(box))) {
         const diag = await box.exec.command(
           `ls -la /workspace/home/ 2>&1 | head -50; echo ---; find /workspace/home -maxdepth 4 -name "output.html" 2>/dev/null`
         );
