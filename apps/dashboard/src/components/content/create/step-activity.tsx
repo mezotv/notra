@@ -98,9 +98,9 @@ export function StepActivity(props: ActivityStepProps) {
   const hasAnyVisible =
     visibleRepos.some(
       (r) =>
-        r.commits.length > 0 ||
-        r.pullRequests.length > 0 ||
-        r.releases.length > 0
+        (dataPoints.includeCommits && r.commits.length > 0) ||
+        (dataPoints.includePullRequests && r.pullRequests.length > 0) ||
+        (dataPoints.includeReleases && r.releases.length > 0)
     ) || visibleLinear.some((li) => li.issues.length > 0);
 
   const hasSelectedIntegrations = selectedIntegrationIds.length > 0;
@@ -266,11 +266,15 @@ export function StepActivity(props: ActivityStepProps) {
                       <div className="divide-y">
                         {li.issues.map((issue) => {
                           const key = `${li.integrationId}:${issue.id}`;
+                          const metaParts = [issue.assignee ?? "Unassigned"];
+                          if (issue.completedAt) {
+                            metaParts.push(formatEventDate(issue.completedAt));
+                          }
                           return (
                             <EventRow
                               key={issue.id}
                               label={`${issue.identifier} ${issue.title}`}
-                              meta={`${issue.assignee ?? "Unassigned"} · ${issue.completedAt ? formatEventDate(issue.completedAt) : ""}`}
+                              meta={metaParts.join(" · ")}
                               onToggle={() => onToggleLinear(key)}
                               selected={selectedLinearKeys.has(key)}
                               type="LinearIssue"

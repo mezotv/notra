@@ -302,7 +302,7 @@ export function CreateContentDialog({
   }, [previewParamsKey, previewFailures]);
 
   const mutation = useMutation<
-    void,
+    { succeeded: number; total: number },
     Error,
     {
       formats: OnDemandContentType[];
@@ -315,7 +315,7 @@ export function CreateContentDialog({
       const calls = formats.flatMap((format) =>
         voiceIds.map((voiceId) => ({ format, voiceId }))
       );
-      await Promise.all(
+      const results = await Promise.allSettled(
         calls.map(({ format, voiceId }) =>
           dashboardOrpc.content.generate.call({
             organizationId,
@@ -329,10 +329,33 @@ export function CreateContentDialog({
           })
         )
       );
+      const failures = results.filter((r) => r.status === "rejected");
+      const succeeded = results.length - failures.length;
+      if (succeeded === 0) {
+        const reason = failures[0];
+        const message =
+          reason &&
+          reason.status === "rejected" &&
+          reason.reason instanceof Error
+            ? reason.reason.message
+            : "Failed to start any content generation";
+        throw new Error(message);
+      }
+      return { succeeded, total: results.length };
     },
-    onSuccess: () => {
+    onSuccess: ({ succeeded, total }) => {
       setOpen(false);
-      toast.success("Content generation started");
+      if (succeeded === total) {
+        toast.success(
+          succeeded === 1
+            ? "Content generation started"
+            : `${succeeded} content generations started`
+        );
+      } else {
+        toast.warning(
+          `${succeeded} of ${total} content generations started; ${total - succeeded} failed`
+        );
+      }
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.content.activeGenerations.list.queryKey({
           input: { organizationId },
@@ -650,12 +673,7 @@ export function CreateContentDialog({
     setOpen(true);
   }, []);
 
-  const hasAnyDataPoint =
-    dataPoints.includePullRequests ||
-    dataPoints.includeCommits ||
-    dataPoints.includeReleases;
-
-  const canContinueFromFormats = selectedFormats.length > 0 && hasAnyDataPoint;
+  const canContinueFromFormats = selectedFormats.length > 0;
   const canContinueFromActivity =
     selectedRepoIds.length > 0 && !isLoadingPreview && eventCounts.selected > 0;
 

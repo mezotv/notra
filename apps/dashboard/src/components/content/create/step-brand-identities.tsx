@@ -56,9 +56,7 @@ function InlineCreateForm({ organizationId }: InlineCreateFormProps) {
       return;
     }
 
-    const websiteUrl = trimmedUrl.startsWith("https://")
-      ? trimmedUrl
-      : `https://${trimmedUrl}`;
+    const websiteUrl = `https://${trimmedUrl}`;
 
     const parseRes = z.url().safeParse(websiteUrl);
     if (!parseRes.success) {
