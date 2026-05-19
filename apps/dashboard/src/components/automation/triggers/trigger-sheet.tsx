@@ -154,8 +154,11 @@ export function AddTriggerDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
+  const noopOpenChange = () => {
+    return;
+  };
   const setOpen = isControlled
-    ? (controlledOnOpenChange ?? (() => {}))
+    ? (controlledOnOpenChange ?? noopOpenChange)
     : setInternalOpen;
   const comboboxAnchor = useComboboxAnchor();
 

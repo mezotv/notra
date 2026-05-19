@@ -169,7 +169,7 @@ export default function PageClient({ slug }: PageClientProps) {
           </Button>
         </div>
 
-        {organizationId && isPending ? (
+        {organizationId && isPending && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cards
@@ -181,9 +181,11 @@ export default function PageClient({ slug }: PageClientProps) {
               </Card>
             ))}
           </div>
-        ) : skills.length === 0 ? (
+        )}
+        {!(organizationId && isPending) && skills.length === 0 && (
           <p className="text-muted-foreground">No skills yet.</p>
-        ) : (
+        )}
+        {!(organizationId && isPending) && skills.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {skills.map((skill) => (
               <Link

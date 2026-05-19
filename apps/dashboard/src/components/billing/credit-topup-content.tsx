@@ -58,11 +58,10 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
     parsedCustom >= TOPUP_MIN_DOLLARS &&
     parsedCustom <= TOPUP_MAX_DOLLARS;
 
-  const activeAmount = isCustom
-    ? isCustomValid
-      ? parsedCustom
-      : null
-    : selected;
+  let activeAmount: number | null = selected;
+  if (isCustom) {
+    activeAmount = isCustomValid ? parsedCustom : null;
+  }
 
   async function handleTopup() {
     if (!activeAmount) {
@@ -190,13 +189,9 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
         disabled={!activeAmount || loading}
         onClick={handleTopup}
       >
-        {loading ? (
-          <Loader2Icon className="size-4 animate-spin" />
-        ) : activeAmount ? (
-          `Add $${activeAmount} in credits`
-        ) : (
-          "Select an amount"
-        )}
+        {loading && <Loader2Icon className="size-4 animate-spin" />}
+        {!loading && activeAmount && `Add $${activeAmount} in credits`}
+        {!(loading || activeAmount) && "Select an amount"}
       </Button>
 
       <p className="text-center text-muted-foreground text-xs">

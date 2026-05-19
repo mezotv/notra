@@ -5,9 +5,9 @@ export type CliPollResponse =
 
 export type CliAuthorizeResponse = { status: "ok" } | { error: string };
 
-export type CliAuthOrganization = {
+export interface CliAuthOrganization {
   id: string;
   name: string;
   slug: string;
   logo: string | null;
-};
+}

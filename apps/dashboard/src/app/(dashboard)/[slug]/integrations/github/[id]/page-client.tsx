@@ -334,17 +334,18 @@ function EventsSection({
           </Link>
         )}
       </div>
-      {isLoadingEvents ? (
-        <Skeleton className="h-18 w-full rounded-lg" />
-      ) : isError ? (
+      {isLoadingEvents && <Skeleton className="h-18 w-full rounded-lg" />}
+      {!isLoadingEvents && isError && (
         <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
           Failed to load event triggers.
         </div>
-      ) : displayEvents.length === 0 ? (
+      )}
+      {!isLoadingEvents && !isError && displayEvents.length === 0 && (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
           No event triggers configured yet.
         </div>
-      ) : (
+      )}
+      {!isLoadingEvents && !isError && displayEvents.length > 0 && (
         <div className="divide-y rounded-lg border">
           {displayEvents.map((event) => (
             <div
@@ -427,17 +428,18 @@ function SchedulesSection({
           </Link>
         )}
       </div>
-      {isLoadingSchedules ? (
-        <Skeleton className="h-18 w-full rounded-lg" />
-      ) : isError ? (
+      {isLoadingSchedules && <Skeleton className="h-18 w-full rounded-lg" />}
+      {!isLoadingSchedules && isError && (
         <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
           Failed to load schedules.
         </div>
-      ) : displaySchedules.length === 0 ? (
+      )}
+      {!isLoadingSchedules && !isError && displaySchedules.length === 0 && (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
           No schedules configured yet.
         </div>
-      ) : (
+      )}
+      {!isLoadingSchedules && !isError && displaySchedules.length > 0 && (
         <div className="divide-y rounded-lg border">
           {displaySchedules.map((schedule) => (
             <div

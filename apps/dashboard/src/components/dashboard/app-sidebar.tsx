@@ -108,7 +108,7 @@ export function DashboardSidebar({
       </SidebarHeader>
       <SidebarContent>
         <AnimatePresence initial={false} mode="popLayout">
-          {isSettingsRoute ? (
+          {isSettingsRoute && (
             <motion.div
               animate="animate"
               className="flex flex-1 flex-col"
@@ -120,7 +120,8 @@ export function DashboardSidebar({
             >
               <NavSettings slug={slug} />
             </motion.div>
-          ) : isChatRoute ? (
+          )}
+          {!isSettingsRoute && isChatRoute && (
             <motion.div
               animate="animate"
               className="flex flex-1 flex-col"
@@ -135,7 +136,8 @@ export function DashboardSidebar({
                 <NavSecondary />
               </div>
             </motion.div>
-          ) : (
+          )}
+          {!(isSettingsRoute || isChatRoute) && (
             <motion.div
               animate="animate"
               className="flex flex-1 flex-col"
