@@ -46,7 +46,7 @@ export const FOOTER_TOOL_LINKS = [
 
 export const FOOTER_FREE_TOOL_LINKS = [
   {
-    href: "/threads",
+    href: "/twitter-thread-creator",
     label: "X Thread Builder",
   },
 ] as const;

@@ -7,7 +7,7 @@ import { SITE_URL } from "@/utils/urls";
 const title = "X Thread Builder";
 const description =
   "Draft, reorder, and ship X (Twitter) threads in a clean, distraction-free workspace. Free, no sign-up.";
-const url = `${SITE_URL}/threads`;
+const url = `${SITE_URL}/twitter-thread-creator`;
 
 export const metadata: Metadata = {
   title,
