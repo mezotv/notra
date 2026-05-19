@@ -193,29 +193,36 @@ export function CreateContentDialog({
     [githubRepoIds, selectedLinearIds, lookbackWindow, dataPoints]
   );
 
+  const previewQueryOptions = dashboardOrpc.content.preview.queryOptions({
+    input: {
+      organizationId,
+      repositoryIds: githubRepoIds,
+      lookbackWindow,
+      includeCommits: dataPoints.includeCommits,
+      includePullRequests: dataPoints.includePullRequests,
+      includeReleases: dataPoints.includeReleases,
+      linearIntegrationIds:
+        selectedLinearIds.length > 0 ? selectedLinearIds : undefined,
+    },
+  });
+
   const {
     data: previewResponse,
     isFetching: isLoadingPreview,
     isError: isPreviewError,
+    refetch: refetchPreview,
   } = useQuery({
-    ...dashboardOrpc.content.preview.queryOptions({
-      input: {
-        organizationId,
-        repositoryIds: githubRepoIds,
-        lookbackWindow,
-        includeCommits: dataPoints.includeCommits,
-        includePullRequests: dataPoints.includePullRequests,
-        includeReleases: dataPoints.includeReleases,
-        linearIntegrationIds:
-          selectedLinearIds.length > 0 ? selectedLinearIds : undefined,
-      },
-    }),
+    ...previewQueryOptions,
     enabled:
       open &&
       step === "activity" &&
       (githubRepoIds.length > 0 || selectedLinearIds.length > 0),
     staleTime: 60_000,
   });
+
+  const handleRetryPreview = useCallback(() => {
+    refetchPreview();
+  }, [refetchPreview]);
 
   const previewData = useMemo(
     () =>
@@ -726,6 +733,7 @@ export function CreateContentDialog({
                   isLoadingPreview={isLoadingPreview}
                   isPreviewError={isPreviewError}
                   onConnect={handleOpenAddRepositoryFlow}
+                  onRetryPreview={handleRetryPreview}
                   onSearchQueryChange={setSearchQuery}
                   onToggleCommit={(key) => {
                     selectionsTouchedRef.current = true;

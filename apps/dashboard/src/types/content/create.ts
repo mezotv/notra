@@ -48,6 +48,7 @@ export interface ActivityStepProps {
   preview: PreviewResponse | undefined;
   isLoadingPreview: boolean;
   isPreviewError: boolean;
+  onRetryPreview: () => void;
   dataPoints: ContentDataPointSettings;
   selectedCommitKeys: Set<string>;
   selectedPrKeys: Set<string>;

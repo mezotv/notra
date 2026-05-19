@@ -60,6 +60,7 @@ export function StepActivity(props: ActivityStepProps) {
     preview,
     isLoadingPreview,
     isPreviewError,
+    onRetryPreview,
     dataPoints,
     selectedCommitKeys,
     selectedPrKeys,
@@ -217,7 +218,12 @@ export function StepActivity(props: ActivityStepProps) {
         {hasSelectedIntegrations && !isLoadingPreview && isPreviewError && (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center text-sm">
             <p>Failed to load events.</p>
-            <Button size="sm" type="button" variant="outline">
+            <Button
+              onClick={onRetryPreview}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
               <HugeiconsIcon
                 className="size-3.5"
                 icon={ArrowReloadHorizontalIcon}

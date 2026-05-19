@@ -152,6 +152,8 @@ export default function PageClient({ slug }: PageClientProps) {
     }));
   };
 
+  const isLoadingSkills = !!organizationId && isPending;
+
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -169,7 +171,7 @@ export default function PageClient({ slug }: PageClientProps) {
           </Button>
         </div>
 
-        {organizationId && isPending && (
+        {isLoadingSkills && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cards
@@ -182,10 +184,10 @@ export default function PageClient({ slug }: PageClientProps) {
             ))}
           </div>
         )}
-        {!(organizationId && isPending) && skills.length === 0 && (
+        {!isLoadingSkills && skills.length === 0 && (
           <p className="text-muted-foreground">No skills yet.</p>
         )}
-        {!(organizationId && isPending) && skills.length > 0 && (
+        {!isLoadingSkills && skills.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {skills.map((skill) => (
               <Link
