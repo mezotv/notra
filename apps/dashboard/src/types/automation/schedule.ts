@@ -1,26 +1,10 @@
-import type {
-  LookbackWindow,
-  ScheduleOutputType,
-} from "@/schemas/integrations";
+import type { ScheduleCron } from "@/schemas/automation/schedule-form";
 import type { Trigger } from "@/types/triggers/triggers";
 
-export interface ScheduleCron {
-  frequency: "daily" | "weekly" | "monthly";
-  hour: number;
-  minute: number;
-  dayOfWeek?: number;
-  dayOfMonth?: number;
-}
-
-export interface ScheduleFormValues {
-  name: string;
-  outputType: ScheduleOutputType;
-  schedule: ScheduleCron;
-  repositoryIds: string[];
-  lookbackWindow: LookbackWindow;
-  brandVoiceId: string;
-  autoPublish: boolean;
-}
+export type {
+  ScheduleCron,
+  ScheduleFormValues,
+} from "@/schemas/automation/schedule-form";
 
 export interface CreateScheduleDialogProps {
   organizationId: string;
