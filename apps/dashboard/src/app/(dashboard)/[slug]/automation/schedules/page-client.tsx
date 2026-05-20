@@ -55,6 +55,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
+import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
@@ -671,9 +672,9 @@ function ScheduleTable({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Schedule</TableHead>
-            <TableHead>Brand</TableHead>
+            <TableHead>Identity</TableHead>
             <TableHead>Output</TableHead>
-            <TableHead>Targets</TableHead>
+            <TableHead>Sources</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>
               <Button
@@ -732,18 +733,10 @@ function ScheduleTable({
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  <Tooltip>
-                    <TooltipTrigger className="cursor-help">
-                      {trigger.targets.repositoryIds.length} repositories
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs" side="top">
-                      <ul className="space-y-0.5">
-                        {trigger.targets.repositoryIds.map((id) => (
-                          <li key={id}>{repositoryMap[id] ?? id}</li>
-                        ))}
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
+                  <SourcesCell
+                    repositoryIds={trigger.targets.repositoryIds}
+                    repositoryMap={repositoryMap}
+                  />
                 </TableCell>
                 <TableCell>
                   <TriggerStatusBadge enabled={trigger.enabled} />

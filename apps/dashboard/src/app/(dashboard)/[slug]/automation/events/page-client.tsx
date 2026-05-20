@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
+import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
@@ -341,9 +342,9 @@ function EventTable({
           <TableRow>
             <TableHead>Type</TableHead>
             <TableHead>Events</TableHead>
-            <TableHead>Brand</TableHead>
+            <TableHead>Identity</TableHead>
             <TableHead>Output</TableHead>
-            <TableHead>Targets</TableHead>
+            <TableHead>Sources</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>
               <Button
@@ -399,7 +400,7 @@ function EventTable({
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {trigger.targets.repositoryIds.length} repositories
+                  <SourcesCell repositoryIds={trigger.targets.repositoryIds} />
                 </TableCell>
                 <TableCell>
                   <TriggerStatusBadge enabled={trigger.enabled} />

@@ -352,65 +352,68 @@ export function CreateEventTriggerDialog({
                   )}
                 </section>
 
-                <section className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-base">
-                      {FORMAT_CARD_META[outputType].label} rules
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Voice and publishing behaviour for this trigger.
-                    </p>
-                  </div>
+                {(brandVoices.length > 1 ||
+                  supportsAutoPublish(outputType)) && (
+                  <section className="space-y-3">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-base">
+                        {FORMAT_CARD_META[outputType].label} rules
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        Voice and publishing behaviour for this trigger.
+                      </p>
+                    </div>
 
-                  {brandVoices.length > 1 && (
-                    <form.Field name="brandVoiceId">
-                      {(field) => (
-                        <BrandVoiceCombobox
-                          id={field.name}
-                          onChange={field.handleChange}
-                          value={field.state.value}
-                          voices={brandVoices}
-                        />
-                      )}
-                    </form.Field>
-                  )}
-
-                  {supportsAutoPublish(outputType) && (
-                    <form.Field name="autoPublish">
-                      {(field) => (
-                        <div className="flex items-center justify-between rounded-lg border p-3">
-                          <div className="flex items-center gap-1.5">
-                            <Label
-                              className="cursor-pointer font-medium text-sm"
-                              htmlFor={field.name}
-                            >
-                              Auto-publish
-                            </Label>
-                            <Tooltip>
-                              <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
-                                <HugeiconsIcon
-                                  icon={InformationCircleIcon}
-                                  size={14}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p className="max-w-50 text-xs">
-                                  When on, posts are published immediately
-                                  instead of saved as drafts.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <Switch
-                            checked={field.state.value}
+                    {brandVoices.length > 1 && (
+                      <form.Field name="brandVoiceId">
+                        {(field) => (
+                          <BrandVoiceCombobox
                             id={field.name}
-                            onCheckedChange={field.handleChange}
+                            onChange={field.handleChange}
+                            value={field.state.value}
+                            voices={brandVoices}
                           />
-                        </div>
-                      )}
-                    </form.Field>
-                  )}
-                </section>
+                        )}
+                      </form.Field>
+                    )}
+
+                    {supportsAutoPublish(outputType) && (
+                      <form.Field name="autoPublish">
+                        {(field) => (
+                          <div className="flex items-center justify-between rounded-lg border p-3">
+                            <div className="flex items-center gap-1.5">
+                              <Label
+                                className="cursor-pointer font-medium text-sm"
+                                htmlFor={field.name}
+                              >
+                                Auto-publish
+                              </Label>
+                              <Tooltip>
+                                <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                                  <HugeiconsIcon
+                                    icon={InformationCircleIcon}
+                                    size={14}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="max-w-50 text-xs">
+                                    When on, posts are published immediately
+                                    instead of saved as drafts.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Switch
+                              checked={field.state.value}
+                              id={field.name}
+                              onCheckedChange={field.handleChange}
+                            />
+                          </div>
+                        )}
+                      </form.Field>
+                    )}
+                  </section>
+                )}
               </div>
             </div>
 

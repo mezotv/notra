@@ -25,17 +25,10 @@ export function EventTypeCard({
       type="button"
     >
       <div className="flex items-start justify-between">
-        <div
-          className={cn(
-            "flex size-9 items-center justify-center rounded-lg",
-            meta.iconBgClass
-          )}
-        >
-          <HugeiconsIcon
-            className={cn("size-5", meta.iconClass)}
-            icon={meta.icon}
-          />
-        </div>
+        <HugeiconsIcon
+          className={cn("size-5", meta.iconClass)}
+          icon={meta.icon}
+        />
         <div
           className={cn(
             "flex size-5 shrink-0 items-center justify-center rounded-full transition-colors",
