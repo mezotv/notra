@@ -54,18 +54,16 @@ import { Loader2Icon, PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
-import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
+import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
-import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
+import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 import { SchedulePageSkeleton } from "./skeleton";
-
-const CRON_SOURCE_TYPES: TriggerSourceType[] = ["cron"];
 
 function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   if (!cron) {
@@ -383,9 +381,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               Configure cron schedules that run daily, weekly, or monthly
             </p>
           </div>
-          <AddTriggerDialog
-            allowedSourceTypes={CRON_SOURCE_TYPES}
-            initialSourceType="cron"
+          <CreateScheduleDialog
             onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.schedules.list.queryKey({
@@ -415,9 +411,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         {!isPending && scheduleTriggers.length === 0 && (
           <EmptyState
             action={
-              <AddTriggerDialog
-                allowedSourceTypes={CRON_SOURCE_TYPES}
-                initialSourceType="cron"
+              <CreateScheduleDialog
                 onSuccess={() => {
                   queryClient.invalidateQueries({
                     queryKey: dashboardOrpc.automation.schedules.list.queryKey({
@@ -578,10 +572,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       </ResponsiveAlertDialog>
 
       {editTrigger && (
-        <AddTriggerDialog
-          allowedSourceTypes={CRON_SOURCE_TYPES}
+        <CreateScheduleDialog
           editTrigger={editTrigger}
-          initialSourceType="cron"
           onOpenChange={(open) => !open && setEditTrigger(null)}
           onSuccess={() => {
             setEditTrigger(null);
