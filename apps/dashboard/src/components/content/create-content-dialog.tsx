@@ -2,6 +2,7 @@
 
 import {
   Add01Icon,
+  AlertCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   Loading03Icon,
@@ -383,6 +384,7 @@ export function CreateContentDialog({
     setSelectedReleaseKeys(new Set());
     setSelectedLinearKeys(new Set());
     setSearchQuery("");
+    setAttemptedAdvance(false);
     lastInitializedParamsRef.current = "";
     selectionsTouchedRef.current = false;
     integrationsInitializedRef.current = false;
@@ -565,16 +567,40 @@ export function CreateContentDialog({
     eventCounts,
   ]);
 
+  const [attemptedAdvance, setAttemptedAdvance] = useState(false);
+
   const goNext = useCallback(() => {
     const idx = STEP_ORDER.indexOf(step);
-    if (idx < STEP_ORDER.length - 1) {
-      setStep(STEP_ORDER[idx + 1] as WizardStep);
+    if (idx >= STEP_ORDER.length - 1) {
+      return;
     }
-  }, [step]);
+    if (step === "formats" && selectedFormats.length === 0) {
+      setAttemptedAdvance(true);
+      return;
+    }
+    if (
+      step === "activity" &&
+      (selectedRepoIds.length === 0 ||
+        isLoadingPreview ||
+        eventCounts.selected === 0)
+    ) {
+      setAttemptedAdvance(true);
+      return;
+    }
+    setAttemptedAdvance(false);
+    setStep(STEP_ORDER[idx + 1] as WizardStep);
+  }, [
+    step,
+    selectedFormats.length,
+    selectedRepoIds.length,
+    isLoadingPreview,
+    eventCounts.selected,
+  ]);
 
   const goBack = useCallback(() => {
     const idx = STEP_ORDER.indexOf(step);
     if (idx > 0) {
+      setAttemptedAdvance(false);
       setStep(STEP_ORDER[idx - 1] as WizardStep);
     }
   }, [step]);
@@ -634,6 +660,10 @@ export function CreateContentDialog({
   ]);
 
   const handleCreate = useCallback(() => {
+    if (selectedFormats.length === 0) {
+      setAttemptedAdvance(true);
+      return;
+    }
     const voiceIds =
       selectedBrandVoiceIds.length > 0 ? selectedBrandVoiceIds : [""];
     mutation.mutate({
@@ -677,14 +707,6 @@ export function CreateContentDialog({
     setOpen(true);
   }, []);
 
-  const canContinueFromFormats = selectedFormats.length > 0;
-  const canContinueFromActivity =
-    selectedRepoIds.length > 0 && !isLoadingPreview && eventCounts.selected > 0;
-
-  const continueDisabled =
-    (step === "formats" && !canContinueFromFormats) ||
-    (step === "activity" && !canContinueFromActivity);
-
   const identityButtonLabel =
     selectedBrandVoiceIds.length === 0
       ? "Skip & start creating"
@@ -692,20 +714,62 @@ export function CreateContentDialog({
 
   const stepIndex = STEP_ORDER.indexOf(step);
 
-  const footerLeft = useMemo(() => {
+  const footerLeft = useMemo<{
+    text: string;
+    tone: "warning" | "muted";
+  }>(() => {
+    if (
+      attemptedAdvance &&
+      step === "formats" &&
+      selectedFormats.length === 0
+    ) {
+      return {
+        text: "Select at least one content format",
+        tone: "warning",
+      };
+    }
+    if (attemptedAdvance && step === "activity") {
+      if (selectedRepoIds.length === 0) {
+        return { text: "Select at least one source", tone: "warning" };
+      }
+      if (eventCounts.selected === 0) {
+        return { text: "Select at least one event", tone: "warning" };
+      }
+    }
+    if (
+      attemptedAdvance &&
+      step === "identities" &&
+      selectedFormats.length === 0
+    ) {
+      return {
+        text: "Select a content format before creating",
+        tone: "warning",
+      };
+    }
     if (step === "formats") {
-      return `${selectedFormats.length} format${selectedFormats.length === 1 ? "" : "s"} selected`;
+      return {
+        text: `${selectedFormats.length} format${selectedFormats.length === 1 ? "" : "s"} selected`,
+        tone: "muted",
+      };
     }
     if (step === "activity") {
       if (selectedRepoIds.length === 0) {
-        return "Select at least one source";
+        return { text: "No sources selected yet", tone: "muted" };
       }
-      return `${eventCounts.selected} / ${eventCounts.total} events · ${selectedRepoIds.length} source${selectedRepoIds.length === 1 ? "" : "s"}`;
+      return {
+        text: `${eventCounts.selected} / ${eventCounts.total} events · ${selectedRepoIds.length} source${selectedRepoIds.length === 1 ? "" : "s"}`,
+        tone: "muted",
+      };
     }
-    return selectedBrandVoiceIds.length === 0
-      ? "No identities selected"
-      : `${selectedBrandVoiceIds.length} ${selectedBrandVoiceIds.length === 1 ? "identity" : "identities"} selected`;
+    return {
+      text:
+        selectedBrandVoiceIds.length === 0
+          ? "No identities selected"
+          : `${selectedBrandVoiceIds.length} ${selectedBrandVoiceIds.length === 1 ? "identity" : "identities"} selected`,
+      tone: "muted",
+    };
   }, [
+    attemptedAdvance,
     step,
     selectedFormats.length,
     selectedRepoIds.length,
@@ -846,15 +910,26 @@ export function CreateContentDialog({
                       Back
                     </Button>
                   )}
-                  <span className="text-muted-foreground text-xs">
-                    {footerLeft}
+                  <span
+                    className={cn(
+                      "flex items-center gap-1.5 text-xs",
+                      footerLeft.tone === "warning"
+                        ? "font-medium text-destructive"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {footerLeft.tone === "warning" && (
+                      <HugeiconsIcon
+                        className="size-3.5"
+                        icon={AlertCircleIcon}
+                      />
+                    )}
+                    {footerLeft.text}
                   </span>
                 </div>
                 {step === "identities" ? (
                   <Button
-                    disabled={
-                      mutation.isPending || selectedFormats.length === 0
-                    }
+                    disabled={mutation.isPending}
                     onClick={handleCreate}
                     type="button"
                   >
@@ -878,7 +953,7 @@ export function CreateContentDialog({
                   </Button>
                 ) : (
                   <Button
-                    disabled={continueDisabled}
+                    disabled={mutation.isPending}
                     onClick={goNext}
                     type="button"
                   >

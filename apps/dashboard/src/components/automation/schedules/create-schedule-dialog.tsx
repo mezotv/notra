@@ -106,6 +106,7 @@ export function CreateScheduleDialog({
     getDefaultScheduleValues(editTrigger)
   );
   const [nameTouched, setNameTouched] = useState(isEditMode);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [addRepoOpen, setAddRepoOpen] = useState(false);
   const comboboxAnchor = useComboboxAnchor();
 
@@ -113,6 +114,7 @@ export function CreateScheduleDialog({
     if (open) {
       setValues(getDefaultScheduleValues(editTrigger));
       setNameTouched(!!editTrigger);
+      setSubmitAttempted(false);
     }
   }, [open, editTrigger]);
 
@@ -298,30 +300,42 @@ export function CreateScheduleDialog({
     text: string;
     tone: "warning" | "muted";
   }>(() => {
-    if (values.repositoryIds.length === 0) {
+    if (submitAttempted && values.repositoryIds.length === 0) {
       return {
         text: "Pick at least one source to continue",
         tone: "warning",
       };
     }
-    if (githubRepoCount === 0) {
+    if (submitAttempted && githubRepoCount === 0) {
       return {
         text: "Schedules need at least one GitHub repository",
         tone: "warning",
       };
     }
-    if (values.name.trim().length === 0) {
+    if (submitAttempted && values.name.trim().length === 0) {
       return { text: "Give this schedule a name", tone: "warning" };
     }
     const count = values.repositoryIds.length;
+    if (count === 0) {
+      return { text: "No sources selected yet", tone: "muted" };
+    }
     return {
       text: `${count} source${count === 1 ? "" : "s"} selected`,
       tone: "muted",
     };
-  }, [values.name, values.repositoryIds.length, githubRepoCount]);
+  }, [
+    submitAttempted,
+    values.name,
+    values.repositoryIds.length,
+    githubRepoCount,
+  ]);
 
   const handleSubmit = useCallback(() => {
-    if (!isValid || mutation.isPending) {
+    if (mutation.isPending) {
+      return;
+    }
+    if (!isValid) {
+      setSubmitAttempted(true);
       return;
     }
     mutation.mutate(values);
@@ -627,7 +641,7 @@ export function CreateScheduleDialog({
                   Cancel
                 </Button>
                 <Button
-                  disabled={!isValid || mutation.isPending}
+                  disabled={mutation.isPending}
                   onClick={handleSubmit}
                   type="button"
                 >
