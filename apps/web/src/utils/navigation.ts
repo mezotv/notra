@@ -44,6 +44,13 @@ export const FOOTER_TOOL_LINKS = [
   },
 ] as const;
 
+export const FOOTER_FREE_TOOL_LINKS = [
+  {
+    href: "/twitter-thread-creator",
+    label: "X Thread Builder",
+  },
+] as const;
+
 export const FOOTER_INTEGRATION_LINKS = [
   {
     href: "https://github.com",
@@ -83,6 +90,11 @@ export const FOOTER_PRODUCT_LINKS = [
   {
     href: "/contributors",
     label: "Contributors",
+  },
+  {
+    href: "https://www.notrareviews.com/",
+    label: "Reviews",
+    target: "_blank",
   },
   {
     href: "https://docs.usenotra.com",

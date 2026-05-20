@@ -22,10 +22,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BrailleLoader } from "@/components/braille-loader";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
@@ -129,6 +133,7 @@ export function BlogChangelogPreview({
       } else {
         onApprove?.();
       }
+      setUserAction("none");
       toast.success("Saved as draft", { id: toastId });
     } catch {
       setUserAction("save-failed");
@@ -261,73 +266,77 @@ export function BlogChangelogPreview({
           </CollapsibleContent>
 
           {!isFinished && isOpen && (
-            <div className="flex items-center gap-2 px-3 pb-2">
+            <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
-                  <BrailleLoader className="text-sm" variant="shimmer" />
+                  <Loader2Icon className="size-4 animate-spin" />
                   <span className="truncate">Generating post...</span>
                 </div>
               )}
               {effectiveState === "draft" && (
-                <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
-                  <BrailleLoader className="text-sm" variant="shimmer" />
-                  <span className="truncate">Waiting for response</span>
-                </div>
-              )}
-              {effectiveState === "draft" && (
-                <>
-                  <Button
-                    onClick={() => setRegenerateOpen((open) => !open)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={ArrowReloadHorizontalIcon}
-                    />
-                    Regenerate
-                  </Button>
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          aria-label="Regenerate"
+                          onClick={() => setRegenerateOpen((open) => !open)}
+                          size="icon-sm"
+                          variant="ghost"
+                        />
+                      }
+                    >
+                      <HugeiconsIcon
+                        className="size-4"
+                        icon={ArrowReloadHorizontalIcon}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>Regenerate</TooltipContent>
+                  </Tooltip>
                   <Button onClick={handleDeny} size="sm" variant="ghost">
                     <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
                     Discard
                   </Button>
-                </>
+                </div>
               )}
-              <Button
-                disabled={effectiveState === "loading"}
-                onClick={handleApprove}
-                size="sm"
-                variant="secondary"
-              >
-                {effectiveState === "loading" ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Saving
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={CheckmarkSquare01Icon}
-                    />
-                    Save as draft
-                  </>
-                )}
-              </Button>
-              <Button
-                disabled={effectiveState === "loading"}
-                onClick={handlePublish}
-                size="sm"
-              >
-                {effectiveState === "loading" && userAction === "publishing" ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Publishing
-                  </>
-                ) : (
-                  "Publish"
-                )}
-              </Button>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  disabled={effectiveState === "loading"}
+                  onClick={handleApprove}
+                  size="sm"
+                  variant="outline"
+                >
+                  {effectiveState === "loading" ? (
+                    <>
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    <>
+                      <HugeiconsIcon
+                        className="size-4"
+                        icon={CheckmarkSquare01Icon}
+                      />
+                      Save as draft
+                    </>
+                  )}
+                </Button>
+                <Button
+                  disabled={effectiveState === "loading"}
+                  onClick={handlePublish}
+                  size="sm"
+                >
+                  {effectiveState === "loading" &&
+                  userAction === "publishing" ? (
+                    <>
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Publishing
+                    </>
+                  ) : (
+                    "Publish"
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </div>

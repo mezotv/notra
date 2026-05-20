@@ -315,7 +315,7 @@ function LinkedInPost({
       <div className="px-4 pb-2">
         {isEditable ? (
           <Textarea
-            className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
             onChange={(e) => {
               const value = e.target.value;
               setLocalValue(value);

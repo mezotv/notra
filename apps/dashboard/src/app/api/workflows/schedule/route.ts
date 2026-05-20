@@ -406,6 +406,17 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               resolveContext: getGitHubToolRepositoryContextByIntegrationId,
               resolveLinearContext: getLinearToolContextByIntegrationId,
               log,
+              telemetryMetadata: {
+                contentType: trigger.outputType,
+                feature: "content_generation",
+                generationMode: creationMode,
+                organizationId: trigger.organizationId,
+                routeName: "/api/workflows/schedule",
+                triggerId,
+                triggerName: trigger.name,
+                triggerSourceType: trigger.sourceType,
+                voiceId: brand?.id,
+              },
             });
           } finally {
             log.emit();

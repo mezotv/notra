@@ -3,14 +3,11 @@
   "ignoreIssues": {
     "mdx-components.tsx": ["exports"],
     "source.config.ts": ["files", "exports"],
-    "src/app/(changelog)/changelog/[name]/[slug]/markdown/route.ts": [
-      "unresolved"
-    ],
     "src/app/(changelog)/changelog/[name]/[slug]/page.tsx": ["unresolved"],
-    "src/app/(changelog)/changelog/[name]/markdown/route.ts": ["unresolved"],
     "src/app/(changelog)/changelog/[name]/page.tsx": ["unresolved"],
     "src/app/(changelog)/changelog/page.tsx": ["unresolved"],
     "src/app/sitemap.ts": ["unresolved"],
-    "src/utils/llms.ts": ["unresolved"]
+    "src/utils/llms.ts": ["unresolved"],
+    "src/utils/markdown-twins.ts": ["unresolved"]
   }
 }

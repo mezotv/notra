@@ -790,11 +790,14 @@ export default function PageClient({
                   className="size-4"
                   icon={content.status === "published" ? TextIcon : SentIcon}
                 />
-                {isTogglingStatus
-                  ? "Updating..."
-                  : content.status === "published"
+                {(() => {
+                  if (isTogglingStatus) {
+                    return "Updating...";
+                  }
+                  return content.status === "published"
                     ? "Move to draft"
-                    : "Publish"}
+                    : "Publish";
+                })()}
               </Button>
               {content.contentType === "linkedin_post" && (
                 <Button

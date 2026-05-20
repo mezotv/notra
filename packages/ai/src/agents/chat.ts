@@ -4,6 +4,7 @@ import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { exampleTool } from "@notra/ai/tools/example";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import type { ChatAgentContext } from "@notra/ai/types/agents";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { stepCountIs, ToolLoopAgent } from "ai";
 
 export async function createChatAgent(
@@ -11,7 +12,13 @@ export async function createChatAgent(
   instruction: string
 ) {
   const { organizationId } = context;
-  const decision = await routeMessage(instruction, false, context.log);
+  const decision = await routeMessage(
+    instruction,
+    false,
+    context.log,
+    false,
+    context.telemetryMetadata
+  );
   const model = selectModel(decision);
 
   const modelWithMemory = createModel(
@@ -86,5 +93,8 @@ Triggers: the user wants the document changed (rewrite, shorten, tone change, cl
     }
 ${selectionContext}`,
     stopWhen: stepCountIs(15),
+    experimental_telemetry: buildExperimentalTelemetry(
+      context.telemetryMetadata
+    ),
   });
 }

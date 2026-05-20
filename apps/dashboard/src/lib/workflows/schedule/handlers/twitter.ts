@@ -25,6 +25,7 @@ export async function handleTwitter(
       resolveContext: ctx.resolveContext,
       resolveLinearContext: ctx.resolveLinearContext,
       log: ctx.log,
+      telemetryMetadata: ctx.telemetryMetadata,
     });
 
     return { status: "ok", postId, title, posts, usage };

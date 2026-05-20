@@ -25,5 +25,6 @@ export async function generateBlogPost(
     resolveContext: options.resolveContext,
     resolveLinearContext: options.resolveLinearContext,
     log: options.log,
+    telemetryMetadata: options.telemetryMetadata,
   });
 }

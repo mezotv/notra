@@ -25,8 +25,8 @@ export function ChatSection() {
               Agent stats
             </Label>
             <p className="text-muted-foreground text-xs">
-              Show model, tokens per second, total tokens, and time to first
-              token under assistant messages. Inspired by{" "}
+              Show tokens per second, total tokens, and time to first token
+              under assistant messages. Inspired by{" "}
               <a
                 className="underline underline-offset-2 hover:text-foreground"
                 href="https://t3.chat"

@@ -185,7 +185,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### 9. Negative Parallelisms
 
-**Problem:** Constructions like "Not only...but..." or "It's not just about..., it's..." are overused.
+**Problem:** Constructions like "Not only...but..." or "It's not just about..., it's..." are overused. A related AI tell is the oppositional contrast sentence: "It's not X, it's Y", "This isn't just X, it's a whole new Y", or "Not because of X, but because of Y." These sentences try to create drama by rejecting a simple framing and replacing it with a bigger one. They often sound assembled rather than thought through.
 
 **Before:**
 
@@ -194,6 +194,14 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 **After:**
 
 > The heavy beat adds to the aggressive tone.
+
+**Before:**
+
+> Notra isn't just a content tool; it's a new way for teams to turn every product update into a strategic narrative. Not because the workflow is faster, but because the output finally captures the full story.
+
+**After:**
+
+> Notra helps teams turn product updates into usable drafts faster. The result is usually closer to what they want to publish, so they spend less time rewriting from scratch.
 
 ---
 

@@ -1,13 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": [
-    "ultracite/biome/core",
-    "ultracite/biome/next",
-    "ultracite/biome/astro"
-  ],
-  "html": {
-    "experimentalFullSupportEnabled": true
-  },
+  "extends": ["ultracite/biome/core", "ultracite/biome/next"],
   "files": {
     "includes": [
       "!packages/ui/src",
@@ -72,11 +65,6 @@
       "a11y": {
         "useAriaPropsSupportedByRole": "warn"
       }
-    }
-  },
-  "css": {
-    "parser": {
-      "tailwindDirectives": true
     }
   }
 }

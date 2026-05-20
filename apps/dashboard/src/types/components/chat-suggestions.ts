@@ -6,4 +6,5 @@ export interface Suggestion {
 export interface ChatSuggestionsProps {
   onSelect: (prompt: string) => void;
   disabled?: boolean;
+  hidden?: boolean;
 }

@@ -90,7 +90,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const has14DayRetention = customer
     ? check({ featureId: FEATURES.LOG_RETENTION_14_DAYS }).allowed
     : false;
-  const logRetentionDays = has30DayRetention ? 30 : has14DayRetention ? 14 : 7;
+  let logRetentionDays = 7;
+  if (has30DayRetention) {
+    logRetentionDays = 30;
+  } else if (has14DayRetention) {
+    logRetentionDays = 14;
+  }
 
   const resetPage = () => {
     if (page !== 1) {

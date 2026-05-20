@@ -1,5 +1,5 @@
 {
-  "$schema": "https://v2-9-10.turborepo.dev/schema.json",
+  "$schema": "https://v2-9-12.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "AI_GATEWAY_API_KEY",

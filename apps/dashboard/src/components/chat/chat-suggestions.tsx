@@ -31,11 +31,26 @@ const SUGGESTIONS: Suggestion[] = [
   },
 ];
 
-export function ChatSuggestions({ onSelect, disabled }: ChatSuggestionsProps) {
+export function ChatSuggestions({
+  onSelect,
+  disabled,
+  hidden = false,
+}: ChatSuggestionsProps) {
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <ul className="w-full divide-y divide-border border-y">
+    <motion.ul
+      animate={
+        shouldReduceMotion
+          ? undefined
+          : { opacity: hidden ? 0 : 1, y: hidden ? -2 : 0 }
+      }
+      aria-hidden={hidden}
+      className="w-full divide-y divide-border border-y"
+      initial={false}
+      style={{ pointerEvents: hidden ? "none" : undefined }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+    >
       {SUGGESTIONS.map((suggestion, index) => (
         <motion.li
           animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
@@ -49,8 +64,9 @@ export function ChatSuggestions({ onSelect, disabled }: ChatSuggestionsProps) {
         >
           <button
             className="group flex w-full cursor-pointer items-center gap-[1rem] px-[0.25rem] py-[0.75rem] text-left transition-colors duration-200 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
-            disabled={disabled}
+            disabled={disabled || hidden}
             onClick={() => onSelect(suggestion.prompt)}
+            tabIndex={hidden ? -1 : undefined}
             type="button"
           >
             <span className="flex min-w-0 flex-1 flex-col gap-[0.125rem]">
@@ -68,6 +84,6 @@ export function ChatSuggestions({ onSelect, disabled }: ChatSuggestionsProps) {
           </button>
         </motion.li>
       ))}
-    </ul>
+    </motion.ul>
   );
 }

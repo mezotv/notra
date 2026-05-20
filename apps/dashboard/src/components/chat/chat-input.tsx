@@ -307,6 +307,7 @@ interface ChatInputAdvancedProps {
   connectedTop?: boolean;
   queuedMessages?: QueuedMessage[];
   onUpdateQueued?: (id: string, text: string) => void;
+  onEmptyChange?: (isEmpty: boolean) => void;
   ref?: Ref<ChatInputHandle>;
 }
 
@@ -346,6 +347,7 @@ export function ChatInputAdvanced({
   thinkingLevel = "medium",
   onThinkingLevelChange,
   connectedTop = false,
+  onEmptyChange,
   ref,
 }: ChatInputAdvancedProps) {
   const currentModel =
@@ -566,6 +568,12 @@ export function ChatInputAdvanced({
       }
     };
   }, [cleanupChatUpload]);
+
+  const onEmptyChangeRef = useRef(onEmptyChange);
+  onEmptyChangeRef.current = onEmptyChange;
+  useEffect(() => {
+    onEmptyChangeRef.current?.(isEmpty);
+  }, [isEmpty]);
 
   useEffect(() => {
     function onDragEnter(event: DragEvent) {

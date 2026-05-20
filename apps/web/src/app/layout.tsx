@@ -50,6 +50,13 @@ export const metadata: Metadata = {
       "application/rss+xml": `${SITE_URL}${RSS_FEED_PATH}`,
     },
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml", sizes: "120x120" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

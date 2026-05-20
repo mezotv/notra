@@ -29,6 +29,7 @@ import {
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport, isToolUIPart } from "ai";
+import { Loader2Icon } from "lucide-react";
 import { motion } from "motion/react";
 import { nanoid } from "nanoid";
 import dynamic from "next/dynamic";
@@ -44,7 +45,6 @@ import {
   useState,
 } from "react";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
-import { BrailleLoader } from "@/components/braille-loader";
 import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
 import {
@@ -100,7 +100,6 @@ const LinkedInPreview = dynamic(
   { ssr: false }
 );
 
-const BRAILLE_THINKING_LABEL = "\u2820\u281d\u2815\u281e\u2817\u2801";
 const THINKING_LABEL = "Thinking";
 const REASONING_AUTO_CLOSE_DELAY_MS = 1000;
 const REASONING_CONTENT_CLASSNAME =
@@ -167,11 +166,9 @@ function ChatReasoningBlock({
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
         {isStreaming ? (
-          <BrailleLoader className="text-xs tracking-tight" variant="shimmer" />
+          <Loader2Icon className="size-4 animate-spin" />
         ) : (
-          <span className="font-mono text-xs tracking-tight">
-            {BRAILLE_THINKING_LABEL}
-          </span>
+          <span className="size-4" />
         )}
         <span>{statusLabel}</span>
         <HugeiconsIcon
@@ -398,6 +395,7 @@ function StandaloneChatPageClient({
   >({});
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const chatInputRef = useRef<ChatInputHandle | null>(null);
+  const [isInputEmpty, setIsInputEmpty] = useState(true);
 
   const handleSuggestionSelect = useCallback((text: string) => {
     chatInputRef.current?.setText(text);
@@ -1587,7 +1585,7 @@ function StandaloneChatPageClient({
               key={toolPart.toolCallId}
             >
               <div className="flex items-center gap-2">
-                <BrailleLoader className="text-sm" variant="shimmer" />
+                <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
                 <span className="animate-pulse text-muted-foreground text-sm">
                   Thinking
                 </span>
@@ -1696,6 +1694,10 @@ function StandaloneChatPageClient({
               onDeny={handleDeny}
               onPersist={handlePersist}
               onRegenerate={handleRegenerate}
+              organization={{
+                name: organization?.name ?? "Your Name",
+                logo: organization?.logo ?? null,
+              }}
               persistedStatus={persistedStatus}
               state={previewState}
               title={title}
@@ -1712,6 +1714,10 @@ function StandaloneChatPageClient({
               onDeny={handleDeny}
               onPersist={handlePersist}
               onRegenerate={handleRegenerate}
+              organization={{
+                name: organization?.name ?? "Your Name",
+                logo: organization?.logo ?? null,
+              }}
               persistedStatus={persistedStatus}
               state={previewState}
               title={title}
@@ -1836,6 +1842,7 @@ function StandaloneChatPageClient({
               model={selectedModel}
               onAddContext={handleAddContext}
               onClearError={handleClearError}
+              onEmptyChange={setIsInputEmpty}
               onModelChange={handleModelChange}
               onRemoveContext={handleRemoveContext}
               onSend={handleSend}
@@ -1851,6 +1858,7 @@ function StandaloneChatPageClient({
           </div>
           <ChatSuggestions
             disabled={isLoading}
+            hidden={!isInputEmpty}
             onSelect={handleSuggestionSelect}
           />
         </div>
@@ -1996,7 +2004,7 @@ function StandaloneChatPageClient({
                   <Message from="assistant">
                     <MessageContent>
                       <div className="flex items-center gap-2">
-                        <BrailleLoader className="text-sm" variant="shimmer" />
+                        <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
                         <span className="animate-pulse text-muted-foreground text-sm">
                           {isStopping ? "Stopping" : thinkingIndicatorLabel}
                         </span>

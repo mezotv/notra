@@ -126,7 +126,12 @@ export function UsageSection() {
     logRetention7DaysFeature !== undefined ||
     logRetention14DaysFeature !== undefined ||
     logRetention30DaysFeature !== undefined;
-  const retentionDays = has30DayRetention ? 30 : has14DayRetention ? 14 : 7;
+  let retentionDays = 7;
+  if (has30DayRetention) {
+    retentionDays = 30;
+  } else if (has14DayRetention) {
+    retentionDays = 14;
+  }
 
   if (customerLoading && !customer) {
     return (

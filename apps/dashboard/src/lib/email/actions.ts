@@ -41,6 +41,12 @@ export async function sendInviteEmailAction({
   workspaceName,
   inviteLink,
 }: SendInviteEmailProps) {
+  const { session } = await getServerSession({ headers: await headers() });
+
+  if (!session) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   if (!resend && isDevelopment) {
     return sendDevEmail({
       from: EMAIL_CONFIG.from,
@@ -58,12 +64,6 @@ export async function sendInviteEmailAction({
         },
       },
     });
-  }
-
-  const { session } = await getServerSession({ headers: await headers() });
-
-  if (!session) {
-    return { success: false, error: "Unauthorized" };
   }
 
   if (!resend) {

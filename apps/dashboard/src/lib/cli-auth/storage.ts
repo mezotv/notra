@@ -30,15 +30,15 @@ export async function consumeCliSessionKey(
   | { status: "expired" }
 > {
   const identifier = identifierFor(sessionId);
-  const row = await db.query.verifications.findFirst({
-    where: eq(verifications.identifier, identifier),
-  });
+  const [row] = await db
+    .delete(verifications)
+    .where(eq(verifications.identifier, identifier))
+    .returning();
+
   if (!row) {
     return { status: "pending" };
   }
-  await db
-    .delete(verifications)
-    .where(eq(verifications.identifier, identifier));
+
   if (row.expiresAt.getTime() < Date.now()) {
     return { status: "expired" };
   }

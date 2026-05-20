@@ -9,6 +9,7 @@ import type {
   LinkedInTonePromptInput,
   TwitterTonePromptInput,
 } from "./prompts";
+import type { TccMetadata } from "./tcc";
 import type {
   CommitWindow,
   GitHubSelectionFilters,
@@ -76,6 +77,7 @@ export interface ChangelogAgentOptions {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface LinkedInAgentResult {
@@ -105,6 +107,7 @@ export interface LinkedInAgentOptions {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface TwitterAgentResult {
@@ -134,6 +137,7 @@ export interface TwitterAgentOptions {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface BlogPostAgentResult {
@@ -163,6 +167,7 @@ export interface BlogPostAgentOptions {
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }
 
 export interface ChatAgentContext {
@@ -172,4 +177,5 @@ export interface ChatAgentContext {
   onMarkdownUpdate: (markdown: string) => void;
   brandContext?: string;
   log?: AILogTarget;
+  telemetryMetadata?: TccMetadata;
 }

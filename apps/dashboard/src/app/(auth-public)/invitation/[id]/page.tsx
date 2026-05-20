@@ -39,17 +39,17 @@ async function InvitePageComponent({ invitationId }: { invitationId: string }) {
 
   // If invitation is expired or already accepted/rejected, show error
   if (invitationData.expired || invitationData.status !== "pending") {
+    let initialError = "This invitation is no longer valid.";
+    if (invitationData.expired) {
+      initialError = "This invitation has expired.";
+    } else if (invitationData.status === "accepted") {
+      initialError = "This invitation has already been accepted.";
+    } else if (invitationData.status === "rejected") {
+      initialError = "This invitation has been declined.";
+    }
     return (
       <PageClient
-        initialError={
-          invitationData.expired
-            ? "This invitation has expired."
-            : invitationData.status === "accepted"
-              ? "This invitation has already been accepted."
-              : invitationData.status === "rejected"
-                ? "This invitation has been declined."
-                : "This invitation is no longer valid."
-        }
+        initialError={initialError}
         invitation={invitationData}
         invitationId={invitationId}
         user={session?.user ?? null}

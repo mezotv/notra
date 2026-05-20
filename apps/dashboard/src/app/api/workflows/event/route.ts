@@ -285,6 +285,20 @@ export const { POST } = serve<EventWorkflowPayload>(
             sourceMetadata,
             autoPublish: trigger.autoPublish,
             resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+            telemetryMetadata: {
+              contentType: trigger.outputType,
+              eventAction,
+              eventType,
+              feature: "content_generation",
+              generationMode: "event",
+              organizationId: trigger.organizationId,
+              repositoryId: repository.id,
+              routeName: "/api/workflows/event",
+              triggerId: trigger.id,
+              triggerName: trigger.name,
+              triggerSourceType: "github_webhook",
+              voiceId: brand?.id,
+            },
           });
         }
       );

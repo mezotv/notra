@@ -283,13 +283,14 @@ export default function PageClient({ slug, name }: PageClientProps) {
           )}
         </div>
 
-        {organizationId && isPending ? (
+        {organizationId && isPending && (
           <div className="space-y-4">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-96 w-full" />
           </div>
-        ) : skill ? (
+        )}
+        {!(organizationId && isPending) && skill && (
           <div className="space-y-4">
             <Field>
               <FieldLabel>Name</FieldLabel>
@@ -348,7 +349,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
               </Tabs>
             </Field>
           </div>
-        ) : null}
+        )}
       </div>
 
       <ResponsiveAlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>

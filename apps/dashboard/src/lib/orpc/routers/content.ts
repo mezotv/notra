@@ -123,6 +123,7 @@ function serializeContent(post: {
 
 export interface CommitPreview {
   authorName: string;
+  authorLogin: string | null;
   authoredAt: string;
   htmlUrl: string;
   message: string;
@@ -434,6 +435,7 @@ async function fetchCommitsPreview(params: {
         sha: commit.sha,
         message: commit.commit.message.split("\n")[0] ?? "",
         authorName: commit.commit.author?.name ?? "Unknown",
+        authorLogin: commit.author?.login ?? null,
         authoredAt: commit.commit.author?.date ?? "",
         htmlUrl: commit.html_url,
       });

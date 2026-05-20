@@ -16,7 +16,7 @@
     "@notra/db": "workspace:*",
     "@notra/utils": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
-    "@opentelemetry/sdk-node": "^0.216.0",
+    "@opentelemetry/sdk-node": "^0.217.0",
     "@unkey/api": "^2.3.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",

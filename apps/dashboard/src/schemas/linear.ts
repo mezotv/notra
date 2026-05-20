@@ -47,3 +47,10 @@ export const linearAuthorizeQuerySchema = z.object({
   callbackPath: z.string().min(1).default("/"),
 });
 export type LinearAuthorizeQuery = z.infer<typeof linearAuthorizeQuerySchema>;
+
+export const linearWebhookPayloadSchema = z.object({
+  action: z.string(),
+  type: z.string(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+export type LinearWebhookPayload = z.infer<typeof linearWebhookPayloadSchema>;

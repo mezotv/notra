@@ -49,6 +49,7 @@ export async function generateEventBasedContent(
       sourceMetadata: ctx.sourceMetadata,
       autoPublish: ctx.autoPublish,
       resolveContext: ctx.resolveContext,
+      telemetryMetadata: ctx.telemetryMetadata,
     };
 
     const result = await generateFn(agentOptions);

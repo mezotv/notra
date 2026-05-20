@@ -26,9 +26,11 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@notra/ui/components/ui/input-group";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
@@ -50,6 +52,9 @@ export default function PageClient({ slug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickstartUrl, setQuickstartUrl] = useState("");
+
+  useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
+
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -147,6 +152,8 @@ export default function PageClient({ slug }: PageClientProps) {
     }));
   };
 
+  const isLoadingSkills = !!organizationId && isPending;
+
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -157,13 +164,14 @@ export default function PageClient({ slug }: PageClientProps) {
               Reusable instructions your agents load when generating content.
             </p>
           </div>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            New Skill
+            Create Skill
+            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
 
-        {organizationId && isPending ? (
+        {isLoadingSkills && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cards
@@ -175,9 +183,11 @@ export default function PageClient({ slug }: PageClientProps) {
               </Card>
             ))}
           </div>
-        ) : skills.length === 0 ? (
+        )}
+        {!isLoadingSkills && skills.length === 0 && (
           <p className="text-muted-foreground">No skills yet.</p>
-        ) : (
+        )}
+        {!isLoadingSkills && skills.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {skills.map((skill) => (
               <Link

@@ -59,12 +59,15 @@ export function AffectedTriggersWarning({
         />
       )}
       <p className="text-muted-foreground text-xs">
-        {hasSchedules && hasEvents
-          ? `These schedules and events use this ${resourceLabel} and will be disabled.`
-          : hasSchedules
-            ? `These schedules use this ${resourceLabel} and will be disabled.`
-            : `These events use this ${resourceLabel} and will be disabled.`}{" "}
-        You&apos;ll need to edit them before re-enabling.
+        {(() => {
+          if (hasSchedules && hasEvents) {
+            return `These schedules and events use this ${resourceLabel} and will be disabled.`;
+          }
+          if (hasSchedules) {
+            return `These schedules use this ${resourceLabel} and will be disabled.`;
+          }
+          return `These events use this ${resourceLabel} and will be disabled.`;
+        })()} You&apos;ll need to edit them before re-enabling.
       </p>
     </div>
   );

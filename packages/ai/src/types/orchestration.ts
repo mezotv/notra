@@ -90,10 +90,14 @@ export interface ToolSet {
 
 export interface RepoContext {
   integrationId: string;
+  owner?: string;
+  repo?: string;
 }
 
 export interface LinearContext {
   integrationId: string;
+  teamName?: string;
+  displayName?: string;
 }
 
 export interface OrchestrateInput {

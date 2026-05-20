@@ -115,8 +115,8 @@ export function Navbar() {
               <ThemeToggle />
               <Link href="https://app.usenotra.com/login">
                 <Button
-                  className="overflow-hidden rounded-lg border-transparent bg-card px-2 py-1 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted sm:px-3 sm:py-[6px] md:px-[14px]"
-                  variant="ghost"
+                  className="overflow-hidden rounded-lg px-2 py-1 sm:px-3 sm:py-[6px] md:px-[14px]"
+                  variant="outline"
                 >
                   <span className="flex flex-col justify-center font-medium font-sans text-primary text-xs leading-5 md:text-[13px]">
                     Log in
@@ -177,8 +177,8 @@ export function Navbar() {
             </TrackedSignupLink>
             <Link href="https://app.usenotra.com/login">
               <Button
-                className="h-11 overflow-hidden rounded-lg border-transparent bg-card px-8 shadow-[0px_1px_2px_rgba(55,50,47,0.12)] hover:bg-muted"
-                variant="ghost"
+                className="h-11 overflow-hidden rounded-lg px-8"
+                variant="outline"
               >
                 <span className="font-medium font-sans text-base text-primary">
                   Log in

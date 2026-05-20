@@ -19,6 +19,21 @@ export function BrandVoiceCell({
   isDefault?: boolean;
 }) {
   if (!voice) {
+    if (isDefault) {
+      return (
+        <Tooltip>
+          <TooltipTrigger className="cursor-help truncate text-sm">
+            None
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <p className="font-medium">No identity</p>
+            <p className="text-muted-foreground">
+              No identity has been configured for this workspace yet.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
     return <span className="text-muted-foreground/50">&mdash;</span>;
   }
 

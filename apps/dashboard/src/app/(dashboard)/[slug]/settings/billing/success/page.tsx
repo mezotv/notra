@@ -20,12 +20,12 @@ export default function BillingSuccessPage() {
     (sub) => !sub.addOn && sub.status === "active"
   );
   const planId = activeSubscription?.plan?.id ?? activeSubscription?.planId;
-  const planName =
-    planId === "pro" || planId === "pro_yearly"
-      ? "Pro"
-      : planId === "basic" || planId === "basic_yearly"
-        ? "Basic"
-        : "your new plan";
+  let planName = "your new plan";
+  if (planId === "pro" || planId === "pro_yearly") {
+    planName = "Pro";
+  } else if (planId === "basic" || planId === "basic_yearly") {
+    planName = "Basic";
+  }
 
   async function handleManageBilling() {
     try {

@@ -2,16 +2,18 @@ import { buttonVariants } from "@notra/ui/components/ui/button";
 import { Discord } from "@notra/ui/components/ui/svgs/discord";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
+import { Reddit } from "@notra/ui/components/ui/svgs/reddit";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { AI_SUMMARY_LINKS } from "@/utils/ai-summary-links";
 import {
+  FOOTER_FREE_TOOL_LINKS,
   FOOTER_INTEGRATION_LINKS,
   FOOTER_PRODUCT_LINKS,
   FOOTER_TOOL_LINKS,
 } from "@/utils/navigation";
-import { SOCIAL_LINKS } from "../utils/constants";
+import { SOCIAL_LINKS } from "../utils/social-links";
 import { NotraMark } from "./notra-mark";
 import { TrackedAiSummaryLink } from "./tracked-ai-summary-link";
 
@@ -74,6 +76,15 @@ export default function FooterSection() {
             >
               <Discord className="size-5" />
             </Link>
+            <Link
+              aria-label="Visit Notra on Reddit"
+              className={buttonVariants({ size: "icon", variant: "ghost" })}
+              href={SOCIAL_LINKS.reddit}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Reddit className="size-5" />
+            </Link>
           </div>
         </div>
 
@@ -109,6 +120,23 @@ export default function FooterSection() {
                   key={link.href}
                   rel={link.rel}
                   target={link.target}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
+            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
+              Free Tools
+            </div>
+            <div className="flex flex-col items-start justify-end gap-2">
+              {FOOTER_FREE_TOOL_LINKS.map((link) => (
+                <Link
+                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
+                  href={link.href}
+                  key={link.href}
                 >
                   {link.label}
                 </Link>
@@ -157,6 +185,12 @@ export default function FooterSection() {
                 href="/legal"
               >
                 Legal Notice
+              </Link>
+              <Link
+                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
+                href="/subprocessors"
+              >
+                Subprocessors
               </Link>
             </div>
           </div>

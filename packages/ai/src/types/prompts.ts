@@ -38,9 +38,13 @@ export interface ContentEditorChatPromptParams {
 export interface StandaloneChatPromptParams {
   repoContext?: Array<{
     integrationId: string;
+    owner?: string;
+    repo?: string;
   }>;
   linearContext?: Array<{
     integrationId: string;
+    teamName?: string;
+    displayName?: string;
   }>;
   toolDescriptions?: string[];
   hasGitHubEnabled: boolean;

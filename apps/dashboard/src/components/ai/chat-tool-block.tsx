@@ -27,11 +27,11 @@ function getNumber(value: unknown, key: string): number | undefined {
   return typeof entry === "number" ? entry : undefined;
 }
 
-type ToolCopy = {
+interface ToolCopy {
   verbs: readonly [present: string, past: string];
   noun: string;
   suffix?: (input: unknown, output: unknown) => string | undefined;
-};
+}
 
 function idSuffix(input: unknown, keys: readonly string[]): string | undefined {
   for (const key of keys) {
@@ -274,11 +274,11 @@ export function ChatToolBlock({
           aria-hidden
           className={cn(
             "size-3.5 shrink-0 text-muted-foreground/60 transition-all",
-            hasDetails
-              ? isOpen
-                ? "rotate-180 opacity-100"
-                : "rotate-0 opacity-0 group-hover:opacity-100"
-              : "invisible"
+            !hasDetails && "invisible",
+            hasDetails && isOpen && "rotate-180 opacity-100",
+            hasDetails &&
+              !isOpen &&
+              "rotate-0 opacity-0 group-hover:opacity-100"
           )}
           icon={ArrowDown01Icon}
         />

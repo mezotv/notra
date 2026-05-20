@@ -107,7 +107,7 @@ export function AssistantMetadataHover({
 }: AssistantMetadataHoverProps) {
   const { showAgentStats } = useShowAgentStats();
 
-  if (!(metadata && showAgentStats)) {
+  if (!metadata) {
     return null;
   }
 
@@ -130,7 +130,7 @@ export function AssistantMetadataHover({
     );
   }
 
-  if (typeof metadata.tokensPerSecond === "number") {
+  if (showAgentStats && typeof metadata.tokensPerSecond === "number") {
     items.push(
       <div className="flex items-center gap-1" key="tps">
         <HugeiconsIcon className="size-3" icon={FlashIcon} />
@@ -139,7 +139,7 @@ export function AssistantMetadataHover({
     );
   }
 
-  if (typeof metadata.outputTokens === "number") {
+  if (showAgentStats && typeof metadata.outputTokens === "number") {
     const contextWindow = metadata.model
       ? getModelContextWindow(metadata.model)
       : null;
@@ -186,7 +186,7 @@ export function AssistantMetadataHover({
     );
   }
 
-  if (typeof metadata.ttftMs === "number") {
+  if (showAgentStats && typeof metadata.ttftMs === "number") {
     items.push(
       <div className="flex items-center gap-1" key="ttft">
         <HugeiconsIcon className="size-3" icon={Clock01Icon} />

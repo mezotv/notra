@@ -15,32 +15,32 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
+import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@notra/ui/components/ui/tabs";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BrailleLoader } from "@/components/braille-loader";
 import { LinkedInPost } from "@/components/linkedin-post";
+import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
+import { createLinkedInPostUrl } from "@/utils/linkedin";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 type IncomingState = "draft" | "finished";
 type EffectiveState = "draft" | "loading" | "finished";
-type UserAction =
-  | "none"
-  | "saving"
-  | "publishing"
-  | "generating"
-  | "save-failed";
+type UserAction = "none" | "saving" | "generating" | "save-failed";
 
 interface LinkedInPreviewProps {
   state: IncomingState;
   title: string;
   markdown: string;
+  organization?: {
+    name: string;
+    logo?: string | null;
+  };
   persistedStatus?: "draft" | "published";
   onApprove?: () => void;
   onDeny?: () => void;
@@ -58,6 +58,7 @@ export function LinkedInPreview({
   state: incomingState,
   title,
   markdown,
+  organization,
   persistedStatus = "draft",
   onApprove,
   onDeny,
@@ -65,15 +66,10 @@ export function LinkedInPreview({
   onRegenerate,
 }: LinkedInPreviewProps) {
   const [userAction, setUserAction] = useState<UserAction>("none");
-  const [draftTitle, setDraftTitle] = useState(title);
   const [draftMarkdown, setDraftMarkdown] = useState(markdown);
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [regenerateInstructions, setRegenerateInstructions] = useState("");
   const [isOpen, setIsOpen] = useState(incomingState !== "finished");
-
-  useEffect(() => {
-    setDraftTitle(title);
-  }, [title]);
 
   useEffect(() => {
     setDraftMarkdown(markdown);
@@ -83,11 +79,7 @@ export function LinkedInPreview({
     if (incomingState === "finished") {
       return "finished";
     }
-    if (
-      userAction === "saving" ||
-      userAction === "publishing" ||
-      userAction === "generating"
-    ) {
+    if (userAction === "saving" || userAction === "generating") {
       return "loading";
     }
     if (userAction === "save-failed") {
@@ -97,11 +89,7 @@ export function LinkedInPreview({
   })();
 
   useEffect(() => {
-    if (
-      userAction !== "saving" &&
-      userAction !== "publishing" &&
-      userAction !== "generating"
-    ) {
+    if (userAction !== "saving" && userAction !== "generating") {
       return;
     }
     const timer = window.setTimeout(() => {
@@ -117,40 +105,19 @@ export function LinkedInPreview({
     try {
       if (onPersist) {
         await onPersist("draft", {
-          title: draftTitle,
+          title,
           markdown: draftMarkdown,
         });
       } else {
         onApprove?.();
       }
+      setUserAction("none");
       toast.success("Saved as draft", { id: toastId });
     } catch {
       setUserAction("save-failed");
       toast.error("Failed to save draft", { id: toastId });
     }
-  }, [draftMarkdown, draftTitle, onApprove, onPersist]);
-
-  const handlePublish = useCallback(async () => {
-    setUserAction("publishing");
-    setIsOpen(false);
-    const toastId = toast.loading("Publishing post...");
-    try {
-      if (!onPersist) {
-        setUserAction("save-failed");
-        toast.error("Publish is not available", { id: toastId });
-        return;
-      }
-      await onPersist("published", {
-        title: draftTitle,
-        markdown: draftMarkdown,
-      });
-      setUserAction("none");
-      toast.success("Post published", { id: toastId });
-    } catch {
-      setUserAction("save-failed");
-      toast.error("Failed to publish post", { id: toastId });
-    }
-  }, [draftMarkdown, draftTitle, onPersist]);
+  }, [draftMarkdown, onApprove, onPersist, title]);
 
   const handleDeny = useCallback(() => {
     onDeny?.();
@@ -166,10 +133,10 @@ export function LinkedInPreview({
     setUserAction("generating");
     toast("Generating post...");
     onRegenerate?.(instructions, {
-      title: draftTitle,
+      title,
       markdown: draftMarkdown,
     });
-  }, [draftMarkdown, draftTitle, onRegenerate, regenerateInstructions]);
+  }, [draftMarkdown, onRegenerate, regenerateInstructions, title]);
 
   const isFinished = effectiveState === "finished";
   const showStatusBadge = isFinished && userAction !== "save-failed";
@@ -184,7 +151,7 @@ export function LinkedInPreview({
               icon={ArrowRight01Icon}
             />
             <span className="min-w-0 truncate text-left font-medium text-sm">
-              {draftTitle}
+              {title}
             </span>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
               {showStatusBadge && (
@@ -204,42 +171,22 @@ export function LinkedInPreview({
 
           <CollapsibleContent>
             <div className="mx-2 mb-2 space-y-2">
-              {!isFinished && (
-                <input
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  onChange={(event) => setDraftTitle(event.target.value)}
-                  value={draftTitle}
+              <div className="flex justify-center py-4">
+                <LinkedInPost
+                  author={{
+                    name: organization?.name ?? "Your Name",
+                    avatar: organization?.logo ?? undefined,
+                  }}
+                  className="w-full max-w-lg"
+                  content={draftMarkdown}
+                  defaultExpanded
+                  onContentChange={
+                    isFinished ? undefined : (value) => setDraftMarkdown(value)
+                  }
+                  timestamp="Just now"
+                  truncate={false}
                 />
-              )}
-              <Tabs defaultValue="markdown">
-                <TabsList variant="line">
-                  <TabsTrigger value="markdown">Markdown</TabsTrigger>
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                </TabsList>
-                <TabsContent className="mt-2" value="markdown">
-                  <textarea
-                    className="min-h-40 w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onChange={(event) => setDraftMarkdown(event.target.value)}
-                    readOnly={isFinished}
-                    value={draftMarkdown}
-                  />
-                </TabsContent>
-                <TabsContent className="mt-2" value="preview">
-                  <LinkedInPost
-                    author={{ name: "Your Name" }}
-                    className="w-full"
-                    content={draftMarkdown}
-                    defaultExpanded
-                    onContentChange={
-                      isFinished
-                        ? undefined
-                        : (value) => setDraftMarkdown(value)
-                    }
-                    timestamp="Just now"
-                    truncate={false}
-                  />
-                </TabsContent>
-              </Tabs>
+              </div>
               {regenerateOpen && !isFinished && (
                 <input
                   autoFocus
@@ -260,73 +207,78 @@ export function LinkedInPreview({
           </CollapsibleContent>
 
           {!isFinished && isOpen && (
-            <div className="flex items-center gap-2 px-3 pb-2">
+            <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
-                  <BrailleLoader className="text-sm" variant="shimmer" />
+                  <Loader2Icon className="size-4 animate-spin" />
                   <span className="truncate">Generating post...</span>
                 </div>
               )}
               {effectiveState === "draft" && (
-                <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
-                  <BrailleLoader className="text-sm" variant="shimmer" />
-                  <span className="truncate">Waiting for response</span>
-                </div>
-              )}
-              {effectiveState === "draft" && (
-                <>
-                  <Button
-                    onClick={() => setRegenerateOpen((open) => !open)}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={ArrowReloadHorizontalIcon}
-                    />
-                    Regenerate
-                  </Button>
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          aria-label="Regenerate"
+                          onClick={() => setRegenerateOpen((open) => !open)}
+                          size="icon-sm"
+                          variant="ghost"
+                        />
+                      }
+                    >
+                      <HugeiconsIcon
+                        className="size-4"
+                        icon={ArrowReloadHorizontalIcon}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent>Regenerate</TooltipContent>
+                  </Tooltip>
                   <Button onClick={handleDeny} size="sm" variant="ghost">
                     <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
                     Discard
                   </Button>
-                </>
+                </div>
               )}
-              <Button
-                disabled={effectiveState === "loading"}
-                onClick={handleApprove}
-                size="sm"
-                variant="secondary"
-              >
-                {effectiveState === "loading" ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Saving
-                  </>
-                ) : (
-                  <>
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={CheckmarkSquare01Icon}
-                    />
-                    Save as draft
-                  </>
-                )}
-              </Button>
-              <Button
-                disabled={effectiveState === "loading"}
-                onClick={handlePublish}
-                size="sm"
-              >
-                {effectiveState === "loading" && userAction === "publishing" ? (
-                  <>
-                    <Loader2Icon className="size-4 animate-spin" />
-                    Publishing
-                  </>
-                ) : (
-                  "Publish"
-                )}
-              </Button>
+              <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <Button
+                  disabled={effectiveState === "loading"}
+                  onClick={handleApprove}
+                  size="sm"
+                  variant="outline"
+                >
+                  {effectiveState === "loading" ? (
+                    <>
+                      <Loader2Icon className="size-4 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    <>
+                      <HugeiconsIcon
+                        className="size-4"
+                        icon={CheckmarkSquare01Icon}
+                      />
+                      Save as draft
+                    </>
+                  )}
+                </Button>
+                <Button
+                  className="max-w-full text-white hover:opacity-90"
+                  nativeButton={false}
+                  render={
+                    <a
+                      href={createLinkedInPostUrl(draftMarkdown)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <Linkedin className="size-4" />
+                      Post to LinkedIn
+                    </a>
+                  }
+                  size="sm"
+                  style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+                />
+              </div>
             </div>
           )}
         </div>

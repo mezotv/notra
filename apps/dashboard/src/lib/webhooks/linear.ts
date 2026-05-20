@@ -2,10 +2,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getDecryptedLinearWebhookSecret } from "@notra/ai/integrations/linear";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
-import type {
-  LinearWebhookPayload,
-  WebhookContext,
-} from "@/types/webhooks/webhooks";
+import {
+  type LinearWebhookPayload,
+  linearWebhookPayloadSchema,
+} from "@/schemas/linear";
+import type { WebhookContext } from "@/types/webhooks/webhooks";
 
 export async function handleLinearWebhook(
   context: WebhookContext
@@ -66,9 +67,9 @@ export async function handleLinearWebhook(
     );
   }
 
-  let payload: LinearWebhookPayload;
+  let parsedBody: unknown;
   try {
-    payload = JSON.parse(rawBody) as LinearWebhookPayload;
+    parsedBody = JSON.parse(rawBody);
   } catch {
     await appendWebhookLog({
       organizationId,
@@ -83,6 +84,27 @@ export async function handleLinearWebhook(
 
     return Response.json({ error: "Invalid webhook payload" }, { status: 400 });
   }
+
+  const validation = linearWebhookPayloadSchema.safeParse(parsedBody);
+  if (!validation.success) {
+    await appendWebhookLog({
+      organizationId,
+      integrationId,
+      integrationType: "linear",
+      title: "Invalid webhook payload structure",
+      status: "failed",
+      statusCode: 400,
+      referenceId: null,
+      errorMessage: `Payload validation failed: ${validation.error.issues.map((issue) => issue.message).join(", ")}`,
+    });
+
+    return Response.json(
+      { error: "Invalid webhook payload structure" },
+      { status: 400 }
+    );
+  }
+
+  const payload: LinearWebhookPayload = validation.data;
 
   const logRetentionDays = await checkLogRetention(organizationId);
 

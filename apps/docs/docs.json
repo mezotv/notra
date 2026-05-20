@@ -207,6 +207,17 @@
                 ]
               },
               {
+                "group": "Skills",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/skills",
+                  "POST /v1/skills",
+                  "GET /v1/skills/{name}",
+                  "PATCH /v1/skills/{name}",
+                  "DELETE /v1/skills/{name}"
+                ]
+              },
+              {
                 "group": "Chats",
                 "expanded": true,
                 "pages": [

@@ -2,6 +2,7 @@ export interface CommitPreview {
   sha: string;
   message: string;
   authorName: string;
+  authorLogin: string | null;
   authoredAt: string;
 }
 
