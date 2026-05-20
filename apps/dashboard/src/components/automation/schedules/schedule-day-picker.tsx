@@ -54,7 +54,7 @@ export function ScheduleDayPicker({
   }
 
   const selectedMonthDay = dayOfMonth ?? 1;
-  const isShortMonthDay = selectedMonthDay >= 29;
+  const skipNote = getMonthDaySkipNote(selectedMonthDay);
   return (
     <div className="space-y-2">
       <Label className="text-muted-foreground text-xs" htmlFor="day-of-month">
@@ -79,11 +79,20 @@ export function ScheduleDayPicker({
           ))}
         </SelectContent>
       </Select>
-      <p className="text-muted-foreground text-xs">
-        {isShortMonthDay
-          ? `Months without day ${selectedMonthDay} are skipped (e.g. February).`
-          : "If a month is shorter than the selected day, the run is skipped that month."}
-      </p>
+      <p className="text-muted-foreground text-xs">{skipNote}</p>
     </div>
   );
+}
+
+function getMonthDaySkipNote(day: number): string {
+  if (day === 31) {
+    return "Skipped in February, April, June, September, and November.";
+  }
+  if (day === 30) {
+    return "Skipped in February.";
+  }
+  if (day === 29) {
+    return "Skipped in February except leap years.";
+  }
+  return "If a month is shorter than the selected day, the run is skipped that month.";
 }

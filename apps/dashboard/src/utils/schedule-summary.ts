@@ -73,7 +73,7 @@ export function formatNextRunRelative(
   now: Date = new Date()
 ): string {
   const diffMs = nextRun.getTime() - now.getTime();
-  const diffMinutes = Math.round(diffMs / 60_000);
+  const diffMinutes = Math.floor(diffMs / 60_000);
 
   if (diffMinutes < 1) {
     return "any moment";
@@ -81,11 +81,11 @@ export function formatNextRunRelative(
   if (diffMinutes < 60) {
     return `in ${diffMinutes}m`;
   }
-  const diffHours = Math.round(diffMinutes / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) {
     return `in ${diffHours}h`;
   }
-  const diffDays = Math.round(diffHours / 24);
+  const diffDays = Math.floor(diffHours / 24);
   return `in ${diffDays}d`;
 }
 

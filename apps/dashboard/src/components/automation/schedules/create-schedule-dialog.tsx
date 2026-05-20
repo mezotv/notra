@@ -287,8 +287,12 @@ export function CreateScheduleDialog({
 
   const meta = FORMAT_CARD_META[values.outputType];
 
-  const isValid =
-    values.name.trim().length > 0 && values.repositoryIds.length > 0;
+  const githubRepoCount = useMemo(
+    () => values.repositoryIds.filter((id) => !id.startsWith("linear:")).length,
+    [values.repositoryIds]
+  );
+
+  const isValid = values.name.trim().length > 0 && githubRepoCount > 0;
 
   const footerStatus = useMemo<{
     text: string;
@@ -300,6 +304,12 @@ export function CreateScheduleDialog({
         tone: "warning",
       };
     }
+    if (githubRepoCount === 0) {
+      return {
+        text: "Schedules need at least one GitHub repository",
+        tone: "warning",
+      };
+    }
     if (values.name.trim().length === 0) {
       return { text: "Give this schedule a name", tone: "warning" };
     }
@@ -308,7 +318,7 @@ export function CreateScheduleDialog({
       text: `${count} source${count === 1 ? "" : "s"} selected`,
       tone: "muted",
     };
-  }, [values.name, values.repositoryIds.length]);
+  }, [values.name, values.repositoryIds.length, githubRepoCount]);
 
   const handleSubmit = useCallback(() => {
     if (!isValid || mutation.isPending) {
