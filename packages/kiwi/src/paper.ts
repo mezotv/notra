@@ -31,6 +31,7 @@ const FONT_FAMILY_QUOTES_RE = /^["']|["']$/g;
 const COLLAPSIBLE_TEXT_RE = /[ \t\n\f\r]+/g;
 const PRE_LINE_BREAK_RE = /\r?\n/;
 const PRE_LINE_SPACE_RE = /[ \t\f\r]+/g;
+const PAPER_TEXT_WIDTH_ALLOWANCE = 1.11;
 
 interface OklchColor {
   alpha?: number;
@@ -102,6 +103,10 @@ function isWhitespaceText(node: ChildNode): boolean {
   return (
     node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() === ""
   );
+}
+
+function isTextNode(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
 }
 
 function paperRootElement(
@@ -500,8 +505,10 @@ function cssPropertyToPaperKey(property: string): string {
   );
 }
 
-function computedStyles(style: CSSStyleDeclaration): Record<string, string> {
-  const styles: Record<string, string> = {};
+function computedStyles(
+  style: CSSStyleDeclaration
+): Record<string, string | number> {
+  const styles: Record<string, string | number> = {};
   for (let index = 0; index < style.length; index += 1) {
     const property = style.item(index);
     const value = style.getPropertyValue(property);
@@ -513,15 +520,21 @@ function computedStyles(style: CSSStyleDeclaration): Record<string, string> {
   return styles;
 }
 
-function textStyles(style: CSSStyleDeclaration): Record<string, string> {
+function textStyles(
+  style: CSSStyleDeclaration,
+  width?: number,
+  height?: number
+): Record<string, string | number> {
   return {
     fontSize: style.fontSize,
+    ...(height !== undefined ? { height } : {}),
     letterSpacing: style.letterSpacing,
     lineHeight: style.lineHeight,
     textAlign: style.textAlign,
     textOverflow: style.textOverflow,
     textTransform: style.textTransform,
     textWrap: style.getPropertyValue("text-wrap") || "auto",
+    ...(width !== undefined ? { width } : {}),
   };
 }
 
@@ -539,6 +552,63 @@ function normalizeTextValue(text: string, style: CSSStyleDeclaration): string {
         .join("\n");
     default:
       return text.replaceAll(COLLAPSIBLE_TEXT_RE, " ").trim();
+  }
+}
+
+function hasTextNode(element: Element): boolean {
+  return Array.from(element.childNodes).some(
+    (node) =>
+      node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim()
+  );
+}
+
+function hasElementChild(element: Element): boolean {
+  return Array.from(element.childNodes).some(
+    (node) => node.nodeType === Node.ELEMENT_NODE
+  );
+}
+
+function measuredTextBounds(node: Node): { height: number; width: number } {
+  const ownerDocument =
+    node.ownerDocument ?? (node instanceof Document ? node : document);
+  const range = ownerDocument.createRange();
+  range.selectNodeContents(node);
+  const rect = range.getBoundingClientRect();
+  range.detach?.();
+  return {
+    height: rect.height,
+    width: rect.width,
+  };
+}
+
+function paperTextWidth(width: number): number {
+  if (!Number.isFinite(width) || width <= 0) {
+    return width;
+  }
+  return Math.ceil(width * PAPER_TEXT_WIDTH_ALLOWANCE);
+}
+
+function applyPaperTextSizing(
+  styles: Record<string, string | number>,
+  element: Element,
+  style: CSSStyleDeclaration
+): void {
+  if (!hasTextNode(element) || hasElementChild(element)) {
+    return;
+  }
+  if (
+    style.whiteSpace === "pre-wrap" ||
+    style.whiteSpace === "pre-line" ||
+    style.whiteSpace === "break-spaces"
+  ) {
+    return;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const width = paperTextWidth(rect.width);
+  if (Number.isFinite(width) && width > rect.width) {
+    styles.width = width;
+    styles.inlineSize = width;
   }
 }
 
@@ -690,7 +760,7 @@ function buildPaperEmbedData(
     return id;
   };
 
-  function addTextNode(text: string, parentElement: Element): string | null {
+  function addTextNode(textNode: Text, parentElement: Element): string | null {
     const view = parentElement.ownerDocument.defaultView;
     if (!view) {
       return null;
@@ -698,10 +768,13 @@ function buildPaperEmbedData(
 
     const id = createId();
     const style = view.getComputedStyle(parentElement);
+    const text = textNode.textContent ?? "";
     const textValue = normalizeTextValue(text, style);
     if (!textValue) {
       return null;
     }
+    const bounds = measuredTextBounds(textNode);
+    const textWidth = paperTextWidth(bounds.width);
 
     nodes[id] = {
       "~": false,
@@ -715,7 +788,13 @@ function buildPaperEmbedData(
         parentElement.tagName.toLowerCase()
       ),
       styleMeta: textStyleMeta(style),
-      styles: textStyles(style),
+      styles: textStyles(
+        style,
+        Number.isFinite(textWidth) && textWidth > 0 ? textWidth : undefined,
+        Number.isFinite(bounds.height) && bounds.height > 0
+          ? bounds.height
+          : undefined
+      ),
       textValue,
     };
     return id;
@@ -740,6 +819,9 @@ function buildPaperEmbedData(
       component = "Frame";
     }
 
+    const styles = computedStyles(style);
+    applyPaperTextSizing(styles, element, style);
+
     nodes[id] = {
       "~": false,
       component,
@@ -749,13 +831,13 @@ function buildPaperEmbedData(
       ...(isSvgChild ? { tag: element.tagName.toLowerCase() } : {}),
       ...(isSvgElement(element) ? { props: svgProps(element, style) } : {}),
       ...(isSvgChild ? {} : { styleMeta: htmlStyleMeta(style) }),
-      styles: computedStyles(style),
+      styles,
     };
 
     const childIds: string[] = [];
     for (const child of Array.from(element.childNodes)) {
-      if (child.nodeType === Node.TEXT_NODE) {
-        const childId = addTextNode(child.textContent ?? "", element);
+      if (isTextNode(child)) {
+        const childId = addTextNode(child, element);
         if (childId) {
           childIds.push(childId);
         }
