@@ -27,19 +27,17 @@ import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
+import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
-import { AddTriggerDialog } from "@/components/automation/triggers/trigger-sheet";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
-import type { Trigger, TriggerSourceType } from "@/types/triggers/triggers";
+import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-
-const EVENT_SOURCE_TYPES: TriggerSourceType[] = ["github_webhook"];
 
 function formatEventList(events?: string[]) {
   if (!events || events.length === 0) {
@@ -196,9 +194,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               automatically
             </p>
           </div>
-          <AddTriggerDialog
-            allowedSourceTypes={EVENT_SOURCE_TYPES}
-            initialSourceType="github_webhook"
+          <CreateEventTriggerDialog
             onSuccess={() =>
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.events.list.queryKey({
@@ -221,9 +217,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         {!isPending && eventTriggers.length === 0 && (
           <EmptyState
             action={
-              <AddTriggerDialog
-                allowedSourceTypes={EVENT_SOURCE_TYPES}
-                initialSourceType="github_webhook"
+              <CreateEventTriggerDialog
                 onSuccess={() =>
                   queryClient.invalidateQueries({
                     queryKey: dashboardOrpc.automation.events.list.queryKey({
