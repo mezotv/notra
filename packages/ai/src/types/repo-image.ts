@@ -1,12 +1,13 @@
 import type {
   generateRepoImageInputSchema,
-  REPO_IMAGE_MODES,
-} from "@/schemas/repo-image";
+  repoImageModeSchema,
+} from "@notra/ai/schemas/repo-image";
+import type { z } from "zod";
 
-export type RepoImageMode = (typeof REPO_IMAGE_MODES)[number];
+export type RepoImageMode = z.infer<typeof repoImageModeSchema>;
 
-export type GenerateRepoImageInput = ReturnType<
-  typeof generateRepoImageInputSchema.parse
+export type GenerateRepoImageInput = z.infer<
+  typeof generateRepoImageInputSchema
 >;
 
 export interface GenerateRepoImageResult {

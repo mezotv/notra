@@ -1,12 +1,6 @@
-export interface PathPoint {
-  x: number;
-  y: number;
-}
+import type { PathPoint, PathSubpath } from "../types/svg-path";
 
-export interface PathSubpath {
-  points: PathPoint[];
-  closed: boolean;
-}
+export type { PathPoint, PathSubpath } from "../types/svg-path";
 
 const CMD_RE = /([MmLlHhVvCcSsQqTtAaZz])([^MmLlHhVvCcSsQqTtAaZz]*)/g;
 const NUM_RE = /-?\d*\.?\d+(?:[eE][+-]?\d+)?/g;
@@ -167,7 +161,11 @@ export function parseSvgPath(d: string): PathSubpath[] {
   CMD_RE.lastIndex = 0;
   let m: RegExpExecArray | null = CMD_RE.exec(d);
   while (m) {
-    const cmd = m[1] as string;
+    const cmd = m[1];
+    if (!cmd) {
+      m = CMD_RE.exec(d);
+      continue;
+    }
     const args = parseNumbers(m[2] ?? "");
     const lower = cmd.toLowerCase();
     const isRel = cmd !== cmd.toUpperCase();

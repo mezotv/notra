@@ -1,33 +1,8 @@
 // biome-ignore-all lint/suspicious/noBitwiseOperators: Kiwi binary encoding requires explicit bitwise operations.
-export type KiwiValue = unknown;
+import { KIND_ENUM, KIND_MESSAGE, KIND_STRUCT } from "../constants/kiwi";
+import type { Definition, FieldDef, KiwiValue } from "../types/kiwi";
 
-export interface FieldDef {
-  name: string;
-  typeCode: number;
-  isArray: boolean;
-  value: number;
-}
-
-export interface Definition {
-  name: string;
-  kind: number;
-  fields: FieldDef[];
-}
-
-export const KIND_ENUM = 0;
-export const KIND_STRUCT = 1;
-export const KIND_MESSAGE = 2;
-
-export const BUILTINS: Record<number, string> = {
-  [-1]: "bool",
-  [-2]: "byte",
-  [-3]: "int",
-  [-4]: "uint",
-  [-5]: "float",
-  [-6]: "string",
-  [-7]: "int64",
-  [-8]: "uint64",
-};
+export type { Definition, FieldDef, KiwiValue } from "../types/kiwi";
 
 const textDecoder = new TextDecoder("utf-8");
 const textEncoder = new TextEncoder();
@@ -312,33 +287,71 @@ function encodeBuiltin(
       writer.writeBool(Boolean(value));
       return;
     case -2:
-      writer.writeByte(value as number);
+      writer.writeByte(numberValue(value, "byte"));
       return;
     case -3:
-      writer.writeInt(value as number);
+      writer.writeInt(numberValue(value, "int"));
       return;
     case -4:
-      writer.writeUint(value as number);
+      writer.writeUint(numberValue(value, "uint"));
       return;
     case -5:
-      writer.writeFloat(value as number);
+      writer.writeFloat(numberValue(value, "float"));
       return;
     case -6:
-      writer.writeString(value as string);
+      writer.writeString(stringValue(value));
       return;
     case -7:
-      writer.writeInt64(
-        typeof value === "bigint" ? value : BigInt(value as number)
-      );
+      writer.writeInt64(bigintValue(value, "int64"));
       return;
     case -8:
-      writer.writeUint64(
-        typeof value === "bigint" ? value : BigInt(value as number)
-      );
+      writer.writeUint64(bigintValue(value, "uint64"));
       return;
     default:
       throw new Error(`unknown builtin ${code}`);
   }
+}
+
+function numberValue(value: KiwiValue, typeName: string): number {
+  if (typeof value !== "number") {
+    throw new Error(`cannot encode ${String(value)} as ${typeName}`);
+  }
+  return value;
+}
+
+function stringValue(value: KiwiValue): string {
+  if (typeof value !== "string") {
+    throw new Error(`cannot encode ${String(value)} as string`);
+  }
+  return value;
+}
+
+function bigintValue(value: KiwiValue, typeName: string): bigint {
+  if (typeof value === "bigint") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return BigInt(value);
+  }
+  throw new Error(`cannot encode ${String(value)} as ${typeName}`);
+}
+
+function arrayValue(value: KiwiValue): KiwiValue[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`cannot encode ${String(value)} as array`);
+  }
+  return value;
+}
+
+function objectValue(value: KiwiValue): Record<string, KiwiValue> {
+  if (!isKiwiRecord(value)) {
+    throw new Error(`cannot encode ${String(value)} as object`);
+  }
+  return value;
+}
+
+function isKiwiRecord(value: KiwiValue): value is Record<string, KiwiValue> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function decodeValue(
@@ -369,7 +382,7 @@ export function encodeValue(
   defs: Definition[]
 ): void {
   if (isArray) {
-    const arr = value as KiwiValue[];
+    const arr = arrayValue(value);
     writer.writeVarint(arr.length);
     for (const item of arr) {
       encodeValue(writer, item, typeCode, false, defs);
@@ -467,14 +480,14 @@ export function encodeDefinition(
     throw new Error(`cannot encode ${String(value)} as enum ${d.name}`);
   }
   if (d.kind === KIND_STRUCT) {
-    const obj = value as Record<string, KiwiValue>;
+    const obj = objectValue(value);
     for (const f of d.fields) {
       encodeValue(writer, obj[f.name], f.typeCode, f.isArray, defs);
     }
     return;
   }
   if (d.kind === KIND_MESSAGE) {
-    const obj = value as Record<string, KiwiValue>;
+    const obj = objectValue(value);
     for (const f of d.fields) {
       const v = obj[f.name];
       if (v !== undefined && v !== null) {

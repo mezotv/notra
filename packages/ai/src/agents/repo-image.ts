@@ -1,25 +1,24 @@
 import {
+  AGENT_TIMEOUT_MS,
+  RECOVERY_AGENT_TIMEOUT_MS,
+  REPO_IMAGE_OUTPUT_HTML_PATH,
+} from "@notra/ai/constants/repo-image";
+import {
   getDecryptedToken,
   getGitHubIntegrationById,
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
-import { createOctokit } from "@notra/ai/utils/octokit";
-import { Agent, Box, OpenCodeModel } from "@upstash/box";
-import {
-  buildExtractionPrompt,
-  REPO_IMAGE_OUTPUT_HTML_PATH,
-} from "@/lib/repo-image/prompt";
-import { renderHtmlToImages } from "@/lib/repo-image/render";
-import { withLongFetchTimeouts } from "@/lib/repo-image/undici-dispatcher";
-import { shortSha } from "@/lib/repo-image/utils";
+import { buildExtractionPrompt } from "@notra/ai/prompts/repo-image";
 import type {
   GenerateRepoImageInput,
   GenerateRepoImageResult,
   RepoImageSourceContext,
-} from "@/types/repo-image";
-
-const AGENT_TIMEOUT_MS = 480_000;
-const RECOVERY_AGENT_TIMEOUT_MS = 180_000;
+} from "@notra/ai/types/repo-image";
+import { createOctokit } from "@notra/ai/utils/octokit";
+import { shortSha } from "@notra/ai/utils/repo-image";
+import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
+import { withLongFetchTimeouts } from "@notra/ai/utils/undici-dispatcher";
+import { Agent, Box, OpenCodeModel } from "@upstash/box";
 
 export class RepoImageError extends Error {
   readonly code:
@@ -102,7 +101,10 @@ async function buildSourceContext(params: {
   const octokit = createOctokit(token ?? undefined);
 
   if (mode === "pr") {
-    const prNumber = params.prNumber as number;
+    const prNumber = params.prNumber;
+    if (prNumber === undefined) {
+      throw new RepoImageError("invalid_source", "PR number is required");
+    }
     let pr: Awaited<
       ReturnType<
         typeof octokit.request<"GET /repos/{owner}/{repo}/pulls/{pull_number}">
@@ -152,7 +154,10 @@ async function buildSourceContext(params: {
     };
   }
 
-  const sha = params.commitSha as string;
+  const sha = params.commitSha;
+  if (!sha) {
+    throw new RepoImageError("invalid_source", "Commit SHA is required");
+  }
   let commit: Awaited<
     ReturnType<
       typeof octokit.request<"GET /repos/{owner}/{repo}/commits/{ref}">

@@ -1,112 +1,32 @@
 import type { Font } from "opentype.js";
-import { loadTextFont } from "./fonts/loader";
-import type { Guid } from "./scene-builder";
-import { SceneBuilder, solidFill } from "./scene-builder";
-import type { PathSubpath } from "./svg-path";
-import { parseSvgPath } from "./svg-path";
-import { TextLayoutCache } from "./text-layout";
+import { SceneBuilder, solidFill } from "../builders/scene-builder";
+import {
+  HEX_RE,
+  IGNORED_TAGS,
+  LAYER_WORD_SPLIT_RE,
+  MAX_LAYER_NAME_LENGTH,
+  RGB_RE,
+  TEXT_ALIGN_MAP,
+  WEIGHT_TO_STYLE,
+  WHITESPACE_GLOBAL_RE,
+  WHITESPACE_RE,
+} from "../constants/dom-to-scene";
+import { loadTextFont } from "../fonts/loader";
+import type {
+  BorderSide,
+  BoxBorders,
+  BuildSceneFromElementOptions,
+  ElementInfo,
+  LayoutNode,
+  SvgInfo,
+  SvgShape,
+} from "../types/dom-to-scene";
+import type { Guid } from "../types/scene";
+import type { PathSubpath } from "../types/svg-path";
+import { parseSvgPath } from "../utils/svg-path";
+import { TextLayoutCache } from "../utils/text-layout";
 
-const RGB_RE = /rgba?\(([^)]+)\)/;
-const HEX_RE = /^#([0-9a-f]{3,8})$/i;
-const LAYER_WORD_SPLIT_RE = /[-_\s]+/;
-const WHITESPACE_RE = /\s+/;
-const WHITESPACE_GLOBAL_RE = /\s+/g;
-
-const WEIGHT_TO_STYLE: Record<string, string> = {
-  "100": "Thin",
-  "200": "Extra Light",
-  "300": "Light",
-  "400": "Regular",
-  normal: "Regular",
-  "500": "Medium",
-  "600": "Semi Bold",
-  "700": "Bold",
-  bold: "Bold",
-  "800": "Extra Bold",
-  "900": "Black",
-};
-
-const TEXT_ALIGN_MAP: Record<string, string> = {
-  left: "LEFT",
-  right: "RIGHT",
-  center: "CENTER",
-  justify: "JUSTIFIED",
-  start: "LEFT",
-  end: "RIGHT",
-};
-
-const IGNORED_TAGS = new Set(["script", "style", "meta", "link", "head"]);
-const MAX_LAYER_NAME_LENGTH = 80;
-
-export interface BuildSceneFromElementOptions {
-  name?: string;
-}
-
-interface ElementInfo {
-  kind: "element";
-  name: string;
-  tag: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  background: string;
-  cornerRadii: [number, number, number, number];
-  borders: BoxBorders;
-  children: LayoutNode[];
-}
-
-interface BorderSide {
-  color: string;
-  width: number;
-}
-
-interface BoxBorders {
-  top: BorderSide;
-  right: BorderSide;
-  bottom: BorderSide;
-  left: BorderSide;
-}
-
-interface TextInfo {
-  kind: "text";
-  name: string;
-  text: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: string;
-  lineHeight: string;
-  letterSpacing: string;
-  color: string;
-  textAlign: string;
-  wrapped: boolean;
-  parentX: number;
-  parentY: number;
-  parentWidth: number;
-}
-
-interface SvgShape {
-  subpaths: PathSubpath[];
-  fill: string;
-  fillRule: "nonzero" | "evenodd";
-}
-
-interface SvgInfo {
-  kind: "svg";
-  name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  shapes: SvgShape[];
-}
-
-type LayoutNode = ElementInfo | TextInfo | SvgInfo;
+export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
 
 function parseColor(s: string): [number, number, number, number] | null {
   if (!s) {
@@ -484,14 +404,20 @@ function extractLayout(node: Node): LayoutNode | null {
   if (node.nodeType !== Node.ELEMENT_NODE) {
     return null;
   }
-  const el = node as Element;
+  if (!(node instanceof Element)) {
+    return null;
+  }
+  const el = node;
   const tag = el.tagName.toLowerCase();
   if (IGNORED_TAGS.has(tag)) {
     return null;
   }
 
   if (tag === "svg") {
-    const svg = el as SVGSVGElement;
+    if (!(el instanceof SVGSVGElement)) {
+      return null;
+    }
+    const svg = el;
     const rect = svg.getBoundingClientRect();
     const style = getComputedStyle(svg);
     const svgFill = svg.getAttribute("fill") ?? "";

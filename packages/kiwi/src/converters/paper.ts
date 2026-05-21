@@ -1,103 +1,32 @@
-export interface BuildPaperPasteHtmlOptions {
-  fileId?: string;
-  label?: string;
-  name?: string;
-  pasteId?: string;
-  unwrapSingleChild?: boolean;
-}
+import {
+  COLLAPSIBLE_TEXT_RE,
+  CSS_PROPERTY_WORD_RE,
+  FONT_FAMILY_QUOTES_RE,
+  HEX_RE,
+  LAYER_WORD_SPLIT_RE,
+  MAX_LAYER_NAME_LENGTH,
+  PAPER_FILE_ID,
+  PAPER_ROOT_NODE_ID,
+  PAPER_TEXT_WIDTH_ALLOWANCE,
+  PRE_LINE_BREAK_RE,
+  PRE_LINE_SPACE_RE,
+  RGB_RE,
+  ULID_ALPHABET,
+  WHITESPACE_GLOBAL_RE,
+} from "../constants/paper";
+import type {
+  BorderSide,
+  BoxBorders,
+  BuildPaperPasteHtmlOptions,
+  PaperBorder,
+  PaperColor,
+  PaperEmbedData,
+  PaperFont,
+  PaperNode,
+  PaperPaint,
+} from "../types/paper";
 
-interface BorderSide {
-  color: string;
-  width: number;
-}
-
-interface BoxBorders {
-  bottom: BorderSide;
-  left: BorderSide;
-  right: BorderSide;
-  top: BorderSide;
-}
-
-const HEX_RE = /^#([0-9a-f]{3,8})$/i;
-const LAYER_WORD_SPLIT_RE = /[-_\s]+/;
-const MAX_LAYER_NAME_LENGTH = 80;
-const PAPER_FILE_ID = "01K7QHG680HSXQF6M27VN7DECS";
-const PAPER_ROOT_NODE_ID = "PT-0";
-const CSS_PROPERTY_WORD_RE = /-([a-z])/g;
-const RGB_RE = /rgba?\(([^)]+)\)/;
-const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const WHITESPACE_GLOBAL_RE = /\s+/g;
-const FONT_FAMILY_QUOTES_RE = /^["']|["']$/g;
-const COLLAPSIBLE_TEXT_RE = /[ \t\n\f\r]+/g;
-const PRE_LINE_BREAK_RE = /\r?\n/;
-const PRE_LINE_SPACE_RE = /[ \t\f\r]+/g;
-const PAPER_TEXT_WIDTH_ALLOWANCE = 1.11;
-
-interface OklchColor {
-  alpha?: number;
-  c: number;
-  h: number;
-  l: number;
-  mode: "oklch";
-}
-
-interface PaperColor {
-  mode: "hex";
-  value: OklchColor;
-}
-
-interface PaperPaint {
-  color: PaperColor;
-  isVisible: boolean;
-  type: "solid";
-}
-
-interface PaperBorder {
-  color: PaperColor;
-  isVisible: boolean;
-  style: string;
-  type: "color";
-  width: string;
-}
-
-interface PaperEmbedData {
-  fileId: string;
-  id: string;
-  images: Record<string, never>;
-  nodes: Record<string, PaperNode>;
-  oldIdToNewIdMap: Record<string, string>;
-  parentToChildrenIndex: Record<string, string[]>;
-  positions: Record<string, [number, number]>;
-  topLevelNodeIds: string[];
-}
-
-interface PaperFont {
-  axes?: Record<string, { max: number; min: number; tag: string }>;
-  coordinates?: Record<string, number>;
-  family: string;
-  isItalic: boolean;
-  style: string;
-  weight: number;
-}
-
-interface PaperNode {
-  "~": false;
-  component: "Frame" | "Rectangle" | "SVG" | "SVGVisualElement" | "Text";
-  id: string;
-  label: string;
-  labelIsModified?: true;
-  props?: Record<string, unknown>;
-  styleMeta?: {
-    borders?: {
-      all: PaperBorder;
-    };
-    fill?: PaperPaint[];
-    font?: PaperFont;
-  };
-  styles: Record<string, string | number>;
-  tag?: string;
-  textValue?: string;
-}
+export type { BuildPaperPasteHtmlOptions } from "../types/paper";
 
 function isWhitespaceText(node: ChildNode): boolean {
   return (

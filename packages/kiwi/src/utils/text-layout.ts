@@ -1,40 +1,15 @@
 import type { Font, Glyph } from "opentype.js";
-import type { DerivedTextData, SceneBuilder, TextGlyph } from "./scene-builder";
+import type { SceneBuilder } from "../builders/scene-builder";
+import type { DerivedTextData, TextGlyph } from "../types/scene";
+import type {
+  CharacterGlyph,
+  LayoutOptions,
+  LineLayout,
+  VariableFont,
+} from "../types/text-layout";
 import { encodeGlyphCommands } from "./text-glyph";
 
-interface LayoutOptions {
-  text: string;
-  font: Font;
-  fontFamily: string;
-  fontStyle: string;
-  fontWeight: number;
-  fontSize: number;
-  lineHeight: number;
-  letterSpacing: number;
-  maxWidth: number;
-  wrap: boolean;
-}
-
-interface CharacterGlyph {
-  char: string;
-  firstCharacter: number;
-  glyph: Glyph;
-  advance: number;
-  width: number;
-}
-
-interface LineLayout {
-  chars: CharacterGlyph[];
-  width: number;
-  firstCharacter: number;
-  endCharacter: number;
-}
-
-interface VariableFont extends Font {
-  variation?: {
-    getTransform: (glyph: Glyph, coords: Record<string, number>) => Glyph;
-  };
-}
+export type { LayoutOptions } from "../types/text-layout";
 
 const WHITESPACE_RE = /\s/;
 
@@ -144,7 +119,7 @@ export class TextLayoutCache {
 function shapeCharacters(options: LayoutOptions): CharacterGlyph[] {
   const out: CharacterGlyph[] = [];
   let index = 0;
-  const variation = (options.font as VariableFont).variation;
+  const variation = getVariation(options.font);
   const coords = variationCoords(options);
   for (const char of Array.from(options.text)) {
     const baseGlyph = options.font.charToGlyph(char);
@@ -161,6 +136,17 @@ function shapeCharacters(options: LayoutOptions): CharacterGlyph[] {
     index += char.length;
   }
   return out;
+}
+
+function getVariation(font: Font): VariableFont["variation"] {
+  if (hasVariation(font)) {
+    return font.variation;
+  }
+  return undefined;
+}
+
+function hasVariation(font: Font): font is VariableFont {
+  return "variation" in font;
 }
 
 function variationCoords(options: LayoutOptions): Record<string, number> {

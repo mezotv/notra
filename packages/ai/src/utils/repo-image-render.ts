@@ -1,28 +1,18 @@
+import {
+  DISPLAY_STYLE_RE,
+  FONT_SPECS,
+  GOOGLE_FONT_URL_REGEX,
+  LEADING_STYLE_SEPARATOR_RE,
+  REPO_IMAGE_HEIGHT,
+  REPO_IMAGE_WIDTH,
+  SATORI_VALID_DISPLAY,
+  STYLE_ATTR_RE,
+} from "@notra/ai/constants/repo-image";
+import type { VNode } from "@notra/ai/types/repo-image-render";
 import { Resvg } from "@resvg/resvg-js";
-import type { ReactNode } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 import satori from "satori";
 import { html as parseHtml } from "satori-html";
-
-const REPO_IMAGE_WIDTH = 1200;
-const REPO_IMAGE_HEIGHT = 630;
-
-const GOOGLE_FONT_URL_REGEX =
-  /src: url\((.+?)\) format\('(opentype|truetype)'\)/;
-
-interface FontSpec {
-  name: string;
-  weight: 400 | 500 | 700;
-  family: string;
-}
-
-const FONT_SPECS: FontSpec[] = [
-  { name: "Inter", weight: 400, family: "Inter" },
-  { name: "Inter", weight: 700, family: "Inter:wght@700" },
-  { name: "Geist", weight: 400, family: "Geist" },
-  { name: "Geist", weight: 700, family: "Geist:wght@700" },
-  { name: "Instrument Serif", weight: 400, family: "Instrument Serif" },
-  { name: "JetBrains Mono", weight: 500, family: "JetBrains Mono:wght@500" },
-];
 
 const fontCache = new Map<string, ArrayBuffer>();
 
@@ -83,20 +73,6 @@ async function loadAllFonts() {
 
   return loaded;
 }
-
-interface VNode {
-  type?: string;
-  props?: {
-    style?: Record<string, unknown>;
-    children?: unknown;
-  };
-}
-
-const SATORI_VALID_DISPLAY = new Set(["flex", "contents", "none"]);
-
-const STYLE_ATTR_RE = /style\s*=\s*(['"])([\s\S]*?)\1/i;
-const DISPLAY_STYLE_RE = /(^|;)\s*display\s*:/i;
-const LEADING_STYLE_SEPARATOR_RE = /^\s*;?/;
 
 function injectDisplayFlexInHtml(htmlSource: string): string {
   return htmlSource.replace(/<div\b([^>]*)>/gi, (match, rawAttrs: string) => {
@@ -165,10 +141,45 @@ function enforceSatoriDisplay(node: unknown) {
   }
 }
 
+function toReactNode(value: unknown): ReactNode {
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === "boolean" ||
+    typeof value === "string" ||
+    typeof value === "number"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return createElement(
+      Fragment,
+      null,
+      ...value.map((child, index) =>
+        createElement(Fragment, { key: index }, toReactNode(child))
+      )
+    );
+  }
+
+  if (!isVNode(value) || !value.type) {
+    return null;
+  }
+
+  const { children, ...props } = value.props ?? {};
+  const childNodes = Array.isArray(children) ? children : [children];
+  return createElement(
+    value.type,
+    props,
+    ...childNodes.map((child) => toReactNode(child))
+  );
+}
+
 export async function renderHtmlToImages(htmlSource: string) {
   const safeHtml = injectDisplayFlexInHtml(htmlSource);
-  const tree = parseHtml(safeHtml) as ReactNode;
-  enforceSatoriDisplay(tree);
+  const rawTree = parseHtml(safeHtml);
+  enforceSatoriDisplay(rawTree);
+  const tree = toReactNode(rawTree);
   const fonts = await loadAllFonts();
 
   const svg = await satori(tree, {

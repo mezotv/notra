@@ -1,21 +1,16 @@
-const MAGIC = new Uint8Array([
-  0x66, 0x69, 0x67, 0x2d, 0x6b, 0x69, 0x77, 0x69, 0x6a,
-]);
-const PADDING = new Uint8Array([0x00, 0x00, 0x00]);
+import { BUFFER_RE, MAGIC, META_RE, PADDING } from "../constants/packer";
+import type { FigmaMetadata } from "../types/packer";
 
-const META_RE =
-  /data-metadata="&lt;!--\(figmeta\)([A-Za-z0-9+/=]+)\(\/figmeta\)--&gt;"/;
-const BUFFER_RE =
-  /data-buffer="&lt;!--\(figma\)([A-Za-z0-9+/=]+)\(\/figma\)--&gt;"/;
+export type { FigmaMetadata } from "../types/packer";
 
-export interface FigmaMetadata {
-  fileKey: string;
-  pasteID: number;
-  dataType: string;
+function blobPartFromBytes(data: Uint8Array): ArrayBuffer {
+  const buffer = new ArrayBuffer(data.byteLength);
+  new Uint8Array(buffer).set(data);
+  return buffer;
 }
 
 async function deflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([data as unknown as BlobPart])
+  const stream = new Blob([blobPartFromBytes(data)])
     .stream()
     .pipeThrough(new CompressionStream("deflate-raw"));
   const out = await new Response(stream).arrayBuffer();
@@ -23,7 +18,7 @@ async function deflateRaw(data: Uint8Array): Promise<Uint8Array> {
 }
 
 async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
-  const stream = new Blob([data as unknown as BlobPart])
+  const stream = new Blob([blobPartFromBytes(data)])
     .stream()
     .pipeThrough(new DecompressionStream("deflate-raw"));
   const out = await new Response(stream).arrayBuffer();

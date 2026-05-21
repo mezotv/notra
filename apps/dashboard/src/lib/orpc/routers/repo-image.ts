@@ -1,4 +1,6 @@
+import { generateRepoImage, RepoImageError } from "@notra/ai/agents/repo-image";
 import { GitHubBranchNotFoundError } from "@notra/ai/integrations/github";
+import { generateRepoImageInputSchema } from "@notra/ai/schemas/repo-image";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
@@ -6,8 +8,6 @@ import {
   internalServerError,
   notFound,
 } from "@/lib/orpc/utils/errors";
-import { generateRepoImage, RepoImageError } from "@/lib/services/repo-image";
-import { generateRepoImageInputSchema } from "@/schemas/repo-image";
 
 export const repoImageRouter = {
   generate: baseProcedure

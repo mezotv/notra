@@ -1,8 +1,8 @@
-import type { RepoImageSourceContext } from "@/types/repo-image";
-
-export const REPO_IMAGE_OUTPUT_HTML_PATH = "/workspace/home/output.html";
-
-const ALLOWED_FONTS = ["Inter", "Geist"] as const;
+import {
+  ALLOWED_FONTS,
+  REPO_IMAGE_OUTPUT_HTML_PATH,
+} from "@notra/ai/constants/repo-image";
+import type { RepoImageSourceContext } from "@notra/ai/types/repo-image";
 
 function describeSource(source: RepoImageSourceContext): string {
   if (source.mode === "prompt") {

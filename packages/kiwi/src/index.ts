@@ -1,55 +1,13 @@
-// biome-ignore-all lint/performance/noBarrelFile: Package entrypoint intentionally re-exports the public Kiwi API.
-import { buildSceneFromElement } from "./dom-to-scene";
 import {
   ByteWriter,
   encodeDefinition,
   findDefinition,
   parseSchema,
-} from "./kiwi";
-import { packBuffer, packHtml } from "./packer";
-import { getSchemaBytes } from "./schema";
-
-export type { BuildSceneFromElementOptions } from "./dom-to-scene";
-export { buildSceneFromElement } from "./dom-to-scene";
-export type { Definition, FieldDef, KiwiValue } from "./kiwi";
-export {
-  ByteReader,
-  ByteWriter,
-  decodeDefinition,
-  encodeDefinition,
-  findDefinition,
-  parseSchema,
-} from "./kiwi";
-export type { FigmaMetadata } from "./packer";
-export { packBuffer, packHtml, unpackBuffer, unpackHtml } from "./packer";
-export type { BuildPaperPasteHtmlOptions } from "./paper";
-export { buildPaperPasteHtml, copyAsPaper } from "./paper";
-export type {
-  AddFrameOptions,
-  AddTextOptions,
-  Color,
-  DerivedTextData,
-  Guid,
-  RGBA,
-  SceneNode,
-  SolidFill,
-  TextBaseline,
-  TextGlyph,
-  Transform,
-} from "./scene-builder";
-export {
-  positionFor,
-  SceneBuilder,
-  solidFill,
-  transformAt,
-} from "./scene-builder";
-export { getSchemaBytes } from "./schema";
-
-export interface BuildFigmaPasteHtmlOptions {
-  name?: string;
-  fileKey?: string;
-  label?: string;
-}
+} from "./codecs/kiwi";
+import { packBuffer, packHtml } from "./codecs/packer";
+import { buildSceneFromElement } from "./converters/dom-to-scene";
+import { getSchemaBytes } from "./schemas/figma";
+import type { BuildFigmaPasteHtmlOptions } from "./types/figma";
 
 export async function buildFigmaPasteHtml(
   element: HTMLElement,

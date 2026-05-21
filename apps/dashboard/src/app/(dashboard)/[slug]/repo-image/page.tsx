@@ -8,6 +8,11 @@ import {
   MagicWand01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type {
+  GenerateRepoImageInput,
+  GenerateRepoImageResult,
+  RepoImageMode,
+} from "@notra/ai/types/repo-image";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import {
@@ -37,11 +42,6 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { base64ToBlob, pngBase64ToDataUrl } from "@/lib/repo-image/utils";
-import type {
-  GenerateRepoImageInput,
-  GenerateRepoImageResult,
-  RepoImageMode,
-} from "@/types/repo-image";
 
 const MODE_LABELS: Record<RepoImageMode, string> = {
   prompt: "Prompt",
@@ -49,7 +49,12 @@ const MODE_LABELS: Record<RepoImageMode, string> = {
   commit: "Commit",
 };
 
+const MODE_OPTIONS: RepoImageMode[] = ["prompt", "pr", "commit"];
 const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
+
+function isRepoImageMode(value: string): value is RepoImageMode {
+  return value in MODE_LABELS;
+}
 
 interface GitHubIntegrationOption {
   id: string;
@@ -154,9 +159,7 @@ export default function RepoImagePage() {
         payload = { ...base, commitSha: sha };
       }
 
-      return dashboardOrpc.repoImage.generate.call(
-        payload
-      ) as Promise<GenerateRepoImageResult>;
+      return dashboardOrpc.repoImage.generate.call(payload);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -250,7 +253,7 @@ export default function RepoImagePage() {
       if (!el) {
         throw new Error("Design not ready");
       }
-      const { copyAsPaper } = await import("@notra/kiwi");
+      const { copyAsPaper } = await import("@notra/kiwi/paper");
       await copyAsPaper(el, { name: exportName });
     },
     onSuccess: () => toast.success("Copied. Now paste into Paper (Cmd+V)"),
@@ -353,21 +356,23 @@ export default function RepoImagePage() {
               <Field>
                 <FieldLabel>Subject</FieldLabel>
                 <Tabs
-                  onValueChange={(value) => setMode(value as RepoImageMode)}
+                  onValueChange={(value) => {
+                    if (isRepoImageMode(value)) {
+                      setMode(value);
+                    }
+                  }}
                   value={mode}
                 >
                   <TabsList>
-                    {(Object.keys(MODE_LABELS) as RepoImageMode[]).map(
-                      (item) => (
-                        <TabsTrigger
-                          disabled={isGenerating}
-                          key={item}
-                          value={item}
-                        >
-                          {MODE_LABELS[item]}
-                        </TabsTrigger>
-                      )
-                    )}
+                    {MODE_OPTIONS.map((item) => (
+                      <TabsTrigger
+                        disabled={isGenerating}
+                        key={item}
+                        value={item}
+                      >
+                        {MODE_LABELS[item]}
+                      </TabsTrigger>
+                    ))}
                   </TabsList>
                 </Tabs>
 
