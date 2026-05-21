@@ -2,7 +2,7 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
+    "dev": "PORT=3003 bun --watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.mjs",
     "check-types": "bunx tsc --noEmit",
