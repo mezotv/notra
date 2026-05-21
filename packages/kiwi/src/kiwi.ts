@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noBitwiseOperators: Kiwi binary encoding requires explicit bitwise operations.
 export type KiwiValue = unknown;
 
 export interface FieldDef {
