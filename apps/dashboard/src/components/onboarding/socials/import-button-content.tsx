@@ -1,7 +1,7 @@
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loader2Icon } from "lucide-react";
-import { ONBOARDING_IMPORT_COUNT } from "@/lib/onboarding/constants";
+import { ONBOARDING_IMPORT_COUNT } from "@/constants/onboarding";
 import type { ImportButtonContentProps } from "@/types/components/socials-onboarding";
 
 export function ImportButtonContent({

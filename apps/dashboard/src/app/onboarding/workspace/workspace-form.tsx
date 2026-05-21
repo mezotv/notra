@@ -23,8 +23,16 @@ function slugify(value: string): string {
   return slugSchema.safeParse(value).data ?? "";
 }
 
-function normalizeWebsite(value: string): string {
-  return WEBSITE_PREFIX_REGEX.test(value) ? value : `https://${value}`;
+function getValidationMessage(error: unknown) {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error && typeof error === "object" && "message" in error) {
+    return String(error.message);
+  }
+
+  return "Please check this field";
 }
 
 interface ExistingOrg {
@@ -47,19 +55,14 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       slug: existingOrg?.slug ?? "",
       websiteUrl: "",
     },
+    validators: {
+      onSubmit: onboardingWorkspaceSchema,
+    },
     onSubmit: async ({ value }) => {
       setIsSubmitting(true);
 
       try {
-        const trimmedWebsite = value.websiteUrl.trim();
-        const websiteUrl = trimmedWebsite
-          ? normalizeWebsite(trimmedWebsite)
-          : undefined;
-        const parsed = onboardingWorkspaceSchema.safeParse({
-          name: value.name,
-          slug: value.slug,
-          websiteUrl,
-        });
+        const parsed = onboardingWorkspaceSchema.safeParse(value);
 
         if (!parsed.success) {
           const message =
@@ -151,9 +154,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         <form.Field
           name="name"
           validators={{
-            onChange: ({ value }) =>
-              onboardingWorkspaceSchema.shape.name.safeParse(value).error
-                ?.issues[0]?.message,
+            onChange: onboardingWorkspaceSchema.shape.name,
           }}
         >
           {(field) => (
@@ -183,7 +184,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
               />
               {field.state.meta.errors.length > 0 ? (
                 <p className="text-destructive text-sm">
-                  {field.state.meta.errors[0]}
+                  {getValidationMessage(field.state.meta.errors[0])}
                 </p>
               ) : null}
             </div>
@@ -193,9 +194,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         <form.Field
           name="slug"
           validators={{
-            onChange: ({ value }) =>
-              onboardingWorkspaceSchema.shape.slug.safeParse(value).error
-                ?.issues[0]?.message,
+            onChange: onboardingWorkspaceSchema.shape.slug,
           }}
         >
           {(field) => (
@@ -215,7 +214,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
               />
               {field.state.meta.errors.length > 0 ? (
                 <p className="text-destructive text-sm">
-                  {field.state.meta.errors[0]}
+                  {getValidationMessage(field.state.meta.errors[0])}
                 </p>
               ) : (
                 <p className="text-muted-foreground text-xs">
@@ -229,15 +228,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         <form.Field
           name="websiteUrl"
           validators={{
-            onChange: ({ value }) => {
-              if (!value || value.trim() === "") {
-                return;
-              }
-              const candidate = normalizeWebsite(value.trim());
-              return onboardingWorkspaceSchema.shape.websiteUrl.safeParse(
-                candidate
-              ).error?.issues[0]?.message;
-            },
+            onChange: onboardingWorkspaceSchema.shape.websiteUrl,
           }}
         >
           {(field) => (
@@ -271,23 +262,31 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
               </div>
               {field.state.meta.errors.length > 0 ? (
                 <p className="text-destructive text-sm">
-                  {field.state.meta.errors[0]}
+                  {getValidationMessage(field.state.meta.errors[0])}
                 </p>
               ) : null}
             </div>
           )}
         </form.Field>
 
-        <Button className="w-full" disabled={isSubmitting} type="submit">
-          {isSubmitting ? (
-            <>
-              <Loader2Icon className="size-4 animate-spin" />
-              Setting up...
-            </>
-          ) : (
-            "Continue"
+        <form.Subscribe selector={(state) => [state.canSubmit]}>
+          {([canSubmit]) => (
+            <Button
+              className="w-full"
+              disabled={!canSubmit || isSubmitting}
+              type="submit"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2Icon className="size-4 animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </Button>
           )}
-        </Button>
+        </form.Subscribe>
       </form>
     </div>
   );

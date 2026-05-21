@@ -14,6 +14,10 @@ import { AutumnProvider } from "autumn-js/react";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { toast } from "sonner";
+import {
+  DATABUDDY_DASHBOARD_MASK_PATTERNS,
+  normalizeDatabuddyEventPath,
+} from "@/utils/databuddy";
 
 const databuddyClientID =
   process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID;
@@ -44,6 +48,23 @@ const queryClient = new QueryClient({
   },
 });
 
+function DatabuddyAnalytics() {
+  if (!databuddyClientID) {
+    return null;
+  }
+
+  return (
+    <Databuddy
+      clientId={databuddyClientID}
+      filter={normalizeDatabuddyEventPath}
+      maskPatterns={DATABUDDY_DASHBOARD_MASK_PATTERNS}
+      trackAttributes={true}
+      trackErrors={true}
+      trackHashChanges={true}
+    />
+  );
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
@@ -58,14 +79,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               >
                 {children}
               </RealtimeProvider>
-              {databuddyClientID && (
-                <Databuddy
-                  clientId={databuddyClientID}
-                  trackAttributes={true}
-                  trackErrors={true}
-                  trackHashChanges={true}
-                />
-              )}
+              <DatabuddyAnalytics />
             </NuqsAdapter>
             <Toaster position="top-center" />
           </AutumnProvider>

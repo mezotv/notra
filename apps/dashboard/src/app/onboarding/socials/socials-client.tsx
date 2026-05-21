@@ -20,12 +20,12 @@ import { toast } from "sonner";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { ImportButtonContent } from "@/components/onboarding/socials/import-button-content";
 import { ImportedTweetCard } from "@/components/onboarding/socials/imported-tweet-card";
+import { ONBOARDING_IMPORT_COUNT } from "@/constants/onboarding";
 import {
   useDeleteReference,
   useImportTweets,
 } from "@/lib/hooks/use-brand-references";
 import { useConnectTwitter } from "@/lib/hooks/use-connected-accounts";
-import { ONBOARDING_IMPORT_COUNT } from "@/lib/onboarding/constants";
 import type { SocialsClientProps } from "@/types/components/socials-onboarding";
 import type { BrandReference } from "@/types/hooks/brand-references";
 

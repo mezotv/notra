@@ -2,6 +2,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import { ActivityFeed } from "../components/activity-feed";
 import BrandVoicePreview from "../components/brand-voice-preview";
 import { HatchPattern } from "../components/hatch-pattern";
@@ -13,6 +14,9 @@ import { SITE_URL } from "../utils/urls";
 
 const DocumentationSection = dynamic(
   () => import("../components/documentation-section")
+);
+const HowItWorksSection = dynamic(
+  () => import("../components/how-it-works-section")
 );
 const FAQSection = dynamic(() => import("../components/faq-section"));
 const CTASection = dynamic(() => import("../components/cta-section"));
@@ -73,7 +77,17 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 mt-6 mb-16 flex w-full max-w-124.25 flex-col items-center justify-center gap-6 sm:mt-8 sm:mb-0 sm:gap-8 md:mt-10 md:gap-10 lg:mt-12 lg:gap-12">
-          <div className="flex items-center justify-start gap-4 backdrop-blur-[0.515625rem]">
+          <div className="flex items-center justify-start gap-3 backdrop-blur-[0.515625rem] sm:gap-4">
+            <Button
+              className="h-10 overflow-hidden rounded-lg px-6 py-2 sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
+              nativeButton={false}
+              render={<Link href="#how-it-works" />}
+              variant="outline"
+            >
+              <span className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
+                How it works
+              </span>
+            </Button>
             <TrackedSignupLink source="landing_page_hero_cta">
               <Button className="h-10 overflow-hidden rounded-lg border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
                 <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
@@ -271,6 +285,10 @@ export default function LandingPage() {
 
             <HatchPattern className="w-4 self-stretch sm:w-6 md:w-8 lg:w-12" />
           </div>
+        </section>
+
+        <section className="w-full" id="how-it-works">
+          <HowItWorksSection />
         </section>
 
         <section className="w-full" id="documentation">

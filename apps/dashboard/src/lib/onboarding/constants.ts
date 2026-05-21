@@ -1,1 +1,0 @@
-export const ONBOARDING_IMPORT_COUNT = 10;

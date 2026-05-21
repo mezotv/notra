@@ -1,13 +1,39 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
+  ONBOARDING_WEBSITE_IPV4_REGEX,
+  ONBOARDING_WEBSITE_IPV6_REGEX,
+  ONBOARDING_WEBSITE_PREFIX_REGEX,
+  ONBOARDING_WEBSITE_TOP_LEVEL_DOMAIN_REGEX,
+} from "@/constants/onboarding";
+import {
   organizationNameSchema,
   organizationSlugSchema,
 } from "@/schemas/organization";
 
-const TOP_LEVEL_DOMAIN_REGEX = /^[a-z]{2,63}$/i;
-const IPV4_REGEX = /^\d{1,3}(?:\.\d{1,3}){3}$/;
-const IPV6_REGEX = /^[0-9a-f:]+$/i;
+export function normalizeOnboardingWebsiteUrl(value: string) {
+  const trimmed = value.trim();
+  return ONBOARDING_WEBSITE_PREFIX_REGEX.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+}
+
+const optionalWebsiteUrlSchema = z
+  .string()
+  .trim()
+  .transform((value) =>
+    value ? normalizeOnboardingWebsiteUrl(value) : undefined
+  )
+  .pipe(
+    z
+      .string()
+      .url("Please enter a valid URL (e.g., https://example.com)")
+      .refine(isValidPublicWebsiteUrl, {
+        message:
+          "Please enter a valid public website URL (e.g., https://example.com)",
+      })
+      .optional()
+  );
 
 function isValidPublicWebsiteUrl(value: string) {
   try {
@@ -38,7 +64,10 @@ function isValidPublicWebsiteUrl(value: string) {
       return false;
     }
 
-    if (IPV4_REGEX.test(hostname) || IPV6_REGEX.test(hostname)) {
+    if (
+      ONBOARDING_WEBSITE_IPV4_REGEX.test(hostname) ||
+      ONBOARDING_WEBSITE_IPV6_REGEX.test(hostname)
+    ) {
       return false;
     }
 
@@ -48,7 +77,7 @@ function isValidPublicWebsiteUrl(value: string) {
     return (
       labels.length >= 2 &&
       !!topLevelDomain &&
-      TOP_LEVEL_DOMAIN_REGEX.test(topLevelDomain)
+      ONBOARDING_WEBSITE_TOP_LEVEL_DOMAIN_REGEX.test(topLevelDomain)
     );
   } catch {
     return false;
@@ -58,14 +87,7 @@ function isValidPublicWebsiteUrl(value: string) {
 export const onboardingWorkspaceSchema = z.object({
   name: organizationNameSchema,
   slug: organizationSlugSchema,
-  websiteUrl: z
-    .string()
-    .url("Please enter a valid URL (e.g., https://example.com)")
-    .refine(isValidPublicWebsiteUrl, {
-      message:
-        "Please enter a valid public website URL (e.g., https://example.com)",
-    })
-    .optional(),
+  websiteUrl: optionalWebsiteUrlSchema,
 });
 
 export type OnboardingWorkspaceInput = z.infer<
