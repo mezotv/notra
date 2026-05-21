@@ -31,9 +31,13 @@ async function inflateRaw(data: Uint8Array): Promise<Uint8Array> {
 }
 
 function startsWith(buf: Uint8Array, prefix: Uint8Array, offset = 0): boolean {
-  if (buf.length - offset < prefix.length) return false;
+  if (buf.length - offset < prefix.length) {
+    return false;
+  }
   for (let i = 0; i < prefix.length; i += 1) {
-    if (buf[offset + i] !== prefix[i]) return false;
+    if (buf[offset + i] !== prefix[i]) {
+      return false;
+    }
   }
   return true;
 }
@@ -77,7 +81,9 @@ export async function packBuffer(
 export async function unpackBuffer(
   buf: Uint8Array
 ): Promise<{ schema: Uint8Array; data: Uint8Array }> {
-  if (!startsWith(buf, MAGIC)) throw new Error("not a fig-kiwij buffer");
+  if (!startsWith(buf, MAGIC)) {
+    throw new Error("not a fig-kiwij buffer");
+  }
   if (!startsWith(buf, PADDING, MAGIC.length)) {
     throw new Error("unexpected padding");
   }
@@ -99,8 +105,9 @@ export async function unpackBuffer(
     chunks.push(inflated);
     pos += length;
   }
-  if (pos !== buf.length)
+  if (pos !== buf.length) {
     throw new Error(`trailing bytes: pos=${pos} len=${buf.length}`);
+  }
   const [schema, data] = chunks;
   if (!schema || !data) {
     throw new Error(`expected 2 chunks, got ${chunks.length}`);
@@ -122,7 +129,9 @@ function base64Encode(bytes: Uint8Array): string {
 function base64Decode(b64: string): Uint8Array {
   const binary = atob(b64);
   const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+  for (let i = 0; i < binary.length; i += 1) {
+    out[i] = binary.charCodeAt(i);
+  }
   return out;
 }
 

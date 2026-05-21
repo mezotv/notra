@@ -130,7 +130,9 @@ const IDENTITY_TRANSFORM: Transform = {
 };
 
 export function positionFor(index: number): string {
-  if (index < 94) return String.fromCharCode(0x21 + index);
+  if (index < 94) {
+    return String.fromCharCode(0x21 + index);
+  }
   throw new Error("more than 94 siblings not yet supported");
 }
 

@@ -51,14 +51,14 @@ const MODE_LABELS: Record<RepoImageMode, string> = {
 
 const COMMIT_SHA_REGEX = /^[0-9a-f]{7,40}$/i;
 
-type GitHubIntegrationOption = {
+interface GitHubIntegrationOption {
   id: string;
   displayName: string;
   enabled: boolean;
   owner: string;
   repo: string;
   defaultBranch: string | null;
-};
+}
 
 export default function RepoImagePage() {
   const { activeOrganization } = useOrganizationsContext();

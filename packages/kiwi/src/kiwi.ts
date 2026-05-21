@@ -48,7 +48,9 @@ export class ByteReader {
 
   private at(pos: number): number {
     const b = this.buf[pos];
-    if (b === undefined) throw new Error(`buffer underrun at offset ${pos}`);
+    if (b === undefined) {
+      throw new Error(`buffer underrun at offset ${pos}`);
+    }
     return b;
   }
 
@@ -71,9 +73,13 @@ export class ByteReader {
       const b = this.at(this.pos);
       this.pos += 1;
       result |= (b & 0x7f) << shift;
-      if ((b & 0x80) === 0) return result >>> 0;
+      if ((b & 0x80) === 0) {
+        return result >>> 0;
+      }
       shift += 7;
-      if (shift > 31) throw new Error("varint too long");
+      if (shift > 31) {
+        throw new Error("varint too long");
+      }
     }
   }
 
@@ -84,9 +90,13 @@ export class ByteReader {
       const b = this.at(this.pos);
       this.pos += 1;
       result |= BigInt(b & 0x7f) << shift;
-      if ((b & 0x80) === 0) return result;
+      if ((b & 0x80) === 0) {
+        return result;
+      }
       shift += 7n;
-      if (shift > 63n) throw new Error("varint too long");
+      if (shift > 63n) {
+        throw new Error("varint too long");
+      }
     }
   }
 
@@ -118,7 +128,9 @@ export class ByteReader {
 
   readFloat(): number {
     const first = this.readByte();
-    if (first === 0) return 0;
+    if (first === 0) {
+      return 0;
+    }
     const b1 = this.readByte();
     const b2 = this.readByte();
     const b3 = this.readByte();
@@ -131,7 +143,9 @@ export class ByteReader {
   readString(): string {
     const start = this.pos;
     let end = start;
-    while (this.buf[end] !== 0) end += 1;
+    while (this.buf[end] !== 0) {
+      end += 1;
+    }
     const s = textDecoder.decode(this.buf.subarray(start, end));
     this.pos = end + 1;
     return s;
@@ -139,22 +153,26 @@ export class ByteReader {
 }
 
 export class ByteWriter {
-  private chunks: number[] = [];
+  private readonly chunks: number[] = [];
 
   writeByte(b: number): void {
     this.chunks.push(b & 0xff);
   }
 
   writeBytes(bytes: Uint8Array): void {
-    for (const b of bytes) this.chunks.push(b);
+    for (const b of bytes) {
+      this.chunks.push(b);
+    }
   }
 
   writeVarint(v: number): void {
-    if (v < 0) throw new Error("varint must be non-negative");
+    if (v < 0) {
+      throw new Error("varint must be non-negative");
+    }
     let value = v >>> 0;
     while (true) {
       const b = value & 0x7f;
-      value = value >>> 7;
+      value >>>= 7;
       if (value) {
         this.chunks.push(b | 0x80);
       } else {
@@ -165,7 +183,9 @@ export class ByteWriter {
   }
 
   writeVarintBig(v: bigint): void {
-    if (v < 0n) throw new Error("varint must be non-negative");
+    if (v < 0n) {
+      throw new Error("varint must be non-negative");
+    }
     let value = v;
     while (true) {
       const b = Number(value & 0x7fn);
@@ -221,7 +241,9 @@ export class ByteWriter {
 
   writeString(s: string): void {
     const bytes = textEncoder.encode(s);
-    for (const b of bytes) this.chunks.push(b);
+    for (const b of bytes) {
+      this.chunks.push(b);
+    }
     this.chunks.push(0);
   }
 
@@ -332,7 +354,9 @@ export function decodeValue(
     }
     return out;
   }
-  if (typeCode < 0) return decodeBuiltin(reader, typeCode);
+  if (typeCode < 0) {
+    return decodeBuiltin(reader, typeCode);
+  }
   return decodeDefinition(reader, typeCode, defs);
 }
 
@@ -346,7 +370,9 @@ export function encodeValue(
   if (isArray) {
     const arr = value as KiwiValue[];
     writer.writeVarint(arr.length);
-    for (const item of arr) encodeValue(writer, item, typeCode, false, defs);
+    for (const item of arr) {
+      encodeValue(writer, item, typeCode, false, defs);
+    }
     return;
   }
   if (typeCode < 0) {
@@ -358,7 +384,9 @@ export function encodeValue(
 
 function defAt(defs: Definition[], idx: number): Definition {
   const d = defs[idx];
-  if (!d) throw new Error(`definition index out of range: ${idx}`);
+  if (!d) {
+    throw new Error(`definition index out of range: ${idx}`);
+  }
   return d;
 }
 
@@ -371,7 +399,9 @@ export function decodeDefinition(
   if (d.kind === KIND_ENUM) {
     const value = reader.readVarint();
     for (const f of d.fields) {
-      if (f.value === value) return f.name;
+      if (f.value === value) {
+        return f.name;
+      }
     }
     return value;
   }
@@ -386,7 +416,9 @@ export function decodeDefinition(
     const result: Record<string, KiwiValue> = {};
     while (true) {
       const tag = reader.readVarint();
-      if (tag === 0) return result;
+      if (tag === 0) {
+        return result;
+      }
       let target: FieldDef | null = null;
       for (const f of d.fields) {
         if (f.value === tag) {
@@ -458,7 +490,9 @@ export function encodeDefinition(
 export function findDefinition(defs: Definition[], name: string): number {
   for (let i = 0; i < defs.length; i += 1) {
     const d = defs[i];
-    if (d && d.name === name) return i;
+    if (d && d.name === name) {
+      return i;
+    }
   }
   throw new Error(`definition not found: ${name}`);
 }

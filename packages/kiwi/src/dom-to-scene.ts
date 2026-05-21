@@ -109,7 +109,9 @@ interface SvgInfo {
 type LayoutNode = ElementInfo | TextInfo | SvgInfo;
 
 function parseColor(s: string): [number, number, number, number] | null {
-  if (!s) return null;
+  if (!s) {
+    return null;
+  }
   const trimmed = s.trim();
   const hex = HEX_RE.exec(trimmed);
   if (hex?.[1]) {
@@ -120,7 +122,9 @@ function parseColor(s: string): [number, number, number, number] | null {
         .map((c) => c + c)
         .join("");
     }
-    if (h.length !== 6 && h.length !== 8) return null;
+    if (h.length !== 6 && h.length !== 8) {
+      return null;
+    }
     const r = Number.parseInt(h.slice(0, 2), 16) / 255;
     const g = Number.parseInt(h.slice(2, 4), 16) / 255;
     const b = Number.parseInt(h.slice(4, 6), 16) / 255;
@@ -129,10 +133,14 @@ function parseColor(s: string): [number, number, number, number] | null {
   }
   const m = RGB_RE.exec(trimmed);
   const inner = m?.[1];
-  if (!inner) return null;
+  if (!inner) {
+    return null;
+  }
   const parts = inner.split(",").map((p) => p.trim());
   const [rs, gs, bs, as] = parts;
-  if (rs === undefined || gs === undefined || bs === undefined) return null;
+  if (rs === undefined || gs === undefined || bs === undefined) {
+    return null;
+  }
   const r = Number.parseFloat(rs) / 255;
   const g = Number.parseFloat(gs) / 255;
   const b = Number.parseFloat(bs) / 255;
@@ -349,7 +357,9 @@ function pickAvailableFont(fontFamily: string, fontSize: number): string {
     .filter(Boolean);
 
   for (const family of families) {
-    if (CSS_GENERIC_FONTS.has(family.toLowerCase())) continue;
+    if (CSS_GENERIC_FONTS.has(family.toLowerCase())) {
+      continue;
+    }
     try {
       if (document.fonts.check(`${fontSize}px "${family}"`)) {
         return family;
@@ -362,7 +372,9 @@ function pickAvailableFont(fontFamily: string, fontSize: number): string {
 }
 
 function parsePx(s: string): number {
-  if (!s || s === "normal") return 0;
+  if (!s || s === "normal") {
+    return 0;
+  }
   const trimmed = s.trim();
   if (trimmed.endsWith("px")) {
     const v = Number.parseFloat(trimmed.slice(0, -2));
@@ -373,19 +385,25 @@ function parsePx(s: string): number {
 }
 
 function parseLineHeight(s: string, fontSize: number): number {
-  if (!s || s === "normal") return 0;
+  if (!s || s === "normal") {
+    return 0;
+  }
   const trimmed = s.trim();
   if (trimmed.endsWith("px")) {
     const v = Number.parseFloat(trimmed.slice(0, -2));
     return Number.isFinite(v) ? v : 0;
   }
   const v = Number.parseFloat(trimmed);
-  if (!Number.isFinite(v)) return 0;
+  if (!Number.isFinite(v)) {
+    return 0;
+  }
   return v < 10 ? v * fontSize : v;
 }
 
 function parseCornerRadius(s: string): number {
-  if (!s) return 0;
+  if (!s) {
+    return 0;
+  }
   const first = s.trim().split(WHITESPACE_RE)[0];
   return first ? parsePx(first) : 0;
 }
@@ -422,9 +440,13 @@ function extractLayout(node: Node): LayoutNode | null {
     const text = (node.nodeValue ?? "")
       .replace(WHITESPACE_GLOBAL_RE, " ")
       .trim();
-    if (!text) return null;
+    if (!text) {
+      return null;
+    }
     const parent = node.parentElement;
-    if (!parent) return null;
+    if (!parent) {
+      return null;
+    }
     const range = document.createRange();
     range.selectNodeContents(node);
     const rect = range.getBoundingClientRect();
@@ -459,10 +481,14 @@ function extractLayout(node: Node): LayoutNode | null {
     };
   }
 
-  if (node.nodeType !== Node.ELEMENT_NODE) return null;
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return null;
+  }
   const el = node as Element;
   const tag = el.tagName.toLowerCase();
-  if (IGNORED_TAGS.has(tag)) return null;
+  if (IGNORED_TAGS.has(tag)) {
+    return null;
+  }
 
   if (tag === "svg") {
     const svg = el as SVGSVGElement;
@@ -478,11 +504,17 @@ function extractLayout(node: Node): LayoutNode | null {
     const pathEls = svg.querySelectorAll("path");
     for (const pathEl of pathEls) {
       const d = pathEl.getAttribute("d");
-      if (!d) continue;
+      if (!d) {
+        continue;
+      }
       const ctm = pathEl.getScreenCTM();
-      if (!ctm) continue;
+      if (!ctm) {
+        continue;
+      }
       const subpaths = parseSvgPath(d);
-      if (subpaths.length === 0) continue;
+      if (subpaths.length === 0) {
+        continue;
+      }
       const pathFill = pathEl.getAttribute("fill") ?? "";
       const fill =
         (pathFill && pathFill !== "none" && pathFill !== "currentColor"
@@ -520,13 +552,17 @@ function extractLayout(node: Node): LayoutNode | null {
   }
 
   const rect = el.getBoundingClientRect();
-  if (rect.width === 0 && rect.height === 0) return null;
+  if (rect.width === 0 && rect.height === 0) {
+    return null;
+  }
   const style = getComputedStyle(el);
 
   const children: LayoutNode[] = [];
   for (const child of Array.from(el.childNodes)) {
     const c = extractLayout(child);
-    if (c) children.push(c);
+    if (c) {
+      children.push(c);
+    }
   }
 
   const cornerRadii: [number, number, number, number] = [
@@ -624,10 +660,18 @@ function emitSvgSubpaths(
   let maxY = Number.NEGATIVE_INFINITY;
   for (const sub of subpaths) {
     for (const p of sub.points) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
+      if (p.x < minX) {
+        minX = p.x;
+      }
+      if (p.y < minY) {
+        minY = p.y;
+      }
+      if (p.x > maxX) {
+        maxX = p.x;
+      }
+      if (p.y > maxY) {
+        maxY = p.y;
+      }
     }
   }
   if (!Number.isFinite(minX)) {

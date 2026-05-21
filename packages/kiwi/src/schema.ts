@@ -4,7 +4,9 @@ const FIGMA_SCHEMA_BASE64 =
 let cached: Uint8Array | null = null;
 
 export function getSchemaBytes(): Uint8Array {
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const binary = atob(FIGMA_SCHEMA_BASE64);
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

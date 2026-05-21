@@ -81,7 +81,9 @@ export function encodeVectorNetwork(network: VectorNetwork): Uint8Array {
     writeU32(r.loops.length);
     for (const loop of r.loops) {
       writeU32(loop.segmentIndices.length);
-      for (const i of loop.segmentIndices) writeU32(i);
+      for (const i of loop.segmentIndices) {
+        writeU32(i);
+      }
     }
     writeU32(r.windingRule === "ODD" ? 1 : 0);
   }

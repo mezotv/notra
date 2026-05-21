@@ -106,7 +106,9 @@ function flattenArc(
     const dot = ux * vx + uy * vy;
     const len = Math.sqrt((ux * ux + uy * uy) * (vx * vx + vy * vy));
     let a = Math.acos(Math.min(1, Math.max(-1, dot / len)));
-    if (ux * vy - uy * vx < 0) a = -a;
+    if (ux * vy - uy * vx < 0) {
+      a = -a;
+    }
     return a;
   };
 
@@ -117,8 +119,11 @@ function flattenArc(
     (-x1p - cxp) / rx,
     (-y1p - cyp) / ry
   );
-  if (!sweep && deltaTheta > 0) deltaTheta -= 2 * Math.PI;
-  else if (sweep && deltaTheta < 0) deltaTheta += 2 * Math.PI;
+  if (!sweep && deltaTheta > 0) {
+    deltaTheta -= 2 * Math.PI;
+  } else if (sweep && deltaTheta < 0) {
+    deltaTheta += 2 * Math.PI;
+  }
 
   for (let i = 1; i <= steps; i += 1) {
     const t = i / steps;

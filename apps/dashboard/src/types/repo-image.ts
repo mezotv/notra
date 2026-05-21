@@ -9,11 +9,11 @@ export type GenerateRepoImageInput = ReturnType<
   typeof generateRepoImageInputSchema.parse
 >;
 
-export type GenerateRepoImageResult = {
+export interface GenerateRepoImageResult {
   pngBase64: string;
   svg: string;
   html: string;
-};
+}
 
 export type RepoImageSourceContext =
   | { mode: "prompt"; prompt: string }
