@@ -178,8 +178,10 @@ export async function orchestrateStandaloneChat(
         effectiveThinkingLevel
       );
 
-  const messagesForModel = stripIncompleteToolParts(
-    isSimpleNoTools ? trimTrivialHistory(messages) : messages
+  const messagesForModel = await expandTextFileParts(
+    stripIncompleteToolParts(
+      isSimpleNoTools ? trimTrivialHistory(messages) : messages
+    )
   );
 
   const modelMessages = await convertToModelMessages(messagesForModel, {
@@ -324,6 +326,96 @@ function trimTrivialHistory(messages: UIMessage[]): UIMessage[] {
     }
     return { ...message, parts: textParts };
   });
+}
+
+const MODEL_READABLE_TEXT_MIME_TYPES = new Set(["text/plain", "text/markdown"]);
+
+async function expandTextFileParts(
+  messages: UIMessage[]
+): Promise<UIMessage[]> {
+  return Promise.all(
+    messages.map(async (message) => {
+      if (!Array.isArray(message.parts)) {
+        return message;
+      }
+
+      let changed = false;
+      const parts = await Promise.all(
+        message.parts.map(async (part) => {
+          if (
+            part.type !== "file" ||
+            !MODEL_READABLE_TEXT_MIME_TYPES.has(part.mediaType)
+          ) {
+            return part;
+          }
+
+          const text = await fetchTextAttachment(part.url);
+          if (text === null) {
+            return part;
+          }
+
+          changed = true;
+          const filename =
+            typeof part.filename === "string" && part.filename.trim().length > 0
+              ? part.filename.trim()
+              : "attached text file";
+
+          return {
+            type: "text" as const,
+            text: `\n\nAttached file (${filename}, ${part.mediaType}):\n\n${text}`,
+          };
+        })
+      );
+
+      return changed ? { ...message, parts } : message;
+    })
+  );
+}
+
+async function fetchTextAttachment(url: string): Promise<string | null> {
+  if (!isAllowedTextAttachmentUrl(url)) {
+    console.error("[Standalone Chat] Refusing to fetch text attachment URL", {
+      url,
+    });
+    return null;
+  }
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error("[Standalone Chat] Failed to fetch text attachment", {
+        status: response.status,
+        url,
+      });
+      return null;
+    }
+    return await response.text();
+  } catch (error) {
+    console.error("[Standalone Chat] Failed to read text attachment", {
+      error: error instanceof Error ? error.message : String(error),
+      url,
+    });
+    return null;
+  }
+}
+
+function isAllowedTextAttachmentUrl(url: string): boolean {
+  const publicUrl = process.env.CLOUDFLARE_PUBLIC_URL;
+  if (!publicUrl) {
+    return false;
+  }
+
+  try {
+    const attachmentUrl = new URL(url);
+    const allowedUrl = new URL(publicUrl);
+    return (
+      attachmentUrl.protocol === allowedUrl.protocol &&
+      attachmentUrl.hostname === allowedUrl.hostname &&
+      attachmentUrl.pathname.startsWith("/organization/")
+    );
+  } catch {
+    return false;
+  }
 }
 
 type StreamProviderOptions = NonNullable<
