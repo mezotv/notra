@@ -1,0 +1,288 @@
+# Implementation Plan: Post Groups + Integrated Repo-Image Generation
+
+Introduce a "post group" concept that bundles multiple post formats (changelog, blog, LinkedIn, Twitter) together with an optional generated cover image. Repo image generation already exists as a standalone tool at `/[slug]/repo-image`; we are integrating it into the content creation flow and removing the standalone page.
+
+---
+
+## Locked design decisions
+
+### Data model
+- New table `post_groups`: `id` (text pk), `organizationId` (FK organizations cascade), `title` (text — auto-derived from primary post's title), `sourceMetadata` (jsonb), `generateImage` (boolean), `expectedPostCount` (integer), `completedPostCount` (integer default 0), `createdAt`, `updatedAt`. Index on `(organizationId, createdAt, id)`.
+- New table `post_group_images`: `id` (text pk), `groupId` (FK post_groups cascade), `status` enum (pending/ready/failed), `mode` enum (prompt/pr/commit) nullable, `prompt`, `prNumber`, `commitSha`, `pngUrl` (text — R2 public URL), `svgSource` (text), `isActive` (boolean), `errorMessage`, timestamps. Partial unique index `(group_id) WHERE is_active = true`.
+- `posts` table: add `groupId` (text, FK post_groups, NOT NULL after backfill).
+- Existing `posts.sourceMetadata` left intact during transition. Group's metadata becomes source of truth going forward.
+- Investor_update posts are wrapped in single-post groups by the backfill for schema consistency; not surfaced in the create modal.
+
+### Create content modal
+- Keep existing 4 format cards (no 5th image card).
+- Add a "Generate cover image" toggle on the formats step, near the data point toggles.
+- No prompt/PR/commit picker — agent decides based on selected activity + finished post markdown.
+- Multi-repo: pass all selected repos; agent picks focus.
+
+### Generation orchestration
+1. Client calls `content.createGroup` to get `groupId` + sets `expectedPostCount = formats.length * voiceIds.length`.
+2. Client fans out N `content.generate` calls, passing `groupId` to each.
+3. Each post-completion path atomically increments `post_groups.completed_post_count` via `UPDATE ... RETURNING`.
+4. When `completed_post_count === expected_post_count && generate_image = true`, enqueue the group-image workflow.
+5. Image workflow generates via `generateGroupCoverImage`, uploads PNG to R2, persists row with `status=ready, isActive=true` (flipping previous active in a transaction).
+
+### UI
+- **Posts list (`/[slug]`)**: renders `post_groups`. Each row = image thumbnail + title (auto from primary post) + small format icons. Click → `/groups/[id]`.
+- **`/[slug]/groups/[id]`** (new): sub-posts list (click → `/content/[id]`), active image preview, regenerate-with-prompt-override button.
+- **`/[slug]/content/[id]`** (existing, unchanged for editing): gains sidebar showing active image preview, regenerate button, sibling posts.
+- **Published API output**: `coverImageUrl` added to post response schemas so external publishers (Marble/Webflow/Framer) consume the image as OG/cover.
+
+### Schedules
+- Also create groups (groups of 1). Same workflow path.
+- `generateImage = false` for schedules in this PR.
+
+### Cascade
+- Delete group → cascade nukes posts + images (FK).
+- Delete last post in group → backend deletes group too (and orphans R2 PNGs; cleanup is a follow-up).
+- Delete non-last post → group untouched.
+
+### Image versioning
+- Keep all versions. Regenerate inserts new row, flips previous `isActive=false` inside a transaction.
+
+### Removed
+- `/[slug]/repo-image` page + sidebar nav entry.
+- `dashboardOrpc.repoImage.generate` orpc procedure and `apps/dashboard/src/lib/orpc/routers/repo-image.ts`.
+
+---
+
+## Infra findings
+
+### PNG storage: use R2 (already configured)
+- `apps/dashboard/src/lib/upload/r2.ts` + `server.ts` already wired up via `@aws-sdk/client-s3` against Cloudflare R2.
+- Use key pattern `organization/${orgId}/post-group-image/${imageId}.png`.
+- Server-side upload via `PutObjectCommand` (mirror `apps/dashboard/src/lib/upload/server.ts:131-165` minus presigning).
+- Add new helper `apps/dashboard/src/lib/upload/group-image.ts` exporting `uploadGroupImagePng(orgId, imageId, bytes)` returning `{ key, publicUrl }`.
+- `pngUrl` column stores absolute public URL (text NOT NULL). SVG stored as `text` in DB (small, ~30-80KB).
+
+### Published web view caveat
+- There is **no hosted public site for user posts in this repo**. `apps/web/(blog)` and `(changelog)` serve Notra's marketing CMS, not customer posts.
+- Customer posts are published via output integrations (Marble/Webflow/Framer) that consume the API.
+- "Group image = cover/OG" means adding `coverImageUrl` to the API/orpc post response. External publishers pick it up automatically.
+- A hosted public `posts.usenotra.com/[slug]/[post]` page would be a separate, larger PR (out of scope).
+
+### Backfill migration caveat
+- Per-row data movement (wrap each existing post in a group of 1) can't be auto-generated by `drizzle-kit generate`.
+- This violates user memory rule "Never create manual migration files."
+- Options: hand-written SQL file, one-off Node script run against prod, or inline backfill on app boot. **Decision needed.**
+
+---
+
+## Step-by-step plan
+
+### Phase 1 — Schema and migration foundation
+
+**1.1 Add `post_groups` and `post_group_images` tables to `packages/db/src/schema.ts`**
+- Add `postGroupImageStatusEnum` (pending/ready/failed), `postGroupImageModeEnum` (prompt/pr/commit).
+- `postGroups` table: id, organizationId (FK organizations cascade), title (text NOT NULL), sourceMetadata (jsonb nullable), generateImage (boolean default false NOT NULL), expectedPostCount (integer NOT NULL), completedPostCount (integer NOT NULL default 0), timestamps. Index `(organizationId, createdAt, id)`.
+- `postGroupImages` table: id, groupId (FK post_groups cascade), status enum, mode enum nullable, prompt/prNumber/commitSha nullable, pngUrl nullable, svgSource nullable, isActive boolean default false NOT NULL, errorMessage nullable, timestamps. Index `(groupId, createdAt)`. Partial unique index `(groupId) WHERE isActive = true`.
+- `posts` table: add `groupId` text column, initially nullable. Add index on `posts(groupId)`.
+- Add `postGroupsRelations` (one organization, many posts, many images).
+- Add `postGroupImagesRelations` (one group).
+- Update `postsRelations` to include `one(postGroups)`.
+- Update `organizationsRelations` to include `many(postGroups)`.
+
+**1.2 Generate schema migration**
+- Run `bun run db:generate` → produces `0036_*.sql`.
+
+**1.3 Data backfill migration**
+- Hand-written SQL `packages/db/migrations/0037_post_groups_backfill.sql`:
+  1. For each existing post → insert `post_groups` row (id, organizationId, title=post.title, sourceMetadata=post.sourceMetadata, expectedPostCount=1, completedPostCount=1, createdAt/updatedAt).
+  2. Update `posts.group_id` to the new group's id.
+  3. `ALTER TABLE posts ALTER COLUMN group_id SET NOT NULL`.
+  4. `ALTER TABLE posts ADD CONSTRAINT posts_group_id_fkey FOREIGN KEY (group_id) REFERENCES post_groups(id) ON DELETE CASCADE`.
+- **Conflicts with memory rule** — needs user OK or alternative (one-off script).
+
+**1.4 Sync drizzle snapshot**
+- Edit `posts.groupId` declaration to be `.notNull().references(() => postGroups.id, { onDelete: "cascade" })`.
+- Run `bun run db:generate` again → produces `0038_*.sql` to keep drizzle's snapshot consistent.
+
+---
+
+### Phase 2 — Backend orchestration
+
+**2.1 Plumb `groupId` through content-generation pipeline**
+- `packages/content-generation/src/schemas.ts`: add `groupId` to `contentGenerationWorkflowPayloadSchema` (required) and `createContentGenerationRequestSchema`.
+- `packages/ai/src/types/post-tools.ts`: add `groupId: string` to `PostToolsConfig`.
+- `packages/ai/src/tools/post.ts`: include `groupId: config.groupId` in `db.insert(posts).values({...})` in both `createCreatePostTool` and `createUpdatePostTool`.
+- `packages/ai/src/agents/background-gen.ts`: forward `groupId` from `BackgroundGenOptions` to `postToolsConfig`.
+- `packages/ai/src/agents/{blog-post,changelog,linkedin,twitter}.ts`: forward `groupId` to `runBackgroundGen`.
+- `packages/ai/src/types/agents.ts`: add `groupId: string` to each agent options type.
+- `apps/dashboard/src/lib/workflows/schedule/types.ts`: add `groupId: string` to `ContentGenerationContext`.
+- `apps/dashboard/src/lib/workflows/schedule/handlers/{blog-post,changelog,linkedin,twitter}.ts`: pass `ctx.groupId` through.
+
+**2.2 Update workflows to require/forward groupId**
+- `apps/dashboard/src/app/api/workflows/on-demand-content/route.ts`: destructure `groupId` from payload, pass into `ContentGenerationContext`.
+- `apps/dashboard/src/app/api/workflows/schedule/route.ts`: inside the `generate-content` step, create a `post_groups` row before calling `generateScheduledContent`. Group title = trigger name, expectedPostCount = 1, generateImage = false.
+
+**2.3 Add `content.createGroup` orpc procedure**
+- `apps/dashboard/src/lib/orpc/routers/content.ts` (near `generate`, ~line 995):
+  - Input: organizationId, expectedPostCount, generateImage, title (placeholder), sourceMetadata.
+  - Output: `{ groupId }`.
+  - Asserts org access + subscription, then inserts row.
+- Modify existing `generate` procedure to require `groupId` field.
+
+**2.4 Refactor `generateRepoImage` for multi-repo + auto-mode**
+- `packages/ai/src/agents/repo-image.ts`: add new export `generateGroupCoverImage({ organizationId, userId, integrations[], activity, postsMarkdown })`.
+- Agent picks focus repo (heuristic: most activity, or first).
+- Agent picks mode automatically: prompt mode if no activity; PR mode if PRs; commit mode otherwise. Records chosen mode in result.
+- `packages/ai/src/prompts/repo-image.ts`: extend extraction prompt for multi-repo + post markdown theme.
+- `packages/ai/src/types/repo-image.ts`: add `GenerateGroupCoverImageInput`, `GenerateGroupCoverImageResult`, `RepoImageSourceContext` (multi-repo variant).
+
+**2.5 `content.generateGroupImage` procedure + workflow**
+- `apps/dashboard/src/lib/orpc/routers/content.ts`: add `generateGroupImage` procedure (input: organizationId, groupId, promptOverride?; output: imageId).
+  - Loads group, posts, integrations.
+  - Inserts `post_group_images` row with `status=pending, isActive=false`.
+  - Triggers `/api/workflows/group-image` via new `triggerGroupImage` helper in `packages/ai/src/qstash/triggers.ts`.
+- New file `apps/dashboard/src/app/api/workflows/group-image/route.ts`:
+  - Validates payload (new `groupImageWorkflowPayloadSchema`).
+  - Calls `generateGroupCoverImage(...)`.
+  - Uploads PNG to R2 via new `apps/dashboard/src/lib/upload/group-image.ts`.
+  - Transaction: set `pngUrl/svgSource/mode/status=ready/isActive=true` on new row; `UPDATE ... SET is_active=false WHERE group_id = ? AND id <> ?`.
+  - On failure: set `status=failed, errorMessage`. Do not mark active.
+
+**2.6 Hook "all posts done?" into post-completion**
+- `apps/dashboard/src/app/api/workflows/on-demand-content/route.ts`: after `completeActiveGeneration(...)` in success path, call new helper `await maybeTriggerGroupImage({ groupId })`.
+- Also call it from failure paths (`complete-failed`, `complete-skipped`, `track-content-failed-no-sources`) — increment counter even on failure so the group can finalize.
+- New file `apps/dashboard/src/lib/workflows/groups/maybe-trigger-image.ts`:
+  - Atomic `UPDATE post_groups SET completed_post_count = completed_post_count + 1 WHERE id = ? RETURNING completed_post_count, expected_post_count, generate_image`.
+  - If counts match AND `generate_image=true` AND no image row exists yet → insert pending image row + trigger workflow.
+- Same hook in `apps/dashboard/src/app/api/workflows/schedule/route.ts` success path.
+
+**2.7 Cascade behavior on post delete**
+- `apps/dashboard/src/lib/orpc/routers/content.ts:593-622` (delete procedure): after `db.delete(posts)`, query count of posts in group. If 0 → `db.delete(postGroups)` (cascades to images). Optional: fire-and-forget `DeleteObjectCommand` for R2 PNGs.
+- `apps/api/src/routes/posts.ts` deletePostRoute (~line 375): same logic.
+
+---
+
+### Phase 3 — Client wiring (create modal)
+
+**3.1 Add `generateImage` to form schema**
+- `apps/dashboard/src/schemas/content/create-content-form.ts`: add `generateImage: z.boolean().default(false)`.
+- `apps/dashboard/src/types/content/create.ts`: add `generateImage` + `onGenerateImageChange` to `FormatsStepProps`.
+
+**3.2 Add "Generate cover image" toggle**
+- `apps/dashboard/src/components/content/create/step-formats.tsx`: add a `DataPointToggle` for "Generate cover image" (or a separated row below data point toggles).
+
+**3.3 Update `CreateContentDialog` to create group first, then fan out**
+- `apps/dashboard/src/components/content/create-content-dialog.tsx`:
+  - Add `generateImage: false` to `getDefaultContentFormValues()`.
+  - In `mutation.mutationFn`: before fan-out, call `dashboardOrpc.content.createGroup.call(...)` to get `groupId`. Compute `expectedPostCount = formats.length * voiceIds.length`. Pass `groupId` + `generateImage` into createGroup payload.
+  - Pass `groupId` to every `content.generate.call` in the fan-out.
+  - Wire a handler to set `generateImage` in form state.
+
+---
+
+### Phase 4 — UI (lists, group detail, post sidebar)
+
+**4.1 Convert posts list to groups list**
+- `apps/dashboard/src/lib/orpc/routers/content.ts`: add `groups.list` (paginated post_groups + posts + activeImage) and `groups.get` (single group + posts + all images).
+- `apps/dashboard/src/schemas/content.ts`: add `postGroupSchema`, `postGroupListResponseSchema`, `postGroupImageSchema`.
+- `apps/dashboard/src/lib/hooks/use-posts.ts`: add `useGroups` (mirror `usePosts`).
+- `apps/dashboard/src/app/(dashboard)/[slug]/content/page-client.tsx`: switch to `useGroups`. Row shows image thumbnail (placeholder if no image), title, format icons, createdAt. Click → `/${slug}/groups/${groupId}`.
+- `apps/dashboard/src/components/content/content-card.tsx`: extend for image thumbnail, or new `GroupCard` component.
+- New types in `apps/dashboard/src/types/content/group.ts`.
+
+**4.2 New `/[slug]/groups/[id]` page**
+- `apps/dashboard/src/app/(dashboard)/[slug]/groups/[id]/page.tsx` (server component).
+- `apps/dashboard/src/app/(dashboard)/[slug]/groups/[id]/page-client.tsx`:
+  - Header: title, createdAt, source metadata badges (reuse existing display from `content/[id]/page-client.tsx`).
+  - Left: active image preview (`next/image` with R2 remote pattern in `next.config.ts`), regenerate button.
+  - Right: list of sibling posts (each link → `/${slug}/content/${postId}` + format badge).
+- `apps/dashboard/src/app/(dashboard)/[slug]/groups/[id]/skeleton.tsx`.
+- `apps/dashboard/src/components/content/group/regenerate-image-dialog.tsx`:
+  - Uses `ResponsiveDialog`.
+  - Form with optional prompt override textarea.
+  - `useMutation` calling `content.generateGroupImage`. Polls until `activeImage.status === 'ready'`.
+
+**4.3 Sidebar on post detail**
+- `apps/dashboard/src/app/(dashboard)/[slug]/content/[id]/page-client.tsx`: add right sidebar (`lg:` only) showing active image thumbnail (click → full preview), regenerate button (same dialog as 4.2), sibling posts list.
+- Add `groupId` + `groupImage` to `contentSchema` in `apps/dashboard/src/schemas/content.ts`.
+
+**4.4 Expose image URL in API responses**
+- `apps/dashboard/src/lib/orpc/routers/content.ts:98-122` (`serializeContent`): add `groupImage: { pngUrl } | null` and `groupId: string`.
+- `apps/api/src/routes/posts.ts` + `apps/api/src/schemas/content.ts`: add `coverImageUrl` to post response shapes (consumed by Marble/Webflow/Framer).
+
+---
+
+### Phase 5 — Removals
+
+**5.1 Delete `/repo-image` page + orpc router**
+- Delete `apps/dashboard/src/app/(dashboard)/[slug]/repo-image/page.tsx`.
+- Delete `apps/dashboard/src/lib/orpc/routers/repo-image.ts`.
+- Edit `apps/dashboard/src/lib/orpc/router.ts`: remove `repoImage` import + entry.
+- Edit `apps/dashboard/src/components/dashboard/nav-main.tsx:73-79`: remove `/repo-image` nav item.
+- Grep for `dashboardOrpc.repoImage` to verify zero remaining references.
+- Keep `packages/ai/src/agents/repo-image.ts` (backs the new flow). The single-repo `generateRepoImage` can be removed if unused after refactor.
+
+---
+
+### Phase 6 — Investor update wrap-up
+- Covered by Phase 1 backfill (wraps every existing post in a group of 1 regardless of type).
+- Spot-check `apps/dashboard/src/utils/output-types.tsx` and content card for investor_update format icon mapping.
+
+---
+
+## Edge cases and risks
+
+1. **Race condition in "all posts done" check.** Atomic `UPDATE ... RETURNING completed_post_count` ensures exactly one workflow sees the row hit `expected_post_count`. Add `INSERT ... ON CONFLICT DO NOTHING` on the pending image row insertion as belt-and-suspenders.
+
+2. **Image generation failure mid-flight.** Status set to `failed`, errorMessage populated, isActive stays false. Posts unaffected. Previous active image (if any) remains. Regenerate button stays usable. Must NOT block post completion or refund AI credits.
+
+3. **User closes modal during creation.** Modal closes on success; QStash workflows continue in background. Group has `expectedPostCount = N`. If a post workflow fails, the **failure paths must also increment `completedPostCount`** — otherwise the image never fires. Critical: hook in all failure paths in step 2.6.
+
+4. **Multi-org runId collisions.** `generateRunId(triggerId) = ${triggerId}-${Date.now()}` collides only sub-ms. Not a real problem. Add `groupId` to `addActiveGeneration` payload so the UI can group skeleton cards by group.
+
+5. **Schedules with generateImage=false.** Workflow checks `generate_image` before enqueueing image. Schedules skip image generation cleanly.
+
+6. **API consumers via `/posts/generate`.** `apps/api/src/utils/content-generation.ts:triggerContentGenerationWorkflow` must create a `post_groups` row before triggering the workflow. `generateImage: false` for API-triggered.
+
+7. **Skeleton UX for in-progress groups.** Existing skeleton cards key off `runId` + `outputType`. Out of scope to rebuild for groups in this PR — accept that skeleton card UX may look ungrouped during generation. Follow-up PR can group-aware them.
+
+8. **`posts.sourceMetadata` duplicated.** New posts have sourceMetadata on both group and post. Reads prefer group. Existing post detail page reads from `content.sourceMetadata` — keeps working. Cleanup PR later.
+
+9. **R2 deletion on cascade.** Postgres FK cascade leaves R2 PNGs orphaned. Optional fire-and-forget `DeleteObjectCommand` in delete path. Long-term: background cleanup job.
+
+10. **`isActive` flip race.** Two regenerate calls could insert two `isActive=true`. Partial unique index prevents second insert. Workflow finalize step uses transaction with `SELECT ... FOR UPDATE` on the group to serialize.
+
+11. **No copy-to-Figma/Paper.** Standalone `/repo-image` page had `Copy as Figma` / `Copy as Paper` export. Confirm OK to drop, or restore as enhancement on the new group page.
+
+12. **Migration ordering.** 3-step migration (schema → backfill → not-null+FK). Window where `posts.groupId` is nullable. App must accept nullable until step 1.4 lands. Deploy pipeline runs all migrations together.
+
+13. **In-between empty state.** First group image insert creates row with `status=pending`. Group detail page needs a "generating cover image…" skeleton — without it, the page looks broken between post-completion and image-completion (1–3 min).
+
+14. **Investor_update via API.** Existing rows wrapped in groups by backfill. New ones still creatable via API; group creation works since schema doesn't constrain contentType.
+
+15. **Group title derivation.** Group must be created before posts exist. Insert with `title = 'Generating…'` (or joined format list). Update title to first persisted post's title inside `createCreatePostTool` (only if still placeholder), or in step 2.6's atomic counter helper when first post hits the group.
+
+---
+
+## Critical files
+
+- `packages/db/src/schema.ts`
+- `apps/dashboard/src/lib/orpc/routers/content.ts`
+- `apps/dashboard/src/app/api/workflows/on-demand-content/route.ts`
+- `apps/dashboard/src/app/api/workflows/schedule/route.ts`
+- `apps/dashboard/src/app/api/workflows/group-image/route.ts` (new)
+- `packages/ai/src/tools/post.ts`
+- `packages/ai/src/agents/repo-image.ts`
+- `apps/dashboard/src/components/content/create-content-dialog.tsx`
+- `apps/dashboard/src/components/content/create/step-formats.tsx`
+- `apps/dashboard/src/lib/upload/server.ts` (reference pattern)
+- `apps/dashboard/src/lib/upload/group-image.ts` (new)
+- `apps/dashboard/src/components/dashboard/nav-main.tsx`
+- `apps/dashboard/src/lib/orpc/router.ts`
+- `apps/api/src/routes/posts.ts`
+- `apps/api/src/schemas/content.ts`
+
+---
+
+## Open questions
+
+1. **Published web view scope** — is `coverImageUrl` in API responses (current scope) enough, or do you need a hosted public post-rendering page (separate larger PR)?
+2. **Backfill migration strategy** — hand-written SQL file, one-off Node script, or inline boot-time migration?
+3. **Copy-as-Figma / Copy-as-Paper** — drop these features, or restore on the new group page?
