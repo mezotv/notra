@@ -115,6 +115,8 @@ export interface AddVectorOptions {
   height: number;
   fill?: SolidFill | null;
   stroke?: SolidFill | null;
+  strokeCap?: string;
+  strokeJoin?: string;
   strokeWeight?: number;
   network: VectorNetwork;
 }

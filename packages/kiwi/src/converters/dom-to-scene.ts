@@ -28,11 +28,52 @@ import { TextLayoutCache } from "../utils/text-layout";
 
 export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
 
-function parseColor(s: string): [number, number, number, number] | null {
-  if (!s) {
+let colorParseContext: CanvasRenderingContext2D | null | undefined;
+
+function parseColorChannel(value: string): number {
+  const trimmed = value.trim();
+  if (trimmed.endsWith("%")) {
+    return Number.parseFloat(trimmed) / 100;
+  }
+  return Number.parseFloat(trimmed) / 255;
+}
+
+function parseAlphaChannel(value: string | undefined): number {
+  if (value === undefined) {
+    return 1;
+  }
+  const trimmed = value.trim();
+  if (trimmed.endsWith("%")) {
+    return Number.parseFloat(trimmed) / 100;
+  }
+  return Number.parseFloat(trimmed);
+}
+
+function normalizeCssColor(value: string): string | null {
+  if (typeof document === "undefined") {
     return null;
   }
+  if (colorParseContext === undefined) {
+    colorParseContext = document.createElement("canvas").getContext("2d");
+  }
+  if (!colorParseContext) {
+    return null;
+  }
+  const previous = colorParseContext.fillStyle;
+  colorParseContext.fillStyle = "#000";
+  colorParseContext.fillStyle = value;
+  const normalized = colorParseContext.fillStyle;
+  colorParseContext.fillStyle = previous;
+  return normalized === "#000" && value.trim().toLowerCase() !== "#000"
+    ? null
+    : normalized;
+}
+
+function parseKnownColor(s: string): [number, number, number, number] | null {
   const trimmed = s.trim();
+  if (trimmed === "transparent") {
+    return [0, 0, 0, 0];
+  }
   const hex = HEX_RE.exec(trimmed);
   if (hex?.[1]) {
     let h = hex[1];
@@ -56,16 +97,84 @@ function parseColor(s: string): [number, number, number, number] | null {
   if (!inner) {
     return null;
   }
-  const parts = inner.split(",").map((p) => p.trim());
+  const parts = inner.includes(",")
+    ? inner.split(",").map((p) => p.trim())
+    : inner
+        .replace(" / ", " ")
+        .split(WHITESPACE_RE)
+        .map((p) => p.trim());
   const [rs, gs, bs, as] = parts;
   if (rs === undefined || gs === undefined || bs === undefined) {
     return null;
   }
-  const r = Number.parseFloat(rs) / 255;
-  const g = Number.parseFloat(gs) / 255;
-  const b = Number.parseFloat(bs) / 255;
-  const a = as !== undefined ? Number.parseFloat(as) : 1;
+  const r = parseColorChannel(rs);
+  const g = parseColorChannel(gs);
+  const b = parseColorChannel(bs);
+  const a = parseAlphaChannel(as);
+  if (![r, g, b, a].every(Number.isFinite)) {
+    return null;
+  }
   return [r, g, b, a];
+}
+
+function parseColor(s: string): [number, number, number, number] | null {
+  if (!s) {
+    return null;
+  }
+  const trimmed = s.trim();
+  const parsed = parseKnownColor(trimmed);
+  if (parsed) {
+    return parsed;
+  }
+  const normalized = normalizeCssColor(trimmed);
+  if (!normalized || normalized === trimmed) {
+    return null;
+  }
+  return parseKnownColor(normalized);
+}
+
+function svgPaintValue(
+  value: string | null,
+  inherited: string | null,
+  currentColor: string
+): string | null {
+  const paint = (value ?? inherited ?? "").trim();
+  if (!paint || paint === "none" || paint.startsWith("url(")) {
+    return null;
+  }
+  if (paint === "currentColor") {
+    return currentColor;
+  }
+  return paint;
+}
+
+function svgStrokeCap(value: string): string {
+  switch (value.trim()) {
+    case "round":
+      return "ROUND";
+    case "square":
+      return "SQUARE";
+    default:
+      return "NONE";
+  }
+}
+
+function svgStrokeJoin(value: string): string {
+  switch (value.trim()) {
+    case "round":
+      return "ROUND";
+    case "bevel":
+      return "BEVEL";
+    default:
+      return "MITER";
+  }
+}
+
+function svgStrokeWeight(shape: SvgShape): number | undefined {
+  if (!shape.stroke) {
+    return undefined;
+  }
+  return shape.strokeWidth > 0 ? shape.strokeWidth : 1;
 }
 
 function cleanLayerName(input: string | null | undefined): string | null {
@@ -420,11 +529,9 @@ function extractLayout(node: Node): LayoutNode | null {
     const svg = el;
     const rect = svg.getBoundingClientRect();
     const style = getComputedStyle(svg);
-    const svgFill = svg.getAttribute("fill") ?? "";
-    const fallbackColor =
-      (svgFill && svgFill !== "none" && svgFill !== "currentColor"
-        ? svgFill
-        : "") || style.color;
+    const svgFill = svg.getAttribute("fill");
+    const svgStroke = svg.getAttribute("stroke");
+    const fallbackColor = style.color;
 
     const shapes: SvgShape[] = [];
     const pathEls = svg.querySelectorAll("path");
@@ -441,15 +548,22 @@ function extractLayout(node: Node): LayoutNode | null {
       if (subpaths.length === 0) {
         continue;
       }
-      const pathFill = pathEl.getAttribute("fill") ?? "";
-      const fill =
-        (pathFill && pathFill !== "none" && pathFill !== "currentColor"
-          ? pathFill
-          : "") ||
-        (svgFill && svgFill !== "none" && svgFill !== "currentColor"
-          ? svgFill
-          : "") ||
-        fallbackColor;
+      const pathStyle = getComputedStyle(pathEl);
+      const pathFill = pathEl.getAttribute("fill");
+      const pathStroke = pathEl.getAttribute("stroke");
+      const stroke = svgPaintValue(
+        pathStroke,
+        svgStroke ?? pathStyle.stroke,
+        fallbackColor
+      );
+      const fill = svgPaintValue(
+        pathFill,
+        svgFill ?? (stroke || pathStroke || svgStroke ? null : pathStyle.fill),
+        fallbackColor
+      );
+      if (!fill && !stroke) {
+        continue;
+      }
       const fillRule: "nonzero" | "evenodd" =
         pathEl.getAttribute("fill-rule") === "evenodd" ||
         pathEl.getAttribute("clip-rule") === "evenodd"
@@ -462,7 +576,26 @@ function extractLayout(node: Node): LayoutNode | null {
           y: ctm.b * p.x + ctm.d * p.y + ctm.f,
         })),
       }));
-      shapes.push({ subpaths: transformed, fill, fillRule });
+      shapes.push({
+        subpaths: transformed,
+        fill,
+        fillRule,
+        stroke,
+        strokeLineCap:
+          pathEl.getAttribute("stroke-linecap") ??
+          svg.getAttribute("stroke-linecap") ??
+          pathStyle.strokeLinecap,
+        strokeLineJoin:
+          pathEl.getAttribute("stroke-linejoin") ??
+          svg.getAttribute("stroke-linejoin") ??
+          pathStyle.strokeLinejoin,
+        strokeWidth:
+          parsePx(
+            pathEl.getAttribute("stroke-width") ??
+              svg.getAttribute("stroke-width") ??
+              pathStyle.strokeWidth
+          ) * (Math.hypot(ctm.a, ctm.b) || 1),
+      });
     }
 
     return {
@@ -609,11 +742,14 @@ function emitSvgSubpaths(
   const vertices: Array<{ x: number; y: number }> = [];
   const segments: Array<{ vStart: number; vEnd: number }> = [];
   const loops: Array<{ segmentIndices: number[] }> = [];
+  const hasFill = Boolean(shape.fill);
+  const hasStroke = Boolean(shape.stroke);
 
   for (const sub of subpaths) {
     const startIdx = vertices.length;
     const pts = sub.points;
     let count = pts.length;
+    let closesPath = sub.closed || hasFill;
     if (count >= 2) {
       const first = pts[0];
       const last = pts[count - 1];
@@ -623,6 +759,7 @@ function emitSvgSubpaths(
         Math.hypot(first.x - last.x, first.y - last.y) < 0.0001
       ) {
         count -= 1;
+        closesPath = true;
       }
     }
     for (let i = 0; i < count; i += 1) {
@@ -633,7 +770,7 @@ function emitSvgSubpaths(
       vertices.push({ x: p.x - minX, y: p.y - minY });
     }
     const numVerts = vertices.length - startIdx;
-    if (numVerts < 3) {
+    if (numVerts < 2) {
       continue;
     }
     const segStart = segments.length;
@@ -641,22 +778,39 @@ function emitSvgSubpaths(
     for (let i = 0; i < lastIdx; i += 1) {
       segments.push({ vStart: startIdx + i, vEnd: startIdx + i + 1 });
     }
-    segments.push({ vStart: startIdx + lastIdx, vEnd: startIdx });
-    const loopSegs: number[] = [];
-    for (let i = segStart; i < segments.length; i += 1) {
-      loopSegs.push(i);
+    if (closesPath && numVerts >= 3) {
+      segments.push({ vStart: startIdx + lastIdx, vEnd: startIdx });
+      const loopSegs: number[] = [];
+      for (let i = segStart; i < segments.length; i += 1) {
+        loopSegs.push(i);
+      }
+      loops.push({ segmentIndices: loopSegs });
     }
-    loops.push({ segmentIndices: loopSegs });
   }
 
-  if (vertices.length < 3 || loops.length === 0) {
+  if (vertices.length < 2 || segments.length === 0) {
     return;
   }
 
-  const shapeColor = parseColor(shape.fill);
-  const fill = shapeColor
-    ? solidFill(shapeColor[0], shapeColor[1], shapeColor[2], shapeColor[3])
-    : solidFill(0.35, 0.35, 0.4, 1);
+  const shapeColor = shape.fill ? parseColor(shape.fill) : null;
+  const fill =
+    shapeColor && shapeColor[3] > 0 && loops.length > 0
+      ? solidFill(shapeColor[0], shapeColor[1], shapeColor[2], shapeColor[3])
+      : null;
+  const strokeColor = shape.stroke ? parseColor(shape.stroke) : null;
+  const stroke =
+    strokeColor && strokeColor[3] > 0
+      ? solidFill(
+          strokeColor[0],
+          strokeColor[1],
+          strokeColor[2],
+          strokeColor[3]
+        )
+      : null;
+
+  if (!fill && !stroke) {
+    return;
+  }
 
   sb.addVector({
     parent,
@@ -666,15 +820,22 @@ function emitSvgSubpaths(
     width,
     height,
     fill,
+    stroke,
+    strokeCap: svgStrokeCap(shape.strokeLineCap),
+    strokeJoin: svgStrokeJoin(shape.strokeLineJoin),
+    strokeWeight: svgStrokeWeight(shape),
     network: {
       vertices,
       segments,
-      regions: [
-        {
-          loops,
-          windingRule: shape.fillRule === "evenodd" ? "ODD" : "NONZERO",
-        },
-      ],
+      regions:
+        fill && loops.length > 0
+          ? [
+              {
+                loops,
+                windingRule: shape.fillRule === "evenodd" ? "ODD" : "NONZERO",
+              },
+            ]
+          : [],
     },
   });
 }

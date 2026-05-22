@@ -53,8 +53,12 @@ export interface TextInfo {
 
 export interface SvgShape {
   subpaths: PathSubpath[];
-  fill: string;
+  fill: string | null;
   fillRule: "nonzero" | "evenodd";
+  stroke: string | null;
+  strokeLineCap: string;
+  strokeLineJoin: string;
+  strokeWidth: number;
 }
 
 export interface SvgInfo {
