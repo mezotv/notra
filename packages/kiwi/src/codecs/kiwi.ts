@@ -382,6 +382,11 @@ export function encodeValue(
   defs: Definition[]
 ): void {
   if (isArray) {
+    if (typeCode === -2 && value instanceof Uint8Array) {
+      writer.writeVarint(value.length);
+      writer.writeBytes(value);
+      return;
+    }
     const arr = arrayValue(value);
     writer.writeVarint(arr.length);
     for (const item of arr) {
