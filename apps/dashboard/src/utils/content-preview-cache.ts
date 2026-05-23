@@ -103,25 +103,35 @@ function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
 
   scheduledPreviewCacheRefreshKeys.add(params.cacheKey);
 
-  after(async () => {
-    try {
-      const acquired = await tryAcquirePreviewCacheRefreshLock(params.cacheKey);
+  try {
+    after(async () => {
+      try {
+        const acquired = await tryAcquirePreviewCacheRefreshLock(
+          params.cacheKey
+        );
 
-      if (!acquired) {
-        return;
+        if (!acquired) {
+          return;
+        }
+
+        const fresh = await params.fetchFresh();
+        await writePreviewCache(params.cacheKey, fresh);
+      } catch (error) {
+        console.warn(
+          `[Preview] Failed to refresh stale preview cache entry ${params.cacheKey}:`,
+          error
+        );
+      } finally {
+        scheduledPreviewCacheRefreshKeys.delete(params.cacheKey);
       }
-
-      const fresh = await params.fetchFresh();
-      await writePreviewCache(params.cacheKey, fresh);
-    } catch (error) {
-      console.warn(
-        `[Preview] Failed to refresh stale preview cache entry ${params.cacheKey}:`,
-        error
-      );
-    } finally {
-      scheduledPreviewCacheRefreshKeys.delete(params.cacheKey);
-    }
-  });
+    });
+  } catch (error) {
+    scheduledPreviewCacheRefreshKeys.delete(params.cacheKey);
+    console.warn(
+      `[Preview] Failed to schedule stale preview cache refresh ${params.cacheKey}:`,
+      error
+    );
+  }
 }
 
 export async function getCachedPreviewData<T extends unknown[]>(params: {
