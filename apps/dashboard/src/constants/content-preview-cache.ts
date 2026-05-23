@@ -1,0 +1,3 @@
+export const PREVIEW_CACHE_VERSION = 1;
+export const PREVIEW_CACHE_TTL_SECONDS = 60 * 60;
+export const PREVIEW_CACHE_STALE_AFTER_MS = 10 * 60 * 1000;

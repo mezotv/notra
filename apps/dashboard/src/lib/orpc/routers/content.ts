@@ -40,6 +40,19 @@ import type { ContentResponse, PostsResponse } from "@/schemas/content";
 import { updateContentSchema } from "@/schemas/content";
 import { clearCompletedGenerationSchema } from "@/schemas/generations";
 import { LOOKBACK_WINDOWS } from "@/schemas/integrations";
+import type {
+  CommitPreview,
+  LinearIntegrationPreview,
+  PreviewFailure,
+  PullRequestPreview,
+  ReleasePreview,
+  RepositoryPreview,
+} from "@/types/content/preview";
+import type { PreviewCacheKind } from "@/types/content/preview-cache";
+import {
+  getCachedPreviewData,
+  getPreviewCacheKey,
+} from "@/utils/content-preview-cache";
 import { resolveLookbackRange } from "@/utils/lookback";
 import {
   badRequest,
@@ -121,74 +134,7 @@ function serializeContent(post: {
   };
 }
 
-export interface CommitPreview {
-  authorName: string;
-  authorLogin: string | null;
-  authoredAt: string;
-  htmlUrl: string;
-  message: string;
-  sha: string;
-}
-
-export interface PullRequestPreview {
-  authorLogin: string;
-  htmlUrl: string;
-  merged: boolean;
-  mergedAt: string | null;
-  number: number;
-  state: string;
-  title: string;
-}
-
-export interface ReleasePreview {
-  authorLogin: string;
-  htmlUrl: string;
-  name: string;
-  prerelease: boolean;
-  publishedAt: string;
-  tagName: string;
-}
-
-export interface RepositoryPreview {
-  commits: CommitPreview[];
-  owner: string;
-  pullRequests: PullRequestPreview[];
-  releases: ReleasePreview[];
-  repo: string;
-  repositoryId: string;
-}
-
-export interface LinearIssuePreviewItem {
-  id: string;
-  identifier: string;
-  title: string;
-  state: string | null;
-  assignee: string | null;
-  completedAt: string | null;
-  url: string;
-}
-
-export interface LinearIntegrationPreviewItem {
-  integrationId: string;
-  displayName: string;
-  issues: LinearIssuePreviewItem[];
-}
-
-type PreviewFailureStage =
-  | "repository_lookup"
-  | "repository_metadata"
-  | "token"
-  | "commits"
-  | "pull_requests"
-  | "releases";
-
-export interface RepositoryPreviewFailure {
-  message: string;
-  owner: string | null;
-  repo: string | null;
-  repositoryId: string;
-  stage: PreviewFailureStage;
-}
+type RepositoryPreviewFailure = PreviewFailure;
 
 function getDateRange(dateParam: string | null) {
   if (!dateParam) {
@@ -808,33 +754,53 @@ export const contentRouter = {
           }
 
           const octokit = createOctokit(token ?? undefined);
+          const getRepoCacheKey = (kind: PreviewCacheKind) =>
+            getPreviewCacheKey({
+              organizationId: input.organizationId,
+              source: "repo",
+              sourceId: repository.id,
+              kind,
+              lookbackWindow: input.lookbackWindow,
+            });
           const [commitsResult, pullsResult, releasesResult] =
             await Promise.allSettled([
               input.includeCommits
-                ? fetchCommitsPreview({
-                    octokit,
-                    owner: repository.owner,
-                    repo: repository.repo,
-                    start: lookback.start,
-                    end: lookback.end,
+                ? getCachedPreviewData({
+                    cacheKey: getRepoCacheKey("commits"),
+                    fetchFresh: () =>
+                      fetchCommitsPreview({
+                        octokit,
+                        owner: repository.owner,
+                        repo: repository.repo,
+                        start: lookback.start,
+                        end: lookback.end,
+                      }),
                   })
                 : Promise.resolve([]),
               input.includePullRequests
-                ? fetchMergedPullRequestsPreview({
-                    octokit,
-                    owner: repository.owner,
-                    repo: repository.repo,
-                    start: lookback.start,
-                    end: lookback.end,
+                ? getCachedPreviewData({
+                    cacheKey: getRepoCacheKey("prs"),
+                    fetchFresh: () =>
+                      fetchMergedPullRequestsPreview({
+                        octokit,
+                        owner: repository.owner,
+                        repo: repository.repo,
+                        start: lookback.start,
+                        end: lookback.end,
+                      }),
                   })
                 : Promise.resolve([]),
               input.includeReleases
-                ? fetchReleasesPreview({
-                    octokit,
-                    owner: repository.owner,
-                    repo: repository.repo,
-                    start: lookback.start,
-                    end: lookback.end,
+                ? getCachedPreviewData({
+                    cacheKey: getRepoCacheKey("releases"),
+                    fetchFresh: () =>
+                      fetchReleasesPreview({
+                        octokit,
+                        owner: repository.owner,
+                        repo: repository.repo,
+                        start: lookback.start,
+                        end: lookback.end,
+                      }),
                   })
                 : Promise.resolve([]),
             ]);
@@ -902,7 +868,7 @@ export const contentRouter = {
           (repository): repository is RepositoryPreview => repository !== null
         );
 
-      let linearIntegrationPreviews: LinearIntegrationPreviewItem[] = [];
+      let linearIntegrationPreviews: LinearIntegrationPreview[] = [];
 
       if (input.linearIntegrationIds && input.linearIntegrationIds.length > 0) {
         const linearIntegrations = await getLinearIntegrationsByOrganization(
@@ -925,43 +891,55 @@ export const contentRouter = {
                 };
               }
 
-              const client = createLinearClient(token);
-              const filter: Record<string, unknown> = {
-                completedAt: { null: false },
-              };
-
-              if (integration.linearTeamId) {
-                filter.team = { id: { eq: integration.linearTeamId } };
-              }
-
-              filter.completedAt = {
-                gte: lookback.start.toISOString(),
-                lte: lookback.end.toISOString(),
-              };
-
-              const issues = await client.issues({
-                filter,
-                first: 50,
-                orderBy: "updatedAt" as never,
-              });
-
-              const items = await Promise.all(
-                issues.nodes.map(async (issue) => {
-                  const [state, assignee] = await Promise.all([
-                    issue.state,
-                    issue.assignee,
-                  ]);
-                  return {
-                    id: issue.id,
-                    identifier: issue.identifier,
-                    title: issue.title,
-                    state: state?.name ?? null,
-                    assignee: assignee?.name ?? assignee?.displayName ?? null,
-                    completedAt: issue.completedAt?.toISOString() ?? null,
-                    url: issue.url,
+              const items = await getCachedPreviewData({
+                cacheKey: getPreviewCacheKey({
+                  organizationId: input.organizationId,
+                  source: "linear",
+                  sourceId: integration.id,
+                  kind: "issues",
+                  lookbackWindow: input.lookbackWindow,
+                }),
+                fetchFresh: async () => {
+                  const client = createLinearClient(token);
+                  const filter: Record<string, unknown> = {
+                    completedAt: { null: false },
                   };
-                })
-              );
+
+                  if (integration.linearTeamId) {
+                    filter.team = { id: { eq: integration.linearTeamId } };
+                  }
+
+                  filter.completedAt = {
+                    gte: lookback.start.toISOString(),
+                    lte: lookback.end.toISOString(),
+                  };
+
+                  const issues = await client.issues({
+                    filter,
+                    first: 50,
+                    orderBy: "updatedAt" as never,
+                  });
+
+                  return Promise.all(
+                    issues.nodes.map(async (issue) => {
+                      const [state, assignee] = await Promise.all([
+                        issue.state,
+                        issue.assignee,
+                      ]);
+                      return {
+                        id: issue.id,
+                        identifier: issue.identifier,
+                        title: issue.title,
+                        state: state?.name ?? null,
+                        assignee:
+                          assignee?.name ?? assignee?.displayName ?? null,
+                        completedAt: issue.completedAt?.toISOString() ?? null,
+                        url: issue.url,
+                      };
+                    })
+                  );
+                },
+              });
 
               return {
                 integrationId: integration.id,
