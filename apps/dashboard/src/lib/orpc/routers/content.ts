@@ -895,7 +895,7 @@ export const contentRouter = {
                 cacheKey: getPreviewCacheKey({
                   organizationId: input.organizationId,
                   source: "linear",
-                  sourceId: integration.id,
+                  sourceId: `${integration.id}:team:${integration.linearTeamId ?? "all"}`,
                   kind: "issues",
                   lookbackWindow: input.lookbackWindow,
                 }),

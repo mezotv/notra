@@ -1,6 +1,7 @@
 import { redis } from "@notra/ai/utils/redis";
 import { after } from "next/server";
 import {
+  PREVIEW_CACHE_REFRESH_LOCK_TTL_SECONDS,
   PREVIEW_CACHE_STALE_AFTER_MS,
   PREVIEW_CACHE_TTL_SECONDS,
   PREVIEW_CACHE_VERSION,
@@ -76,10 +77,30 @@ async function writePreviewCache<T extends unknown[]>(key: string, data: T) {
   await redis.set(key, entry, { ex: PREVIEW_CACHE_TTL_SECONDS });
 }
 
-function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
+async function tryAcquirePreviewCacheRefreshLock(cacheKey: string) {
+  if (!redis) {
+    return false;
+  }
+
+  const lockKey = `${cacheKey}:refresh-lock`;
+  const result = await redis.set(lockKey, "1", {
+    ex: PREVIEW_CACHE_REFRESH_LOCK_TTL_SECONDS,
+    nx: true,
+  });
+
+  return result === "OK";
+}
+
+async function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
   cacheKey: string;
   fetchFresh: () => Promise<T>;
 }) {
+  const acquired = await tryAcquirePreviewCacheRefreshLock(params.cacheKey);
+
+  if (!acquired) {
+    return;
+  }
+
   after(async () => {
     try {
       const fresh = await params.fetchFresh();
@@ -106,7 +127,7 @@ export async function getCachedPreviewData<T extends unknown[]>(params: {
 
     if (isPreviewCacheEntry<T>(cached)) {
       if (cached.staleAt <= Date.now()) {
-        schedulePreviewCacheRefresh(params);
+        await schedulePreviewCacheRefresh(params);
       }
 
       return cached.data;
