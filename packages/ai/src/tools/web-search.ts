@@ -1,5 +1,6 @@
-import Firecrawl, { type SearchRequest } from "@mendable/firecrawl-js";
+import type { FirecrawlWebSearchInput } from "@notra/ai/types/firecrawl";
 import { toolDescription } from "@notra/ai/utils/description";
+import { searchWeb } from "@notra/ai/utils/firecrawl";
 import { type Tool, tool } from "ai";
 import z from "zod";
 
@@ -9,7 +10,7 @@ export function isWebSearchAvailable(): boolean {
   return Boolean(process.env.FIRECRAWL_API_KEY?.trim());
 }
 
-const webSearchInputSchema = z.object({
+const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
   query: z.string().min(1).describe("The web search query."),
   limit: z
     .number()
@@ -69,8 +70,6 @@ const webSearchInputSchema = z.object({
     .describe("Optional scrape options when full page content is needed."),
 });
 
-type WebSearchInput = z.infer<typeof webSearchInputSchema>;
-
 export function createWebSearchTool(): Tool {
   return tool({
     description: toolDescription({
@@ -85,21 +84,6 @@ export function createWebSearchTool(): Tool {
     inputSchema: webSearchInputSchema,
     execute: async (input) => searchWeb(input),
   });
-}
-
-async function searchWeb(input: WebSearchInput) {
-  const apiKey = process.env.FIRECRAWL_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error("FIRECRAWL_API_KEY is required to use webSearch.");
-  }
-
-  const firecrawl = new Firecrawl({ apiKey });
-  const { query, ...options } = input;
-  const data = await firecrawl.search(
-    query,
-    options satisfies Omit<SearchRequest, "query">
-  );
-  return { success: true, data };
 }
 
 export const WEB_SEARCH_TOOL_DESCRIPTION =

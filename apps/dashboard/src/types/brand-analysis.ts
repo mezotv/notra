@@ -33,6 +33,26 @@ export interface DispatchBrandAnalysisInput {
   jobId: string;
 }
 
+export interface BrandAnalysisPayload {
+  organizationId: string;
+  url: string;
+  voiceId?: string;
+  jobId?: string;
+}
+
+export interface BrandInfo {
+  companyName: string;
+  companyDescription: string;
+  toneProfile: string;
+  customTone?: string | null;
+  audience: string;
+  language?: string;
+}
+
+export type ExtractionResult =
+  | { success: true; brandInfo: BrandInfo }
+  | { success: false; error: string };
+
 export interface InsertBrandIdentityInput {
   organizationId: string;
   brandName: string;
