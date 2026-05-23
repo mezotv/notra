@@ -25,6 +25,7 @@ import {
   getCreatePostToolName,
 } from "@notra/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import { createSupermemoryToolSet } from "@notra/ai/tools/supermemory";
 import type {
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
@@ -100,6 +101,10 @@ export function buildStandaloneToolSet(
   descriptions.push(
     "**Skills**: Access knowledge and writing guidelines using listAvailableSkills and getSkillByName"
   );
+
+  const memoryToolSet = createSupermemoryToolSet(organizationId);
+  Object.assign(tools, memoryToolSet.tools);
+  descriptions.push(...memoryToolSet.descriptions);
 
   if (process.env.NODE_ENV === "development") {
     tools.example = exampleTool();

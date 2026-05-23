@@ -5,6 +5,7 @@ import {
   createUpdatePostTool,
   createViewPostTool,
 } from "@notra/ai/tools/post";
+import { hasSupermemoryToolsConfigured } from "@notra/ai/tools/supermemory";
 import type {
   AutoThinkingLevel,
   IntegrationFetchers,
@@ -128,11 +129,13 @@ export async function orchestrateStandaloneChat(
 
   const isSimpleNoTools =
     routingDecision.complexity === "simple" && !routingDecision.requiresTools;
+  const useExplicitMemoryTools =
+    !isSimpleNoTools && hasSupermemoryToolsConfigured();
 
-  const modelWithMemory = createModel(
+  const model = createModel(
     organizationId,
     routingDecision.model,
-    { disableMemory: isSimpleNoTools },
+    { disableMemory: isSimpleNoTools || useExplicitMemoryTools },
     log
   );
 
@@ -190,7 +193,7 @@ export async function orchestrateStandaloneChat(
 
   let firstChunkFired = false;
   const stream = streamText({
-    model: modelWithMemory,
+    model,
     system: systemPrompt,
     messages: modelMessages,
     tools,

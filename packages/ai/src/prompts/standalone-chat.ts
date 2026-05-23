@@ -61,6 +61,13 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - When asked about GitHub activity, use the GitHub tools to fetch PRs, commits, and releases.
     - When asked about Linear issues or projects, use the Linear tools.${exampleToolLine}
 
+    ## Memory
+    - When memory tools are available, use searchMemories or getProfile when prior user, organization, brand, or project context would materially improve the answer.
+    - Use addMemory when the user explicitly asks you to remember something or shares a durable preference, fact, reusable context, brand rule, or project detail.
+    - Use memoryForget when the user asks you to forget or remove a specific memory.
+    - Do not save secrets, credentials, payment details, private keys, transient drafting requests, or one-off instructions that are only relevant to the current turn.
+    - When you use memory, mention it briefly only if it is helpful to the user; do not narrate every lookup.
+
     ## Content Types
     Available content types: changelog, blog_post, twitter_post, linkedin_post, investor_update
 
