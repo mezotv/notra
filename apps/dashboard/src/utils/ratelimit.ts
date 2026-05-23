@@ -23,6 +23,12 @@ export const ratelimit = {
     prefix: "ratelimit:import-tweets",
     limiter: Ratelimit.slidingWindow(20, "1m"),
   }),
+  onboardingBrandAnalysis: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:onboarding-brand-analysis",
+    limiter: Ratelimit.slidingWindow(2, "10m"),
+  }),
   commandPaletteNavigate: new Ratelimit({
     redis,
     analytics: true,
