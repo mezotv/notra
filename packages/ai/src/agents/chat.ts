@@ -3,6 +3,12 @@ import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
 import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { exampleTool } from "@notra/ai/tools/example";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import {
+  createWebSearchTool,
+  isWebSearchAvailable,
+  WEB_SEARCH_TOOL_DESCRIPTION,
+  WEB_SEARCH_TOOL_NAME,
+} from "@notra/ai/tools/web-search";
 import type { ChatAgentContext } from "@notra/ai/types/agents";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { stepCountIs, ToolLoopAgent } from "ai";
@@ -34,6 +40,7 @@ export async function createChatAgent(
   });
 
   const isDev = process.env.NODE_ENV === "development";
+  const hasWebSearch = isWebSearchAvailable();
 
   const selectionContext = context.selectedText
     ? `\n\nThe user has selected the following text (focus changes on this area):\n"""\n${context.selectedText}\n"""`
@@ -50,12 +57,17 @@ export async function createChatAgent(
       editMarkdown,
       listAvailableSkills: listAvailableSkills({ organizationId }),
       getSkillByName: getSkillByName({ organizationId }),
+      ...(hasWebSearch
+        ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() }
+        : {}),
       ...(isDev ? { example: exampleTool() } : {}),
     },
     instructions: `You are a content editor assistant for a markdown document. You have two response modes depending on what the user asks.${brandContext}
 
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
+
+${hasWebSearch ? `## Available Capabilities\n- ${WEB_SEARCH_TOOL_DESCRIPTION}\n` : ""}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.

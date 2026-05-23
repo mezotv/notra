@@ -356,7 +356,7 @@ export function ChatHistoryNav() {
       </SidebarGroup>
 
       {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <AnimatePresence initial={false}>
             {!isLoading && (
               <motion.div

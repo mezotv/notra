@@ -11,6 +11,12 @@ import {
   createGetLinearProjectsTool,
 } from "@notra/ai/tools/linear";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import {
+  createWebSearchTool,
+  isWebSearchAvailable,
+  WEB_SEARCH_TOOL_DESCRIPTION,
+  WEB_SEARCH_TOOL_NAME,
+} from "@notra/ai/tools/web-search";
 import type {
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
@@ -55,18 +61,24 @@ export function buildToolSet(
   });
 
   const isDev = process.env.NODE_ENV === "development";
+  const hasWebSearch = isWebSearchAvailable();
 
   const tools: Record<string, Tool> = {
     getMarkdown,
     editMarkdown,
     listAvailableSkills: listAvailableSkills({ organizationId }),
     getSkillByName: getSkillByName({ organizationId }),
+    ...(hasWebSearch ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() } : {}),
   };
 
   const descriptions: string[] = [
     "**Markdown Editing**: View and edit the document using getMarkdown and editMarkdown",
     "**Skills**: Access knowledge and writing guidelines using listAvailableSkills and getSkillByName",
   ];
+
+  if (hasWebSearch) {
+    descriptions.push(WEB_SEARCH_TOOL_DESCRIPTION);
+  }
 
   if (isDev) {
     tools.example = exampleTool();

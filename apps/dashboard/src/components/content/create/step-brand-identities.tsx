@@ -1,11 +1,12 @@
 "use client";
 
-import {
-  Loading03Icon,
-  Tick01Icon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
+import { Loading03Icon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -20,6 +21,7 @@ import {
   useCreateBrandVoice,
 } from "@/lib/hooks/use-brand-analysis";
 import type { BrandIdentitiesStepProps } from "@/types/content/create";
+import { getBrandFaviconUrl } from "@/utils/brand";
 
 const HTTP_PREFIX_RE = /^https?:\/\//i;
 const WWW_PREFIX_RE = /^www\./;
@@ -208,12 +210,15 @@ export function StepBrandIdentities({
                     <HugeiconsIcon className="size-3" icon={Tick01Icon} />
                   )}
                 </div>
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <HugeiconsIcon
-                    className="size-4 text-muted-foreground"
-                    icon={UserGroupIcon}
-                  />
-                </div>
+                <Avatar
+                  className="size-8 rounded-full after:rounded-full"
+                  size="sm"
+                >
+                  <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
+                  <AvatarFallback>
+                    {voice.name.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-sm">{voice.name}</p>
                   <p className="truncate text-muted-foreground text-xs">

@@ -41,6 +41,14 @@ function getNumber(value: unknown, key: string): number | undefined {
   return typeof entry === "number" ? entry : undefined;
 }
 
+function getArray(value: unknown, key: string): unknown[] | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const entry = (value as Record<string, unknown>)[key];
+  return Array.isArray(entry) ? entry : undefined;
+}
+
 interface ToolCopy {
   verbs: readonly [present: string, past: string];
   noun: string;
@@ -62,6 +70,14 @@ function idSuffix(input: unknown, keys: readonly string[]): string | undefined {
   return undefined;
 }
 
+function shortPreview(value: string, maxLength = 72): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
 function quotedSuffix(
   input: unknown,
   keys: readonly string[]
@@ -69,37 +85,7 @@ function quotedSuffix(
   for (const key of keys) {
     const value = getString(input, key);
     if (value) {
-      return `"${value}"`;
-    }
-  }
-  return undefined;
-}
-
-const LABEL_PREVIEW_MAX_CHARS = 80;
-
-function compactText(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
-}
-
-function previewText(value: string): string | undefined {
-  const compacted = compactText(value);
-  if (!compacted) {
-    return undefined;
-  }
-  return compacted.length > LABEL_PREVIEW_MAX_CHARS
-    ? `${compacted.slice(0, LABEL_PREVIEW_MAX_CHARS - 1)}…`
-    : compacted;
-}
-
-function quotedPreviewSuffix(
-  input: unknown,
-  keys: readonly string[]
-): string | undefined {
-  for (const key of keys) {
-    const value = getString(input, key);
-    const preview = value ? previewText(value) : undefined;
-    if (preview) {
-      return `"${preview}"`;
+      return `"${shortPreview(value)}"`;
     }
   }
   return undefined;
@@ -133,7 +119,7 @@ function claudeMemorySubtitle({
   const command = getString(input, "command");
   const suffix =
     memoryPathSuffix(input) ??
-    quotedPreviewSuffix(input, ["file_text", "insert_text", "new_str"]);
+    quotedSuffix(input, ["file_text", "insert_text", "new_str"]);
 
   const withSuffix = (label: string) => (suffix ? `${label} ${suffix}` : label);
 
@@ -152,6 +138,42 @@ function claudeMemorySubtitle({
     default:
       return withSuffix(isStreaming ? "Using memory" : "Used memory");
   }
+}
+
+function webSearchSuffix(input: unknown, output: unknown): string | undefined {
+  const query = quotedSuffix(input, ["query"]);
+  const count = getWebSearchResultCount(output);
+  if (query && count !== undefined) {
+    return `for ${query} (${count} ${count === 1 ? "result" : "results"})`;
+  }
+  return query ? `for ${query}` : undefined;
+}
+
+function getWebSearchResultCount(output: unknown): number | undefined {
+  const directResults = getArray(output, "results") ?? getArray(output, "data");
+  if (directResults) {
+    return directResults.length;
+  }
+
+  if (!output || typeof output !== "object") {
+    return undefined;
+  }
+
+  const data = (output as Record<string, unknown>).data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return undefined;
+  }
+
+  const resultGroups = ["web", "news", "images"].map((key) =>
+    getArray(data, key)
+  );
+  const counts = resultGroups
+    .filter((group): group is unknown[] => Boolean(group))
+    .map((group) => group.length);
+
+  return counts.length
+    ? counts.reduce((total, count) => total + count, 0)
+    : undefined;
 }
 
 const TOOL_COPY: Record<string, ToolCopy> = {
@@ -231,23 +253,31 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     noun: "skill",
     suffix: (input) => quotedSuffix(input, ["name"]),
   },
+  webSearch: {
+    verbs: ["Searching", "Searched"],
+    noun: "web",
+    suffix: webSearchSuffix,
+  },
+  search: {
+    verbs: ["Searching", "Searched"],
+    noun: "web",
+    suffix: webSearchSuffix,
+  },
   searchMemories: {
     verbs: ["Searching", "Searched"],
     noun: "memory",
-    suffix: (input) =>
-      quotedPreviewSuffix(input, ["informationToGet", "query", "q"]),
+    suffix: (input) => quotedSuffix(input, ["informationToGet", "query", "q"]),
   },
   recall: {
     verbs: ["Searching", "Searched"],
     noun: "memory",
-    suffix: (input) =>
-      quotedPreviewSuffix(input, ["informationToGet", "query", "q"]),
+    suffix: (input) => quotedSuffix(input, ["informationToGet", "query", "q"]),
   },
   addMemory: {
     verbs: ["Saving", "Saved"],
     noun: "memory",
     suffix: (input, output) =>
-      quotedPreviewSuffix(input, ["memory", "content"]) ??
+      quotedSuffix(input, ["memory", "content", "text"]) ??
       memoryIdSuffix(input, output),
   },
   fetchMemory: {
@@ -258,7 +288,7 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   getProfile: {
     verbs: ["Checking", "Checked"],
     noun: "memory profile",
-    suffix: (input) => quotedPreviewSuffix(input, ["query", "containerTag"]),
+    suffix: (input) => quotedSuffix(input, ["query", "containerTag"]),
   },
   whoAmI: {
     verbs: ["Checking", "Checked"],
@@ -267,13 +297,13 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   documentList: {
     verbs: ["Listing", "Listed"],
     noun: "memory documents",
-    suffix: (input) => quotedPreviewSuffix(input, ["containerTag", "status"]),
+    suffix: (input) => quotedSuffix(input, ["containerTag", "status"]),
   },
   documentAdd: {
     verbs: ["Saving", "Saved"],
     noun: "memory document",
     suffix: (input, output) =>
-      quotedPreviewSuffix(input, ["title", "description", "content"]) ??
+      quotedSuffix(input, ["title", "description", "content"]) ??
       memoryIdSuffix(input, output),
   },
   documentDelete: {
@@ -286,7 +316,7 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     noun: "memory",
     suffix: (input) =>
       idSuffix(input, ["memoryId"]) ??
-      quotedPreviewSuffix(input, ["memoryContent", "reason"]),
+      quotedSuffix(input, ["memoryContent", "reason"]),
   },
   memory: {
     verbs: ["Using", "Used"],

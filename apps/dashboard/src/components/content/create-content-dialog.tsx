@@ -497,6 +497,16 @@ export function CreateContentDialog({
     [form]
   );
 
+  const toggleAllIntegrations = useCallback(() => {
+    const allValues = integrationOptions.map((opt) => opt.value);
+    const allSelected =
+      allValues.length > 0 &&
+      allValues.every((value) =>
+        form.state.values.repositoryIds.includes(value)
+      );
+    form.setFieldValue("repositoryIds", allSelected ? [] : allValues);
+  }, [integrationOptions, form]);
+
   const toggleVoiceId = useCallback(
     (id: string) => {
       const current = form.state.values.brandVoiceIds;
@@ -884,6 +894,7 @@ export function CreateContentDialog({
                   onConnect={handleOpenAddRepositoryFlow}
                   onRetryPreview={handleRetryPreview}
                   onSearchQueryChange={setSearchQuery}
+                  onToggleAllIntegrations={toggleAllIntegrations}
                   onToggleCommit={(key) => {
                     selectionsTouchedRef.current = true;
                     setSelectedCommitKeys((prev) => {

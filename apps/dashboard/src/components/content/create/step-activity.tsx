@@ -54,6 +54,7 @@ export function StepActivity(props: ActivityStepProps) {
     integrationOptions,
     selectedIntegrationIds,
     onToggleIntegration,
+    onToggleAllIntegrations,
     isLoadingIntegrations,
     onConnect,
     repositories,
@@ -105,6 +106,12 @@ export function StepActivity(props: ActivityStepProps) {
 
   const hasSelectedIntegrations = selectedIntegrationIds.length > 0;
 
+  const allSourcesSelected =
+    integrationOptions.length > 0 &&
+    integrationOptions.every((opt) =>
+      selectedIntegrationIds.includes(opt.value)
+    );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="space-y-1">
@@ -143,6 +150,38 @@ export function StepActivity(props: ActivityStepProps) {
               <span className="text-muted-foreground text-xs">
                 No integrations connected yet.
               </span>
+            )}
+
+            {!isLoadingIntegrations && integrationOptions.length > 1 && (
+              <button
+                aria-pressed={allSourcesSelected}
+                className={cn(
+                  "flex h-8 shrink-0 items-center gap-2 rounded-md border bg-card px-2.5 font-medium text-xs transition-colors hover:border-foreground/20",
+                  allSourcesSelected
+                    ? "border-foreground/40 bg-foreground/5"
+                    : "border-border"
+                )}
+                onClick={onToggleAllIntegrations}
+                type="button"
+              >
+                <div
+                  className={cn(
+                    "flex size-3.5 shrink-0 items-center justify-center rounded-sm border transition-colors",
+                    allSourcesSelected
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-muted-foreground/40"
+                  )}
+                >
+                  {allSourcesSelected && (
+                    <HugeiconsIcon
+                      className="size-2.5"
+                      icon={Tick01Icon}
+                      strokeWidth={3}
+                    />
+                  )}
+                </div>
+                <span>All sources</span>
+              </button>
             )}
 
             {!isLoadingIntegrations &&
