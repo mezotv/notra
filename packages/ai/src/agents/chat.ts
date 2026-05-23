@@ -5,6 +5,7 @@ import { exampleTool } from "@notra/ai/tools/example";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
   createWebSearchTool,
+  isWebSearchAvailable,
   WEB_SEARCH_TOOL_DESCRIPTION,
   WEB_SEARCH_TOOL_NAME,
 } from "@notra/ai/tools/web-search";
@@ -39,6 +40,7 @@ export async function createChatAgent(
   });
 
   const isDev = process.env.NODE_ENV === "development";
+  const hasWebSearch = isWebSearchAvailable();
 
   const selectionContext = context.selectedText
     ? `\n\nThe user has selected the following text (focus changes on this area):\n"""\n${context.selectedText}\n"""`
@@ -55,7 +57,9 @@ export async function createChatAgent(
       editMarkdown,
       listAvailableSkills: listAvailableSkills({ organizationId }),
       getSkillByName: getSkillByName({ organizationId }),
-      [WEB_SEARCH_TOOL_NAME]: createWebSearchTool(),
+      ...(hasWebSearch
+        ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() }
+        : {}),
       ...(isDev ? { example: exampleTool() } : {}),
     },
     instructions: `You are a content editor assistant for a markdown document. You have two response modes depending on what the user asks.${brandContext}
@@ -63,8 +67,7 @@ export async function createChatAgent(
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
 
-## Available Capabilities
-- ${WEB_SEARCH_TOOL_DESCRIPTION}
+${hasWebSearch ? `## Available Capabilities\n- ${WEB_SEARCH_TOOL_DESCRIPTION}\n` : ""}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.
@@ -88,7 +91,6 @@ Triggers: the user wants the document changed (rewrite, shorten, tone change, cl
 
 ## Guidelines
 - Always assume the user wants to edit this specific document, not some pasted markdown
-- Use webSearch when public, current, or external context would improve accuracy. Prefer limit: 5 unless broader coverage is needed.
 - Make minimal edits
 - Line numbers are 1-indexed
 - For multi-line content use \\n in content string

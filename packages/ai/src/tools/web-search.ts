@@ -5,6 +5,10 @@ import z from "zod";
 
 export const WEB_SEARCH_TOOL_NAME = "webSearch";
 
+export function isWebSearchAvailable(): boolean {
+  return Boolean(process.env.FIRECRAWL_API_KEY?.trim());
+}
+
 const webSearchInputSchema = z.object({
   query: z.string().min(1).describe("The web search query."),
   limit: z

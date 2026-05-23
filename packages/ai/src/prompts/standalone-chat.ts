@@ -60,7 +60,6 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - When asked about existing posts, use getAvailablePosts and getPostById.
     - When asked about GitHub activity, use the GitHub tools to fetch PRs, commits, and releases.
     - When asked about Linear issues or projects, use the Linear tools.${exampleToolLine}
-    - When asked about current facts, public docs, news, competitors, or external source context, use webSearch. Prefer limit: 5 unless broader coverage is needed.
 
     ## Content Types
     Available content types: changelog, blog_post, twitter_post, linkedin_post, investor_update

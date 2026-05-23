@@ -74,12 +74,38 @@ function quotedSuffix(
 
 function webSearchSuffix(input: unknown, output: unknown): string | undefined {
   const query = quotedSuffix(input, ["query"]);
-  const results = getArray(output, "data") ?? getArray(output, "results");
-  const count = results?.length;
+  const count = getWebSearchResultCount(output);
   if (query && count !== undefined) {
     return `for ${query} (${count} ${count === 1 ? "result" : "results"})`;
   }
   return query ? `for ${query}` : undefined;
+}
+
+function getWebSearchResultCount(output: unknown): number | undefined {
+  const directResults = getArray(output, "results") ?? getArray(output, "data");
+  if (directResults) {
+    return directResults.length;
+  }
+
+  if (!output || typeof output !== "object") {
+    return undefined;
+  }
+
+  const data = (output as Record<string, unknown>).data;
+  if (!data || typeof data !== "object" || Array.isArray(data)) {
+    return undefined;
+  }
+
+  const resultGroups = ["web", "news", "images"].map((key) =>
+    getArray(data, key)
+  );
+  const counts = resultGroups
+    .filter((group): group is unknown[] => Boolean(group))
+    .map((group) => group.length);
+
+  return counts.length
+    ? counts.reduce((total, count) => total + count, 0)
+    : undefined;
 }
 
 const TOOL_COPY: Record<string, ToolCopy> = {
