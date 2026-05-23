@@ -27,6 +27,14 @@ function getNumber(value: unknown, key: string): number | undefined {
   return typeof entry === "number" ? entry : undefined;
 }
 
+function getArray(value: unknown, key: string): unknown[] | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const entry = (value as Record<string, unknown>)[key];
+  return Array.isArray(entry) ? entry : undefined;
+}
+
 interface ToolCopy {
   verbs: readonly [present: string, past: string];
   noun: string;
@@ -43,6 +51,14 @@ function idSuffix(input: unknown, keys: readonly string[]): string | undefined {
   return undefined;
 }
 
+function shortPreview(value: string, maxLength = 72): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
 function quotedSuffix(
   input: unknown,
   keys: readonly string[]
@@ -50,10 +66,20 @@ function quotedSuffix(
   for (const key of keys) {
     const value = getString(input, key);
     if (value) {
-      return `"${value}"`;
+      return `"${shortPreview(value)}"`;
     }
   }
   return undefined;
+}
+
+function webSearchSuffix(input: unknown, output: unknown): string | undefined {
+  const query = quotedSuffix(input, ["query"]);
+  const results = getArray(output, "data") ?? getArray(output, "results");
+  const count = results?.length;
+  if (query && count !== undefined) {
+    return `for ${query} (${count} ${count === 1 ? "result" : "results"})`;
+  }
+  return query ? `for ${query}` : undefined;
 }
 
 const TOOL_COPY: Record<string, ToolCopy> = {
@@ -132,6 +158,46 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     verbs: ["Loading", "Loaded"],
     noun: "skill",
     suffix: (input) => quotedSuffix(input, ["name"]),
+  },
+  webSearch: {
+    verbs: ["Searching", "Searched"],
+    noun: "web",
+    suffix: webSearchSuffix,
+  },
+  search: {
+    verbs: ["Searching", "Searched"],
+    noun: "web",
+    suffix: webSearchSuffix,
+  },
+  searchMemories: {
+    verbs: ["Searching", "Searched"],
+    noun: "memory",
+    suffix: (input) => quotedSuffix(input, ["q", "query"]),
+  },
+  recall: {
+    verbs: ["Searching", "Searched"],
+    noun: "memory",
+    suffix: (input) => quotedSuffix(input, ["q", "query"]),
+  },
+  addMemory: {
+    verbs: ["Saving", "Saved"],
+    noun: "memory",
+    suffix: (input) => quotedSuffix(input, ["content", "memory", "text"]),
+  },
+  memory: {
+    verbs: ["Using", "Used"],
+    noun: "memory",
+    suffix: (input) =>
+      quotedSuffix(input, ["content", "memory", "text", "operation"]),
+  },
+  fetchMemory: {
+    verbs: ["Fetching", "Fetched"],
+    noun: "memory",
+    suffix: (input) => idSuffix(input, ["id", "memoryId", "documentId"]),
+  },
+  whoAmI: {
+    verbs: ["Checking", "Checked"],
+    noun: "memory account",
   },
 };
 

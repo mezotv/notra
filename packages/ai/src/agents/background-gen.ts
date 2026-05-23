@@ -17,6 +17,11 @@ import {
   createViewPostTool,
 } from "@notra/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
+import {
+  createWebSearchTool,
+  WEB_SEARCH_TOOL_DESCRIPTION,
+  WEB_SEARCH_TOOL_NAME,
+} from "@notra/ai/tools/web-search";
 import type {
   AgentDataPointSettings,
   AgentTokenUsage,
@@ -98,7 +103,7 @@ Do these steps in order:
 
 3. Call getSkillByName to load the primary skill's full instructions. Read them carefully and follow them exactly. They override these dispatcher instructions on any overlap.
 
-4. Execute the primary skill: gather source data via the provided tools (brand references, GitHub, Linear), then draft the post according to the skill's format and rules.
+4. Execute the primary skill: gather source data via the provided tools (brand references, GitHub, Linear, web search), then draft the post according to the skill's format and rules.
 
 5. Before finalizing, scan the skill list again for supporting skills (for example, a "humanizer" skill for polishing AI-sounding output, or any org-specific skill whose description applies). Load any that apply via getSkillByName and apply their guidance to your near-final draft.
 
@@ -106,6 +111,7 @@ Do these steps in order:
 
 ## Output rules (hard)
 - NEVER use em dashes (—) or en dashes (–) anywhere in the post content, title, recommendations, or any text you emit. Use commas, periods, semicolons, parentheses, or a hyphen (-). If a loaded skill's examples contain em/en dashes, ignore that part of the style and substitute safe punctuation.
+- Use webSearch when public, current, or external context would improve accuracy, especially for source-aware claims, market context, docs, or news. Prefer limit: 5 unless broader coverage is needed.
 
 Skills are the source of truth for how to write. This prompt tells you how to orchestrate them.`;
 }
@@ -221,13 +227,14 @@ export async function runBackgroundGen(
       }),
       listAvailableSkills: listAvailableSkills({ organizationId }),
       getSkillByName: getSkillByName({ organizationId }),
+      [WEB_SEARCH_TOOL_NAME]: createWebSearchTool(),
       createPost: createCreatePostTool(postToolsConfig, postToolsResult),
       updatePost: createUpdatePostTool(postToolsConfig, postToolsResult),
       viewPost: createViewPostTool(postToolsConfig),
       skip: createSkipTool(postToolsResult),
       fail: createFailTool(postToolsResult),
     },
-    instructions,
+    instructions: `${instructions}\n\n## Additional Capability\n- ${WEB_SEARCH_TOOL_DESCRIPTION}`,
     stopWhen: stepCountIs(35),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });

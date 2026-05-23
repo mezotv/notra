@@ -71,6 +71,7 @@ export function getContentEditorChatPrompt(
     - When user selects text, focus only on that section
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
     - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
+    - Use webSearch when public, current, or external context would improve accuracy. Prefer limit: 5 unless broader coverage is needed.
     - Never use em dashes (—) or en dashes (–) in any content. Use hyphens (-) or rewrite the sentence instead.
     ${capabilitiesSection}${linkedInSection}${twitterSection}${githubSection}${linearSection}${selectionContext}
   `;
