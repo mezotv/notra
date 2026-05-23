@@ -156,6 +156,11 @@ export function PricingClient({ slug }: PricingClientProps) {
         </Tabs>
       </div>
 
+      <p className="mt-3 text-center text-muted-foreground text-xs">
+        Your plan renews automatically every {isYearly ? "year" : "month"} until
+        you cancel.
+      </p>
+
       {plansLoading ? (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
           <Skeleton className="h-[28rem] rounded-lg" />
