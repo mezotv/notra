@@ -12,6 +12,8 @@ import type {
   PreviewCacheSource,
 } from "@/types/content/preview-cache";
 
+const scheduledPreviewCacheRefreshKeys = new Set<string>();
+
 function normalizeCacheKeyPart(value: string) {
   return value
     .trim()
@@ -91,18 +93,24 @@ async function tryAcquirePreviewCacheRefreshLock(cacheKey: string) {
   return result === "OK";
 }
 
-async function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
+function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
   cacheKey: string;
   fetchFresh: () => Promise<T>;
 }) {
-  const acquired = await tryAcquirePreviewCacheRefreshLock(params.cacheKey);
-
-  if (!acquired) {
+  if (scheduledPreviewCacheRefreshKeys.has(params.cacheKey)) {
     return;
   }
 
+  scheduledPreviewCacheRefreshKeys.add(params.cacheKey);
+
   after(async () => {
     try {
+      const acquired = await tryAcquirePreviewCacheRefreshLock(params.cacheKey);
+
+      if (!acquired) {
+        return;
+      }
+
       const fresh = await params.fetchFresh();
       await writePreviewCache(params.cacheKey, fresh);
     } catch (error) {
@@ -110,6 +118,8 @@ async function schedulePreviewCacheRefresh<T extends unknown[]>(params: {
         `[Preview] Failed to refresh stale preview cache entry ${params.cacheKey}:`,
         error
       );
+    } finally {
+      scheduledPreviewCacheRefreshKeys.delete(params.cacheKey);
     }
   });
 }
@@ -127,7 +137,7 @@ export async function getCachedPreviewData<T extends unknown[]>(params: {
 
     if (isPreviewCacheEntry<T>(cached)) {
       if (cached.staleAt <= Date.now()) {
-        await schedulePreviewCacheRefresh(params);
+        schedulePreviewCacheRefresh(params);
       }
 
       return cached.data;
