@@ -11,10 +11,10 @@ import {
   RadioGroupItem,
 } from "@notra/ui/components/ui/radio-group";
 import { cn } from "@notra/ui/lib/utils";
+import { useId } from "react";
 import type { BrandIdentityRadioGroupProps } from "@/types/components/brand-identity";
 import { getBrandFaviconUrl } from "@/utils/brand";
 
-const DEFAULT_ID = "brand-identity";
 const EMPTY_SENTINEL = "__none__";
 
 interface BrandIdentityOptionCardProps {
@@ -68,9 +68,11 @@ export function BrandIdentityRadioGroup({
   emptyOption,
   label,
   description,
-  id = DEFAULT_ID,
+  id,
 }: BrandIdentityRadioGroupProps) {
-  const labelId = `${id}-label`;
+  const generatedId = useId();
+  const groupId = id ?? generatedId;
+  const labelId = `${groupId}-label`;
   const groupValue = value === "" ? EMPTY_SENTINEL : value;
 
   const handleValueChange = (next: unknown) => {
@@ -93,7 +95,7 @@ export function BrandIdentityRadioGroup({
         {emptyOption && (
           <BrandIdentityOptionCard
             isSelected={value === ""}
-            itemId={`${id}-none`}
+            itemId={`${groupId}-none`}
             itemValue={EMPTY_SENTINEL}
             subtitle={emptyOption.description}
             title={emptyOption.label}
@@ -104,7 +106,7 @@ export function BrandIdentityRadioGroup({
             fallback={voice.name.slice(0, 2).toUpperCase()}
             faviconUrl={getBrandFaviconUrl(voice.websiteUrl)}
             isSelected={value === voice.id}
-            itemId={`${id}-${voice.id}`}
+            itemId={`${groupId}-${voice.id}`}
             itemValue={voice.id}
             key={voice.id}
             subtitle={
