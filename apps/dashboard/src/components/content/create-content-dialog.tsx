@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Add01Icon,
   AlertCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -17,7 +16,6 @@ import {
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Button } from "@notra/ui/components/ui/button";
-import { Kbd } from "@notra/ui/components/ui/kbd";
 import { cn } from "@notra/ui/lib/utils";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useHotkey } from "@tanstack/react-hotkeys";
@@ -27,6 +25,7 @@ import { toast } from "sonner";
 import { StepActivity } from "@/components/content/create/step-activity";
 import { StepBrandIdentities } from "@/components/content/create/step-brand-identities";
 import { StepFormats } from "@/components/content/create/step-formats";
+import { CreateContentButton } from "@/components/content/create-content-button";
 import { AddIntegrationDialog } from "@/components/integrations/add-integration-dialog";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
@@ -50,6 +49,9 @@ import {
 } from "@/utils/content-preview";
 
 interface CreateContentDialogProps {
+  hideTrigger?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   organizationId: string;
 }
 
@@ -78,15 +80,28 @@ function getDefaultContentFormValues(): CreateContentFormValues {
 }
 
 export function CreateContentDialog({
+  hideTrigger = false,
+  onOpenChange,
+  open: controlledOpen,
   organizationId,
 }: CreateContentDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setDialogOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (controlledOpen === undefined) {
+        setUncontrolledOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [controlledOpen, onOpenChange]
+  );
 
   useHotkey(
     "C",
     () => {
       if (organizationId) {
-        setOpen(true);
+        setDialogOpen(true);
       }
     },
     { enabled: !open }
@@ -383,7 +398,7 @@ export function CreateContentDialog({
       return { succeeded, total: results.length };
     },
     onSuccess: ({ succeeded, total }) => {
-      setOpen(false);
+      setDialogOpen(false);
       if (succeeded === total) {
         toast.success(
           succeeded === 1
@@ -437,7 +452,7 @@ export function CreateContentDialog({
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
-      setOpen(next);
+      setDialogOpen(next);
       if (!next) {
         const preserveState =
           openingAddRepoFlowRef.current || addRepoMode !== null;
@@ -451,7 +466,7 @@ export function CreateContentDialog({
         resetWizard();
       }
     },
-    [addRepoMode, resetWizard]
+    [addRepoMode, resetWizard, setDialogOpen]
   );
 
   const toggleFormat = useCallback(
@@ -744,8 +759,8 @@ export function CreateContentDialog({
     setAddRepoMode(githubIntegrationId ? "repository" : "integration");
     setWaitingForWebhookSetup(false);
     setAddRepoOpen(true);
-    setOpen(false);
-  }, [githubIntegrationId]);
+    setDialogOpen(false);
+  }, [githubIntegrationId, setDialogOpen]);
 
   const handleAddRepoOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -758,9 +773,9 @@ export function CreateContentDialog({
       }
       setAddRepoMode(null);
       setWaitingForWebhookSetup(false);
-      setOpen(true);
+      setDialogOpen(true);
     },
-    [addRepoMode, waitingForWebhookSetup]
+    [addRepoMode, waitingForWebhookSetup, setDialogOpen]
   );
 
   const handleIntegrationSuccess = useCallback(() => {
@@ -770,8 +785,8 @@ export function CreateContentDialog({
   const handleIntegrationFlowComplete = useCallback(() => {
     setAddRepoMode(null);
     setWaitingForWebhookSetup(false);
-    setOpen(true);
-  }, []);
+    setDialogOpen(true);
+  }, [setDialogOpen]);
 
   const identityButtonLabel = selectedBrandVoiceId
     ? "Start creating"
@@ -844,15 +859,11 @@ export function CreateContentDialog({
   return (
     <>
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
-        <ResponsiveDialogTrigger
-          render={
-            <Button className="gap-1.5" disabled={!organizationId}>
-              <HugeiconsIcon className="size-4" icon={Add01Icon} />
-              Create Content
-              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-            </Button>
-          }
-        />
+        {!hideTrigger && (
+          <ResponsiveDialogTrigger
+            render={<CreateContentButton disabled={!organizationId} />}
+          />
+        )}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <div className="flex items-center justify-between gap-4">

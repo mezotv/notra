@@ -44,7 +44,7 @@ import {
 } from "@/components/content/content-card";
 import { ContentRowActions } from "@/components/content/content-row-actions";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
-import { CreateContentDialog } from "@/components/content/create-content-dialog";
+import { LazyCreateContentDialog } from "@/components/content/lazy-create-content-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -238,7 +238,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <TooltipContent>Table view</TooltipContent>
               </Tooltip>
             </ButtonGroup>
-            <CreateContentDialog organizationId={organizationId} />
+            <LazyCreateContentDialog organizationId={organizationId} />
           </div>
         </div>
         {isPending && <ContentPageSkeleton />}

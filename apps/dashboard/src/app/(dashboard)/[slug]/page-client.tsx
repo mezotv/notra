@@ -5,7 +5,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 import { ContentCard } from "@/components/content/content-card";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
-import { CreateContentDialog } from "@/components/content/create-content-dialog";
+import { LazyCreateContentDialog } from "@/components/content/lazy-create-content-dialog";
 import { ContentActivityCard } from "@/components/dashboard/content-activity-card";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
@@ -126,7 +126,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 Latest items created today
               </p>
             </div>
-            <CreateContentDialog organizationId={organizationId} />
+            <LazyCreateContentDialog organizationId={organizationId} />
           </div>
 
           {todayContent}
