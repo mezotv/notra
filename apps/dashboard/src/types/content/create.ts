@@ -16,7 +16,7 @@ export interface WizardFormValues {
   lookbackWindow: LookbackWindow;
   dataPoints: ContentDataPointSettings;
   repositoryIds: string[];
-  brandVoiceIds: string[];
+  brandVoiceId: string;
 }
 
 export interface IntegrationOption {
@@ -66,8 +66,8 @@ export interface ActivityStepProps {
 
 export interface BrandIdentitiesStepProps {
   voices: BrandSettings[];
-  selected: string[];
-  onToggle: (id: string) => void;
+  value: string;
+  onChange: (id: string) => void;
   isLoading: boolean;
   organizationId: string;
 }

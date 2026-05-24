@@ -1,27 +1,21 @@
 "use client";
 
-import { Loading03Icon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { cn } from "@notra/ui/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
   useCreateBrandVoice,
 } from "@/lib/hooks/use-brand-analysis";
 import type { BrandIdentitiesStepProps } from "@/types/content/create";
-import { getBrandFaviconUrl } from "@/utils/brand";
 
 const HTTP_PREFIX_RE = /^https?:\/\//i;
 const WWW_PREFIX_RE = /^www\./;
@@ -152,8 +146,8 @@ function InlineCreateForm({ organizationId }: InlineCreateFormProps) {
 
 export function StepBrandIdentities({
   voices,
-  selected,
-  onToggle,
+  value,
+  onChange,
   isLoading,
   organizationId,
 }: BrandIdentitiesStepProps) {
@@ -164,8 +158,7 @@ export function StepBrandIdentities({
           Which brand identity should this use?
         </h2>
         <p className="text-muted-foreground text-sm">
-          Select one or more brand identities, or skip to write for a general
-          audience.
+          Select a brand identity, or write for a general audience.
         </p>
       </div>
 
@@ -181,56 +174,16 @@ export function StepBrandIdentities({
       )}
 
       {!isLoading && voices.length > 0 && (
-        <div className="space-y-2">
-          {voices.map((voice) => {
-            const isSelected = selected.includes(voice.id);
-            return (
-              <button
-                aria-pressed={isSelected}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 text-left transition-colors",
-                  "hover:border-foreground/20",
-                  isSelected
-                    ? "border-foreground/40 ring-2 ring-foreground/10"
-                    : "border-border"
-                )}
-                key={voice.id}
-                onClick={() => onToggle(voice.id)}
-                type="button"
-              >
-                <div
-                  className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors",
-                    isSelected
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-muted-foreground/30"
-                  )}
-                >
-                  {isSelected && (
-                    <HugeiconsIcon className="size-3" icon={Tick01Icon} />
-                  )}
-                </div>
-                <Avatar
-                  className="size-8 rounded-full after:rounded-full"
-                  size="sm"
-                >
-                  <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
-                  <AvatarFallback>
-                    {voice.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{voice.name}</p>
-                  <p className="truncate text-muted-foreground text-xs">
-                    {voice.isDefault
-                      ? "Default brand identity"
-                      : "Brand identity"}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <BrandIdentityRadioGroup
+          emptyOption={{
+            label: "General audience",
+            description:
+              "Write for a general audience without a specific brand identity.",
+          }}
+          onChange={onChange}
+          value={value}
+          voices={voices}
+        />
       )}
     </div>
   );

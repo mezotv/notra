@@ -11,7 +11,7 @@ export const createContentFormSchema = z.object({
     .array(onDemandContentTypeSchema)
     .min(1, "Select at least one content format"),
   repositoryIds: z.array(z.string()).min(1, "Select at least one source"),
-  brandVoiceIds: z.array(z.string()),
+  brandVoiceId: z.string(),
   lookbackWindow: z.enum(LOOKBACK_WINDOWS),
   dataPoints: contentDataPointSettingsSchema,
 });

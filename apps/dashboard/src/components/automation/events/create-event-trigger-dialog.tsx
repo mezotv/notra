@@ -39,7 +39,7 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BrandVoiceCombobox } from "@/components/brand-voice-combobox";
+import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { FormatCard } from "@/components/content/create/format-card";
 import { AddIntegrationDialog } from "@/components/integrations/add-integration-dialog";
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
@@ -153,6 +153,13 @@ export function CreateEventTriggerDialog({
   );
 
   const brandVoices = brandResponse?.voices ?? [];
+  const nonDefaultBrandVoices = brandVoices.filter((voice) => !voice.isDefault);
+  const defaultBrandVoiceName = brandVoices.find(
+    (voice) => voice.isDefault
+  )?.name;
+  const defaultBrandVoiceLabel = defaultBrandVoiceName
+    ? `${defaultBrandVoiceName} (Default)`
+    : "Default brand voice";
 
   const { integrationOptions, githubIntegrationId } = useMemo(() => {
     const githubIntegrations =
@@ -367,11 +374,17 @@ export function CreateEventTriggerDialog({
                     {brandVoices.length > 1 && (
                       <form.Field name="brandVoiceId">
                         {(field) => (
-                          <BrandVoiceCombobox
+                          <BrandIdentityRadioGroup
+                            description="Choose which brand voice to use for generated content."
+                            emptyOption={{
+                              label: defaultBrandVoiceLabel,
+                              description: "Use your default brand voice.",
+                            }}
                             id={field.name}
+                            label="Brand voice"
                             onChange={field.handleChange}
                             value={field.state.value}
-                            voices={brandVoices}
+                            voices={nonDefaultBrandVoices}
                           />
                         )}
                       </form.Field>

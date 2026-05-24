@@ -71,7 +71,7 @@ function getDefaultContentFormValues(): CreateContentFormValues {
   return {
     formats: [],
     repositoryIds: [],
-    brandVoiceIds: [],
+    brandVoiceId: "",
     lookbackWindow: "last_7_days",
     dataPoints: DEFAULT_DATA_POINTS,
   };
@@ -120,9 +120,9 @@ export function CreateContentDialog({
 
   const selectedFormats = useStore(form.store, (s) => s.values.formats);
   const selectedRepoIds = useStore(form.store, (s) => s.values.repositoryIds);
-  const selectedBrandVoiceIds = useStore(
+  const selectedBrandVoiceId = useStore(
     form.store,
-    (s) => s.values.brandVoiceIds
+    (s) => s.values.brandVoiceId
   );
   const lookbackWindow = useStore(form.store, (s) => s.values.lookbackWindow);
   const dataPoints = useStore(form.store, (s) => s.values.dataPoints);
@@ -507,15 +507,9 @@ export function CreateContentDialog({
     form.setFieldValue("repositoryIds", allSelected ? [] : allValues);
   }, [integrationOptions, form]);
 
-  const toggleVoiceId = useCallback(
+  const selectVoiceId = useCallback(
     (id: string) => {
-      const current = form.state.values.brandVoiceIds;
-      form.setFieldValue(
-        "brandVoiceIds",
-        current.includes(id)
-          ? current.filter((v) => v !== id)
-          : [...current, id]
-      );
+      form.setFieldValue("brandVoiceId", id);
     },
     [form]
   );
@@ -732,8 +726,7 @@ export function CreateContentDialog({
   ]);
 
   submitHandlerRef.current = async (value: CreateContentFormValues) => {
-    const voiceIds =
-      value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
+    const voiceIds = value.brandVoiceId ? [value.brandVoiceId] : [""];
     await mutation.mutateAsync({
       formats: value.formats,
       voiceIds,
@@ -780,10 +773,9 @@ export function CreateContentDialog({
     setOpen(true);
   }, []);
 
-  const identityButtonLabel =
-    selectedBrandVoiceIds.length === 0
-      ? "Skip & start creating"
-      : `Start creating with ${selectedBrandVoiceIds.length} ${selectedBrandVoiceIds.length === 1 ? "identity" : "identities"}`;
+  const identityButtonLabel = selectedBrandVoiceId
+    ? "Start creating"
+    : "Skip & start creating";
 
   const stepIndex = STEP_ORDER.indexOf(step);
 
@@ -835,10 +827,9 @@ export function CreateContentDialog({
       };
     }
     return {
-      text:
-        selectedBrandVoiceIds.length === 0
-          ? "No identities selected"
-          : `${selectedBrandVoiceIds.length} ${selectedBrandVoiceIds.length === 1 ? "identity" : "identities"} selected`,
+      text: selectedBrandVoiceId
+        ? "1 identity selected"
+        : "No identity selected",
       tone: "muted",
     };
   }, [
@@ -847,7 +838,7 @@ export function CreateContentDialog({
     selectedFormats.length,
     selectedRepoIds.length,
     eventCounts,
-    selectedBrandVoiceIds.length,
+    selectedBrandVoiceId,
   ]);
 
   return (
@@ -958,9 +949,9 @@ export function CreateContentDialog({
               {step === "identities" && (
                 <StepBrandIdentities
                   isLoading={isLoadingVoices}
-                  onToggle={toggleVoiceId}
+                  onChange={selectVoiceId}
                   organizationId={organizationId}
-                  selected={selectedBrandVoiceIds}
+                  value={selectedBrandVoiceId}
                   voices={brandVoices}
                 />
               )}
