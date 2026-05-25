@@ -65,7 +65,7 @@ function PricingCard({
       {price}
 
       <Button
-        className={`w-full border-transparent px-4 py-[10px] shadow-[0px_2px_4px_rgba(55,50,47,0.12)] ${
+        className={`w-full overflow-hidden rounded-[2rem] border-transparent px-4 py-[10px] shadow-[0px_2px_4px_rgba(55,50,47,0.12)] supports-[corner-shape:round]:rounded-[1.25rem] ${
           isFeatured
             ? "bg-white [a]:hover:bg-white/90"
             : "bg-primary hover:bg-primary-hover"

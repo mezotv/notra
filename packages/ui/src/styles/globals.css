@@ -189,6 +189,10 @@
     @apply bg-background text-foreground;
   }
 
+  [data-slot="button"] {
+    @apply corner-squircle;
+  }
+
   /* Force text selection to be visible */
   ::selection {
     background-color: oklch(0.6056 0.2189 292.7172 / 0.3);

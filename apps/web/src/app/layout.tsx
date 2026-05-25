@@ -5,6 +5,7 @@ import { Instrument_Serif, Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import { ConsentManager } from "../components/consent-manager";
 import FooterSection from "../components/footer-section";
+import { HeroGradient } from "../components/hero-gradient";
 import { Navbar } from "../components/navbar";
 import { ThemeProvider } from "../components/theme-provider";
 import { RSS_FEED_PATH, RSS_FEED_TITLE } from "../utils/constants";
@@ -130,10 +131,11 @@ export default function RootLayout({
             )}
             <ConsentManager>
               <div className="relative flex min-h-screen w-full flex-col items-center justify-start bg-background">
-                <div className="relative flex w-full flex-col items-center justify-start">
+                <div className="relative isolate flex w-full flex-col items-center justify-start">
+                  <HeroGradient />
                   <div className="relative flex w-full max-w-none flex-col items-start justify-start px-4 sm:px-6 md:px-8 lg:w-7xl lg:max-w-7xl lg:px-0">
-                    <div className="absolute top-0 left-4 z-0 h-full w-px bg-border/60 sm:left-6 md:left-8 lg:left-0" />
-                    <div className="absolute top-0 right-4 z-0 h-full w-px bg-border/60 sm:right-6 md:right-8 lg:right-0" />
+                    <div className="absolute top-0 left-4 z-0 h-full w-px bg-border/60 [-webkit-mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] [mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] sm:left-6 md:left-8 lg:left-0" />
+                    <div className="absolute top-0 right-4 z-0 h-full w-px bg-border/60 [-webkit-mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] [mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] sm:right-6 md:right-8 lg:right-0" />
 
                     <div className="relative z-10 flex flex-col items-center self-stretch pt-2.25 pb-8 md:pb-12">
                       <Navbar />

@@ -23,7 +23,7 @@ export default function CTASection() {
           <div className="flex w-full max-w-[497px] flex-col items-center justify-center gap-12">
             <div className="flex items-center justify-start gap-4">
               <Button
-                className="h-10 border-transparent bg-primary px-12 py-[6px] transition-colors hover:bg-primary-hover"
+                className="h-10 overflow-hidden rounded-[2rem] border-transparent bg-primary px-12 py-[6px] transition-colors hover:bg-primary-hover supports-[corner-shape:round]:rounded-[1.25rem]"
                 nativeButton={false}
                 render={<TrackedSignupLink source="cta_section" />}
               >
