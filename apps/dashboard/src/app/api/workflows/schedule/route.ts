@@ -550,25 +550,25 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         const autumnClient = autumn;
         if (aiCreditReservation.reserved && autumnClient) {
           await context.run(
-            "refund-ai-credit-after-generation-failure",
+            "track-ai-credit-after-generation-failure",
             async () => {
               try {
                 await autumnClient.track({
                   customerId: trigger.organizationId,
                   featureId: FEATURES.AI_CREDITS,
-                  value: 0,
+                  value: 1,
                   properties: {
                     source: "workflow_schedule",
                     output_type: trigger.outputType,
                     trigger_name: trigger.name.trim() || trigger.outputType,
                     trigger_id: triggerId,
                     run_id: runId,
-                    refund_reason: "generation_failed",
+                    billing_reason: "generation_failed",
                   },
                 });
               } catch (error) {
                 console.error(
-                  "[Schedule] Failed to refund AI credit after generation failure",
+                  "[Schedule] Failed to track AI credit after generation failure",
                   {
                     triggerId,
                     organizationId: trigger.organizationId,
@@ -1129,28 +1129,28 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       const autumnClient = autumn;
       if (aiCreditReservation.reserved && autumnClient) {
-        await context.run("refund-ai-credit-after-failure", async () => {
+        await context.run("track-ai-credit-after-failure", async () => {
           try {
             await autumnClient.track({
               customerId: trigger.organizationId,
               featureId: FEATURES.AI_CREDITS,
-              value: 0,
+              value: 1,
               properties: {
                 source: "workflow_schedule",
                 output_type: trigger.outputType,
                 trigger_name: trigger.name.trim() || trigger.outputType,
                 trigger_id: triggerId,
                 run_id: runId,
-                refund_reason: "workflow_error",
+                billing_reason: "workflow_error",
               },
             });
-          } catch (refundError) {
+          } catch (trackError) {
             console.error(
-              "[Schedule] Failed to refund AI credit after failure",
+              "[Schedule] Failed to track AI credit after failure",
               {
                 triggerId,
                 organizationId: trigger.organizationId,
-                error: refundError,
+                error: trackError,
               }
             );
           }
