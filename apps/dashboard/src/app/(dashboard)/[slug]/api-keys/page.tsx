@@ -12,6 +12,7 @@ import {
   Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ConnectedCards } from "@notra/ui/components/shared/connected-cards";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -43,6 +44,14 @@ import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@notra/ui/components/ui/pagination";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -70,14 +79,21 @@ import type {
   KeyResponseData,
   V2KeysCreateKeyResponseData,
 } from "@unkey/api/models/components";
-import { useMemo, useState } from "react";
+import { parseAsInteger, parseAsStringLiteral, useQueryState } from "nuqs";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import {
+  API_KEY_CARD_ITEMS,
+  API_KEY_CARD_VARIANTS,
+  API_KEY_PRESETS,
+} from "@/lib/api-keys/presets";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   API_KEY_EXPIRATION_OPTIONS,
   API_KEY_PERMISSIONS,
+  API_KEY_PRESET_IDS,
   type ApiKeyExpiration,
   type ApiKeyPermission,
   createApiKeySchema,
@@ -265,9 +281,21 @@ export default function ApiKeysPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<ApiKeyListItem | null>(null);
+  const [activePreset, setActivePreset] = useQueryState(
+    "preset",
+    parseAsStringLiteral(API_KEY_PRESET_IDS)
+  );
+  const [cardStyle, setCardStyle] = useQueryState(
+    "style",
+    parseAsInteger.withDefault(1).withOptions({ clearOnDefault: true })
+  );
+
+  const cardVariantIndex =
+    Math.min(Math.max(cardStyle, 1), API_KEY_CARD_VARIANTS.length) - 1;
+  const cardVariant = API_KEY_CARD_VARIANTS[cardVariantIndex];
 
   useHotkey("C", () => setDialogOpen(true), {
-    enabled: !(dialogOpen || editDialogOpen || !!deletingKey),
+    enabled: !(dialogOpen || editDialogOpen || !!deletingKey || !!activePreset),
   });
 
   const [createdSortOrder, setCreatedSortOrder] = useState<
@@ -317,6 +345,27 @@ export default function ApiKeysPage() {
       mutation.mutate(result.data);
     },
   });
+
+  useEffect(() => {
+    if (!activePreset) {
+      return;
+    }
+    const preset = API_KEY_PRESETS.find((item) => item.id === activePreset);
+    if (preset) {
+      form.reset({
+        name: preset.defaultName,
+        permission: preset.permission,
+        expiration: preset.expiration,
+      });
+    }
+  }, [activePreset, form]);
+
+  const handlePresetSelect = (id: string) => {
+    const preset = API_KEY_PRESETS.find((item) => item.id === id);
+    if (preset) {
+      setActivePreset(preset.id);
+    }
+  };
 
   const editForm = useForm({
     defaultValues: {
@@ -427,6 +476,7 @@ export default function ApiKeysPage() {
       form.reset();
       mutation.reset();
       setCreatedKey(null);
+      setActivePreset(null);
     }
     setDialogOpen(open);
   };
@@ -514,6 +564,57 @@ export default function ApiKeysPage() {
           </div>
         </div>
 
+        <div className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="font-semibold text-lg tracking-tight">
+                Quick start
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Spin up a key preconfigured for how you plan to use the API.
+              </p>
+            </div>
+            <Pagination className="mx-0 w-auto justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setCardStyle((current) => Math.max(1, current - 1))
+                    }
+                  />
+                </PaginationItem>
+                {API_KEY_CARD_VARIANTS.map((variant, index) => (
+                  <PaginationItem key={variant}>
+                    <PaginationLink
+                      className="cursor-pointer"
+                      isActive={cardVariantIndex === index}
+                      onClick={() => setCardStyle(index + 1)}
+                    >
+                      {index + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setCardStyle((current) =>
+                        Math.min(API_KEY_CARD_VARIANTS.length, current + 1)
+                      )
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+          <ConnectedCards
+            items={API_KEY_CARD_ITEMS}
+            onSelect={handlePresetSelect}
+            variant={cardVariant}
+          />
+        </div>
+
         <div className="overflow-hidden rounded-lg border">
           <Table>
             <TableHeader>
@@ -557,7 +658,10 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      <ResponsiveAlertDialog onOpenChange={handleDialogClose} open={dialogOpen}>
+      <ResponsiveAlertDialog
+        onOpenChange={handleDialogClose}
+        open={dialogOpen || activePreset !== null}
+      >
         <ResponsiveAlertDialogContent className="sm:max-w-120">
           {createdKey ? (
             <>

@@ -4,6 +4,9 @@ import * as z from "zod";
 export const API_KEY_PERMISSIONS = ["api.read", "api.write"] as const;
 export type ApiKeyPermission = (typeof API_KEY_PERMISSIONS)[number];
 
+export const API_KEY_PRESET_IDS = ["mcp", "sdk", "cli"] as const;
+export type ApiKeyPresetId = (typeof API_KEY_PRESET_IDS)[number];
+
 export const API_KEY_EXPIRATION_OPTIONS = [
   { label: "No expiry", value: "never" },
   { label: "7 days", value: "7d" },
