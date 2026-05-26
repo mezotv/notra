@@ -400,6 +400,7 @@ export function Navbar() {
                 </ContextMenuContent>
               </ContextMenu>
 
+              {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
               <nav
                 className="relative hidden items-center gap-1 lg:flex"
                 onMouseLeave={scheduleClose}

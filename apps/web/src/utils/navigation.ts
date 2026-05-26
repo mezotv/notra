@@ -11,25 +11,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
 
-export const MARKETING_NAV_LINKS = [
-  {
-    href: "/features",
-    label: "Features",
-  },
-  {
-    href: "/pricing",
-    label: "Pricing",
-  },
-  {
-    href: "/blog",
-    label: "Blog",
-  },
-  {
-    href: "/changelog/notra",
-    label: "What's New",
-  },
-] as const;
-
 export type MarketingNavCard = {
   href: string;
   label: string;
@@ -54,7 +35,7 @@ export type MarketingNavGroup = {
   rail: readonly MarketingNavRailItem[];
 };
 
-export type MarketingNavLink = {
+type MarketingNavLink = {
   type: "link";
   href: string;
   label: string;
