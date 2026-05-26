@@ -1,14 +1,4 @@
-"use client";
-
-import { usePathname } from "next/navigation";
-
 export function HeroGradient() {
-  const pathname = usePathname();
-
-  if (pathname !== "/") {
-    return null;
-  }
-
   return (
     <div
       aria-hidden="true"
