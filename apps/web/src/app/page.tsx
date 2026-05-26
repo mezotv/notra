@@ -128,7 +128,7 @@ export default function LandingPage() {
         </div>
 
         <section
-          className="content-defer flex w-full flex-col items-center justify-center border-border border-b"
+          className="flex w-full flex-col items-center justify-center border-border border-b content-defer"
           id="social-proof"
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-4 py-8 sm:px-6 sm:py-12 md:px-24 md:py-16">
@@ -200,7 +200,7 @@ export default function LandingPage() {
         </section>
 
         <section
-          className="content-defer flex w-full flex-col items-center justify-center border-border border-b"
+          className="flex w-full flex-col items-center justify-center border-border border-b content-defer"
           id="features"
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
@@ -287,19 +287,19 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="content-defer w-full" id="how-it-works">
+        <section className="w-full content-defer" id="how-it-works">
           <HowItWorksSection />
         </section>
 
-        <section className="content-defer w-full" id="documentation">
+        <section className="w-full content-defer" id="documentation">
           <DocumentationSection />
         </section>
 
-        <section className="content-defer w-full" id="testimonials">
+        <section className="w-full content-defer" id="testimonials">
           <TestimonialsSection />
         </section>
 
-        <section className="content-defer w-full" id="pricing">
+        <section className="w-full content-defer" id="pricing">
           <div className="flex w-full flex-col items-center justify-center gap-2">
             <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
               <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
@@ -320,11 +320,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="content-defer w-full" id="faq">
+        <section className="w-full content-defer" id="faq">
           <FAQSection />
         </section>
 
-        <section className="content-defer w-full" id="cta">
+        <section className="w-full content-defer" id="cta">
           <CTASection />
         </section>
       </main>
