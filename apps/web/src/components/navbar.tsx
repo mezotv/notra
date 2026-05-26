@@ -652,7 +652,7 @@ function ChevronIcon({ flipped }: { flipped: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className={`size-3.5 text-neutral-400 transition-transform duration-200 dark:text-neutral-500 ${flipped ? "rotate-180" : ""}`}
+      className={`size-3.5 transition-transform duration-200 ${flipped ? "rotate-180" : ""}`}
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"
