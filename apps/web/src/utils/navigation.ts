@@ -91,7 +91,7 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
       },
       {
         href: "/changelog/notra",
-        label: "What's New",
+        label: "Changelog",
         description: "Latest Notra updates",
         icon: Megaphone01Icon,
       },

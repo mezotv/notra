@@ -536,7 +536,7 @@ export function Navbar() {
                     className="corner-squircle overflow-hidden rounded-[2rem] border-transparent bg-primary px-4 py-1.5 font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 supports-[corner-shape:round]:rounded-[1.25rem]"
                     source="navbar_desktop_signup"
                   >
-                    Get started
+                    Sign up
                   </TrackedSignupLink>
                 </div>
                 <button
