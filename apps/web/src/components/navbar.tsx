@@ -38,9 +38,26 @@ const SIGNIN_URL = "https://app.usenotra.com/login";
 const HOVER_CLOSE_DELAY = 120;
 const CONTENT_SLIDE = 48;
 const EASE = [0.32, 0.72, 0, 1] as const;
+const SWAP_EASE = [0.25, 0.1, 0.25, 1] as const;
+const PANEL_PERSPECTIVE = 2000;
+const PANEL_SCALE_IN = {
+  opacity: 0,
+  rotateX: -30,
+  scale: 0.9,
+} as const;
+const PANEL_SCALE_OUT = {
+  opacity: 0,
+  rotateX: -10,
+  scale: 0.95,
+} as const;
+const PANEL_SCALE_REST = {
+  opacity: 1,
+  rotateX: 0,
+  scale: 1,
+} as const;
 const ENTER_EXIT_TRANSITION = {
   duration: 0.2,
-  ease: EASE,
+  ease: SWAP_EASE,
 };
 const MORPH_TRANSITION = {
   duration: 0.28,
@@ -53,9 +70,9 @@ const SHELL_TRANSITION = {
 const SCROLL_THRESHOLD = 64;
 const ISLAND_CHROME =
   "inset-shadow-lg inset-shadow-white bg-white shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10";
-const CONTENT_TRANSITION = {
-  duration: 0.18,
-  ease: EASE,
+const SWAP_TRANSITION = {
+  duration: 0.15,
+  ease: SWAP_EASE,
 };
 const contentVariants = {
   enter: (direction: number) => ({
@@ -330,9 +347,7 @@ export function Navbar() {
   const enterExitTransition = reduceMotion
     ? { duration: 0 }
     : ENTER_EXIT_TRANSITION;
-  const contentTransition = reduceMotion
-    ? { duration: 0 }
-    : { x: MORPH_TRANSITION, opacity: CONTENT_TRANSITION };
+  const contentTransition = reduceMotion ? { duration: 0 } : SWAP_TRANSITION;
   const shellTransition = reduceMotion ? { duration: 0 } : SHELL_TRANSITION;
   const mutedNavClass = scrolled
     ? "text-neutral-500 dark:text-neutral-400"
@@ -457,11 +472,15 @@ export function Navbar() {
                 <AnimatePresence>
                   {activeGroupData && (
                     <m.div
-                      animate={{ opacity: 1, y: 0, x: "-50%" }}
+                      animate={{ ...PANEL_SCALE_REST, x: "-50%" }}
                       className="absolute top-full left-1/2 z-50 pt-2"
-                      exit={{ opacity: 0, y: 6, x: "-50%" }}
-                      initial={{ opacity: 0, y: 6, x: "-50%" }}
+                      exit={{ ...PANEL_SCALE_OUT, x: "-50%" }}
+                      initial={{ ...PANEL_SCALE_IN, x: "-50%" }}
                       key="navbar-dropdown"
+                      style={{
+                        transformPerspective: PANEL_PERSPECTIVE,
+                        transformOrigin: "top center",
+                      }}
                       transition={enterExitTransition}
                     >
                       <m.div
