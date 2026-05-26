@@ -9,6 +9,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility content-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40rem;
+}
+
 :root {
   --background: hsl(0 0% 100%);
   --foreground: hsl(0 0% 9%);
