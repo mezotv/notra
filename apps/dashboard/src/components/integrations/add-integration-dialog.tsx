@@ -22,17 +22,18 @@ import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
 import {
   isValidElement,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/button";
+import { Button, buttonVariants } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
@@ -70,6 +71,8 @@ export function AddIntegrationDialog({
   trigger,
 }: AddIntegrationDialogProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = propOrganizationId ?? activeOrganization?.id;
   const organizationSlug = propOrganizationSlug ?? activeOrganization?.slug;
@@ -269,6 +272,17 @@ export function AddIntegrationDialog({
     };
   }, [repoProbeDebouncer]);
 
+  const githubAppAuthorizeUrl = useMemo(() => {
+    const queryString = searchParams.toString();
+    const callbackPath = `${pathname}${queryString ? `?${queryString}` : ""}`;
+    const params = new URLSearchParams({
+      organizationId: organizationId ?? "",
+      callbackPath,
+    });
+
+    return `/api/integrations/github/app/authorize?${params.toString()}`;
+  }, [organizationId, pathname, searchParams]);
+
   if (!organizationId) {
     return null;
   }
@@ -292,18 +306,6 @@ export function AddIntegrationDialog({
   };
 
   const firstRepository = createdIntegration?.repositories?.[0];
-  const connectWithGitHubApp = () => {
-    const callbackPath =
-      typeof window === "undefined"
-        ? `/${organizationSlug ?? ""}/integrations`
-        : `${window.location.pathname}${window.location.search}`;
-    const params = new URLSearchParams({
-      organizationId,
-      callbackPath,
-    });
-
-    window.location.href = `/api/integrations/github/app/authorize?${params.toString()}`;
-  };
 
   return (
     <>
@@ -320,14 +322,14 @@ export function AddIntegrationDialog({
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <div className="space-y-3 py-4">
-            <Button
-              className="w-full"
-              disabled={mutation.isPending}
-              onClick={connectWithGitHubApp}
-              type="button"
+            <a
+              className={buttonVariants({
+                className: "w-full",
+              })}
+              href={githubAppAuthorizeUrl}
             >
               Install GitHub App
-            </Button>
+            </a>
             <p className="text-muted-foreground text-sm">
               Recommended for public and private repositories. GitHub lets you
               choose exactly which repositories Notra can access.
