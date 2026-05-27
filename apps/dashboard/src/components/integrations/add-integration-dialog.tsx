@@ -16,11 +16,20 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@notra/ui/components/ui/combobox";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type React from "react";
@@ -57,6 +66,11 @@ interface ProbeResult {
   description?: string;
 }
 
+interface GitHubAppRepositoryOption {
+  integrationId: string;
+  label: string;
+}
+
 function getRepoKey(owner: string, repo: string) {
   return `${owner.toLowerCase()}/${repo.toLowerCase()}`;
 }
@@ -89,6 +103,8 @@ export function AddIntegrationDialog({
   const [tokenOpen, setTokenOpen] = useState(false);
   const [legacyOpen, setLegacyOpen] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [selectedGitHubAppRepository, setSelectedGitHubAppRepository] =
+    useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const probeRepo = useCallback(
@@ -216,6 +232,49 @@ export function AddIntegrationDialog({
 
   const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
 
+  const integrationsQuery = useQuery(
+    dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: open && !!organizationId,
+    })
+  );
+
+  const githubAppRepositoryOptions = useMemo<
+    GitHubAppRepositoryOption[]
+  >(() => {
+    const integrations = integrationsQuery.data?.integrations ?? [];
+
+    return integrations.flatMap((integration) => {
+      const repository = integration.repositories.find(
+        (repo) =>
+          repo.enabled &&
+          (repo.authType === "github_app" || repo.githubAppInstallationId)
+      );
+
+      if (!repository) {
+        return [];
+      }
+
+      return [
+        {
+          integrationId: integration.id,
+          label: `${repository.owner}/${repository.repo}`,
+        },
+      ];
+    });
+  }, [integrationsQuery.data?.integrations]);
+
+  useEffect(() => {
+    if (
+      selectedGitHubAppRepository &&
+      !githubAppRepositoryOptions.some(
+        (option) => option.label === selectedGitHubAppRepository
+      )
+    ) {
+      setSelectedGitHubAppRepository("");
+    }
+  }, [githubAppRepositoryOptions, selectedGitHubAppRepository]);
+
   const resetProbeState = useCallback(() => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
@@ -306,6 +365,19 @@ export function AddIntegrationDialog({
   };
 
   const firstRepository = createdIntegration?.repositories?.[0];
+  const selectedGitHubAppIntegration = githubAppRepositoryOptions.find(
+    (option) => option.label === selectedGitHubAppRepository
+  );
+  const openSelectedGitHubAppRepository = () => {
+    if (!(organizationSlug && selectedGitHubAppIntegration)) {
+      return;
+    }
+
+    setOpen(false);
+    router.push(
+      `/${organizationSlug}/integrations/github/${selectedGitHubAppIntegration.integrationId}`
+    );
+  };
 
   return (
     <>
@@ -321,19 +393,77 @@ export function AddIntegrationDialog({
               content generation.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
-          <div className="space-y-3 py-4">
-            <a
-              className={buttonVariants({
-                className: "w-full",
-              })}
-              href={githubAppAuthorizeUrl}
-            >
-              Install GitHub App
-            </a>
-            <p className="text-muted-foreground text-sm">
-              Recommended for public and private repositories. GitHub lets you
-              choose exactly which repositories Notra can access.
-            </p>
+          <div className="space-y-4 py-4">
+            {integrationsQuery.isPending ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : githubAppRepositoryOptions.length > 0 ? (
+              <Field>
+                <FieldLabel>Repository</FieldLabel>
+                <div className="flex gap-2">
+                  <Combobox
+                    items={githubAppRepositoryOptions.map(
+                      (option) => option.label
+                    )}
+                    onValueChange={(value) => {
+                      setSelectedGitHubAppRepository(value ?? "");
+                    }}
+                    value={selectedGitHubAppRepository}
+                  >
+                    <ComboboxInput
+                      className="min-w-0 flex-1"
+                      placeholder="Search repositories..."
+                      showClear
+                    />
+                    <ComboboxContent>
+                      <ComboboxEmpty>No repositories found.</ComboboxEmpty>
+                      <ComboboxList>
+                        {githubAppRepositoryOptions.map((option) => (
+                          <ComboboxItem
+                            key={option.integrationId}
+                            value={option.label}
+                          >
+                            <span className="min-w-0 flex-1 truncate">
+                              {option.label}
+                            </span>
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                  <Button
+                    disabled={!selectedGitHubAppIntegration}
+                    onClick={openSelectedGitHubAppRepository}
+                    type="button"
+                  >
+                    Open
+                  </Button>
+                </div>
+                <a
+                  className="text-muted-foreground text-xs hover:text-foreground hover:underline"
+                  href={githubAppAuthorizeUrl}
+                >
+                  Manage GitHub App repository access
+                </a>
+              </Field>
+            ) : (
+              <>
+                <a
+                  className={buttonVariants({
+                    className: "w-full",
+                  })}
+                  href={githubAppAuthorizeUrl}
+                >
+                  Install GitHub App
+                </a>
+                <p className="text-muted-foreground text-sm">
+                  Recommended for public and private repositories. GitHub lets
+                  you choose exactly which repositories Notra can access.
+                </p>
+              </>
+            )}
           </div>
           <Collapsible onOpenChange={setLegacyOpen} open={legacyOpen}>
             <CollapsibleTrigger className="flex w-full items-center gap-2 border-t pt-4 font-medium text-sm">
