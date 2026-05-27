@@ -47,6 +47,11 @@ export interface IntegrationWithRepositories {
   createdAt: Date;
   repositories: Array<{
     id: string;
+    authType?: string;
+    githubAppInstallationId?: string | null;
+    githubAppInstallationAccountLogin?: string | null;
+    githubAppInstallationAccountType?: string | null;
+    githubAppRepositoryId?: number | null;
     owner: string;
     repo: string;
     defaultBranch: string | null;

@@ -31,6 +31,13 @@ const integrationFetchers: Partial<
         createdAt: integration.createdAt,
         repositories: uniqueRepositories.map((repo) => ({
           id: repo.id,
+          authType: repo.authType,
+          githubAppInstallationId: repo.githubAppInstallationId,
+          githubAppInstallationAccountLogin:
+            repo.githubAppInstallationAccountLogin,
+          githubAppInstallationAccountType:
+            repo.githubAppInstallationAccountType,
+          githubAppRepositoryId: repo.githubAppRepositoryId,
           owner: repo.owner,
           repo: repo.repo,
           defaultBranch: repo.defaultBranch,

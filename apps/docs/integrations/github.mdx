@@ -27,28 +27,19 @@ When you connect a GitHub repository, Notra can access:
   </Step>
 
   <Step title="Add Repository">
-    Click **Add GitHub Integration** and enter your repository URL in one of these formats:
+    Click **Add GitHub Integration**, then choose **Install GitHub App**. GitHub will ask which repositories Notra can access. You can grant access to all repositories or select specific repositories.
+
+    Notra will create integrations for the repositories you selected and automatically detect each default branch.
+  </Step>
+
+  <Step title="Legacy Access">
+    Existing Personal Access Token integrations continue to work. New integrations should use the GitHub App flow instead.
+
+    The legacy repository URL form remains available for existing workflows:
 
     * `https://github.com/facebook/react`
     * `github.com/facebook/react`
     * `facebook/react`
-
-    Notra will automatically detect your default branch (usually `main` or `master`).
-  </Step>
-
-  <Step title="Configure Access (Private Repos Only)">
-    For private repositories, you'll need to provide a Personal Access Token:
-
-    1. Go to [GitHub Settings → Tokens](https://github.com/settings/tokens/new?scopes=repo\&description=Notra%20Integration)
-    2. Click **Generate new token (classic)**
-    3. Set description to "Notra Integration"
-    4. Select the `repo` scope (full repository access)
-    5. Click **Generate token**
-    6. Copy the token and paste it into Notra
-
-    <Info>
-      Public repositories work without a token. Only provide one if your repository is private.
-    </Info>
   </Step>
 
   <Step title="Set Up Webhook (Optional)">
@@ -123,13 +114,11 @@ You can modify your integration after setup:
 * **Update display name**: Customize how the integration appears in your dashboard
 * **Toggle content types**: Enable or disable specific output types
 
-### Update Access Token
+### Update Access
 
-If your Personal Access Token expires or is revoked:
+GitHub App integrations are managed from the app installation settings in GitHub. To change repository access, update the Notra GitHub App installation and select the repositories Notra should be able to access.
 
-1. Generate a new token on GitHub (same process as initial setup)
-2. Go to your integration settings in Notra
-3. Update the token in the integration configuration
+For legacy Personal Access Token integrations, generate a new token and update it in the integration configuration.
 
 ### Remove the Integration
 
@@ -156,7 +145,7 @@ Notra requires these GitHub permissions:
 | Read access | Repository metadata | Get repository name and description      |
 
 <Info>
-  The `repo` scope in Personal Access Tokens grants read access to all of the above for private repositories. Public repositories don't require a token.
+  New integrations use the Notra GitHub App with repository-scoped access. Personal Access Tokens are supported only for legacy integrations.
 </Info>
 
 ## Webhook Events
@@ -179,8 +168,9 @@ If you configured a webhook, Notra listens for these events:
 **Solutions**:
 
 * Verify the repository URL is correct
-* For private repositories, ensure your Personal Access Token has the `repo` scope
-* Check that the token hasn't expired
+* Ensure the Notra GitHub App is installed on the repository
+* Check that the repository is selected in the Notra GitHub App installation
+* For legacy integrations, ensure your Personal Access Token has access and hasn't expired
 * Confirm you have access to the repository on GitHub
 
 ### Webhook Not Working

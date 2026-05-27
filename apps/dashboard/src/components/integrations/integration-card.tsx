@@ -118,6 +118,7 @@ export function IntegrationCard({
   };
 
   const isLoading = toggleMutation.isPending || deleteMutation.isPending;
+  const isGitHubAppIntegration = integration.authType === "github_app";
 
   const handleCardClick = (event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement | null;
@@ -151,7 +152,6 @@ export function IntegrationCard({
             )}
           </CardDescription>
           <CardAction>
-            {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: Event propagation barrier */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: Event propagation barrier */}
             <div
               className="flex items-center gap-2"
@@ -163,6 +163,9 @@ export function IntegrationCard({
             >
               <Badge variant={integration.enabled ? "default" : "secondary"}>
                 {integration.enabled ? "Enabled" : "Disabled"}
+              </Badge>
+              <Badge variant="outline">
+                {isGitHubAppIntegration ? "GitHub App" : "Legacy"}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -187,15 +190,17 @@ export function IntegrationCard({
                   }
                 />
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setIsEditTokenDialogOpen(true);
-                    }}
-                  >
-                    Edit Personal Access Token
-                  </DropdownMenuItem>
+                  {isGitHubAppIntegration ? null : (
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setIsEditTokenDialogOpen(true);
+                      }}
+                    >
+                      Edit Personal Access Token
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onClick={(event) => {

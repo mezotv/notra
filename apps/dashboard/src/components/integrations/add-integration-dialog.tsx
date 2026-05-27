@@ -84,6 +84,7 @@ export function AddIntegrationDialog({
 
   const [probeStatus, setProbeStatus] = useState<ProbeStatus>("idle");
   const [tokenOpen, setTokenOpen] = useState(false);
+  const [legacyOpen, setLegacyOpen] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -291,6 +292,18 @@ export function AddIntegrationDialog({
   };
 
   const firstRepository = createdIntegration?.repositories?.[0];
+  const connectWithGitHubApp = () => {
+    const callbackPath =
+      typeof window === "undefined"
+        ? `/${organizationSlug ?? ""}/integrations`
+        : `${window.location.pathname}${window.location.search}`;
+    const params = new URLSearchParams({
+      organizationId,
+      callbackPath,
+    });
+
+    window.location.href = `/api/integrations/github/app/authorize?${params.toString()}`;
+  };
 
   return (
     <>
@@ -299,245 +312,280 @@ export function AddIntegrationDialog({
         <ResponsiveDialogContent className="sm:max-w-[520px]">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle className="text-2xl">
-              Add GitHub Integration
+              Connect GitHub
             </ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Connect a GitHub repository to enable AI-powered outputs like
-              changelogs, blog posts, and tweets.
+              Install the Notra GitHub App to select repositories for AI-powered
+              content generation.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setHasAttemptedSubmit(true);
-              form.handleSubmit();
-            }}
-          >
-            <div className="space-y-4 py-4">
-              <form.Field
-                name="repoUrl"
-                validators={{
-                  onSubmit: addGitHubIntegrationFormSchema.shape.repoUrl,
+          <div className="space-y-3 py-4">
+            <Button
+              className="w-full"
+              disabled={mutation.isPending}
+              onClick={connectWithGitHubApp}
+              type="button"
+            >
+              Install GitHub App
+            </Button>
+            <p className="text-muted-foreground text-sm">
+              Recommended for public and private repositories. GitHub lets you
+              choose exactly which repositories Notra can access.
+            </p>
+          </div>
+          <Collapsible onOpenChange={setLegacyOpen} open={legacyOpen}>
+            <CollapsibleTrigger className="flex w-full items-center gap-2 border-t pt-4 font-medium text-sm">
+              <ChevronDownIcon
+                className={`h-4 w-4 transition-transform ${legacyOpen ? "" : "-rotate-90"}`}
+              />
+              Legacy repository URL or PAT
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setHasAttemptedSubmit(true);
+                  form.handleSubmit();
                 }}
               >
-                {(field) => (
-                  <Field>
-                    <FieldLabel>GitHub Repository</FieldLabel>
-                    <Input
-                      disabled={mutation.isPending}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => {
-                        const nextValue = e.target.value;
-                        const parsed = parseGitHubUrl(nextValue);
+                <div className="space-y-4 py-4">
+                  <form.Field
+                    name="repoUrl"
+                    validators={{
+                      onSubmit: addGitHubIntegrationFormSchema.shape.repoUrl,
+                    }}
+                  >
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>GitHub Repository</FieldLabel>
+                        <Input
+                          disabled={mutation.isPending}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => {
+                            const nextValue = e.target.value;
+                            const parsed = parseGitHubUrl(nextValue);
 
-                        setHasAttemptedSubmit(false);
-                        field.handleChange(nextValue);
+                            setHasAttemptedSubmit(false);
+                            field.handleChange(nextValue);
 
-                        if (!nextValue.trim()) {
-                          repoProbeDebouncer.cancel();
-                          resetProbeState();
-                          return;
-                        }
+                            if (!nextValue.trim()) {
+                              repoProbeDebouncer.cancel();
+                              resetProbeState();
+                              return;
+                            }
 
-                        if (!parsed) {
-                          repoProbeDebouncer.cancel();
-                          resetProbeState();
-                          return;
-                        }
+                            if (!parsed) {
+                              repoProbeDebouncer.cancel();
+                              resetProbeState();
+                              return;
+                            }
 
-                        setRepoInfo(parsed);
-                        repoProbeDebouncer.maybeExecute({
-                          owner: parsed.owner,
-                          repo: parsed.repo,
-                          token:
-                            form.getFieldValue("token")?.trim() || undefined,
-                        });
-                      }}
-                      placeholder="https://github.com/facebook/react or facebook/react"
-                      value={field.state.value}
-                    />
-                    {hasAttemptedSubmit &&
-                    field.state.meta.errors.length > 0 ? (
-                      <p className="mt-1 text-destructive text-sm">
-                        {typeof field.state.meta.errors[0] === "string"
-                          ? field.state.meta.errors[0]
-                          : ((
-                              field.state.meta.errors[0] as { message?: string }
-                            )?.message ?? "Invalid value")}
-                      </p>
-                    ) : null}
-                    {repoInfo ? (
-                      <div className="mt-2 flex items-center gap-2">
-                        <Badge
-                          className="font-mono text-xs"
-                          variant="secondary"
-                        >
-                          {repoInfo.owner}/{repoInfo.repo}
-                        </Badge>
-                        <a
-                          className="text-primary text-xs hover:underline"
-                          href={repoInfo.fullUrl}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          View on GitHub
-                        </a>
-                      </div>
-                    ) : null}
-                  </Field>
-                )}
-              </form.Field>
-
-              <form.Field name="branch">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Default Branch</FieldLabel>
-                    <Input
-                      disabled={mutation.isPending}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder={
-                        probeStatus === "loading" ? "Detecting..." : "main"
-                      }
-                      value={field.state.value}
-                    />
-                  </Field>
-                )}
-              </form.Field>
-
-              <Collapsible onOpenChange={setTokenOpen} open={tokenOpen}>
-                <CollapsibleTrigger className="flex w-full items-center gap-2 font-medium text-sm">
-                  <ChevronDownIcon
-                    className={`h-4 w-4 transition-transform ${tokenOpen ? "" : "-rotate-90"}`}
-                  />
-                  Personal Access Token
-                  <span className="font-normal text-muted-foreground text-xs">
-                    (optional)
-                  </span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="pt-2">
-                    <form.Field
-                      name="token"
-                      validators={{
-                        onSubmit: ({ value }) => {
-                          const trimmed = value.trim();
-
-                          if (!trimmed) {
-                            return undefined;
-                          }
-
-                          const validationResult =
-                            githubPersonalAccessTokenSchema.safeParse(trimmed);
-
-                          if (validationResult.success) {
-                            return undefined;
-                          }
-
-                          return validationResult.error.issues[0]?.message;
-                        },
-                      }}
-                    >
-                      {(field) => (
-                        <Field>
-                          {probeStatus === "not_found" ? (
-                            <p className="mb-2 text-amber-600 text-xs dark:text-amber-400">
-                              This repository appears to be private or not
-                              found. A token is required to access it.
-                            </p>
-                          ) : (
-                            <p className="mb-2 text-muted-foreground text-xs">
-                              Only required for private repositories. Public
-                              repos work without a token.
-                            </p>
-                          )}
-                          <Input
-                            disabled={mutation.isPending}
-                            onBlur={(e) => {
-                              field.handleBlur();
-                              const token = e.target.value.trim();
-                              if (
-                                token &&
-                                repoInfo &&
-                                probeStatus === "not_found"
-                              ) {
-                                probeRepo(repoInfo.owner, repoInfo.repo, token)
-                                  .then((result) => {
-                                    if (result?.defaultBranch) {
-                                      initializeBranch(
-                                        repoInfo.owner,
-                                        repoInfo.repo,
-                                        result.defaultBranch
-                                      );
-                                    }
-                                  })
-                                  .catch(() => {
-                                    return null;
-                                  });
-                              }
-                            }}
-                            onChange={(e) => {
-                              setHasAttemptedSubmit(false);
-                              field.handleChange(e.target.value);
-                            }}
-                            placeholder="ghp_... (leave empty for public repos)"
-                            value={field.state.value}
-                          />
-                          {hasAttemptedSubmit &&
-                          field.state.meta.errors.length > 0 ? (
-                            <p className="mt-1 text-destructive text-sm">
-                              {typeof field.state.meta.errors[0] === "string"
-                                ? field.state.meta.errors[0]
-                                : ((
-                                    field.state.meta.errors[0] as unknown as {
-                                      message?: string;
-                                    }
-                                  )?.message ?? "Invalid value")}
-                            </p>
-                          ) : null}
-                          <p className="mt-1 text-muted-foreground text-xs">
+                            setRepoInfo(parsed);
+                            repoProbeDebouncer.maybeExecute({
+                              owner: parsed.owner,
+                              repo: parsed.repo,
+                              token:
+                                form.getFieldValue("token")?.trim() ||
+                                undefined,
+                            });
+                          }}
+                          placeholder="https://github.com/facebook/react or facebook/react"
+                          value={field.state.value}
+                        />
+                        {hasAttemptedSubmit &&
+                        field.state.meta.errors.length > 0 ? (
+                          <p className="mt-1 text-destructive text-sm">
+                            {typeof field.state.meta.errors[0] === "string"
+                              ? field.state.meta.errors[0]
+                              : ((
+                                  field.state.meta.errors[0] as {
+                                    message?: string;
+                                  }
+                                )?.message ?? "Invalid value")}
+                          </p>
+                        ) : null}
+                        {repoInfo ? (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge
+                              className="font-mono text-xs"
+                              variant="secondary"
+                            >
+                              {repoInfo.owner}/{repoInfo.repo}
+                            </Badge>
                             <a
-                              className="text-primary hover:underline"
-                              href="https://github.com/settings/tokens/new?scopes=repo&description=Notra%20Integration"
+                              className="text-primary text-xs hover:underline"
+                              href={repoInfo.fullUrl}
                               rel="noopener noreferrer"
                               target="_blank"
                             >
-                              Generate a token on GitHub
-                            </a>{" "}
-                            with <code className="text-xs">repo</code> scope
-                          </p>
-                        </Field>
-                      )}
-                    </form.Field>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-            <ResponsiveDialogFooter>
-              <ResponsiveDialogClose
-                disabled={mutation.isPending}
-                render={<Button variant="outline" />}
-              >
-                Cancel
-              </ResponsiveDialogClose>
-              <form.Subscribe selector={(state) => [state.canSubmit]}>
-                {([canSubmit]) => (
-                  <Button
-                    disabled={!canSubmit || mutation.isPending}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setHasAttemptedSubmit(true);
-                      form.handleSubmit();
-                    }}
-                    type="button"
+                              View on GitHub
+                            </a>
+                          </div>
+                        ) : null}
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <form.Field name="branch">
+                    {(field) => (
+                      <Field>
+                        <FieldLabel>Default Branch</FieldLabel>
+                        <Input
+                          disabled={mutation.isPending}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder={
+                            probeStatus === "loading" ? "Detecting..." : "main"
+                          }
+                          value={field.state.value}
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+
+                  <Collapsible onOpenChange={setTokenOpen} open={tokenOpen}>
+                    <CollapsibleTrigger className="flex w-full items-center gap-2 font-medium text-sm">
+                      <ChevronDownIcon
+                        className={`h-4 w-4 transition-transform ${tokenOpen ? "" : "-rotate-90"}`}
+                      />
+                      Personal Access Token
+                      <span className="font-normal text-muted-foreground text-xs">
+                        (optional)
+                      </span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="pt-2">
+                        <form.Field
+                          name="token"
+                          validators={{
+                            onSubmit: ({ value }) => {
+                              const trimmed = value.trim();
+
+                              if (!trimmed) {
+                                return undefined;
+                              }
+
+                              const validationResult =
+                                githubPersonalAccessTokenSchema.safeParse(
+                                  trimmed
+                                );
+
+                              if (validationResult.success) {
+                                return undefined;
+                              }
+
+                              return validationResult.error.issues[0]?.message;
+                            },
+                          }}
+                        >
+                          {(field) => (
+                            <Field>
+                              {probeStatus === "not_found" ? (
+                                <p className="mb-2 text-amber-600 text-xs dark:text-amber-400">
+                                  This repository appears to be private or not
+                                  found. A token is required to access it.
+                                </p>
+                              ) : (
+                                <p className="mb-2 text-muted-foreground text-xs">
+                                  Only required for private repositories. Public
+                                  repos work without a token.
+                                </p>
+                              )}
+                              <Input
+                                disabled={mutation.isPending}
+                                onBlur={(e) => {
+                                  field.handleBlur();
+                                  const token = e.target.value.trim();
+                                  if (
+                                    token &&
+                                    repoInfo &&
+                                    probeStatus === "not_found"
+                                  ) {
+                                    probeRepo(
+                                      repoInfo.owner,
+                                      repoInfo.repo,
+                                      token
+                                    )
+                                      .then((result) => {
+                                        if (result?.defaultBranch) {
+                                          initializeBranch(
+                                            repoInfo.owner,
+                                            repoInfo.repo,
+                                            result.defaultBranch
+                                          );
+                                        }
+                                      })
+                                      .catch(() => {
+                                        return null;
+                                      });
+                                  }
+                                }}
+                                onChange={(e) => {
+                                  setHasAttemptedSubmit(false);
+                                  field.handleChange(e.target.value);
+                                }}
+                                placeholder="ghp_... (leave empty for public repos)"
+                                value={field.state.value}
+                              />
+                              {hasAttemptedSubmit &&
+                              field.state.meta.errors.length > 0 ? (
+                                <p className="mt-1 text-destructive text-sm">
+                                  {typeof field.state.meta.errors[0] ===
+                                  "string"
+                                    ? field.state.meta.errors[0]
+                                    : ((
+                                        field.state.meta
+                                          .errors[0] as unknown as {
+                                          message?: string;
+                                        }
+                                      )?.message ?? "Invalid value")}
+                                </p>
+                              ) : null}
+                              <p className="mt-1 text-muted-foreground text-xs">
+                                <a
+                                  className="text-primary hover:underline"
+                                  href="https://github.com/settings/tokens/new?scopes=repo&description=Notra%20Integration"
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  Generate a token on GitHub
+                                </a>{" "}
+                                with <code className="text-xs">repo</code> scope
+                              </p>
+                            </Field>
+                          )}
+                        </form.Field>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                <ResponsiveDialogFooter>
+                  <ResponsiveDialogClose
+                    disabled={mutation.isPending}
+                    render={<Button variant="outline" />}
                   >
-                    {mutation.isPending ? "Adding..." : "Add Integration"}
-                  </Button>
-                )}
-              </form.Subscribe>
-            </ResponsiveDialogFooter>
-          </form>
+                    Cancel
+                  </ResponsiveDialogClose>
+                  <form.Subscribe selector={(state) => [state.canSubmit]}>
+                    {([canSubmit]) => (
+                      <Button
+                        disabled={!canSubmit || mutation.isPending}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setHasAttemptedSubmit(true);
+                          form.handleSubmit();
+                        }}
+                        type="button"
+                      >
+                        {mutation.isPending ? "Adding..." : "Add Integration"}
+                      </Button>
+                    )}
+                  </form.Subscribe>
+                </ResponsiveDialogFooter>
+              </form>
+            </CollapsibleContent>
+          </Collapsible>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
       {firstRepository && organizationId ? (

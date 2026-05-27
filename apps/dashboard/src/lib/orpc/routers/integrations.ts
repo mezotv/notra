@@ -92,6 +92,11 @@ function serializeRepositoryOutput(output: {
 
 function serializeRepository(repository: {
   id: string;
+  authType?: string;
+  githubAppInstallationId?: string | null;
+  githubAppInstallationAccountLogin?: string | null;
+  githubAppInstallationAccountType?: string | null;
+  githubAppRepositoryId?: number | null;
   owner: string;
   repo: string;
   defaultBranch: string | null;
@@ -105,6 +110,13 @@ function serializeRepository(repository: {
 }): GitHubRepository {
   return {
     id: repository.id,
+    authType: repository.authType,
+    githubAppInstallationId: repository.githubAppInstallationId,
+    githubAppInstallationAccountLogin:
+      repository.githubAppInstallationAccountLogin,
+    githubAppInstallationAccountType:
+      repository.githubAppInstallationAccountType,
+    githubAppRepositoryId: repository.githubAppRepositoryId,
     owner: repository.owner,
     repo: repository.repo,
     defaultBranch: repository.defaultBranch,
@@ -122,6 +134,11 @@ function serializeRepository(repository: {
 
 function serializeIntegration(integration: {
   id: string;
+  authType?: string;
+  githubAppInstallationId?: string | null;
+  githubAppInstallationAccountLogin?: string | null;
+  githubAppInstallationAccountType?: string | null;
+  githubAppRepositoryId?: number | null;
   displayName: string;
   enabled: boolean;
   createdAt: Date;
@@ -133,6 +150,11 @@ function serializeIntegration(integration: {
   } | null;
   repositories: Array<{
     id: string;
+    authType?: string;
+    githubAppInstallationId?: string | null;
+    githubAppInstallationAccountLogin?: string | null;
+    githubAppInstallationAccountType?: string | null;
+    githubAppRepositoryId?: number | null;
     owner: string;
     repo: string;
     defaultBranch: string | null;
@@ -147,6 +169,13 @@ function serializeIntegration(integration: {
 }): GitHubIntegration {
   return {
     id: integration.id,
+    authType: integration.authType,
+    githubAppInstallationId: integration.githubAppInstallationId,
+    githubAppInstallationAccountLogin:
+      integration.githubAppInstallationAccountLogin,
+    githubAppInstallationAccountType:
+      integration.githubAppInstallationAccountType,
+    githubAppRepositoryId: integration.githubAppRepositoryId,
     displayName: integration.displayName,
     enabled: integration.enabled,
     createdAt: integration.createdAt.toISOString(),
@@ -165,6 +194,11 @@ function serializeListedIntegration(integration: {
   createdAt: Date;
   repositories: Array<{
     id: string;
+    authType?: string;
+    githubAppInstallationId?: string | null;
+    githubAppInstallationAccountLogin?: string | null;
+    githubAppInstallationAccountType?: string | null;
+    githubAppRepositoryId?: number | null;
     owner: string;
     repo: string;
     defaultBranch: string | null;
@@ -382,6 +416,8 @@ export const integrationsRouter = {
             repo: effectiveRepo,
             token: input.token,
             encryptedToken: integration.encryptedToken,
+            authType: integration.authType,
+            githubAppInstallationId: integration.githubAppInstallationId,
           });
 
           await updateGitHubIntegration(input.integrationId, {
@@ -412,6 +448,8 @@ export const integrationsRouter = {
               branch: normalizedBranch,
               token: input.token,
               encryptedToken: integration.encryptedToken,
+              authType: integration.authType,
+              githubAppInstallationId: integration.githubAppInstallationId,
             });
           }
 
@@ -602,6 +640,9 @@ export const integrationsRouter = {
               repo: repository.repo,
               branch: normalizedDefaultBranch,
               encryptedToken: repository.integration.encryptedToken,
+              authType: repository.integration.authType,
+              githubAppInstallationId:
+                repository.integration.githubAppInstallationId,
             });
           }
 

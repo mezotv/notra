@@ -9,6 +9,11 @@ export interface RepositoryOutput {
 
 export interface GitHubRepository {
   id: string;
+  authType?: string;
+  githubAppInstallationId?: string | null;
+  githubAppInstallationAccountLogin?: string | null;
+  githubAppInstallationAccountType?: string | null;
+  githubAppRepositoryId?: number | null;
   owner: string;
   repo: string;
   defaultBranch: string | null;
@@ -21,6 +26,11 @@ export type Repository = GitHubRepository;
 
 export interface GitHubIntegration {
   id: string;
+  authType?: string;
+  githubAppInstallationId?: string | null;
+  githubAppInstallationAccountLogin?: string | null;
+  githubAppInstallationAccountType?: string | null;
+  githubAppRepositoryId?: number | null;
   displayName: string;
   enabled: boolean;
   createdAt: string;
