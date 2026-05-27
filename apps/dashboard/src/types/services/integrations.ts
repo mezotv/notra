@@ -2,6 +2,7 @@ import type {
   IntegrationType,
   OutputContentType,
 } from "@/schemas/integrations";
+import type { GitHubIntegrationAuthType } from "@/types/integrations";
 
 export interface CreateGitHubIntegrationParams {
   organizationId: string;
@@ -47,7 +48,7 @@ export interface IntegrationWithRepositories {
   createdAt: Date;
   repositories: Array<{
     id: string;
-    authType?: string;
+    authType?: GitHubIntegrationAuthType | string;
     githubAppInstallationId?: string | null;
     githubAppInstallationAccountLogin?: string | null;
     githubAppInstallationAccountType?: string | null;

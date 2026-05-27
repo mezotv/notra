@@ -91,6 +91,14 @@ export type CreateGitHubIntegrationRequest = z.infer<
   typeof createGitHubIntegrationRequestSchema
 >;
 
+export const githubAppAuthorizeQuerySchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  callbackPath: z.string().optional(),
+});
+export type GitHubAppAuthorizeQuery = z.infer<
+  typeof githubAppAuthorizeQuerySchema
+>;
+
 export const addRepositoryFormSchema = z.object({
   repository: z
     .string()

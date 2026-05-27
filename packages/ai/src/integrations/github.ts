@@ -7,46 +7,31 @@ import {
 } from "@notra/db/schema";
 import { and, eq, notInArray, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import {
+  DEFAULT_REPOSITORY_OUTPUT_CONFIG,
+  GITHUB_API_VERSION,
+} from "../constants/github";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type {
   AddRepositoryParams,
   ConfigureOutputParams,
   CreateGitHubIntegrationParams,
   ErrorWithStatus,
+  GitHubAppRepository,
+  GitHubIntegrationAuthType,
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
+import type { GitHubToolRepositoryContext } from "../types/tools";
 import {
   createGitHubAppInstallationOctokit,
   createGitHubAppInstallationToken,
   createGitHubAppOctokit,
-  createOctokit,
-} from "../utils/octokit";
+} from "../utils/github-app";
+import { createOctokit } from "../utils/octokit";
 import { getConfiguredAppUrl } from "../utils/url";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
-
-export interface GitHubToolRepositoryContext {
-  integrationId: string;
-  organizationId: string;
-  owner: string;
-  repo: string;
-  defaultBranch: string | null;
-  token: string | undefined;
-}
-
-interface GitHubAppRepository {
-  id: number;
-  name: string;
-  full_name: string;
-  private: boolean;
-  description: string | null;
-  html_url: string;
-  default_branch: string | null;
-  owner: {
-    login: string;
-  };
-}
 
 export class GitHubBranchNotFoundError extends Error {
   constructor(owner: string, repo: string, branch: string) {
@@ -61,7 +46,7 @@ function generateWebhookSecret(): string {
 
 function toRepositoryRecord(integration: {
   id: string;
-  authType?: string;
+  authType?: GitHubIntegrationAuthType | string;
   githubAppInstallationId?: string | null;
   githubAppInstallationAccountLogin?: string | null;
   githubAppInstallationAccountType?: string | null;
@@ -99,48 +84,18 @@ function toRepositoryRecord(integration: {
 }
 
 function getDefaultRepositoryOutputs(repositoryId: string) {
-  return [
-    {
-      id: nanoid(),
-      repositoryId,
-      outputType: "changelog",
-      enabled: true,
-      config: null,
-    },
-    {
-      id: nanoid(),
-      repositoryId,
-      outputType: "blog_post",
-      enabled: false,
-      config: null,
-    },
-    {
-      id: nanoid(),
-      repositoryId,
-      outputType: "twitter_post",
-      enabled: false,
-      config: null,
-    },
-    {
-      id: nanoid(),
-      repositoryId,
-      outputType: "linkedin_post",
-      enabled: false,
-      config: null,
-    },
-    {
-      id: nanoid(),
-      repositoryId,
-      outputType: "investor_update",
-      enabled: false,
-      config: null,
-    },
-  ];
+  return DEFAULT_REPOSITORY_OUTPUT_CONFIG.map((output) => ({
+    id: nanoid(),
+    repositoryId,
+    outputType: output.outputType,
+    enabled: output.enabled,
+    config: null,
+  }));
 }
 
 async function resolveAuthTokenForIntegration(integration: {
   encryptedToken?: string | null;
-  authType?: string | null;
+  authType?: GitHubIntegrationAuthType | string | null;
   githubAppInstallationId?: string | null;
 }) {
   if (integration.authType === "github_app") {
@@ -258,7 +213,7 @@ export async function validateRepositoryAccess(params: {
       owner,
       repo,
       headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     });
   } catch (error) {
@@ -333,7 +288,7 @@ export async function createGitHubIntegration(
         owner,
         repo,
         headers: {
-          "X-GitHub-Api-Version": "2022-11-28",
+          "X-GitHub-Api-Version": GITHUB_API_VERSION,
         },
       });
     } catch (_error) {
@@ -389,7 +344,7 @@ async function listGitHubAppInstallationRepositories(installationId: string) {
       per_page: 100,
       page,
       headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     });
 
@@ -440,7 +395,7 @@ export async function createGitHubAppIntegrationsForInstallation(params: {
     {
       installation_id: Number(params.installationId),
       headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     }
   );
@@ -806,7 +761,7 @@ export async function updateGitHubIntegrationToken(
       owner,
       repo,
       headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     });
   } catch (_error) {
@@ -882,7 +837,7 @@ export async function validateRepositoryBranchExists(
       repo,
       branch: normalizedBranch,
       headers: {
-        "X-GitHub-Api-Version": "2022-11-28",
+        "X-GitHub-Api-Version": GITHUB_API_VERSION,
       },
     });
   } catch (error) {
@@ -944,7 +899,7 @@ export async function listAvailableRepositories(
     per_page: 100,
     sort: "updated",
     headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
+      "X-GitHub-Api-Version": GITHUB_API_VERSION,
     },
   });
 

@@ -2,6 +2,21 @@ export interface ErrorWithStatus {
   status?: number;
 }
 
+export type GitHubIntegrationAuthType = "github_app" | "legacy";
+
+export interface GitHubAppRepository {
+  id: number;
+  name: string;
+  full_name: string;
+  private: boolean;
+  description: string | null;
+  html_url: string;
+  default_branch: string | null;
+  owner: {
+    login: string;
+  };
+}
+
 export interface ValidateRepositoryBranchExistsParams {
   owner: string;
   repo: string;

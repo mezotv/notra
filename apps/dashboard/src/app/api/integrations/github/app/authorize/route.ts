@@ -1,17 +1,16 @@
 import {
   getGitHubAppSlug,
   isGitHubAppConfigured,
-} from "@notra/ai/utils/octokit";
+} from "@notra/ai/utils/github-app";
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import {
+  GITHUB_APP_INSTALL_STATE_KEY_PREFIX,
+  GITHUB_APP_INSTALL_STATE_TTL_SECONDS,
+} from "@/constants/github";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-
-const githubAppAuthorizeQuerySchema = z.object({
-  organizationId: z.string().min(1),
-  callbackPath: z.string().optional(),
-});
+import { githubAppAuthorizeQuerySchema } from "@/schemas/integrations";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -54,13 +53,13 @@ export async function GET(request: NextRequest) {
     const state = crypto.randomUUID();
 
     await redis.set(
-      `github_app_install:${state}`,
+      `${GITHUB_APP_INSTALL_STATE_KEY_PREFIX}${state}`,
       JSON.stringify({
         organizationId,
         userId,
         callbackPath,
       }),
-      { ex: 600 }
+      { ex: GITHUB_APP_INSTALL_STATE_TTL_SECONDS }
     );
 
     const installUrl = new URL(

@@ -2,15 +2,11 @@ import { createGitHubAppIntegrationsForInstallation } from "@notra/ai/integratio
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { GITHUB_APP_INSTALL_STATE_KEY_PREFIX } from "@/constants/github";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
+import type { GitHubAppInstallState } from "@/types/integrations/github-app";
 import { buildCallbackUrl } from "@/utils/build-callback-url";
-
-interface GitHubAppInstallState {
-  organizationId: string;
-  userId: string;
-  callbackPath?: string;
-}
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -25,7 +21,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
     }
 
-    const raw = await redis.get<string>(`github_app_install:${state}`);
+    const raw = await redis.get<string>(
+      `${GITHUB_APP_INSTALL_STATE_KEY_PREFIX}${state}`
+    );
     if (!raw) {
       return NextResponse.redirect(`${baseUrl}/?error=expired_state`);
     }
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    await redis.del(`github_app_install:${state}`);
+    await redis.del(`${GITHUB_APP_INSTALL_STATE_KEY_PREFIX}${state}`);
 
     const integrations = await createGitHubAppIntegrationsForInstallation({
       organizationId: installState.organizationId,

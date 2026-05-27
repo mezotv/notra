@@ -1,6 +1,8 @@
 import type React from "react";
 import type { IntegrationType } from "@/schemas/integrations";
 
+export type GitHubIntegrationAuthType = "github_app" | "legacy";
+
 export interface RepositoryOutput {
   id: string;
   outputType: string;
@@ -9,7 +11,7 @@ export interface RepositoryOutput {
 
 export interface GitHubRepository {
   id: string;
-  authType?: string;
+  authType?: GitHubIntegrationAuthType | string;
   githubAppInstallationId?: string | null;
   githubAppInstallationAccountLogin?: string | null;
   githubAppInstallationAccountType?: string | null;
@@ -26,7 +28,7 @@ export type Repository = GitHubRepository;
 
 export interface GitHubIntegration {
   id: string;
-  authType?: string;
+  authType?: GitHubIntegrationAuthType | string;
   githubAppInstallationId?: string | null;
   githubAppInstallationAccountLogin?: string | null;
   githubAppInstallationAccountType?: string | null;
