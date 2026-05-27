@@ -8,6 +8,8 @@ export interface ValidateRepositoryBranchExistsParams {
   branch: string;
   token?: string | null;
   encryptedToken?: string | null;
+  authType?: string | null;
+  githubAppInstallationId?: string | null;
 }
 
 export interface CreateGitHubIntegrationParams {

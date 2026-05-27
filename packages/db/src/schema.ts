@@ -235,6 +235,15 @@ export const githubIntegrations = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     displayName: text("display_name").notNull(),
     encryptedToken: text("encrypted_token"),
+    authType: text("auth_type").default("legacy").notNull(),
+    githubAppInstallationId: text("github_app_installation_id"),
+    githubAppInstallationAccountLogin: text(
+      "github_app_installation_account_login"
+    ),
+    githubAppInstallationAccountType: text(
+      "github_app_installation_account_type"
+    ),
+    githubAppRepositoryId: integer("github_app_repository_id"),
     owner: text("owner"),
     repo: text("repo"),
     defaultBranch: text("default_branch"),
