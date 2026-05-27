@@ -42,7 +42,7 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { Button, buttonVariants } from "@/components/button";
+import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
@@ -399,7 +399,7 @@ export function AddIntegrationDialog({
                 <Skeleton className="h-4 w-32" />
                 <Skeleton className="h-10 w-full" />
               </div>
-            ) : githubAppRepositoryOptions.length > 0 ? (
+            ) : (
               <Field>
                 <FieldLabel>Repository</FieldLabel>
                 <div className="flex gap-2">
@@ -418,7 +418,10 @@ export function AddIntegrationDialog({
                       showClear
                     />
                     <ComboboxContent>
-                      <ComboboxEmpty>No repositories found.</ComboboxEmpty>
+                      <ComboboxEmpty>
+                        No repositories found. Manage GitHub App access to add
+                        repositories.
+                      </ComboboxEmpty>
                       <ComboboxList>
                         {githubAppRepositoryOptions.map((option) => (
                           <ComboboxItem
@@ -441,28 +444,23 @@ export function AddIntegrationDialog({
                     Open
                   </Button>
                 </div>
-                <a
-                  className="text-muted-foreground text-xs hover:text-foreground hover:underline"
-                  href={githubAppAuthorizeUrl}
-                >
-                  Manage GitHub App repository access
-                </a>
-              </Field>
-            ) : (
-              <>
-                <a
-                  className={buttonVariants({
-                    className: "w-full",
-                  })}
-                  href={githubAppAuthorizeUrl}
-                >
-                  Install GitHub App
-                </a>
-                <p className="text-muted-foreground text-sm">
-                  Recommended for public and private repositories. GitHub lets
-                  you choose exactly which repositories Notra can access.
+                <Button
+                  className="w-full"
+                  render={
+                    <a href={githubAppAuthorizeUrl}>
+                      {githubAppRepositoryOptions.length > 0
+                        ? "Manage GitHub App repository access"
+                        : "Install or manage GitHub App access"}
+                    </a>
+                  }
+                  type="button"
+                  variant="outline"
+                />
+                <p className="text-muted-foreground text-xs">
+                  GitHub App repositories appear here after GitHub redirects
+                  back to Notra.
                 </p>
-              </>
+              </Field>
             )}
           </div>
           <Collapsible onOpenChange={setLegacyOpen} open={legacyOpen}>
