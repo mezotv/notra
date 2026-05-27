@@ -10,14 +10,21 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@notra/ui/components/ui/combobox";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import type React from "react";
-import { isValidElement, useRef, useState } from "react";
+import { isValidElement, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -44,91 +51,37 @@ function RepositorySelector({
   availableRepos: AvailableRepo[];
   mutation: { isPending: boolean };
 }) {
-  const parentRef = useRef<HTMLDivElement>(null);
-  const shouldVirtualize = availableRepos.length > 20;
-
-  const rowVirtualizer = useVirtualizer({
-    count: availableRepos.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 5,
-    enabled: shouldVirtualize,
-  });
-
-  if (shouldVirtualize) {
-    return (
-      <>
-        <div
-          className="w-full rounded-lg border border-border bg-background"
-          ref={parentRef}
-          style={{
-            height: "300px",
-            overflow: "auto",
-          }}
-        >
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: "100%",
-              position: "relative",
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const repo = availableRepos[virtualRow.index];
-              if (!repo) {
-                return null;
-              }
-              return (
-                <button
-                  className={`w-full px-3 py-2 text-left hover:bg-accent ${
-                    field.state.value === repo.fullName ? "bg-accent" : ""
-                  }`}
-                  disabled={mutation.isPending}
-                  key={virtualRow.key}
-                  onClick={() => field.handleChange(repo.fullName)}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                  type="button"
-                >
-                  {repo.fullName} {repo.private ? "(Private)" : ""}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {field.state.meta.errors.length > 0 ? (
-          <p className="mt-1 text-destructive text-sm">
-            {typeof field.state.meta.errors[0] === "string"
-              ? field.state.meta.errors[0]
-              : ((field.state.meta.errors[0] as { message?: string })
-                  ?.message ?? "Invalid value")}
-          </p>
-        ) : null}
-      </>
-    );
-  }
-
   return (
     <>
-      <select
-        className="w-full rounded-lg border border-border bg-background px-3 py-2"
-        disabled={mutation.isPending}
-        onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(e.target.value)}
+      <Combobox
+        items={availableRepos.map((repo) => repo.fullName)}
+        onValueChange={(value) => {
+          field.handleChange(value ?? "");
+        }}
         value={field.state.value}
       >
-        <option value="">Select a repository...</option>
-        {availableRepos.map((repo) => (
-          <option key={repo.fullName} value={repo.fullName}>
-            {repo.fullName} {repo.private ? "(Private)" : ""}
-          </option>
-        ))}
-      </select>
+        <ComboboxInput
+          disabled={mutation.isPending}
+          onBlur={field.handleBlur}
+          placeholder="Search repositories..."
+          showClear
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>No repositories found.</ComboboxEmpty>
+          <ComboboxList>
+            {availableRepos.map((repo) => (
+              <ComboboxItem key={repo.fullName} value={repo.fullName}>
+                <span className="min-w-0 flex-1 truncate">{repo.fullName}</span>
+                {repo.private ? (
+                  <span className="shrink-0 text-muted-foreground text-xs">
+                    Private
+                  </span>
+                ) : null}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
       {field.state.meta.errors.length > 0 ? (
         <p className="mt-1 text-destructive text-sm">
           {typeof field.state.meta.errors[0] === "string"
