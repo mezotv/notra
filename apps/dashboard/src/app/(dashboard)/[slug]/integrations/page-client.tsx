@@ -17,9 +17,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
@@ -186,6 +187,9 @@ const IntegrationCard = memo(function IntegrationCard({
 });
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id;
@@ -206,6 +210,44 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const integrations = data?.integrations;
   const installedCount = data?.count ?? 0;
+
+  useEffect(() => {
+    const githubAppConnected = searchParams.get("githubAppConnected");
+    const githubAppRepositoryCount = searchParams.get(
+      "githubAppRepositoryCount"
+    );
+    const error = searchParams.get("error");
+    const isGitHubAppError = error?.startsWith("github_app");
+
+    if (!(githubAppConnected || isGitHubAppError)) {
+      return;
+    }
+
+    if (githubAppConnected === "true") {
+      const count = Number(githubAppRepositoryCount);
+      toast.success(
+        Number.isFinite(count) && count > 0
+          ? `GitHub App connected. ${count} ${count === 1 ? "repository" : "repositories"} synced.`
+          : "GitHub App connected."
+      );
+      setActiveTab("installed");
+      refetch();
+    } else if (isGitHubAppError) {
+      toast.error("GitHub App connection failed. Please try again.");
+    }
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.delete("githubAppConnected");
+    nextParams.delete("githubAppRepositoryCount");
+    if (isGitHubAppError) {
+      nextParams.delete("error");
+    }
+
+    const nextQuery = nextParams.toString();
+    router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
+      scroll: false,
+    });
+  }, [pathname, refetch, router, searchParams, setActiveTab]);
 
   // Single-pass partitioning of integrations by category
   const { inputIntegrations, outputIntegrations } = useMemo(() => {
