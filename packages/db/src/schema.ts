@@ -223,6 +223,39 @@ export const invitations = pgTable(
   ]
 );
 
+export const githubAppInstallations = pgTable(
+  "github_app_installations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    installationId: text("installation_id").notNull(),
+    accountLogin: text("account_login"),
+    accountType: text("account_type"),
+    installedByUserId: text("installed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("githubAppInstallations_organizationId_idx").on(
+      table.organizationId
+    ),
+    index("githubAppInstallations_installationId_idx").on(
+      table.installationId
+    ),
+    uniqueIndex("githubAppInstallations_org_installation_uidx").on(
+      table.organizationId,
+      table.installationId
+    ),
+  ]
+);
+
 export const githubIntegrations = pgTable(
   "github_integrations",
   {
@@ -236,6 +269,9 @@ export const githubIntegrations = pgTable(
     displayName: text("display_name").notNull(),
     encryptedToken: text("encrypted_token"),
     authType: text("auth_type").default("legacy").notNull(),
+    githubAppInstallationRecordId: text(
+      "github_app_installation_record_id"
+    ).references(() => githubAppInstallations.id, { onDelete: "set null" }),
     githubAppInstallationId: text("github_app_installation_id"),
     githubAppInstallationAccountLogin: text(
       "github_app_installation_account_login"
@@ -591,6 +627,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   members: many(members),
   invitations: many(invitations),
+  githubAppInstallations: many(githubAppInstallations),
   githubIntegrations: many(githubIntegrations),
   linearIntegrations: many(linearIntegrations),
   chatAttachments: many(chatAttachments),
@@ -636,6 +673,7 @@ export const organizationsRelations = relations(
   ({ many, one }) => ({
     members: many(members),
     invitations: many(invitations),
+    githubAppInstallations: many(githubAppInstallations),
     githubIntegrations: many(githubIntegrations),
     linearIntegrations: many(linearIntegrations),
     brandSettings: many(brandSettings),
@@ -670,6 +708,21 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
+export const githubAppInstallationsRelations = relations(
+  githubAppInstallations,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [githubAppInstallations.organizationId],
+      references: [organizations.id],
+    }),
+    installedByUser: one(users, {
+      fields: [githubAppInstallations.installedByUserId],
+      references: [users.id],
+    }),
+    repositories: many(githubIntegrations),
+  })
+);
+
 export const githubIntegrationsRelations = relations(
   githubIntegrations,
   ({ one, many }) => ({
@@ -680,6 +733,10 @@ export const githubIntegrationsRelations = relations(
     createdByUser: one(users, {
       fields: [githubIntegrations.createdByUserId],
       references: [users.id],
+    }),
+    githubAppInstallation: one(githubAppInstallations, {
+      fields: [githubIntegrations.githubAppInstallationRecordId],
+      references: [githubAppInstallations.id],
     }),
     outputs: many(repositoryOutputs),
   })

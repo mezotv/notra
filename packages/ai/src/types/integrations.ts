@@ -17,6 +17,19 @@ export interface GitHubAppRepository {
   };
 }
 
+export interface CreateGitHubAppIntegrationsForInstallationParams {
+  organizationId: string;
+  userId: string;
+  installationId: string;
+}
+
+export interface GitHubAppInstallationRecord {
+  id: string;
+  installationId: string;
+  accountLogin: string | null;
+  accountType: string | null;
+}
+
 export interface ValidateRepositoryBranchExistsParams {
   owner: string;
   repo: string;

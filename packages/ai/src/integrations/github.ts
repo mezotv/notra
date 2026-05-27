@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
+  githubAppInstallations,
   githubIntegrations,
   members,
   repositoryOutputs,
@@ -15,6 +16,7 @@ import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type {
   AddRepositoryParams,
   ConfigureOutputParams,
+  CreateGitHubAppIntegrationsForInstallationParams,
   CreateGitHubIntegrationParams,
   ErrorWithStatus,
   GitHubAppRepository,
@@ -376,11 +378,9 @@ export async function listGitHubAppRepositories(installationId: string) {
   }));
 }
 
-export async function createGitHubAppIntegrationsForInstallation(params: {
-  organizationId: string;
-  userId: string;
-  installationId: string;
-}) {
+export async function createGitHubAppIntegrationsForInstallation(
+  params: CreateGitHubAppIntegrationsForInstallationParams
+) {
   const hasAccess = await validateUserOrgAccess(
     params.userId,
     params.organizationId
@@ -413,6 +413,39 @@ export async function createGitHubAppIntegrationsForInstallation(params: {
   );
 
   const createdIds = await db.transaction(async (tx) => {
+    const [installationRecord] = await tx
+      .insert(githubAppInstallations)
+      .values({
+        id: nanoid(),
+        organizationId: params.organizationId,
+        installationId: params.installationId,
+        accountLogin,
+        accountType,
+        installedByUserId: params.userId,
+      })
+      .onConflictDoUpdate({
+        target: [
+          githubAppInstallations.organizationId,
+          githubAppInstallations.installationId,
+        ],
+        set: {
+          accountLogin,
+          accountType,
+          installedByUserId: params.userId,
+          updatedAt: new Date(),
+        },
+      })
+      .returning({
+        id: githubAppInstallations.id,
+        installationId: githubAppInstallations.installationId,
+        accountLogin: githubAppInstallations.accountLogin,
+        accountType: githubAppInstallations.accountType,
+      });
+
+    if (!installationRecord) {
+      throw new Error("Failed to upsert GitHub App installation");
+    }
+
     const ids: string[] = [];
     const installedRepositoryIds = repositories.map((repo) => repo.id);
 
@@ -470,6 +503,7 @@ export async function createGitHubAppIntegrationsForInstallation(params: {
         await tx
           .update(githubIntegrations)
           .set({
+            githubAppInstallationRecordId: installationRecord.id,
             authType: "github_app",
             githubAppInstallationId: params.installationId,
             githubAppInstallationAccountLogin: accountLogin,
@@ -496,6 +530,7 @@ export async function createGitHubAppIntegrationsForInstallation(params: {
           createdByUserId: params.userId,
           encryptedToken: null,
           authType: "github_app",
+          githubAppInstallationRecordId: installationRecord.id,
           githubAppInstallationId: params.installationId,
           githubAppInstallationAccountLogin: accountLogin,
           githubAppInstallationAccountType: accountType,
