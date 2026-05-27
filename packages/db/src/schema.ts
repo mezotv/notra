@@ -243,12 +243,8 @@ export const githubAppInstallations = pgTable(
       .notNull(),
   },
   (table) => [
-    index("githubAppInstallations_organizationId_idx").on(
-      table.organizationId
-    ),
-    index("githubAppInstallations_installationId_idx").on(
-      table.installationId
-    ),
+    index("githubAppInstallations_organizationId_idx").on(table.organizationId),
+    index("githubAppInstallations_installationId_idx").on(table.installationId),
     uniqueIndex("githubAppInstallations_org_installation_uidx").on(
       table.organizationId,
       table.installationId
