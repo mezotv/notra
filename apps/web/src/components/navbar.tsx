@@ -479,7 +479,7 @@ export function Navbar() {
 
                 <div
                   aria-hidden="true"
-                  className="-z-10 pointer-events-none invisible absolute top-full left-0"
+                  className="-z-10 pointer-events-none invisible absolute top-full left-0 size-0 overflow-hidden"
                 >
                   {groups.map((group) => (
                     <div

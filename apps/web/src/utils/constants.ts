@@ -13,6 +13,7 @@ export const RSS_FEED_DESCRIPTION =
 export const RSS_FEED_LANGUAGE = "en-us";
 
 export const BLOG_INDEX_PATH = "/blog";
+export const BLOG_AUTHOR_PATH = "/blog/author";
 export const CHANGELOG_INDEX_PATH = "/changelog";
 export const NOTRA_CHANGELOG_INDEX_PATH = "/changelog/notra";
 export const SITEMAP_PATH = "/sitemap.xml";
@@ -24,12 +25,14 @@ export const MARBLE_CHANGELOG_CATEGORY_SLUG = "changelog";
 export const MARBLE_DEFAULT_POST_LIMIT = 100;
 
 export const MARBLE_CACHE_KEYS = {
-  blogPosts: "marble-blog-posts-v3",
+  blogPosts: "marble-blog-posts-v4",
+  blogAuthors: "marble-blog-authors-v1",
   changelogPosts: "marble-changelog-posts-v2",
 } as const;
 
 export const MARBLE_CACHE_TAGS = {
   blogPosts: "marble-blog-posts",
+  blogAuthors: "marble-blog-authors",
   changelogPosts: "marble-changelog-posts",
 } as const;
 
@@ -37,6 +40,7 @@ export const MARBLE_POST_CACHE_TAG_PREFIX = "marble-post";
 
 export const MARBLE_REVALIDATE_SECONDS = {
   blogPosts: 3000,
+  blogAuthors: 3000,
   changelogPosts: 300,
 } as const;
 

@@ -1,10 +1,39 @@
+import type { IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
+
+export interface NotraAuthorSocial {
+  url: string;
+  platform: string;
+}
 
 export interface NotraBlogAuthor {
   id: string;
   name: string;
   image: string | null;
+  slug: string;
+  bio: string | null;
   role: string | null;
+  socials: NotraAuthorSocial[];
+}
+
+export interface NotraAuthor extends NotraBlogAuthor {
+  postCount: number;
+}
+
+export interface BlogAuthorPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export interface BlogCopyArticleProps {
+  markdown: string;
+  markdownUrl: string;
+  title: string;
+}
+
+export interface BlogCopyArticleItemProps {
+  icon: ReactNode;
+  title: string;
+  description: string;
 }
 
 export interface NotraBlogPost {
@@ -64,4 +93,11 @@ export interface BlogJsonLdInput {
 
 export interface BlogArticleProps {
   html: string;
+}
+
+export interface ResolvedSocialLink {
+  label: string;
+  displayUrl: string;
+  url: string;
+  icon: IconSvgElement;
 }

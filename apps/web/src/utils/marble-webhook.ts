@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
+  BLOG_AUTHOR_PATH,
   BLOG_INDEX_PATH,
   CHANGELOG_INDEX_PATH,
   LLMS_FULL_PATH,
@@ -85,6 +86,15 @@ function revalidateChangelogContent(slug?: string) {
   }
 }
 
+function revalidateAuthorContent(slug?: string) {
+  revalidateTag(MARBLE_CACHE_TAGS.blogAuthors, { expire: 0 });
+  revalidateBlogContent();
+
+  if (slug) {
+    revalidatePath(`${BLOG_AUTHOR_PATH}/${slug}`);
+  }
+}
+
 export function verifyMarbleSignature(
   secret: string,
   signatureHeader: string,
@@ -142,6 +152,18 @@ export function revalidateMarbleContent({
 
 export function handleMarbleWebhookEvent(payload: MarbleWebhookPayload) {
   const event = payload.event ?? payload.type;
+
+  if (event?.startsWith("author.")) {
+    revalidateAuthorContent(payload.data?.slug);
+
+    return {
+      event,
+      revalidated: true,
+      revalidatedAuthors: true,
+      slug: payload.data?.slug ?? null,
+      now: Date.now(),
+    };
+  }
 
   if (!event?.startsWith("post.")) {
     return {

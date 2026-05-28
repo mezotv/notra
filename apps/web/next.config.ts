@@ -116,7 +116,7 @@ const nextConfig: NextConfig = {
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' databuddy.cc *.databuddy.cc va.vercel-scripts.com",
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self'",
-            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc avatars.githubusercontent.com cdn.contentport.io images.marblecms.com",
+            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc avatars.githubusercontent.com cdn.contentport.io images.marblecms.com media.marblecms.com",
             "connect-src 'self' databuddy.cc *.databuddy.cc *.inth.app *.c15t.com *.c15t.dev",
             "frame-src 'none'",
             "frame-ancestors 'none'",
@@ -143,6 +143,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.marblecms.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.marblecms.com",
       },
     ],
   },

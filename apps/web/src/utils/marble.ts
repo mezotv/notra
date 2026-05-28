@@ -1,5 +1,5 @@
 import { Marble } from "@usemarble/sdk";
-import { ContentFormat, type Post } from "@usemarble/sdk/models";
+import { type Author, ContentFormat, type Post } from "@usemarble/sdk/models";
 import {
   MARBLE_DEFAULT_POST_LIMIT,
   MARBLE_POST_CACHE_TAG_PREFIX,
@@ -89,4 +89,25 @@ export async function listMarblePublishedPosts({
       markdown: markdownById.get(post.id) ?? "",
     }))
   );
+}
+
+export async function listMarbleAuthors(): Promise<Author[]> {
+  const { apiKey } = getMarbleConfig();
+
+  if (!apiKey) {
+    return [];
+  }
+
+  const client = createMarbleClient(apiKey);
+  const iterator = await client.authors.list({
+    limit: MARBLE_DEFAULT_POST_LIMIT,
+  });
+
+  const authors: Author[] = [];
+
+  for await (const page of iterator) {
+    authors.push(...page.result.authors);
+  }
+
+  return authors;
 }
