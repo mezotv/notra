@@ -48,6 +48,27 @@ const PROTOCOL_PREFIX_REGEX = /^https?:\/\//;
 const WWW_PREFIX_REGEX = /^www\./;
 const TRAILING_SLASH_REGEX = /\/$/;
 
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+function toSafeUrl(rawUrl: string): string | null {
+  const trimmed = rawUrl.trim();
+  const candidate = PROTOCOL_PREFIX_REGEX.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(candidate);
+
+    if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
 function toDisplayUrl(url: string) {
   return url
     .replace(PROTOCOL_PREFIX_REGEX, "")
@@ -57,14 +78,20 @@ function toDisplayUrl(url: string) {
 
 export function resolveSocialLink(
   social: NotraAuthorSocial
-): ResolvedSocialLink {
+): ResolvedSocialLink | null {
+  const safeUrl = toSafeUrl(social.url);
+
+  if (!safeUrl) {
+    return null;
+  }
+
   const platform =
     SOCIAL_PLATFORMS[social.platform.toLowerCase()] ?? FALLBACK_PLATFORM;
 
   return {
     label: platform.label,
     icon: platform.icon,
-    url: social.url,
-    displayUrl: toDisplayUrl(social.url),
+    url: safeUrl,
+    displayUrl: toDisplayUrl(safeUrl),
   };
 }

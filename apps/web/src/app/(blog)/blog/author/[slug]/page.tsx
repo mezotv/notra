@@ -76,7 +76,9 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
   const posts = await listNotraBlogPosts();
   const authorPosts = filterPostsByAuthorSlug(posts, slug);
   const timelineItems = buildBlogTimelineItems(authorPosts);
-  const socials = author.socials.map(resolveSocialLink);
+  const socials = author.socials
+    .map(resolveSocialLink)
+    .filter((social) => social !== null);
   const postLabel = authorPosts.length === 1 ? "post" : "posts";
 
   return (
