@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChangelogHtmlArticle } from "@/components/changelog-html-article";
+import { BlogArticle } from "@/components/blog-article";
 import { formatBlogDate, getNotraBlogPostBySlug } from "@/utils/blog";
 import {
   buildBlogArticleJsonLd,
   buildBlogFaqJsonLd,
 } from "@/utils/blog-jsonld";
+import { highlightCodeBlocks } from "@/utils/highlight-code";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -59,6 +60,7 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
 
   const url = `${SITE_URL}/blog/${slug}`;
   const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
+  const content = await highlightCodeBlocks(post.content);
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -101,7 +103,7 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
         {formatBlogDate(post.createdAt)}
       </time>
 
-      <ChangelogHtmlArticle html={post.content} />
+      <BlogArticle html={content} />
     </>
   );
 }

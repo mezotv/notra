@@ -53,3 +53,7 @@ export interface BlogJsonLdInput {
   url: string;
   imageUrl: string;
 }
+
+export interface BlogArticleProps {
+  html: string;
+}
