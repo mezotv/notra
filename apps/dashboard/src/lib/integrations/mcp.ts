@@ -1,6 +1,14 @@
-import type { AddMcpServerFormValues } from "@/schemas/integrations";
+import {
+  type AddMcpServerFormValues,
+  MCP_URL_PROTOCOL_REGEX,
+} from "@/schemas/integrations";
 
 export const MCP_ACCENT_COLOR = "#9333EA";
+
+export function buildMcpUrl(raw: string) {
+  const host = raw.trim().replace(MCP_URL_PROTOCOL_REGEX, "");
+  return host ? `https://${host}` : "";
+}
 
 export function getMcpFaviconUrl(url: string | null | undefined) {
   if (!url) {
@@ -50,10 +58,17 @@ export function getMcpFormErrorMessage(error: unknown) {
 }
 
 export function buildMcpHeaders(
-  value: Pick<AddMcpServerFormValues, "headerName" | "headerValue">
+  value: Pick<AddMcpServerFormValues, "headers">
 ) {
-  const name = value.headerName.trim();
-  const headerValue = value.headerValue.trim();
+  const headers: Record<string, string> = {};
 
-  return name && headerValue ? { [name]: headerValue } : {};
+  for (const row of value.headers) {
+    const name = row.name.trim();
+    const headerValue = row.value.trim();
+    if (name && headerValue) {
+      headers[name] = headerValue;
+    }
+  }
+
+  return headers;
 }

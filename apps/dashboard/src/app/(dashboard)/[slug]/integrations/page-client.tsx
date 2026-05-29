@@ -9,37 +9,26 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
-import { McpServersSection } from "@/components/integrations/mcp-servers-section";
-import { InstalledIntegrationCard } from "@/components/integrations-card";
+import { McpIntegrationCard } from "@/components/integrations/mcp-integration-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
+import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import {
-  ALL_INTEGRATIONS,
-  EXTENSION_SOURCES,
-  INPUT_SOURCES,
-  INTEGRATION_CATEGORY_MAP,
-  OUTPUT_SOURCES,
-} from "@/lib/integrations/catalog";
+  INTEGRATION_CATEGORY_TABS,
+  INTEGRATION_TAB_VALUES,
+} from "@/lib/integrations/constants";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { IntegrationType } from "@/schemas/integrations";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
-import { IntegrationsPageSkeleton } from "./skeleton";
-
-const TAB_VALUES = ["all", "installed"] as const;
 
 const AddIntegrationDialog = dynamic(
   () =>
@@ -78,7 +67,6 @@ const IntegrationCard = memo(function IntegrationCard({
   const isActive = activeCount > 0;
   const [dialogOpen, setDialogOpen] = useState(false);
   const showConnectButton = integration.available;
-  const showComingSoon = !integration.available;
   const showGitHubDialog = integration.available && integration.id === "github";
   const showLinearDialog = integration.available && integration.id === "linear";
 
@@ -115,26 +103,6 @@ const IntegrationCard = memo(function IntegrationCard({
             >
               {integration.connectLabel ?? "Connect"}
             </Button>
-          ) : null}
-          {showComingSoon ? (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    disabled
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Coming Soon
-                  </Button>
-                }
-              />
-              <TooltipContent>Coming soon</TooltipContent>
-            </Tooltip>
           ) : null}
         </div>
       }
@@ -195,10 +163,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
-    parseAsStringLiteral(TAB_VALUES).withDefault("all")
+    parseAsStringLiteral(INTEGRATION_TAB_VALUES).withDefault("all")
   );
 
-  const { data, isPending, refetch } = useQuery(
+  const { data, isPending } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
       input: { organizationId: organizationId ?? "" },
       enabled: !!organizationId,
@@ -206,22 +174,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
 
   const integrations = data?.integrations;
-  const installedCount = data?.count ?? 0;
-
-  // Single-pass partitioning of integrations by category
-  const { inputIntegrations, outputIntegrations } = useMemo(() => {
-    const input: Integration[] = [];
-    const output: Integration[] = [];
-    for (const i of integrations ?? []) {
-      const category = INTEGRATION_CATEGORY_MAP[i.type];
-      if (category === "input") {
-        input.push(i);
-      } else if (category === "output") {
-        output.push(i);
-      }
-    }
-    return { inputIntegrations: input, outputIntegrations: output };
-  }, [integrations]);
 
   if (!organizationId) {
     return (
@@ -262,21 +214,27 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
         <Tabs onValueChange={(value) => setActiveTab(value)} value={activeTab}>
           <TabsList variant="line">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="installed">
-              Installed{installedCount > 0 ? ` (${installedCount})` : ""}
-            </TabsTrigger>
+            {INTEGRATION_CATEGORY_TABS.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <TabsContent value="all">
-            <div className="space-y-8 pt-4">
-              <section>
-                <h2 className="mb-4 font-semibold text-lg">Input Sources</h2>
-                <p className="mb-4 text-muted-foreground text-sm">
-                  Connect services to pull data and updates from
-                </p>
-                <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {INPUT_SOURCES.map((integration) => (
+          {INTEGRATION_CATEGORY_TABS.map((tab) => {
+            const items =
+              tab.value === "all"
+                ? ALL_INTEGRATIONS
+                : ALL_INTEGRATIONS.filter((i) => i.category === tab.value);
+            const showMcpCard =
+              tab.value === "all" ||
+              tab.value === "input" ||
+              tab.value === "output";
+
+            return (
+              <TabsContent key={tab.value} value={tab.value}>
+                <div className="grid gap-3 pt-4 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {items.map((integration) => (
                     <IntegrationCard
                       activeCount={
                         integrationsByType?.[integration.id]?.length || 0
@@ -286,132 +244,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                       key={integration.id}
                     />
                   ))}
-                </div>
-              </section>
-
-              <section>
-                <h2 className="mb-4 font-semibold text-lg">Output Sources</h2>
-                <p className="mb-4 text-muted-foreground text-sm">
-                  Connect services to publish and sync content to
-                </p>
-                <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {OUTPUT_SOURCES.map((integration) => (
-                    <IntegrationCard
-                      activeCount={
-                        integrationsByType?.[integration.id]?.length || 0
-                      }
-                      integration={integration}
-                      isPending={isPending}
-                      key={integration.id}
+                  {showMcpCard ? (
+                    <McpIntegrationCard
+                      organizationId={organizationId}
+                      organizationSlug={organizationSlug}
                     />
-                  ))}
+                  ) : null}
                 </div>
-              </section>
-
-              <section>
-                <h2 className="mb-4 font-semibold text-lg">Extensions</h2>
-                <p className="mb-4 text-muted-foreground text-sm">
-                  Use Notra from your favorite tools and launchers
-                </p>
-                <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {EXTENSION_SOURCES.map((integration) => (
-                    <IntegrationCard
-                      activeCount={
-                        integrationsByType?.[integration.id]?.length || 0
-                      }
-                      integration={integration}
-                      isPending={isPending}
-                      key={integration.id}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              <McpServersSection organizationId={organizationId} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="installed">
-            <div className="space-y-8 pt-4">
-              {isPending && <IntegrationsPageSkeleton />}
-              {!isPending &&
-                inputIntegrations.length === 0 &&
-                outputIntegrations.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <p className="text-muted-foreground">
-                      No integrations installed yet.
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      Switch to the "All" tab to browse and connect
-                      integrations.
-                    </p>
-                  </div>
-                )}
-              {!isPending &&
-                (inputIntegrations.length > 0 ||
-                  outputIntegrations.length > 0) && (
-                  <>
-                    {inputIntegrations.length > 0 && (
-                      <section>
-                        <h2 className="mb-4 font-semibold text-lg">
-                          Input Sources
-                        </h2>
-                        <p className="mb-4 text-muted-foreground text-sm">
-                          Connected services pulling data and updates
-                        </p>
-                        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                          {inputIntegrations.map((integration) => {
-                            const config = ALL_INTEGRATIONS.find(
-                              (i) => i.id === integration.type
-                            );
-                            return (
-                              <InstalledIntegrationCard
-                                accentColor={config?.accentColor}
-                                icon={config?.icon}
-                                integration={integration}
-                                key={integration.id}
-                                onUpdate={() => refetch()}
-                                organizationId={organizationId}
-                                organizationSlug={organizationSlug}
-                              />
-                            );
-                          })}
-                        </div>
-                      </section>
-                    )}
-
-                    {outputIntegrations.length > 0 && (
-                      <section>
-                        <h2 className="mb-4 font-semibold text-lg">
-                          Output Sources
-                        </h2>
-                        <p className="mb-4 text-muted-foreground text-sm">
-                          Connected services publishing and syncing content
-                        </p>
-                        <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                          {outputIntegrations.map((integration) => {
-                            const config = ALL_INTEGRATIONS.find(
-                              (i) => i.id === integration.type
-                            );
-                            return (
-                              <InstalledIntegrationCard
-                                accentColor={config?.accentColor}
-                                icon={config?.icon}
-                                integration={integration}
-                                key={integration.id}
-                                onUpdate={() => refetch()}
-                                organizationId={organizationId}
-                                organizationSlug={organizationSlug}
-                              />
-                            );
-                          })}
-                        </div>
-                      </section>
-                    )}
-                  </>
-                )}
-            </div>
-          </TabsContent>
+              </TabsContent>
+            );
+          })}
         </Tabs>
       </div>
     </PageContainer>

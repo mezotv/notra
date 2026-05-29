@@ -1,6 +1,11 @@
 "use client";
 
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Kbd } from "@notra/ui/components/ui/kbd";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { AddIntegrationDialog } from "@/components/integrations/add-integration-dialog";
@@ -17,6 +22,10 @@ interface PageClientProps {
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
+  const organizationId = organization?.id ?? "";
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
   const {
     data: response,
@@ -24,15 +33,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     refetch,
   } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
-      input: { organizationId: organization?.id ?? "" },
-      enabled: !!organization?.id,
+      input: { organizationId },
+      enabled: !!organizationId,
     })
   );
 
   const integrations = response?.integrations.filter(
     (i) => i.type === "github"
   );
-  const showLoading = !!organization?.id && isLoadingIntegrations && !response;
+  const showLoading = !!organizationId && isLoadingIntegrations && !response;
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -46,12 +55,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               Manage your GitHub repository integrations and outputs
             </p>
           </div>
-          <AddIntegrationDialog
-            onSuccess={() => refetch()}
-            organizationId={organization?.id ?? ""}
-            organizationSlug={organizationSlug}
-            trigger={<Button variant="default">Add Github Integration</Button>}
-          />
+          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+            Connect GitHub
+            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+          </Button>
         </div>
 
         <div>
@@ -60,16 +68,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           {!showLoading && (!integrations || integrations.length === 0) ? (
             <EmptyState
               action={
-                <AddIntegrationDialog
-                  onSuccess={() => refetch()}
-                  organizationId={organization?.id ?? ""}
-                  organizationSlug={organizationSlug}
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      Add Github Integration
-                    </Button>
-                  }
-                />
+                <Button
+                  onClick={() => setDialogOpen(true)}
+                  size="sm"
+                  variant="outline"
+                >
+                  Connect GitHub
+                </Button>
               }
               description="Add your first GitHub integration to get started."
               title="No integrations yet"
@@ -83,7 +88,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   integration={integration}
                   key={integration.id}
                   onUpdate={() => refetch()}
-                  organizationId={organization?.id ?? ""}
+                  organizationId={organizationId}
                   organizationSlug={organizationSlug}
                 />
               ))}
@@ -91,6 +96,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           ) : null}
         </div>
       </div>
+
+      <AddIntegrationDialog
+        onOpenChange={setDialogOpen}
+        onSuccess={() => refetch()}
+        open={dialogOpen}
+        organizationId={organizationId}
+        organizationSlug={organizationSlug}
+      />
     </PageContainer>
   );
 }

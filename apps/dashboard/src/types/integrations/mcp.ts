@@ -24,7 +24,7 @@ export interface McpServerCardProps {
   onDelete?: (id: string) => void;
 }
 
-export interface McpServersSectionProps {
-  className?: string;
+export interface McpIntegrationCardProps {
   organizationId: string;
+  organizationSlug: string;
 }

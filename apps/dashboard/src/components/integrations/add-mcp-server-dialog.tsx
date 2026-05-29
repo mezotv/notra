@@ -5,6 +5,8 @@ import {
   ArrowDown01Icon,
   CheckmarkCircle02Icon,
   CpuIcon,
+  MinusSignIcon,
+  PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -38,15 +40,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
   buildMcpHeaders,
+  buildMcpUrl,
   getMcpFormErrorMessage,
 } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type AddMcpServerFormValues,
   addMcpServerFormFieldsSchema,
-  addMcpServerFormSchema,
   type CreateMcpServerRequest,
   createMcpServerRequestSchema,
+  MAX_MCP_HEADERS,
+  mcpHeaderNameSchema,
+  mcpHeaderValueSchema,
   testMcpServerRequestSchema,
 } from "@/schemas/integrations";
 import type {
@@ -65,7 +70,10 @@ export function AddMcpServerDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
-  const [authOpen, setAuthOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(true);
+  const [headerRowIds, setHeaderRowIds] = useState<string[]>(() => [
+    crypto.randomUUID(),
+  ]);
   const [testStatus, setTestStatus] = useState<McpTestStatus>("idle");
   const [testMessage, setTestMessage] = useState("");
   const openRef = useRef(open);
@@ -79,7 +87,7 @@ export function AddMcpServerDialog({
     const payload = createMcpServerRequestSchema.safeParse({
       organizationId,
       name: value.name,
-      url: value.url,
+      url: buildMcpUrl(value.url),
       description: value.description.trim() || null,
       headers: buildMcpHeaders(value),
     });
@@ -99,11 +107,10 @@ export function AddMcpServerDialog({
       name: "",
       url: "",
       description: "",
-      headerName: "",
-      headerValue: "",
+      headers: [{ name: "", value: "" }],
     },
     validators: {
-      onSubmit: addMcpServerFormSchema,
+      onSubmit: addMcpServerFormFieldsSchema,
     },
     onSubmit: ({ value }) => {
       submitCreate(value);
@@ -113,7 +120,8 @@ export function AddMcpServerDialog({
   const resetForm = () => {
     testRequestIdRef.current += 1;
     form.reset();
-    setAuthOpen(false);
+    setAuthOpen(true);
+    setHeaderRowIds([crypto.randomUUID()]);
     setTestStatus("idle");
     setTestMessage("");
   };
@@ -132,17 +140,10 @@ export function AddMcpServerDialog({
       requestId: number;
       value: AddMcpServerFormValues;
     }) => {
-      const formValue = addMcpServerFormSchema.safeParse(value);
-      if (!formValue.success) {
-        throw new Error(
-          formValue.error.issues[0]?.message ?? "Check the MCP server details"
-        );
-      }
-
       const payload = testMcpServerRequestSchema.safeParse({
         organizationId,
-        url: formValue.data.url,
-        headers: buildMcpHeaders(formValue.data),
+        url: buildMcpUrl(value.url),
+        headers: buildMcpHeaders(value),
       });
 
       if (!payload.success) {
@@ -216,7 +217,7 @@ export function AddMcpServerDialog({
       {triggerElement}
       <ResponsiveDialogContent className="sm:max-w-[32.5rem]">
         <ResponsiveDialogHeader>
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
               <HugeiconsIcon className="size-5" icon={CpuIcon} />
             </span>
@@ -242,7 +243,11 @@ export function AddMcpServerDialog({
           <div className="space-y-4 py-4">
             <form.Field
               name="name"
-              validators={{ onChange: addMcpServerFormFieldsSchema.shape.name }}
+              validators={{
+                onBlur: addMcpServerFormFieldsSchema.shape.name,
+                onChange: addMcpServerFormFieldsSchema.shape.name,
+                onSubmit: addMcpServerFormFieldsSchema.shape.name,
+              }}
             >
               {(field) => (
                 <Field>
@@ -266,22 +271,37 @@ export function AddMcpServerDialog({
 
             <form.Field
               name="url"
-              validators={{ onChange: addMcpServerFormFieldsSchema.shape.url }}
+              validators={{
+                onBlur: addMcpServerFormFieldsSchema.shape.url,
+                onChange: addMcpServerFormFieldsSchema.shape.url,
+                onSubmit: addMcpServerFormFieldsSchema.shape.url,
+              }}
             >
               {(field) => (
                 <Field>
                   <FieldLabel htmlFor="mcp-url">Server URL</FieldLabel>
-                  <Input
-                    autoComplete="off"
-                    id="mcp-url"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      field.handleChange(event.target.value);
-                      invalidateTestResult();
-                    }}
-                    placeholder="https://example.com/mcp"
-                    value={field.state.value}
-                  />
+                  <div
+                    className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
+                  >
+                    <label
+                      className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
+                      htmlFor="mcp-url"
+                    >
+                      https://
+                    </label>
+                    <input
+                      autoComplete="off"
+                      className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                      id="mcp-url"
+                      onBlur={field.handleBlur}
+                      onChange={(event) => {
+                        field.handleChange(event.target.value);
+                        invalidateTestResult();
+                      }}
+                      placeholder="mcp.example.com/mcp"
+                      value={field.state.value}
+                    />
+                  </div>
                   {field.state.meta.errors[0] ? (
                     <p className="text-destructive text-sm">
                       {getMcpFormErrorMessage(field.state.meta.errors[0])}
@@ -305,9 +325,6 @@ export function AddMcpServerDialog({
                 <Field>
                   <FieldLabel htmlFor="mcp-description">
                     Use case description
-                    <span className="font-normal text-muted-foreground text-xs">
-                      (optional)
-                    </span>
                   </FieldLabel>
                   <Textarea
                     id="mcp-description"
@@ -327,77 +344,129 @@ export function AddMcpServerDialog({
             </form.Field>
 
             <Collapsible onOpenChange={setAuthOpen} open={authOpen}>
-              <CollapsibleTrigger className="flex w-full items-center gap-2 font-medium text-sm">
-                <HugeiconsIcon
-                  className={`size-4 transition-transform ${authOpen ? "" : "-rotate-90"}`}
-                  icon={ArrowDown01Icon}
-                />
-                Headers
-                <span className="font-normal text-muted-foreground text-xs">
-                  (optional)
-                </span>
-              </CollapsibleTrigger>
+              <div className="flex items-center gap-2">
+                <CollapsibleTrigger className="flex flex-1 items-center gap-2 font-medium text-sm">
+                  <HugeiconsIcon
+                    className={`size-4 transition-transform ${authOpen ? "" : "-rotate-90"}`}
+                    icon={ArrowDown01Icon}
+                  />
+                  Headers
+                  <form.Subscribe
+                    selector={(state) => state.values.headers.length}
+                  >
+                    {(count) => (
+                      <span className="font-normal text-muted-foreground text-xs">
+                        ({count}/{MAX_MCP_HEADERS})
+                      </span>
+                    )}
+                  </form.Subscribe>
+                </CollapsibleTrigger>
+                <form.Field mode="array" name="headers">
+                  {(headersField) => (
+                    <Button
+                      aria-label="Add header"
+                      disabled={
+                        headersField.state.value.length >= MAX_MCP_HEADERS
+                      }
+                      onClick={() => {
+                        headersField.pushValue({ name: "", value: "" });
+                        setHeaderRowIds((ids) => [...ids, crypto.randomUUID()]);
+                        setAuthOpen(true);
+                      }}
+                      size="icon-sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+                    </Button>
+                  )}
+                </form.Field>
+              </div>
               <CollapsibleContent>
-                <div className="grid gap-2 pt-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-                  <form.Field
-                    name="headerName"
-                    validators={{
-                      onChange: addMcpServerFormFieldsSchema.shape.headerName,
-                    }}
-                  >
-                    {(field) => (
-                      <Field>
-                        <Input
-                          autoComplete="off"
-                          id="mcp-header-name"
-                          onBlur={field.handleBlur}
-                          onChange={(event) => {
-                            field.handleChange(event.target.value);
-                            invalidateTestResult();
-                          }}
-                          placeholder="Authorization"
-                          value={field.state.value}
-                        />
-                        {field.state.meta.errors[0] ? (
-                          <p className="text-destructive text-sm">
-                            {getMcpFormErrorMessage(field.state.meta.errors[0])}
-                          </p>
-                        ) : null}
-                      </Field>
-                    )}
-                  </form.Field>
-                  <form.Field
-                    name="headerValue"
-                    validators={{
-                      onChange: addMcpServerFormFieldsSchema.shape.headerValue,
-                    }}
-                  >
-                    {(field) => (
-                      <Field>
-                        <Input
-                          autoComplete="off"
-                          id="mcp-header-value"
-                          onBlur={field.handleBlur}
-                          onChange={(event) => {
-                            field.handleChange(event.target.value);
-                            invalidateTestResult();
-                          }}
-                          placeholder="Bearer token"
-                          type="password"
-                          value={field.state.value}
-                        />
-                        {field.state.meta.errors[0] ? (
-                          <p className="text-destructive text-sm">
-                            {getMcpFormErrorMessage(field.state.meta.errors[0])}
-                          </p>
-                        ) : null}
-                      </Field>
-                    )}
-                  </form.Field>
-                </div>
-                <FieldDescription className="mt-2">
-                  Stored encrypted and sent when Notra calls your server.
-                </FieldDescription>
+                <form.Field mode="array" name="headers">
+                  {(headersField) => (
+                    <div className="space-y-2 pt-2">
+                      {headersField.state.value.map((_, index) => (
+                        <div
+                          className="flex items-start gap-2"
+                          key={headerRowIds[index]}
+                        >
+                          <form.Field
+                            name={`headers[${index}].name`}
+                            validators={{ onChange: mcpHeaderNameSchema }}
+                          >
+                            {(field) => (
+                              <Field className="flex-1">
+                                <Input
+                                  autoComplete="off"
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => {
+                                    field.handleChange(event.target.value);
+                                    invalidateTestResult();
+                                  }}
+                                  placeholder="Authorization"
+                                  value={field.state.value}
+                                />
+                                {field.state.meta.errors[0] ? (
+                                  <p className="text-destructive text-sm">
+                                    {getMcpFormErrorMessage(
+                                      field.state.meta.errors[0]
+                                    )}
+                                  </p>
+                                ) : null}
+                              </Field>
+                            )}
+                          </form.Field>
+                          <form.Field
+                            name={`headers[${index}].value`}
+                            validators={{ onChange: mcpHeaderValueSchema }}
+                          >
+                            {(field) => (
+                              <Field className="flex-[1.3]">
+                                <Input
+                                  autoComplete="off"
+                                  onBlur={field.handleBlur}
+                                  onChange={(event) => {
+                                    field.handleChange(event.target.value);
+                                    invalidateTestResult();
+                                  }}
+                                  placeholder="Bearer token"
+                                  type="password"
+                                  value={field.state.value}
+                                />
+                                {field.state.meta.errors[0] ? (
+                                  <p className="text-destructive text-sm">
+                                    {getMcpFormErrorMessage(
+                                      field.state.meta.errors[0]
+                                    )}
+                                  </p>
+                                ) : null}
+                              </Field>
+                            )}
+                          </form.Field>
+                          <Button
+                            aria-label="Remove header"
+                            onClick={() => {
+                              headersField.removeValue(index);
+                              setHeaderRowIds((ids) =>
+                                ids.filter((_id, idx) => idx !== index)
+                              );
+                              invalidateTestResult();
+                            }}
+                            size="icon"
+                            type="button"
+                            variant="outline"
+                          >
+                            <HugeiconsIcon
+                              className="size-4"
+                              icon={MinusSignIcon}
+                            />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </form.Field>
               </CollapsibleContent>
             </Collapsible>
 
@@ -439,8 +508,12 @@ export function AddMcpServerDialog({
             <Button
               className="sm:mr-auto"
               disabled={testMutation.isPending}
-              onClick={(event) => {
+              onClick={async (event) => {
                 event.preventDefault();
+                const urlErrors = await form.validateField("url", "change");
+                if (urlErrors.length > 0) {
+                  return;
+                }
                 const requestId = testRequestIdRef.current + 1;
                 testRequestIdRef.current = requestId;
                 testMutation.mutate({
