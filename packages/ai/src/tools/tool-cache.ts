@@ -10,6 +10,11 @@ interface MemoryCacheEntry {
   value: unknown;
 }
 
+interface RedisCacheEnvelope {
+  __notraToolCache: true;
+  value: unknown;
+}
+
 const memoryCache = new Map<string, MemoryCacheEntry>();
 
 function normalizeKeyPart(value: string) {
@@ -91,12 +96,11 @@ async function readCachedValue(
 ): Promise<{ hit: true; value: unknown } | { hit: false }> {
   if (redis) {
     const value = await redis.get<unknown>(key);
-    if (value !== null) {
-      return { hit: true, value };
+    if (isRedisCacheEnvelope(value)) {
+      return { hit: true, value: value.value };
     }
 
-    const exists = await redis.exists(key);
-    return exists > 0 ? { hit: true, value: null } : { hit: false };
+    return value === null ? { hit: false } : { hit: true, value };
   }
 
   const entry = memoryCache.get(key);
@@ -119,7 +123,9 @@ async function writeCachedValue(
   redis?: Redis | null
 ) {
   if (redis) {
-    await redis.set(key, value, { ex: Math.ceil(ttlMs / 1000) });
+    await redis.set(key, createRedisCacheEnvelope(value), {
+      ex: Math.ceil(ttlMs / 1000),
+    });
     return;
   }
 
@@ -128,6 +134,23 @@ async function writeCachedValue(
     expiresAt: Date.now() + ttlMs,
     value,
   });
+}
+
+function createRedisCacheEnvelope(value: unknown): RedisCacheEnvelope {
+  return {
+    __notraToolCache: true,
+    value,
+  };
+}
+
+function isRedisCacheEnvelope(value: unknown): value is RedisCacheEnvelope {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "__notraToolCache" in value &&
+    value.__notraToolCache === true &&
+    "value" in value
+  );
 }
 
 function pruneExpiredMemoryCacheEntries() {
