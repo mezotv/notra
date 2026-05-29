@@ -10,6 +10,7 @@ import {
   createGetLinearIssuesTool,
   createGetLinearProjectsTool,
 } from "@notra/ai/tools/linear";
+import { createMcpRuntimeToolSet } from "@notra/ai/tools/mcp";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
   createWebSearchTool,
@@ -36,10 +37,10 @@ export interface BuildToolSetDeps {
   skipTools?: boolean;
 }
 
-export function buildToolSet(
+export async function buildToolSet(
   params: BuildToolSetParams,
   deps?: BuildToolSetDeps
-): ToolSet {
+): Promise<ToolSet> {
   if (deps?.skipTools) {
     return { tools: {}, descriptions: [] };
   }
@@ -158,7 +159,11 @@ export function buildToolSet(
     );
   }
 
-  return { tools, descriptions };
+  const mcpToolSet = await createMcpRuntimeToolSet(organizationId);
+  Object.assign(tools, mcpToolSet.tools);
+  descriptions.push(...mcpToolSet.descriptions);
+
+  return { tools, descriptions, cleanup: mcpToolSet.cleanup };
 }
 
 function getGitHubRepoList(integrations: ValidatedIntegration[]): string {

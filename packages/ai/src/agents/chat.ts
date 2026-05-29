@@ -3,6 +3,7 @@ import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { exampleTool } from "@notra/ai/tools/example";
+import { createMcpRuntimeToolSet } from "@notra/ai/tools/mcp";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
   createWebSearchTool,
@@ -42,6 +43,15 @@ export async function createChatAgent(
 
   const isDev = process.env.NODE_ENV === "development";
   const hasWebSearch = isWebSearchAvailable();
+  const mcpToolSet = await createMcpRuntimeToolSet(organizationId);
+  let mcpCleanupStarted = false;
+  const cleanupMcpTools = async () => {
+    if (mcpCleanupStarted) {
+      return;
+    }
+    mcpCleanupStarted = true;
+    await mcpToolSet.cleanup();
+  };
 
   const selectionContext = context.selectedText
     ? `\n\nThe user has selected the following text (focus changes on this area):\n"""\n${context.selectedText}\n"""`
@@ -51,7 +61,7 @@ export async function createChatAgent(
     ? `\n\nBrand identity context:\n${context.brandContext}`
     : "";
 
-  return new ToolLoopAgent({
+  const agent = new ToolLoopAgent({
     model: modelWithMemory,
     providerOptions: withGatewayAutomaticCaching(),
     tools: {
@@ -62,6 +72,7 @@ export async function createChatAgent(
       ...(hasWebSearch
         ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() }
         : {}),
+      ...mcpToolSet.tools,
       ...(isDev ? { example: exampleTool() } : {}),
     },
     instructions: `You are a content editor assistant for a markdown document. You have two response modes depending on what the user asks.${brandContext}
@@ -69,7 +80,7 @@ export async function createChatAgent(
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
 
-${hasWebSearch ? `## Available Capabilities\n- ${WEB_SEARCH_TOOL_DESCRIPTION}\n` : ""}
+${hasWebSearch || mcpToolSet.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...mcpToolSet.descriptions.map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.
@@ -107,8 +118,79 @@ Triggers: the user wants the document changed (rewrite, shorten, tone change, cl
     }
 ${selectionContext}`,
     stopWhen: stepCountIs(15),
+    async onFinish() {
+      await cleanupMcpTools();
+    },
     experimental_telemetry: buildExperimentalTelemetry(
       context.telemetryMetadata
     ),
   });
+
+  const generate = agent.generate.bind(agent);
+  agent.generate = async (parameters) => {
+    try {
+      return await generate(parameters);
+    } catch (error) {
+      await cleanupMcpTools();
+      throw error;
+    }
+  };
+
+  const stream = agent.stream.bind(agent);
+  agent.stream = async (parameters) => {
+    try {
+      const result = await stream(parameters);
+      const toUIMessageStream = result.toUIMessageStream.bind(result);
+      result.toUIMessageStream = ((options) =>
+        withCleanupOnReadableStreamClose(
+          toUIMessageStream(options),
+          cleanupMcpTools
+        )) as typeof result.toUIMessageStream;
+      return result;
+    } catch (error) {
+      await cleanupMcpTools();
+      throw error;
+    }
+  };
+
+  return agent;
+}
+
+function withCleanupOnReadableStreamClose<TStream extends ReadableStream>(
+  stream: TStream,
+  cleanup: () => Promise<void>
+): TStream {
+  const reader = stream.getReader();
+  let cleanupPromise: Promise<void> | null = null;
+  const cleanupOnce = () => {
+    cleanupPromise ??= cleanup();
+    return cleanupPromise;
+  };
+
+  return new ReadableStream({
+    async pull(controller) {
+      let result: ReadableStreamReadResult<unknown>;
+      try {
+        result = await reader.read();
+      } catch (error) {
+        await cleanupOnce();
+        throw error;
+      }
+
+      const { done, value } = result;
+      if (done) {
+        await cleanupOnce();
+        controller.close();
+        return;
+      }
+      controller.enqueue(value);
+    },
+    async cancel(reason) {
+      try {
+        await reader.cancel(reason);
+      } finally {
+        await cleanupOnce();
+      }
+    },
+  }) as TStream;
 }

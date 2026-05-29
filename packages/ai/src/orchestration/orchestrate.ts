@@ -1,3 +1,4 @@
+import { hasEnabledMcpServerIntegrations } from "@notra/ai/integrations/mcp";
 import { createModel } from "@notra/ai/model";
 import type { AILogTarget } from "@notra/ai/observability";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
@@ -69,7 +70,8 @@ export async function orchestrateChat(
 
   const hasGitHub = hasEnabledGitHubIntegration(validatedIntegrations);
   const hasLinear = hasEnabledLinearIntegration(validatedIntegrations);
-  const hasIntegrationContext = hasGitHub || hasLinear;
+  const hasMcp = await hasEnabledMcpServerIntegrations(organizationId);
+  const hasIntegrationContext = hasGitHub || hasLinear || hasMcp;
 
   const lastUserMessage = getLastUserMessage(messages);
   const hasAttachments = lastUserMessageHasNonTextParts(messages);
@@ -91,7 +93,7 @@ export async function orchestrateChat(
     log
   );
 
-  const { tools, descriptions } = buildToolSet(
+  const { tools, descriptions, cleanup } = await buildToolSet(
     {
       organizationId,
       currentMarkdown,
@@ -135,9 +137,26 @@ export async function orchestrateChat(
     stopWhen: stepCountIs(maxSteps),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     async onFinish({ totalUsage }) {
+      try {
+        await cleanup?.();
+      } catch (error) {
+        console.error("[Chat MCP Cleanup Error]", {
+          organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
       await deps?.onUsage?.(totalUsage, routingDecision.model);
     },
     onError({ error }) {
+      cleanup?.().catch((cleanupError) => {
+        console.error("[Chat MCP Cleanup Error]", {
+          organizationId,
+          error:
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError),
+        });
+      });
       console.error("[Chat Stream Error]", {
         organizationId,
         model: routingDecision.model,

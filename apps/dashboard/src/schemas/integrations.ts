@@ -343,3 +343,95 @@ export const deleteResourceResponseSchema = z.object({
 export type DeleteResourceResponse = z.infer<
   typeof deleteResourceResponseSchema
 >;
+
+const mcpUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Server URL is required")
+  .max(2048, "Server URL is too long")
+  .pipe(z.url({ protocol: /^https$/ }));
+
+export const mcpHeaderNameSchema = z
+  .string()
+  .trim()
+  .max(128, "Header name is too long")
+  .regex(/^[!#$%&'*+\-.^_`|~0-9A-Za-z]*$/, "Invalid header name");
+
+export const mcpHeaderValueSchema = z
+  .string()
+  .trim()
+  .max(4096, "Header value is too long");
+
+export const mcpHeadersSchema = z
+  .record(
+    mcpHeaderNameSchema.pipe(z.string().min(1, "Header name is required")),
+    mcpHeaderValueSchema.pipe(z.string().min(1, "Header value is required"))
+  )
+  .default({});
+
+export const addMcpServerFormFieldsSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120),
+  url: mcpUrlSchema,
+  description: z.string().trim().max(1000, "Description is too long"),
+  headerName: mcpHeaderNameSchema,
+  headerValue: mcpHeaderValueSchema,
+});
+
+export const addMcpServerFormSchema = addMcpServerFormFieldsSchema.refine(
+  (value) =>
+    (value.headerName === "" && value.headerValue === "") ||
+    (value.headerName !== "" && value.headerValue !== ""),
+  {
+    message: "Header name and value are required together",
+    path: ["headerValue"],
+  }
+);
+export type AddMcpServerFormValues = z.infer<typeof addMcpServerFormSchema>;
+
+export const createMcpServerRequestSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  name: addMcpServerFormFieldsSchema.shape.name,
+  url: addMcpServerFormFieldsSchema.shape.url,
+  description: z
+    .string()
+    .trim()
+    .max(1000, "Description is too long")
+    .optional()
+    .nullable(),
+  headers: mcpHeadersSchema,
+});
+export type CreateMcpServerRequest = z.infer<
+  typeof createMcpServerRequestSchema
+>;
+
+export const updateMcpServerBodySchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    url: mcpUrlSchema.optional(),
+    description: z.string().trim().max(1000).optional().nullable(),
+    headers: mcpHeadersSchema.optional(),
+    enabled: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.url !== undefined ||
+      value.description !== undefined ||
+      value.headers !== undefined ||
+      value.enabled !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
+export type UpdateMcpServerBody = z.infer<typeof updateMcpServerBodySchema>;
+
+export const mcpServerIdParamSchema = z.object({
+  serverId: z.string().min(1, "MCP server ID is required"),
+});
+
+export const testMcpServerRequestSchema = createMcpServerRequestSchema.pick({
+  organizationId: true,
+  url: true,
+  headers: true,
+});
+export type TestMcpServerRequest = z.infer<typeof testMcpServerRequestSchema>;

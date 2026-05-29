@@ -296,6 +296,42 @@ export const linearIntegrations = pgTable(
   ]
 );
 
+export const mcpServerIntegrations = pgTable(
+  "mcp_server_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    description: text("description"),
+    encryptedHeaders: jsonb("encrypted_headers")
+      .$type<Record<string, string>>()
+      .default(sql`'{}'::jsonb`)
+      .notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("mcpServerIntegrations_organizationId_idx").on(table.organizationId),
+    index("mcpServerIntegrations_createdByUserId_idx").on(
+      table.createdByUserId
+    ),
+    uniqueIndex("mcpServerIntegrations_org_name_uidx").on(
+      table.organizationId,
+      table.name
+    ),
+  ]
+);
+
 export const contentTriggers = pgTable(
   "content_triggers",
   {
@@ -584,6 +620,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   invitations: many(invitations),
   githubIntegrations: many(githubIntegrations),
   linearIntegrations: many(linearIntegrations),
+  mcpServerIntegrations: many(mcpServerIntegrations),
   chatAttachments: many(chatAttachments),
 }));
 
@@ -629,6 +666,7 @@ export const organizationsRelations = relations(
     invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
     linearIntegrations: many(linearIntegrations),
+    mcpServerIntegrations: many(mcpServerIntegrations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -685,6 +723,20 @@ export const linearIntegrationsRelations = relations(
     }),
     createdByUser: one(users, {
       fields: [linearIntegrations.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const mcpServerIntegrationsRelations = relations(
+  mcpServerIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [mcpServerIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [mcpServerIntegrations.createdByUserId],
       references: [users.id],
     }),
   })

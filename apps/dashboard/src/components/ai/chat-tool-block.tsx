@@ -49,6 +49,19 @@ function getArray(value: unknown, key: string): unknown[] | undefined {
   return Array.isArray(entry) ? entry : undefined;
 }
 
+function getRecord(
+  value: unknown,
+  key: string
+): Record<string, unknown> | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const entry = (value as Record<string, unknown>)[key];
+  return entry && typeof entry === "object" && !Array.isArray(entry)
+    ? (entry as Record<string, unknown>)
+    : undefined;
+}
+
 interface ToolCopy {
   verbs: readonly [present: string, past: string];
   noun: string;
@@ -325,19 +338,52 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   },
 };
 
+const MCP_TOOL_NAME_REGEX = /^mcp_/;
+const UNDERSCORE_REGEX = /_+/g;
+
+function formatMcpToolName(toolName: string): string {
+  const label = toolName
+    .replace(MCP_TOOL_NAME_REGEX, "")
+    .replace(UNDERSCORE_REGEX, " ")
+    .trim();
+  return label || "MCP tool";
+}
+
+function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
+  const notraMetadata = getRecord(toolMetadata, "notra");
+  const label = getString(notraMetadata, "label");
+  if (label) {
+    return label;
+  }
+
+  const serverName = getString(notraMetadata, "serverName");
+  const mcpToolName = getString(notraMetadata, "toolName");
+  if (serverName && mcpToolName) {
+    return `${serverName} · ${mcpToolName}`;
+  }
+
+  return formatMcpToolName(toolName);
+}
+
 function getSubtitle({
   toolName,
   input,
   output,
   isStreaming,
+  toolMetadata,
 }: {
   toolName: string;
   input: unknown;
   output: unknown;
   isStreaming: boolean;
+  toolMetadata?: unknown;
 }): string {
   const copy = TOOL_COPY[toolName];
   if (!copy) {
+    if (MCP_TOOL_NAME_REGEX.test(toolName)) {
+      const label = getMcpToolLabel(toolName, toolMetadata);
+      return isStreaming ? `Calling ${label}` : `Called ${label}`;
+    }
     return isStreaming ? `Running ${toolName}` : `Ran ${toolName}`;
   }
   const subtitle = copy.subtitle?.({ input, output, isStreaming });
@@ -441,6 +487,8 @@ interface ChatToolBlockProps {
   state: string;
   input?: unknown;
   output?: unknown;
+  isMcp?: boolean;
+  toolMetadata?: unknown;
 }
 
 export function ChatToolBlock({
@@ -448,11 +496,19 @@ export function ChatToolBlock({
   state,
   input,
   output,
+  isMcp = false,
+  toolMetadata,
 }: ChatToolBlockProps) {
   const [isOpen, setIsOpen] = useState(false);
   const isStreaming =
     state === "input-streaming" || state === "input-available";
-  const subtitle = getSubtitle({ toolName, input, output, isStreaming });
+  const subtitle = getSubtitle({
+    toolName,
+    input,
+    output,
+    isStreaming,
+    toolMetadata,
+  });
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasDetails = hasInput || hasOutput;
@@ -463,6 +519,11 @@ export function ChatToolBlock({
         className="group flex w-full min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
         disabled={!hasDetails}
       >
+        {isMcp ? (
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
+            MCP
+          </span>
+        ) : null}
         {isStreaming ? (
           <Shimmer
             as="span"

@@ -1557,6 +1557,44 @@ function StandaloneChatPageClient({
       );
     }
 
+    if (part.type === "dynamic-tool") {
+      const toolPart = part as {
+        type: string;
+        toolName: string;
+        state: string;
+        toolCallId: string;
+        input?: unknown;
+        output?: unknown;
+        errorText?: string;
+        toolMetadata?: unknown;
+      };
+
+      if (
+        toolPart.state === "input-streaming" ||
+        toolPart.state === "input-available" ||
+        toolPart.state === "output-available" ||
+        toolPart.state === "output-error"
+      ) {
+        return (
+          <ChatToolBlock
+            input={toolPart.input}
+            isMcp={toolPart.toolName.startsWith("mcp_")}
+            key={toolPart.toolCallId}
+            output={
+              toolPart.state === "output-error"
+                ? { error: toolPart.errorText }
+                : toolPart.output
+            }
+            state={toolPart.state}
+            toolMetadata={toolPart.toolMetadata}
+            toolName={toolPart.toolName}
+          />
+        );
+      }
+
+      return null;
+    }
+
     if (part.type.startsWith("tool-")) {
       const toolPart = part as {
         type: string;
@@ -1565,6 +1603,7 @@ function StandaloneChatPageClient({
         input?: { title?: string; markdown?: string };
         output?: { postId?: string; status?: string };
         approval?: { id: string; approved?: boolean; reason?: string };
+        toolMetadata?: unknown;
       };
       const toolName = toolPart.type.replace("tool-", "");
 
@@ -1752,6 +1791,7 @@ function StandaloneChatPageClient({
             key={toolPart.toolCallId}
             output={toolPart.output}
             state={toolPart.state}
+            toolMetadata={toolPart.toolMetadata}
             toolName={toolName}
           />
         );

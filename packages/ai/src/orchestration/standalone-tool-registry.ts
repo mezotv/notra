@@ -11,6 +11,7 @@ import {
   createGetLinearIssuesTool,
   createGetLinearProjectsTool,
 } from "@notra/ai/tools/linear";
+import { createMcpRuntimeToolSet } from "@notra/ai/tools/mcp";
 import {
   createGetAvailableIntegrationsTool,
   createGetBrandIdentityTool,
@@ -59,10 +60,10 @@ interface BuildStandaloneToolSetDeps {
   resolveLinearContext?: ResolveLinearIntegrationContext;
 }
 
-export function buildStandaloneToolSet(
+export async function buildStandaloneToolSet(
   params: BuildStandaloneToolSetParams,
   deps?: BuildStandaloneToolSetDeps
-): ToolSet {
+): Promise<ToolSet> {
   const { organizationId, validatedIntegrations, postResult } = params;
   const hasWebSearch = isWebSearchAvailable();
 
@@ -188,7 +189,11 @@ export function buildStandaloneToolSet(
     );
   }
 
-  return { tools, descriptions };
+  const mcpToolSet = await createMcpRuntimeToolSet(organizationId);
+  Object.assign(tools, mcpToolSet.tools);
+  descriptions.push(...mcpToolSet.descriptions);
+
+  return { tools, descriptions, cleanup: mcpToolSet.cleanup };
 }
 
 function getGitHubRepoList(integrations: ValidatedIntegration[]): string {

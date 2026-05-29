@@ -22,6 +22,7 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
+import { McpServersSection } from "@/components/integrations/mcp-servers-section";
 import { InstalledIntegrationCard } from "@/components/integrations-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -325,6 +326,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   ))}
                 </div>
               </section>
+
+              <McpServersSection organizationId={organizationId} />
             </div>
           </TabsContent>
 

@@ -26,9 +26,19 @@ import {
   getLinearIntegrationsByOrganization,
   updateLinearIntegration,
 } from "@notra/ai/integrations/linear";
+import {
+  createMcpServerIntegration,
+  deleteMcpServerIntegration,
+  getMcpServerIntegrationById,
+  getMcpServerIntegrationsByOrganization,
+  serializeMcpServerIntegration,
+  testMcpServerConnection,
+  updateMcpServerIntegration,
+} from "@notra/ai/integrations/mcp";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
+import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
@@ -40,12 +50,16 @@ import {
   addRepositoryRequestSchema,
   configureOutputBodySchema,
   createGitHubIntegrationRequestSchema,
+  createMcpServerRequestSchema,
   type IntegrationType,
   integrationIdParamSchema,
+  mcpServerIdParamSchema,
   outputIdParamSchema,
   repositoryIdParamSchema,
+  testMcpServerRequestSchema,
   triggerTargetsSchema,
   updateIntegrationBodySchema,
+  updateMcpServerBodySchema,
   updateOutputBodySchema,
   updateRepositoryBodySchema,
 } from "@/schemas/integrations";
@@ -77,6 +91,19 @@ const repositoryInputSchema = organizationIdInputSchema.extend({
 const outputInputSchema = organizationIdInputSchema.extend({
   outputId: outputIdParamSchema.shape.outputId,
 });
+
+const mcpServerInputSchema = organizationIdInputSchema.extend({
+  serverId: mcpServerIdParamSchema.shape.serverId,
+});
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "23505"
+  );
+}
 
 function serializeRepositoryOutput(output: {
   id: string;
@@ -847,6 +874,128 @@ export const integrationsRouter = {
         await deleteLinearIntegration(input.integrationId);
 
         return { success: true };
+      }),
+  },
+  mcp: {
+    list: baseProcedure
+      .input(organizationIdInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integrations = await getMcpServerIntegrationsByOrganization(
+          input.organizationId
+        );
+
+        return {
+          servers: integrations.map(serializeMcpServerIntegration),
+          count: integrations.length,
+        };
+      }),
+    create: baseProcedure
+      .input(createMcpServerRequestSchema)
+      .handler(async ({ context, input }) => {
+        const auth = await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        try {
+          const integration = await createMcpServerIntegration({
+            organizationId: input.organizationId,
+            userId: auth.user.id,
+            name: input.name,
+            url: input.url,
+            description: input.description ?? null,
+            headers: input.headers,
+          });
+
+          return serializeMcpServerIntegration(integration);
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            throw conflict("An MCP server with this name already exists");
+          }
+          if (error instanceof PublicUrlValidationError) {
+            throw badRequest(error.message);
+          }
+
+          throw internalServerError("Failed to create MCP server", error);
+        }
+      }),
+    update: baseProcedure
+      .input(mcpServerInputSchema.and(updateMcpServerBodySchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const existing = await getMcpServerIntegrationById(input.serverId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("MCP server not found");
+        }
+
+        let updated:
+          | Awaited<ReturnType<typeof updateMcpServerIntegration>>
+          | undefined;
+        try {
+          updated = await updateMcpServerIntegration(input.serverId, {
+            name: input.name,
+            url: input.url,
+            description: input.description,
+            headers: input.headers,
+            enabled: input.enabled,
+          });
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            throw conflict("An MCP server with this name already exists");
+          }
+          if (error instanceof PublicUrlValidationError) {
+            throw badRequest(error.message);
+          }
+
+          throw internalServerError("Failed to update MCP server", error);
+        }
+
+        if (!updated) {
+          throw notFound("MCP server not found");
+        }
+
+        return serializeMcpServerIntegration(updated);
+      }),
+    delete: baseProcedure
+      .input(mcpServerInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const existing = await getMcpServerIntegrationById(input.serverId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("MCP server not found");
+        }
+
+        await deleteMcpServerIntegration(input.serverId);
+
+        return { success: true };
+      }),
+    test: baseProcedure
+      .input(testMcpServerRequestSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        return testMcpServerConnection({
+          url: input.url,
+          headers: input.headers,
+        });
       }),
   },
 };

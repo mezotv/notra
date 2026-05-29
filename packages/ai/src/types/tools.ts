@@ -1,7 +1,9 @@
+import type { MCPClient } from "@ai-sdk/mcp";
 import type {
   AgentDataPointSettings,
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
+import type { Tool } from "ai";
 
 export interface CommitWindow {
   since: string;
@@ -97,3 +99,11 @@ export interface BuildLinearDataToolsOptions {
   dataPointSettings?: AgentDataPointSettings;
   resolveContext?: ResolveLinearIntegrationContext;
 }
+
+export interface McpRuntimeToolSet {
+  tools: Record<string, Tool>;
+  descriptions: string[];
+  cleanup: () => Promise<void>;
+}
+
+export type McpRuntimeTool = Awaited<ReturnType<MCPClient["tools"]>>[string];

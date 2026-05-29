@@ -253,6 +253,13 @@
       "when": 1778358496565,
       "tag": "0035_fine_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1780056912610,
+      "tag": "0036_lovely_wallop",
+      "breakpoints": true
     }
   ]
 }

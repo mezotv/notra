@@ -14,7 +14,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/react": "^3.0.160",
+    "@ai-sdk/react": "3.0.192",
     "@aws-sdk/client-s3": "^3.990.0",
     "@aws-sdk/s3-request-presigner": "^3.990.0",
     "@c15t/nextjs": "^2.0.4",
@@ -59,7 +59,7 @@
     "@upstash/workflow": "^1.1.0",
     "@vercel/analytics": "^1.6.1",
     "@vercel/otel": "^2.1.2",
-    "ai": "^6.0.168",
+    "ai": "6.0.190",
     "autumn-js": "^1.2.7",
     "better-auth": "^1.5.5",
     "clsx": "^2.1.1",

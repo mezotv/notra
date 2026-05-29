@@ -1,3 +1,4 @@
+import { hasEnabledMcpServerIntegrations } from "@notra/ai/integrations/mcp";
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
@@ -85,6 +86,10 @@ export async function orchestrateStandaloneChat(
     !hasNonTextPartsOnLatestTurn && isTrivialMessage(lastUserMessage);
   const mentionsSkills = SKILLS_MENTION_REGEX.test(lastUserMessage);
   const isAuto = requestedModel === undefined || requestedModel === "auto";
+  const hasMcp =
+    isAuto && !(hasGitHub || hasLinear)
+      ? await hasEnabledMcpServerIntegrations(organizationId)
+      : false;
 
   let selectedModel: string;
   let autoThinkingLevel: AutoThinkingLevel | undefined;
@@ -97,7 +102,7 @@ export async function orchestrateStandaloneChat(
   if (isAuto) {
     const decision = await routeMessage(
       lastUserMessage,
-      hasGitHub || hasLinear,
+      hasGitHub || hasLinear || hasMcp,
       log,
       hasNonTextPartsOnLatestTurn,
       telemetryMetadata
@@ -142,9 +147,9 @@ export async function orchestrateStandaloneChat(
 
   const postResult: PostToolsResult = {};
 
-  const { tools, descriptions } = isSimpleNoTools
+  const { tools, descriptions, cleanup } = isSimpleNoTools
     ? { tools: {}, descriptions: [] as string[] }
-    : buildStandaloneToolSet(
+    : await buildStandaloneToolSet(
         {
           organizationId,
           validatedIntegrations,
@@ -213,6 +218,12 @@ export async function orchestrateStandaloneChat(
       }
     },
     onAbort({ steps }) {
+      cleanup?.().catch((error) => {
+        console.error("[Standalone Chat MCP Cleanup Error]", {
+          organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
       console.log("[Standalone Chat Stream Aborted]", {
         organizationId,
         model: routingDecision.model,
@@ -220,9 +231,19 @@ export async function orchestrateStandaloneChat(
       });
     },
     async onFinish({ totalUsage }) {
+      await cleanup?.();
       await deps?.onUsage?.(totalUsage, routingDecision.model);
     },
     onError({ error }) {
+      cleanup?.().catch((cleanupError) => {
+        console.error("[Standalone Chat MCP Cleanup Error]", {
+          organizationId,
+          error:
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : String(cleanupError),
+        });
+      });
       console.error("[Standalone Chat Stream Error]", {
         organizationId,
         model: routingDecision.model,

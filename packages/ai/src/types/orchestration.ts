@@ -86,6 +86,7 @@ export interface RoutingResult {
 export interface ToolSet {
   tools: Record<string, import("ai").Tool>;
   descriptions: string[];
+  cleanup?: () => Promise<void>;
 }
 
 export interface RepoContext {
