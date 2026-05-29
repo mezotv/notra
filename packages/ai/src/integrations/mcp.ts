@@ -188,13 +188,21 @@ export async function deleteMcpServerIntegration(integrationId: string) {
     .where(eq(mcpServerIntegrations.id, integrationId));
 }
 
-export async function getDecryptedMcpHeaders(integrationId: string) {
+export async function getDecryptedMcpHeaders(
+  integrationId: string,
+  organizationId: string
+) {
   const [integration] = await db
     .select({
       encryptedHeaders: mcpServerIntegrations.encryptedHeaders,
     })
     .from(mcpServerIntegrations)
-    .where(eq(mcpServerIntegrations.id, integrationId))
+    .where(
+      and(
+        eq(mcpServerIntegrations.id, integrationId),
+        eq(mcpServerIntegrations.organizationId, organizationId)
+      )
+    )
     .limit(1);
 
   return decryptHeaders(integration?.encryptedHeaders ?? {});
@@ -233,8 +241,7 @@ export async function testMcpServerConnection(input: {
     return {
       success: false,
       status: null,
-      message:
-        error instanceof Error ? error.message : "Could not reach the server",
+      message: "Could not reach the MCP server. Check the URL and headers.",
     };
   } finally {
     await client.close().catch(() => undefined);

@@ -161,98 +161,116 @@ export async function orchestrateStandaloneChat(
         }
       );
 
-  const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
-  const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
+  try {
+    const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
+    const linearContext = getLinearContextFromIntegrations(
+      validatedIntegrations
+    );
 
-  const systemPrompt = isSimpleNoTools
-    ? MINIMAL_STANDALONE_PROMPT
-    : getStandaloneChatPrompt({
-        repoContext,
-        linearContext,
-        toolDescriptions: descriptions,
-        hasGitHubEnabled: hasGitHub,
-        hasLinearEnabled: hasLinear,
-        timezone,
-      });
+    const systemPrompt = isSimpleNoTools
+      ? MINIMAL_STANDALONE_PROMPT
+      : getStandaloneChatPrompt({
+          repoContext,
+          linearContext,
+          toolDescriptions: descriptions,
+          hasGitHubEnabled: hasGitHub,
+          hasLinearEnabled: hasLinear,
+          timezone,
+        });
 
-  const effectiveThinkingLevel = autoThinkingLevel ?? thinkingLevel;
-  const effectiveEnableThinking =
-    enableThinking && (autoThinkingLevel ? autoThinkingLevel !== "off" : true);
+    const effectiveThinkingLevel = autoThinkingLevel ?? thinkingLevel;
+    const effectiveEnableThinking =
+      enableThinking &&
+      (autoThinkingLevel ? autoThinkingLevel !== "off" : true);
 
-  const providerOptions = isSimpleNoTools
-    ? undefined
-    : getThinkingProviderOptions(
-        routingDecision.model,
-        effectiveEnableThinking,
-        effectiveThinkingLevel
-      );
+    const providerOptions = isSimpleNoTools
+      ? undefined
+      : getThinkingProviderOptions(
+          routingDecision.model,
+          effectiveEnableThinking,
+          effectiveThinkingLevel
+        );
 
-  const messagesForModel = await expandTextFileParts(
-    stripIncompleteToolParts(
-      isSimpleNoTools ? trimTrivialHistory(messages) : messages
-    )
-  );
+    const messagesForModel = await expandTextFileParts(
+      stripIncompleteToolParts(
+        isSimpleNoTools ? trimTrivialHistory(messages) : messages
+      )
+    );
 
-  const modelMessages = await convertToModelMessages(messagesForModel, {
-    ignoreIncompleteToolCalls: true,
-  });
+    const modelMessages = await convertToModelMessages(messagesForModel, {
+      ignoreIncompleteToolCalls: true,
+    });
 
-  let firstChunkFired = false;
-  const stream = streamText({
-    model,
-    system: systemPrompt,
-    messages: modelMessages,
-    tools,
-    stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
-    experimental_transform: smoothStream(),
-    providerOptions: withGatewayAutomaticCaching(providerOptions),
-    abortSignal,
-    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
-    onChunk({ chunk }) {
-      if (firstChunkFired) {
-        return;
-      }
-      if (chunk.type === "text-delta" || chunk.type === "reasoning-delta") {
-        firstChunkFired = true;
-        deps?.onFirstChunk?.();
-      }
-    },
-    onAbort({ steps }) {
-      cleanup?.().catch((error) => {
-        console.error("[Standalone Chat MCP Cleanup Error]", {
+    let firstChunkFired = false;
+    const stream = streamText({
+      model,
+      system: systemPrompt,
+      messages: modelMessages,
+      tools,
+      stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
+      experimental_transform: smoothStream(),
+      providerOptions: withGatewayAutomaticCaching(providerOptions),
+      abortSignal,
+      experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+      onChunk({ chunk }) {
+        if (firstChunkFired) {
+          return;
+        }
+        if (chunk.type === "text-delta" || chunk.type === "reasoning-delta") {
+          firstChunkFired = true;
+          deps?.onFirstChunk?.();
+        }
+      },
+      onAbort({ steps }) {
+        cleanup?.().catch((error) => {
+          console.error("[Standalone Chat MCP Cleanup Error]", {
+            organizationId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        });
+        console.log("[Standalone Chat Stream Aborted]", {
           organizationId,
+          model: routingDecision.model,
+          completedSteps: steps.length,
+        });
+      },
+      async onFinish({ totalUsage }) {
+        await cleanup?.();
+        await deps?.onUsage?.(totalUsage, routingDecision.model);
+      },
+      onError({ error }) {
+        cleanup?.().catch((cleanupError) => {
+          console.error("[Standalone Chat MCP Cleanup Error]", {
+            organizationId,
+            error:
+              cleanupError instanceof Error
+                ? cleanupError.message
+                : String(cleanupError),
+          });
+        });
+        console.error("[Standalone Chat Stream Error]", {
+          organizationId,
+          model: routingDecision.model,
           error: error instanceof Error ? error.message : String(error),
         });
-      });
-      console.log("[Standalone Chat Stream Aborted]", {
-        organizationId,
-        model: routingDecision.model,
-        completedSteps: steps.length,
-      });
-    },
-    async onFinish({ totalUsage }) {
-      await cleanup?.();
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
-    },
-    onError({ error }) {
-      cleanup?.().catch((cleanupError) => {
-        console.error("[Standalone Chat MCP Cleanup Error]", {
-          organizationId,
-          error:
-            cleanupError instanceof Error
-              ? cleanupError.message
-              : String(cleanupError),
-        });
-      });
-      console.error("[Standalone Chat Stream Error]", {
-        organizationId,
-        model: routingDecision.model,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    },
-  });
+      },
+    });
 
-  return { stream, routingDecision };
+    return { stream, routingDecision };
+  } catch (error) {
+    try {
+      await cleanup?.();
+    } catch (cleanupError) {
+      console.error("[Standalone Chat MCP Cleanup Error]", {
+        organizationId,
+        error:
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError),
+      });
+    }
+    throw error;
+  }
 }
 
 function lastUserMessageHasNonTextParts(messages: UIMessage[]): boolean {

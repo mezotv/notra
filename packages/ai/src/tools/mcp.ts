@@ -4,6 +4,7 @@ import {
   getMcpServerIntegrationsByOrganization,
 } from "@notra/ai/integrations/mcp";
 import type { McpRuntimeTool, McpRuntimeToolSet } from "@notra/ai/types/tools";
+import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import type { Tool } from "ai";
 
 const MCP_ID_PREFIX_REGEX = /^mcp_/;
@@ -27,7 +28,11 @@ export async function createMcpRuntimeToolSet(
 
   for (const integration of integrations) {
     try {
-      const headers = await getDecryptedMcpHeaders(integration.id);
+      await assertPublicHttpUrlResolution(integration.url);
+      const headers = await getDecryptedMcpHeaders(
+        integration.id,
+        organizationId
+      );
       const client = await createMCPClient({
         clientName: "notra",
         version: "0.0.1",
@@ -61,11 +66,13 @@ export async function createMcpRuntimeToolSet(
       }
 
       const prefix = createToolNamePrefix(integration);
+      const runtimeToolNames: string[] = [];
       for (const [toolName, toolDefinition] of Object.entries(serverTools)) {
         const runtimeToolName = createUniqueToolName(
           `${prefix}_${sanitizeToolName(toolName)}`,
           usedToolNames
         );
+        runtimeToolNames.push(runtimeToolName);
         const displayName = getToolDisplayName(toolName, toolDefinition);
         tools[runtimeToolName] = {
           ...toolDefinition,
@@ -83,7 +90,9 @@ export async function createMcpRuntimeToolSet(
         };
       }
 
-      descriptions.push(formatMcpCapabilityDescription(integration, toolNames));
+      descriptions.push(
+        formatMcpCapabilityDescription(integration, runtimeToolNames)
+      );
     } catch (error) {
       console.error("[MCP Tool Load Error]", {
         integrationId: integration.id,

@@ -91,7 +91,12 @@ async function readCachedValue(
 ): Promise<{ hit: true; value: unknown } | { hit: false }> {
   if (redis) {
     const value = await redis.get<unknown>(key);
-    return value === null ? { hit: false } : { hit: true, value };
+    if (value !== null) {
+      return { hit: true, value };
+    }
+
+    const exists = await redis.exists(key);
+    return exists > 0 ? { hit: true, value: null } : { hit: false };
   }
 
   const entry = memoryCache.get(key);
