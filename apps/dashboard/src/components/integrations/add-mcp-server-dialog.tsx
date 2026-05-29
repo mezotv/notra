@@ -70,7 +70,7 @@ export function AddMcpServerDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
-  const [authOpen, setAuthOpen] = useState(true);
+  const [authOpen, setAuthOpen] = useState(false);
   const [headerRowIds, setHeaderRowIds] = useState<string[]>(() => [
     crypto.randomUUID(),
   ]);
@@ -120,7 +120,7 @@ export function AddMcpServerDialog({
   const resetForm = () => {
     testRequestIdRef.current += 1;
     form.reset();
-    setAuthOpen(true);
+    setAuthOpen(false);
     setHeaderRowIds([crypto.randomUUID()]);
     setTestStatus("idle");
     setTestMessage("");
