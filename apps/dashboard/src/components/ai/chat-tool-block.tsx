@@ -364,7 +364,7 @@ function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
   const serverName = getString(notraMetadata, "serverName");
   const mcpToolName = getString(notraMetadata, "toolName");
   if (serverName && mcpToolName) {
-    return `${serverName} · ${mcpToolName}`;
+    return `${serverName} - ${mcpToolName}`;
   }
 
   return formatMcpToolName(toolName);

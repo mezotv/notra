@@ -76,7 +76,7 @@ export async function createMcpRuntimeToolSet(
         const displayName = getToolDisplayName(toolName, toolDefinition);
         tools[runtimeToolName] = {
           ...toolDefinition,
-          title: `${integration.name} · ${displayName}`,
+          title: `${integration.name} - ${displayName}`,
           metadata: {
             ...(toolDefinition.metadata ?? {}),
             notra: {
@@ -84,7 +84,7 @@ export async function createMcpRuntimeToolSet(
               serverId: integration.id,
               serverName: integration.name,
               toolName,
-              label: `${integration.name} · ${displayName}`,
+              label: `${integration.name} - ${displayName}`,
             },
           },
         };
