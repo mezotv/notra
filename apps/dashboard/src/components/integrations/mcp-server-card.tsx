@@ -16,6 +16,11 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   DropdownMenu,
@@ -26,7 +31,7 @@ import {
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useState } from "react";
 import { Button } from "@/components/button";
-import { MCP_ACCENT_COLOR } from "@/lib/integrations/mcp";
+import { getMcpFaviconUrl, MCP_ACCENT_COLOR } from "@/lib/integrations/mcp";
 import type { McpServerCardProps } from "@/types/integrations/mcp";
 
 export function McpServerCard({
@@ -80,7 +85,17 @@ export function McpServerCard({
         }
         className="h-full"
         heading={server.name}
-        icon={<HugeiconsIcon icon={CpuIcon} />}
+        icon={
+          <Avatar className="size-7 rounded-md after:hidden">
+            <AvatarImage
+              className="rounded-md"
+              src={getMcpFaviconUrl(server.url)}
+            />
+            <AvatarFallback className="rounded-md bg-transparent">
+              <HugeiconsIcon icon={CpuIcon} />
+            </AvatarFallback>
+          </Avatar>
+        }
       >
         <div className="space-y-1">
           <Badge className="font-normal text-xs" variant="secondary">

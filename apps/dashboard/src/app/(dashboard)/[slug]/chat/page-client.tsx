@@ -65,6 +65,8 @@ import {
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
+import { getMcpFaviconFromToolMetadata } from "@/lib/integrations/mcp";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
 import {
@@ -699,6 +701,22 @@ function StandaloneChatPageClient({
     enabled: Boolean(initialChatId) && Boolean(organizationId),
     staleTime: 1000 * 60 * 5,
   });
+
+  const hasMcpToolCalls = useMemo(
+    () =>
+      messages.some((message) =>
+        message.parts?.some((part) => part.type === "dynamic-tool")
+      ),
+    [messages]
+  );
+
+  const mcpServersQuery = useQuery(
+    dashboardOrpc.integrations.mcp.list.queryOptions({
+      input: { organizationId },
+      enabled: Boolean(organizationId) && hasMcpToolCalls,
+    })
+  );
+  const mcpServers = mcpServersQuery.data?.servers;
 
   useLayoutEffect(() => {
     if (!chatHistoryQuery.data) {
@@ -1580,6 +1598,10 @@ function StandaloneChatPageClient({
             input={toolPart.input}
             isMcp={toolPart.toolName.startsWith("mcp_")}
             key={toolPart.toolCallId}
+            mcpIconUrl={getMcpFaviconFromToolMetadata(
+              toolPart.toolMetadata,
+              mcpServers
+            )}
             output={
               toolPart.state === "output-error"
                 ? { error: toolPart.errorText }

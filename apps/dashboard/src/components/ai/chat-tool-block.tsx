@@ -1,8 +1,13 @@
 "use client";
 
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { ArrowDown01Icon, CpuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Shimmer } from "@notra/ui/components/ai-elements/shimmer";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import {
   Collapsible,
   CollapsibleContent,
@@ -488,6 +493,7 @@ interface ChatToolBlockProps {
   input?: unknown;
   output?: unknown;
   isMcp?: boolean;
+  mcpIconUrl?: string;
   toolMetadata?: unknown;
 }
 
@@ -497,6 +503,7 @@ export function ChatToolBlock({
   input,
   output,
   isMcp = false,
+  mcpIconUrl,
   toolMetadata,
 }: ChatToolBlockProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -519,7 +526,14 @@ export function ChatToolBlock({
         className="group flex w-full min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
         disabled={!hasDetails}
       >
-        {isMcp ? (
+        {isMcp && mcpIconUrl ? (
+          <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
+            <AvatarImage className="rounded-sm" src={mcpIconUrl} />
+            <AvatarFallback className="rounded-sm bg-transparent">
+              <HugeiconsIcon className="size-3" icon={CpuIcon} />
+            </AvatarFallback>
+          </Avatar>
+        ) : isMcp ? (
           <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
             MCP
           </span>
