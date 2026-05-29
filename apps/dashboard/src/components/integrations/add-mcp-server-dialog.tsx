@@ -47,6 +47,7 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type AddMcpServerFormValues,
   addMcpServerFormFieldsSchema,
+  addMcpServerFormSchema,
   type CreateMcpServerRequest,
   createMcpServerRequestSchema,
   MAX_MCP_HEADERS,
@@ -110,7 +111,7 @@ export function AddMcpServerDialog({
       headers: [{ name: "", value: "" }],
     },
     validators: {
-      onSubmit: addMcpServerFormFieldsSchema,
+      onSubmit: addMcpServerFormSchema,
     },
     onSubmit: ({ value }) => {
       submitCreate(value);

@@ -403,6 +403,22 @@ export const addMcpServerFormFieldsSchema = z.object({
     .max(MAX_MCP_HEADERS, `You can add up to ${MAX_MCP_HEADERS} headers`),
 });
 
+export const addMcpServerFormSchema = addMcpServerFormFieldsSchema.superRefine(
+  (value, ctx) => {
+    value.headers.forEach((row, index) => {
+      const hasName = row.name.trim() !== "";
+      const hasValue = row.value.trim() !== "";
+      if (hasName !== hasValue) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Header name and value are required together",
+          path: ["headers", index, hasValue ? "name" : "value"],
+        });
+      }
+    });
+  }
+);
+
 export type AddMcpServerFormValues = z.infer<
   typeof addMcpServerFormFieldsSchema
 >;
