@@ -14,58 +14,23 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { cn } from "@notra/ui/lib/utils";
-import { useState } from "react";
-
-function getString(value: unknown, key: string): string | undefined {
-  if (!value || typeof value !== "object") {
-    return undefined;
-  }
-  const entry = (value as Record<string, unknown>)[key];
-  return typeof entry === "string" ? entry : undefined;
-}
-
-function getStringPath(
-  value: unknown,
-  path: readonly string[]
-): string | undefined {
-  let current = value;
-  for (const key of path) {
-    if (!current || typeof current !== "object") {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[key];
-  }
-  return typeof current === "string" ? current : undefined;
-}
-
-function getNumber(value: unknown, key: string): number | undefined {
-  if (!value || typeof value !== "object") {
-    return undefined;
-  }
-  const entry = (value as Record<string, unknown>)[key];
-  return typeof entry === "number" ? entry : undefined;
-}
-
-function getArray(value: unknown, key: string): unknown[] | undefined {
-  if (!value || typeof value !== "object") {
-    return undefined;
-  }
-  const entry = (value as Record<string, unknown>)[key];
-  return Array.isArray(entry) ? entry : undefined;
-}
-
-function getRecord(
-  value: unknown,
-  key: string
-): Record<string, unknown> | undefined {
-  if (!value || typeof value !== "object") {
-    return undefined;
-  }
-  const entry = (value as Record<string, unknown>)[key];
-  return entry && typeof entry === "object" && !Array.isArray(entry)
-    ? (entry as Record<string, unknown>)
-    : undefined;
-}
+import { type ReactNode, useState } from "react";
+import {
+  commitsByTimeframeInputSchema,
+  type MemoryToolInput,
+  mcpToolMetadataSchema,
+  memoryIdentifierInputSchema,
+  memoryIdentifierOutputSchema,
+  memoryToolInputSchema,
+  pullRequestInputSchema,
+  pullRequestOutputSchema,
+  releaseInputSchema,
+  releaseOutputSchema,
+  type StringToolField,
+  stringToolFieldsSchema,
+  webSearchInputSchema,
+  webSearchOutputSchema,
+} from "@/schemas/ai/chat-tool-block";
 
 interface ToolCopy {
   verbs: readonly [present: string, past: string];
@@ -78,14 +43,36 @@ interface ToolCopy {
   suffix?: (input: unknown, output: unknown) => string | undefined;
 }
 
-function idSuffix(input: unknown, keys: readonly string[]): string | undefined {
+function firstStringValue<T extends object>(
+  values: T,
+  keys: readonly (keyof T)[]
+): string | undefined {
   for (const key of keys) {
-    const value = getString(input, key);
-    if (value) {
-      return value.slice(0, 8);
+    const value = values[key];
+    if (typeof value === "string" && value) {
+      return value;
     }
   }
   return undefined;
+}
+
+function idSuffixFromFields<T extends object>(
+  values: T,
+  keys: readonly (keyof T)[]
+): string | undefined {
+  const value = firstStringValue(values, keys);
+  return value ? value.slice(0, 8) : undefined;
+}
+
+function idSuffix(
+  input: unknown,
+  keys: readonly StringToolField[]
+): string | undefined {
+  const parsed = stringToolFieldsSchema.safeParse(input);
+  if (!parsed.success) {
+    return undefined;
+  }
+  return idSuffixFromFields(parsed.data, keys);
 }
 
 function shortPreview(value: string, maxLength = 72): string {
@@ -96,48 +83,70 @@ function shortPreview(value: string, maxLength = 72): string {
   return `${normalized.slice(0, maxLength - 1)}…`;
 }
 
-function quotedSuffix(
-  input: unknown,
-  keys: readonly string[]
+function quotedSuffixFromFields<T extends object>(
+  values: T,
+  keys: readonly (keyof T)[]
 ): string | undefined {
   for (const key of keys) {
-    const value = getString(input, key);
-    if (value) {
+    const value = values[key];
+    if (typeof value === "string" && value) {
       return `"${shortPreview(value)}"`;
     }
   }
   return undefined;
 }
 
+function quotedSuffix(
+  input: unknown,
+  keys: readonly StringToolField[]
+): string | undefined {
+  const parsed = stringToolFieldsSchema.safeParse(input);
+  if (!parsed.success) {
+    return undefined;
+  }
+  return quotedSuffixFromFields(parsed.data, keys);
+}
+
 function memoryIdSuffix(input: unknown, output: unknown): string | undefined {
+  const parsedInput = memoryIdentifierInputSchema.safeParse(input);
+  const parsedOutput = memoryIdentifierOutputSchema.safeParse(output);
+  const outputData = parsedOutput.success ? parsedOutput.data : undefined;
   return (
-    idSuffix(input, ["memoryId", "documentId", "id"]) ??
-    idSuffix(output, ["memoryId", "documentId", "id"]) ??
-    getStringPath(output, ["memory", "id"])?.slice(0, 8) ??
-    getStringPath(output, ["document", "id"])?.slice(0, 8)
+    (parsedInput.success
+      ? idSuffixFromFields(parsedInput.data, ["memoryId", "documentId", "id"])
+      : undefined) ??
+    (outputData
+      ? idSuffixFromFields(outputData, ["memoryId", "documentId", "id"])
+      : undefined) ??
+    outputData?.memory?.id?.slice(0, 8) ??
+    outputData?.document?.id?.slice(0, 8)
   );
 }
 
-function memoryPathSuffix(input: unknown): string | undefined {
-  const path = getString(input, "path");
-  const newPath = getString(input, "new_path");
-  if (path && newPath) {
-    return `${path} → ${newPath}`;
+function memoryPathSuffix(input: MemoryToolInput): string | undefined {
+  if (input.path && input.new_path) {
+    return `${input.path} → ${input.new_path}`;
   }
-  return path;
+  return input.path;
 }
 
-function claudeMemorySubtitle({
+function memoryToolSubtitle({
   input,
   isStreaming,
 }: {
   input: unknown;
   isStreaming: boolean;
 }): string | undefined {
-  const command = getString(input, "command");
-  const suffix =
-    memoryPathSuffix(input) ??
-    quotedSuffix(input, ["file_text", "insert_text", "new_str"]);
+  const parsed = memoryToolInputSchema.safeParse(input);
+  const command = parsed.success ? parsed.data.command : undefined;
+  const suffix = parsed.success
+    ? (memoryPathSuffix(parsed.data) ??
+      quotedSuffixFromFields(parsed.data, [
+        "file_text",
+        "insert_text",
+        "new_str",
+      ]))
+    : undefined;
 
   const withSuffix = (label: string) => (suffix ? `${label} ${suffix}` : label);
 
@@ -159,7 +168,10 @@ function claudeMemorySubtitle({
 }
 
 function webSearchSuffix(input: unknown, output: unknown): string | undefined {
-  const query = quotedSuffix(input, ["query"]);
+  const parsedInput = webSearchInputSchema.safeParse(input);
+  const query = parsedInput.success
+    ? quotedSuffixFromFields(parsedInput.data, ["query"])
+    : undefined;
   const count = getWebSearchResultCount(output);
   if (query && count !== undefined) {
     return `for ${query} (${count} ${count === 1 ? "result" : "results"})`;
@@ -168,26 +180,25 @@ function webSearchSuffix(input: unknown, output: unknown): string | undefined {
 }
 
 function getWebSearchResultCount(output: unknown): number | undefined {
-  const directResults = getArray(output, "results") ?? getArray(output, "data");
-  if (directResults) {
-    return directResults.length;
-  }
-
-  if (!output || typeof output !== "object") {
+  const parsed = webSearchOutputSchema.safeParse(output);
+  if (!parsed.success) {
     return undefined;
   }
 
-  const data = (output as Record<string, unknown>).data;
-  if (!data || typeof data !== "object" || Array.isArray(data)) {
-    return undefined;
+  if (parsed.data.results) {
+    return parsed.data.results.length;
   }
 
-  const resultGroups = ["web", "news", "images"].map((key) =>
-    getArray(data, key)
-  );
-  const counts = resultGroups
-    .filter((group): group is unknown[] => Boolean(group))
-    .map((group) => group.length);
+  if (Array.isArray(parsed.data.data)) {
+    return parsed.data.data.length;
+  }
+
+  const data = parsed.data.data;
+  const counts = data
+    ? [data.web, data.news, data.images]
+        .filter((group): group is unknown[] => Boolean(group))
+        .map((group) => group.length)
+    : [];
 
   return counts.length
     ? counts.reduce((total, count) => total + count, 0)
@@ -199,13 +210,20 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     verbs: ["Fetching", "Fetched"],
     noun: "pull request",
     suffix: (input, output) => {
-      const repo = getString(output, "repository") ?? getString(output, "repo");
-      const number =
-        getNumber(output, "number") ?? getNumber(output, "pull_number");
+      const parsedOutput = pullRequestOutputSchema.safeParse(output);
+      const repo = parsedOutput.success
+        ? (parsedOutput.data.repository ?? parsedOutput.data.repo)
+        : undefined;
+      const number = parsedOutput.success
+        ? (parsedOutput.data.number ?? parsedOutput.data.pull_number)
+        : undefined;
       if (repo && number !== undefined) {
         return `${repo}#${number}`;
       }
-      const pullNumber = getNumber(input, "pull_number");
+      const parsedInput = pullRequestInputSchema.safeParse(input);
+      const pullNumber = parsedInput.success
+        ? parsedInput.data.pull_number
+        : undefined;
       return pullNumber !== undefined ? `#${pullNumber}` : undefined;
     },
   },
@@ -213,19 +231,26 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     verbs: ["Fetching", "Fetched"],
     noun: "release",
     suffix: (input, output) => {
-      const repo = getString(output, "repository") ?? getString(output, "repo");
-      const tag = getString(output, "tag_name") ?? getString(output, "tag");
+      const parsedOutput = releaseOutputSchema.safeParse(output);
+      const repo = parsedOutput.success
+        ? (parsedOutput.data.repository ?? parsedOutput.data.repo)
+        : undefined;
+      const tag = parsedOutput.success
+        ? (parsedOutput.data.tag_name ?? parsedOutput.data.tag)
+        : undefined;
       if (repo && tag) {
         return `${repo} · ${tag}`;
       }
-      return getString(input, "tag");
+      const parsedInput = releaseInputSchema.safeParse(input);
+      return parsedInput.success ? parsedInput.data.tag : undefined;
     },
   },
   getCommitsByTimeframe: {
     verbs: ["Fetching", "Fetched"],
     noun: "commits",
     suffix: (input) => {
-      const days = getNumber(input, "days");
+      const parsed = commitsByTimeframeInputSchema.safeParse(input);
+      const days = parsed.success ? parsed.data.days : undefined;
       return days ? `from the last ${days} days` : undefined;
     },
   },
@@ -339,7 +364,7 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   memory: {
     verbs: ["Using", "Used"],
     noun: "memory",
-    subtitle: claudeMemorySubtitle,
+    subtitle: memoryToolSubtitle,
   },
 };
 
@@ -355,16 +380,14 @@ function formatMcpToolName(toolName: string): string {
 }
 
 function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
-  const notraMetadata = getRecord(toolMetadata, "notra");
-  const label = getString(notraMetadata, "label");
-  if (label) {
-    return label;
+  const parsed = mcpToolMetadataSchema.safeParse(toolMetadata);
+  const notraMetadata = parsed.success ? parsed.data.notra : undefined;
+  if (notraMetadata?.label) {
+    return notraMetadata.label;
   }
 
-  const serverName = getString(notraMetadata, "serverName");
-  const mcpToolName = getString(notraMetadata, "toolName");
-  if (serverName && mcpToolName) {
-    return `${serverName} - ${mcpToolName}`;
+  if (notraMetadata?.serverName && notraMetadata.toolName) {
+    return `${notraMetadata.serverName} - ${notraMetadata.toolName}`;
   }
 
   return formatMcpToolName(toolName);
@@ -519,6 +542,24 @@ export function ChatToolBlock({
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasDetails = hasInput || hasOutput;
+  let toolIcon: ReactNode = null;
+
+  if (iconUrl) {
+    toolIcon = (
+      <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
+        <AvatarImage className="rounded-sm" src={iconUrl} />
+        <AvatarFallback className="rounded-sm bg-transparent">
+          <HugeiconsIcon className="size-3" icon={CpuIcon} />
+        </AvatarFallback>
+      </Avatar>
+    );
+  } else if (isMcp) {
+    toolIcon = (
+      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
+        MCP
+      </span>
+    );
+  }
 
   return (
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
@@ -526,18 +567,7 @@ export function ChatToolBlock({
         className="group flex w-full min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
         disabled={!hasDetails}
       >
-        {iconUrl ? (
-          <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
-            <AvatarImage className="rounded-sm" src={iconUrl} />
-            <AvatarFallback className="rounded-sm bg-transparent">
-              <HugeiconsIcon className="size-3" icon={CpuIcon} />
-            </AvatarFallback>
-          </Avatar>
-        ) : isMcp ? (
-          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
-            MCP
-          </span>
-        ) : null}
+        {toolIcon}
         {isStreaming ? (
           <Shimmer
             as="span"
