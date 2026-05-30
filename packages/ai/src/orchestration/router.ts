@@ -36,12 +36,23 @@ const TRIVIAL_MESSAGE_PATTERNS = [
   /^(bye|cya|tschüss|ciao)\b[\s!.?]*$/i,
 ];
 
+const EXPLICIT_TOOL_REQUEST_PATTERNS = [
+  /\b(call|use|run|execute|invoke|exercise|trigger|test)\b[\s\S]{0,120}\btools?\b/i,
+  /\btools?\b[\s\S]{0,120}\b(call|use|run|execute|invoke|exercise|trigger|test)\b/i,
+];
+
 export function isTrivialMessage(userMessage: string): boolean {
   const trimmed = userMessage.trim();
   if (!trimmed || trimmed.length > 40) {
     return false;
   }
   return TRIVIAL_MESSAGE_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
+function isExplicitToolRequest(userMessage: string): boolean {
+  return EXPLICIT_TOOL_REQUEST_PATTERNS.some((pattern) =>
+    pattern.test(userMessage)
+  );
 }
 
 function matchTrivialFastPath(
@@ -90,6 +101,16 @@ export async function routeMessage(
   );
   if (fastPath) {
     return fastPath;
+  }
+
+  if (isExplicitToolRequest(userMessage)) {
+    return {
+      complexity: "complex",
+      requiresTools: true,
+      reasoningHeavy: false,
+      reasoning:
+        "The user explicitly asked to call, test, or exercise tools, so tools are required.",
+    };
   }
 
   const contextHint = hasIntegrationContext
