@@ -45,10 +45,6 @@ const SKILLS_MENTION_REGEX = /\bskills?\b/i;
 const TRIVIAL_HISTORY_LIMIT = 6;
 const MINIMAL_STANDALONE_PROMPT =
   "You are Notra, an AI assistant for content teams. Reply briefly and warmly.";
-const OBSOLETE_NO_TOOLS_REFUSAL_PATTERNS = [
-  /Do not call tools on this turn/i,
-  /cannot call tools on this turn/i,
-];
 
 export async function orchestrateStandaloneChat(
   input: StandaloneChatInput,
@@ -197,9 +193,7 @@ export async function orchestrateStandaloneChat(
 
     const messagesForModel = await expandTextFileParts(
       stripIncompleteToolParts(
-        isSimpleNoTools
-          ? trimTrivialHistory(removeObsoleteNoToolsRefusals(messages))
-          : removeObsoleteNoToolsRefusals(messages)
+        isSimpleNoTools ? trimTrivialHistory(messages) : messages
       )
     );
 
@@ -358,23 +352,6 @@ function stripIncompleteToolParts(messages: UIMessage[]): UIMessage[] {
       return message;
     }
     return { ...message, parts: filtered };
-  });
-}
-
-function removeObsoleteNoToolsRefusals(messages: UIMessage[]): UIMessage[] {
-  return messages.filter((message) => {
-    if (message.role !== "assistant" || !Array.isArray(message.parts)) {
-      return true;
-    }
-
-    const text = message.parts
-      .filter((part) => part.type === "text")
-      .map((part) => part.text)
-      .join("\n");
-
-    return !OBSOLETE_NO_TOOLS_REFUSAL_PATTERNS.some((pattern) =>
-      pattern.test(text)
-    );
   });
 }
 
