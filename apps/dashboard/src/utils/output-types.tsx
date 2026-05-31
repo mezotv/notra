@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import type { JSX } from "react";
+import { FORMAT_CARD_META } from "@/constants/content-formats";
 
 const OUTPUT_TYPE_LABELS: Record<string, string> = {
   changelog: "Changelog",
@@ -18,6 +19,14 @@ const OUTPUT_TYPE_LABELS: Record<string, string> = {
 
 export function getOutputTypeLabel(outputType: string): string {
   return OUTPUT_TYPE_LABELS[outputType] ?? outputType.replaceAll("_", " ");
+}
+
+const ICON_CLASS_BY_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(FORMAT_CARD_META).map(([type, meta]) => [type, meta.iconClass])
+);
+
+export function getOutputTypeIconClass(outputType: string): string {
+  return ICON_CLASS_BY_TYPE[outputType] ?? "text-muted-foreground";
 }
 
 export function OutputTypeIcon({

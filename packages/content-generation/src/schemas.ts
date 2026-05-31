@@ -173,6 +173,7 @@ export const contentGenerationJobSchema = z.object({
 
 export const contentGenerationWorkflowPayloadSchema = z.object({
   organizationId: z.string().min(1),
+  collectionId: z.string().min(1),
   runId: z.string().min(1),
   jobId: z.string().min(1).optional(),
   contentType: onDemandContentTypeSchema,

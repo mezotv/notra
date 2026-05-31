@@ -4,6 +4,7 @@ import type { PostSummary } from "./posts";
 
 export interface PostToolsConfig {
   organizationId: string;
+  collectionId?: string;
   contentType: ContentType;
   sourceMetadata?: PostSourceMetadata;
   autoPublish?: boolean;

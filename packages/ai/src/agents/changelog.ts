@@ -9,6 +9,7 @@ export async function generateChangelog(
 ): Promise<ChangelogAgentResult> {
   return runBackgroundGen({
     organizationId: options.organizationId,
+    collectionId: options.collectionId,
     skillName: "changelog",
     contentType: "changelog",
     brandAgentType: "changelog",

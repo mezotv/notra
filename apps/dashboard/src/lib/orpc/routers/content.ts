@@ -7,17 +7,23 @@ import {
   getLinearIntegrationsByOrganization,
 } from "@notra/ai/integrations/linear";
 import { triggerOnDemandContent } from "@notra/ai/qstash/triggers";
+import { type ContentType, contentTypeSchema } from "@notra/ai/schemas/content";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
-import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
+import {
+  createContentGenerationRequestSchema,
+  onDemandContentTypeSchema,
+} from "@notra/content-generation/schemas";
 import { db } from "@notra/db/drizzle";
-import { githubIntegrations, posts } from "@notra/db/schema";
+import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
-import { and, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
+import { nanoid } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import {
@@ -37,7 +43,7 @@ import {
 import { baseProcedure } from "@/lib/orpc/base";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
-import { updateContentSchema } from "@/schemas/content";
+import { renameCollectionSchema, updateContentSchema } from "@/schemas/content";
 import { clearCompletedGenerationSchema } from "@/schemas/generations";
 import { LOOKBACK_WINDOWS } from "@/schemas/integrations";
 import { resolveLookbackRange } from "@/utils/lookback";
@@ -66,6 +72,11 @@ const previewRequestSchema = z.object({
   includePullRequests: z.boolean().default(true),
   includeReleases: z.boolean().default(true),
   linearIntegrationIds: z.array(z.string().min(1)).optional(),
+});
+
+const createPostCollectionInputSchema = organizationIdInputSchema.extend({
+  contentTypes: z.array(onDemandContentTypeSchema).min(1),
+  expectedPostCount: z.number().int().positive(),
 });
 
 function serializePost(post: {
@@ -119,6 +130,23 @@ function serializeContent(post: {
     date: post.createdAt.toISOString(),
     sourceMetadata: post.sourceMetadata as ContentResponse["sourceMetadata"],
   };
+}
+
+function normalizeContentTypes(contentTypes: string[]): ContentType[] {
+  const normalized: ContentType[] = [];
+
+  for (const contentType of contentTypes) {
+    const parsed = contentTypeSchema.safeParse(contentType);
+    if (parsed.success && !normalized.includes(parsed.data)) {
+      normalized.push(parsed.data);
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeContentType(contentType: string): ContentType {
+  return contentTypeSchema.parse(contentType);
 }
 
 export interface CommitPreview {
@@ -520,8 +548,41 @@ export const contentRouter = {
         throw notFound("Content not found");
       }
 
+      const collection = await db.query.postCollections.findFirst({
+        where: and(
+          eq(postCollections.id, post.collectionId),
+          eq(postCollections.organizationId, input.organizationId)
+        ),
+        with: {
+          posts: {
+            columns: {
+              id: true,
+              title: true,
+              contentType: true,
+              status: true,
+            },
+            orderBy: [asc(posts.createdAt), asc(posts.id)],
+          },
+        },
+      });
+
       return {
         content: serializeContent(post),
+        collection: collection
+          ? {
+              id: collection.id,
+              name: collection.name,
+              source: collection.source,
+              siblings: collection.posts
+                .filter((sibling) => sibling.id !== post.id)
+                .map((sibling) => ({
+                  id: sibling.id,
+                  title: sibling.title,
+                  contentType: normalizeContentType(sibling.contentType),
+                  status: sibling.status,
+                })),
+            }
+          : null,
       };
     }),
   update: baseProcedure
@@ -620,6 +681,314 @@ export const contentRouter = {
 
       return { success: true };
     }),
+  collections: {
+    list: baseProcedure
+      .input(
+        organizationIdInputSchema.extend({
+          page: z.coerce.number().int().min(1).default(1),
+          pageSize: z.coerce.number().int().min(1).max(100).default(20),
+        })
+      )
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const whereClause = eq(
+          postCollections.organizationId,
+          input.organizationId
+        );
+        const offset = (input.page - 1) * input.pageSize;
+
+        const [collectionRows, totalCountResult] = await Promise.all([
+          db.query.postCollections.findMany({
+            where: whereClause,
+            orderBy: [
+              desc(postCollections.createdAt),
+              desc(postCollections.id),
+            ],
+            limit: input.pageSize,
+            offset,
+          }),
+          db
+            .select({ value: count() })
+            .from(postCollections)
+            .where(whereClause),
+        ]);
+
+        const collectionIds = collectionRows.map((collection) => collection.id);
+        const postRows =
+          collectionIds.length > 0
+            ? await db
+                .select({
+                  collectionId: posts.collectionId,
+                  contentType: posts.contentType,
+                  status: posts.status,
+                })
+                .from(posts)
+                .where(inArray(posts.collectionId, collectionIds))
+            : [];
+
+        const aggregates = new Map<
+          string,
+          { total: number; draft: number; published: number; types: string[] }
+        >();
+        for (const post of postRows) {
+          const aggregate = aggregates.get(post.collectionId) ?? {
+            total: 0,
+            draft: 0,
+            published: 0,
+            types: [],
+          };
+          aggregate.total += 1;
+          if (post.status === "published") {
+            aggregate.published += 1;
+          } else {
+            aggregate.draft += 1;
+          }
+          if (!aggregate.types.includes(post.contentType)) {
+            aggregate.types.push(post.contentType);
+          }
+          aggregates.set(post.collectionId, aggregate);
+        }
+
+        const collections = collectionRows.map((collection) => {
+          const aggregate = aggregates.get(collection.id);
+          const storedTypes = Array.isArray(collection.contentTypes)
+            ? collection.contentTypes.filter(
+                (type): type is string => typeof type === "string"
+              )
+            : [];
+          const contentTypes = normalizeContentTypes(
+            aggregate && aggregate.types.length > 0
+              ? aggregate.types
+              : storedTypes
+          );
+          const postCount = aggregate?.total ?? 0;
+          const isGenerating =
+            collection.expectedPostCount !== null &&
+            collection.completedPostCount < collection.expectedPostCount;
+
+          return {
+            id: collection.id,
+            name: collection.name,
+            source: collection.source,
+            nameSource: collection.nameSource,
+            contentTypes,
+            postCount,
+            expectedPostCount: collection.expectedPostCount,
+            isGenerating,
+            statusSummary: {
+              total: postCount,
+              draft: aggregate?.draft ?? 0,
+              published: aggregate?.published ?? 0,
+            },
+            createdAt: collection.createdAt.toISOString(),
+          };
+        });
+
+        const totalCount = totalCountResult[0]?.value ?? 0;
+        const totalPages = Math.max(1, Math.ceil(totalCount / input.pageSize));
+
+        return {
+          collections,
+          pagination: {
+            page: input.page,
+            pageSize: input.pageSize,
+            totalCount,
+            totalPages,
+          },
+        };
+      }),
+    get: baseProcedure
+      .input(
+        organizationIdInputSchema.extend({
+          collectionId: z.string().min(1, "Collection ID is required"),
+        })
+      )
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const collection = await db.query.postCollections.findFirst({
+          where: and(
+            eq(postCollections.id, input.collectionId),
+            eq(postCollections.organizationId, input.organizationId)
+          ),
+          with: {
+            posts: {
+              columns: {
+                id: true,
+                title: true,
+                markdown: true,
+                contentType: true,
+                status: true,
+                createdAt: true,
+                updatedAt: true,
+              },
+              orderBy: [asc(posts.createdAt), asc(posts.id)],
+            },
+          },
+        });
+
+        if (!collection) {
+          throw notFound("Post collection not found");
+        }
+
+        const storedTypes = Array.isArray(collection.contentTypes)
+          ? collection.contentTypes.filter(
+              (type): type is string => typeof type === "string"
+            )
+          : [];
+        const postTypes: string[] = [];
+        for (const post of collection.posts) {
+          if (!postTypes.includes(post.contentType)) {
+            postTypes.push(post.contentType);
+          }
+        }
+        const isGenerating =
+          collection.expectedPostCount !== null &&
+          collection.completedPostCount < collection.expectedPostCount;
+
+        return {
+          collection: {
+            id: collection.id,
+            name: collection.name,
+            source: collection.source,
+            nameSource: collection.nameSource,
+            contentTypes: normalizeContentTypes(
+              postTypes.length > 0 ? postTypes : storedTypes
+            ),
+            expectedPostCount: collection.expectedPostCount,
+            isGenerating,
+            createdAt: collection.createdAt.toISOString(),
+            posts: collection.posts.map((post) => ({
+              id: post.id,
+              title: post.title,
+              markdown: post.markdown,
+              contentType: normalizeContentType(post.contentType),
+              status: post.status,
+              createdAt: post.createdAt.toISOString(),
+              updatedAt: post.updatedAt.toISOString(),
+            })),
+          },
+        };
+      }),
+    rename: baseProcedure
+      .input(
+        organizationIdInputSchema
+          .extend({
+            collectionId: z.string().min(1, "Collection ID is required"),
+          })
+          .and(renameCollectionSchema)
+      )
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const [updatedCollection] = await db
+          .update(postCollections)
+          .set({
+            name: input.name,
+            nameSource: "user",
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(postCollections.id, input.collectionId),
+              eq(postCollections.organizationId, input.organizationId)
+            )
+          )
+          .returning();
+
+        if (!updatedCollection) {
+          throw notFound("Post collection not found");
+        }
+
+        return {
+          collection: {
+            id: updatedCollection.id,
+            name: updatedCollection.name,
+            nameSource: updatedCollection.nameSource,
+          },
+        };
+      }),
+    delete: baseProcedure
+      .input(
+        organizationIdInputSchema.extend({
+          collectionId: z.string().min(1, "Collection ID is required"),
+        })
+      )
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const existingCollection = await db.query.postCollections.findFirst({
+          where: and(
+            eq(postCollections.id, input.collectionId),
+            eq(postCollections.organizationId, input.organizationId)
+          ),
+          columns: { id: true },
+        });
+
+        if (!existingCollection) {
+          throw notFound("Post collection not found");
+        }
+
+        await db
+          .delete(postCollections)
+          .where(
+            and(
+              eq(postCollections.id, input.collectionId),
+              eq(postCollections.organizationId, input.organizationId)
+            )
+          );
+
+        return { success: true };
+      }),
+    updateExpectedPostCount: baseProcedure
+      .input(
+        organizationIdInputSchema.extend({
+          collectionId: z.string().min(1, "Collection ID is required"),
+          expectedPostCount: z.number().int().positive(),
+        })
+      )
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const [updatedCollection] = await db
+          .update(postCollections)
+          .set({
+            expectedPostCount: input.expectedPostCount,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(postCollections.id, input.collectionId),
+              eq(postCollections.organizationId, input.organizationId)
+            )
+          )
+          .returning({ id: postCollections.id });
+
+        if (!updatedCollection) {
+          throw notFound("Post collection not found");
+        }
+
+        return { success: true };
+      }),
+  },
   metrics: {
     get: baseProcedure
       .input(organizationIdInputSchema)
@@ -992,14 +1361,57 @@ export const contentRouter = {
         failures,
       };
     }),
-  generate: baseProcedure
-    .input(organizationIdInputSchema.and(createContentGenerationRequestSchema))
+  createCollection: baseProcedure
+    .input(createPostCollectionInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
       await assertActiveSubscription(input.organizationId);
+
+      const now = new Date();
+      const collectionId = nanoid();
+
+      await db.insert(postCollections).values({
+        id: collectionId,
+        organizationId: input.organizationId,
+        source: "manual",
+        sourceId: collectionId,
+        name: buildPostCollectionName(input.contentTypes, now),
+        nameSource: "generated",
+        contentTypes: input.contentTypes,
+        expectedPostCount: input.expectedPostCount,
+        completedPostCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      return { collectionId };
+    }),
+  generate: baseProcedure
+    .input(
+      organizationIdInputSchema
+        .and(createContentGenerationRequestSchema)
+        .and(z.object({ collectionId: z.string().min(1) }))
+    )
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+      });
+      await assertActiveSubscription(input.organizationId);
+
+      const collection = await db.query.postCollections.findFirst({
+        where: and(
+          eq(postCollections.id, input.collectionId),
+          eq(postCollections.organizationId, input.organizationId)
+        ),
+      });
+
+      if (!collection) {
+        throw notFound("Post collection not found");
+      }
 
       if (
         !input.dataPoints.includePullRequests &&
@@ -1078,6 +1490,7 @@ export const contentRouter = {
 
       await triggerOnDemandContent({
         organizationId: input.organizationId,
+        collectionId: input.collectionId,
         runId,
         contentType: input.contentType,
         lookbackWindow: input.lookbackWindow,

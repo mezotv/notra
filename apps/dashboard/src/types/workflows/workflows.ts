@@ -54,6 +54,7 @@ export type ScheduleBrandSettingsData = {
 
 export interface EventGenerationContext {
   organizationId: string;
+  collectionId: string;
   triggerId: string;
   triggerName: string;
   eventType: string;

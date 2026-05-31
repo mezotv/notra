@@ -43,6 +43,7 @@ export async function generateEventBasedContent(
 
     const agentOptions = {
       organizationId: ctx.organizationId,
+      collectionId: ctx.collectionId,
       repositories,
       tone: ctx.tone,
       promptInput,

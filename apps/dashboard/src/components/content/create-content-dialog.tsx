@@ -354,10 +354,18 @@ export function CreateContentDialog({
       // that delegates to N sub-agents (one per format), with the boss
       // deciding the angle / topic each sub-agent writes about so the
       // outputs are coordinated instead of independently drafted.
+      const { collectionId } =
+        await dashboardOrpc.content.createCollection.call({
+          organizationId,
+          contentTypes: formats,
+          expectedPostCount: calls.length,
+        });
+
       const results = await Promise.allSettled(
         calls.map(({ format, voiceId }) =>
           dashboardOrpc.content.generate.call({
             organizationId,
+            collectionId,
             contentType: format,
             lookbackWindow,
             repositoryIds: githubRepoIds,
@@ -371,6 +379,12 @@ export function CreateContentDialog({
       const failures = results.filter((r) => r.status === "rejected");
       const succeeded = results.length - failures.length;
       if (succeeded === 0) {
+        await dashboardOrpc.content.collections.delete
+          .call({
+            organizationId,
+            collectionId,
+          })
+          .catch(() => null);
         const reason = failures[0];
         const message =
           reason &&
@@ -379,6 +393,13 @@ export function CreateContentDialog({
             ? reason.reason.message
             : "Failed to start any content generation";
         throw new Error(message);
+      }
+      if (succeeded < results.length) {
+        await dashboardOrpc.content.collections.updateExpectedPostCount.call({
+          organizationId,
+          collectionId,
+          expectedPostCount: succeeded,
+        });
       }
       return { succeeded, total: results.length };
     },
@@ -399,6 +420,9 @@ export function CreateContentDialog({
         queryKey: dashboardOrpc.content.activeGenerations.list.queryKey({
           input: { organizationId },
         }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.content.collections.list.key(),
       });
     },
     onError: (err) => {

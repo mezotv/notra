@@ -1,3 +1,4 @@
+import { formatDistanceToNowStrict } from "date-fns";
 import type { PrSelection, ReleaseSelection } from "@/types/content/preview";
 
 export function prSelectionToKey(selection: PrSelection): string {
@@ -42,6 +43,26 @@ export function releaseSelectionFromKey(key: string): ReleaseSelection | null {
   return null;
 }
 
+const MARKDOWN_PREVIEW_MAX_LENGTH = 200;
+const MARKDOWN_PREVIEW_LINES = 3;
+const MARKDOWN_LINK_REGEX = /\[([^\]]+)\]\([^)]+\)/g;
+
+export function getMarkdownPreview(markdown: string): string {
+  const lines = markdown
+    .split("\n")
+    .filter((line) => !line.startsWith("#") && line.trim().length > 0);
+
+  return lines
+    .slice(0, MARKDOWN_PREVIEW_LINES)
+    .join(" ")
+    .trim()
+    .replaceAll("**", "")
+    .replaceAll("*", "")
+    .replaceAll("`", "")
+    .replace(MARKDOWN_LINK_REGEX, "$1")
+    .slice(0, MARKDOWN_PREVIEW_MAX_LENGTH);
+}
+
 export function getPageNumbers(
   current: number,
   total: number
@@ -63,6 +84,22 @@ export function getPageNumbers(
   }
   pages.push(total);
   return pages;
+}
+
+export function formatLongDate(dateString: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }).format(new Date(dateString));
+  } catch {
+    return "";
+  }
+}
+
+export function formatRelativeDate(dateString: string): string {
+  return formatDistanceToNowStrict(new Date(dateString), { addSuffix: true });
 }
 
 export function formatEventDate(dateStr: string): string {

@@ -9,6 +9,7 @@ export async function generateTwitterPost(
 ): Promise<TwitterAgentResult> {
   return runBackgroundGen({
     organizationId: options.organizationId,
+    collectionId: options.collectionId,
     skillName: "twitter",
     contentType: "twitter_post",
     brandAgentType: "twitter",

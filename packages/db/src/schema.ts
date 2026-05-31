@@ -21,6 +21,20 @@ export const lookbackWindowEnum = pgEnum("lookback_window", [
 
 export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
 
+export const postCollectionSourceEnum = pgEnum("post_collection_source", [
+  "manual",
+  "chat",
+  "schedule",
+  "automation",
+  "api",
+  "backfill",
+]);
+
+export const postCollectionNameSourceEnum = pgEnum(
+  "post_collection_name_source",
+  ["generated", "user", "backfill"]
+);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -504,6 +518,46 @@ export const organizationNotificationSettings = pgTable(
   ]
 );
 
+export const postCollections = pgTable(
+  "post_collections",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: postCollectionSourceEnum("source").notNull(),
+    sourceId: text("source_id"),
+    name: text("name").notNull(),
+    nameSource: postCollectionNameSourceEnum("name_source")
+      .default("generated")
+      .notNull(),
+    contentTypes: jsonb("content_types").default(sql`'[]'::jsonb`).notNull(),
+    sourceMetadata: jsonb("source_metadata"),
+    expectedPostCount: integer("expected_post_count"),
+    completedPostCount: integer("completed_post_count").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("post_collections_org_created_at_idx").on(
+      table.organizationId,
+      table.createdAt,
+      table.id
+    ),
+    index("post_collections_source_idx").on(
+      table.organizationId,
+      table.source,
+      table.sourceId
+    ),
+    uniqueIndex("post_collections_chat_source_uidx")
+      .on(table.organizationId, table.source, table.sourceId)
+      .where(sql`${table.source} = 'chat' AND ${table.sourceId} IS NOT NULL`),
+  ]
+);
+
 export const posts = pgTable(
   "posts",
   {
@@ -511,6 +565,9 @@ export const posts = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => postCollections.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     slug: text("slug"),
     content: text("content").notNull(),
@@ -534,6 +591,7 @@ export const posts = pgTable(
       table.createdAt,
       table.id
     ),
+    index("posts_collection_id_idx").on(table.collectionId),
   ]
 );
 
@@ -632,6 +690,7 @@ export const organizationsRelations = relations(
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
     connectedSocialAccounts: many(connectedSocialAccounts),
+    postCollections: many(postCollections),
     posts: many(posts),
     skills: many(skills),
     chatSessions: many(chatSessions),
@@ -765,10 +824,25 @@ export const organizationNotificationSettingsRelations = relations(
   })
 );
 
+export const postCollectionsRelations = relations(
+  postCollections,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [postCollections.organizationId],
+      references: [organizations.id],
+    }),
+    posts: many(posts),
+  })
+);
+
 export const postsRelations = relations(posts, ({ one }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
     references: [organizations.id],
+  }),
+  collection: one(postCollections, {
+    fields: [posts.collectionId],
+    references: [postCollections.id],
   }),
 }));
 

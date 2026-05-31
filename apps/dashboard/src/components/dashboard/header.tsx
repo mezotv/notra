@@ -41,6 +41,8 @@ import {
   CreditBalanceMenuItem,
 } from "@/components/billing/credit-balance-button";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
+import { CollectionTopbarTitle } from "@/components/dashboard/collection-topbar-title";
+import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import {
   FeedbackForm,
@@ -50,6 +52,7 @@ import {
 const NON_ORG_PATHS: string[] = [];
 
 const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
+  collection: { label: "Collections" },
   billing: { label: "Billing & Usage" },
   automation: { href: null },
   brand: { href: null },
@@ -135,11 +138,28 @@ export function SiteHeader() {
     breadcrumbSegments[0] === "chat" &&
     breadcrumbSegments.length >= 2;
   const chatDetailId = isChatDetail ? breadcrumbSegments[1] : null;
+  const isCollectionDetail =
+    !isNonOrgPath &&
+    breadcrumbSegments[0] === "collection" &&
+    breadcrumbSegments.length >= 2;
+  const collectionDetailId = isCollectionDetail ? breadcrumbSegments[1] : null;
+  const isContentDetail =
+    !isNonOrgPath &&
+    breadcrumbSegments[0] === "content" &&
+    breadcrumbSegments.length >= 2;
+  const contentDetailId = isContentDetail ? breadcrumbSegments[1] : null;
 
   const breadcrumbs = breadcrumbSegments.flatMap((segment, index) => {
-    const href = isNonOrgPath
-      ? `/${segments.slice(0, index + 1).join("/")}`
-      : `/${segments.slice(0, index + 2).join("/")}`;
+    const isCollectionsRoot =
+      isCollectionDetail && index === 0 && segment === "collection";
+    const href = (() => {
+      if (isCollectionsRoot) {
+        return `/${slug}/content`;
+      }
+      return isNonOrgPath
+        ? `/${segments.slice(0, index + 1).join("/")}`
+        : `/${segments.slice(0, index + 2).join("/")}`;
+    })();
     const isLast = index === breadcrumbSegments.length - 1;
     const config = SEGMENT_CONFIG[segment];
     const label =
@@ -147,9 +167,20 @@ export function SiteHeader() {
       segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
     const isClickable = config?.href !== null;
     const isChatDetailLast = isChatDetail && isLast && chatDetailId;
+    const isCollectionDetailLast =
+      isCollectionDetail && isLast && collectionDetailId;
+    const isContentDetailLast = isContentDetail && isLast && contentDetailId;
     const content = (() => {
       if (isChatDetailLast) {
         return <ChatTopbarTitle chatId={chatDetailId} />;
+      }
+
+      if (isCollectionDetailLast) {
+        return <CollectionTopbarTitle collectionId={collectionDetailId} />;
+      }
+
+      if (isContentDetailLast) {
+        return <ContentTopbarTitle contentId={contentDetailId} />;
       }
 
       if (isClickable) {
@@ -166,8 +197,15 @@ export function SiteHeader() {
     const item = (
       <BreadcrumbItem
         className={cn(
-          isChatDetailLast && "min-w-0",
-          isClickable && !isChatDetailLast && "hover:underline"
+          (isChatDetailLast || isCollectionDetailLast || isContentDetailLast) &&
+            "min-w-0",
+          isClickable &&
+            !(
+              isChatDetailLast ||
+              isCollectionDetailLast ||
+              isContentDetailLast
+            ) &&
+            "hover:underline"
         )}
         key={`${id}-item-${segment}`}
       >

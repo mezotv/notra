@@ -9,6 +9,7 @@ export async function generateLinkedInPost(
 ): Promise<LinkedInAgentResult> {
   return runBackgroundGen({
     organizationId: options.organizationId,
+    collectionId: options.collectionId,
     skillName: "linkedin",
     contentType: "linkedin_post",
     brandAgentType: "linkedin",
