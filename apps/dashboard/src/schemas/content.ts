@@ -89,6 +89,101 @@ export const postsResponseSchema = z.object({
 
 export type PostsResponse = z.infer<typeof postsResponseSchema>;
 
+export const postCollectionSourceSchema = z.enum([
+  "manual",
+  "chat",
+  "schedule",
+  "automation",
+  "api",
+  "backfill",
+]);
+export type PostCollectionSource = z.infer<typeof postCollectionSourceSchema>;
+
+export const postCollectionNameSourceSchema = z.enum([
+  "generated",
+  "user",
+  "backfill",
+]);
+export type PostCollectionNameSource = z.infer<
+  typeof postCollectionNameSourceSchema
+>;
+
+export const postCollectionStatusSummarySchema = z.object({
+  total: z.number().int().min(0),
+  draft: z.number().int().min(0),
+  published: z.number().int().min(0),
+});
+export type PostCollectionStatusSummary = z.infer<
+  typeof postCollectionStatusSummarySchema
+>;
+
+export const postCollectionSummarySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source: postCollectionSourceSchema,
+  nameSource: postCollectionNameSourceSchema,
+  contentTypes: z.array(contentTypeSchema),
+  postCount: z.number().int().min(0),
+  expectedPostCount: z.number().int().nullable(),
+  isGenerating: z.boolean(),
+  statusSummary: postCollectionStatusSummarySchema,
+  createdAt: z.string(),
+});
+export type PostCollectionSummary = z.infer<typeof postCollectionSummarySchema>;
+
+export const postCollectionListResponseSchema = z.object({
+  collections: z.array(postCollectionSummarySchema),
+  pagination: postsPaginationSchema,
+});
+export type PostCollectionListResponse = z.infer<
+  typeof postCollectionListResponseSchema
+>;
+
+export const groupPostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  markdown: z.string(),
+  contentType: contentTypeSchema,
+  status: postStatusSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type CollectionPost = z.infer<typeof groupPostSchema>;
+
+export const postCollectionDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source: postCollectionSourceSchema,
+  nameSource: postCollectionNameSourceSchema,
+  contentTypes: z.array(contentTypeSchema),
+  expectedPostCount: z.number().int().nullable(),
+  isGenerating: z.boolean(),
+  createdAt: z.string(),
+  posts: z.array(groupPostSchema),
+});
+export type PostCollectionDetail = z.infer<typeof postCollectionDetailSchema>;
+
+export const postSiblingSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  contentType: z.string(),
+  status: postStatusSchema,
+});
+export type PostSibling = z.infer<typeof postSiblingSchema>;
+
+export const postCollectionContextSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  source: postCollectionSourceSchema,
+  siblings: z.array(postSiblingSchema),
+});
+export type PostCollectionContext = z.infer<typeof postCollectionContextSchema>;
+
+export const renameCollectionSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+});
+export type RenameCollectionInput = z.infer<typeof renameCollectionSchema>;
+
 export const editContentSchema = z.object({
   instruction: z.string().min(1, "Instruction is required"),
   currentMarkdown: z.string(),

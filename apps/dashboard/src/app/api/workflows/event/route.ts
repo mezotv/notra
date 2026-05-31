@@ -17,7 +17,9 @@ import {
   members,
   organizationNotificationSettings,
   organizations,
+  postCollections,
 } from "@notra/db/schema";
+import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
@@ -238,6 +240,8 @@ export const { POST } = serve<EventWorkflowPayload>(
       generateRunId(triggerId)
     );
 
+    const collectionId = `group_${runId}`;
+
     await context.run("track-generation-start", async () => {
       await addActiveGeneration(trigger.organizationId, {
         runId,
@@ -245,6 +249,31 @@ export const { POST } = serve<EventWorkflowPayload>(
         outputType: trigger.outputType,
         triggerName: trigger.name.trim() || `${eventType} event`,
         startedAt: new Date().toISOString(),
+      });
+    });
+
+    await context.run("create-post-collection", async () => {
+      const now = new Date();
+
+      await db.insert(postCollections).values({
+        id: collectionId,
+        organizationId: trigger.organizationId,
+        source: "automation",
+        sourceId: runId,
+        name: buildPostCollectionName([trigger.outputType], now),
+        nameSource: "generated",
+        contentTypes: [trigger.outputType],
+        sourceMetadata: {
+          triggerId: trigger.id,
+          triggerName: trigger.name,
+          triggerSourceType: "github_webhook",
+          eventType,
+          eventAction,
+        },
+        expectedPostCount: 1,
+        completedPostCount: 0,
+        createdAt: now,
+        updatedAt: now,
       });
     });
 
@@ -266,6 +295,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         async () => {
           return generateEventBasedContent({
             organizationId: trigger.organizationId,
+            collectionId,
             triggerId: trigger.id,
             triggerName: trigger.name,
             eventType,

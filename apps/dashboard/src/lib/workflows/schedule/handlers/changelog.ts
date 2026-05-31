@@ -12,6 +12,7 @@ export async function handleChangelog(
   try {
     const { postId, title, posts, usage } = await generateChangelog({
       organizationId: ctx.organizationId,
+      collectionId: ctx.collectionId,
       voiceId: ctx.voiceId,
       repositories: ctx.repositories,
       linearIntegrations: ctx.linearIntegrations,

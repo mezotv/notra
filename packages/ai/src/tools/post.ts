@@ -16,9 +16,9 @@ import {
 } from "@notra/ai/utils/posts";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { posts } from "@notra/db/schema";
+import { postCollections, posts } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { marked } from "marked";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
@@ -97,19 +97,39 @@ export function createCreatePostTool(
           ),
       }),
       execute: async ({ title, slug, markdown, recommendations }) => {
+        if (!config.collectionId) {
+          throw new Error("Post collection is required to create a post.");
+        }
+
+        const collectionId = config.collectionId;
         const id = nanoid();
         const content = sanitizeMarkdownHtml(await marked.parse(markdown));
-        await db.insert(posts).values({
-          id,
-          organizationId: config.organizationId,
-          title,
-          slug,
-          content,
-          markdown,
-          recommendations: recommendations ?? null,
-          contentType,
-          status: config.autoPublish ? "published" : "draft",
-          sourceMetadata: config.sourceMetadata ?? null,
+        await db.transaction(async (tx) => {
+          await tx.insert(posts).values({
+            id,
+            organizationId: config.organizationId,
+            collectionId,
+            title,
+            slug,
+            content,
+            markdown,
+            recommendations: recommendations ?? null,
+            contentType,
+            status: config.autoPublish ? "published" : "draft",
+            sourceMetadata: config.sourceMetadata ?? null,
+          });
+          await tx
+            .update(postCollections)
+            .set({
+              completedPostCount: sql`${postCollections.completedPostCount} + 1`,
+              updatedAt: new Date(),
+            })
+            .where(
+              and(
+                eq(postCollections.id, collectionId),
+                eq(postCollections.organizationId, config.organizationId)
+              )
+            );
         });
         result.posts ??= [];
         result.posts.push({
@@ -158,19 +178,39 @@ export function createCreatePostTool(
         ),
     }),
     execute: async ({ title, markdown, recommendations }) => {
+      if (!config.collectionId) {
+        throw new Error("Post collection is required to create a post.");
+      }
+
+      const collectionId = config.collectionId;
       const id = nanoid();
       const content = sanitizeMarkdownHtml(await marked.parse(markdown));
-      await db.insert(posts).values({
-        id,
-        organizationId: config.organizationId,
-        title,
-        slug: null,
-        content,
-        markdown,
-        recommendations: recommendations ?? null,
-        contentType,
-        status: config.autoPublish ? "published" : "draft",
-        sourceMetadata: config.sourceMetadata ?? null,
+      await db.transaction(async (tx) => {
+        await tx.insert(posts).values({
+          id,
+          organizationId: config.organizationId,
+          collectionId,
+          title,
+          slug: null,
+          content,
+          markdown,
+          recommendations: recommendations ?? null,
+          contentType,
+          status: config.autoPublish ? "published" : "draft",
+          sourceMetadata: config.sourceMetadata ?? null,
+        });
+        await tx
+          .update(postCollections)
+          .set({
+            completedPostCount: sql`${postCollections.completedPostCount} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(postCollections.id, collectionId),
+              eq(postCollections.organizationId, config.organizationId)
+            )
+          );
       });
       result.posts ??= [];
       result.posts.push({

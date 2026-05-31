@@ -42,6 +42,7 @@ import { stepCountIs, ToolLoopAgent } from "ai";
 
 export interface BackgroundGenOptions {
   organizationId: string;
+  collectionId: string;
   skillName: string;
   contentType: ContentType;
   brandAgentType: AgentType;
@@ -115,6 +116,7 @@ export async function runBackgroundGen(
 ): Promise<BackgroundGenResult> {
   const {
     organizationId,
+    collectionId,
     skillName,
     contentType,
     brandAgentType,
@@ -170,6 +172,7 @@ export async function runBackgroundGen(
   const postToolsResult: PostToolsResult = {};
   const postToolsConfig: PostToolsConfig = {
     organizationId,
+    collectionId,
     contentType,
     sourceMetadata,
     autoPublish,

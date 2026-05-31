@@ -46,7 +46,7 @@ const CONTENT_TYPES = [
 
 type ContentType = (typeof CONTENT_TYPES)[number];
 
-function getContentTypeLabel(contentType: ContentType): string {
+function getContentTypeLabel(contentType: string): string {
   if (contentType === "twitter_post") {
     return "tweet";
   }
@@ -58,7 +58,7 @@ interface ContentCardProps {
   id: string;
   title: string;
   preview: string;
-  contentType: ContentType;
+  contentType: string;
   status: PostStatus;
   organizationId: string;
   className?: string;
@@ -89,9 +89,17 @@ const ContentCard = memo(function ContentCard({
       });
 
       toast.success("Post deleted");
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.content.list.key(),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.list.key(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.collections.list.key(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.collections.get.key(),
+        }),
+      ]);
       setShowDeleteDialog(false);
     } catch {
       toast.error("Failed to delete post");
@@ -116,6 +124,12 @@ const ContentCard = memo(function ContentCard({
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: dashboardOrpc.content.list.key(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.collections.list.key(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.collections.get.key(),
         }),
         queryClient.invalidateQueries({
           queryKey: dashboardOrpc.content.metrics.get.queryKey({

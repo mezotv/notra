@@ -1,7 +1,11 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { SentIcon, TextIcon } from "@hugeicons/core-free-icons";
+import {
+  ArrowLeft02Icon,
+  SentIcon,
+  TextIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
 import {
@@ -618,34 +622,24 @@ export default function PageClient({
   }
 
   const content = data.content;
+  const collection = data.collection;
+  const backHref = collection
+    ? `/${organizationSlug}/collection/${collection.id}`
+    : `/${organizationSlug}/content`;
+  const backLabel = collection ? "Back to collection" : "Back to Content";
 
   return (
     <>
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
+          <Link
+            className="inline-flex w-fit items-center gap-1.5 rounded-sm text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            href={backHref}
+          >
+            <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+            {backLabel}
+          </Link>
           <div className="flex flex-wrap items-center gap-4">
-            <Link
-              className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              href={`/${organizationSlug}/content`}
-            >
-              <Button size="sm" tabIndex={-1} variant="ghost">
-                <svg
-                  className="mr-2 size-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <title>Back arrow</title>
-                  <path d="M19 12H5" />
-                  <path d="m12 19-7-7 7-7" />
-                </svg>
-                Back to Content
-              </Button>
-            </Link>
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex items-center gap-3">
                 <time

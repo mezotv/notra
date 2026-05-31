@@ -12,6 +12,7 @@ export async function handleTwitter(
   try {
     const { postId, title, posts, usage } = await generateTwitterPost({
       organizationId: ctx.organizationId,
+      collectionId: ctx.collectionId,
       voiceId: ctx.voiceId,
       repositories: ctx.repositories,
       linearIntegrations: ctx.linearIntegrations,

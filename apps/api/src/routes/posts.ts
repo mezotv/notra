@@ -9,8 +9,10 @@ import {
   setContentGenerationJobStatus,
   updateContentGenerationJob,
 } from "@notra/content-generation/jobs";
-import { posts } from "@notra/db/schema";
+import { postCollections, posts } from "@notra/db/schema";
+import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { and, count, eq, inArray, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 import {
   ALL_POST_CONTENT_TYPES,
@@ -606,49 +608,70 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
 
   const now = new Date().toISOString();
   const jobId = createContentGenerationJobId();
+  const collectionId = nanoid();
+  let collectionCreated = false;
 
-  const job = await createContentGenerationJob(redis, {
-    id: jobId,
+  await db.insert(postCollections).values({
+    id: collectionId,
     organizationId: orgId,
-    status: "queued",
-    contentType: body.contentType,
-    lookbackWindow: body.lookbackWindow,
-    repositoryIds: repositoryIds ?? [],
-    brandVoiceId: resolvedBrandVoiceId,
-    workflowRunId: null,
-    postId: null,
-    error: null,
     source: "api",
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null,
+    sourceId: jobId,
+    name: buildPostCollectionName([body.contentType], new Date(now)),
+    nameSource: "generated",
+    contentTypes: [body.contentType],
+    expectedPostCount: 1,
+    completedPostCount: 0,
+    createdAt: new Date(now),
+    updatedAt: new Date(now),
   });
+  collectionCreated = true;
 
-  await addActiveGeneration(redis, orgId, {
-    runId: jobId,
-    triggerId: "api_on_demand",
-    outputType: body.contentType,
-    triggerName: body.contentType,
-    startedAt: now,
-    source: "api",
-  });
-
-  await appendContentGenerationJobEvent(redis, {
-    id: crypto.randomUUID(),
-    jobId,
-    type: "queued",
-    message: `Queued ${body.contentType.replaceAll("_", " ")} generation`,
-    createdAt: now,
-    metadata: {
-      lookbackWindow: body.lookbackWindow,
-      repositoryCount: repositoryIds?.length ?? 0,
-      linearIntegrationCount: linearIntegrationIds?.length ?? 0,
-    },
-  });
+  let job: Awaited<ReturnType<typeof createContentGenerationJob>> | null = null;
+  let workflowTriggered = false;
 
   try {
+    job = await createContentGenerationJob(redis, {
+      id: jobId,
+      organizationId: orgId,
+      status: "queued",
+      contentType: body.contentType,
+      lookbackWindow: body.lookbackWindow,
+      repositoryIds: repositoryIds ?? [],
+      brandVoiceId: resolvedBrandVoiceId,
+      workflowRunId: null,
+      postId: null,
+      error: null,
+      source: "api",
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    });
+
+    await addActiveGeneration(redis, orgId, {
+      runId: jobId,
+      triggerId: "api_on_demand",
+      outputType: body.contentType,
+      triggerName: body.contentType,
+      startedAt: now,
+      source: "api",
+    });
+
+    await appendContentGenerationJobEvent(redis, {
+      id: crypto.randomUUID(),
+      jobId,
+      type: "queued",
+      message: `Queued ${body.contentType.replaceAll("_", " ")} generation`,
+      createdAt: now,
+      metadata: {
+        lookbackWindow: body.lookbackWindow,
+        repositoryCount: repositoryIds?.length ?? 0,
+        linearIntegrationCount: linearIntegrationIds?.length ?? 0,
+      },
+    });
+
     const workflowRunId = await triggerContentGenerationWorkflow(runtimeEnv, {
       organizationId: orgId,
+      collectionId,
       jobId,
       runId: jobId,
       contentType: body.contentType,
@@ -662,6 +685,7 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
       aiCreditMarkup: false,
       source: "api",
     });
+    workflowTriggered = true;
 
     const updatedJob = await updateContentGenerationJob(redis, jobId, {
       workflowRunId,
@@ -681,21 +705,34 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
     const message =
       error instanceof Error ? error.message : "Failed to trigger workflow";
 
-    const failedJob = await setContentGenerationJobStatus(
-      redis,
-      jobId,
-      "failed",
-      { error: message }
-    );
+    if (collectionCreated && !workflowTriggered) {
+      await db
+        .delete(postCollections)
+        .where(
+          and(
+            eq(postCollections.id, collectionId),
+            eq(postCollections.organizationId, orgId)
+          )
+        )
+        .catch(() => null);
+    }
 
-    await appendContentGenerationJobEvent(redis, {
-      id: crypto.randomUUID(),
-      jobId,
-      type: "failed",
-      message,
-      createdAt: new Date().toISOString(),
-      metadata: null,
-    });
+    const failedJob = job
+      ? await setContentGenerationJobStatus(redis, jobId, "failed", {
+          error: message,
+        }).catch(() => null)
+      : null;
+
+    if (job) {
+      await appendContentGenerationJobEvent(redis, {
+        id: crypto.randomUUID(),
+        jobId,
+        type: "failed",
+        message,
+        createdAt: new Date().toISOString(),
+        metadata: null,
+      }).catch(() => null);
+    }
 
     return c.json(
       {

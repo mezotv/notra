@@ -59,6 +59,7 @@ export interface LinearIntegrationRef {
 
 export interface ChangelogAgentOptions {
   organizationId: string;
+  collectionId: string;
   voiceId?: string;
   repositories: Array<{
     integrationId: string;
@@ -89,6 +90,7 @@ export interface LinkedInAgentResult {
 
 export interface LinkedInAgentOptions {
   organizationId: string;
+  collectionId: string;
   voiceId?: string;
   repositories: Array<{
     integrationId: string;
@@ -119,6 +121,7 @@ export interface TwitterAgentResult {
 
 export interface TwitterAgentOptions {
   organizationId: string;
+  collectionId: string;
   voiceId?: string;
   repositories: Array<{
     integrationId: string;
@@ -149,6 +152,7 @@ export interface BlogPostAgentResult {
 
 export interface BlogPostAgentOptions {
   organizationId: string;
+  collectionId: string;
   voiceId?: string;
   repositories: Array<{
     integrationId: string;

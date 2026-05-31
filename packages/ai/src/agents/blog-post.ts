@@ -9,6 +9,7 @@ export async function generateBlogPost(
 ): Promise<BlogPostAgentResult> {
   return runBackgroundGen({
     organizationId: options.organizationId,
+    collectionId: options.collectionId,
     skillName: "blog-post",
     contentType: "blog_post",
     brandAgentType: "blog",
