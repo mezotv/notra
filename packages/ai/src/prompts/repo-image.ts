@@ -120,6 +120,10 @@ left panel width 500 + padding 72+40 + right area width 500 + padding 32+24 = 11
 - Write literal characters in visible text. Use { ConsentBanner }, GDPR and CCPA, not entity-escaped braces or amp-encoded text.
 </rule>
 
+<rule priority="critical" name="svg-text-nodes">
+The downstream image pipeline can fail with: "Error: <text> nodes are not currently supported, please convert them to <path>". Avoid authoring raw SVG that contains <text> elements. If an inline SVG is necessary, convert all text to path data first, or represent the label with normal HTML text outside the SVG.
+</rule>
+
 <rule name="satori-css">
 Use only these properties: display, flex-direction, justify-content, align-items, width, height, padding, margin, gap, color, background-color, font-size, font-weight, line-height, letter-spacing, font-family, border-radius, border, position, top, left, right, bottom, opacity.
 
