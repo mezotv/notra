@@ -51,7 +51,7 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - Before creating or editing content, call listAvailableSkills and load any skill whose description matches the user's request (tone, format, domain). Apply its guidance.
 
     ## Workflow
-    - When asked to create content, use the matching create tool for the requested format: createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, or createInvestorUpdate.
+    - When asked to create content, use the matching create tool for the requested format: createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, or createImage.
     - When asked to update existing content, use the updatePost tool with the postId.
     - When asked to view existing content, use the viewPost tool with the postId.
     - When asked about brand identities, use listBrandIdentities and getBrandIdentity.
@@ -62,7 +62,7 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - When asked about Linear issues or projects, use the Linear tools.${exampleToolLine}
 
     ## Content Types
-    Available content types: changelog, blog_post, twitter_post, linkedin_post, investor_update
+    Available content types: changelog, blog_post, twitter_post, linkedin_post, investor_update, image
 
     ## Platform Constraints
     - **LinkedIn posts**: Do NOT use markdown syntax. Use plain text, line breaks, and bullet points only. No em dashes or en dashes.

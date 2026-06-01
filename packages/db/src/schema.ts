@@ -619,9 +619,9 @@ export const skills = pgTable(
 );
 
 export interface PostSourceMetadata {
-  triggerId: string;
-  triggerSourceType: string;
-  repositories: { owner: string; repo: string }[];
+  triggerId?: string;
+  triggerSourceType?: string;
+  repositories?: { owner: string; repo: string }[];
   linearIntegrations?: Array<{ integrationId: string }>;
   lookbackWindow?: string;
   lookbackRange?: { start: string; end: string };
@@ -633,6 +633,27 @@ export interface PostSourceMetadata {
   selectedPullRequests?: Array<{ repositoryId: string; number: number }>;
   selectedReleases?: Array<{ repositoryId: string; tagName: string }>;
   selectedLinearIssues?: Array<{ integrationId: string; issueId: string }>;
+  type?: "generated_image";
+  chatId?: string | null;
+  integrationId?: string;
+  branch?: string;
+  mode?: string;
+  prompt?: string | null;
+  prNumber?: number | null;
+  commitSha?: string | null;
+  sourcePostId?: string | null;
+  sandbox?: {
+    boxId?: string;
+    snapshotId?: string;
+    snapshotName?: string;
+    snapshotSizeBytes?: number;
+    snapshotCreatedAt?: string;
+  } | null;
+  usage?: unknown;
+  artifacts?: {
+    html?: string;
+    svg?: string;
+  };
 }
 
 export const usersRelations = relations(users, ({ many }) => ({

@@ -15,6 +15,7 @@ export const SUPPORTED_CONTENT_GENERATION_TYPES = [
   "blog_post",
   "linkedin_post",
   "twitter_post",
+  "image",
 ] as const satisfies readonly z.infer<typeof contentTypeSchema>[];
 
 export const lookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
@@ -173,6 +174,7 @@ export const contentGenerationJobSchema = z.object({
 
 export const contentGenerationWorkflowPayloadSchema = z.object({
   organizationId: z.string().min(1),
+  userId: z.string().min(1).optional(),
   collectionId: z.string().min(1),
   runId: z.string().min(1),
   jobId: z.string().min(1).optional(),

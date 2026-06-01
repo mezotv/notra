@@ -14,6 +14,8 @@ import type {
 
 export interface StandaloneChatInput {
   organizationId: string;
+  chatId?: string;
+  userId?: string;
   messages: UIMessage[];
   context?: StandaloneChatContextItem[];
   maxSteps?: number;

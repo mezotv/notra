@@ -50,6 +50,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     requestId,
     organizationId,
     chatId,
+    userId,
     context: standaloneContext,
     useMarkup,
     model,
@@ -136,6 +137,8 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     const { stream, routingDecision } = await orchestrateStandaloneChat(
       {
         organizationId,
+        chatId,
+        userId,
         messages,
         context: standaloneContext as StandaloneChatContextItem[],
         maxSteps: 5,
@@ -174,6 +177,10 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
           usageSnapshot.inputTokens = usage.inputTokens ?? 0;
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
+          usageSnapshot.cacheReadTokens =
+            usage.inputTokenDetails?.cacheReadTokens ?? 0;
+          usageSnapshot.cacheWriteTokens =
+            usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
           if (!autumn) {
             return;

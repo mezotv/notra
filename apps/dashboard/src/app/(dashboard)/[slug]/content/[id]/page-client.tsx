@@ -524,11 +524,14 @@ export default function PageClient({
     for (const message of messages) {
       if (message.role === "assistant" && message.parts) {
         for (const part of message.parts) {
-          if (part.type === "tool-editMarkdown") {
+          if (
+            part.type === "tool-editMarkdown" ||
+            part.type === "tool-reviseImage"
+          ) {
             const toolPart = part as {
               toolCallId: string;
               state: string;
-              output?: { updatedMarkdown?: string };
+              output?: { markdown?: string; updatedMarkdown?: string };
             };
 
             if (processedToolCallsRef.current.has(toolPart.toolCallId)) {
@@ -537,22 +540,33 @@ export default function PageClient({
 
             if (
               toolPart.state === "output-available" &&
-              toolPart.output?.updatedMarkdown
+              (toolPart.output?.updatedMarkdown || toolPart.output?.markdown)
             ) {
               processedToolCallsRef.current.add(toolPart.toolCallId);
-              const fixedMarkdown = remend(toolPart.output.updatedMarkdown);
+              const nextMarkdown =
+                toolPart.output.updatedMarkdown ?? toolPart.output.markdown;
+              if (!nextMarkdown) {
+                continue;
+              }
+              const fixedMarkdown =
+                part.type === "tool-reviseImage"
+                  ? nextMarkdown
+                  : remend(nextMarkdown);
               console.log(
-                `[Tool] editMarkdown result applied, toolCallId=${toolPart.toolCallId}`
+                `[Tool] ${part.type} result applied, toolCallId=${toolPart.toolCallId}`
               );
               setEditedMarkdown(fixedMarkdown);
               editedMarkdownRef.current = fixedMarkdown;
               editorRef.current?.setMarkdown(fixedMarkdown);
+              queryClient.invalidateQueries({
+                queryKey: ["content", organizationId, contentId],
+              });
             }
           }
         }
       }
     }
-  }, [messages]);
+  }, [contentId, messages, organizationId, queryClient]);
 
   const handleAiEdit = useCallback(
     async (instruction: string) => {
@@ -669,12 +683,25 @@ export default function PageClient({
                     return null;
                   }
                   const meta = parsed.data;
-                  const repoLabel = formatRepos(meta.repositories);
-                  const needsTooltip = meta.repositories.length > 1;
+                  const repositories = meta.repositories ?? [];
+                  if (
+                    repositories.length === 0 ||
+                    !meta.triggerSourceType ||
+                    !meta.lookbackWindow ||
+                    !meta.lookbackRange
+                  ) {
+                    return null;
+                  }
+
+                  const triggerSourceType = meta.triggerSourceType;
+                  const lookbackWindow = meta.lookbackWindow;
+                  const lookbackRange = meta.lookbackRange;
+                  const repoLabel = formatRepos(repositories);
+                  const needsTooltip = repositories.length > 1;
                   return (
                     <p className="text-muted-foreground text-xs">
                       <span className="capitalize">
-                        {formatTriggerType(meta.triggerSourceType)}
+                        {formatTriggerType(triggerSourceType)}
                       </span>
                       {" \u00B7 "}
                       {needsTooltip ? (
@@ -688,7 +715,7 @@ export default function PageClient({
                           />
                           <TooltipContent>
                             <ul>
-                              {meta.repositories.map((r) => (
+                              {repositories.map((r) => (
                                 <li key={`${r.owner}/${r.repo}`}>
                                   {r.owner}/{r.repo}
                                 </li>
@@ -701,13 +728,9 @@ export default function PageClient({
                       )}
                       {" \u00B7 "}
                       <span className="capitalize">
-                        {formatLookbackWindow(meta.lookbackWindow)}
+                        {formatLookbackWindow(lookbackWindow)}
                       </span>{" "}
-                      (
-                      {formatDateRange(
-                        meta.lookbackRange.start,
-                        meta.lookbackRange.end
-                      )}
+                      ({formatDateRange(lookbackRange.start, lookbackRange.end)}
                       )
                       {meta.brandVoiceName &&
                         (() => {

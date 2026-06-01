@@ -62,6 +62,13 @@ async function runRepoImageAgentStream(params: {
       console.log(`[repo-image] ${params.label} tool: ${chunk.toolName}`);
     }
   }
+
+  return {
+    cost:
+      typeof stream === "object" && stream !== null && "cost" in stream
+        ? (stream.cost as unknown)
+        : undefined,
+  };
 }
 
 async function hasRepoImageOutput(box: Awaited<ReturnType<typeof Box.create>>) {
@@ -194,8 +201,10 @@ async function buildSourceContext(params: {
 export async function generateRepoImage(params: {
   input: GenerateRepoImageInput;
   userId: string;
+  restoreSnapshotId?: string | null;
+  snapshotName?: string;
 }): Promise<GenerateRepoImageResult> {
-  const { input, userId } = params;
+  const { input, restoreSnapshotId, snapshotName, userId } = params;
 
   if (!process.env.UPSTASH_BOX_API_KEY) {
     throw new RepoImageError(
@@ -241,9 +250,9 @@ export async function generateRepoImage(params: {
   });
 
   return await withLongFetchTimeouts(async () => {
-    const box = await Box.create({
+    const boxConfig = {
       apiKey: process.env.UPSTASH_BOX_API_KEY,
-      runtime: "node",
+      runtime: "node" as const,
       git: {
         ...(token ? { token } : {}),
         userName: "notra-bot",
@@ -254,17 +263,24 @@ export async function generateRepoImage(params: {
         model: OpenCodeModel.Claude_Sonnet_4_6,
       },
       timeout: AGENT_TIMEOUT_MS,
-    });
+    };
+    const box = restoreSnapshotId
+      ? await Box.fromSnapshot(restoreSnapshotId, boxConfig)
+      : await Box.create(boxConfig);
 
     let html: string;
+    let usage: GenerateRepoImageResult["usage"];
+    let snapshot: Awaited<ReturnType<typeof box.snapshot>> | null = null;
 
     try {
-      await box.git.clone({
-        repo: `https://github.com/${repository.owner}/${repository.repo}.git`,
-        branch: input.branch,
-      });
+      if (!restoreSnapshotId) {
+        await box.git.clone({
+          repo: `https://github.com/${repository.owner}/${repository.repo}.git`,
+          branch: input.branch,
+        });
+      }
 
-      await runRepoImageAgentStream({
+      const initialRun = await runRepoImageAgentStream({
         box,
         prompt: buildExtractionPrompt({
           owner: repository.owner,
@@ -275,17 +291,22 @@ export async function generateRepoImage(params: {
         timeout: AGENT_TIMEOUT_MS,
         label: "initial",
       });
+      usage = extractRepoImageUsage(initialRun.cost);
 
       if (!(await hasRepoImageOutput(box))) {
         console.warn(
           `[repo-image] missing ${REPO_IMAGE_OUTPUT_HTML_PATH}; asking agent to recover`
         );
-        await runRepoImageAgentStream({
+        const recoveryRun = await runRepoImageAgentStream({
           box,
           prompt: buildMissingOutputRecoveryPrompt(),
           timeout: RECOVERY_AGENT_TIMEOUT_MS,
           label: "recovery",
         });
+        usage = mergeRepoImageUsage(
+          usage,
+          extractRepoImageUsage(recoveryRun.cost)
+        );
       }
 
       if (!(await hasRepoImageOutput(box))) {
@@ -303,6 +324,11 @@ export async function generateRepoImage(params: {
       }
 
       html = await box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH);
+      snapshot = await box.snapshot({
+        name:
+          snapshotName ??
+          `repo-image-${repository.owner}-${repository.repo}-${Date.now()}`,
+      });
     } finally {
       await box.delete().catch((error: unknown) => {
         console.error("Failed to delete repo-image box", error);
@@ -311,6 +337,73 @@ export async function generateRepoImage(params: {
 
     const { svg, pngBase64 } = await renderHtmlToImages(html);
 
-    return { pngBase64, svg, html };
+    return {
+      pngBase64,
+      svg,
+      html,
+      sandbox: snapshot
+        ? {
+            boxId: readSnapshotString(snapshot, "boxId"),
+            snapshotId: readSnapshotString(snapshot, "id"),
+            snapshotName: readSnapshotString(snapshot, "name"),
+            snapshotSizeBytes: readSnapshotNumber(snapshot, "sizeBytes"),
+            snapshotCreatedAt: readSnapshotString(snapshot, "createdAt"),
+          }
+        : null,
+      usage,
+    };
   });
+}
+
+function readSnapshotString(snapshot: unknown, key: string) {
+  if (typeof snapshot !== "object" || snapshot === null || !(key in snapshot)) {
+    return undefined;
+  }
+  const value = (snapshot as Record<string, unknown>)[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function readSnapshotNumber(snapshot: unknown, key: string) {
+  if (typeof snapshot !== "object" || snapshot === null || !(key in snapshot)) {
+    return undefined;
+  }
+  const value = (snapshot as Record<string, unknown>)[key];
+  return typeof value === "number" ? value : undefined;
+}
+
+function extractRepoImageUsage(
+  cost: unknown
+): GenerateRepoImageResult["usage"] {
+  if (!cost || typeof cost !== "object") {
+    return undefined;
+  }
+
+  const totalUsd =
+    "totalUsd" in cost && typeof cost.totalUsd === "number"
+      ? cost.totalUsd
+      : undefined;
+
+  return {
+    ...(totalUsd === undefined ? {} : { totalUsd }),
+    raw: cost,
+  };
+}
+
+function mergeRepoImageUsage(
+  current: GenerateRepoImageResult["usage"],
+  next: GenerateRepoImageResult["usage"]
+): GenerateRepoImageResult["usage"] {
+  if (!current) {
+    return next;
+  }
+  if (!next) {
+    return current;
+  }
+  return {
+    totalUsd:
+      current.totalUsd === undefined && next.totalUsd === undefined
+        ? undefined
+        : (current.totalUsd ?? 0) + (next.totalUsd ?? 0),
+    raw: [current.raw, next.raw],
+  };
 }

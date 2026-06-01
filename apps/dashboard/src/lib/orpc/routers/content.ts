@@ -1396,7 +1396,7 @@ export const contentRouter = {
         .and(z.object({ collectionId: z.string().min(1) }))
     )
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -1490,6 +1490,7 @@ export const contentRouter = {
 
       await triggerOnDemandContent({
         organizationId: input.organizationId,
+        userId: auth.user.id,
         collectionId: input.collectionId,
         runId,
         contentType: input.contentType,

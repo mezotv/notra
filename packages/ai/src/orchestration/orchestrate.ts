@@ -50,6 +50,9 @@ export async function orchestrateChat(
     messages,
     currentMarkdown,
     contentType,
+    currentPostId,
+    userId,
+    imageDefaults,
     selection,
     context = [],
     maxSteps = 1,
@@ -94,6 +97,10 @@ export async function orchestrateChat(
     {
       organizationId,
       currentMarkdown,
+      contentType,
+      currentPostId,
+      userId,
+      imageDefaults,
       validatedIntegrations,
     },
     {

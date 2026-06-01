@@ -2,6 +2,7 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
   blog_post: "Blog post",
   changelog: "Changelog",
   investor_update: "Investor update",
+  image: "Image",
   linkedin_post: "LinkedIn post",
   twitter_post: "Twitter post",
 };

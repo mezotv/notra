@@ -14,6 +14,7 @@ import type { PostSummary } from "@/types/posts";
 
 export interface ContentGenerationContext {
   organizationId: string;
+  userId?: string;
   collectionId: string;
   repositories: Array<{
     integrationId: string;

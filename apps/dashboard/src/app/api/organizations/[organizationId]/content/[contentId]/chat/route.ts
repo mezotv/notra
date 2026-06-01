@@ -14,7 +14,10 @@ import {
   getLinearToolContextByIntegrationId,
 } from "@notra/ai/integrations/linear";
 import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
+import { db } from "@notra/db/drizzle";
+import { posts } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
+import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -120,6 +123,10 @@ export const POST = withEvlog(async function POST(
     } = parseResult.data;
 
     const autumnClient = autumn;
+    const imageDefaults =
+      contentType === "image"
+        ? await getImageDefaults({ organizationId, contentId })
+        : undefined;
 
     const { stream, routingDecision } = await orchestrateChat(
       {
@@ -127,6 +134,9 @@ export const POST = withEvlog(async function POST(
         messages,
         currentMarkdown,
         contentType,
+        currentPostId: contentId,
+        userId: auth.context.user.id,
+        imageDefaults,
         selection,
         context,
         maxSteps: 50,
@@ -223,3 +233,53 @@ export const POST = withEvlog(async function POST(
     );
   }
 });
+
+async function getImageDefaults(params: {
+  organizationId: string;
+  contentId: string;
+}) {
+  const post = await db.query.posts.findFirst({
+    where: and(
+      eq(posts.id, params.contentId),
+      eq(posts.organizationId, params.organizationId)
+    ),
+    columns: {
+      title: true,
+      sourceMetadata: true,
+    },
+  });
+
+  const metadata = post?.sourceMetadata;
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return;
+  }
+
+  const integrationId =
+    "integrationId" in metadata && typeof metadata.integrationId === "string"
+      ? metadata.integrationId
+      : null;
+  const branch =
+    "branch" in metadata && typeof metadata.branch === "string"
+      ? metadata.branch
+      : null;
+  const sandbox =
+    "sandbox" in metadata &&
+    metadata.sandbox &&
+    typeof metadata.sandbox === "object"
+      ? metadata.sandbox
+      : null;
+  const snapshotId =
+    sandbox && "snapshotId" in sandbox && typeof sandbox.snapshotId === "string"
+      ? sandbox.snapshotId
+      : null;
+
+  if (!(integrationId && branch && snapshotId && post?.title)) {
+    return;
+  }
+
+  return {
+    integrationId,
+    branch,
+    title: post.title,
+  };
+}

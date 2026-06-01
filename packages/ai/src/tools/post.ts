@@ -32,6 +32,7 @@ const CREATE_POST_TOOL_NAMES = {
   twitter_post: "createTwitterPost",
   linkedin_post: "createLinkedInPost",
   investor_update: "createInvestorUpdate",
+  image: "createImage",
 } as const;
 
 export function getCreatePostToolName(contentType: string): string {

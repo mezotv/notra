@@ -105,6 +105,13 @@ export interface OrchestrateInput {
   messages: UIMessage[];
   currentMarkdown: string;
   contentType?: string;
+  currentPostId?: string;
+  userId?: string;
+  imageDefaults?: {
+    integrationId: string;
+    branch: string;
+    title: string;
+  };
   selection?: TextSelection;
   context?: ContextItem[];
   maxSteps?: number;
@@ -121,6 +128,14 @@ export interface OrchestrateResult {
 export interface BuildToolSetParams {
   organizationId: string;
   currentMarkdown: string;
+  contentType?: string;
+  currentPostId?: string;
+  userId?: string;
+  imageDefaults?: {
+    integrationId: string;
+    branch: string;
+    title: string;
+  };
   onMarkdownUpdate?: (markdown: string) => void;
   validatedIntegrations: ValidatedIntegration[];
 }

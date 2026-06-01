@@ -1,5 +1,5 @@
 {
-  "lockfileVersion": 1,
+  "lockfileVersion": 2,
   "configVersion": 1,
   "workspaces": {
     "": {
@@ -78,7 +78,6 @@
         "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
         "@notra/email": "workspace:*",
-        "@notra/kiwi": "workspace:*",
         "@notra/ui": "workspace:*",
         "@notra/utils": "workspace:*",
         "@opentelemetry/api": "^1.9.1",

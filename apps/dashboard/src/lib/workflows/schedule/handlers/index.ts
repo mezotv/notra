@@ -6,14 +6,16 @@ import type {
 } from "../types";
 import { handleBlogPost } from "./blog-post";
 import { handleChangelog } from "./changelog";
+import { handleImage } from "./image";
 import { handleLinkedIn } from "./linkedin";
 import { handleTwitter } from "./twitter";
 
-const handlers: Record<ScheduleOutputType, ContentHandler> = {
+const handlers: Record<string, ContentHandler> = {
   changelog: handleChangelog,
   blog_post: handleBlogPost,
   linkedin_post: handleLinkedIn,
   twitter_post: handleTwitter,
+  image: handleImage,
 };
 
 export async function generateScheduledContent(

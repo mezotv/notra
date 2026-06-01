@@ -1,0 +1,426 @@
+import { generateRepoImage, RepoImageError } from "@notra/ai/agents/repo-image";
+import { autumn } from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { repoImageModeSchema } from "@notra/ai/schemas/repo-image";
+import { toolDescription } from "@notra/ai/utils/description";
+import { db } from "@notra/db/drizzle";
+import { postCollections, posts } from "@notra/db/schema";
+import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { type Tool, tool } from "ai";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
+
+const imageToolInputSchema = z
+  .object({
+    integrationId: z.string().min(1, "Integration ID is required"),
+    branch: z.string().trim().min(1, "Branch is required"),
+    mode: repoImageModeSchema,
+    prompt: z.string().trim().max(500).optional(),
+    prNumber: z.number().int().positive().optional(),
+    commitSha: z
+      .string()
+      .trim()
+      .regex(/^[0-9a-f]{7,40}$/i, "Must be a git SHA (7-40 hex chars)")
+      .optional(),
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(120)
+      .describe("A concise title for the saved image content"),
+    sourcePostId: z
+      .string()
+      .trim()
+      .min(1)
+      .optional()
+      .describe(
+        "Optional existing image post ID to continue from its saved sandbox snapshot"
+      ),
+  })
+  .superRefine((value, ctx) => {
+    if (value.mode === "prompt" && !value.prompt) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["prompt"],
+        message: "Prompt is required",
+      });
+    }
+    if (value.mode === "pr" && value.prNumber === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["prNumber"],
+        message: "PR number is required",
+      });
+    }
+    if (value.mode === "commit" && !value.commitSha) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["commitSha"],
+        message: "Commit SHA is required",
+      });
+    }
+  });
+
+interface ImageToolConfig {
+  chatId?: string;
+  organizationId: string;
+  userId: string;
+}
+
+export function createImageTool(config: ImageToolConfig): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: "createImage",
+      intro:
+        "Generates a 1200x630 social image from a connected GitHub repository in a sandbox, saves the image as content, and snapshots the sandbox for later follow-up work.",
+      whenToUse:
+        "When the user asks to create, generate, revise, or continue an image/visual/social card from repository context.",
+      usageNotes:
+        "Requires integrationId and branch. For revisions, pass sourcePostId when the user refers to a prior generated image so the sandbox can be restored from its snapshot.",
+    }),
+    inputSchema: imageToolInputSchema,
+    execute: async ({ sourcePostId, title, ...input }) => {
+      const restoreSnapshotId = sourcePostId
+        ? await getImageSnapshotId(config.organizationId, sourcePostId)
+        : null;
+
+      const result = await generateRepoImage({
+        input: {
+          organizationId: config.organizationId,
+          integrationId: input.integrationId,
+          branch: input.branch,
+          mode: input.mode,
+          prompt: input.prompt,
+          prNumber: input.prNumber,
+          commitSha: input.commitSha,
+        },
+        restoreSnapshotId,
+        snapshotName: `image-${config.organizationId}-${Date.now()}`,
+        userId: config.userId,
+      });
+
+      const postId = await saveGeneratedImagePost({
+        chatId: config.chatId,
+        organizationId: config.organizationId,
+        title,
+        markdown: `![${escapeMarkdownAlt(title)}](data:image/png;base64,${result.pngBase64})`,
+        html: `<img alt="${escapeHtml(title)}" src="data:image/png;base64,${result.pngBase64}" />`,
+        sourceMetadata: {
+          type: "generated_image",
+          chatId: config.chatId ?? null,
+          integrationId: input.integrationId,
+          branch: input.branch,
+          mode: input.mode,
+          prompt: input.prompt ?? null,
+          prNumber: input.prNumber ?? null,
+          commitSha: input.commitSha ?? null,
+          sourcePostId: sourcePostId ?? null,
+          sandbox: result.sandbox,
+          usage: result.usage ?? null,
+          artifacts: {
+            html: result.html,
+            svg: result.svg,
+          },
+        },
+      });
+
+      await trackImageGenerationUsage({
+        organizationId: config.organizationId,
+        postId,
+        usage: result.usage,
+      });
+
+      return {
+        postId,
+        title,
+        status: "created",
+        contentType: "image",
+        sandbox: result.sandbox,
+        usage: result.usage ?? null,
+      };
+    },
+  });
+}
+
+interface ImageRevisionToolConfig {
+  organizationId: string;
+  userId: string;
+  postId: string;
+  title: string;
+  integrationId: string;
+  branch: string;
+}
+
+export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: "reviseImage",
+      intro:
+        "Revises the current generated image by restoring its saved sandbox snapshot, applying the requested visual change, rendering a new 1200x630 PNG, saving it back to this image content item, and snapshotting the sandbox again.",
+      whenToUse:
+        "When editing or revising the current image content item. Use this instead of markdown editing.",
+      usageNotes:
+        "Describe the requested visual change in prompt. The current image post ID, repository integration, branch, and sandbox snapshot are supplied automatically.",
+    }),
+    inputSchema: z.object({
+      prompt: z
+        .string()
+        .trim()
+        .min(1)
+        .max(500)
+        .describe("The visual changes to apply to the current image"),
+      title: z
+        .string()
+        .trim()
+        .min(1)
+        .max(120)
+        .optional()
+        .describe("Optional updated title for the image content"),
+    }),
+    execute: async ({ prompt, title }) => {
+      const restoreSnapshotId = await getImageSnapshotId(
+        config.organizationId,
+        config.postId
+      );
+      const nextTitle = title ?? config.title;
+
+      const result = await generateRepoImage({
+        input: {
+          organizationId: config.organizationId,
+          integrationId: config.integrationId,
+          branch: config.branch,
+          mode: "prompt",
+          prompt,
+        },
+        restoreSnapshotId,
+        snapshotName: `image-${config.organizationId}-${Date.now()}`,
+        userId: config.userId,
+      });
+
+      const markdown = `![${escapeMarkdownAlt(nextTitle)}](data:image/png;base64,${result.pngBase64})`;
+      const html = `<img alt="${escapeHtml(nextTitle)}" src="data:image/png;base64,${result.pngBase64}" />`;
+      const sourceMetadata = await buildRevisionSourceMetadata({
+        organizationId: config.organizationId,
+        postId: config.postId,
+        integrationId: config.integrationId,
+        branch: config.branch,
+        prompt,
+        result,
+      });
+
+      await db
+        .update(posts)
+        .set({
+          title: nextTitle,
+          content: html,
+          markdown,
+          sourceMetadata,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(posts.id, config.postId),
+            eq(posts.organizationId, config.organizationId)
+          )
+        );
+
+      await trackImageGenerationUsage({
+        organizationId: config.organizationId,
+        postId: config.postId,
+        usage: result.usage,
+      });
+
+      return {
+        postId: config.postId,
+        title: nextTitle,
+        status: "updated",
+        contentType: "image",
+        markdown,
+        sandbox: result.sandbox,
+        usage: result.usage ?? null,
+      };
+    },
+  });
+}
+
+async function buildRevisionSourceMetadata(params: {
+  organizationId: string;
+  postId: string;
+  integrationId: string;
+  branch: string;
+  prompt: string;
+  result: Awaited<ReturnType<typeof generateRepoImage>>;
+}) {
+  const post = await db.query.posts.findFirst({
+    where: and(
+      eq(posts.id, params.postId),
+      eq(posts.organizationId, params.organizationId)
+    ),
+  });
+  const existing =
+    post?.sourceMetadata &&
+    typeof post.sourceMetadata === "object" &&
+    !Array.isArray(post.sourceMetadata)
+      ? post.sourceMetadata
+      : {};
+
+  return {
+    ...existing,
+    type: "generated_image",
+    integrationId: params.integrationId,
+    branch: params.branch,
+    mode: "prompt",
+    prompt: params.prompt,
+    sourcePostId: params.postId,
+    sandbox: params.result.sandbox,
+    usage: params.result.usage ?? null,
+    artifacts: {
+      html: params.result.html,
+      svg: params.result.svg,
+    },
+  };
+}
+
+async function trackImageGenerationUsage(params: {
+  organizationId: string;
+  postId: string;
+  usage: { totalUsd?: number; raw?: unknown } | undefined;
+}) {
+  if (!autumn || params.usage?.totalUsd === undefined) {
+    return;
+  }
+
+  const costCents = Math.max(1, Math.ceil(params.usage.totalUsd * 100));
+
+  try {
+    await autumn.track({
+      customerId: params.organizationId,
+      featureId: FEATURES.AI_CREDITS,
+      value: costCents,
+      properties: {
+        source: "image_generation",
+        post_id: params.postId,
+        total_usd: params.usage.totalUsd,
+        cost_cents: costCents,
+      },
+    });
+  } catch (error) {
+    console.error("[Autumn] Track error after image generation:", {
+      customerId: params.organizationId,
+      postId: params.postId,
+      error,
+    });
+  }
+}
+
+async function getImageSnapshotId(organizationId: string, postId: string) {
+  const post = await db.query.posts.findFirst({
+    where: and(eq(posts.id, postId), eq(posts.organizationId, organizationId)),
+  });
+
+  if (!post) {
+    throw new RepoImageError("not_found", "Source image post not found");
+  }
+
+  const metadata = post.sourceMetadata;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    !("sandbox" in metadata) ||
+    typeof metadata.sandbox !== "object" ||
+    metadata.sandbox === null ||
+    !("snapshotId" in metadata.sandbox) ||
+    typeof metadata.sandbox.snapshotId !== "string"
+  ) {
+    throw new RepoImageError(
+      "invalid_source",
+      "Source image post does not have a sandbox snapshot"
+    );
+  }
+
+  return metadata.sandbox.snapshotId;
+}
+
+async function saveGeneratedImagePost(params: {
+  chatId?: string;
+  organizationId: string;
+  title: string;
+  markdown: string;
+  html: string;
+  sourceMetadata: Record<string, unknown>;
+}) {
+  const postId = nanoid();
+  const collectionId = nanoid();
+  const now = new Date();
+  const contentTypesJson = JSON.stringify(["image"]);
+
+  const [collection] = await db
+    .insert(postCollections)
+    .values({
+      id: collectionId,
+      organizationId: params.organizationId,
+      source: "chat",
+      sourceId: params.chatId ?? null,
+      name: buildPostCollectionName(["image"], now),
+      nameSource: "generated",
+      contentTypes: ["image"],
+      expectedPostCount: null,
+      completedPostCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        postCollections.organizationId,
+        postCollections.source,
+        postCollections.sourceId,
+      ],
+      targetWhere: and(
+        eq(postCollections.source, "chat"),
+        isNotNull(postCollections.sourceId)
+      ),
+      set: {
+        contentTypes: sql`CASE
+          WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
+            THEN ${postCollections.contentTypes}
+          ELSE ${postCollections.contentTypes} || ${contentTypesJson}::jsonb
+        END`,
+        updatedAt: now,
+      },
+    })
+    .returning({ id: postCollections.id });
+
+  if (!collection) {
+    throw new Error("Failed to create image content collection");
+  }
+
+  await db.insert(posts).values({
+    id: postId,
+    organizationId: params.organizationId,
+    collectionId: collection.id,
+    title: params.title,
+    slug: null,
+    content: params.html,
+    markdown: params.markdown,
+    recommendations: null,
+    contentType: "image",
+    status: "draft",
+    sourceMetadata: params.sourceMetadata,
+  });
+
+  return postId;
+}
+
+function escapeMarkdownAlt(value: string) {
+  return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}

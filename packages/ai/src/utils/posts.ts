@@ -24,6 +24,7 @@ export function serializePostDetail(post: NonNullable<SinglePostRecord>) {
     markdown: post.markdown,
     recommendations: post.recommendations,
     contentType: post.contentType,
+    sourceMetadata: post.sourceMetadata,
     status: post.status,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),

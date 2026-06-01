@@ -43,6 +43,8 @@ export interface ChatUsageSnapshot {
   inputTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
 }
 
 export interface ChatImageAttachmentProps {
