@@ -93,11 +93,6 @@ export default function PageClient({
                   <TableHead className={cn(HEADER_CLASS, "w-[160px]")}>
                     Types
                   </TableHead>
-                  <TableHead
-                    className={cn(HEADER_CLASS, "w-[90px] text-right")}
-                  >
-                    Posts
-                  </TableHead>
                   <TableHead className={cn(HEADER_CLASS, "w-[150px]")}>
                     Created
                   </TableHead>
@@ -122,9 +117,6 @@ export default function PageClient({
                         <GroupContentTypes
                           contentTypes={collection.contentTypes}
                         />
-                      </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">
-                        {collection.postCount}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
                         {formatRelativeDate(collection.createdAt)}
