@@ -32,6 +32,7 @@ export const OUTPUT_CONTENT_TYPES = [
   "twitter_post",
   "linkedin_post",
   "investor_update",
+  "image",
 ] as const;
 export type OutputContentType = (typeof OUTPUT_CONTENT_TYPES)[number];
 
@@ -282,6 +283,7 @@ export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = [
   "blog_post",
   "linkedin_post",
   "twitter_post",
+  "image",
 ] as const;
 export type ScheduleOutputType =
   (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];

@@ -35,9 +35,9 @@ export const FORMAT_ORDER: ScheduleOutputType[] = [
   "blog_post",
   "linkedin_post",
   "twitter_post",
+  "image",
 ];
 
 export const CREATE_CONTENT_FORMAT_ORDER: OnDemandContentType[] = [
   ...FORMAT_ORDER,
-  "image",
 ];

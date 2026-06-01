@@ -1,5 +1,6 @@
 "use client";
 
+import { isEmbeddedImageDataUrl } from "@notra/ai/utils/html";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import Image from "next/image";
 import type { ContentEditorProps } from "./types";
@@ -14,7 +15,7 @@ function getImageSource(markdown: string): string | null {
   }
 
   const htmlMatch = markdown.match(HTML_IMAGE_SRC_RE);
-  if (htmlMatch?.[1]) {
+  if (htmlMatch?.[1] && isEmbeddedImageDataUrl(htmlMatch[1])) {
     return htmlMatch[1];
   }
 

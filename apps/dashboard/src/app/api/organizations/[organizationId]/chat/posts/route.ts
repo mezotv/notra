@@ -74,13 +74,33 @@ export async function POST(
         updatedAt: now,
       },
     })
-    .returning({ id: postCollections.id });
+    .returning({
+      id: postCollections.id,
+      contentTypes: postCollections.contentTypes,
+      createdAt: postCollections.createdAt,
+      nameSource: postCollections.nameSource,
+    });
 
   if (!collection) {
     return NextResponse.json(
       { error: "Failed to create chat collection" },
       { status: 500 }
     );
+  }
+
+  if (collection.nameSource === "generated") {
+    await db
+      .update(postCollections)
+      .set({
+        name: buildPostCollectionName(
+          Array.isArray(collection.contentTypes)
+            ? collection.contentTypes
+            : [contentType],
+          collection.createdAt
+        ),
+        updatedAt: now,
+      })
+      .where(eq(postCollections.id, collection.id));
   }
 
   await db.insert(posts).values({

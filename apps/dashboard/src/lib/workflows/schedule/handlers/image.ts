@@ -1,5 +1,9 @@
 import { generateRepoImage } from "@notra/ai/agents/repo-image";
 import { isGitHubRateLimitError } from "@notra/ai/tools/github";
+import {
+  buildGeneratedImageHtmlPlaceholder,
+  buildGeneratedImageMarkdown,
+} from "@notra/ai/utils/html";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -45,8 +49,11 @@ export async function handleImage(
         collectionId: ctx.collectionId,
         title,
         slug: null,
-        content: `<img alt="${escapeHtml(title)}" src="data:image/png;base64,${result.pngBase64}" />`,
-        markdown: `![${escapeMarkdownAlt(title)}](data:image/png;base64,${result.pngBase64})`,
+        content: buildGeneratedImageHtmlPlaceholder(title),
+        markdown: buildGeneratedImageMarkdown({
+          title,
+          pngBase64: result.pngBase64,
+        }),
         recommendations: null,
         contentType: "image",
         status: ctx.autoPublish ? "published" : "draft",
@@ -110,18 +117,6 @@ function buildImagePrompt(ctx: ContentGenerationContext) {
   ];
 
   return promptParts.filter(Boolean).join("\n");
-}
-
-function escapeMarkdownAlt(value: string) {
-  return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 function getUsageCostCents(usage: { totalUsd?: number } | undefined) {

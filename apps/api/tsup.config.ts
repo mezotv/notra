@@ -2,17 +2,10 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
   entry: ["src/index.ts"],
-  esbuildOptions(options) {
-    options.external = [
-      ...(options.external ?? []),
-      "./resvgjs.*.node",
-      "@resvg/resvg-js",
-    ];
-  },
-  external: ["@resvg/resvg-js"],
+  external: ["@resvg/resvg-js", "./resvgjs.*.node"],
   format: ["esm"],
   outDir: "dist",
   outExtension: () => ({ js: ".mjs" }),
   splitting: false,
-  noExternal: [/.*/],
+  noExternal: [/^(?!@resvg\/resvg-js(?:$|\/)).*/],
 });

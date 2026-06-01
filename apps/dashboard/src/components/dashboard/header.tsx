@@ -153,16 +153,11 @@ export function SiteHeader() {
     : breadcrumbSegments;
 
   const breadcrumbs = displayBreadcrumbSegments.flatMap((segment, index) => {
-    const isCollectionsRoot =
-      isCollectionDetail && index === 0 && segment === "collection";
     const href = (() => {
       if (isCollectionDetail && segment === "content") {
         return `/${slug}/content`;
       }
       if (isCollectionDetail && segment === "collection") {
-        return `/${slug}/content`;
-      }
-      if (isCollectionsRoot) {
         return `/${slug}/content`;
       }
       return isNonOrgPath

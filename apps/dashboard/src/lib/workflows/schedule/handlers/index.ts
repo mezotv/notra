@@ -10,7 +10,7 @@ import { handleImage } from "./image";
 import { handleLinkedIn } from "./linkedin";
 import { handleTwitter } from "./twitter";
 
-const handlers: Record<string, ContentHandler> = {
+const handlers: Record<ScheduleOutputType, ContentHandler> = {
   changelog: handleChangelog,
   blog_post: handleBlogPost,
   linkedin_post: handleLinkedIn,
@@ -22,7 +22,9 @@ export async function generateScheduledContent(
   outputType: string,
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
-  const handler = handlers[outputType as ScheduleOutputType];
+  const handler = isScheduleOutputType(outputType)
+    ? handlers[outputType]
+    : null;
 
   if (!handler) {
     console.log(
@@ -35,4 +37,8 @@ export async function generateScheduledContent(
   }
 
   return handler(ctx);
+}
+
+function isScheduleOutputType(value: string): value is ScheduleOutputType {
+  return value in handlers;
 }

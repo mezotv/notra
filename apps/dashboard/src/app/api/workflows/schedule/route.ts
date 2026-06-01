@@ -156,7 +156,12 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             defaultBranch: githubIntegrations.defaultBranch,
           })
           .from(githubIntegrations)
-          .where(inArray(githubIntegrations.id, repositoryIds));
+          .where(
+            and(
+              eq(githubIntegrations.organizationId, trigger.organizationId),
+              inArray(githubIntegrations.id, repositoryIds)
+            )
+          );
 
         return repos.filter(
           (repo): repo is RepositoryData => !!(repo.owner && repo.repo)

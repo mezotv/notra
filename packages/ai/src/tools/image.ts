@@ -14,7 +14,10 @@ import type {
   ImageToolConfig,
 } from "@notra/ai/types/repo-image";
 import { toolDescription } from "@notra/ai/utils/description";
-import { escapeHtml, escapeMarkdownAlt } from "@notra/ai/utils/html";
+import {
+  buildGeneratedImageHtmlPlaceholder,
+  buildGeneratedImageMarkdown,
+} from "@notra/ai/utils/html";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
@@ -58,8 +61,11 @@ export function createImageTool(config: ImageToolConfig): Tool {
         chatId: config.chatId,
         organizationId: config.organizationId,
         title,
-        markdown: `![${escapeMarkdownAlt(title)}](data:image/png;base64,${result.pngBase64})`,
-        html: `<img alt="${escapeHtml(title)}" src="data:image/png;base64,${result.pngBase64}" />`,
+        markdown: buildGeneratedImageMarkdown({
+          title,
+          pngBase64: result.pngBase64,
+        }),
+        html: buildGeneratedImageHtmlPlaceholder(title),
         sourceMetadata: {
           type: "generated_image",
           chatId: config.chatId ?? null,
@@ -129,8 +135,11 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         userId: config.userId,
       });
 
-      const markdown = `![${escapeMarkdownAlt(nextTitle)}](data:image/png;base64,${result.pngBase64})`;
-      const html = `<img alt="${escapeHtml(nextTitle)}" src="data:image/png;base64,${result.pngBase64}" />`;
+      const markdown = buildGeneratedImageMarkdown({
+        title: nextTitle,
+        pngBase64: result.pngBase64,
+      });
+      const html = buildGeneratedImageHtmlPlaceholder(nextTitle);
       const sourceMetadata = await buildRevisionSourceMetadata({
         organizationId: config.organizationId,
         postId: config.postId,
