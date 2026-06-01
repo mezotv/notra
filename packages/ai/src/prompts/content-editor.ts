@@ -39,6 +39,30 @@ export function getContentEditorChatPrompt(
       ? "\n\n## Image Editing Constraints\nThis is a generated image, not a markdown document.\n- Do NOT call getMarkdown or editMarkdown.\n- For any visual edit, call reviseImage with a concise prompt describing the requested change.\n- reviseImage restores the saved sandbox snapshot, updates the image, saves it back to the current content item, and stores a new snapshot."
       : "";
 
+  const workflowSection =
+    contentType === "image"
+      ? `## Workflow
+    1. If the user asks for visual edits, call reviseImage.
+    2. Do not call markdown editing tools for image content.`
+      : `## Workflow
+    1. If the user asks for edits, ALWAYS call getMarkdown first.
+    2. Apply edits with editMarkdown (work from bottom to top).
+
+    ## Edit Operations
+    - replaceLine: { op: "replaceLine", line: number, content: string }
+    - replaceRange: { op: "replaceRange", startLine: number, endLine: number, content: string }
+    - insert: { op: "insert", afterLine: number, content: string }
+    - deleteLine: { op: "deleteLine", line: number }
+    - deleteRange: { op: "deleteRange", startLine: number, endLine: number }
+
+    ## Guidelines
+    - Make minimal edits
+    - Line numbers are 1-indexed
+    - For multi-line content use \\n in content string
+    - When user selects text, focus only on that section
+    - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
+    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.`;
+
   const githubSection =
     hasGitHubEnabled && repoContext?.length
       ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
@@ -58,25 +82,9 @@ export function getContentEditorChatPrompt(
     ## Current Date
     Today is ${currentDate} (${resolvedTimezone}). Use this when users reference relative dates like "today", "yesterday", "this week", or "last month".
 
-    ## Workflow
-    1. If this is image content and the user asks for edits, call reviseImage.
-    2. Otherwise, if the user asks for edits, ALWAYS call getMarkdown first.
-    3. Apply text edits with editMarkdown (work from bottom to top).
+    ${workflowSection}
 
-    ## Edit Operations
-    - replaceLine: { op: "replaceLine", line: number, content: string }
-    - replaceRange: { op: "replaceRange", startLine: number, endLine: number, content: string }
-    - insert: { op: "insert", afterLine: number, content: string }
-    - deleteLine: { op: "deleteLine", line: number }
-    - deleteRange: { op: "deleteRange", startLine: number, endLine: number }
-
-    ## Guidelines
-    - Make minimal edits
-    - Line numbers are 1-indexed
-    - For multi-line content use \\n in content string
-    - When user selects text, focus only on that section
-    - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
-    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
+    ## Content Guidelines
     - Never use em dashes (—) or en dashes (–) in any content. Use hyphens (-) or rewrite the sentence instead.
     ${capabilitiesSection}${linkedInSection}${twitterSection}${imageSection}${githubSection}${linearSection}${selectionContext}
   `;

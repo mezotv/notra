@@ -100,7 +100,9 @@ export function buildStandaloneToolSet(
   });
 
   descriptions.push(
-    "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, createImage, plus updatePost and viewPost. createImage runs in a sandbox, saves the generated image as a draft, and stores a sandbox snapshot for future revisions."
+    userId
+      ? "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, createImage, plus updatePost and viewPost. createImage runs in a sandbox, saves the generated image as a draft, and stores a sandbox snapshot for future revisions."
+      : "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, plus updatePost and viewPost"
   );
   descriptions.push(
     "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPostById"

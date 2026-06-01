@@ -139,9 +139,9 @@ async function getAllOrganizationsForUser(userId: string) {
     })
   );
 
-  const orgs = await retryTransientDbError(() =>
-    Promise.all(
-      userMemberships.map((m) =>
+  const orgs = await Promise.all(
+    userMemberships.map((m) =>
+      retryTransientDbError(() =>
         db.query.organizations.findFirst({
           where: eq(organizations.id, m.organizationId),
           columns: { slug: true, id: true },

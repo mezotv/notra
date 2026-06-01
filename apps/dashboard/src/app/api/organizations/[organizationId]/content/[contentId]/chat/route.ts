@@ -125,7 +125,17 @@ export const POST = withEvlog(async function POST(
     const autumnClient = autumn;
     const imageDefaults =
       contentType === "image"
-        ? await getImageDefaults({ organizationId, contentId })
+        ? await getImageDefaults({ organizationId, contentId }).catch(
+            (error) => {
+              console.warn("[Content Chat] Failed to load image defaults", {
+                requestId,
+                organizationId,
+                contentId,
+                error,
+              });
+              return undefined;
+            }
+          )
         : undefined;
 
     const { stream, routingDecision } = await orchestrateChat(

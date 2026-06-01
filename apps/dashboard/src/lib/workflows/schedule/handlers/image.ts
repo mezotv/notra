@@ -1,4 +1,5 @@
 import { generateRepoImage } from "@notra/ai/agents/repo-image";
+import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -77,8 +78,16 @@ export async function handleImage(
       postId,
       title,
       posts: [{ postId, title, recommendations: null }],
+      usageCostCents: getUsageCostCents(result.usage),
     };
   } catch (error) {
+    if (isGitHubRateLimitError(error)) {
+      return {
+        status: "rate_limited",
+        retryAfterSeconds: error.retryAfterSeconds,
+      };
+    }
+
     return {
       status: "generation_failed",
       reason: error instanceof Error ? error.message : String(error),
@@ -113,4 +122,12 @@ function escapeHtml(value: string) {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function getUsageCostCents(usage: { totalUsd?: number } | undefined) {
+  if (typeof usage?.totalUsd !== "number") {
+    return undefined;
+  }
+
+  return Math.max(1, Math.ceil(usage.totalUsd * 100));
 }

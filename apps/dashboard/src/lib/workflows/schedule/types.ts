@@ -58,6 +58,7 @@ export type ContentGenerationResult =
       title: string;
       posts: PostSummary[];
       usage?: AgentTokenUsage;
+      usageCostCents?: number;
     }
   | { status: "skipped"; reason: string }
   | { status: "rate_limited"; retryAfterSeconds?: number }

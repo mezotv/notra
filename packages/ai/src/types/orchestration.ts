@@ -88,6 +88,12 @@ export interface ToolSet {
   descriptions: string[];
 }
 
+export interface ImageDefaults {
+  integrationId: string;
+  branch: string;
+  title: string;
+}
+
 export interface RepoContext {
   integrationId: string;
   owner?: string;
@@ -107,11 +113,7 @@ export interface OrchestrateInput {
   contentType?: string;
   currentPostId?: string;
   userId?: string;
-  imageDefaults?: {
-    integrationId: string;
-    branch: string;
-    title: string;
-  };
+  imageDefaults?: ImageDefaults;
   selection?: TextSelection;
   context?: ContextItem[];
   maxSteps?: number;
@@ -131,11 +133,7 @@ export interface BuildToolSetParams {
   contentType?: string;
   currentPostId?: string;
   userId?: string;
-  imageDefaults?: {
-    integrationId: string;
-    branch: string;
-    title: string;
-  };
+  imageDefaults?: ImageDefaults;
   onMarkdownUpdate?: (markdown: string) => void;
   validatedIntegrations: ValidatedIntegration[];
 }

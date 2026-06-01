@@ -544,7 +544,7 @@ export default function PageClient({
             ) {
               processedToolCallsRef.current.add(toolPart.toolCallId);
               const nextMarkdown =
-                toolPart.output.updatedMarkdown ?? toolPart.output.markdown;
+                toolPart.output.updatedMarkdown || toolPart.output.markdown;
               if (!nextMarkdown) {
                 continue;
               }

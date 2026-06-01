@@ -130,7 +130,17 @@ function getTrustedOrigins() {
         process.env.BETTER_AUTH_URL,
         process.env.NEXT_PUBLIC_APP_URL,
         process.env.WORKFLOW_BASE_URL,
-      ].filter((origin): origin is string => Boolean(origin))
+      ].flatMap((origin) => {
+        if (!origin) {
+          return [];
+        }
+
+        try {
+          return [new URL(origin).origin];
+        } catch {
+          return [];
+        }
+      })
     )
   );
 }

@@ -23,7 +23,9 @@ import type {
   ToolSet,
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
-import type { Tool } from "ai";
+import { type Tool, tool } from "ai";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
 
 export interface BuildToolSetDeps {
   resolveContext?: ResolveIntegrationContext;
@@ -75,6 +77,11 @@ export function buildToolSet(
       });
       descriptions.unshift(
         "**Image Editing**: Revise the current image using reviseImage. It restores the saved sandbox snapshot, applies the visual change, saves the updated image back to this content item, and stores a new snapshot."
+      );
+    } else {
+      tools.reviseImage = createUnavailableImageRevisionTool();
+      descriptions.unshift(
+        "**Image Editing**: Image revision is unavailable because the saved sandbox metadata is missing. Call reviseImage to explain the missing metadata."
       );
     }
   } else {
@@ -173,6 +180,21 @@ export function buildToolSet(
   }
 
   return { tools, descriptions };
+}
+
+function createUnavailableImageRevisionTool(): Tool {
+  return tool({
+    description:
+      "Explain why this generated image cannot be revised because its saved sandbox metadata is missing.",
+    inputSchema: z.object({
+      prompt: z.string().optional(),
+    }),
+    execute: async () => ({
+      status: "unavailable",
+      message:
+        "This image cannot be revised because the saved sandbox metadata is missing.",
+    }),
+  });
 }
 
 function getGitHubRepoList(integrations: ValidatedIntegration[]): string {
