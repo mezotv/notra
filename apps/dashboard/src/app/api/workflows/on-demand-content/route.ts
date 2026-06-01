@@ -15,12 +15,16 @@ import {
   contentGenerationWorkflowPayloadSchema,
 } from "@notra/content-generation/schemas";
 import { db } from "@notra/db/drizzle";
-import type { PostSourceMetadata } from "@notra/db/schema";
-import { githubIntegrations } from "@notra/db/schema";
+import {
+  githubIntegrations,
+  type PostSourceMetadata,
+  postCollections,
+  posts,
+} from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import {
   trackScheduledContentCreated,
@@ -87,6 +91,101 @@ async function appendTrackedJobEvent(
     message,
     createdAt: new Date().toISOString(),
     metadata: metadata ?? null,
+  });
+}
+
+async function reconcileUnsuccessfulPostCollectionAttempt(params: {
+  collectionId: string;
+  organizationId: string;
+  runId: string;
+}) {
+  await db.transaction(async (tx) => {
+    const [collection] = await tx
+      .select({
+        completedPostCount: postCollections.completedPostCount,
+        expectedPostCount: postCollections.expectedPostCount,
+        sourceMetadata: postCollections.sourceMetadata,
+      })
+      .from(postCollections)
+      .where(
+        and(
+          eq(postCollections.id, params.collectionId),
+          eq(postCollections.organizationId, params.organizationId)
+        )
+      )
+      .for("update");
+
+    if (!collection) {
+      return;
+    }
+
+    const sourceMetadata: Record<string, unknown> =
+      collection.sourceMetadata &&
+      typeof collection.sourceMetadata === "object" &&
+      !Array.isArray(collection.sourceMetadata)
+        ? (collection.sourceMetadata as Record<string, unknown>)
+        : {};
+    const reconciledRunIds = Array.isArray(
+      sourceMetadata.reconciledUnsuccessfulRunIds
+    )
+      ? sourceMetadata.reconciledUnsuccessfulRunIds.filter(
+          (value): value is string => typeof value === "string"
+        )
+      : [];
+
+    if (reconciledRunIds.includes(params.runId)) {
+      return;
+    }
+
+    const [postCountResult] = await tx
+      .select({ value: count() })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.collectionId, params.collectionId),
+          eq(posts.organizationId, params.organizationId)
+        )
+      );
+
+    const successfulPostCount = Math.max(
+      collection.completedPostCount,
+      postCountResult?.value ?? 0
+    );
+    const expectedAttempts = collection.expectedPostCount ?? 1;
+
+    if (successfulPostCount === 0 && expectedAttempts <= 1) {
+      await tx
+        .delete(postCollections)
+        .where(
+          and(
+            eq(postCollections.id, params.collectionId),
+            eq(postCollections.organizationId, params.organizationId)
+          )
+        );
+      return;
+    }
+
+    if (collection.expectedPostCount !== null) {
+      await tx
+        .update(postCollections)
+        .set({
+          expectedPostCount: Math.max(
+            successfulPostCount,
+            collection.expectedPostCount - 1
+          ),
+          sourceMetadata: {
+            ...sourceMetadata,
+            reconciledUnsuccessfulRunIds: [...reconciledRunIds, params.runId],
+          },
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(postCollections.id, params.collectionId),
+            eq(postCollections.organizationId, params.organizationId)
+          )
+        );
+    }
   });
 }
 
@@ -232,6 +331,13 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             }
           );
         }
+      });
+      await context.run("cleanup-post-collection-no-sources", async () => {
+        await reconcileUnsuccessfulPostCollectionAttempt({
+          collectionId,
+          organizationId,
+          runId,
+        });
       });
       await context.cancel();
       return;
@@ -498,6 +604,14 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           }
         );
 
+        await context.run("cleanup-post-collection-skipped", async () => {
+          await reconcileUnsuccessfulPostCollectionAttempt({
+            collectionId,
+            organizationId,
+            runId,
+          });
+        });
+
         await context.cancel();
         return;
       }
@@ -583,6 +697,17 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           contentType,
         });
 
+        await context.run(
+          "cleanup-post-collection-generation-failure",
+          async () => {
+            await reconcileUnsuccessfulPostCollectionAttempt({
+              collectionId,
+              organizationId,
+              runId,
+            });
+          }
+        );
+
         await context.cancel();
         return;
       }
@@ -655,6 +780,14 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
               }
             );
           }
+        });
+
+        await context.run("cleanup-post-collection-no-posts", async () => {
+          await reconcileUnsuccessfulPostCollectionAttempt({
+            collectionId,
+            organizationId,
+            runId,
+          });
         });
 
         await context.cancel();
@@ -870,6 +1003,14 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
         }
       });
 
+      await context.run("cleanup-post-collection-workflow-error", async () => {
+        await reconcileUnsuccessfulPostCollectionAttempt({
+          collectionId,
+          organizationId,
+          runId,
+        });
+      });
+
       throw error;
     }
   },
@@ -921,6 +1062,11 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
           reason: "Workflow infrastructure failure",
           lookbackWindow: payload.lookbackWindow,
           source: "on_demand",
+        });
+        await reconcileUnsuccessfulPostCollectionAttempt({
+          collectionId: payload.collectionId,
+          organizationId: payload.organizationId,
+          runId: payload.runId,
         });
       } catch (cleanupError) {
         console.error(
