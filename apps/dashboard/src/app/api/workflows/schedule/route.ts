@@ -302,66 +302,66 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
     const collectionId = `group_${runId}`;
 
-    await context.run("track-generation-start", async () => {
-      await addActiveGeneration(trigger.organizationId, {
-        runId,
-        triggerId: trigger.id,
-        outputType: trigger.outputType,
-        triggerName: trigger.name.trim() || trigger.outputType,
-        startedAt: new Date().toISOString(),
-      });
-    });
-
-    await context.run("create-post-collection", async () => {
-      const now = new Date();
-
-      await db.insert(postCollections).values({
-        id: collectionId,
-        organizationId: trigger.organizationId,
-        source: trigger.sourceType === "cron" ? "schedule" : "automation",
-        sourceId: runId,
-        name: buildPostCollectionName([trigger.outputType], now),
-        nameSource: "generated",
-        contentTypes: [trigger.outputType],
-        sourceMetadata: {
-          triggerId: trigger.id,
-          triggerName: trigger.name,
-          triggerSourceType: trigger.sourceType,
-          manualRun: manual,
-        },
-        expectedPostCount: 1,
-        completedPostCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      });
-    });
-
-    const generationUserId = await context.run<string | undefined>(
-      "fetch-generation-user-id",
-      async () => {
-        const ownerMembership = await db.query.members.findFirst({
-          where: and(
-            eq(members.organizationId, trigger.organizationId),
-            eq(members.role, "owner")
-          ),
-          columns: { userId: true },
-        });
-
-        if (ownerMembership?.userId) {
-          return ownerMembership.userId;
-        }
-
-        const membership = await db.query.members.findFirst({
-          where: eq(members.organizationId, trigger.organizationId),
-          columns: { userId: true },
-        });
-
-        return membership?.userId;
-      }
-    );
-
-    // Step 3: Generate content based on output type
     try {
+      await context.run("track-generation-start", async () => {
+        await addActiveGeneration(trigger.organizationId, {
+          runId,
+          triggerId: trigger.id,
+          outputType: trigger.outputType,
+          triggerName: trigger.name.trim() || trigger.outputType,
+          startedAt: new Date().toISOString(),
+        });
+      });
+
+      await context.run("create-post-collection", async () => {
+        const now = new Date();
+
+        await db.insert(postCollections).values({
+          id: collectionId,
+          organizationId: trigger.organizationId,
+          source: trigger.sourceType === "cron" ? "schedule" : "automation",
+          sourceId: runId,
+          name: buildPostCollectionName([trigger.outputType], now),
+          nameSource: "generated",
+          contentTypes: [trigger.outputType],
+          sourceMetadata: {
+            triggerId: trigger.id,
+            triggerName: trigger.name,
+            triggerSourceType: trigger.sourceType,
+            manualRun: manual,
+          },
+          expectedPostCount: 1,
+          completedPostCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        });
+      });
+
+      const generationUserId = await context.run<string | undefined>(
+        "fetch-generation-user-id",
+        async () => {
+          const ownerMembership = await db.query.members.findFirst({
+            where: and(
+              eq(members.organizationId, trigger.organizationId),
+              eq(members.role, "owner")
+            ),
+            columns: { userId: true },
+          });
+
+          if (ownerMembership?.userId) {
+            return ownerMembership.userId;
+          }
+
+          const membership = await db.query.members.findFirst({
+            where: eq(members.organizationId, trigger.organizationId),
+            columns: { userId: true },
+          });
+
+          return membership?.userId;
+        }
+      );
+
+      // Step 3: Generate content based on output type
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
         async () => {
