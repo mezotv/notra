@@ -26,25 +26,6 @@ export function getMcpFaviconUrl(url: string | null | undefined) {
   }
 }
 
-export function getMcpFaviconFromToolMetadata(
-  toolMetadata: unknown,
-  servers: ReadonlyArray<{ id: string; url: string }> | undefined
-) {
-  if (!(servers && toolMetadata) || typeof toolMetadata !== "object") {
-    return undefined;
-  }
-  const notra = (toolMetadata as Record<string, unknown>).notra;
-  if (!notra || typeof notra !== "object") {
-    return undefined;
-  }
-  const serverId = (notra as Record<string, unknown>).serverId;
-  if (typeof serverId !== "string") {
-    return undefined;
-  }
-  const server = servers.find((candidate) => candidate.id === serverId);
-  return server ? getMcpFaviconUrl(server.url) : undefined;
-}
-
 export function getMcpFormErrorMessage(error: unknown) {
   if (typeof error === "string") {
     return error;

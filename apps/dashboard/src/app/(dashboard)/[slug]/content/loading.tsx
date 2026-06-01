@@ -1,6 +1,6 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { PageContainer } from "@/components/layout/container";
-import { ContentPageSkeleton } from "./skeleton";
+import { GroupsPageSkeleton } from "./skeleton";
 
 export default function Loading() {
   return (
@@ -18,7 +18,7 @@ export default function Loading() {
             <Skeleton className="h-9 w-36 rounded-md" />
           </div>
         </div>
-        <ContentPageSkeleton />
+        <GroupsPageSkeleton />
       </div>
     </PageContainer>
   );

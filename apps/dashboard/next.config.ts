@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     "@notra/content-generation",
     "@notra/utils",
   ],
+  serverExternalPackages: ["@resvg/resvg-js"],
   async rewrites() {
     const c15tBackendUrl = process.env.NEXT_PUBLIC_C15T_BACKEND_URL;
     if (!c15tBackendUrl) {

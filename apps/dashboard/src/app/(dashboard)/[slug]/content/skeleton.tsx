@@ -26,5 +26,3 @@ export function GroupsPageSkeleton() {
     </div>
   );
 }
-
-export const ContentPageSkeleton = GroupsPageSkeleton;
