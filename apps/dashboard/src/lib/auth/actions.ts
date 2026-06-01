@@ -7,6 +7,7 @@ import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { auth } from "@/lib/auth/server";
+import { retryTransientDbError } from "@/lib/db/retry";
 import type { InvitationResponse } from "@/types/auth/actions";
 
 export async function validateOrganizationAccess(slug: string) {
@@ -18,14 +19,16 @@ export async function validateOrganizationAccess(slug: string) {
     redirect("/login");
   }
 
-  const organization = await db.query.organizations.findFirst({
-    where: eq(organizations.slug, slug),
-    with: {
-      members: {
-        where: eq(members.userId, session.user.id),
+  const organization = await retryTransientDbError(() =>
+    db.query.organizations.findFirst({
+      where: eq(organizations.slug, slug),
+      with: {
+        members: {
+          where: eq(members.userId, session.user.id),
+        },
       },
-    },
-  });
+    })
+  );
 
   if (!organization || organization.members.length === 0) {
     const fallbackOrganization = await getLastActiveOrganizationForUser(
@@ -74,33 +77,39 @@ async function getLastActiveOrganizationForUser(userId: string) {
   )?.value;
 
   if (lastVisitedOrgSlug) {
-    const organization = await db.query.organizations.findFirst({
-      where: eq(organizations.slug, lastVisitedOrgSlug),
-      columns: { slug: true, id: true },
-      with: {
-        members: {
-          where: eq(members.userId, userId),
-          columns: { id: true },
+    const organization = await retryTransientDbError(() =>
+      db.query.organizations.findFirst({
+        where: eq(organizations.slug, lastVisitedOrgSlug),
+        columns: { slug: true, id: true },
+        with: {
+          members: {
+            where: eq(members.userId, userId),
+            columns: { id: true },
+          },
         },
-      },
-    });
+      })
+    );
 
     if (organization && organization.members.length > 0) {
       return { slug: organization.slug, id: organization.id };
     }
   }
 
-  const ownerMembership = await db.query.members.findFirst({
-    where: eq(members.userId, userId),
-    columns: { organizationId: true, role: true },
-    orderBy: (m, { desc }) => [desc(m.createdAt)],
-  });
+  const ownerMembership = await retryTransientDbError(() =>
+    db.query.members.findFirst({
+      where: eq(members.userId, userId),
+      columns: { organizationId: true, role: true },
+      orderBy: (m, { desc }) => [desc(m.createdAt)],
+    })
+  );
 
   if (ownerMembership) {
-    const org = await db.query.organizations.findFirst({
-      where: eq(organizations.id, ownerMembership.organizationId),
-      columns: { slug: true, id: true },
-    });
+    const org = await retryTransientDbError(() =>
+      db.query.organizations.findFirst({
+        where: eq(organizations.id, ownerMembership.organizationId),
+        columns: { slug: true, id: true },
+      })
+    );
 
     if (org) {
       return { slug: org.slug, id: org.id };
@@ -123,17 +132,21 @@ export async function getLastActiveOrganization() {
 }
 
 async function getAllOrganizationsForUser(userId: string) {
-  const userMemberships = await db.query.members.findMany({
-    where: eq(members.userId, userId),
-    columns: { organizationId: true },
-  });
+  const userMemberships = await retryTransientDbError(() =>
+    db.query.members.findMany({
+      where: eq(members.userId, userId),
+      columns: { organizationId: true },
+    })
+  );
 
   const orgs = await Promise.all(
     userMemberships.map((m) =>
-      db.query.organizations.findFirst({
-        where: eq(organizations.id, m.organizationId),
-        columns: { slug: true, id: true },
-      })
+      retryTransientDbError(() =>
+        db.query.organizations.findFirst({
+          where: eq(organizations.id, m.organizationId),
+          columns: { slug: true, id: true },
+        })
+      )
     )
   );
 

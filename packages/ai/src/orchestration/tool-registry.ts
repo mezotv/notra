@@ -5,6 +5,7 @@ import {
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
 } from "@notra/ai/tools/github";
+import { createImageRevisionTool } from "@notra/ai/tools/image";
 import {
   createGetLinearCyclesTool,
   createGetLinearIssuesTool,
@@ -22,7 +23,9 @@ import type {
   ToolSet,
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
-import type { Tool } from "ai";
+import { type Tool, tool } from "ai";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
 
 export interface BuildToolSetDeps {
   resolveContext?: ResolveIntegrationContext;
@@ -41,32 +44,62 @@ export function buildToolSet(
   const {
     organizationId,
     currentMarkdown,
+    contentType,
+    currentPostId,
+    userId,
+    imageDefaults,
     onMarkdownUpdate,
     validatedIntegrations,
   } = params;
 
-  const { getMarkdown, editMarkdown } = createMarkdownTools({
-    currentMarkdown,
-    onUpdate:
-      onMarkdownUpdate ??
-      (() => {
-        console.log("onMarkdownUpdate is not set");
-      }),
-  });
+  const isImageContent = contentType === "image";
 
   const isDev = process.env.NODE_ENV === "development";
 
   const tools: Record<string, Tool> = {
-    getMarkdown,
-    editMarkdown,
     listAvailableSkills: listAvailableSkills({ organizationId }),
     getSkillByName: getSkillByName({ organizationId }),
   };
 
   const descriptions: string[] = [
-    "**Markdown Editing**: View and edit the document using getMarkdown and editMarkdown",
     "**Skills**: Access knowledge and writing guidelines using listAvailableSkills and getSkillByName",
   ];
+
+  if (isImageContent) {
+    if (currentPostId && userId && imageDefaults) {
+      tools.reviseImage = createImageRevisionTool({
+        organizationId,
+        userId,
+        postId: currentPostId,
+        title: imageDefaults.title,
+        integrationId: imageDefaults.integrationId,
+        branch: imageDefaults.branch,
+      });
+      descriptions.unshift(
+        "**Image Editing**: Revise the current image using reviseImage. It restores the saved sandbox snapshot, applies the visual change, saves the updated image back to this content item, and stores a new snapshot."
+      );
+    } else {
+      tools.reviseImage = createUnavailableImageRevisionTool();
+      descriptions.unshift(
+        "**Image Editing**: Image revision is unavailable because the saved sandbox metadata is missing. Call reviseImage to explain the missing metadata."
+      );
+    }
+  } else {
+    const { getMarkdown, editMarkdown } = createMarkdownTools({
+      currentMarkdown,
+      onUpdate:
+        onMarkdownUpdate ??
+        (() => {
+          console.log("onMarkdownUpdate is not set");
+        }),
+    });
+
+    tools.getMarkdown = getMarkdown;
+    tools.editMarkdown = editMarkdown;
+    descriptions.unshift(
+      "**Markdown Editing**: View and edit the document using getMarkdown and editMarkdown"
+    );
+  }
 
   if (isDev) {
     tools.example = exampleTool();
@@ -147,6 +180,21 @@ export function buildToolSet(
   }
 
   return { tools, descriptions };
+}
+
+function createUnavailableImageRevisionTool(): Tool {
+  return tool({
+    description:
+      "Explain why this generated image cannot be revised because its saved sandbox metadata is missing.",
+    inputSchema: z.object({
+      prompt: z.string().optional(),
+    }),
+    execute: async () => ({
+      status: "unavailable",
+      message:
+        "This image cannot be revised because the saved sandbox metadata is missing.",
+    }),
+  });
 }
 
 function getGitHubRepoList(integrations: ValidatedIntegration[]): string {

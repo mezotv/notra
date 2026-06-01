@@ -160,12 +160,14 @@ export default function CreditsPageClient() {
       eventsOffset,
       eventsLimit,
     ],
-    queryFn: () =>
-      autumnClient.listEvents({
+    queryFn: () => {
+      const params = {
         featureId: FEATURES.AI_CREDITS,
         offset: eventsOffset,
         limit: eventsLimit,
-      }),
+      };
+      return autumnClient.listEvents(params);
+    },
   });
 
   const hasMore = eventsData?.hasMore ?? false;

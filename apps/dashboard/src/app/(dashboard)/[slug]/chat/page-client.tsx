@@ -200,6 +200,8 @@ const CREATE_TOOL_TYPES = {
   "tool-createLinkedInPost": "linkedin_post",
   "tool-createTwitterPost": "twitter_post",
 } satisfies Record<string, ContentType>;
+type CreateToolContentType =
+  (typeof CREATE_TOOL_TYPES)[keyof typeof CREATE_TOOL_TYPES];
 
 function isCreateTool(type: string): boolean {
   return type in CREATE_TOOL_TYPES;
@@ -207,7 +209,7 @@ function isCreateTool(type: string): boolean {
 
 function getCreateToolContentType(
   type: keyof typeof CREATE_TOOL_TYPES
-): ContentType {
+): CreateToolContentType {
   return CREATE_TOOL_TYPES[type];
 }
 

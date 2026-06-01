@@ -42,6 +42,7 @@ const CONTENT_TYPES = [
   "twitter_post",
   "linkedin_post",
   "investor_update",
+  "image",
 ] as const;
 
 type ContentType = (typeof CONTENT_TYPES)[number];

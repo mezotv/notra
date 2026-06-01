@@ -6,6 +6,7 @@ import {
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
 } from "@notra/ai/tools/github";
+import { createImageTool } from "@notra/ai/tools/image";
 import {
   createGetLinearCyclesTool,
   createGetLinearIssuesTool,
@@ -43,6 +44,8 @@ import type { Tool } from "ai";
 
 interface BuildStandaloneToolSetParams {
   organizationId: string;
+  chatId?: string;
+  userId?: string;
   validatedIntegrations: ValidatedIntegration[];
   postResult: PostToolsResult;
 }
@@ -56,16 +59,24 @@ export function buildStandaloneToolSet(
   params: BuildStandaloneToolSetParams,
   deps?: BuildStandaloneToolSetDeps
 ): ToolSet {
-  const { organizationId, validatedIntegrations, postResult } = params;
+  const { chatId, organizationId, userId, validatedIntegrations, postResult } =
+    params;
 
   const tools: Record<string, Tool> = {};
   const descriptions: string[] = [];
 
   for (const contentType of contentTypeSchema.options) {
+    if (contentType === "image") {
+      continue;
+    }
     tools[getCreatePostToolName(contentType)] = createCreatePostTool(
       { organizationId, contentType, needsApproval: true },
       postResult
     );
+  }
+
+  if (userId) {
+    tools.createImage = createImageTool({ chatId, organizationId, userId });
   }
 
   tools.updatePost = createUpdatePostTool(
@@ -89,7 +100,9 @@ export function buildStandaloneToolSet(
   });
 
   descriptions.push(
-    "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, plus updatePost and viewPost"
+    userId
+      ? "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, createImage, plus updatePost and viewPost. createImage runs in a sandbox, saves the generated image as a draft, and stores a sandbox snapshot for future revisions."
+      : "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, plus updatePost and viewPost"
   );
   descriptions.push(
     "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPostById"

@@ -1085,7 +1085,29 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       const autumnClientSuccess = autumn;
       const contentUsage = contentResult.usage;
-      if (aiCreditReservation.reserved && autumnClientSuccess && contentUsage) {
+      if (
+        aiCreditReservation.reserved &&
+        autumnClientSuccess &&
+        Number.isFinite(contentResult.usageCostCents)
+      ) {
+        await context.run("track-ai-credit-usage-cost", async () => {
+          await autumnClientSuccess.track({
+            customerId: trigger.organizationId,
+            featureId: FEATURES.AI_CREDITS,
+            value: contentResult.usageCostCents ?? 1,
+            properties: {
+              source: "workflow_schedule",
+              output_type: trigger.outputType,
+              trigger_name: trigger.name,
+              cost_cents: contentResult.usageCostCents,
+            },
+          });
+        });
+      } else if (
+        aiCreditReservation.reserved &&
+        autumnClientSuccess &&
+        contentUsage
+      ) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
             contentUsage,

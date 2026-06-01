@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangelogEditor } from "./changelog-editor";
+import { ImageEditor } from "./image-editor";
 import { LinkedInEditor } from "./linkedin-editor";
 import { TwitterEditor } from "./twitter-editor";
 import type { ContentEditorProps } from "./types";
@@ -14,6 +15,9 @@ export function ContentEditorSwitch({
   ...props
 }: ContentEditorSwitchProps) {
   switch (contentType) {
+    case "image":
+      return <ImageEditor {...props} />;
+
     case "linkedin_post":
       return <LinkedInEditor {...props} />;
 

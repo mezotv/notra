@@ -34,28 +34,19 @@ export function getContentEditorChatPrompt(
       ? "\n\n## Twitter Post Constraints\nThis is a Twitter/X post.\n- Plain text only, no markdown syntax\n- The tweet MUST be 280 characters or fewer. Aim for 100-250 characters.\n- Do NOT use em dashes or en dashes\n- No hashtags\n- Vary sentence length, mix short and long\n- Use contractions naturally (we've, it's, don't)\n- Never use: game-changer, next-level, revolutionary, incredibly, innovative, cutting-edge, leverage, robust, seamless, delighted\n- Never open with Excited to/Thrilled to/Just shipped\n- Lead with what users get, not what was built\n- Take a clear position, don't hedge"
       : "";
 
-  const githubSection =
-    hasGitHubEnabled && repoContext?.length
-      ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
+  const imageSection =
+    contentType === "image"
+      ? "\n\n## Image Editing Constraints\nThis is a generated image, not a markdown document.\n- Do NOT call getMarkdown or editMarkdown.\n- For any visual edit, call reviseImage with a concise prompt describing the requested change.\n- reviseImage restores the saved sandbox snapshot, updates the image, saves it back to the current content item, and stores a new snapshot."
       : "";
 
-  const linearSection =
-    hasLinearEnabled && linearContext?.length
-      ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
-      : "";
-
-  const { formatted: currentDate, timezone: resolvedTimezone } =
-    formatCurrentDate(timezone);
-
-  return dedent`
-    You are a content editor assistant. Help users edit their markdown documents.
-
-    ## Current Date
-    Today is ${currentDate} (${resolvedTimezone}). Use this when users reference relative dates like "today", "yesterday", "this week", or "last month".
-
-    ## Workflow
-    1. If the user asks for edits, ALWAYS call getMarkdown first
-    2. Apply edits with editMarkdown (work from bottom to top)
+  const workflowSection =
+    contentType === "image"
+      ? `## Workflow
+    1. If the user asks for visual edits, call reviseImage.
+    2. Do not call markdown editing tools for image content.`
+      : `## Workflow
+    1. If the user asks for edits, ALWAYS call getMarkdown first.
+    2. Apply edits with editMarkdown (work from bottom to top).
 
     ## Edit Operations
     - replaceLine: { op: "replaceLine", line: number, content: string }
@@ -70,8 +61,31 @@ export function getContentEditorChatPrompt(
     - For multi-line content use \\n in content string
     - When user selects text, focus only on that section
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
-    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.
+    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.`;
+
+  const githubSection =
+    hasGitHubEnabled && repoContext?.length
+      ? `\n\n## GitHub Repositories\nSource of truth identifiers for repository context:\n${repoContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with GitHub data, always call GitHub tools using integrationId. Do not pass owner, repo, or defaultBranch values in tool calls.`
+      : "";
+
+  const linearSection =
+    hasLinearEnabled && linearContext?.length
+      ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- integrationId: ${c.integrationId}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
+      : "";
+
+  const { formatted: currentDate, timezone: resolvedTimezone } =
+    formatCurrentDate(timezone);
+
+  return dedent`
+    You are a content editor assistant. Help users edit content.
+
+    ## Current Date
+    Today is ${currentDate} (${resolvedTimezone}). Use this when users reference relative dates like "today", "yesterday", "this week", or "last month".
+
+    ${workflowSection}
+
+    ## Content Guidelines
     - Never use em dashes (—) or en dashes (–) in any content. Use hyphens (-) or rewrite the sentence instead.
-    ${capabilitiesSection}${linkedInSection}${twitterSection}${githubSection}${linearSection}${selectionContext}
+    ${capabilitiesSection}${linkedInSection}${twitterSection}${imageSection}${githubSection}${linearSection}${selectionContext}
   `;
 }

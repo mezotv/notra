@@ -14,6 +14,17 @@ export interface GenerateRepoImageResult {
   pngBase64: string;
   svg: string;
   html: string;
+  sandbox: {
+    boxId?: string;
+    snapshotId?: string;
+    snapshotName?: string;
+    snapshotSizeBytes?: number;
+    snapshotCreatedAt?: string;
+  } | null;
+  usage?: {
+    totalUsd?: number;
+    raw?: unknown;
+  };
 }
 
 export type RepoImageSourceContext =

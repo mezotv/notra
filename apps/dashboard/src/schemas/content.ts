@@ -16,15 +16,17 @@ export const postStatusSchema = z.enum(["draft", "published"]);
 export type PostStatus = z.infer<typeof postStatusSchema>;
 
 export const sourceMetadataSchema = z
-  .object({
-    triggerId: z.string(),
-    triggerSourceType: z.string(),
-    repositories: z.array(z.object({ owner: z.string(), repo: z.string() })),
+  .looseObject({
+    triggerId: z.string().optional(),
+    triggerSourceType: z.string().optional(),
+    repositories: z
+      .array(z.object({ owner: z.string(), repo: z.string() }))
+      .optional(),
     linearIntegrations: z
       .array(z.object({ integrationId: z.string() }))
       .optional(),
-    lookbackWindow: z.string(),
-    lookbackRange: z.object({ start: z.string(), end: z.string() }),
+    lookbackWindow: z.string().optional(),
+    lookbackRange: z.object({ start: z.string(), end: z.string() }).optional(),
     brandVoiceName: z.string().optional(),
     brandVoiceId: z.string().optional(),
     selectedCommitShas: z.array(z.string()).optional(),
@@ -36,6 +38,18 @@ export const sourceMetadataSchema = z
       .optional(),
     selectedLinearIssues: z
       .array(z.object({ integrationId: z.string(), issueId: z.string() }))
+      .optional(),
+    type: z.literal("generated_image").optional(),
+    chatId: z.string().nullable().optional(),
+    sandbox: z
+      .object({
+        boxId: z.string().optional(),
+        snapshotId: z.string().optional(),
+        snapshotName: z.string().optional(),
+        snapshotSizeBytes: z.number().optional(),
+        snapshotCreatedAt: z.string().optional(),
+      })
+      .nullable()
       .optional(),
   })
   .nullable()
@@ -244,9 +258,10 @@ export const updateContentSchema = z
 
 export type UpdateContentInput = z.infer<typeof updateContentSchema>;
 
-export const onDemandContentTypeSchema = z.enum(
-  SUPPORTED_SCHEDULE_OUTPUT_TYPES
-);
+export const onDemandContentTypeSchema = z.enum([
+  ...SUPPORTED_SCHEDULE_OUTPUT_TYPES,
+  "image",
+] as const);
 export type OnDemandContentType = z.infer<typeof onDemandContentTypeSchema>;
 
 export const contentDataPointSettingsSchema = z.object({

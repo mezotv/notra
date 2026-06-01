@@ -1,6 +1,7 @@
 import {
   Blockchain04Icon,
   ChartHistogramIcon,
+  Image01Icon,
   News01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -15,6 +16,7 @@ const OUTPUT_TYPE_LABELS: Record<string, string> = {
   twitter_post: "Twitter Post",
   linkedin_post: "LinkedIn Post",
   investor_update: "Investor Update",
+  image: "Image",
 };
 
 export function getOutputTypeLabel(outputType: string): string {
@@ -47,6 +49,8 @@ export function OutputTypeIcon({
       return <HugeiconsIcon className={className} icon={News01Icon} />;
     case "investor_update":
       return <HugeiconsIcon className={className} icon={ChartHistogramIcon} />;
+    case "image":
+      return <HugeiconsIcon className={className} icon={Image01Icon} />;
     default:
       return null;
   }

@@ -7,6 +7,7 @@ export const contentTypeSchema = z.enum([
   "twitter_post",
   "linkedin_post",
   "investor_update",
+  "image",
 ]);
 
 export type ContentType = z.infer<typeof contentTypeSchema>;

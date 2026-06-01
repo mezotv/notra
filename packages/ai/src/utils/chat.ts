@@ -22,6 +22,12 @@ export function buildChatFinishMetadata({
   const inputTokens = partUsage?.inputTokens ?? usageSnapshot.inputTokens;
   const outputTokens = partUsage?.outputTokens ?? usageSnapshot.outputTokens;
   const totalTokens = partUsage?.totalTokens ?? usageSnapshot.totalTokens;
+  const cacheReadTokens =
+    partUsage?.inputTokenDetails?.cacheReadTokens ??
+    usageSnapshot.cacheReadTokens;
+  const cacheWriteTokens =
+    partUsage?.inputTokenDetails?.cacheWriteTokens ??
+    usageSnapshot.cacheWriteTokens;
   const tokensPerSecond =
     generationDurationMs &&
     generationDurationMs > 0 &&
@@ -38,6 +44,8 @@ export function buildChatFinishMetadata({
     inputTokens,
     outputTokens,
     totalTokens,
+    cacheReadTokens,
+    cacheWriteTokens,
     ttftMs,
     generationDurationMs,
     tokensPerSecond,

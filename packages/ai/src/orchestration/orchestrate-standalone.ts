@@ -49,6 +49,8 @@ export async function orchestrateStandaloneChat(
 ): Promise<OrchestrateResult> {
   const {
     organizationId,
+    chatId,
+    userId,
     messages,
     context = [],
     maxSteps = 5,
@@ -143,6 +145,8 @@ export async function orchestrateStandaloneChat(
     : buildStandaloneToolSet(
         {
           organizationId,
+          chatId,
+          userId,
           validatedIntegrations,
           postResult,
         },

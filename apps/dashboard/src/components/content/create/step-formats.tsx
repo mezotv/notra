@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { FORMAT_ORDER } from "@/constants/content-formats";
+import { CREATE_CONTENT_FORMAT_ORDER } from "@/constants/content-formats";
 import { LOOKBACK_WINDOWS, type LookbackWindow } from "@/schemas/integrations";
 import type { FormatsStepProps } from "@/types/content/create";
 import { formatSnakeCaseLabel } from "@/utils/format";
@@ -34,7 +34,7 @@ export function StepFormats({
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        {FORMAT_ORDER.map((format) => (
+        {CREATE_CONTENT_FORMAT_ORDER.map((format) => (
           <FormatCard
             format={format}
             key={format}

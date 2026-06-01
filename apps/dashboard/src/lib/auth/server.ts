@@ -121,6 +121,30 @@ if (!authSecret) {
   throw new Error("BETTER_AUTH_SECRET must be defined");
 }
 
+function getTrustedOrigins() {
+  return Array.from(
+    new Set(
+      [
+        "http://localhost:3000",
+        "https://app.usenotra.com",
+        process.env.BETTER_AUTH_URL,
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.WORKFLOW_BASE_URL,
+      ].flatMap((origin) => {
+        if (!origin) {
+          return [];
+        }
+
+        try {
+          return [new URL(origin).origin];
+        } catch {
+          return [];
+        }
+      })
+    )
+  );
+}
+
 async function getActiveOrganizationId(
   userId: string,
   cookieHeader?: string | null
@@ -301,7 +325,7 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: ["http://localhost:3000", "https://app.usenotra.com"],
+  trustedOrigins: getTrustedOrigins(),
   session: {
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,

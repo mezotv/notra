@@ -169,6 +169,7 @@ export const POST = withEvlog(async function POST(
     if (!canUseWorkflowStreaming) {
       return createDirectStandaloneChatResponse({
         organizationId,
+        userId: auth.context.user.id,
         chatId,
         messages,
         context,
@@ -300,6 +301,7 @@ function deriveContextFromValidatedIntegrations(
 
 async function createDirectStandaloneChatResponse({
   organizationId,
+  userId,
   chatId,
   messages,
   context,
@@ -315,6 +317,7 @@ async function createDirectStandaloneChatResponse({
   telemetryMetadata,
 }: {
   organizationId: string;
+  userId: string;
   chatId: string;
   messages: UIMessage[];
   context: StandaloneChatContextItem[];
@@ -376,6 +379,8 @@ async function createDirectStandaloneChatResponse({
     const { stream, routingDecision } = await orchestrateStandaloneChat(
       {
         organizationId,
+        chatId,
+        userId,
         messages: messages as never,
         context,
         maxSteps: 5,
@@ -400,6 +405,10 @@ async function createDirectStandaloneChatResponse({
           usageSnapshot.inputTokens = usage.inputTokens ?? 0;
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
+          usageSnapshot.cacheReadTokens =
+            usage.inputTokenDetails?.cacheReadTokens ?? 0;
+          usageSnapshot.cacheWriteTokens =
+            usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
           if (!autumnClient) {
             return;
