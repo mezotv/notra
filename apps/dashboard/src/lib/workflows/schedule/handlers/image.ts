@@ -125,7 +125,7 @@ function escapeHtml(value: string) {
 }
 
 function getUsageCostCents(usage: { totalUsd?: number } | undefined) {
-  if (typeof usage?.totalUsd !== "number") {
+  if (typeof usage?.totalUsd !== "number" || !Number.isFinite(usage.totalUsd)) {
     return undefined;
   }
 

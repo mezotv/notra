@@ -1088,7 +1088,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       if (
         aiCreditReservation.reserved &&
         autumnClientSuccess &&
-        typeof contentResult.usageCostCents === "number"
+        Number.isFinite(contentResult.usageCostCents)
       ) {
         await context.run("track-ai-credit-usage-cost", async () => {
           await autumnClientSuccess.track({

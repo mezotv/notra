@@ -702,7 +702,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       if (
         aiCreditReserved &&
         autumnClient &&
-        typeof contentResult.usageCostCents === "number"
+        Number.isFinite(contentResult.usageCostCents)
       ) {
         await context.run("track-ai-credit-usage-cost", async () => {
           await autumnClient.track({
