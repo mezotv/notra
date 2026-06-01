@@ -66,19 +66,46 @@ export const applicableToSchema = z
 
 export type ApplicableTo = z.infer<typeof applicableToSchema>;
 
+export const BRAND_REFERENCE_CONTENT_MAX_LENGTH = 10_000;
+export const BRAND_REFERENCE_NOTE_MAX_LENGTH = 4000;
+export const BRAND_REFERENCE_METADATA_MAX_KEYS = 50;
+export const BRAND_REFERENCE_METADATA_KEY_MAX_LENGTH = 128;
+export const BRAND_REFERENCE_METADATA_MAX_BYTES = 16_384;
+
+const brandReferenceMetadataSchema = z
+  .record(
+    z.string().min(1).max(BRAND_REFERENCE_METADATA_KEY_MAX_LENGTH),
+    z.unknown()
+  )
+  .refine(
+    (metadata) =>
+      Object.keys(metadata).length <= BRAND_REFERENCE_METADATA_MAX_KEYS,
+    {
+      message: `Metadata can contain at most ${BRAND_REFERENCE_METADATA_MAX_KEYS} fields`,
+    }
+  )
+  .refine(
+    (metadata) =>
+      new TextEncoder().encode(JSON.stringify(metadata)).byteLength <=
+      BRAND_REFERENCE_METADATA_MAX_BYTES,
+    {
+      message: `Metadata must be less than ${BRAND_REFERENCE_METADATA_MAX_BYTES} bytes`,
+    }
+  );
+
 export const createReferenceSchema = z.object({
   type: referenceTypeSchema,
-  content: z.string().min(1).max(10_000),
-  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
-  note: z.string().nullable().optional(),
+  content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH),
+  metadata: brandReferenceMetadataSchema.nullable().optional(),
+  note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
   applicableTo: applicableToSchema.optional(),
 });
 
 export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;
 
 export const updateReferenceSchema = z.object({
-  note: z.string().nullable().optional(),
-  content: z.string().min(1).optional(),
+  note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
+  content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH).optional(),
   applicableTo: applicableToSchema.optional(),
 });
 
