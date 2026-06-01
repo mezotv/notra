@@ -58,6 +58,7 @@ import {
   usageBarColor,
 } from "@/utils/format";
 import { getOutputTypeLabel } from "@/utils/output-types";
+import { hasMorePaginatedResults } from "@/utils/pagination";
 
 const chartConfig = {
   ai_credits: {
@@ -170,7 +171,7 @@ export default function CreditsPageClient() {
     },
   });
 
-  const hasMore = eventsData?.hasMore ?? false;
+  const hasMore = hasMorePaginatedResults(eventsData, eventsLimit);
   const hasPrevious = page > 1;
 
   const visibleEvents = useMemo(
