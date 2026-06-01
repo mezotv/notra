@@ -142,6 +142,21 @@ export default function PageClient({
     }
   }, [data, editedMarkdown]);
 
+  useEffect(() => {
+    if (
+      data?.content?.contentType !== "image" ||
+      data.content.markdown === editedMarkdownRef.current
+    ) {
+      return;
+    }
+
+    setEditedMarkdown(data.content.markdown);
+    setOriginalMarkdown(data.content.markdown);
+    originalMarkdownRef.current = data.content.markdown;
+    editedMarkdownRef.current = data.content.markdown;
+    setEditorKey((k) => k + 1);
+  }, [data?.content]);
+
   const currentMarkdown = editedMarkdown ?? data?.content?.markdown ?? "";
   useEffect(() => {
     setPersistedTitle(data?.content?.title ?? null);
@@ -423,7 +438,8 @@ export default function PageClient({
     transport: new DefaultChatTransport({
       api: `/api/organizations/${organizationId}/content/${contentId}/chat`,
       body: () => ({
-        currentMarkdown: currentMarkdownRef.current,
+        currentMarkdown:
+          contentTypeRef.current === "image" ? "" : currentMarkdownRef.current,
         contentType: contentTypeRef.current,
         selection: selectionRef.current ?? undefined,
         context: contextRef.current,
@@ -469,6 +485,7 @@ export default function PageClient({
     const toolNames: Record<string, string> = {
       getMarkdown: "Reading document...",
       editMarkdown: "Editing document...",
+      reviseImage: "Revising image...",
       listAvailableSkills: "Checking skills...",
       getSkillByName: "Loading skill...",
     };
@@ -519,6 +536,20 @@ export default function PageClient({
   }, [messages, status]);
 
   const processedToolCallsRef = useRef<Set<string>>(new Set());
+  const invalidateContentQueries = useCallback(
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.get.queryKey({
+            input: { organizationId, contentId },
+          }),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.content.list.key(),
+        }),
+      ]),
+    [contentId, organizationId, queryClient]
+  );
 
   useEffect(() => {
     for (const message of messages) {
@@ -531,10 +562,26 @@ export default function PageClient({
             const toolPart = part as {
               toolCallId: string;
               state: string;
-              output?: { markdown?: string; updatedMarkdown?: string };
+              output?: {
+                markdown?: string;
+                status?: string;
+                updatedMarkdown?: string;
+              };
             };
 
             if (processedToolCallsRef.current.has(toolPart.toolCallId)) {
+              continue;
+            }
+
+            if (
+              part.type === "tool-reviseImage" &&
+              toolPart.state === "output-available" &&
+              toolPart.output?.status === "updated"
+            ) {
+              processedToolCallsRef.current.add(toolPart.toolCallId);
+              invalidateContentQueries().catch((error) => {
+                console.error("Failed to refresh revised image content", error);
+              });
               continue;
             }
 
@@ -558,15 +605,15 @@ export default function PageClient({
               setEditedMarkdown(fixedMarkdown);
               editedMarkdownRef.current = fixedMarkdown;
               editorRef.current?.setMarkdown(fixedMarkdown);
-              queryClient.invalidateQueries({
-                queryKey: ["content", organizationId, contentId],
+              invalidateContentQueries().catch((error) => {
+                console.error("Failed to refresh edited content", error);
               });
             }
           }
         }
       }
     }
-  }, [contentId, messages, organizationId, queryClient]);
+  }, [invalidateContentQueries, messages]);
 
   const handleAiEdit = useCallback(
     async (instruction: string) => {

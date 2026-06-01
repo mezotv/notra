@@ -8,7 +8,10 @@ import {
   getGitHubIntegrationById,
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
-import { buildExtractionPrompt } from "@notra/ai/prompts/repo-image";
+import {
+  buildExtractionPrompt,
+  buildRevisionPrompt,
+} from "@notra/ai/prompts/repo-image";
 import type {
   GenerateRepoImageInput,
   GenerateRepoImageResult,
@@ -19,6 +22,10 @@ import { shortSha } from "@notra/ai/utils/repo-image";
 import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
 import { withLongFetchTimeouts } from "@notra/ai/utils/undici-dispatcher";
 import { Agent, Box, OpenCodeModel } from "@upstash/box";
+
+const BOX_BASE_URL =
+  process.env.UPSTASH_BOX_BASE_URL ?? "https://us-east-1.box.upstash.com";
+const TRAILING_SLASH_RE = /\/$/;
 
 export class RepoImageError extends Error {
   readonly code:
@@ -72,10 +79,45 @@ async function runRepoImageAgentStream(params: {
 }
 
 async function hasRepoImageOutput(box: Awaited<ReturnType<typeof Box.create>>) {
-  const existsRun = await box.exec.command(
-    `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
+  const existsRun = await withBoxRetry(() =>
+    box.exec.command(
+      `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
+    )
   );
   return existsRun.result.trim() === "ok";
+}
+
+async function withBoxRetry<T>(callback: () => Promise<T>, attempts = 3) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await callback();
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts || !isTransientBoxError(error)) {
+        break;
+      }
+      await sleep(1000 * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
+function isTransientBoxError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    error.message.includes("fetch failed") ||
+    error.message.includes("ECONNRESET") ||
+    error.message.includes("UND_ERR")
+  );
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function buildMissingOutputRecoveryPrompt() {
@@ -265,8 +307,8 @@ export async function generateRepoImage(params: {
       timeout: AGENT_TIMEOUT_MS,
     };
     const box = restoreSnapshotId
-      ? await Box.fromSnapshot(restoreSnapshotId, boxConfig)
-      : await Box.create(boxConfig);
+      ? await withBoxRetry(() => Box.fromSnapshot(restoreSnapshotId, boxConfig))
+      : await withBoxRetry(() => Box.create(boxConfig));
 
     let html: string;
     let usage: GenerateRepoImageResult["usage"];
@@ -282,14 +324,16 @@ export async function generateRepoImage(params: {
 
       const initialRun = await runRepoImageAgentStream({
         box,
-        prompt: buildExtractionPrompt({
-          owner: repository.owner,
-          repo: repository.repo,
-          branch: input.branch,
-          source,
-        }),
+        prompt: restoreSnapshotId
+          ? buildRevisionPrompt({ prompt: input.prompt ?? "" })
+          : buildExtractionPrompt({
+              owner: repository.owner,
+              repo: repository.repo,
+              branch: input.branch,
+              source,
+            }),
         timeout: AGENT_TIMEOUT_MS,
-        label: "initial",
+        label: restoreSnapshotId ? "revision" : "initial",
       });
       usage = extractRepoImageUsage(initialRun.cost);
 
@@ -310,8 +354,10 @@ export async function generateRepoImage(params: {
       }
 
       if (!(await hasRepoImageOutput(box))) {
-        const diag = await box.exec.command(
-          `ls -la /workspace/home/ 2>&1 | head -50; echo ---; find /workspace/home -maxdepth 4 -name "output.html" 2>/dev/null`
+        const diag = await withBoxRetry(() =>
+          box.exec.command(
+            `ls -la /workspace/home/ 2>&1 | head -50; echo ---; find /workspace/home -maxdepth 4 -name "output.html" 2>/dev/null`
+          )
         );
         console.error(
           "[repo-image] missing output.html, /workspace/home contents:\n",
@@ -323,12 +369,16 @@ export async function generateRepoImage(params: {
         );
       }
 
-      html = await box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH);
-      snapshot = await box.snapshot({
-        name:
-          snapshotName ??
-          `repo-image-${repository.owner}-${repository.repo}-${Date.now()}`,
-      });
+      html = await withBoxRetry(() =>
+        box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH)
+      );
+      snapshot = await withBoxRetry(() =>
+        box.snapshot({
+          name:
+            snapshotName ??
+            `repo-image-${repository.owner}-${repository.repo}-${Date.now()}`,
+        })
+      );
     } finally {
       await box.delete().catch((error: unknown) => {
         console.error("Failed to delete repo-image box", error);
@@ -353,6 +403,48 @@ export async function generateRepoImage(params: {
       usage,
     };
   });
+}
+
+export async function deleteRepoImageSnapshot(params: {
+  boxId?: string;
+  snapshotId?: string;
+}) {
+  if (!(params.boxId && params.snapshotId)) {
+    return;
+  }
+  if (!process.env.UPSTASH_BOX_API_KEY) {
+    throw new RepoImageError(
+      "missing_config",
+      "UPSTASH_BOX_API_KEY is not configured"
+    );
+  }
+
+  await withLongFetchTimeouts(async () =>
+    withBoxRetry(async () => {
+      const response = await fetch(
+        `${BOX_BASE_URL.replace(TRAILING_SLASH_RE, "")}/v2/box/${
+          params.boxId
+        }/snapshots/${params.snapshotId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "X-Box-Api-Key": process.env.UPSTASH_BOX_API_KEY ?? "",
+          },
+        }
+      );
+
+      if (response.status === 404) {
+        return;
+      }
+
+      if (!response.ok) {
+        throw new RepoImageError(
+          "agent_failed",
+          `Failed to delete repo image snapshot ${params.snapshotId}: ${response.status} ${response.statusText}`
+        );
+      }
+    })
+  );
 }
 
 function readSnapshotString(snapshot: unknown, key: string) {

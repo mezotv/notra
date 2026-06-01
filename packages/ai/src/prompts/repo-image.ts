@@ -186,3 +186,45 @@ The HTML follows this shape (this is structure only; replace the content with ma
 Before writing HTML, decide which real component or page in this repo best matches the subject and which globals.css tokens you will use. Plan the layout math (widths + padding + gaps for each row and column) so you know the design will fit 1200x630 with safe margins. Only then draft the HTML and run the quality loop.
 </thinking-instructions>`;
 }
+
+export function buildRevisionPrompt(params: { prompt: string }) {
+  return `<role>
+You are a senior brand designer editing an existing generated social image. You are working inside a restored sandbox snapshot that already contains the repository context and the current HTML deliverable.
+</role>
+
+<task>
+Apply this user-requested change to the existing image:
+
+${params.prompt}
+</task>
+
+<deliverable>
+Your task ends ONLY after this exact file exists and contains the revised final image HTML:
+
+  ${REPO_IMAGE_OUTPUT_HTML_PATH}
+
+You MUST edit the file on disk. Use the Read tool or shell command to read ${REPO_IMAGE_OUTPUT_HTML_PATH}, then use the Edit tool, Write tool, or shell redirection to write the revised HTML back to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Do not merely describe the edit. Do not ask the user to upload the image again. Do not create a new unrelated design unless this file is missing.
+</deliverable>
+
+<required-steps>
+1. Read ${REPO_IMAGE_OUTPUT_HTML_PATH}.
+2. Locate the exact HTML text, element, inline SVG, or asset markup related to the user request.
+3. Modify that file in place.
+4. Verify with a shell command that ${REPO_IMAGE_OUTPUT_HTML_PATH} exists after your edit.
+5. Stop.
+</required-steps>
+
+<constraints>
+- Preserve the existing image's layout, style, brand tokens, dimensions, and overall composition.
+- Make the smallest visual change that satisfies the user request.
+- Keep the root output exactly 1200 x 630.
+- Inline styles only. No classes, no Tailwind, no <style> tag.
+- Any element with more than one child node must set display:flex or display:contents.
+- Avoid raw SVG <text> nodes.
+- No emojis and no em dashes in visible text.
+</constraints>
+
+<quality-loop>
+After editing, inspect the final HTML for broken layout, clipping, missing text, and accidental changes outside the requested edit. If the requested text appears in the existing design, replace it exactly. If the text is rendered through an image or SVG asset, recreate that part with normal HTML text or an SVG path-safe alternative so the requested wording is visible.
+</quality-loop>`;
+}

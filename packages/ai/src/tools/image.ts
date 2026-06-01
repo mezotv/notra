@@ -1,4 +1,8 @@
-import { generateRepoImage, RepoImageError } from "@notra/ai/agents/repo-image";
+import {
+  deleteRepoImageSnapshot,
+  generateRepoImage,
+  RepoImageError,
+} from "@notra/ai/agents/repo-image";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { repoImageModeSchema } from "@notra/ai/schemas/repo-image";
@@ -82,8 +86,8 @@ export function createImageTool(config: ImageToolConfig): Tool {
     }),
     inputSchema: imageToolInputSchema,
     execute: async ({ sourcePostId, title, ...input }) => {
-      const restoreSnapshotId = sourcePostId
-        ? await getImageSnapshotId(config.organizationId, sourcePostId)
+      const restoreSnapshot = sourcePostId
+        ? await getImageSnapshot(config.organizationId, sourcePostId)
         : null;
 
       const result = await generateRepoImage({
@@ -96,7 +100,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
           prNumber: input.prNumber,
           commitSha: input.commitSha,
         },
-        restoreSnapshotId,
+        restoreSnapshotId: restoreSnapshot?.snapshotId,
         snapshotName: `image-${config.organizationId}-${Date.now()}`,
         userId: config.userId,
       });
@@ -180,7 +184,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         .describe("Optional updated title for the image content"),
     }),
     execute: async ({ prompt, title }) => {
-      const restoreSnapshotId = await getImageSnapshotId(
+      const previousSnapshot = await getImageSnapshot(
         config.organizationId,
         config.postId
       );
@@ -194,7 +198,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
           mode: "prompt",
           prompt,
         },
-        restoreSnapshotId,
+        restoreSnapshotId: previousSnapshot.snapshotId,
         snapshotName: `image-${config.organizationId}-${Date.now()}`,
         userId: config.userId,
       });
@@ -226,6 +230,14 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
           )
         );
 
+      await deleteRepoImageSnapshot(previousSnapshot).catch((error) => {
+        console.error("[repo-image] Failed to delete previous snapshot", {
+          postId: config.postId,
+          snapshotId: previousSnapshot.snapshotId,
+          error,
+        });
+      });
+
       await trackImageGenerationUsage({
         organizationId: config.organizationId,
         postId: config.postId,
@@ -237,7 +249,6 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         title: nextTitle,
         status: "updated",
         contentType: "image",
-        markdown,
         sandbox: result.sandbox,
         usage: result.usage ?? null,
       };
@@ -315,7 +326,7 @@ async function trackImageGenerationUsage(params: {
   }
 }
 
-async function getImageSnapshotId(organizationId: string, postId: string) {
+async function getImageSnapshot(organizationId: string, postId: string) {
   const post = await db.query.posts.findFirst({
     where: and(eq(posts.id, postId), eq(posts.organizationId, organizationId)),
   });
@@ -340,7 +351,12 @@ async function getImageSnapshotId(organizationId: string, postId: string) {
     );
   }
 
-  return metadata.sandbox.snapshotId;
+  const boxId =
+    "boxId" in metadata.sandbox && typeof metadata.sandbox.boxId === "string"
+      ? metadata.sandbox.boxId
+      : undefined;
+
+  return { boxId, snapshotId: metadata.sandbox.snapshotId };
 }
 
 async function saveGeneratedImagePost(params: {
