@@ -24,8 +24,14 @@ function getErrorCause(error: unknown): unknown {
 
 function isTransientDbError(error: unknown): boolean {
   let current: unknown = error;
+  const seen = new Set<unknown>();
 
   while (current) {
+    if (seen.has(current)) {
+      return false;
+    }
+    seen.add(current);
+
     const message = getErrorMessage(current);
     if (TRANSIENT_DB_MESSAGES.some((value) => message.includes(value))) {
       return true;

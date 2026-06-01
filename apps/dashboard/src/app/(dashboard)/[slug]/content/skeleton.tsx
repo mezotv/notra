@@ -9,7 +9,8 @@ export function GroupsPageSkeleton() {
     <div className="overflow-hidden rounded-lg border">
       <div className="flex items-center gap-4 border-b bg-muted/30 px-4 py-2.5">
         <Skeleton className="h-3.5 w-40" />
-        <Skeleton className="ml-auto h-3.5 w-16" />
+        <Skeleton className="h-3.5 w-20" />
+        <Skeleton className="h-3.5 w-24" />
       </div>
       {Array.from({ length: 8 }).map((_, i) => (
         <div
@@ -17,10 +18,8 @@ export function GroupsPageSkeleton() {
           key={`${id}-row-${i}`}
         >
           <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-6 w-16" />
-          <Skeleton className="ml-auto h-4 w-24" />
-          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-6 w-20" />
+          <Skeleton className="h-4 w-24" />
         </div>
       ))}
     </div>

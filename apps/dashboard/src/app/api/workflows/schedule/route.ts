@@ -69,6 +69,21 @@ import type {
   ScheduleTriggerData,
 } from "@/types/workflows/workflows";
 
+async function deleteEmptyPostCollection(params: {
+  collectionId: string;
+  organizationId: string;
+}) {
+  await db
+    .delete(postCollections)
+    .where(
+      and(
+        eq(postCollections.id, params.collectionId),
+        eq(postCollections.organizationId, params.organizationId),
+        eq(postCollections.completedPostCount, 0)
+      )
+    );
+}
+
 export const { POST } = serve<ScheduleWorkflowPayload>(
   async (context: WorkflowContext<ScheduleWorkflowPayload>) => {
     const parseResult = scheduleWorkflowPayloadSchema.safeParse(
@@ -321,6 +336,30 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       });
     });
 
+    const generationUserId = await context.run<string | undefined>(
+      "fetch-generation-user-id",
+      async () => {
+        const ownerMembership = await db.query.members.findFirst({
+          where: and(
+            eq(members.organizationId, trigger.organizationId),
+            eq(members.role, "owner")
+          ),
+          columns: { userId: true },
+        });
+
+        if (ownerMembership?.userId) {
+          return ownerMembership.userId;
+        }
+
+        const membership = await db.query.members.findFirst({
+          where: eq(members.organizationId, trigger.organizationId),
+          columns: { userId: true },
+        });
+
+        return membership?.userId;
+      }
+    );
+
     // Step 3: Generate content based on output type
     try {
       const contentResult = await context.run<ContentGenerationResult>(
@@ -412,6 +451,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           try {
             return await generateScheduledContent(trigger.outputType, {
               organizationId: trigger.organizationId,
+              userId: generationUserId,
               collectionId,
               repositories: repositoryParams,
               linearIntegrations: linearIntegrationRefs,
@@ -504,6 +544,13 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           }
         );
 
+        await context.run("cleanup-post-collection-rate-limit", async () => {
+          await deleteEmptyPostCollection({
+            collectionId,
+            organizationId: trigger.organizationId,
+          });
+        });
+
         await context.cancel();
         return;
       }
@@ -557,6 +604,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
         console.warn(
           `[Schedule] Output type ${contentResult.outputType} is not implemented for trigger ${triggerId}. Canceling without retry.`
+        );
+
+        await context.run(
+          "cleanup-post-collection-unsupported-output-type",
+          async () => {
+            await deleteEmptyPostCollection({
+              collectionId,
+              organizationId: trigger.organizationId,
+            });
+          }
         );
 
         await context.cancel();
@@ -727,6 +784,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           });
         }
 
+        await context.run(
+          "cleanup-post-collection-generation-failure",
+          async () => {
+            await deleteEmptyPostCollection({
+              collectionId,
+              organizationId: trigger.organizationId,
+            });
+          }
+        );
+
         await context.cancel();
         return;
       }
@@ -892,6 +959,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           });
         }
 
+        await context.run(
+          "cleanup-post-collection-generation-skip",
+          async () => {
+            await deleteEmptyPostCollection({
+              collectionId,
+              organizationId: trigger.organizationId,
+            });
+          }
+        );
+
         await context.cancel();
         return;
       }
@@ -902,6 +979,12 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         console.warn("[Schedule] Content generation returned no posts", {
           triggerId,
           organizationId: trigger.organizationId,
+        });
+        await context.run("cleanup-post-collection-empty-result", async () => {
+          await deleteEmptyPostCollection({
+            collectionId,
+            organizationId: trigger.organizationId,
+          });
         });
         await context.cancel();
         return;
@@ -914,6 +997,15 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           triggerId,
           organizationId: trigger.organizationId,
         });
+        await context.run(
+          "cleanup-post-collection-missing-primary-post",
+          async () => {
+            await deleteEmptyPostCollection({
+              collectionId,
+              organizationId: trigger.organizationId,
+            });
+          }
+        );
         await context.cancel();
         return;
       }
@@ -1195,6 +1287,13 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           }
         });
       }
+
+      await context.run("cleanup-post-collection-workflow-error", async () => {
+        await deleteEmptyPostCollection({
+          collectionId,
+          organizationId: trigger.organizationId,
+        });
+      });
 
       throw error;
     }
