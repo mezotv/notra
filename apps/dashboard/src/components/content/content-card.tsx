@@ -32,7 +32,7 @@ import { memo, useState } from "react";
 import { toast } from "sonner";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
-import type { PostStatus } from "@/schemas/content";
+import type { ContentCardProps, ContentCardType } from "@/types/content/card";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { OutputTypeIcon } from "@/utils/output-types";
 
@@ -43,9 +43,7 @@ const CONTENT_TYPES = [
   "linkedin_post",
   "investor_update",
   "image",
-] as const;
-
-type ContentType = (typeof CONTENT_TYPES)[number];
+] as const satisfies readonly ContentCardType[];
 
 function getContentTypeLabel(contentType: string): string {
   if (contentType === "twitter_post") {
@@ -53,17 +51,6 @@ function getContentTypeLabel(contentType: string): string {
   }
 
   return formatSnakeCaseLabel(contentType);
-}
-
-interface ContentCardProps {
-  id: string;
-  title: string;
-  preview: string;
-  contentType: string;
-  status: PostStatus;
-  organizationId: string;
-  className?: string;
-  href?: string;
 }
 
 const ContentCard = memo(function ContentCard({
@@ -273,4 +260,4 @@ const ContentCard = memo(function ContentCard({
 });
 
 export { ContentCard, CONTENT_TYPES, getContentTypeLabel };
-export type { ContentCardProps, ContentType };
+export type { ContentCardProps, ContentCardType } from "@/types/content/card";

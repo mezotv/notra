@@ -5,73 +5,22 @@ import {
 } from "@notra/ai/agents/repo-image";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
-import { repoImageModeSchema } from "@notra/ai/schemas/repo-image";
+import {
+  imageRevisionToolInputSchema,
+  imageToolInputSchema,
+} from "@notra/ai/schemas/repo-image";
+import type {
+  ImageRevisionToolConfig,
+  ImageToolConfig,
+} from "@notra/ai/types/repo-image";
 import { toolDescription } from "@notra/ai/utils/description";
+import { escapeHtml, escapeMarkdownAlt } from "@notra/ai/utils/html";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { type Tool, tool } from "ai";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
-
-const imageToolInputSchema = z
-  .object({
-    integrationId: z.string().min(1, "Integration ID is required"),
-    branch: z.string().trim().min(1, "Branch is required"),
-    mode: repoImageModeSchema,
-    prompt: z.string().trim().max(500).optional(),
-    prNumber: z.number().int().positive().optional(),
-    commitSha: z
-      .string()
-      .trim()
-      .regex(/^[0-9a-f]{7,40}$/i, "Must be a git SHA (7-40 hex chars)")
-      .optional(),
-    title: z
-      .string()
-      .trim()
-      .min(1)
-      .max(120)
-      .describe("A concise title for the saved image content"),
-    sourcePostId: z
-      .string()
-      .trim()
-      .min(1)
-      .optional()
-      .describe(
-        "Optional existing image post ID to continue from its saved sandbox snapshot"
-      ),
-  })
-  .superRefine((value, ctx) => {
-    if (value.mode === "prompt" && !value.prompt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["prompt"],
-        message: "Prompt is required",
-      });
-    }
-    if (value.mode === "pr" && value.prNumber === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["prNumber"],
-        message: "PR number is required",
-      });
-    }
-    if (value.mode === "commit" && !value.commitSha) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["commitSha"],
-        message: "Commit SHA is required",
-      });
-    }
-  });
-
-interface ImageToolConfig {
-  chatId?: string;
-  organizationId: string;
-  userId: string;
-}
 
 export function createImageTool(config: ImageToolConfig): Tool {
   return tool({
@@ -148,15 +97,6 @@ export function createImageTool(config: ImageToolConfig): Tool {
   });
 }
 
-interface ImageRevisionToolConfig {
-  organizationId: string;
-  userId: string;
-  postId: string;
-  title: string;
-  integrationId: string;
-  branch: string;
-}
-
 export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
   return tool({
     description: toolDescription({
@@ -168,21 +108,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
       usageNotes:
         "Describe the requested visual change in prompt. The current image post ID, repository integration, branch, and sandbox snapshot are supplied automatically.",
     }),
-    inputSchema: z.object({
-      prompt: z
-        .string()
-        .trim()
-        .min(1)
-        .max(500)
-        .describe("The visual changes to apply to the current image"),
-      title: z
-        .string()
-        .trim()
-        .min(1)
-        .max(120)
-        .optional()
-        .describe("Optional updated title for the image content"),
-    }),
+    inputSchema: imageRevisionToolInputSchema,
     execute: async ({ prompt, title }) => {
       const previousSnapshot = await getImageSnapshot(
         config.organizationId,
@@ -427,16 +353,4 @@ async function saveGeneratedImagePost(params: {
   });
 
   return postId;
-}
-
-function escapeMarkdownAlt(value: string) {
-  return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }

@@ -39,6 +39,7 @@ import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { sourceMetadataSchema } from "@/schemas/content";
+import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
@@ -48,12 +49,6 @@ import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
-
-interface PageClientProps {
-  contentId: string;
-  organizationSlug: string;
-  organizationId: string;
-}
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -103,7 +98,7 @@ export default function PageClient({
   contentId,
   organizationSlug,
   organizationId,
-}: PageClientProps) {
+}: ContentDetailPageClientProps) {
   const { state: sidebarState } = useSidebar();
   const queryClient = useQueryClient();
   const { data, isPending, error } = useContent(organizationId, contentId);

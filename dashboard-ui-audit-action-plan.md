@@ -1,6 +1,6 @@
 # Notra Dashboard UI Audit Action Plan
 
-Date: 2026-05-06  
+Date: 2026-05-06
 Scope: manual dashboard walkthrough in browser tab `http://localhost:3000/erf/logs`, plus source-code reference pass for the dashboard app.
 
 ## Evidence reviewed
@@ -20,7 +20,7 @@ Scope: manual dashboard walkthrough in browser tab `http://localhost:3000/erf/lo
 
 ### 1. Schedules route uses the wrong path in multiple places
 
-**Impact**  
+**Impact**
 Users clicking **Schedules** can be routed to a non-existent path or get a stale/incorrect navigation experience. The app has a route for `automation/schedules`, but navigation references `automation/schedule`.
 
 **Observed/code evidence**
@@ -73,7 +73,7 @@ href: `/${slug}/automation/schedules`,
 
 ### 2. Chat route changes the entire sidebar model abruptly
 
-**Impact**  
+**Impact**
 Clicking **Chat** shifts the user from the normal app navigation into a chat-only sidebar with **Back**, **New chat**, **Recents**, and **Settings**. It feels like switching products rather than moving to another dashboard section.
 
 **Code references**
@@ -98,7 +98,7 @@ Clicking **Chat** shifts the user from the normal app navigation into a chat-onl
    - Consider preserving the org selector and key global nav items.
 4. Add a keyboard and screen-reader check for the back behavior.
 
-**Recommended direction**  
+**Recommended direction**
 Treat Chat as a top-level dashboard section unless chat history genuinely needs the whole sidebar. The current replacement pattern costs orientation.
 
 ---
@@ -107,7 +107,7 @@ Treat Chat as a top-level dashboard section unless chat history genuinely needs 
 
 ### 3. Create Content disabled Continue button does not explain why it is disabled
 
-**Impact**  
+**Impact**
 The user sees a filled-out form and a disabled **Continue** button. The reason is only inferable: no integrations selected/connected. This is a common conversion-killer.
 
 **Code references**
@@ -161,7 +161,7 @@ The user sees a filled-out form and a disabled **Continue** button. The reason i
 
 ### 4. Integrations empty state in Create Content is too weak for a required step
 
-**Impact**  
+**Impact**
 The dialog depends on integrations, but the empty state is a terse dashed box. It does not explain what integrations unlock or which integrations are supported.
 
 **Code references**
@@ -190,7 +190,7 @@ The dialog depends on integrations, but the empty state is a terse dashed box. I
 
 ### 5. Home empty state conflicts with yearly activity summary
 
-**Impact**  
+**Impact**
 Home says **No content created today**, while the activity graph below shows total posts. This can be technically correct, but it reads as contradictory without time-range context.
 
 **Code references**
@@ -230,7 +230,7 @@ Home says **No content created today**, while the activity graph below shows tot
 
 ### 6. Logs empty state looks unfinished
 
-**Impact**  
+**Impact**
 The Logs page shows a large table with a single `No results.` row. It does not explain whether there are no webhook events yet, filters removed the results, or logs are unavailable due retention.
 
 **Code references**
@@ -299,7 +299,7 @@ interface DataTableProps<TData> {
 
 ### 7. Logs pagination should not render as usable controls when there is only one page
 
-**Impact**  
+**Impact**
 `Page 1 of 1`, `Previous`, and `Next` appear even when there are no results. This adds disabled UI noise.
 
 **Code references**
@@ -330,7 +330,7 @@ const showPagination = totalPages > 1 || data.length > 0;
 
 ### 8. Content card titles truncate too aggressively
 
-**Impact**  
+**Impact**
 Cards show titles like `One-Click Approval for AI Dr...` even when the grid has room to provide more context. This makes cards harder to distinguish.
 
 **Code references**
@@ -359,7 +359,7 @@ Cards show titles like `One-Click Approval for AI Dr...` even when the grid has 
 
 ### 9. Content card preview area feels heavier than metadata
 
-**Impact**  
+**Impact**
 The dark inset preview dominates the card while the status/type metadata feels cramped. The card hierarchy is slightly off.
 
 **Code references**
@@ -387,7 +387,7 @@ The dark inset preview dominates the card while the status/type metadata feels c
 
 ### 10. Dashboard activity graph width can feel arbitrary
 
-**Impact**  
+**Impact**
 The graph uses `w-fit`, so the card width is content-driven and can look visually detached from the rest of the page grid.
 
 **Code references**
@@ -414,7 +414,7 @@ The graph uses `w-fit`, so the card width is content-driven and can look visuall
 
 ### 11. Getting Started card is visually heavy and persistent
 
-**Impact**  
+**Impact**
 The onboarding checklist competes with primary navigation on every page until dismissed/collapsed. It looks like a floating card inside the sidebar rather than a secondary helper.
 
 **Code references**
@@ -443,7 +443,7 @@ const storageKey = orgId ? `onboarding-collapsed:${orgId}` : STORAGE_KEY;
 
 ### 12. Search button looks like an input but uses cursor-help
 
-**Impact**  
+**Impact**
 The sidebar Search control looks like a search input, but it opens the command palette. `cursor-help` is misleading.
 
 **Code references**
@@ -474,7 +474,7 @@ The sidebar Search control looks like a search input, but it opens the command p
 
 ### 13. Credit balance button lacks semantic clarity
 
-**Impact**  
+**Impact**
 A wallet icon plus `$11.91` is visually clean but ambiguous. Users cannot tell if it means credits, balance, monthly spend, or budget.
 
 **Code references**
@@ -496,7 +496,7 @@ A wallet icon plus `$11.91` is visually clean but ambiguous. Users cannot tell i
 
 ### 14. Breadcrumb labels are generated from URL segments and can be too generic
 
-**Impact**  
+**Impact**
 The header breadcrumb is mostly mechanical. For pages like integrations, settings, or nested content detail pages, generated labels can be less helpful than explicit route metadata.
 
 **Code references**
@@ -522,7 +522,7 @@ The header breadcrumb is mostly mechanical. For pages like integrations, setting
 
 ### 15. Icon-only controls need stronger accessible names and hover/focus consistency
 
-**Impact**  
+**Impact**
 The UI relies on icon recognition: sidebar toggle, card kebab menus, grid/list view toggle, info icon, modal close, and header more menu. Some have `sr-only` or `aria-label`; this should be audited consistently.
 
 **Code references**
@@ -547,7 +547,7 @@ The UI relies on icon recognition: sidebar toggle, card kebab menus, grid/list v
 
 ### 16. Disabled buttons need reason text when they block a flow
 
-**Impact**  
+**Impact**
 Disabled states are acceptable for obvious cases, but not when the user must infer missing requirements.
 
 **Code references**
@@ -577,7 +577,7 @@ Disabled states are acceptable for obvious cases, but not when the user must inf
 Error fetching consent banner information: Error: Failed to fetch consent banner info: undefined
 ```
 
-**Impact**  
+**Impact**
 This is noisy and can hide real regressions. It may also indicate a broken consent/privacy integration.
 
 **Action steps**
@@ -599,7 +599,7 @@ This is noisy and can hide real regressions. It may also indicate a broken conse
 Executing inline script violates the following Content Security Policy directive 'script-src github.githubassets.com'.
 ```
 
-**Impact**  
+**Impact**
 This may be benign if it is from an embedded GitHub context, but it should be understood. CSP errors in production erode confidence and can indicate integration breakage.
 
 **Action steps**

@@ -14,28 +14,13 @@ import { authClient } from "@/lib/auth/client";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
 import type { PostStatus } from "@/schemas/content";
+import type { DashboardHomePageClientProps } from "@/types/dashboard/home";
+import { getDashboardPostPreview } from "@/utils/content-preview";
 import { getGreeting } from "@/utils/dashboard-greeting";
 
-interface PageClientProps {
-  organizationSlug: string;
-}
-
-function getPreview(markdown: string): string {
-  const lines = markdown
-    .split("\n")
-    .filter((line) => !line.startsWith("#") && line.trim().length > 0);
-
-  const preview = lines.slice(0, 2).join(" ").trim();
-
-  return preview
-    .replace(/\*\*/g, "")
-    .replace(/\*/g, "")
-    .replace(/`/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .slice(0, 160);
-}
-
-export default function PageClient({ organizationSlug }: PageClientProps) {
+export default function PageClient({
+  organizationSlug,
+}: DashboardHomePageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -92,7 +77,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}
                 organizationId={organizationId}
-                preview={getPreview(post.markdown)}
+                preview={getDashboardPostPreview(post.markdown)}
                 status={post.status as PostStatus}
                 title={post.title}
               />

@@ -1,4 +1,3 @@
-import { contentTypeSchema } from "@notra/ai/schemas/content";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
@@ -8,24 +7,14 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
 import { NextResponse } from "next/server";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing.
-import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { createChatPostSchema } from "@/schemas/content";
+import type { RouteContext } from "@/types/api/routes";
 
-const createChatPostSchema = z.object({
-  chatId: z.string().trim().min(1),
-  title: z.string().trim().min(1).max(120),
-  slug: z.string().trim().min(1).nullable().optional(),
-  markdown: z.string().trim().min(1),
-  contentType: contentTypeSchema,
-  status: z.enum(["draft", "published"]),
-});
-
-interface RouteContext {
-  params: Promise<{ organizationId: string }>;
-}
-
-export async function POST(request: Request, { params }: RouteContext) {
+export async function POST(
+  request: Request,
+  { params }: RouteContext<{ organizationId: string }>
+) {
   const { organizationId } = await params;
 
   await assertOrganizationAccess({

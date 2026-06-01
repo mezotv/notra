@@ -26,7 +26,7 @@ export interface ReleasePreview {
   htmlUrl?: string;
 }
 
-export interface LinearIssuePreview {
+export interface LinearIssuePreviewItem {
   id: string;
   identifier: string;
   title: string;
@@ -36,10 +36,10 @@ export interface LinearIssuePreview {
   url: string;
 }
 
-export interface LinearIntegrationPreview {
+export interface LinearIntegrationPreviewItem {
   integrationId: string;
   displayName: string;
-  issues: LinearIssuePreview[];
+  issues: LinearIssuePreviewItem[];
 }
 
 export interface RepositoryPreview {
@@ -51,19 +51,25 @@ export interface RepositoryPreview {
   releases: ReleasePreview[];
 }
 
-export interface PreviewFailure {
+export type PreviewFailureStage =
+  | "repository_lookup"
+  | "repository_metadata"
+  | "token"
+  | "commits"
+  | "pull_requests"
+  | "releases";
+
+export interface RepositoryPreviewFailure {
   repositoryId: string;
   owner: string | null;
   repo: string | null;
-  stage:
-    | "repository_lookup"
-    | "repository_metadata"
-    | "token"
-    | "commits"
-    | "pull_requests"
-    | "releases";
+  stage: PreviewFailureStage;
   message: string;
 }
+
+export type PreviewFailure = RepositoryPreviewFailure;
+export type LinearIssuePreview = LinearIssuePreviewItem;
+export type LinearIntegrationPreview = LinearIntegrationPreviewItem;
 
 export interface PreviewResponse {
   repositories: Array<{
@@ -74,8 +80,8 @@ export interface PreviewResponse {
     pullRequests?: PullRequestPreview[];
     releases?: ReleasePreview[];
   }>;
-  failures?: PreviewFailure[];
-  linearIntegrations?: LinearIntegrationPreview[];
+  failures?: RepositoryPreviewFailure[];
+  linearIntegrations?: LinearIntegrationPreviewItem[];
 }
 
 export interface PrSelection {

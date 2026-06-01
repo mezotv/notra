@@ -27,6 +27,27 @@ export interface GenerateRepoImageResult {
   };
 }
 
+export interface ImageToolConfig {
+  chatId?: string;
+  organizationId: string;
+  userId: string;
+}
+
+export interface ImageRevisionToolConfig {
+  organizationId: string;
+  userId: string;
+  postId: string;
+  title: string;
+  integrationId: string;
+  branch: string;
+}
+
+export interface FontSpec {
+  name: string;
+  weight: 400 | 500 | 700;
+  family: string;
+}
+
 export type RepoImageSourceContext =
   | { mode: "prompt"; prompt: string }
   | {

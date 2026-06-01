@@ -1,3 +1,5 @@
+import type { FontSpec } from "@notra/ai/types/repo-image";
+
 export const AGENT_TIMEOUT_MS = 480_000;
 export const RECOVERY_AGENT_TIMEOUT_MS = 180_000;
 export const REPO_IMAGE_OUTPUT_HTML_PATH = "/workspace/home/output.html";
@@ -26,9 +28,3 @@ export const DISPLAY_STYLE_RE = /(^|;)\s*display\s*:/i;
 export const LEADING_STYLE_SEPARATOR_RE = /^\s*;?/;
 
 export const TEN_MINUTES_MS = 600_000;
-
-interface FontSpec {
-  name: string;
-  weight: 400 | 500 | 700;
-  family: string;
-}

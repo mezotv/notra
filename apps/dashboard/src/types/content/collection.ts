@@ -1,3 +1,10 @@
+export interface CollectionPageProps {
+  params: Promise<{
+    slug: string;
+    id: string;
+  }>;
+}
+
 export interface RenameCollectionDialogProps {
   collectionId: string;
   currentName: string;

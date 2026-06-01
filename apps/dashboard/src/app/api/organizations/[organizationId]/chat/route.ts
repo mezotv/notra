@@ -37,16 +37,13 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
-
-interface RouteContext {
-  params: Promise<{ organizationId: string }>;
-}
+import type { RouteContext } from "@/types/api/routes";
 
 export const maxDuration = 60;
 
 export const POST = withEvlog(async function POST(
   request: NextRequest,
-  { params }: RouteContext
+  { params }: RouteContext<{ organizationId: string }>
 ) {
   const requestId = nanoid(10);
   const log = useLogger();

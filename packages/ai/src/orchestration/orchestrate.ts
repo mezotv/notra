@@ -1,19 +1,13 @@
 import { createModel } from "@notra/ai/model";
-import type { AILogTarget } from "@notra/ai/observability";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
 import type {
-  ResolveIntegrationContext,
-  ResolveLinearIntegrationContext,
-} from "@notra/ai/types/agents";
-import type {
-  IntegrationFetchers,
+  OrchestrateDeps,
   OrchestrateInput,
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
-  type LanguageModelUsage,
   stepCountIs,
   streamText,
   type UIMessage,
@@ -29,17 +23,6 @@ import {
   getLinearContextFromIntegrations,
   getRepoContextFromIntegrations,
 } from "./tool-registry";
-
-export interface OrchestrateDeps {
-  integrationFetchers?: IntegrationFetchers;
-  resolveContext?: ResolveIntegrationContext;
-  resolveLinearContext?: ResolveLinearIntegrationContext;
-  onUsage?: (
-    usage: LanguageModelUsage,
-    modelId: string
-  ) => void | Promise<void>;
-  log?: AILogTarget;
-}
 
 export async function orchestrateChat(
   input: OrchestrateInput,

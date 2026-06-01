@@ -1,11 +1,6 @@
 import type { OnDemandContentType } from "@/schemas/content";
 import type { ScheduleOutputType } from "@/schemas/integrations";
-
-interface FormatCardMeta {
-  label: string;
-  description: string;
-  iconClass: string;
-}
+import type { FormatCardMeta } from "@/types/content/formats";
 
 export const FORMAT_CARD_META: Record<OnDemandContentType, FormatCardMeta> = {
   changelog: {

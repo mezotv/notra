@@ -8,6 +8,7 @@ import {
 import type {
   AutoThinkingLevel,
   IntegrationFetchers,
+  StreamProviderOptions,
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
 import type { PostToolsResult } from "@notra/ai/types/post-tools";
@@ -329,10 +330,6 @@ function trimTrivialHistory(messages: UIMessage[]): UIMessage[] {
     return { ...message, parts: textParts };
   });
 }
-
-type StreamProviderOptions = NonNullable<
-  Parameters<typeof streamText>[0]["providerOptions"]
->;
 
 function getThinkingProviderOptions(
   modelId: string,

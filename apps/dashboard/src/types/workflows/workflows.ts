@@ -17,6 +17,12 @@ export interface WorkflowTriggerData {
   autoPublish: boolean;
 }
 
+export interface ScheduleTriggerData extends WorkflowTriggerData {
+  sourceType: string;
+  sourceConfig: unknown;
+  targets: { repositoryIds: string[] };
+}
+
 export interface WorkflowRepositoryData {
   id: string;
   owner: string;

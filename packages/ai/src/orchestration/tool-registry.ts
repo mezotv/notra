@@ -1,3 +1,4 @@
+import { unavailableImageRevisionToolInputSchema } from "@notra/ai/schemas/repo-image";
 import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { exampleTool } from "@notra/ai/tools/example";
 import {
@@ -13,10 +14,7 @@ import {
 } from "@notra/ai/tools/linear";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import type {
-  ResolveIntegrationContext,
-  ResolveLinearIntegrationContext,
-} from "@notra/ai/types/agents";
-import type {
+  BuildToolSetDeps,
   BuildToolSetParams,
   LinearContext,
   RepoContext,
@@ -24,14 +22,6 @@ import type {
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
 import { type Tool, tool } from "ai";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
-
-export interface BuildToolSetDeps {
-  resolveContext?: ResolveIntegrationContext;
-  resolveLinearContext?: ResolveLinearIntegrationContext;
-  skipTools?: boolean;
-}
 
 export function buildToolSet(
   params: BuildToolSetParams,
@@ -186,9 +176,7 @@ function createUnavailableImageRevisionTool(): Tool {
   return tool({
     description:
       "Explain why this generated image cannot be revised because its saved sandbox metadata is missing.",
-    inputSchema: z.object({
-      prompt: z.string().optional(),
-    }),
+    inputSchema: unavailableImageRevisionToolInputSchema,
     execute: async () => ({
       status: "unavailable",
       message:

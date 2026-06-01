@@ -67,6 +67,10 @@ import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
+import type {
+  CreateToolContentType,
+  StandaloneChatPageClientProps,
+} from "@/types/components/chat-page";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,
@@ -188,11 +192,6 @@ function ChatReasoningBlock({
   );
 }
 
-interface PageClientProps {
-  organizationSlug: string;
-  chatId?: string;
-}
-
 const CREATE_TOOL_TYPES = {
   "tool-createBlogPost": "blog_post",
   "tool-createChangelog": "changelog",
@@ -200,8 +199,6 @@ const CREATE_TOOL_TYPES = {
   "tool-createLinkedInPost": "linkedin_post",
   "tool-createTwitterPost": "twitter_post",
 } satisfies Record<string, ContentType>;
-type CreateToolContentType =
-  (typeof CREATE_TOOL_TYPES)[keyof typeof CREATE_TOOL_TYPES];
 
 function isCreateTool(type: string): boolean {
   return type in CREATE_TOOL_TYPES;
@@ -353,7 +350,7 @@ function ChatImageAttachment({
 function StandaloneChatPageClient({
   organizationSlug,
   chatId: initialChatId,
-}: PageClientProps) {
+}: StandaloneChatPageClientProps) {
   const router = useRouter();
   const [initialQuery, setInitialQuery] = useQueryState(
     "q",
@@ -2070,7 +2067,7 @@ function StandaloneChatPageClient({
   );
 }
 
-export default function PageClient(props: PageClientProps) {
+export default function PageClient(props: StandaloneChatPageClientProps) {
   return (
     <StandaloneChatPageClient
       chatId={props.chatId}

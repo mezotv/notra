@@ -27,33 +27,14 @@ import {
 } from "@notra/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import type {
-  ResolveIntegrationContext,
-  ResolveLinearIntegrationContext,
-} from "@notra/ai/types/agents";
-import type {
+  BuildStandaloneToolSetDeps,
+  BuildStandaloneToolSetParams,
   LinearContext,
   RepoContext,
   ToolSet,
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
-import type {
-  PostToolsConfig,
-  PostToolsResult,
-} from "@notra/ai/types/post-tools";
 import type { Tool } from "ai";
-
-interface BuildStandaloneToolSetParams {
-  organizationId: string;
-  chatId?: string;
-  userId?: string;
-  validatedIntegrations: ValidatedIntegration[];
-  postResult: PostToolsResult;
-}
-
-interface BuildStandaloneToolSetDeps {
-  resolveContext?: ResolveIntegrationContext;
-  resolveLinearContext?: ResolveLinearIntegrationContext;
-}
 
 export function buildStandaloneToolSet(
   params: BuildStandaloneToolSetParams,

@@ -12,10 +12,6 @@ import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
-import {
-  createContentGenerationRequestSchema,
-  onDemandContentTypeSchema,
-} from "@notra/content-generation/schemas";
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
@@ -24,8 +20,6 @@ import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 import {
   GITHUB_API_MAX_PAGES,
   GITHUB_API_MAX_RESULTS,
@@ -43,9 +37,28 @@ import {
 import { baseProcedure } from "@/lib/orpc/base";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
-import { renameCollectionSchema, updateContentSchema } from "@/schemas/content";
+import {
+  contentInputSchema,
+  contentOrganizationIdInputSchema,
+  contentPreviewRequestSchema,
+  createPostCollectionInputSchema,
+  generateContentInputSchema,
+  postCollectionInputSchema,
+  postCollectionsListInputSchema,
+  renamePostCollectionInputSchema,
+  updateContentSchema,
+  updateExpectedPostCountInputSchema,
+} from "@/schemas/content";
 import { clearCompletedGenerationSchema } from "@/schemas/generations";
-import { LOOKBACK_WINDOWS } from "@/schemas/integrations";
+import type {
+  CommitPreview,
+  LinearIntegrationPreviewItem,
+  LinearIssuePreviewItem,
+  PullRequestPreview,
+  ReleasePreview,
+  RepositoryPreview,
+  RepositoryPreviewFailure,
+} from "@/types/content/preview";
 import { resolveLookbackRange } from "@/utils/lookback";
 import {
   badRequest,
@@ -56,28 +69,6 @@ import {
 } from "../utils/errors";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
-
-const organizationIdInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-
-const contentInputSchema = organizationIdInputSchema.extend({
-  contentId: z.string().min(1, "Content ID is required"),
-});
-
-const previewRequestSchema = z.object({
-  repositoryIds: z.array(z.string().min(1)),
-  lookbackWindow: z.enum(LOOKBACK_WINDOWS),
-  includeCommits: z.boolean().default(true),
-  includePullRequests: z.boolean().default(true),
-  includeReleases: z.boolean().default(true),
-  linearIntegrationIds: z.array(z.string().min(1)).optional(),
-});
-
-const createPostCollectionInputSchema = organizationIdInputSchema.extend({
-  contentTypes: z.array(onDemandContentTypeSchema).min(1),
-  expectedPostCount: z.number().int().positive(),
-});
 
 function serializePost(post: {
   content: string;
@@ -147,75 +138,6 @@ function normalizeContentTypes(contentTypes: string[]): ContentType[] {
 
 function normalizeContentType(contentType: string): ContentType {
   return contentTypeSchema.parse(contentType);
-}
-
-export interface CommitPreview {
-  authorName: string;
-  authorLogin: string | null;
-  authoredAt: string;
-  htmlUrl: string;
-  message: string;
-  sha: string;
-}
-
-export interface PullRequestPreview {
-  authorLogin: string;
-  htmlUrl: string;
-  merged: boolean;
-  mergedAt: string | null;
-  number: number;
-  state: string;
-  title: string;
-}
-
-export interface ReleasePreview {
-  authorLogin: string;
-  htmlUrl: string;
-  name: string;
-  prerelease: boolean;
-  publishedAt: string;
-  tagName: string;
-}
-
-export interface RepositoryPreview {
-  commits: CommitPreview[];
-  owner: string;
-  pullRequests: PullRequestPreview[];
-  releases: ReleasePreview[];
-  repo: string;
-  repositoryId: string;
-}
-
-export interface LinearIssuePreviewItem {
-  id: string;
-  identifier: string;
-  title: string;
-  state: string | null;
-  assignee: string | null;
-  completedAt: string | null;
-  url: string;
-}
-
-export interface LinearIntegrationPreviewItem {
-  integrationId: string;
-  displayName: string;
-  issues: LinearIssuePreviewItem[];
-}
-
-type PreviewFailureStage =
-  | "repository_lookup"
-  | "repository_metadata"
-  | "token"
-  | "commits"
-  | "pull_requests"
-  | "releases";
-
-export interface RepositoryPreviewFailure {
-  message: string;
-  owner: string | null;
-  repo: string | null;
-  repositoryId: string;
-  stage: PreviewFailureStage;
 }
 
 function getDateRange(dateParam: string | null) {
@@ -481,7 +403,7 @@ async function fetchCommitsPreview(params: {
 
 export const contentRouter = {
   list: baseProcedure
-    .input(organizationIdInputSchema.and(contentListQuerySchema))
+    .input(contentOrganizationIdInputSchema.and(contentListQuerySchema))
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -683,12 +605,7 @@ export const contentRouter = {
     }),
   collections: {
     list: baseProcedure
-      .input(
-        organizationIdInputSchema.extend({
-          page: z.coerce.number().int().min(1).default(1),
-          pageSize: z.coerce.number().int().min(1).max(100).default(20),
-        })
-      )
+      .input(postCollectionsListInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -802,11 +719,7 @@ export const contentRouter = {
         };
       }),
     get: baseProcedure
-      .input(
-        organizationIdInputSchema.extend({
-          collectionId: z.string().min(1, "Collection ID is required"),
-        })
-      )
+      .input(postCollectionInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -878,13 +791,7 @@ export const contentRouter = {
         };
       }),
     rename: baseProcedure
-      .input(
-        organizationIdInputSchema
-          .extend({
-            collectionId: z.string().min(1, "Collection ID is required"),
-          })
-          .and(renameCollectionSchema)
-      )
+      .input(renamePostCollectionInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -920,11 +827,7 @@ export const contentRouter = {
         };
       }),
     delete: baseProcedure
-      .input(
-        organizationIdInputSchema.extend({
-          collectionId: z.string().min(1, "Collection ID is required"),
-        })
-      )
+      .input(postCollectionInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -955,12 +858,7 @@ export const contentRouter = {
         return { success: true };
       }),
     updateExpectedPostCount: baseProcedure
-      .input(
-        organizationIdInputSchema.extend({
-          collectionId: z.string().min(1, "Collection ID is required"),
-          expectedPostCount: z.number().int().positive(),
-        })
-      )
+      .input(updateExpectedPostCountInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -991,7 +889,7 @@ export const contentRouter = {
   },
   metrics: {
     get: baseProcedure
-      .input(organizationIdInputSchema)
+      .input(contentOrganizationIdInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -1092,7 +990,7 @@ export const contentRouter = {
       }),
   },
   preview: baseProcedure
-    .input(organizationIdInputSchema.and(previewRequestSchema))
+    .input(contentOrganizationIdInputSchema.and(contentPreviewRequestSchema))
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -1390,11 +1288,7 @@ export const contentRouter = {
       return { collectionId };
     }),
   generate: baseProcedure
-    .input(
-      organizationIdInputSchema
-        .and(createContentGenerationRequestSchema)
-        .and(z.object({ collectionId: z.string().min(1) }))
-    )
+    .input(generateContentInputSchema)
     .handler(async ({ context, input }) => {
       const auth = await assertOrganizationAccess({
         headers: context.headers,
@@ -1512,7 +1406,7 @@ export const contentRouter = {
     }),
   activeGenerations: {
     list: baseProcedure
-      .input(organizationIdInputSchema)
+      .input(contentOrganizationIdInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -1527,7 +1421,9 @@ export const contentRouter = {
         return { generations, results };
       }),
     clearCompleted: baseProcedure
-      .input(organizationIdInputSchema.and(clearCompletedGenerationSchema))
+      .input(
+        contentOrganizationIdInputSchema.and(clearCompletedGenerationSchema)
+      )
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,

@@ -1,8 +1,6 @@
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
 import { createModel } from "@notra/ai/model";
-import type { AILogTarget } from "@notra/ai/observability";
 import { getUserPrompt } from "@notra/ai/prompts/user";
-import type { ContentType } from "@notra/ai/schemas/content";
 import {
   createGetBrandReferencesTool,
   createSearchBrandReferencesTool,
@@ -18,62 +16,15 @@ import {
 } from "@notra/ai/tools/post";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import type {
-  AgentDataPointSettings,
-  AgentTokenUsage,
-  LinearIntegrationRef,
-  ResolveIntegrationContext,
-  ResolveLinearIntegrationContext,
+  BackgroundGenOptions,
+  BackgroundGenResult,
 } from "@notra/ai/types/agents";
-import type { AgentType } from "@notra/ai/types/brand-references";
 import type {
   PostToolsConfig,
   PostToolsResult,
 } from "@notra/ai/types/post-tools";
-import type { PostSummary } from "@notra/ai/types/posts";
-import type { BaseTonePromptInput } from "@notra/ai/types/prompts";
-import type { TccMetadata } from "@notra/ai/types/tcc";
-import type {
-  CommitWindow,
-  GitHubSelectionFilters,
-} from "@notra/ai/types/tools";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
-import type { PostSourceMetadata } from "@notra/db/schema";
 import { stepCountIs, ToolLoopAgent } from "ai";
-
-export interface BackgroundGenOptions {
-  organizationId: string;
-  collectionId: string;
-  skillName: string;
-  contentType: ContentType;
-  brandAgentType: AgentType;
-  contentLabel: string;
-  voiceId?: string;
-  repositories: Array<{
-    integrationId: string;
-    owner: string;
-    repo: string;
-    defaultBranch?: string | null;
-  }>;
-  linearIntegrations?: LinearIntegrationRef[];
-  promptInput: BaseTonePromptInput;
-  sourceMetadata?: PostSourceMetadata;
-  dataPointSettings?: AgentDataPointSettings;
-  selectionFilters?: GitHubSelectionFilters;
-  commitWindow?: CommitWindow;
-  autoPublish?: boolean;
-  resolveContext: ResolveIntegrationContext;
-  resolveLinearContext?: ResolveLinearIntegrationContext;
-  log?: AILogTarget;
-  telemetryMetadata?: TccMetadata;
-  includeSearchBrandReferencesTool?: boolean;
-}
-
-export interface BackgroundGenResult {
-  postId: string;
-  title: string;
-  posts: PostSummary[];
-  usage?: AgentTokenUsage;
-}
 
 export class ContentGenerationSkippedError extends Error {
   constructor(message: string) {

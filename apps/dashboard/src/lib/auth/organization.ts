@@ -5,24 +5,13 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { retryTransientDbError } from "@/lib/db/retry";
 import { organizationIdSchema } from "@/schemas/auth/organization";
-import type { OrganizationAuth } from "@/types/auth/organization";
+import type {
+  AuthenticatedUser,
+  AuthSession,
+  OrganizationAuth,
+  OrganizationAuthDependencies,
+} from "@/types/auth/organization";
 import { getServerSession } from "./session";
-
-type AuthSession = Awaited<ReturnType<typeof getServerSession>>;
-type AuthenticatedUser = NonNullable<AuthSession["user"]>;
-interface OrganizationMembership {
-  id: string;
-  role: string;
-}
-
-interface OrganizationAuthDependencies {
-  getServerSession: typeof getServerSession;
-  findMembership: (params: {
-    organizationId: string;
-    userId: string;
-  }) => Promise<OrganizationMembership | undefined>;
-  hasDatabaseUrl: () => boolean;
-}
 
 const organizationAuthDependencies: OrganizationAuthDependencies = {
   getServerSession,

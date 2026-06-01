@@ -66,20 +66,8 @@ import {
 import type {
   ScheduleBrandSettingsData as BrandSettingsData,
   ScheduleRepositoryData as RepositoryData,
+  ScheduleTriggerData,
 } from "@/types/workflows/workflows";
-
-interface TriggerData {
-  id: string;
-  name: string;
-  organizationId: string;
-  sourceType: string;
-  sourceConfig: unknown;
-  targets: { repositoryIds: string[] };
-  outputType: string;
-  outputConfig: unknown;
-  enabled: boolean;
-  autoPublish: boolean;
-}
 
 export const { POST } = serve<ScheduleWorkflowPayload>(
   async (context: WorkflowContext<ScheduleWorkflowPayload>) => {
@@ -95,7 +83,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
     const creationMode = manual ? "manual" : "automatic";
 
     // Step 1: Fetch trigger configuration
-    const trigger = await context.run<TriggerData | null>(
+    const trigger = await context.run<ScheduleTriggerData | null>(
       "fetch-trigger",
       async () => {
         const result = await db.query.contentTriggers.findFirst({

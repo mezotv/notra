@@ -45,6 +45,8 @@ export function releaseSelectionFromKey(key: string): ReleaseSelection | null {
 
 const MARKDOWN_PREVIEW_MAX_LENGTH = 200;
 const MARKDOWN_PREVIEW_LINES = 3;
+const DASHBOARD_POST_PREVIEW_MAX_LENGTH = 160;
+const DASHBOARD_POST_PREVIEW_LINES = 2;
 const MARKDOWN_LINK_REGEX = /\[([^\]]+)\]\([^)]+\)/g;
 
 export function getMarkdownPreview(markdown: string): string {
@@ -61,6 +63,22 @@ export function getMarkdownPreview(markdown: string): string {
     .replaceAll("`", "")
     .replace(MARKDOWN_LINK_REGEX, "$1")
     .slice(0, MARKDOWN_PREVIEW_MAX_LENGTH);
+}
+
+export function getDashboardPostPreview(markdown: string): string {
+  const lines = markdown
+    .split("\n")
+    .filter((line) => !line.startsWith("#") && line.trim().length > 0);
+
+  return lines
+    .slice(0, DASHBOARD_POST_PREVIEW_LINES)
+    .join(" ")
+    .trim()
+    .replaceAll("**", "")
+    .replaceAll("*", "")
+    .replaceAll("`", "")
+    .replace(MARKDOWN_LINK_REGEX, "$1")
+    .slice(0, DASHBOARD_POST_PREVIEW_MAX_LENGTH);
 }
 
 export function getPageNumbers(

@@ -5,6 +5,7 @@ import {
   POST_TITLE_MAX_LENGTH,
 } from "@notra/ai/schemas/limits";
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
+import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
@@ -102,6 +103,32 @@ export const postsResponseSchema = z.object({
 });
 
 export type PostsResponse = z.infer<typeof postsResponseSchema>;
+
+export const createChatPostSchema = z.object({
+  chatId: z.string().trim().min(1),
+  title: z.string().trim().min(1).max(120),
+  slug: z.string().trim().min(1).nullable().optional(),
+  markdown: z.string().trim().min(1),
+  contentType: contentTypeSchema,
+  status: postStatusSchema,
+});
+
+export const contentOrganizationIdInputSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+});
+
+export const contentInputSchema = contentOrganizationIdInputSchema.extend({
+  contentId: z.string().min(1, "Content ID is required"),
+});
+
+export const contentPreviewRequestSchema = z.object({
+  repositoryIds: z.array(z.string().min(1)),
+  lookbackWindow: z.enum(LOOKBACK_WINDOWS),
+  includeCommits: z.boolean().default(true),
+  includePullRequests: z.boolean().default(true),
+  includeReleases: z.boolean().default(true),
+  linearIntegrationIds: z.array(z.string().min(1)).optional(),
+});
 
 export const postCollectionSourceSchema = z.enum([
   "manual",
@@ -263,6 +290,36 @@ export const onDemandContentTypeSchema = z.enum([
   "image",
 ] as const);
 export type OnDemandContentType = z.infer<typeof onDemandContentTypeSchema>;
+
+export const createPostCollectionInputSchema =
+  contentOrganizationIdInputSchema.extend({
+    contentTypes: z.array(onDemandContentTypeSchema).min(1),
+    expectedPostCount: z.number().int().positive(),
+  });
+
+export const postCollectionsListInputSchema =
+  contentOrganizationIdInputSchema.extend({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  });
+
+export const postCollectionInputSchema =
+  contentOrganizationIdInputSchema.extend({
+    collectionId: z.string().min(1, "Collection ID is required"),
+  });
+
+export const renamePostCollectionInputSchema = postCollectionInputSchema.and(
+  renameCollectionSchema
+);
+
+export const updateExpectedPostCountInputSchema =
+  postCollectionInputSchema.extend({
+    expectedPostCount: z.number().int().positive(),
+  });
+
+export const generateContentInputSchema = contentOrganizationIdInputSchema
+  .and(createContentGenerationRequestSchema)
+  .and(z.object({ collectionId: z.string().min(1) }));
 
 export const contentDataPointSettingsSchema = z.object({
   includePullRequests: z.boolean().default(true),
