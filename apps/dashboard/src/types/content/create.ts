@@ -42,6 +42,7 @@ export interface ActivityStepProps {
   integrationOptions: IntegrationOption[];
   selectedIntegrationIds: string[];
   onToggleIntegration: (value: string) => void;
+  onToggleAllIntegrations: () => void;
   isLoadingIntegrations: boolean;
   onConnect: () => void;
   repositories: RepositoryPreview[] | undefined;

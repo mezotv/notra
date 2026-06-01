@@ -1,9 +1,9 @@
 "use client";
 
-import { buttonVariants } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { buttonVariants } from "@/components/button";
 
 export default function NotFound() {
   const router = useRouter();

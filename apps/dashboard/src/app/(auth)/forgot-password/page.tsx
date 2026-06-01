@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 
 export default function ForgotPassword() {

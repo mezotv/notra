@@ -1,5 +1,10 @@
 import type { MetadataRoute } from "next";
 import { changelog } from "@/../.source/server";
+import {
+  filterPostsByAuthorSlug,
+  getAuthorHref,
+  listNotraAuthors,
+} from "@/utils/authors";
 import { listNotraBlogPosts } from "@/utils/blog";
 import { listNotraChangelogPosts } from "@/utils/changelog";
 import { SITE_URL } from "@/utils/urls";
@@ -24,10 +29,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
-  const notraBlogEntries = (await listNotraBlogPosts()).map((post) => ({
+  const notraBlogPosts = await listNotraBlogPosts();
+  const notraBlogEntries = notraBlogPosts.map((post) => ({
     url: `${SITE_URL}/blog/${post.slug}`,
     lastModified: new Date(post.updatedAt),
   }));
+
+  const notraAuthorEntries = (await listNotraAuthors()).map((author) => {
+    const lastModified = filterPostsByAuthorSlug(
+      notraBlogPosts,
+      author.slug
+    ).reduce<Date>((latest, post) => {
+      const postDate = new Date(post.updatedAt);
+      return postDate > latest ? postDate : latest;
+    }, STATIC_PAGE_LAST_MODIFIED);
+
+    return {
+      url: `${SITE_URL}${getAuthorHref(author.slug)}`,
+      lastModified,
+    };
+  });
 
   const latestNotraChangelog = notraChangelogEntries.reduce<Date>(
     (latest, entry) =>
@@ -114,5 +135,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...showcaseEntries,
     ...notraChangelogEntries,
     ...notraBlogEntries,
+    ...notraAuthorEntries,
   ];
 }

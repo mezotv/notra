@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Add01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
@@ -22,7 +23,6 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import {
   Table,
   TableBody,
@@ -49,14 +50,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2Icon, PlusIcon } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
+import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -104,6 +107,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [createdSortOrder, setCreatedSortOrder] = useState<
     false | "asc" | "desc"
   >(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
   const { data, isPending } = useQuery(
     dashboardOrpc.automation.schedules.list.queryOptions({
@@ -383,6 +389,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <CreateScheduleDialog
+            onOpenChange={setCreateOpen}
             onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.schedules.list.queryKey({
@@ -397,11 +404,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 });
               }
             }}
+            open={createOpen}
             organizationId={organizationId ?? ""}
             trigger={
-              <Button variant="default">
-                <PlusIcon className="size-4" />
-                <span className="ml-1">New Schedule</span>
+              <Button className="gap-1.5">
+                <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                Create Schedule
+                <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
               </Button>
             }
           />
@@ -429,9 +438,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 }}
                 organizationId={organizationId ?? ""}
                 trigger={
-                  <Button variant="outline">
-                    <PlusIcon className="size-4" />
-                    <span className="ml-1">New Schedule</span>
+                  <Button className="gap-1.5" variant="outline">
+                    <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                    Create Schedule
                   </Button>
                 }
               />

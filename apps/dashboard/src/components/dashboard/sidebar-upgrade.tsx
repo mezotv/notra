@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 

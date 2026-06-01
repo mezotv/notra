@@ -4,13 +4,13 @@ import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FEATURES, PLANS } from "@notra/ai/billing/features";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
@@ -155,6 +155,11 @@ export function PricingClient({ slug }: PricingClientProps) {
           </TabsList>
         </Tabs>
       </div>
+
+      <p className="mt-3 text-center text-muted-foreground text-xs">
+        Your plan renews automatically every {isYearly ? "year" : "month"} until
+        you cancel.
+      </p>
 
       {plansLoading ? (
         <div className="mt-8 grid gap-6 lg:grid-cols-2">

@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { Framer } from "@notra/ui/components/ui/svgs/framer";
 import { CheckIcon, ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 
 const STEPS = [

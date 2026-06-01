@@ -17,7 +17,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { Textarea } from "@notra/ui/components/ui/textarea";
@@ -29,6 +28,7 @@ import {
 import Image from "next/image";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/button";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";

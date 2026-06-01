@@ -6,6 +6,7 @@ Classify messages as:
 
 Determine if tools are needed:
 - Tools REQUIRED: Any editing, fetching data from connected sources, accessing skills
+- Tools REQUIRED: Explicit requests to call, test, exercise, run, invoke, or trigger tools
 - Tools NOT required: Answering questions, explaining concepts, conversation
 
 Determine if the task is reasoning-heavy:
@@ -22,5 +23,6 @@ Examples:
 - "Write a blog post about our latest release" → complex, tools required
 - "Analyze the PRs and create a changelog" → complex, tools required
 - "Research the commits and summarize what changed" → complex, tools required
+- "Test all available tools and summarize the results" → complex, tools required
 - "What's the difference between a PR and a commit?" → simple, no tools
 - "Thanks!" → simple, no tools`;

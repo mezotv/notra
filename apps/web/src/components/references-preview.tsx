@@ -4,10 +4,12 @@ import {
   RepeatIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import Image from "next/image";
 
 interface MockTweet {
   authorName: string;
   authorHandle: string;
+  authorAvatar: string;
   content: string;
   likes: number;
   retweets: number;
@@ -19,8 +21,9 @@ interface MockTweet {
 const TRAILING_ZERO_REGEX = /\.0$/;
 
 const MOCK_TWEET: MockTweet = {
-  authorName: "Sarah Chen",
-  authorHandle: "sarahchen_dev",
+  authorName: "Dominik Koch",
+  authorHandle: "dominikkoch",
+  authorAvatar: "https://avatars.githubusercontent.com/u/68947960?s=200&v=4",
   content:
     "Just shipped our biggest update yet. Real-time collab, revamped dashboard, and 3x faster sync.\n\nHonestly can't believe how far we've come in 6 months.",
   likes: 847,
@@ -43,12 +46,13 @@ function MockReferenceCard({ tweet }: { tweet: MockTweet }) {
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground text-xs">
-              {tweet.authorName
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </div>
+            <Image
+              alt={tweet.authorName}
+              className="size-9 shrink-0 rounded-full object-cover"
+              height={36}
+              src={tweet.authorAvatar}
+              width={36}
+            />
             <div className="min-w-0">
               <span className="truncate font-semibold text-sm leading-tight">
                 {tweet.authorName}

@@ -11,7 +11,7 @@ Attach a screenshot or recording of the change. This is optional, but can help r
 - [ ] I ran formatting/linting/type checks locally
 - [ ] I updated docs when behavior or setup changed
 - [ ] I only added comments where the logic is not obvious
-- [ ] I have used [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the commit messages
+- [ ] I have used [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for the PR title and commit messages
 - [ ] I did not use AI to write the code in this PR or have disclosed that I did
 
 </details>

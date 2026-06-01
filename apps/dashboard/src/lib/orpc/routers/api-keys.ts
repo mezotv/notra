@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+import { API_KEY_EXPIRATION_MS } from "@/constants/api-keys";
 import {
   getPermissionLevel,
   getPermissionsForLevel,
@@ -11,7 +12,6 @@ import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   createApiKeySchema,
   deleteApiKeySchema,
-  EXPIRATION_MS,
   updateApiKeySchema,
 } from "@/schemas/api-keys";
 import { organizationIdSchema } from "@/schemas/auth/organization";
@@ -148,7 +148,7 @@ export const apiKeysRouter = {
       await assertActiveSubscription(input.organizationId);
 
       const { apiId, client } = requireUnkeyConfig();
-      const expiresMs = EXPIRATION_MS[input.expiration];
+      const expiresMs = API_KEY_EXPIRATION_MS[input.expiration];
       const expires = expiresMs ? Date.now() + expiresMs : undefined;
 
       const created = await client.keys.createKey({
@@ -220,7 +220,8 @@ export const apiKeysRouter = {
       } else if (input.payload.expiration === "never") {
         expires = null;
       } else {
-        expires = Date.now() + (EXPIRATION_MS[input.payload.expiration] ?? 0);
+        expires =
+          Date.now() + (API_KEY_EXPIRATION_MS[input.payload.expiration] ?? 0);
       }
 
       await client.keys.updateKey({

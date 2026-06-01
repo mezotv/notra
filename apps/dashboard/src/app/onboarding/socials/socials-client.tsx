@@ -7,7 +7,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,6 +16,7 @@ import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { ImportButtonContent } from "@/components/onboarding/socials/import-button-content";
 import { ImportedTweetCard } from "@/components/onboarding/socials/imported-tweet-card";

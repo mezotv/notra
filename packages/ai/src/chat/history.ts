@@ -7,6 +7,7 @@ import {
   CHAT_LAST_STOPPED_TTL_SECONDS,
 } from "../constants/chat";
 import { gateway } from "../gateway";
+import { withGatewayAutomaticCaching } from "../provider-options";
 import type {
   ChatSessionSummary,
   ExternalChannelId,
@@ -732,6 +733,7 @@ export async function generateAndSetChatTitle(
       system: `Generate a short, descriptive title (max 50 chars) for a chat conversation based on the user's first message. Return ONLY the title text, nothing else. No quotes, no prefix. Be specific and concise.`,
       prompt: userMessage,
       maxOutputTokens: 30,
+      providerOptions: withGatewayAutomaticCaching(),
       experimental_telemetry: buildExperimentalTelemetry({
         chatId,
         feature: "chat_title",

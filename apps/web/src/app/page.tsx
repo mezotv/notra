@@ -63,7 +63,7 @@ export default function LandingPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-54">
+      <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-36">
         <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
             <h1 className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24">
@@ -78,8 +78,15 @@ export default function LandingPage() {
 
         <div className="relative z-10 mt-6 mb-16 flex w-full max-w-124.25 flex-col items-center justify-center gap-6 sm:mt-8 sm:mb-0 sm:gap-8 md:mt-10 md:gap-10 lg:mt-12 lg:gap-12">
           <div className="flex items-center justify-start gap-3 backdrop-blur-[0.515625rem] sm:gap-4">
+            <TrackedSignupLink source="landing_page_hero_cta">
+              <Button className="corner-squircle h-10 overflow-hidden rounded-[1rem] border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
+                <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
+                  Start for free
+                </span>
+              </Button>
+            </TrackedSignupLink>
             <Button
-              className="h-10 overflow-hidden rounded-lg px-6 py-2 sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
+              className="corner-squircle h-10 overflow-hidden rounded-[1rem] px-6 py-2 supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
               nativeButton={false}
               render={<Link href="#how-it-works" />}
               variant="outline"
@@ -88,13 +95,6 @@ export default function LandingPage() {
                 How it works
               </span>
             </Button>
-            <TrackedSignupLink source="landing_page_hero_cta">
-              <Button className="h-10 overflow-hidden rounded-lg border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
-                <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
-                  Start for free
-                </span>
-              </Button>
-            </TrackedSignupLink>
           </div>
         </div>
 
@@ -128,7 +128,7 @@ export default function LandingPage() {
         </div>
 
         <section
-          className="flex w-full flex-col items-center justify-center border-border border-b"
+          className="flex w-full flex-col items-center justify-center border-border border-b content-defer"
           id="social-proof"
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-4 py-8 sm:px-6 sm:py-12 md:px-24 md:py-16">
@@ -200,7 +200,7 @@ export default function LandingPage() {
         </section>
 
         <section
-          className="flex w-full flex-col items-center justify-center border-border border-b"
+          className="flex w-full flex-col items-center justify-center border-border border-b content-defer"
           id="features"
         >
           <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
@@ -287,19 +287,19 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full" id="how-it-works">
+        <section className="w-full content-defer" id="how-it-works">
           <HowItWorksSection />
         </section>
 
-        <section className="w-full" id="documentation">
+        <section className="w-full content-defer" id="documentation">
           <DocumentationSection />
         </section>
 
-        <section className="w-full" id="testimonials">
+        <section className="w-full content-defer" id="testimonials">
           <TestimonialsSection />
         </section>
 
-        <section className="w-full" id="pricing">
+        <section className="w-full content-defer" id="pricing">
           <div className="flex w-full flex-col items-center justify-center gap-2">
             <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
               <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
@@ -320,11 +320,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full" id="faq">
+        <section className="w-full content-defer" id="faq">
           <FAQSection />
         </section>
 
-        <section className="w-full" id="cta">
+        <section className="w-full content-defer" id="cta">
           <CTASection />
         </section>
       </main>

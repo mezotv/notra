@@ -5,6 +5,8 @@ export interface CreateEventTriggerDialogProps {
   organizationId: string;
   onSuccess?: (trigger: Trigger) => void;
   trigger?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export interface EventTypeCardProps {

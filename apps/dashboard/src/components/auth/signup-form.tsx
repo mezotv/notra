@@ -2,7 +2,6 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Separator } from "@notra/ui/components/ui/separator";
@@ -17,6 +16,7 @@ import { flushSync } from "react-dom";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import type { AuthMethod } from "@/types/auth/method";
 import {

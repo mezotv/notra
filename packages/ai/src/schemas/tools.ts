@@ -38,3 +38,31 @@ export const editOperationSchema = z.discriminatedUnion("op", [
 ]);
 
 export type EditOperation = z.infer<typeof editOperationSchema>;
+
+export const getLinearIssuesInputSchema = z.object({
+  integrationId: z
+    .string()
+    .describe("The integration ID for the configured Linear workspace"),
+  since: z
+    .string()
+    .datetime()
+    .optional()
+    .describe(
+      "UTC ISO timestamp for the start of the range (filters by updatedAt)"
+    ),
+  until: z
+    .string()
+    .datetime()
+    .optional()
+    .describe(
+      "UTC ISO timestamp for the end of the range (filters by updatedAt)"
+    ),
+  cursor: z
+    .string()
+    .optional()
+    .describe("Pagination cursor from a previous response"),
+  includeCompleted: z
+    .boolean()
+    .default(true)
+    .describe("Whether to include completed/cancelled issues"),
+});

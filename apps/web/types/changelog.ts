@@ -5,7 +5,7 @@ interface NotraSourceRepository {
   repo: string;
 }
 
-export interface NotraSourceMetadata {
+interface NotraSourceMetadata {
   triggerId: string;
   repositories: NotraSourceRepository[];
   lookbackRange: {

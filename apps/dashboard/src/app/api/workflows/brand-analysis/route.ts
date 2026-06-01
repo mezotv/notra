@@ -1,11 +1,13 @@
-import { SdkError } from "@mendable/firecrawl-js";
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
 import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { getBaseUrl } from "@notra/ai/qstash/triggers";
+import type { FirecrawlScrapingResult } from "@notra/ai/types/firecrawl";
+import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/firecrawl";
 import { redis } from "@notra/ai/utils/redis";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
@@ -19,8 +21,11 @@ import { createRequestLogger } from "evlog";
 import { createAILogger } from "evlog/ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
-import { getFirecrawlClient } from "@/lib/firecrawl";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
+import type {
+  BrandAnalysisPayload,
+  ExtractionResult,
+} from "@/types/brand-analysis";
 import type { ProgressData } from "@/types/hooks/brand-analysis";
 import {
   getStepFromCurrentStep,
@@ -29,21 +34,6 @@ import {
 } from "@/utils/brand-settings";
 
 const PROGRESS_TTL = 300;
-
-interface ErrorDetail {
-  code: string;
-  path: string[];
-  message: string;
-}
-
-interface BrandInfo {
-  companyName: string;
-  companyDescription: string;
-  toneProfile: string;
-  customTone?: string | null;
-  audience: string;
-  language?: string;
-}
 
 const brandAnalysisPayloadSchema = z.object({
   organizationId: z.string().min(1),
@@ -64,30 +54,7 @@ const brandAnalysisPayloadSchema = z.object({
   jobId: z.string().optional(),
 });
 
-type BrandAnalysisPayload = z.infer<typeof brandAnalysisPayloadSchema>;
-
-type ScrapingResult =
-  | { success: true; content: string }
-  | { success: false; error: string; fatal: boolean };
-
-type ExtractionResult =
-  | { success: true; brandInfo: BrandInfo }
-  | { success: false; error: string };
-
 const STEP_COUNT = 3;
-
-const isFirecrawlUnsupportedMessage = (message?: string | null) => {
-  if (!message) {
-    return false;
-  }
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("do not support this site") ||
-    normalized.includes("we do not support this site") ||
-    normalized.includes("unsupported site") ||
-    normalized.includes("unsupported url")
-  );
-};
 
 async function setProgress(organizationId: string, data: ProgressData) {
   if (!redis) {
@@ -170,68 +137,15 @@ export const { POST } = serve<BrandAnalysisPayload>(
           status: "scraping",
           currentStep: 1,
           totalSteps: STEP_COUNT,
-        } as const;
+        } satisfies ProgressData;
         await setProgress(organizationId, progress);
         await setJobProgress(jobId, progress);
       });
 
-      const scrapingResult = await context.run<ScrapingResult>(
+      const scrapingResult = await context.run<FirecrawlScrapingResult>(
         "scrape-website",
         async () => {
-          try {
-            const firecrawl = getFirecrawlClient();
-            const result = await firecrawl.scrape(url, {
-              formats: ["markdown"],
-              onlyMainContent: true,
-            });
-
-            return { success: true, content: result.markdown ?? "" };
-          } catch (error) {
-            console.error("Error scraping website:", error);
-
-            if (error instanceof SdkError) {
-              const details = Array.isArray(error.details)
-                ? (error.details as ErrorDetail[])
-                : [];
-              const detailMessages = details.map((detail) => detail.message);
-
-              if (
-                detailMessages.includes("Invalid URL") ||
-                detailMessages.some((message) =>
-                  message.includes("valid top-level domain")
-                ) ||
-                error.message?.includes("Invalid URL") ||
-                error.message?.includes("valid top-level domain")
-              ) {
-                return { success: false, error: "Invalid URL", fatal: true };
-              }
-
-              if (
-                error.status === 403 ||
-                isFirecrawlUnsupportedMessage(error.message) ||
-                detailMessages.some((message) =>
-                  isFirecrawlUnsupportedMessage(message)
-                )
-              ) {
-                return {
-                  success: false,
-                  error: "Unsupported website URL",
-                  fatal: true,
-                };
-              }
-              return {
-                success: false,
-                error: error.message || "Failed to scrape website",
-                fatal: false,
-              };
-            }
-
-            return {
-              success: false,
-              error: "Unknown error attempting to scrape website",
-              fatal: false,
-            };
-          }
+          return scrapeWebsiteForBrandAnalysis(url);
         }
       );
 
@@ -242,7 +156,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
             currentStep: 1,
             totalSteps: STEP_COUNT,
             error: scrapingResult.error,
-          } as const;
+          } satisfies ProgressData;
           await setProgress(organizationId, progress);
           await setJobProgress(jobId, progress);
         });
@@ -256,7 +170,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
           status: "extracting",
           currentStep: 2,
           totalSteps: STEP_COUNT,
-        } as const;
+        } satisfies ProgressData;
         await setProgress(organizationId, progress);
         await setJobProgress(jobId, progress);
       });
@@ -280,6 +194,7 @@ Extract the following information:
 4. audience: A description of their target audience (1-2 sentences)
 5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
               system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
+              providerOptions: withGatewayAutomaticCaching(),
               experimental_telemetry: buildExperimentalTelemetry({
                 feature: "brand_analysis",
                 jobId,
@@ -289,7 +204,7 @@ Extract the following information:
               }),
             });
 
-            return { success: true, brandInfo: output as BrandInfo };
+            return { success: true, brandInfo: output };
           } catch (error) {
             console.error("Error extracting brand info:", error);
             return {
@@ -310,7 +225,7 @@ Extract the following information:
             currentStep: 2,
             totalSteps: STEP_COUNT,
             error: extractionResult.error,
-          } as const;
+          } satisfies ProgressData;
           await setProgress(organizationId, progress);
           await setJobProgress(jobId, progress);
         });
@@ -324,7 +239,7 @@ Extract the following information:
           status: "saving",
           currentStep: 3,
           totalSteps: STEP_COUNT,
-        } as const;
+        } satisfies ProgressData;
         await setProgress(organizationId, progress);
         await setJobProgress(jobId, progress);
       });
@@ -370,7 +285,7 @@ Extract the following information:
           status: "completed",
           currentStep: 3,
           totalSteps: STEP_COUNT,
-        } as const;
+        } satisfies ProgressData;
         await setProgress(organizationId, progress);
         await setJobProgress(jobId, progress);
       });
@@ -392,7 +307,7 @@ Extract the following information:
           currentStep: 0,
           totalSteps: STEP_COUNT,
           error: "Workflow failed unexpectedly",
-        } as const;
+        } satisfies ProgressData;
 
         await redis.set(`brand:progress:${organizationId}`, progress, {
           ex: PROGRESS_TTL,

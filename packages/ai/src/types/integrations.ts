@@ -56,3 +56,24 @@ export interface CreateLinearIntegrationParams {
   linearTeamId?: string;
   linearTeamName?: string;
 }
+
+export interface McpHeaderMap {
+  [key: string]: string;
+}
+
+export interface CreateMcpServerIntegrationParams {
+  organizationId: string;
+  userId: string;
+  name: string;
+  url: string;
+  description?: string | null;
+  headers?: McpHeaderMap;
+}
+
+export interface UpdateMcpServerIntegrationParams {
+  name?: string;
+  url?: string;
+  description?: string | null;
+  headers?: McpHeaderMap;
+  enabled?: boolean;
+}

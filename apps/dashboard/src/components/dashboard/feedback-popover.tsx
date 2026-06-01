@@ -2,7 +2,6 @@
 
 import { SentIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -13,6 +12,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { usePathname } from "next/navigation";
 import { cloneElement, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEEDBACK_MAX_MESSAGE_LENGTH } from "@/constants/feedback";

@@ -94,3 +94,14 @@ export const importTweetsSchema = z.object({
 });
 
 export type ImportTweetsInput = z.infer<typeof importTweetsSchema>;
+
+const brandIdentityWithWebsiteSchema = z
+  .object({ websiteUrl: z.string().nullish() })
+  .partial();
+
+export const brandIdentityToolOutputSchema = z
+  .object({
+    brandIdentity: brandIdentityWithWebsiteSchema.nullish(),
+    brandIdentities: z.array(brandIdentityWithWebsiteSchema).optional(),
+  })
+  .partial();

@@ -1,40 +1,25 @@
-import { Notra } from "@usenotra/sdk";
-import type {
-  GetPostPost,
-  ListPostsPost,
-} from "@usenotra/sdk/models/operations";
 import { unstable_cache } from "next/cache";
+import {
+  MARBLE_CACHE_KEYS,
+  MARBLE_CACHE_TAGS,
+  MARBLE_CHANGELOG_CATEGORY_SLUG,
+  MARBLE_REVALIDATE_SECONDS,
+  NOTRA_CHANGELOG_INDEX_PATH,
+} from "@/utils/constants";
+import {
+  getMarblePostCacheTag,
+  listMarblePublishedPosts,
+  type MarblePublishedPost,
+} from "@/utils/marble";
 import type {
   ChangelogTimelineItem,
   NotraChangelogPost,
-  NotraSourceMetadata,
 } from "~types/changelog";
 
 const CHANGELOG_CONTENT_TYPE = "changelog";
-const CHANGELOG_STATUS = "published";
-const DEFAULT_POST_LIMIT = 100;
 const FALLBACK_EXCERPT =
   "Product updates, fixes, and shipped improvements from the Notra team.";
 const BLOCK_SEPARATOR_REGEX = /\n\s*\n/;
-
-function getNotraChangelogConfig() {
-  return {
-    apiKey: process.env.NOTRA_API_KEY?.trim() ?? "",
-  };
-}
-
-function createNotraClient(apiKey: string) {
-  return new Notra({
-    bearerAuth: apiKey,
-  });
-}
-
-function sortPostsByCreatedAt(posts: NotraChangelogPost[]) {
-  return [...posts].sort(
-    (left, right) =>
-      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
-  );
-}
 
 function stripMarkdownFormatting(value: string) {
   return value
@@ -78,69 +63,55 @@ function slugifySegment(value: string) {
   return slug || "update";
 }
 
-function normalizePost(post: ListPostsPost | GetPostPost): NotraChangelogPost {
-  const slug =
-    "slug" in post && typeof post.slug === "string"
-      ? post.slug
-      : createChangelogPostSlug({ title: post.title });
+function normalizePost(post: MarblePublishedPost): NotraChangelogPost {
+  const slug = post.slug || createChangelogPostSlug({ title: post.title });
+  const createdAt = post.publishedAt.toISOString();
+  const markdown = post.markdown || post.content;
 
   return {
     id: post.id,
     title: post.title,
     content: post.content,
-    markdown: post.markdown,
-    recommendations: post.recommendations ?? null,
-    contentType: post.contentType,
-    sourceMetadata:
-      (post.sourceMetadata as NotraSourceMetadata | undefined) ?? null,
+    markdown,
+    recommendations: null,
+    contentType: CHANGELOG_CONTENT_TYPE,
+    sourceMetadata: null,
     status: post.status,
-    createdAt: post.createdAt,
-    updatedAt: post.updatedAt,
+    createdAt,
+    updatedAt: post.updatedAt.toISOString(),
     slug,
-    excerpt: getPostExcerpt(post.markdown),
+    excerpt: post.description.trim() || getPostExcerpt(markdown),
   };
 }
 
 const fetchChangelogPosts = unstable_cache(
   async () => {
-    const { apiKey } = getNotraChangelogConfig();
-
-    if (!apiKey) {
-      return [] satisfies NotraChangelogPost[];
-    }
-
     try {
-      const client = createNotraClient(apiKey);
-      const response = await client.content.listPosts({
-        contentType: CHANGELOG_CONTENT_TYPE,
-        limit: DEFAULT_POST_LIMIT,
-        sort: "desc",
-        status: CHANGELOG_STATUS,
+      const posts = await listMarblePublishedPosts({
+        category: MARBLE_CHANGELOG_CATEGORY_SLUG,
       });
-
-      return sortPostsByCreatedAt(response.posts.map(normalizePost));
+      return posts.map(normalizePost);
     } catch (error) {
-      console.error("Failed to load Notra changelog posts", error);
+      console.error("Failed to load Marble changelog posts", error);
       return [] satisfies NotraChangelogPost[];
     }
   },
-  ["notra-changelog-posts"],
+  [MARBLE_CACHE_KEYS.changelogPosts],
   {
-    revalidate: 300,
+    revalidate: MARBLE_REVALIDATE_SECONDS.changelogPosts,
+    tags: [
+      MARBLE_CACHE_TAGS.changelogPosts,
+      `${MARBLE_CACHE_TAGS.changelogPosts}:${MARBLE_CHANGELOG_CATEGORY_SLUG}`,
+    ],
   }
 );
-
-function isNotraChangelogConfigured() {
-  const { apiKey } = getNotraChangelogConfig();
-  return Boolean(apiKey);
-}
 
 function createChangelogPostSlug(post: Pick<NotraChangelogPost, "title">) {
   return slugifySegment(post.title);
 }
 
 export function getChangelogPostHref(slug: string) {
-  return `/changelog/notra/${slug}`;
+  return `${NOTRA_CHANGELOG_INDEX_PATH}/${slug}`;
 }
 
 export function formatChangelogDate(date: string) {
@@ -156,7 +127,18 @@ export async function listNotraChangelogPosts() {
 }
 
 export async function getNotraChangelogPostBySlug(slug: string) {
-  const posts = await listNotraChangelogPosts();
+  const posts = await unstable_cache(
+    listNotraChangelogPosts,
+    [MARBLE_CACHE_KEYS.changelogPosts, slug],
+    {
+      revalidate: MARBLE_REVALIDATE_SECONDS.changelogPosts,
+      tags: [
+        MARBLE_CACHE_TAGS.changelogPosts,
+        `${MARBLE_CACHE_TAGS.changelogPosts}:${MARBLE_CHANGELOG_CATEGORY_SLUG}`,
+        getMarblePostCacheTag(slug),
+      ],
+    }
+  )();
   return posts.find((post) => post.slug === slug) ?? null;
 }
 

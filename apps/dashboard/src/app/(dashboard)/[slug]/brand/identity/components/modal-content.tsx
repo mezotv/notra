@@ -1,5 +1,5 @@
-import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
+import { Button } from "@/components/button";
 import type { ModalContentProps } from "../types/brand-identity";
 import { AnalysisStepper } from "./analysis-stepper";
 

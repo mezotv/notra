@@ -11,7 +11,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button, buttonVariants } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardContent,
@@ -33,6 +32,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
+import { Button, buttonVariants } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import {
   isTeamMemberLimitError,

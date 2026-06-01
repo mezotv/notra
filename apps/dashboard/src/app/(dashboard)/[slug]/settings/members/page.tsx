@@ -3,7 +3,6 @@
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tabs,
@@ -14,6 +13,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import type { Invitation } from "better-auth/plugins/organization";
 import { use, useState } from "react";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { columns, type Member } from "@/components/members/columns";
 import { DataTable } from "@/components/members/data-table";
@@ -106,7 +106,7 @@ export default function MembersPage({ params }: PageProps) {
               Manage who has access to this organization
             </p>
           </div>
-          <Button onClick={() => setIsInviteModalOpen(true)} size="sm">
+          <Button onClick={() => setIsInviteModalOpen(true)}>
             <HugeiconsIcon className="size-4" icon={Add01Icon} />
             Invite Member
           </Button>

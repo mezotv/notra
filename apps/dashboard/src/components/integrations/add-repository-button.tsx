@@ -2,7 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { Button } from "@/components/button";
 import type { AddRepositoryButtonProps } from "@/types/integrations";
 
 export function AddRepositoryButton({

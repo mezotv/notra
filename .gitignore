@@ -50,9 +50,10 @@ next-env.d.ts
 
 # Opencode
 opencode.json
+.opencode/package-lock.json
 
 # Openlogs
-.openlogs/
-.opencode/package-lock.json
 .mcp.json
 .codex/config.toml
+
+.deepsec

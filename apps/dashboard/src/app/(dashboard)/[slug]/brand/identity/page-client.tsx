@@ -8,7 +8,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@notra/ui/components/ui/alert";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardContent,
@@ -29,6 +28,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { getValidLanguage } from "@/schemas/brand";
@@ -283,10 +283,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   if (!hasVoices) {
     return (
-      <PageContainer
-        className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
-        variant="compact"
-      >
+      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full px-4 lg:px-6">
           <div className="relative min-h-125">
             <div className="pointer-events-none blur-sm">
@@ -392,7 +389,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <Button
               className="gap-1.5"
               onClick={() => setAddIdentityOpen(true)}
-              size="sm"
             >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
               Create Identity
@@ -402,7 +398,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <Button
               className="gap-1.5"
               onClick={() => setAddReferenceOpen(true)}
-              size="sm"
             >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
               Create Reference

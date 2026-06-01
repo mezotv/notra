@@ -2,7 +2,6 @@
 
 import { Wallet01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import { DropdownMenuItem } from "@notra/ui/components/ui/dropdown-menu";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
@@ -13,6 +12,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useState } from "react";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
+import { Button } from "@/components/button";
 import { useCreditBalance } from "@/lib/hooks/use-credit-balance";
 import { formatDollars } from "@/utils/format";
 

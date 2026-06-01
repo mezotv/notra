@@ -7,6 +7,16 @@ export interface ParsedSkillFrontmatter {
 }
 
 const BOM_REGEX = /^\uFEFF/;
+const PLAIN_YAML_DELIMITER_REGEX = /^---[ \t]*(?:\r?\n|$)/;
+
+const FRONTMATTER_OPTIONS = {
+  language: "yaml",
+  engines: {
+    javascript: () => {
+      throw new Error("JavaScript frontmatter is not supported");
+    },
+  },
+} satisfies matter.GrayMatterOption<string, never>;
 
 export function parseSkillFrontmatter(
   input: string
@@ -15,10 +25,13 @@ export function parseSkillFrontmatter(
   if (!trimmed.startsWith("---")) {
     return null;
   }
+  if (!PLAIN_YAML_DELIMITER_REGEX.test(trimmed)) {
+    return null;
+  }
 
   let parsed: matter.GrayMatterFile<string>;
   try {
-    parsed = matter(trimmed);
+    parsed = matter(trimmed, FRONTMATTER_OPTIONS);
   } catch {
     return null;
   }

@@ -9,7 +9,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/constants/chat";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,9 +23,13 @@ import {
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { LinkedInPost } from "@/components/linkedin-post";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
-import { createLinkedInPostUrl } from "@/utils/linkedin";
+import {
+  copyLinkedInPostForPublishing,
+  createLinkedInPostUrl,
+} from "@/utils/linkedin";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 type IncomingState = "draft" | "finished";
@@ -137,6 +140,10 @@ export function LinkedInPreview({
       markdown: draftMarkdown,
     });
   }, [draftMarkdown, onRegenerate, regenerateInstructions, title]);
+
+  const handlePostToLinkedIn = useCallback(() => {
+    copyLinkedInPostForPublishing(draftMarkdown);
+  }, [draftMarkdown]);
 
   const isFinished = effectiveState === "finished";
   const showStatusBadge = isFinished && userAction !== "save-failed";
@@ -268,6 +275,7 @@ export function LinkedInPreview({
                   render={
                     <a
                       href={createLinkedInPostUrl(draftMarkdown)}
+                      onClick={handlePostToLinkedIn}
                       rel="noopener noreferrer"
                       target="_blank"
                     >

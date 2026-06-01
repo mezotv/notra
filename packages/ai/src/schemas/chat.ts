@@ -6,7 +6,7 @@ import { standaloneChatContextSchema } from "./standalone-chat";
 
 export const chatModelSchema = z.enum([
   "auto",
-  "anthropic/claude-opus-4.7",
+  "anthropic/claude-opus-4.8",
   "anthropic/claude-sonnet-4.6",
   "anthropic/claude-haiku-4.5",
   "openai/gpt-5.4",

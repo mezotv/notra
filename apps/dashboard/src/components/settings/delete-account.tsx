@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+import { Button } from "@/components/button";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 
 export function DeleteAccountSection() {

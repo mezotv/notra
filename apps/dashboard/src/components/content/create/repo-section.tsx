@@ -1,6 +1,10 @@
 "use client";
 
+import { Tick01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { cn } from "@notra/ui/lib/utils";
+import { useMemo } from "react";
 import type { ContentDataPointSettings } from "@/schemas/content";
 import type { RepositoryPreview } from "@/types/content/preview";
 import {
@@ -36,18 +40,83 @@ export function RepoSection({
     dataPoints.includePullRequests && repo.pullRequests.length > 0;
   const showReleases = dataPoints.includeReleases && repo.releases.length > 0;
 
+  const selectables = useMemo(
+    () => [
+      ...repo.commits.map((c) => ({
+        selected: selectedCommitKeys.has(c.sha),
+        toggle: () => onToggleCommit(c.sha),
+      })),
+      ...repo.pullRequests.map((pr) => {
+        const key = prSelectionToKey({
+          repositoryId: repo.repositoryId,
+          number: pr.number,
+        });
+        return {
+          selected: selectedPrKeys.has(key),
+          toggle: () => onTogglePr(key),
+        };
+      }),
+      ...repo.releases.map((r) => {
+        const key = releaseSelectionToKey({
+          repositoryId: repo.repositoryId,
+          tagName: r.tagName,
+        });
+        return {
+          selected: selectedReleaseKeys.has(key),
+          toggle: () => onToggleRelease(key),
+        };
+      }),
+    ],
+    [
+      repo,
+      selectedCommitKeys,
+      selectedPrKeys,
+      selectedReleaseKeys,
+      onToggleCommit,
+      onTogglePr,
+      onToggleRelease,
+    ]
+  );
+
+  const allSelected =
+    selectables.length > 0 && selectables.every((s) => s.selected);
+
+  const handleToggleAllRepo = () => {
+    for (const item of selectables) {
+      if (allSelected || !item.selected) {
+        item.toggle();
+      }
+    }
+  };
+
   if (!(showCommits || showPrs || showReleases)) {
     return null;
   }
 
   return (
     <div className="overflow-hidden rounded-lg border">
-      <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
+      <button
+        className="flex w-full items-center gap-2 bg-muted/30 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+        onClick={handleToggleAllRepo}
+        type="button"
+      >
+        <div
+          className={cn(
+            "flex size-4 shrink-0 items-center justify-center rounded-sm border transition-colors",
+            allSelected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-muted-foreground/30"
+          )}
+        >
+          {allSelected && (
+            <HugeiconsIcon className="size-3" icon={Tick01Icon} />
+          )}
+        </div>
         <Github className="size-4 shrink-0" />
-        <span className="font-medium text-sm">
+        <span className="flex-1 font-medium text-sm">
           {repo.owner}/{repo.repo}
         </span>
-      </div>
+      </button>
       <div className="divide-y">
         {showReleases &&
           repo.releases.map((release) => {

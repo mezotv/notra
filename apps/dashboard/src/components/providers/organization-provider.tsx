@@ -115,11 +115,20 @@ export function OrganizationsProvider({
 
     return initialActiveOrganization as Organization;
   }, [initialActiveOrganization, slugFromPath]);
-  const resolvedActiveOrganization =
-    activeOrganization ??
-    optimisticActiveOrg ??
-    organizationFromPath ??
-    seededActiveOrganization;
+  const activeOrganizationForPath =
+    !slugFromPath || activeOrganization?.slug === slugFromPath
+      ? activeOrganization
+      : null;
+  const optimisticActiveOrgForPath =
+    !slugFromPath || optimisticActiveOrg?.slug === slugFromPath
+      ? optimisticActiveOrg
+      : null;
+  const resolvedActiveOrganization = slugFromPath
+    ? (organizationFromPath ??
+      activeOrganizationForPath ??
+      optimisticActiveOrgForPath ??
+      seededActiveOrganization)
+    : (activeOrganization ?? optimisticActiveOrg ?? seededActiveOrganization);
 
   // Clear optimistic state when real data arrives
   useEffect(() => {

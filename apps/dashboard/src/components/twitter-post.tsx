@@ -14,7 +14,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import {
   DropdownMenu,
@@ -25,6 +24,7 @@ import {
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/button";
 import { TWITTER_CHAR_LIMIT } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";

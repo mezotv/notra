@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Add01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
@@ -11,6 +12,7 @@ import {
   Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ConnectedCards } from "@notra/ui/components/shared/connected-cards";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -29,7 +31,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,23 +70,33 @@ import type {
   KeyResponseData,
   V2KeysCreateKeyResponseData,
 } from "@unkey/api/models/components";
-import { useMemo, useState } from "react";
+import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   API_KEY_EXPIRATION_OPTIONS,
+  API_KEY_EXPIRATION_VALUES,
+  API_KEY_PERMISSION_LABELS,
   API_KEY_PERMISSIONS,
-  type ApiKeyExpiration,
-  type ApiKeyPermission,
-  createApiKeySchema,
-  updateApiKeySchema,
-} from "@/schemas/api-keys";
+} from "@/constants/api-keys";
+import { API_KEY_CARD_ITEMS, API_KEY_PRESETS } from "@/lib/api-keys/presets";
+import { dashboardOrpc } from "@/lib/orpc/query";
+import { createApiKeySchema, updateApiKeySchema } from "@/schemas/api-keys";
+import type { ApiKeyExpiration, ApiKeyPermission } from "@/types/api-keys";
 
-const PERMISSION_LABELS: Record<ApiKeyPermission, string> = {
-  "api.read": "Read only",
-  "api.write": "Read & write",
+const NEW_KEY_CONFIG_PARSERS = {
+  name: parseAsString,
+  permission: parseAsStringLiteral(API_KEY_PERMISSIONS),
+  expiration: parseAsStringLiteral(API_KEY_EXPIRATION_VALUES),
+};
+
+const DEFAULT_NEW_KEY_CONFIG = {
+  name: "",
+  permission: "api.read" as ApiKeyPermission,
+  expiration: "never" as ApiKeyExpiration,
 };
 
 type ApiKeyListItem = Omit<
@@ -138,7 +149,7 @@ function formatPermissionLabel(apiKey: ApiKeyListItem) {
   }
 
   return (
-    PERMISSION_LABELS[apiKey.permission as ApiKeyPermission] ??
+    API_KEY_PERMISSION_LABELS[apiKey.permission as ApiKeyPermission] ??
     apiKey.permission
   );
 }
@@ -262,11 +273,24 @@ export default function ApiKeysPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createdKey, setCreatedKey] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deletingKey, setDeletingKey] = useState<ApiKeyListItem | null>(null);
+  const [newKeyConfig, setNewKeyConfig] = useQueryStates(
+    NEW_KEY_CONFIG_PARSERS
+  );
+  const hasNewKeyConfig =
+    newKeyConfig.name !== null &&
+    newKeyConfig.permission !== null &&
+    newKeyConfig.expiration !== null;
 
   useHotkey("C", () => setDialogOpen(true), {
-    enabled: !(dialogOpen || editDialogOpen || !!deletingKey),
+    enabled: !(
+      dialogOpen ||
+      editDialogOpen ||
+      !!deletingKey ||
+      hasNewKeyConfig
+    ),
   });
 
   const [createdSortOrder, setCreatedSortOrder] = useState<
@@ -302,20 +326,48 @@ export default function ApiKeysPage() {
   }
   const createdSortIcon = getSortIcon(createdSortOrder);
 
-  const form = useForm({
-    defaultValues: {
-      name: "",
-      permission: "api.read" as ApiKeyPermission,
-      expiration: "never" as ApiKeyExpiration,
-    },
-    onSubmit: ({ value }) => {
-      const result = createApiKeySchema.safeParse(value);
-      if (!result.success) {
-        return;
-      }
-      mutation.mutate(result.data);
-    },
-  });
+  const newKeyName = newKeyConfig.name;
+  const newKeyPermission =
+    newKeyConfig.permission ?? DEFAULT_NEW_KEY_CONFIG.permission;
+  const newKeyExpiration =
+    newKeyConfig.expiration ?? DEFAULT_NEW_KEY_CONFIG.expiration;
+  const createInput = {
+    name: newKeyName ?? DEFAULT_NEW_KEY_CONFIG.name,
+    permission: newKeyPermission,
+    expiration: newKeyExpiration,
+  };
+
+  useEffect(() => {
+    if (hasNewKeyConfig) {
+      setDialogOpen(true);
+    }
+  }, [hasNewKeyConfig]);
+
+  const handlePresetSelect = (id: string) => {
+    const preset = API_KEY_PRESETS.find((item) => item.id === id);
+    if (!preset) {
+      return;
+    }
+    const config = {
+      name: preset.defaultName,
+      permission: preset.permission,
+      expiration: preset.expiration,
+    };
+    setCreateError(null);
+    setDialogOpen(true);
+    setNewKeyConfig(config);
+  };
+
+  const handleCreateSubmit = () => {
+    const result = createApiKeySchema.safeParse(createInput);
+    if (!result.success) {
+      setCreateError(result.error.issues[0]?.message ?? "Invalid API key");
+      return;
+    }
+
+    setCreateError(null);
+    mutation.mutate(result.data);
+  };
 
   const editForm = useForm({
     defaultValues: {
@@ -350,7 +402,8 @@ export default function ApiKeysPage() {
     },
     onSuccess: (data) => {
       setCreatedKey(data.key);
-      form.reset();
+      setCreateError(null);
+      setNewKeyConfig(null);
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.apiKeys.list.queryKey({
           input: { organizationId: organizationId ?? "" },
@@ -423,9 +476,10 @@ export default function ApiKeysPage() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      form.reset();
+      setCreateError(null);
       mutation.reset();
       setCreatedKey(null);
+      setNewKeyConfig(null);
     }
     setDialogOpen(open);
   };
@@ -484,6 +538,7 @@ export default function ApiKeysPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+              <HugeiconsIcon className="size-4" icon={Add01Icon} />
               Create API Key
               <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
             </Button>
@@ -553,6 +608,21 @@ export default function ApiKeysPage() {
             </TableBody>
           </Table>
         </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h2 className="font-semibold text-lg tracking-tight">
+              Quick start
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              Spin up a key preconfigured for how you plan to use the API.
+            </p>
+          </div>
+          <ConnectedCards
+            items={API_KEY_CARD_ITEMS}
+            onSelect={handlePresetSelect}
+          />
+        </div>
       </div>
 
       <ResponsiveAlertDialog onOpenChange={handleDialogClose} open={dialogOpen}>
@@ -599,126 +669,92 @@ export default function ApiKeysPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  form.handleSubmit();
+                  handleCreateSubmit();
                 }}
               >
                 <div className="space-y-4 py-4">
-                  <form.Field
-                    name="name"
-                    validators={{
-                      onChange: createApiKeySchema.shape.name,
-                    }}
-                  >
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>
-                          Name<span className="-ml-1 text-destructive">*</span>
-                        </FieldLabel>
-                        <Input
-                          disabled={mutation.isPending}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
-                          placeholder="e.g. CI/CD Pipeline"
-                          value={field.state.value}
-                        />
-                        {field.state.meta.isTouched &&
-                        field.state.meta.errors.length > 0 ? (
-                          <p className="text-destructive text-sm">
-                            {typeof field.state.meta.errors[0] === "string"
-                              ? field.state.meta.errors[0]
-                              : ((
-                                  field.state.meta.errors[0] as {
-                                    message?: string;
-                                  }
-                                )?.message ?? "Invalid value")}
-                          </p>
-                        ) : null}
-                      </Field>
-                    )}
-                  </form.Field>
+                  <Field>
+                    <FieldLabel>
+                      Name<span className="-ml-1 text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      disabled={mutation.isPending}
+                      onChange={(event) => {
+                        setCreateError(null);
+                        setNewKeyConfig({
+                          name: event.target.value || null,
+                        });
+                      }}
+                      placeholder="e.g. CI/CD Pipeline"
+                      value={createInput.name}
+                    />
+                    {createError ? (
+                      <p className="text-destructive text-sm">{createError}</p>
+                    ) : null}
+                  </Field>
 
-                  <form.Field name="permission">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>
-                          Permission
-                          <span className="-ml-1 text-destructive">*</span>
-                        </FieldLabel>
-                        <Select
-                          disabled={mutation.isPending}
-                          onValueChange={(value) =>
-                            field.handleChange(value as ApiKeyPermission)
-                          }
-                          value={field.state.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue>
-                              {PERMISSION_LABELS[field.state.value]}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="api.read">Read only</SelectItem>
-                            <SelectItem value="api.write">
-                              Read & write
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
+                  <Field>
+                    <FieldLabel>
+                      Permission
+                      <span className="-ml-1 text-destructive">*</span>
+                    </FieldLabel>
+                    <Select
+                      disabled={mutation.isPending}
+                      onValueChange={(value) =>
+                        setNewKeyConfig({
+                          permission: value as ApiKeyPermission,
+                        })
+                      }
+                      value={createInput.permission}
+                    >
+                      <SelectTrigger>
+                        <SelectValue>
+                          {API_KEY_PERMISSION_LABELS[createInput.permission]}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="api.read">Read only</SelectItem>
+                        <SelectItem value="api.write">Read & write</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
 
-                  <form.Field name="expiration">
-                    {(field) => (
-                      <Field>
-                        <FieldLabel>
-                          Expiration
-                          <span className="-ml-1 text-muted-foreground text-xs">
-                            (Optional)
-                          </span>
-                        </FieldLabel>
-                        <Select
-                          disabled={mutation.isPending}
-                          onValueChange={(value) =>
-                            field.handleChange(value as ApiKeyExpiration)
-                          }
-                          value={field.state.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue className="capitalize" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {API_KEY_EXPIRATION_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </Field>
-                    )}
-                  </form.Field>
+                  <Field>
+                    <FieldLabel>
+                      Expiration
+                      <span className="-ml-1 text-muted-foreground text-xs">
+                        (Optional)
+                      </span>
+                    </FieldLabel>
+                    <Select
+                      disabled={mutation.isPending}
+                      onValueChange={(value) =>
+                        setNewKeyConfig({
+                          expiration: value as ApiKeyExpiration,
+                        })
+                      }
+                      value={createInput.expiration}
+                    >
+                      <SelectTrigger>
+                        <SelectValue className="capitalize" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {API_KEY_EXPIRATION_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
                 </div>
                 <ResponsiveAlertDialogFooter>
                   <ResponsiveAlertDialogCancel disabled={mutation.isPending}>
                     Cancel
                   </ResponsiveAlertDialogCancel>
-                  <form.Subscribe selector={(state) => [state.canSubmit]}>
-                    {([canSubmit]) => (
-                      <Button
-                        disabled={!canSubmit || mutation.isPending}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          form.handleSubmit();
-                        }}
-                        type="button"
-                      >
-                        {mutation.isPending ? "Creating…" : "Create Key"}
-                      </Button>
-                    )}
-                  </form.Subscribe>
+                  <Button disabled={mutation.isPending} type="submit">
+                    {mutation.isPending ? "Creating…" : "Create Key"}
+                  </Button>
                 </ResponsiveAlertDialogFooter>
               </form>
             </>
@@ -794,7 +830,7 @@ export default function ApiKeysPage() {
                     >
                       <SelectTrigger>
                         <SelectValue>
-                          {PERMISSION_LABELS[field.state.value]}
+                          {API_KEY_PERMISSION_LABELS[field.state.value]}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>

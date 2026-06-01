@@ -2,13 +2,13 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import type { ConnectedAccountsSectionProps } from "@/types/settings/account";
 

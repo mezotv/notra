@@ -11,7 +11,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { detectPlatform } from "@/lib/cli-auth/platform";
 import type { CliAuthFormProps } from "@/types/cli-auth/form";
 

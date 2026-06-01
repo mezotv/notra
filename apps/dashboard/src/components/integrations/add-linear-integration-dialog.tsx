@@ -10,10 +10,10 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import type React from "react";
 import { isValidElement, useState } from "react";
+import { Button } from "@/components/button";
 
 interface AddLinearIntegrationDialogProps {
   authorizeUrl: string;

@@ -4,6 +4,7 @@ import {
   wrapModelWithObservability,
 } from "@notra/ai/observability";
 import { ROUTING_PROMPT } from "@notra/ai/prompts/router";
+import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { routingDecisionSchema } from "@notra/ai/schemas/orchestration";
 import type {
   AutoSelection,
@@ -25,7 +26,7 @@ const MODELS = {
 const AUTO_POOL = {
   trivial: "anthropic/claude-haiku-4.5",
   everyday: "anthropic/claude-sonnet-4.6",
-  deep: "anthropic/claude-opus-4.7",
+  deep: "anthropic/claude-opus-4.8",
 } as const;
 
 const TRIVIAL_MESSAGE_PATTERNS = [
@@ -35,12 +36,23 @@ const TRIVIAL_MESSAGE_PATTERNS = [
   /^(bye|cya|tschüss|ciao)\b[\s!.?]*$/i,
 ];
 
+const EXPLICIT_TOOL_REQUEST_PATTERNS = [
+  /\b(call|use|run|execute|invoke|exercise|trigger|test)\b[\s\S]{0,120}\btools?\b/i,
+  /\btools?\b[\s\S]{0,120}\b(call|use|run|execute|invoke|exercise|trigger|test)\b/i,
+];
+
 export function isTrivialMessage(userMessage: string): boolean {
   const trimmed = userMessage.trim();
   if (!trimmed || trimmed.length > 40) {
     return false;
   }
   return TRIVIAL_MESSAGE_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
+function isExplicitToolRequest(userMessage: string): boolean {
+  return EXPLICIT_TOOL_REQUEST_PATTERNS.some((pattern) =>
+    pattern.test(userMessage)
+  );
 }
 
 function matchTrivialFastPath(
@@ -91,6 +103,16 @@ export async function routeMessage(
     return fastPath;
   }
 
+  if (isExplicitToolRequest(userMessage)) {
+    return {
+      complexity: "complex",
+      requiresTools: true,
+      reasoningHeavy: false,
+      reasoning:
+        "The user explicitly asked to call, test, or exercise tools, so tools are required.",
+    };
+  }
+
   const contextHint = hasIntegrationContext
     ? "\n\nNote: The user has connected integration context (for example GitHub or Linear), so they may want help using external project data."
     : "";
@@ -104,6 +126,7 @@ export async function routeMessage(
     prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
+    providerOptions: withGatewayAutomaticCaching(),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });
 

@@ -4,6 +4,7 @@ export interface CommitPreview {
   authorName: string;
   authorLogin: string | null;
   authoredAt: string;
+  htmlUrl?: string;
 }
 
 export interface PullRequestPreview {
@@ -11,6 +12,9 @@ export interface PullRequestPreview {
   title: string;
   authorLogin: string;
   mergedAt: string | null;
+  htmlUrl?: string;
+  merged?: boolean;
+  state?: string;
 }
 
 export interface ReleasePreview {
@@ -19,6 +23,7 @@ export interface ReleasePreview {
   publishedAt: string;
   authorLogin: string;
   prerelease: boolean;
+  htmlUrl?: string;
 }
 
 export interface LinearIssuePreview {

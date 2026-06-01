@@ -50,6 +50,9 @@ import {
 } from "@/utils/content-preview";
 
 interface CreateContentDialogProps {
+  hideTrigger?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
   organizationId: string;
 }
 
@@ -78,15 +81,28 @@ function getDefaultContentFormValues(): CreateContentFormValues {
 }
 
 export function CreateContentDialog({
+  hideTrigger = false,
+  onOpenChange,
+  open: controlledOpen,
   organizationId,
 }: CreateContentDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setDialogOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (controlledOpen === undefined) {
+        setUncontrolledOpen(nextOpen);
+      }
+      onOpenChange?.(nextOpen);
+    },
+    [controlledOpen, onOpenChange]
+  );
 
   useHotkey(
     "C",
     () => {
       if (organizationId) {
-        setOpen(true);
+        setDialogOpen(true);
       }
     },
     { enabled: !open }
@@ -404,7 +420,7 @@ export function CreateContentDialog({
       return { succeeded, total: results.length };
     },
     onSuccess: ({ succeeded, total }) => {
-      setOpen(false);
+      setDialogOpen(false);
       if (succeeded === total) {
         toast.success(
           succeeded === 1
@@ -461,7 +477,7 @@ export function CreateContentDialog({
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
-      setOpen(next);
+      setDialogOpen(next);
       if (!next) {
         const preserveState =
           openingAddRepoFlowRef.current || addRepoMode !== null;
@@ -475,7 +491,7 @@ export function CreateContentDialog({
         resetWizard();
       }
     },
-    [addRepoMode, resetWizard]
+    [addRepoMode, resetWizard, setDialogOpen]
   );
 
   const toggleFormat = useCallback(
@@ -520,6 +536,17 @@ export function CreateContentDialog({
     },
     [form]
   );
+
+  const toggleAllRepoIds = useCallback(() => {
+    const allIds = integrationOptions.map((opt) => opt.value);
+    const current = form.state.values.repositoryIds;
+    form.setFieldValue(
+      "repositoryIds",
+      allIds.length > 0 && allIds.every((id) => current.includes(id))
+        ? []
+        : allIds
+    );
+  }, [form, integrationOptions]);
 
   const toggleVoiceId = useCallback(
     (id: string) => {
@@ -765,8 +792,8 @@ export function CreateContentDialog({
     setAddRepoMode(githubIntegrationId ? "repository" : "integration");
     setWaitingForWebhookSetup(false);
     setAddRepoOpen(true);
-    setOpen(false);
-  }, [githubIntegrationId]);
+    setDialogOpen(false);
+  }, [githubIntegrationId, setDialogOpen]);
 
   const handleAddRepoOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -779,9 +806,9 @@ export function CreateContentDialog({
       }
       setAddRepoMode(null);
       setWaitingForWebhookSetup(false);
-      setOpen(true);
+      setDialogOpen(true);
     },
-    [addRepoMode, waitingForWebhookSetup]
+    [addRepoMode, setDialogOpen, waitingForWebhookSetup]
   );
 
   const handleIntegrationSuccess = useCallback(() => {
@@ -791,8 +818,8 @@ export function CreateContentDialog({
   const handleIntegrationFlowComplete = useCallback(() => {
     setAddRepoMode(null);
     setWaitingForWebhookSetup(false);
-    setOpen(true);
-  }, []);
+    setDialogOpen(true);
+  }, [setDialogOpen]);
 
   const identityButtonLabel =
     selectedBrandVoiceIds.length === 0
@@ -867,15 +894,17 @@ export function CreateContentDialog({
   return (
     <>
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
-        <ResponsiveDialogTrigger
-          render={
-            <Button className="gap-1.5" disabled={!organizationId}>
-              <HugeiconsIcon className="size-4" icon={Add01Icon} />
-              Create Content
-              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-            </Button>
-          }
-        />
+        {!hideTrigger && (
+          <ResponsiveDialogTrigger
+            render={
+              <Button className="gap-1.5" disabled={!organizationId}>
+                <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                Create Content
+                <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+              </Button>
+            }
+          />
+        )}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <div className="flex items-center justify-between gap-4">
@@ -908,6 +937,7 @@ export function CreateContentDialog({
                   onConnect={handleOpenAddRepositoryFlow}
                   onRetryPreview={handleRetryPreview}
                   onSearchQueryChange={setSearchQuery}
+                  onToggleAllIntegrations={toggleAllRepoIds}
                   onToggleCommit={(key) => {
                     selectionsTouchedRef.current = true;
                     setSelectedCommitKeys((prev) => {

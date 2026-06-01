@@ -20,7 +20,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +37,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
+import { Button } from "@/components/button";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { truncateText } from "@/utils/format";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";

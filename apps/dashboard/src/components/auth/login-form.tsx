@@ -3,7 +3,6 @@
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Separator } from "@notra/ui/components/ui/separator";
@@ -15,6 +14,7 @@ import type { FormEvent } from "react";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import type { AuthMethod } from "@/types/auth/method";
 

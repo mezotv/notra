@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
+import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
 export function SidebarTrialExpired() {

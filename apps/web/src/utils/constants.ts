@@ -12,9 +12,42 @@ export const RSS_FEED_DESCRIPTION =
   "Insights, guides, and stories from the Notra team.";
 export const RSS_FEED_LANGUAGE = "en-us";
 
+export const BLOG_INDEX_PATH = "/blog";
+export const BLOG_AUTHOR_PATH = "/blog/author";
+export const CHANGELOG_INDEX_PATH = "/changelog";
+export const NOTRA_CHANGELOG_INDEX_PATH = "/changelog/notra";
+export const SITEMAP_PATH = "/sitemap.xml";
+export const LLMS_PATH = "/llms.txt";
+export const LLMS_FULL_PATH = "/llms-full.txt";
+
+export const MARBLE_BLOG_CATEGORY_SLUG = "blog";
+export const MARBLE_CHANGELOG_CATEGORY_SLUG = "changelog";
+export const MARBLE_DEFAULT_POST_LIMIT = 100;
+
+export const MARBLE_CACHE_KEYS = {
+  blogPosts: "marble-blog-posts-v4",
+  blogAuthors: "marble-blog-authors-v1",
+  changelogPosts: "marble-changelog-posts-v2",
+} as const;
+
+export const MARBLE_CACHE_TAGS = {
+  blogPosts: "marble-blog-posts",
+  blogAuthors: "marble-blog-authors",
+  changelogPosts: "marble-changelog-posts",
+} as const;
+
+export const MARBLE_POST_CACHE_TAG_PREFIX = "marble-post";
+
+export const MARBLE_REVALIDATE_SECONDS = {
+  blogPosts: 3000,
+  blogAuthors: 3000,
+  changelogPosts: 300,
+} as const;
+
 export const OG_EXCLUDED_CONTRIBUTOR = "mezotv";
 export const OG_MAX_CONTRIBUTORS = 6;
 export const OG_MAX_LOGIN_LENGTH = 12;
+export const OG_BLOG_TITLE_MAX_LENGTH = 80;
 
 export const BLOG_HEADING_REGEX = /<h([2-3])[^>]*>([\s\S]*?)<\/h\1>/gi;
 export const BLOG_PARAGRAPH_REGEX = /<p[^>]*>([\s\S]*?)<\/p>/gi;
@@ -150,7 +183,7 @@ const FEATURES_TABLE = [
       },
       {
         name: "Email support",
-        basic: false,
+        basic: true,
         pro: true,
         enterprise: true,
       },

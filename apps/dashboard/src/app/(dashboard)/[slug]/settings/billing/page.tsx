@@ -9,7 +9,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { FEATURES } from "@notra/ai/billing/features";
 import Counter from "@notra/ui/components/Counter";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
@@ -37,6 +36,7 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { BillingPlan } from "@/types/billing/plan";

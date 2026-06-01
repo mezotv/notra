@@ -1,3 +1,5 @@
+import type { LookupAddress } from "node:dns";
+import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
 const BLOCKED_HOSTNAMES = new Set([
@@ -8,6 +10,13 @@ const BLOCKED_HOSTNAMES = new Set([
 
 const BLOCKED_HOSTNAME_SUFFIXES = [".internal", ".local", ".localhost"];
 const HEXTET_REGEX = /^[0-9a-f]{1,4}$/;
+
+export class PublicUrlValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PublicUrlValidationError";
+  }
+}
 
 function ipv4ToNumber(ip: string): number | null {
   const parts = ip.split(".");
@@ -190,39 +199,82 @@ export function assertPublicHttpUrl(raw: string): void {
   try {
     parsed = new URL(raw);
   } catch {
-    throw new Error("Invalid URL");
+    throw new PublicUrlValidationError("Invalid URL");
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Only http and https URLs are allowed");
+    throw new PublicUrlValidationError("Only http and https URLs are allowed");
   }
 
   if (parsed.username || parsed.password) {
-    throw new Error("URL userinfo is not allowed");
+    throw new PublicUrlValidationError("URL userinfo is not allowed");
   }
 
   const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
 
   if (!hostname) {
-    throw new Error("URL must include a hostname");
+    throw new PublicUrlValidationError("URL must include a hostname");
   }
 
   const ipVersion = isIP(hostname);
   if (ipVersion === 4) {
     if (isPrivateOrReservedIpv4(hostname)) {
-      throw new Error("Private or reserved IP addresses are not allowed");
+      throw new PublicUrlValidationError(
+        "Private or reserved IP addresses are not allowed"
+      );
     }
     return;
   }
 
   if (ipVersion === 6) {
     if (isPrivateOrReservedIpv6(hostname)) {
-      throw new Error("Private or reserved IP addresses are not allowed");
+      throw new PublicUrlValidationError(
+        "Private or reserved IP addresses are not allowed"
+      );
     }
     return;
   }
 
   if (isBlockedHostname(hostname)) {
-    throw new Error("Internal or metadata hostnames are not allowed");
+    throw new PublicUrlValidationError(
+      "Internal or metadata hostnames are not allowed"
+    );
+  }
+}
+
+export async function assertPublicHttpUrlResolution(
+  raw: string
+): Promise<void> {
+  assertPublicHttpUrl(raw);
+
+  const parsed = new URL(raw);
+  const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
+  if (isIP(hostname)) {
+    return;
+  }
+
+  let addresses: LookupAddress[];
+  try {
+    addresses = await lookup(hostname, { all: true, verbatim: true });
+  } catch {
+    throw new PublicUrlValidationError("URL hostname could not be resolved");
+  }
+
+  if (addresses.length === 0) {
+    throw new PublicUrlValidationError("URL hostname could not be resolved");
+  }
+
+  for (const address of addresses) {
+    if (address.family === 4 && isPrivateOrReservedIpv4(address.address)) {
+      throw new PublicUrlValidationError(
+        "Private or reserved IP addresses are not allowed"
+      );
+    }
+
+    if (address.family === 6 && isPrivateOrReservedIpv6(address.address)) {
+      throw new PublicUrlValidationError(
+        "Private or reserved IP addresses are not allowed"
+      );
+    }
   }
 }

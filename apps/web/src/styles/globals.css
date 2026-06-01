@@ -9,6 +9,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility content-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 40rem;
+}
+
 :root {
   --background: hsl(0 0% 100%);
   --foreground: hsl(0 0% 9%);
@@ -162,6 +167,10 @@
     @apply bg-background text-foreground;
   }
 
+  [data-slot="button"] {
+    @apply corner-squircle;
+  }
+
   ::selection {
     background-color: oklch(0.6056 0.2189 292.7172 / 0.3);
     color: inherit;
@@ -170,6 +179,83 @@
   [contenteditable]::selection {
     background-color: oklch(0.6056 0.2189 292.7172 / 0.4);
   }
+}
+
+.prose .code-block {
+  position: relative;
+}
+
+.prose .code-copy-button {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0.0625rem solid var(--border);
+  border-radius: 0.5rem;
+  background-color: color-mix(in oklab, var(--background) 80%, transparent);
+  color: color-mix(in oklab, var(--foreground) 55%, transparent);
+  cursor: pointer;
+  opacity: 0;
+  z-index: 1;
+  backdrop-filter: blur(0.25rem);
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.prose .code-block:hover .code-copy-button {
+  opacity: 1;
+}
+
+.prose .code-copy-button:hover {
+  color: var(--foreground);
+  background-color: var(--background);
+}
+
+.prose .code-copy-button:focus-visible {
+  opacity: 1;
+  outline: 0.125rem solid var(--ring);
+  outline-offset: 0.125rem;
+}
+
+.prose .code-copy-icon,
+.prose .code-copy-icon-success {
+  width: 1rem;
+  height: 1rem;
+}
+
+.prose .code-copy-icon-success {
+  display: none;
+}
+
+.prose .code-copy-button[data-copied] {
+  color: var(--foreground);
+}
+
+.prose .code-copy-button[data-copied] .code-copy-icon {
+  display: none;
+}
+
+.prose .code-copy-button[data-copied] .code-copy-icon-success {
+  display: block;
+}
+
+.prose .shiki {
+  border: 0.0625rem solid var(--border);
+}
+
+.dark .prose .shiki,
+.dark .prose .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
 }
 
 @layer components {

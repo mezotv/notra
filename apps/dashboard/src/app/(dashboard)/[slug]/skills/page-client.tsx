@@ -11,7 +11,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -28,7 +27,6 @@ import {
 } from "@notra/ui/components/ui/input-group";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Separator } from "@notra/ui/components/ui/separator";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -36,11 +34,13 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
+import { SkillsPageSkeleton } from "./skeleton";
 
 interface PageClientProps {
   slug: string;
@@ -171,19 +171,7 @@ export default function PageClient({ slug }: PageClientProps) {
           </Button>
         </div>
 
-        {isLoadingSkills && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton cards
-              <Card className="gap-3 p-4" key={i}>
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="mt-1 h-3 w-24" />
-              </Card>
-            ))}
-          </div>
-        )}
+        {isLoadingSkills && <SkillsPageSkeleton />}
         {!isLoadingSkills && skills.length === 0 && (
           <p className="text-muted-foreground">No skills yet.</p>
         )}

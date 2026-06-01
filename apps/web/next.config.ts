@@ -19,16 +19,19 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: false,
   },
   transpilePackages: ["@notra/ui"],
-  rewrites: async () => ({
-    beforeFiles: [
+  rewrites: async () => {
+    const c15tBackendUrl = process.env.NEXT_PUBLIC_C15T_BACKEND_URL;
+    if (!c15tBackendUrl) {
+      return [];
+    }
+
+    return [
       {
         source: "/api/c15t/:path*",
-        destination: `${process.env.NEXT_PUBLIC_C15T_BACKEND_URL}/:path*`,
+        destination: `${c15tBackendUrl}/:path*`,
       },
-    ],
-    afterFiles: [],
-    fallback: [],
-  }),
+    ];
+  },
   redirects: async () => [
     ...SHOWCASE_COMPANY_SLUGS.map((slug) => ({
       source: `/showcase/${slug}`,
@@ -116,7 +119,7 @@ const nextConfig: NextConfig = {
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' databuddy.cc *.databuddy.cc va.vercel-scripts.com",
             "style-src 'self' 'unsafe-inline'",
             "font-src 'self'",
-            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc avatars.githubusercontent.com",
+            "img-src 'self' data: blob: databuddy.cc *.databuddy.cc avatars.githubusercontent.com cdn.contentport.io images.marblecms.com media.marblecms.com",
             "connect-src 'self' databuddy.cc *.databuddy.cc *.inth.app *.c15t.com *.c15t.dev",
             "frame-src 'none'",
             "frame-ancestors 'none'",
@@ -135,6 +138,18 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "avatars.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.contentport.io",
+      },
+      {
+        protocol: "https",
+        hostname: "images.marblecms.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.marblecms.com",
       },
     ],
   },

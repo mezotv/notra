@@ -1,7 +1,8 @@
 "use client";
 
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardAction,
@@ -16,11 +17,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Kbd } from "@notra/ui/components/ui/kbd";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
@@ -227,6 +231,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const pathname = usePathname();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
   useLinearConnectionToast();
 
@@ -258,14 +265,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               Manage your Linear integrations for automated content
             </p>
           </div>
-          <AddLinearIntegrationDialog
-            authorizeUrl={authorizeUrl}
-            trigger={
-              <Button size="sm" variant="default">
-                Connect Linear
-              </Button>
-            }
-          />
+          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+            Connect Linear
+            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+          </Button>
         </div>
 
         <div>
@@ -274,14 +278,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           {!showLoading && (!integrations || integrations.length === 0) ? (
             <EmptyState
               action={
-                <AddLinearIntegrationDialog
-                  authorizeUrl={authorizeUrl}
-                  trigger={
-                    <Button size="sm" variant="outline">
-                      Connect Linear
-                    </Button>
-                  }
-                />
+                <Button
+                  onClick={() => setDialogOpen(true)}
+                  size="sm"
+                  variant="outline"
+                >
+                  Connect Linear
+                </Button>
               }
               description="Connect Linear to start syncing issues and updates."
               title="No integrations yet"
@@ -303,6 +306,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           ) : null}
         </div>
       </div>
+
+      <AddLinearIntegrationDialog
+        authorizeUrl={authorizeUrl}
+        onOpenChange={setDialogOpen}
+        open={dialogOpen}
+      />
     </PageContainer>
   );
 }

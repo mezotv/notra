@@ -1,4 +1,4 @@
-import type { ApiKeyPermission } from "@/schemas/api-keys";
+import type { ApiKeyPermission } from "@/types/api-keys";
 
 export function getPermissionsForLevel(permission: ApiKeyPermission) {
   return permission === "api.write" ? ["api.read", "api.write"] : ["api.read"];

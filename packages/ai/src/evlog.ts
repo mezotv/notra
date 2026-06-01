@@ -7,7 +7,7 @@ const service = process.env.NODE_ENV === "development" ? "notra-dev" : "notra";
 const drain =
   process.env.AXIOM_TOKEN && process.env.AXIOM_AI_DATASET
     ? createAxiomDrain({
-        token: process.env.AXIOM_TOKEN,
+        apiKey: process.env.AXIOM_TOKEN,
         dataset: process.env.AXIOM_AI_DATASET,
         orgId: process.env.AXIOM_ORG_ID,
       })

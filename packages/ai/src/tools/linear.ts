@@ -1,3 +1,4 @@
+import { getLinearIssuesInputSchema } from "@notra/ai/schemas/tools";
 import type { ResolveLinearIntegrationContext } from "@notra/ai/types/agents";
 import type {
   BuildLinearDataToolsOptions,
@@ -62,33 +63,7 @@ export function createGetLinearIssuesTool(
     tool({
       description:
         "Get Linear issues for a team (title, state, priority, assignee, labels). Supports since/until ISO timestamps and cursor pagination.",
-      inputSchema: z.object({
-        integrationId: z
-          .string()
-          .describe("The integration ID for the configured Linear workspace"),
-        since: z
-          .string()
-          .datetime()
-          .optional()
-          .describe(
-            "UTC ISO timestamp for the start of the range (filters by updatedAt)"
-          ),
-        until: z
-          .string()
-          .datetime()
-          .optional()
-          .describe(
-            "UTC ISO timestamp for the end of the range (filters by updatedAt)"
-          ),
-        cursor: z
-          .string()
-          .optional()
-          .describe("Pagination cursor from a previous response"),
-        includeCompleted: z
-          .boolean()
-          .default(true)
-          .describe("Whether to include completed/cancelled issues"),
-      }),
+      inputSchema: getLinearIssuesInputSchema,
       execute: async ({
         integrationId,
         since,
@@ -167,13 +142,11 @@ export function createGetLinearIssuesTool(
     {
       ttl: 5 * 60 * 1000,
       keyGenerator: (params: unknown) => {
-        const { integrationId, since, until, cursor } = params as {
-          integrationId: string;
-          since?: string;
-          until?: string;
-          cursor?: string;
-        };
-        return `get_linear_issues:integration=${integrationId}:since=${since ?? "none"}:until=${until ?? "none"}:cursor=${cursor ?? "start"}`;
+        const { integrationId, since, until, cursor, includeCompleted } =
+          getLinearIssuesInputSchema.parse(params);
+        return `get_linear_issues:integration=${integrationId}:since=${since ?? "none"}:until=${until ?? "none"}:cursor=${cursor ?? "start"}:completed=${String(
+          includeCompleted
+        )}`;
       },
     }
   );

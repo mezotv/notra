@@ -9,8 +9,8 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
+import { Button } from "@/components/button";
 import type { ImportedTweetCardProps } from "@/types/components/socials-onboarding";
 import type { TweetMetadata } from "@/types/hooks/brand-references";
 import { formatCompactNumber } from "@/utils/format-compact-number";

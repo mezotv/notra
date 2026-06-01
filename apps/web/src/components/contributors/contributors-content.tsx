@@ -1,8 +1,10 @@
 import { ContributorsGrid } from "@/components/contributors/contributors-grid";
 import { IssueList } from "@/components/contributors/issue-list";
 import { PullRequestList } from "@/components/contributors/pull-request-list";
+import { Sponsors } from "@/components/contributors/sponsors";
 import { Stats } from "@/components/contributors/stats";
 import { ViewAllLink } from "@/components/contributors/view-all-link";
+import { SPONSORS } from "@/lib/sponsors/constants";
 import { fetchContributorsData, GITHUB_REPO_URL } from "@/utils/github";
 
 export async function ContributorsContent() {
@@ -26,6 +28,8 @@ export async function ContributorsContent() {
           <ContributorsGrid contributors={data.contributors} />
         </div>
       </section>
+
+      <Sponsors sponsors={SPONSORS} />
 
       <section className="grid w-full grid-cols-1 gap-8 border-border border-t px-4 py-12 sm:px-6 md:grid-cols-2 md:gap-10 md:px-8 md:py-16">
         <div className="flex flex-col gap-6">

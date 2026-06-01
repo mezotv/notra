@@ -2,9 +2,9 @@
 
 import { Delete02Icon, LinkSquare02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
 import Image from "next/image";
+import { Button } from "@/components/button";
 import {
   isImageMimeType,
   isPdfMimeType,

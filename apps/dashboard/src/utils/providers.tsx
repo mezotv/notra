@@ -8,9 +8,9 @@ import {
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RealtimeProvider } from "@upstash/realtime/client";
 import { AutumnProvider } from "autumn-js/react";
+import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { toast } from "sonner";
@@ -21,6 +21,17 @@ import {
 
 const databuddyClientID =
   process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID;
+
+const ReactQueryDevtools =
+  process.env.NODE_ENV === "development"
+    ? dynamic(
+        () =>
+          import("@tanstack/react-query-devtools").then(
+            (mod) => mod.ReactQueryDevtools
+          ),
+        { ssr: false }
+      )
+    : null;
 
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
@@ -68,7 +79,7 @@ function DatabuddyAnalytics() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
       <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
         <TooltipProvider>
           <AutumnProvider includeCredentials>

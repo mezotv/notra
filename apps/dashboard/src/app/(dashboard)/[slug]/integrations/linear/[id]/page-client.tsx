@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import {
   Tooltip,
@@ -12,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinearIntegration } from "@/types/integrations";

@@ -13,7 +13,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +29,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { createColumnHelper } from "@tanstack/react-table";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import type {
   IntegrationType,
   Log,

@@ -9,11 +9,11 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
 import { CheckIcon, ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/button";
 
 interface RaycastSetupGuideDialogProps {
   open: boolean;

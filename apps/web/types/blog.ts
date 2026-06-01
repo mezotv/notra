@@ -1,4 +1,40 @@
+import type { IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
+
+export interface NotraAuthorSocial {
+  url: string;
+  platform: string;
+}
+
+export interface NotraBlogAuthor {
+  id: string;
+  name: string;
+  image: string | null;
+  slug: string;
+  bio: string | null;
+  role: string | null;
+  socials: NotraAuthorSocial[];
+}
+
+export interface NotraAuthor extends NotraBlogAuthor {
+  postCount: number;
+}
+
+export interface BlogAuthorPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export interface BlogCopyArticleProps {
+  markdown: string;
+  markdownUrl: string;
+  title: string;
+}
+
+export interface BlogCopyArticleItemProps {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}
 
 export interface NotraBlogPost {
   id: string;
@@ -13,6 +49,7 @@ export interface NotraBlogPost {
   updatedAt: string;
   slug: string;
   excerpt: string;
+  authors: NotraBlogAuthor[];
 }
 
 interface BlogPageHeaderProps {
@@ -21,12 +58,32 @@ interface BlogPageHeaderProps {
   description: ReactNode;
 }
 
-export interface BlogTimelineItem {
+interface BlogTimelineItem {
   id: string;
   title: string;
   description: string;
   href: string;
   date: string;
+}
+
+interface BlogCardAuthor {
+  name: string;
+  image: string | null;
+  slug: string;
+  href: string;
+}
+
+export interface BlogCardItem {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  date: string;
+  author: BlogCardAuthor | null;
+}
+
+export interface BlogPostCardProps {
+  item: BlogCardItem;
 }
 
 interface BlogTimelineProps {
@@ -52,4 +109,15 @@ export interface BlogJsonLdInput {
   post: NotraBlogPost;
   url: string;
   imageUrl: string;
+}
+
+export interface BlogArticleProps {
+  html: string;
+}
+
+export interface ResolvedSocialLink {
+  label: string;
+  displayUrl: string;
+  url: string;
+  icon: IconSvgElement;
 }

@@ -13,7 +13,7 @@ export function ChangelogPageHeader({
           {eyebrow}
         </p>
       ) : null}
-      <h1 className="text-balance font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl md:leading-[60px]">
+      <h1 className="text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
         {title}
       </h1>
       <div className="text-balance font-sans text-base text-muted-foreground leading-7">

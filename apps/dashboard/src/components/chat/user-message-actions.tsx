@@ -9,7 +9,6 @@ import {
   Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { cn } from "@notra/ui/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/button";
 import { AVAILABLE_MODELS, ModelIcon } from "@/components/chat/chat-input";
 
 interface UserMessageActionsProps {

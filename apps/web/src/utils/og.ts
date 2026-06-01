@@ -1,6 +1,18 @@
 const GOOGLE_FONT_URL_REGEX =
   /src: url\((.+)\) format\('(opentype|truetype)'\)/;
 
+export function splitTitleForDot(title: string) {
+  const words = title.split(" ");
+  const lastWord = words.at(-1) ?? title;
+  const leading: { word: string; key: string }[] = [];
+  let cursor = 0;
+  for (const word of words.slice(0, -1)) {
+    leading.push({ word, key: `word-${cursor}` });
+    cursor += word.length + 1;
+  }
+  return { leading, lastWord };
+}
+
 export async function loadGoogleFont(family: string, text: string) {
   const url = `https://fonts.googleapis.com/css2?family=${family.replace(
     / /g,
@@ -20,4 +32,22 @@ export async function loadGoogleFont(family: string, text: string) {
 
 export function truncate(value: string, max: number) {
   return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+}
+
+export async function loadImageAsDataUrl(url: string | null) {
+  if (!url) {
+    return null;
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return null;
+    }
+    const input = Buffer.from(await response.arrayBuffer());
+    const { default: sharp } = await import("sharp");
+    const png = await sharp(input).png().toBuffer();
+    return `data:image/png;base64,${png.toString("base64")}`;
+  } catch {
+    return null;
+  }
 }

@@ -29,10 +29,9 @@ export default async function Image() {
     .map((c) => c.displayLogin)
     .join(" ")}`;
 
-  const [serifFont, sansFont, sansBoldFont, logoSvg] = await Promise.all([
-    loadGoogleFont("Instrument Serif", headingText),
+  const [sansFont, sansBoldFont, logoSvg] = await Promise.all([
     loadGoogleFont("Inter", uiText),
-    loadGoogleFont("Inter:wght@600", uiText),
+    loadGoogleFont("Inter:wght@600", `${uiText} ${headingText}`),
     Promise.resolve(
       readFileSync(join(process.cwd(), "public/notra-mark.svg"), "utf-8")
     ),
@@ -47,7 +46,7 @@ export default async function Image() {
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        backgroundColor: "#f5f0e8",
+        backgroundColor: "#ffffff",
         padding: "5rem",
         fontFamily: "Inter",
       }}
@@ -83,10 +82,11 @@ export default async function Image() {
         <div
           style={{
             color: "#1a1a1a",
-            fontFamily: "Instrument Serif",
+            fontFamily: "Inter",
+            fontWeight: 600,
             fontSize: "5rem",
             lineHeight: 1.02,
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}
         >
           Built by the
@@ -95,10 +95,11 @@ export default async function Image() {
           style={{
             display: "flex",
             color: "#1a1a1a",
-            fontFamily: "Instrument Serif",
+            fontFamily: "Inter",
+            fontWeight: 600,
             fontSize: "5rem",
             lineHeight: 1.02,
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}
         >
           <span>community</span>
@@ -160,12 +161,6 @@ export default async function Image() {
     {
       ...size,
       fonts: [
-        {
-          name: "Instrument Serif",
-          data: serifFont,
-          style: "normal",
-          weight: 400,
-        },
         { name: "Inter", data: sansFont, style: "normal", weight: 400 },
         { name: "Inter", data: sansBoldFont, style: "normal", weight: 600 },
       ],

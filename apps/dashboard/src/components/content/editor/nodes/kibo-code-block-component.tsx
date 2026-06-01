@@ -3,7 +3,6 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { useLexicalNodeSelection } from "@lexical/react/useLexicalNodeSelection";
 import { mergeRegister } from "@lexical/utils";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -22,6 +21,7 @@ import {
 } from "lexical";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 import { $isKiboCodeBlockNode } from "./kibo-code-block-node";
 

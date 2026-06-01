@@ -1,16 +1,32 @@
 "use client";
 
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
+import { Button } from "@/components/button";
+import { PageContainer } from "@/components/layout/container";
 
 export function BrandIdentityPageSkeleton() {
   const id = useId();
   return (
-    <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="space-y-1">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-5 w-80" />
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h1 className="font-bold text-3xl tracking-tight">
+              Brand Identity
+            </h1>
+            <p className="text-muted-foreground">
+              Configure your brand identity and tone
+            </p>
+          </div>
+          <Button className="gap-1.5">
+            <HugeiconsIcon className="size-4" icon={Add01Icon} />
+            Create Identity
+            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+          </Button>
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -43,6 +59,6 @@ export function BrandIdentityPageSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
+    "@react-email/preview-server": "5.2.8",
     "@types/node": "22.9.0",
     "@types/react": "^19.2.10",
     "react-email": "5.2.8",

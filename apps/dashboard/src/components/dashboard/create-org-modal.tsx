@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { generateOrganizationAvatar, slugify } from "@/lib/utils";
 import { createOrganizationSchema } from "@/schemas/organization";

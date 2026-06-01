@@ -1,12 +1,13 @@
 "use client";
 
 import {
+  Add01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
   ArrowUpDownIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import {
   Table,
@@ -22,8 +23,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PlusIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
@@ -32,6 +33,7 @@ import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
+import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -68,6 +70,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [createdSortOrder, setCreatedSortOrder] = useState<
     false | "asc" | "desc"
   >(false);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
   const { data, isPending } = useQuery(
     dashboardOrpc.automation.events.list.queryOptions({
@@ -196,6 +201,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <CreateEventTriggerDialog
+            onOpenChange={setCreateOpen}
             onSuccess={() =>
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.events.list.queryKey({
@@ -203,11 +209,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 }),
               })
             }
+            open={createOpen}
             organizationId={organizationId ?? ""}
             trigger={
-              <Button variant="default">
-                <PlusIcon className="size-4" />
-                <span className="ml-1">New Event Trigger</span>
+              <Button className="gap-1.5">
+                <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                Create Trigger
+                <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
               </Button>
             }
           />
@@ -228,9 +236,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 }
                 organizationId={organizationId ?? ""}
                 trigger={
-                  <Button variant="outline">
-                    <PlusIcon className="size-4" />
-                    <span className="ml-1">New Event Trigger</span>
+                  <Button className="gap-1.5" variant="outline">
+                    <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                    Create Trigger
                   </Button>
                 }
               />

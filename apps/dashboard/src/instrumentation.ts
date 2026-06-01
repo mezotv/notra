@@ -7,7 +7,10 @@ const evlogInstrumentation = defineNodeInstrumentation(
 export async function register() {
   await evlogInstrumentation.register();
 
-  if (process.env.NEXT_RUNTIME === "nodejs") {
+  if (
+    process.env.NEXT_RUNTIME === "nodejs" &&
+    process.env.NODE_ENV === "production"
+  ) {
     const { registerOTelTCC } = await import("@contextcompany/otel/nextjs");
     registerOTelTCC();
   }

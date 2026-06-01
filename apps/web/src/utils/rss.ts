@@ -82,7 +82,7 @@ export function buildBlogRssFeed(posts: NotraBlogPost[]) {
   });
 
   const lastBuildDate =
-    items.length > 0 ? items[0]?.pubDate : new Date().toUTCString();
+    items.length > 0 ? items[0]!.pubDate : new Date().toUTCString();
 
   return buildRssFeed({
     title: RSS_FEED_TITLE,

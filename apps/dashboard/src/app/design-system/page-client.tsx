@@ -34,7 +34,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@notra/ui/components/ui/breadcrumb";
-import { Button, buttonVariants } from "@notra/ui/components/ui/button";
 import {
   ButtonGroup,
   ButtonGroupSeparator,
@@ -217,6 +216,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { BrailleLoader } from "@/components/braille-loader";
+import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
 import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 

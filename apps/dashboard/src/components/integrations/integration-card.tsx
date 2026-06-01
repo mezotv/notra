@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardAction,
@@ -21,6 +20,7 @@ import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EditTokenDialog } from "@/components/integrations/edit-token-dialog";
 import { dashboardOrpc } from "@/lib/orpc/query";

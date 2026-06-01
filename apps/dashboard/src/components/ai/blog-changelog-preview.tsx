@@ -10,7 +10,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/constants/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -30,6 +29,7 @@ import {
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 

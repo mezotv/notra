@@ -12,13 +12,13 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { WebhookSetupDialogProps } from "@/types/integrations";
 import type { WebhookConfig } from "@/types/services/integrations";

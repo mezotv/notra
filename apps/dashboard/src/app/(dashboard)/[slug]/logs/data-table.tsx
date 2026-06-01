@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,6 +16,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import type { DataTableProps } from "@/types/logs/data-table";
 
 export function DataTable<TData>({

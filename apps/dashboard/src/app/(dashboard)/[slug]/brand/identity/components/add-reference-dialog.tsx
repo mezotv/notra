@@ -24,7 +24,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
@@ -38,6 +37,7 @@ import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import {
   type ConnectedAccount,
   useConnectedAccounts,

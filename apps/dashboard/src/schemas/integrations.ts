@@ -343,3 +343,130 @@ export const deleteResourceResponseSchema = z.object({
 export type DeleteResourceResponse = z.infer<
   typeof deleteResourceResponseSchema
 >;
+
+export const MCP_URL_PROTOCOL_REGEX = /^https?:\/\//i;
+
+export const mcpUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Server URL is required")
+  .max(2048, "Server URL is too long")
+  .pipe(z.url({ protocol: /^https$/ }));
+
+export const mcpFormUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Server URL is required")
+  .refine(
+    (value) =>
+      mcpUrlSchema.safeParse(
+        `https://${value.replace(MCP_URL_PROTOCOL_REGEX, "")}`
+      ).success,
+    "Enter a valid URL"
+  );
+
+export const mcpHeaderNameSchema = z
+  .string()
+  .trim()
+  .max(128, "Header name is too long")
+  .regex(/^[!#$%&'*+\-.^_`|~0-9A-Za-z]*$/, "Invalid header name");
+
+export const mcpHeaderValueSchema = z
+  .string()
+  .trim()
+  .max(4096, "Header value is too long");
+
+export const MAX_MCP_HEADERS = 5;
+
+export const mcpHeadersSchema = z
+  .record(
+    mcpHeaderNameSchema.pipe(z.string().min(1, "Header name is required")),
+    mcpHeaderValueSchema.pipe(z.string().min(1, "Header value is required"))
+  )
+  .refine((headers) => Object.keys(headers).length <= MAX_MCP_HEADERS, {
+    message: `You can add up to ${MAX_MCP_HEADERS} headers`,
+  })
+  .default({});
+
+export const mcpHeaderRowSchema = z.object({
+  name: mcpHeaderNameSchema,
+  value: mcpHeaderValueSchema,
+});
+export type McpHeaderRow = z.infer<typeof mcpHeaderRowSchema>;
+
+export const addMcpServerFormFieldsSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120),
+  url: mcpFormUrlSchema,
+  description: z.string().trim().max(1000, "Description is too long"),
+  headers: z
+    .array(mcpHeaderRowSchema)
+    .max(MAX_MCP_HEADERS, `You can add up to ${MAX_MCP_HEADERS} headers`),
+});
+
+export const addMcpServerFormSchema = addMcpServerFormFieldsSchema.superRefine(
+  (value, ctx) => {
+    value.headers.forEach((row, index) => {
+      const hasName = row.name.trim() !== "";
+      const hasValue = row.value.trim() !== "";
+      if (hasName !== hasValue) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Header name and value are required together",
+          path: ["headers", index, hasValue ? "name" : "value"],
+        });
+      }
+    });
+  }
+);
+
+export type AddMcpServerFormValues = z.infer<
+  typeof addMcpServerFormFieldsSchema
+>;
+
+export const createMcpServerRequestSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  name: addMcpServerFormFieldsSchema.shape.name,
+  url: mcpUrlSchema,
+  description: z
+    .string()
+    .trim()
+    .max(1000, "Description is too long")
+    .optional()
+    .nullable(),
+  headers: mcpHeadersSchema,
+});
+export type CreateMcpServerRequest = z.infer<
+  typeof createMcpServerRequestSchema
+>;
+
+export const updateMcpServerBodySchema = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    url: mcpUrlSchema.optional(),
+    description: z.string().trim().max(1000).optional().nullable(),
+    headers: mcpHeadersSchema.optional(),
+    enabled: z.boolean().optional(),
+  })
+  .refine(
+    (value) =>
+      value.name !== undefined ||
+      value.url !== undefined ||
+      value.description !== undefined ||
+      value.headers !== undefined ||
+      value.enabled !== undefined,
+    {
+      message: "At least one field must be provided",
+    }
+  );
+export type UpdateMcpServerBody = z.infer<typeof updateMcpServerBodySchema>;
+
+export const mcpServerIdParamSchema = z.object({
+  serverId: z.string().min(1, "MCP server ID is required"),
+});
+
+export const testMcpServerRequestSchema = createMcpServerRequestSchema.pick({
+  organizationId: true,
+  url: true,
+  headers: true,
+});
+export type TestMcpServerRequest = z.infer<typeof testMcpServerRequestSchema>;

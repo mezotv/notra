@@ -1,4 +1,5 @@
 import { gateway } from "@notra/ai/gateway";
+import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import {
@@ -293,6 +294,7 @@ export async function POST(request: NextRequest) {
           : "No matching entities found.",
         `User query: ${query}`,
       ].join("\n"),
+      providerOptions: withGatewayAutomaticCaching(),
       abortSignal: request.signal,
       experimental_telemetry: buildExperimentalTelemetry({
         feature: "command_palette",

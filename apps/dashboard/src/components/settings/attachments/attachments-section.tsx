@@ -12,7 +12,6 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -24,6 +23,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { type AttachmentRow, buildAttachmentColumns } from "./columns";
 import { AttachmentsDataTable } from "./data-table";

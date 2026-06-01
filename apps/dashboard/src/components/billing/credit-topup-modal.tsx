@@ -10,8 +10,8 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { CreditTopupContent } from "@/components/billing/credit-topup-content";
+import { Button } from "@/components/button";
 
 interface CreditTopupModalProps {
   open: boolean;
