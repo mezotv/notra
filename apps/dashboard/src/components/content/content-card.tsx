@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +63,7 @@ const ContentCard = memo(function ContentCard({
   organizationId,
   className,
   href,
+  imagePreviewSrc,
 }: ContentCardProps) {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -189,8 +191,28 @@ const ContentCard = memo(function ContentCard({
           </DropdownMenu>
         </div>
       </div>
-      <div className="flex-1 rounded-md bg-background/60 px-3 py-2.5">
-        <p className="line-clamp-3 text-muted-foreground text-sm">{preview}</p>
+      <div
+        className={cn(
+          "flex-1 overflow-hidden rounded-md bg-background/60",
+          contentType === "image" && imagePreviewSrc
+            ? "flex items-center justify-center"
+            : "px-3 py-2.5"
+        )}
+      >
+        {contentType === "image" && imagePreviewSrc ? (
+          <Image
+            alt={title}
+            className="h-full max-h-full w-full object-contain"
+            height={630}
+            src={imagePreviewSrc}
+            unoptimized
+            width={1200}
+          />
+        ) : (
+          <p className="line-clamp-3 text-muted-foreground text-sm">
+            {preview}
+          </p>
+        )}
       </div>
       <div className="flex items-center gap-2 px-2 py-2">
         <Badge

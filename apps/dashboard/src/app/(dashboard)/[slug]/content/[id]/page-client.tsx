@@ -16,7 +16,9 @@ import {
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
+import { Figma } from "@notra/ui/components/ui/svgs/figma";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
+import { Paper } from "@notra/ui/components/ui/svgs/paper";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
@@ -37,6 +39,7 @@ import { RecommendationsSection } from "@/components/content/recommendations-sec
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import { copyImageAsFigma, copyImageAsPaper } from "@/lib/content/image-export";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { sourceMetadataSchema } from "@/schemas/content";
 import type { ContentDetailPageClientProps } from "@/types/content/detail";
@@ -120,6 +123,7 @@ export default function PageClient({
 
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
+  const imageExportRef = useRef<HTMLDivElement | null>(null);
   const handleSaveRef = useRef<(() => void) | null>(null);
   const handleDiscardRef = useRef<(() => void) | null>(null);
   const needsNormalizationRef = useRef(false);
@@ -707,14 +711,16 @@ export default function PageClient({
                 <Badge className="capitalize" variant="secondary">
                   {getContentTypeLabel(content.contentType)}
                 </Badge>
-                <Badge
-                  className="capitalize"
-                  variant={
-                    content.status === "published" ? "default" : "outline"
-                  }
-                >
-                  {content.status}
-                </Badge>
+                {content.contentType !== "image" && (
+                  <Badge
+                    className="capitalize"
+                    variant={
+                      content.status === "published" ? "default" : "outline"
+                    }
+                  >
+                    {content.status}
+                  </Badge>
+                )}
               </div>
               {content.sourceMetadata &&
                 (() => {
@@ -839,25 +845,27 @@ export default function PageClient({
                 })()}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <Button
-                disabled={isTogglingStatus}
-                onClick={handleToggleStatus}
-                size="sm"
-                variant={content.status === "draft" ? "default" : "outline"}
-              >
-                <HugeiconsIcon
-                  className="size-4"
-                  icon={content.status === "published" ? TextIcon : SentIcon}
-                />
-                {(() => {
-                  if (isTogglingStatus) {
-                    return "Updating...";
-                  }
-                  return content.status === "published"
-                    ? "Move to draft"
-                    : "Publish";
-                })()}
-              </Button>
+              {content.contentType !== "image" && (
+                <Button
+                  disabled={isTogglingStatus}
+                  onClick={handleToggleStatus}
+                  size="sm"
+                  variant={content.status === "draft" ? "default" : "outline"}
+                >
+                  <HugeiconsIcon
+                    className="size-4"
+                    icon={content.status === "published" ? TextIcon : SentIcon}
+                  />
+                  {(() => {
+                    if (isTogglingStatus) {
+                      return "Updating...";
+                    }
+                    return content.status === "published"
+                      ? "Move to draft"
+                      : "Publish";
+                  })()}
+                </Button>
+              )}
               {content.contentType === "linkedin_post" && (
                 <Button
                   className="text-white hover:opacity-90"
@@ -894,6 +902,30 @@ export default function PageClient({
                   style={{ backgroundColor: TWITTER_BRAND_COLOR }}
                 />
               )}
+              {content.contentType === "image" && (
+                <>
+                  <Button
+                    onClick={() =>
+                      copyImageAsFigma(imageExportRef.current, title)
+                    }
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Figma className="size-4" />
+                    Copy for Figma
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      copyImageAsPaper(imageExportRef.current, title)
+                    }
+                    size="sm"
+                    variant="outline"
+                  >
+                    <Paper className="size-4" />
+                    Copy for Paper
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
@@ -923,6 +955,7 @@ export default function PageClient({
             contentType={content.contentType}
             editorKey={editorKey}
             editorRef={editorRef}
+            imageExportRef={imageExportRef}
             organization={{
               name: activeOrganization?.name ?? "Your Organization",
               logo: activeOrganization?.logo ?? null,

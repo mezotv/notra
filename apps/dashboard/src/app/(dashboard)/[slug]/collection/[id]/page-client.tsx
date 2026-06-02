@@ -14,6 +14,7 @@ import { PageContainer } from "@/components/layout/container";
 import { useCollection } from "@/lib/hooks/use-collections";
 import type { CollectionDetailPageClientProps } from "@/types/content/collection";
 import { formatLongDate, getMarkdownPreview } from "@/utils/content-preview";
+import { extractMarkdownImageSrc } from "@/utils/markdown-image";
 import { GroupDetailSkeleton } from "./skeleton";
 
 export default function PageClient({
@@ -115,6 +116,11 @@ export default function PageClient({
                 contentType={post.contentType}
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}
+                imagePreviewSrc={
+                  post.contentType === "image"
+                    ? extractMarkdownImageSrc(post.markdown)
+                    : null
+                }
                 key={post.id}
                 organizationId={organizationId}
                 preview={getMarkdownPreview(post.markdown)}

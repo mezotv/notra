@@ -17,4 +17,5 @@ export interface ContentCardProps {
   organizationId: string;
   className?: string;
   href?: string;
+  imagePreviewSrc?: string | null;
 }

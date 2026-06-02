@@ -15,6 +15,7 @@ import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
 import type { PostStatus } from "@/schemas/content";
 import { getGreeting } from "@/utils/dashboard-greeting";
+import { extractMarkdownImageSrc } from "@/utils/markdown-image";
 
 interface PageClientProps {
   organizationSlug: string;
@@ -91,6 +92,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 contentType={post.contentType as ContentType}
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}
+                imagePreviewSrc={
+                  post.contentType === "image"
+                    ? extractMarkdownImageSrc(post.markdown)
+                    : null
+                }
                 organizationId={organizationId}
                 preview={getPreview(post.markdown)}
                 status={post.status as PostStatus}
