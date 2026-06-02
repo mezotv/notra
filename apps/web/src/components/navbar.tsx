@@ -14,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { GlassDropdownMenuContent } from "@notra/ui/components/ui/glasscn/glass-dropdown-menu";
+import { LiquidGlass } from "@notra/ui/components/ui/glasscn/liquid-glass";
 import {
   AnimatePresence,
   domAnimation,
@@ -105,7 +107,7 @@ function MegaCard({
   onSelect: () => void;
 }) {
   const className =
-    "flex h-40 w-44 flex-col justify-between rounded-xl border border-neutral-200/70 bg-neutral-50 p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-100 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
+    "flex h-40 w-44 flex-col justify-between rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-100/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
   const body = (
     <>
       <span className="inset-shadow-sm inset-shadow-white flex size-9 items-center justify-center rounded-lg bg-white text-neutral-700 shadow-black/5 shadow-sm ring-1 ring-black/5 dark:inset-shadow-white/8 dark:bg-white/10 dark:text-neutral-200 dark:ring-white/10">
@@ -416,9 +418,11 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     </span>
                   </span>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
+                <GlassDropdownMenuContent
                   align="start"
-                  className="w-56"
+                  className="w-56 bg-white/60 dark:bg-neutral-950/60"
+                  glassVariant="liquid-refract"
+                  showBackdrop
                   side="bottom"
                 >
                   <DropdownMenuItem
@@ -434,7 +438,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     <HugeiconsIcon icon={DashboardSquare01Icon} />
                     Dashboard
                   </DropdownMenuItem>
-                </DropdownMenuContent>
+                </GlassDropdownMenuContent>
               </DropdownMenu>
 
               {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
@@ -526,7 +530,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                           width: activeSize?.width,
                           height: activeSize?.height,
                         }}
-                        className="relative inset-shadow-lg inset-shadow-white overflow-hidden rounded-2xl bg-white shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10"
+                        className="relative"
                         initial={{
                           width: activeSize?.width,
                           height: activeSize?.height,
@@ -536,24 +540,31 @@ export function Navbar({ variant }: NavbarProps = {}) {
                           height: morphTransition,
                         }}
                       >
-                        <AnimatePresence custom={direction} initial={false}>
-                          <m.div
-                            animate="center"
-                            className="absolute top-0 left-0 w-max"
-                            custom={direction}
-                            exit="exit"
-                            initial="enter"
-                            key={activeGroupData.label}
-                            role="menu"
-                            transition={contentTransition}
-                            variants={contentVariants}
-                          >
-                            <MegaPanel
-                              group={activeGroupData}
-                              onSelect={closePanel}
-                            />
-                          </m.div>
-                        </AnimatePresence>
+                        <LiquidGlass
+                          blur={5}
+                          className="h-full w-full rounded-2xl border-0 bg-transparent shadow-none"
+                        >
+                          <div className="relative inset-shadow-lg inset-shadow-white h-full w-full overflow-hidden rounded-2xl bg-white/70 shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950/70 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10">
+                            <AnimatePresence custom={direction} initial={false}>
+                              <m.div
+                                animate="center"
+                                className="absolute top-0 left-0 w-max"
+                                custom={direction}
+                                exit="exit"
+                                initial="enter"
+                                key={activeGroupData.label}
+                                role="menu"
+                                transition={contentTransition}
+                                variants={contentVariants}
+                              >
+                                <MegaPanel
+                                  group={activeGroupData}
+                                  onSelect={closePanel}
+                                />
+                              </m.div>
+                            </AnimatePresence>
+                          </div>
+                        </LiquidGlass>
                       </m.div>
                     </m.div>
                   )}
