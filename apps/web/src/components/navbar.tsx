@@ -421,6 +421,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 <GlassDropdownMenuContent
                   align="start"
                   className="w-56 bg-white/60 dark:bg-neutral-950/60"
+                  glassClassName="border-black/5 dark:border-white/10"
                   glassVariant="liquid-refract"
                   showBackdrop
                   side="bottom"
@@ -544,7 +545,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                           blur={5}
                           className="h-full w-full rounded-2xl border-0 bg-transparent shadow-none"
                         >
-                          <div className="relative inset-shadow-lg inset-shadow-white h-full w-full overflow-hidden rounded-2xl bg-white/70 shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950/70 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10">
+                          <div className="relative inset-shadow-lg inset-shadow-white h-full w-full overflow-hidden rounded-2xl bg-white/85 shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950/85 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10">
                             <AnimatePresence custom={direction} initial={false}>
                               <m.div
                                 animate="center"

@@ -13,7 +13,9 @@ import { LiquidGlass } from "./liquid-glass";
 type GlassDropdownMenuContentProps = React.ComponentProps<
   typeof DropdownMenuContent
 > &
-  FrostGlassVariantProp;
+  FrostGlassVariantProp & {
+    glassClassName?: string;
+  };
 
 const menuStateStyles = [
   "[&_[data-slot=dropdown-menu-item]:focus]:bg-white/70",
@@ -34,6 +36,7 @@ const menuStateStyles = [
 
 function GlassDropdownMenuContent({
   className,
+  glassClassName,
   glassVariant = "liquid-refract",
   showBackdrop = false,
   align = "start",
@@ -58,7 +61,7 @@ function GlassDropdownMenuContent({
           side={side}
           sideOffset={sideOffset}
         >
-          <LiquidGlass className="rounded-lg">
+          <LiquidGlass className={cn("rounded-lg", glassClassName)}>
             <MenuPrimitive.Popup
               className={cn(
                 "z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-transparent p-1 text-foreground shadow-none outline-none ring-0 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:overflow-hidden",
