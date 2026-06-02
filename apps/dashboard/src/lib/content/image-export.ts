@@ -2,17 +2,58 @@ import { copyAsFigma } from "@notra/kiwi";
 import { copyAsPaper } from "@notra/kiwi/paper";
 import { toast } from "sonner";
 
-export async function copyImageAsFigma(
+function createExportElement(html: string): HTMLDivElement {
+  const container = document.createElement("div");
+  container.style.position = "fixed";
+  container.style.left = "-10000px";
+  container.style.top = "0";
+  container.style.width = "1200px";
+  container.style.height = "630px";
+  container.style.overflow = "hidden";
+  container.style.pointerEvents = "none";
+
+  const range = document.createRange();
+  container.replaceChildren(range.createContextualFragment(html));
+  document.body.appendChild(container);
+
+  return container;
+}
+
+async function withExportElement(
   element: HTMLElement | null,
-  label?: string
-): Promise<void> {
-  if (!element) {
-    toast.error("Image is not ready yet");
-    return;
+  html: string | null | undefined,
+  copy: (element: HTMLElement) => Promise<void>
+): Promise<boolean> {
+  if (!html?.trim()) {
+    if (!element) {
+      return false;
+    }
+    await copy(element);
+    return true;
   }
 
+  const exportElement = createExportElement(html);
   try {
-    await copyAsFigma(element, { label, name: label });
+    await copy(exportElement);
+  } finally {
+    exportElement.remove();
+  }
+  return true;
+}
+
+export async function copyImageAsFigma(
+  element: HTMLElement | null,
+  label?: string,
+  html?: string | null
+): Promise<void> {
+  try {
+    const copied = await withExportElement(element, html, (exportElement) =>
+      copyAsFigma(exportElement, { label, name: label })
+    );
+    if (!copied) {
+      toast.error("Image is not ready yet");
+      return;
+    }
     toast.success("Copied for Figma. Paste it into your Figma file.");
   } catch (error) {
     console.error("Failed to copy image for Figma", error);
@@ -22,15 +63,17 @@ export async function copyImageAsFigma(
 
 export async function copyImageAsPaper(
   element: HTMLElement | null,
-  label?: string
+  label?: string,
+  html?: string | null
 ): Promise<void> {
-  if (!element) {
-    toast.error("Image is not ready yet");
-    return;
-  }
-
   try {
-    await copyAsPaper(element, { label, name: label });
+    const copied = await withExportElement(element, html, (exportElement) =>
+      copyAsPaper(exportElement, { label, name: label })
+    );
+    if (!copied) {
+      toast.error("Image is not ready yet");
+      return;
+    }
     toast.success("Copied for Paper. Paste it into your Paper file.");
   } catch (error) {
     console.error("Failed to copy image for Paper", error);

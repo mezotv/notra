@@ -2,48 +2,12 @@
 
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { isHttpImageContent } from "@/utils/image-content";
 import { extractMarkdownImageSrc } from "@/utils/markdown-image";
 import type { ContentEditorProps } from "./types";
 
-const HTTP_URL_RE = /^https?:\/\//i;
-
-function getArtifactHtml(sourceMetadata: unknown): string | null {
-  if (
-    !sourceMetadata ||
-    typeof sourceMetadata !== "object" ||
-    Array.isArray(sourceMetadata)
-  ) {
-    return null;
-  }
-
-  const artifacts = (sourceMetadata as { artifacts?: unknown }).artifacts;
-  if (!artifacts || typeof artifacts !== "object" || Array.isArray(artifacts)) {
-    return null;
-  }
-
-  const html = (artifacts as { html?: unknown }).html;
-  return typeof html === "string" && html.trim() ? html : null;
-}
-
-function getExportHtml(content: ContentEditorProps["content"]): string | null {
-  if (content.rawHtml?.trim()) {
-    return content.rawHtml;
-  }
-
-  const persistedHtml = content.content.trim();
-  if (
-    persistedHtml.startsWith("<") &&
-    !persistedHtml.startsWith("<p>Generated image:")
-  ) {
-    return persistedHtml;
-  }
-
-  return getArtifactHtml(content.sourceMetadata);
-}
-
 function getImageSrc(content: ContentEditorProps["content"]): string | null {
-  if (HTTP_URL_RE.test(content.content)) {
+  if (isHttpImageContent(content.content)) {
     return content.content;
   }
 
@@ -52,62 +16,31 @@ function getImageSrc(content: ContentEditorProps["content"]): string | null {
 
 export function ImageEditor({ content, imageExportRef }: ContentEditorProps) {
   const imageSrc = getImageSrc(content);
-  const exportHtml = getExportHtml(content);
-  const exportContainerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!exportHtml || !exportContainerRef.current) {
-      return;
-    }
-
-    const range = document.createRange();
-    const fragment = range.createContextualFragment(exportHtml);
-    exportContainerRef.current.replaceChildren(fragment);
-
-    if (imageExportRef) {
-      imageExportRef.current = exportContainerRef.current;
-    }
-
-    return () => {
-      if (imageExportRef?.current === exportContainerRef.current) {
-        imageExportRef.current = null;
-      }
-    };
-  }, [exportHtml, imageExportRef]);
 
   return (
-    <>
-      <TitleCard
-        contentClassName="flex min-h-[420px] items-center justify-center overflow-hidden p-0"
-        heading={content.title}
-      >
-        {imageSrc ? (
-          <div
-            className="flex w-full items-center justify-center"
-            ref={exportHtml ? undefined : imageExportRef}
-          >
-            <Image
-              alt={content.title}
-              className="h-auto max-h-[calc(100vh-260px)] w-full object-contain"
-              height={630}
-              src={imageSrc}
-              unoptimized
-              width={1200}
-            />
-          </div>
-        ) : (
-          <div className="px-4 py-12 text-center text-muted-foreground text-sm">
-            Image data is unavailable.
-          </div>
-        )}
-      </TitleCard>
-      {exportHtml ? (
+    <TitleCard
+      contentClassName="flex min-h-[420px] items-center justify-center overflow-hidden p-0"
+      heading={content.title}
+    >
+      {imageSrc ? (
         <div
-          aria-hidden="true"
-          className="pointer-events-none fixed top-0 left-[-10000px] h-[630px] w-[1200px] overflow-hidden"
-          ref={exportContainerRef}
-        />
-      ) : null}
-    </>
+          className="flex w-full items-center justify-center"
+          ref={imageExportRef}
+        >
+          <Image
+            alt={content.title}
+            className="h-auto max-h-[calc(100vh-260px)] w-full object-contain"
+            height={630}
+            src={imageSrc}
+            unoptimized
+            width={1200}
+          />
+        </div>
+      ) : (
+        <div className="px-4 py-12 text-center text-muted-foreground text-sm">
+          Image data is unavailable.
+        </div>
+      )}
+    </TitleCard>
   );
 }

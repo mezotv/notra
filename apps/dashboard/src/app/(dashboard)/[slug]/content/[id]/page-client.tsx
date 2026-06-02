@@ -46,6 +46,7 @@ import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
+import { getImageExportHtml } from "@/utils/image-content";
 import { createLinkedInPostUrl } from "@/utils/linkedin";
 import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
@@ -684,6 +685,8 @@ export default function PageClient({
   }
 
   const content = data.content;
+  const imageExportHtml =
+    content.contentType === "image" ? getImageExportHtml(content) : null;
   const collection = data.collection;
   const backHref = collection
     ? `/${organizationSlug}/collection/${collection.id}`
@@ -908,7 +911,11 @@ export default function PageClient({
                 <>
                   <Button
                     onClick={() =>
-                      copyImageAsFigma(imageExportRef.current, title)
+                      copyImageAsFigma(
+                        imageExportRef.current,
+                        title,
+                        imageExportHtml
+                      )
                     }
                     size="sm"
                     variant="outline"
@@ -918,7 +925,11 @@ export default function PageClient({
                   </Button>
                   <Button
                     onClick={() =>
-                      copyImageAsPaper(imageExportRef.current, title)
+                      copyImageAsPaper(
+                        imageExportRef.current,
+                        title,
+                        imageExportHtml
+                      )
                     }
                     size="sm"
                     variant="outline"
