@@ -60,6 +60,60 @@ function shouldApplyFilter(
   return selectedValues.length < allValues.length;
 }
 
+type PostResponseContentType = (typeof ALL_POST_CONTENT_TYPES)[number];
+
+function extractImageArtifactHtml(sourceMetadata: unknown): string | null {
+  if (
+    !sourceMetadata ||
+    typeof sourceMetadata !== "object" ||
+    Array.isArray(sourceMetadata)
+  ) {
+    return null;
+  }
+
+  const artifacts = (sourceMetadata as { artifacts?: unknown }).artifacts;
+  if (!artifacts || typeof artifacts !== "object" || Array.isArray(artifacts)) {
+    return null;
+  }
+
+  const html = (artifacts as { html?: unknown }).html;
+  return typeof html === "string" && html.trim() ? html : null;
+}
+
+function serializePost(post: {
+  content: string;
+  contentType: string;
+  createdAt: Date;
+  id: string;
+  markdown: string | null;
+  rawHtml?: string | null;
+  recommendations: string | null;
+  slug: string | null;
+  sourceMetadata: unknown;
+  status: "draft" | "published";
+  title: string;
+  updatedAt: Date;
+}) {
+  const isImage = post.contentType === "image";
+
+  return {
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    content: post.content,
+    markdown: isImage ? null : post.markdown,
+    rawHtml: isImage
+      ? (post.rawHtml ?? extractImageArtifactHtml(post.sourceMetadata))
+      : null,
+    recommendations: post.recommendations,
+    contentType: post.contentType as PostResponseContentType,
+    sourceMetadata: post.sourceMetadata,
+    status: post.status,
+    createdAt: post.createdAt.toISOString(),
+    updatedAt: post.updatedAt.toISOString(),
+  };
+}
+
 const getPostsRoute = createRoute({
   method: "get",
   path: "/posts",
@@ -316,7 +370,7 @@ postsRoutes.openapi(getPostsRoute, async (c) => {
 
   return c.json(
     {
-      posts: results,
+      posts: results.map(serializePost),
       pagination: {
         limit,
         currentPage: page,
@@ -367,7 +421,7 @@ postsRoutes.openapi(getPostRoute, async (c) => {
 
   return c.json(
     {
-      post: post ?? null,
+      post: post ? serializePost(post) : null,
       organization,
     },
     200
@@ -486,7 +540,8 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     title: string;
     slug: string | null;
     content: string;
-    markdown: string;
+    markdown: string | null;
+    rawHtml?: string | null;
     recommendations: string | null;
     contentType: string;
     sourceMetadata: unknown;
@@ -530,7 +585,7 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     return c.json({ error: "Post not found" }, 404);
   }
 
-  return c.json({ post: updatedPost, organization }, 200);
+  return c.json({ post: serializePost(updatedPost), organization }, 200);
 });
 
 postsRoutes.openapi(createPostGenerationRoute, async (c) => {

@@ -16,10 +16,7 @@ import type {
   ImageToolConfig,
 } from "@notra/ai/types/repo-image";
 import { toolDescription } from "@notra/ai/utils/description";
-import {
-  buildGeneratedImageHtmlPlaceholder,
-  buildGeneratedImageMarkdown,
-} from "@notra/ai/utils/html";
+import { uploadGeneratedImageAsset } from "@notra/ai/utils/image-assets";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
@@ -63,11 +60,8 @@ export function createImageTool(config: ImageToolConfig): Tool {
         chatId: config.chatId,
         organizationId: config.organizationId,
         title,
-        markdown: buildGeneratedImageMarkdown({
-          title,
-          pngBase64: result.pngBase64,
-        }),
-        html: buildGeneratedImageHtmlPlaceholder(title),
+        pngBase64: result.pngBase64,
+        html: result.html,
         sourceMetadata: {
           type: "generated_image",
           chatId: config.chatId ?? null,
@@ -138,11 +132,11 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         userId: config.userId,
       });
 
-      const markdown = buildGeneratedImageMarkdown({
-        title: nextTitle,
+      const imageUrl = await uploadGeneratedImageAsset({
+        organizationId: config.organizationId,
         pngBase64: result.pngBase64,
+        postId: config.postId,
       });
-      const html = buildGeneratedImageHtmlPlaceholder(nextTitle);
       const sourceMetadata = await buildRevisionSourceMetadata({
         organizationId: config.organizationId,
         postId: config.postId,
@@ -156,8 +150,9 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         .update(posts)
         .set({
           title: nextTitle,
-          content: html,
-          markdown,
+          content: imageUrl,
+          markdown: null,
+          rawHtml: result.html,
           sourceMetadata,
           updatedAt: new Date(),
         })
@@ -315,11 +310,16 @@ async function saveGeneratedImagePost(params: {
   chatId?: string;
   organizationId: string;
   title: string;
-  markdown: string;
+  pngBase64: string;
   html: string;
   sourceMetadata: Record<string, unknown>;
 }) {
   const postId = nanoid();
+  const imageUrl = await uploadGeneratedImageAsset({
+    organizationId: params.organizationId,
+    pngBase64: params.pngBase64,
+    postId,
+  });
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify(["image"]);
@@ -370,8 +370,9 @@ async function saveGeneratedImagePost(params: {
     collectionId: collection.id,
     title: params.title,
     slug: null,
-    content: params.html,
-    markdown: params.markdown,
+    content: imageUrl,
+    markdown: null,
+    rawHtml: params.html,
     recommendations: null,
     contentType: "image",
     status: "draft",

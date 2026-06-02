@@ -70,12 +70,29 @@ import {
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
 
+const postReadColumns = {
+  id: true,
+  organizationId: true,
+  collectionId: true,
+  title: true,
+  slug: true,
+  content: true,
+  markdown: true,
+  recommendations: true,
+  contentType: true,
+  createdAt: true,
+  sourceMetadata: true,
+  status: true,
+  updatedAt: true,
+} as const;
+
 function serializePost(post: {
   content: string;
   contentType: string;
   createdAt: Date;
   id: string;
-  markdown: string;
+  markdown: string | null;
+  sourceMetadata: unknown;
   recommendations: string | null;
   slug: string | null;
   status: "draft" | "published";
@@ -88,6 +105,7 @@ function serializePost(post: {
     slug: post.slug,
     content: post.content,
     markdown: post.markdown,
+    rawHtml: extractImageArtifactHtml(post.sourceMetadata),
     recommendations: post.recommendations,
     contentType:
       post.contentType as PostsResponse["posts"][number]["contentType"],
@@ -102,7 +120,7 @@ function serializeContent(post: {
   contentType: string;
   createdAt: Date;
   id: string;
-  markdown: string;
+  markdown: string | null;
   recommendations: string | null;
   slug: string | null;
   sourceMetadata: unknown;
@@ -115,12 +133,31 @@ function serializeContent(post: {
     slug: post.slug,
     content: post.content,
     markdown: post.markdown,
+    rawHtml: extractImageArtifactHtml(post.sourceMetadata),
     recommendations: post.recommendations,
     contentType: post.contentType as ContentResponse["contentType"],
     status: post.status,
     date: post.createdAt.toISOString(),
     sourceMetadata: post.sourceMetadata as ContentResponse["sourceMetadata"],
   };
+}
+
+function extractImageArtifactHtml(sourceMetadata: unknown): string | null {
+  if (
+    !sourceMetadata ||
+    typeof sourceMetadata !== "object" ||
+    Array.isArray(sourceMetadata)
+  ) {
+    return null;
+  }
+
+  const artifacts = (sourceMetadata as { artifacts?: unknown }).artifacts;
+  if (!artifacts || typeof artifacts !== "object" || Array.isArray(artifacts)) {
+    return null;
+  }
+
+  const html = (artifacts as { html?: unknown }).html;
+  return typeof html === "string" && html.trim() ? html : null;
 }
 
 function normalizeContentTypes(contentTypes: string[]): ContentType[] {
@@ -434,6 +471,7 @@ export const contentRouter = {
           orderBy: [desc(posts.createdAt), desc(posts.id)],
           limit: input.pageSize,
           offset,
+          columns: postReadColumns,
         }),
         db.select({ value: count() }).from(posts).where(whereClause),
       ]);
@@ -464,6 +502,7 @@ export const contentRouter = {
           eq(posts.id, input.contentId),
           eq(posts.organizationId, input.organizationId)
         ),
+        columns: postReadColumns,
       });
 
       if (!post) {
@@ -521,6 +560,10 @@ export const contentRouter = {
           eq(posts.id, input.contentId),
           eq(posts.organizationId, input.organizationId)
         ),
+        columns: {
+          title: true,
+          contentType: true,
+        },
       });
 
       if (!existingPost) {
@@ -551,7 +594,21 @@ export const contentRouter = {
               eq(posts.organizationId, input.organizationId)
             )
           )
-          .returning();
+          .returning({
+            id: posts.id,
+            organizationId: posts.organizationId,
+            collectionId: posts.collectionId,
+            title: posts.title,
+            slug: posts.slug,
+            content: posts.content,
+            markdown: posts.markdown,
+            recommendations: posts.recommendations,
+            contentType: posts.contentType,
+            createdAt: posts.createdAt,
+            sourceMetadata: posts.sourceMetadata,
+            status: posts.status,
+            updatedAt: posts.updatedAt,
+          });
 
         if (!updatedPost) {
           throw internalServerError("Failed to update content");
@@ -586,6 +643,9 @@ export const contentRouter = {
           eq(posts.id, input.contentId),
           eq(posts.organizationId, input.organizationId)
         ),
+        columns: {
+          id: true,
+        },
       });
 
       if (!existingPost) {
@@ -736,6 +796,7 @@ export const contentRouter = {
               columns: {
                 id: true,
                 title: true,
+                content: true,
                 markdown: true,
                 contentType: true,
                 status: true,
@@ -781,6 +842,7 @@ export const contentRouter = {
             posts: collection.posts.map((post) => ({
               id: post.id,
               title: post.title,
+              content: post.content,
               markdown: post.markdown,
               contentType: normalizeContentType(post.contentType),
               status: post.status,

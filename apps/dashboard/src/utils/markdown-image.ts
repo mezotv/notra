@@ -2,6 +2,7 @@ import { isEmbeddedImageDataUrl } from "@notra/ai/utils/html";
 
 const MARKDOWN_IMAGE_RE = /!\[[^\]]*]\((data:image\/[^)]+)\)/;
 const HTML_IMAGE_SRC_RE = /<img[^>]+src=["']([^"']+)["']/i;
+const HTTP_URL_RE = /^https?:\/\//i;
 
 export function extractMarkdownImageSrc(markdown: string): string | null {
   const markdownMatch = markdown.match(MARKDOWN_IMAGE_RE);
@@ -15,4 +16,15 @@ export function extractMarkdownImageSrc(markdown: string): string | null {
   }
 
   return null;
+}
+
+export function resolveImagePreviewSrc(params: {
+  content: string;
+  markdown: string | null;
+}): string | null {
+  if (HTTP_URL_RE.test(params.content)) {
+    return params.content;
+  }
+
+  return extractMarkdownImageSrc(params.markdown ?? "");
 }

@@ -17,7 +17,7 @@ import type { PostStatus } from "@/schemas/content";
 import type { DashboardHomePageClientProps } from "@/types/dashboard/home";
 import { getDashboardPostPreview } from "@/utils/content-preview";
 import { getGreeting } from "@/utils/dashboard-greeting";
-import { extractMarkdownImageSrc } from "@/utils/markdown-image";
+import { resolveImagePreviewSrc } from "@/utils/markdown-image";
 
 export default function PageClient({
   organizationSlug,
@@ -79,11 +79,14 @@ export default function PageClient({
                 id={post.id}
                 imagePreviewSrc={
                   post.contentType === "image"
-                    ? extractMarkdownImageSrc(post.markdown)
+                    ? resolveImagePreviewSrc({
+                        content: post.content,
+                        markdown: post.markdown,
+                      })
                     : null
                 }
                 organizationId={organizationId}
-                preview={getDashboardPostPreview(post.markdown)}
+                preview={getDashboardPostPreview(post.markdown ?? "")}
                 status={post.status as PostStatus}
                 title={post.title}
               />

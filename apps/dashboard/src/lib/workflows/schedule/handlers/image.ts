@@ -1,9 +1,6 @@
 import { generateRepoImage } from "@notra/ai/agents/repo-image";
 import { isGitHubRateLimitError } from "@notra/ai/tools/github";
-import {
-  buildGeneratedImageHtmlPlaceholder,
-  buildGeneratedImageMarkdown,
-} from "@notra/ai/utils/html";
+import { uploadGeneratedImageAsset } from "@notra/ai/utils/image-assets";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { eq, sql } from "drizzle-orm";
@@ -42,6 +39,11 @@ export async function handleImage(
     });
 
     const postId = nanoid();
+    const imageUrl = await uploadGeneratedImageAsset({
+      organizationId: ctx.organizationId,
+      pngBase64: result.pngBase64,
+      postId,
+    });
     await db.transaction(async (tx) => {
       await tx.insert(posts).values({
         id: postId,
@@ -49,11 +51,9 @@ export async function handleImage(
         collectionId: ctx.collectionId,
         title,
         slug: null,
-        content: buildGeneratedImageHtmlPlaceholder(title),
-        markdown: buildGeneratedImageMarkdown({
-          title,
-          pngBase64: result.pngBase64,
-        }),
+        content: imageUrl,
+        markdown: null,
+        rawHtml: result.html,
         recommendations: null,
         contentType: "image",
         status: ctx.autoPublish ? "published" : "draft",

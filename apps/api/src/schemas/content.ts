@@ -30,6 +30,8 @@ const postContentTypeSchema = z.enum([
   "linkedin_post",
   "twitter_post",
   "blog_post",
+  "investor_update",
+  "image",
 ]);
 
 export const ALL_POST_STATUSES = postStatusSchema.options;
@@ -358,10 +360,19 @@ const postResponseSchema = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string().nullable(),
-  content: z.string(),
-  markdown: z.string(),
+  content: z.string().openapi({
+    description:
+      "Rendered HTML for text posts. For image posts, this is the public CDN URL of the rendered image.",
+  }),
+  markdown: z.string().nullable().openapi({
+    description: "Markdown source for text posts. Null for image posts.",
+  }),
+  rawHtml: z.string().nullable().openapi({
+    description:
+      "Raw generated HTML for image posts, used for design/export workflows. Null for non-image posts.",
+  }),
   recommendations: z.string().nullable(),
-  contentType: z.string(),
+  contentType: postContentTypeSchema,
   sourceMetadata: z.unknown().nullable(),
   status: postStatusSchema,
   createdAt: z.string(),

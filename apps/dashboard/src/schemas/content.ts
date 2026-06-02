@@ -52,6 +52,12 @@ export const sourceMetadataSchema = z
       })
       .nullable()
       .optional(),
+    artifacts: z
+      .object({
+        html: z.string().optional(),
+        svg: z.string().optional(),
+      })
+      .optional(),
   })
   .nullable()
   .optional();
@@ -63,7 +69,8 @@ export const contentSchema = z.object({
   title: z.string(),
   slug: z.string().nullable(),
   content: z.string(),
-  markdown: z.string(),
+  markdown: z.string().nullable(),
+  rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
   contentType: contentTypeSchema,
   status: postStatusSchema,
@@ -78,7 +85,8 @@ export const postSchema = z.object({
   title: z.string(),
   slug: z.string().nullable(),
   content: z.string(),
-  markdown: z.string(),
+  markdown: z.string().nullable(),
+  rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
   contentType: contentTypeSchema,
   status: postStatusSchema,
@@ -183,7 +191,8 @@ export type PostCollectionListResponse = z.infer<
 export const groupPostSchema = z.object({
   id: z.string(),
   title: z.string(),
-  markdown: z.string(),
+  content: z.string(),
+  markdown: z.string().nullable(),
   contentType: contentTypeSchema,
   status: postStatusSchema,
   createdAt: z.string(),

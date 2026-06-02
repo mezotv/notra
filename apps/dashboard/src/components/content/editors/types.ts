@@ -5,7 +5,9 @@ interface ContentData {
   id: string;
   title: string;
   slug: string | null;
-  markdown: string;
+  content: string;
+  markdown: string | null;
+  rawHtml: string | null;
   contentType: string;
   date: string;
   sourceMetadata: unknown;

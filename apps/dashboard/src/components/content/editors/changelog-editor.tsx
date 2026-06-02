@@ -39,7 +39,7 @@ export function ChangelogEditor({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const slugInputRef = useRef<HTMLInputElement>(null);
 
-  const currentMarkdown = state.editedMarkdown ?? content.markdown;
+  const currentMarkdown = state.editedMarkdown ?? content.markdown ?? "";
   const title = state.editingTitle ?? state.serverTitle;
   const slug = state.editingSlug ?? state.serverSlug ?? "";
   const showSlug = supportsPostSlug(content.contentType);

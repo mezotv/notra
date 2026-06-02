@@ -260,6 +260,13 @@
       "when": 1780249436959,
       "tag": "0036_tranquil_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1780403289055,
+      "tag": "0037_soft_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

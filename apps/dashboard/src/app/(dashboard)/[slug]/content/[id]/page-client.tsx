@@ -132,10 +132,11 @@ export default function PageClient({
 
   useEffect(() => {
     if (data?.content && editedMarkdown === null) {
-      setEditedMarkdown(data.content.markdown);
-      setOriginalMarkdown(data.content.markdown);
-      originalMarkdownRef.current = data.content.markdown;
-      editedMarkdownRef.current = data.content.markdown;
+      const nextMarkdown = data.content.markdown ?? "";
+      setEditedMarkdown(nextMarkdown);
+      setOriginalMarkdown(nextMarkdown);
+      originalMarkdownRef.current = nextMarkdown;
+      editedMarkdownRef.current = nextMarkdown;
       needsNormalizationRef.current = true;
       setEditorKey((k) => k + 1);
     }
@@ -144,15 +145,16 @@ export default function PageClient({
   useEffect(() => {
     if (
       data?.content?.contentType !== "image" ||
-      data.content.markdown === editedMarkdownRef.current
+      (data.content.markdown ?? "") === editedMarkdownRef.current
     ) {
       return;
     }
 
-    setEditedMarkdown(data.content.markdown);
-    setOriginalMarkdown(data.content.markdown);
-    originalMarkdownRef.current = data.content.markdown;
-    editedMarkdownRef.current = data.content.markdown;
+    const nextMarkdown = data.content.markdown ?? "";
+    setEditedMarkdown(nextMarkdown);
+    setOriginalMarkdown(nextMarkdown);
+    originalMarkdownRef.current = nextMarkdown;
+    editedMarkdownRef.current = nextMarkdown;
     setEditorKey((k) => k + 1);
   }, [data?.content]);
 
@@ -947,6 +949,8 @@ export default function PageClient({
               id: content.id,
               title: content.title,
               slug: content.slug,
+              content: content.content,
+              rawHtml: content.rawHtml,
               markdown: content.markdown,
               contentType: content.contentType,
               date: content.date,
