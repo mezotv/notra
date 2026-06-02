@@ -2,6 +2,7 @@
 
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import { extractMarkdownImageSrc } from "@/utils/markdown-image";
 import type { ContentEditorProps } from "./types";
 
@@ -52,6 +53,27 @@ function getImageSrc(content: ContentEditorProps["content"]): string | null {
 export function ImageEditor({ content, imageExportRef }: ContentEditorProps) {
   const imageSrc = getImageSrc(content);
   const exportHtml = getExportHtml(content);
+  const exportContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!exportHtml || !exportContainerRef.current) {
+      return;
+    }
+
+    const range = document.createRange();
+    const fragment = range.createContextualFragment(exportHtml);
+    exportContainerRef.current.replaceChildren(fragment);
+
+    if (imageExportRef) {
+      imageExportRef.current = exportContainerRef.current;
+    }
+
+    return () => {
+      if (imageExportRef?.current === exportContainerRef.current) {
+        imageExportRef.current = null;
+      }
+    };
+  }, [exportHtml, imageExportRef]);
 
   return (
     <>
@@ -83,8 +105,7 @@ export function ImageEditor({ content, imageExportRef }: ContentEditorProps) {
         <div
           aria-hidden="true"
           className="pointer-events-none fixed top-0 left-[-10000px] h-[630px] w-[1200px] overflow-hidden"
-          dangerouslySetInnerHTML={{ __html: exportHtml }}
-          ref={imageExportRef}
+          ref={exportContainerRef}
         />
       ) : null}
     </>
