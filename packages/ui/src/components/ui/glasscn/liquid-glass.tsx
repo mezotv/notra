@@ -11,6 +11,12 @@ import {
 } from "react";
 import { cn } from "@notra/ui/lib/utils";
 
+const displacementMapCache = new Map<string, string>();
+
+function getDisplacementMapCacheKey(size: number, bezel: number) {
+  return `${size}:${bezel}`;
+}
+
 export type LiquidGlassProps = HTMLAttributes<HTMLDivElement> & {
   blur?: number;
   refraction?: number;
@@ -37,10 +43,21 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(
       () => `liquid-glass-${rawId.replace(/:/g, "")}`,
       [rawId]
     );
-    const [mapUrl, setMapUrl] = useState("");
+    const [mapUrl, setMapUrl] = useState(() => {
+      if (typeof document === "undefined") {
+        return "";
+      }
+
+      return displacementMapCache.get(
+        getDisplacementMapCacheKey(mapSize, bezel)
+      ) ?? "";
+    });
 
     useEffect(() => {
-      setMapUrl(createDisplacementMap(mapSize, bezel));
+      const nextMapUrl = createDisplacementMap(mapSize, bezel);
+      setMapUrl((currentMapUrl) =>
+        currentMapUrl === nextMapUrl ? currentMapUrl : nextMapUrl
+      );
     }, [bezel, mapSize]);
 
     return (
@@ -100,6 +117,13 @@ export const LiquidGlass = forwardRef<HTMLDivElement, LiquidGlassProps>(
 );
 
 function createDisplacementMap(size: number, bezel: number) {
+  const cacheKey = getDisplacementMapCacheKey(size, bezel);
+  const cachedMap = displacementMapCache.get(cacheKey);
+
+  if (cachedMap !== undefined) {
+    return cachedMap;
+  }
+
   const canvas = document.createElement("canvas");
   canvas.height = size;
   canvas.width = size;
@@ -146,7 +170,10 @@ function createDisplacementMap(size: number, bezel: number) {
   }
 
   ctx.putImageData(image, 0, 0);
-  return canvas.toDataURL("image/png");
+  const mapUrl = canvas.toDataURL("image/png");
+  displacementMapCache.set(cacheKey, mapUrl);
+
+  return mapUrl;
 }
 
 function convexSquircle(x: number) {
