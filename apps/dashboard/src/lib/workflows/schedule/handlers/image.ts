@@ -85,7 +85,7 @@ export async function handleImage(
       postId,
       title,
       posts: [{ postId, title, recommendations: null }],
-      usageCostCents: getUsageCostCents(result.usage),
+      usage: result.usage,
     };
   } catch (error) {
     if (isGitHubRateLimitError(error)) {
@@ -117,12 +117,4 @@ function buildImagePrompt(ctx: ContentGenerationContext) {
   ];
 
   return promptParts.filter(Boolean).join("\n");
-}
-
-function getUsageCostCents(usage: { totalUsd?: number } | undefined) {
-  if (typeof usage?.totalUsd !== "number" || !Number.isFinite(usage.totalUsd)) {
-    return undefined;
-  }
-
-  return Math.max(1, Math.ceil(usage.totalUsd * 100));
 }

@@ -62,6 +62,7 @@ export async function orchestrateStandaloneChat(
     abortSignal,
     timezone,
     telemetryMetadata,
+    useMarkup,
   } = input;
 
   const log = deps?.log ?? inputLog;
@@ -148,6 +149,7 @@ export async function orchestrateStandaloneChat(
           organizationId,
           chatId,
           userId,
+          useMarkup,
           validatedIntegrations,
           postResult,
         },

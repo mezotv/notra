@@ -832,28 +832,11 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
 
       const autumnClient = autumn;
       const contentUsage = contentResult.usage;
-      if (
-        aiCreditReserved &&
-        autumnClient &&
-        Number.isFinite(contentResult.usageCostCents)
-      ) {
-        await context.run("track-ai-credit-usage-cost", async () => {
-          await autumnClient.track({
-            customerId: organizationId,
-            featureId: FEATURES.AI_CREDITS,
-            value: contentResult.usageCostCents ?? 1,
-            properties: {
-              source: "manual",
-              output_type: contentType,
-              cost_cents: contentResult.usageCostCents,
-            },
-          });
-        });
-      } else if (aiCreditReserved && autumnClient && contentUsage) {
+      if (aiCreditReserved && autumnClient && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
             contentUsage,
-            "anthropic/claude-haiku-4.5",
+            contentUsage.modelId ?? "anthropic/claude-haiku-4.5",
             aiCreditMarkup
           );
           await autumnClient.track({
@@ -863,11 +846,15 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             properties: {
               source: "manual",
               output_type: contentType,
+              model: contentResult.usage?.modelId,
+              billing_basis: "tokens",
               input_tokens: contentResult.usage?.inputTokens,
               output_tokens: contentResult.usage?.outputTokens,
               cache_read_tokens: contentResult.usage?.cacheReadTokens,
               cache_write_tokens: contentResult.usage?.cacheWriteTokens,
               total_tokens: contentResult.usage?.totalTokens,
+              sandbox_total_usd: contentResult.usage?.totalUsd,
+              markup_applied: aiCreditMarkup,
               cost_cents: costCents,
             },
           });

@@ -26,6 +26,7 @@ export interface StandaloneChatInput {
   abortSignal?: AbortSignal;
   timezone?: string;
   telemetryMetadata?: TccMetadata;
+  useMarkup?: boolean;
 }
 
 export interface StandaloneChatDeps {

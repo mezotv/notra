@@ -1,10 +1,12 @@
 import {
   deleteRepoImageSnapshot,
   generateRepoImage,
+  REPO_IMAGE_MODEL_ID,
   RepoImageError,
 } from "@notra/ai/agents/repo-image";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
+import { calculateTokenCostCents } from "@notra/ai/billing/token-pricing";
 import {
   imageRevisionToolInputSchema,
   imageToolInputSchema,
@@ -89,6 +91,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
         organizationId: config.organizationId,
         postId,
         usage: result.usage,
+        useMarkup: config.useMarkup,
       });
 
       return {
@@ -177,6 +180,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         organizationId: config.organizationId,
         postId: config.postId,
         usage: result.usage,
+        useMarkup: config.useMarkup,
       });
 
       return {
@@ -232,13 +236,18 @@ async function buildRevisionSourceMetadata(params: {
 async function trackImageGenerationUsage(params: {
   organizationId: string;
   postId: string;
-  usage: { totalUsd?: number; raw?: unknown } | undefined;
+  usage: Awaited<ReturnType<typeof generateRepoImage>>["usage"];
+  useMarkup?: boolean;
 }) {
-  if (!autumn || params.usage?.totalUsd === undefined) {
+  if (!autumn || !params.usage) {
     return;
   }
 
-  const costCents = Math.max(1, Math.ceil(params.usage.totalUsd * 100));
+  const costCents = calculateTokenCostCents(
+    params.usage,
+    params.usage.modelId ?? REPO_IMAGE_MODEL_ID,
+    params.useMarkup ?? false
+  );
 
   try {
     await autumn.track({
@@ -248,7 +257,15 @@ async function trackImageGenerationUsage(params: {
       properties: {
         source: "image_generation",
         post_id: params.postId,
-        total_usd: params.usage.totalUsd,
+        model: params.usage.modelId ?? REPO_IMAGE_MODEL_ID,
+        billing_basis: "tokens",
+        input_tokens: params.usage.inputTokens,
+        output_tokens: params.usage.outputTokens,
+        cache_read_tokens: params.usage.cacheReadTokens,
+        cache_write_tokens: params.usage.cacheWriteTokens,
+        total_tokens: params.usage.totalTokens,
+        sandbox_total_usd: params.usage.totalUsd,
+        markup_applied: params.useMarkup ?? false,
         cost_cents: costCents,
       },
     });

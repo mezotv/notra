@@ -38,6 +38,7 @@ export function buildToolSet(
     currentPostId,
     userId,
     imageDefaults,
+    useMarkup,
     onMarkdownUpdate,
     validatedIntegrations,
   } = params;
@@ -64,6 +65,7 @@ export function buildToolSet(
         title: imageDefaults.title,
         integrationId: imageDefaults.integrationId,
         branch: imageDefaults.branch,
+        useMarkup,
       });
       descriptions.unshift(
         "**Image Editing**: Revise the current image using reviseImage. It restores the saved sandbox snapshot, applies the visual change, saves the updated image back to this content item, and stores a new snapshot."

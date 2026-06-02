@@ -1170,33 +1170,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       const autumnClientSuccess = autumn;
       const contentUsage = contentResult.usage;
-      if (
-        aiCreditReservation.reserved &&
-        autumnClientSuccess &&
-        Number.isFinite(contentResult.usageCostCents)
-      ) {
-        await context.run("track-ai-credit-usage-cost", async () => {
-          await autumnClientSuccess.track({
-            customerId: trigger.organizationId,
-            featureId: FEATURES.AI_CREDITS,
-            value: contentResult.usageCostCents ?? 1,
-            properties: {
-              source: "workflow_schedule",
-              output_type: trigger.outputType,
-              trigger_name: trigger.name,
-              cost_cents: contentResult.usageCostCents,
-            },
-          });
-        });
-      } else if (
-        aiCreditReservation.reserved &&
-        autumnClientSuccess &&
-        contentUsage
-      ) {
+      if (aiCreditReservation.reserved && autumnClientSuccess && contentUsage) {
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
             contentUsage,
-            "anthropic/claude-haiku-4.5",
+            contentUsage.modelId ?? "anthropic/claude-haiku-4.5",
             aiCreditReservation.useMarkup
           );
           await autumnClientSuccess.track({
@@ -1207,11 +1185,15 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
               source: "workflow_schedule",
               output_type: trigger.outputType,
               trigger_name: trigger.name,
+              model: contentResult.usage?.modelId,
+              billing_basis: "tokens",
               input_tokens: contentResult.usage?.inputTokens,
               output_tokens: contentResult.usage?.outputTokens,
               cache_read_tokens: contentResult.usage?.cacheReadTokens,
               cache_write_tokens: contentResult.usage?.cacheWriteTokens,
               total_tokens: contentResult.usage?.totalTokens,
+              sandbox_total_usd: contentResult.usage?.totalUsd,
+              markup_applied: aiCreditReservation.useMarkup,
               cost_cents: costCents,
             },
           });

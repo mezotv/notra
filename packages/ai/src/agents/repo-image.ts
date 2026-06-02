@@ -26,6 +26,7 @@ import { Agent, Box, OpenCodeModel } from "@upstash/box";
 const BOX_BASE_URL =
   process.env.UPSTASH_BOX_BASE_URL ?? "https://us-east-1.box.upstash.com";
 const TRAILING_SLASH_RE = /\/$/;
+export const REPO_IMAGE_MODEL_ID = OpenCodeModel.Claude_Sonnet_4_6;
 
 export class RepoImageError extends Error {
   readonly code:
@@ -302,7 +303,7 @@ export async function generateRepoImage(params: {
       },
       agent: {
         harness: Agent.OpenCode,
-        model: OpenCodeModel.Claude_Sonnet_4_6,
+        model: REPO_IMAGE_MODEL_ID,
       },
       timeout: AGENT_TIMEOUT_MS,
     };
@@ -335,7 +336,7 @@ export async function generateRepoImage(params: {
         timeout: AGENT_TIMEOUT_MS,
         label: restoreSnapshotId ? "revision" : "initial",
       });
-      usage = extractRepoImageUsage(initialRun.cost);
+      usage = extractRepoImageUsage(initialRun.cost, REPO_IMAGE_MODEL_ID);
 
       if (!(await hasRepoImageOutput(box))) {
         console.warn(
@@ -349,7 +350,7 @@ export async function generateRepoImage(params: {
         });
         usage = mergeRepoImageUsage(
           usage,
-          extractRepoImageUsage(recoveryRun.cost)
+          extractRepoImageUsage(recoveryRun.cost, REPO_IMAGE_MODEL_ID)
         );
       }
 
@@ -464,18 +465,38 @@ function readSnapshotNumber(snapshot: unknown, key: string) {
 }
 
 function extractRepoImageUsage(
-  cost: unknown
+  cost: unknown,
+  modelId: string
 ): GenerateRepoImageResult["usage"] {
   if (!cost || typeof cost !== "object") {
     return undefined;
   }
 
+  const inputTokens =
+    "inputTokens" in cost && typeof cost.inputTokens === "number"
+      ? cost.inputTokens
+      : 0;
+  const outputTokens =
+    "outputTokens" in cost && typeof cost.outputTokens === "number"
+      ? cost.outputTokens
+      : 0;
+  const computeMs =
+    "computeMs" in cost && typeof cost.computeMs === "number"
+      ? cost.computeMs
+      : undefined;
   const totalUsd =
     "totalUsd" in cost && typeof cost.totalUsd === "number"
       ? cost.totalUsd
       : undefined;
 
   return {
+    inputTokens,
+    outputTokens,
+    totalTokens: inputTokens + outputTokens,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    modelId,
+    ...(computeMs === undefined ? {} : { computeMs }),
     ...(totalUsd === undefined ? {} : { totalUsd }),
     raw: cost,
   };
@@ -492,6 +513,16 @@ function mergeRepoImageUsage(
     return current;
   }
   return {
+    inputTokens: current.inputTokens + next.inputTokens,
+    outputTokens: current.outputTokens + next.outputTokens,
+    totalTokens: current.totalTokens + next.totalTokens,
+    cacheReadTokens: current.cacheReadTokens + next.cacheReadTokens,
+    cacheWriteTokens: current.cacheWriteTokens + next.cacheWriteTokens,
+    modelId: current.modelId ?? next.modelId,
+    computeMs:
+      current.computeMs === undefined && next.computeMs === undefined
+        ? undefined
+        : (current.computeMs ?? 0) + (next.computeMs ?? 0),
     totalUsd:
       current.totalUsd === undefined && next.totalUsd === undefined
         ? undefined

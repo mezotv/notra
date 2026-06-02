@@ -149,6 +149,7 @@ export const POST = withEvlog(async function POST(
         maxSteps: 50,
         log,
         timezone,
+        useMarkup,
         telemetryMetadata: {
           contentId,
           contentType: contentType ?? "unknown",

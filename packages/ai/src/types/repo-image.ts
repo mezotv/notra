@@ -2,6 +2,7 @@ import type {
   generateRepoImageInputSchema,
   repoImageModeSchema,
 } from "@notra/ai/schemas/repo-image";
+import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type { z } from "zod";
 
 export type RepoImageMode = z.infer<typeof repoImageModeSchema>;
@@ -21,16 +22,14 @@ export interface GenerateRepoImageResult {
     snapshotSizeBytes?: number;
     snapshotCreatedAt?: string;
   } | null;
-  usage?: {
-    totalUsd?: number;
-    raw?: unknown;
-  };
+  usage?: AgentTokenUsage;
 }
 
 export interface ImageToolConfig {
   chatId?: string;
   organizationId: string;
   userId: string;
+  useMarkup?: boolean;
 }
 
 export interface ImageRevisionToolConfig {
@@ -40,6 +39,7 @@ export interface ImageRevisionToolConfig {
   title: string;
   integrationId: string;
   branch: string;
+  useMarkup?: boolean;
 }
 
 export interface FontSpec {

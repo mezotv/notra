@@ -631,7 +631,7 @@ export const { POST } = serve<EventWorkflowPayload>(
         await context.run("track-ai-credit-usage", async () => {
           const costCents = calculateTokenCostCents(
             contentUsage,
-            "anthropic/claude-haiku-4.5",
+            contentUsage.modelId ?? "anthropic/claude-haiku-4.5",
             aiCreditReservation.useMarkup
           );
           await autumnClientSuccess.track({
@@ -642,11 +642,15 @@ export const { POST } = serve<EventWorkflowPayload>(
               source: "workflow_event",
               output_type: trigger.outputType,
               trigger_name: trigger.name,
+              model: contentResult.usage?.modelId,
+              billing_basis: "tokens",
               input_tokens: contentResult.usage?.inputTokens,
               output_tokens: contentResult.usage?.outputTokens,
               cache_read_tokens: contentResult.usage?.cacheReadTokens,
               cache_write_tokens: contentResult.usage?.cacheWriteTokens,
               total_tokens: contentResult.usage?.totalTokens,
+              sandbox_total_usd: contentResult.usage?.totalUsd,
+              markup_applied: aiCreditReservation.useMarkup,
               cost_cents: costCents,
             },
           });

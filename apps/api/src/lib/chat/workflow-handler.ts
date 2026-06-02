@@ -51,6 +51,7 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
       requestId,
       organizationId,
       chatId,
+      userId,
       context: standaloneContext,
       useMarkup,
       model,
@@ -145,6 +146,8 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
           enableThinking,
           thinkingLevel,
           timezone,
+          userId,
+          useMarkup,
         },
         {
           integrationFetchers: {

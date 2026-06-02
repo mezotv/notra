@@ -3,7 +3,6 @@ import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type { AgentType } from "@notra/ai/types/brand-references";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { LanguageModelUsage } from "ai";
 import type { PostSummary } from "./posts";
 import type {
   BaseTonePromptInput,
@@ -45,7 +44,10 @@ export interface AgentTokenUsage {
   totalTokens: number;
   cacheReadTokens: number;
   cacheWriteTokens: number;
-  raw?: LanguageModelUsage;
+  modelId?: string;
+  computeMs?: number;
+  totalUsd?: number;
+  raw?: unknown;
 }
 
 export interface ChangelogAgentResult {

@@ -1,14 +1,17 @@
 import type { Balance } from "autumn-js";
 import type { AgentTokenUsage } from "../types/agents";
+import type { ModelPricing } from "../types/billing";
 
-export interface ModelPricing {
-  inputPerMillionTokens: number;
-  outputPerMillionTokens: number;
-  cacheReadPerMillionTokens: number;
-  cacheWritePerMillionTokens: number;
-}
+const CLAUDE_SONNET_4_6_PRICING: ModelPricing = {
+  inputPerMillionTokens: 3.0,
+  outputPerMillionTokens: 15.0,
+  cacheReadPerMillionTokens: 0.3,
+  cacheWritePerMillionTokens: 3.75,
+};
 
 export const MODEL_PRICING: Record<string, ModelPricing> = {
+  "opencode/claude-sonnet-4-6": CLAUDE_SONNET_4_6_PRICING,
+  "anthropic/claude-sonnet-4.6": CLAUDE_SONNET_4_6_PRICING,
   "anthropic/claude-haiku-4.5": {
     inputPerMillionTokens: 0.8,
     outputPerMillionTokens: 4.0,

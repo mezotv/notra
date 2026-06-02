@@ -125,6 +125,7 @@ export interface OrchestrateInput {
   log?: AILogTarget;
   timezone?: string;
   telemetryMetadata?: TccMetadata;
+  useMarkup?: boolean;
 }
 
 export interface OrchestrateResult {
@@ -154,6 +155,7 @@ export interface BuildToolSetParams {
   currentPostId?: string;
   userId?: string;
   imageDefaults?: ImageDefaults;
+  useMarkup?: boolean;
   onMarkdownUpdate?: (markdown: string) => void;
   validatedIntegrations: ValidatedIntegration[];
 }
@@ -168,6 +170,7 @@ export interface BuildStandaloneToolSetParams {
   organizationId: string;
   chatId?: string;
   userId?: string;
+  useMarkup?: boolean;
   validatedIntegrations: ValidatedIntegration[];
   postResult: PostToolsResult;
 }

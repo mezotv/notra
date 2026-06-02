@@ -86,6 +86,7 @@ export async function createDirectStandaloneChatResponse({
         timezone,
         abortSignal: combinedAbortSignal,
         telemetryMetadata,
+        useMarkup,
       },
       {
         preValidatedIntegrations: validatedIntegrations,

@@ -40,8 +40,14 @@ export function buildStandaloneToolSet(
   params: BuildStandaloneToolSetParams,
   deps?: BuildStandaloneToolSetDeps
 ): ToolSet {
-  const { chatId, organizationId, userId, validatedIntegrations, postResult } =
-    params;
+  const {
+    chatId,
+    organizationId,
+    userId,
+    useMarkup,
+    validatedIntegrations,
+    postResult,
+  } = params;
 
   const tools: Record<string, Tool> = {};
   const descriptions: string[] = [];
@@ -57,7 +63,12 @@ export function buildStandaloneToolSet(
   }
 
   if (userId) {
-    tools.createImage = createImageTool({ chatId, organizationId, userId });
+    tools.createImage = createImageTool({
+      chatId,
+      organizationId,
+      userId,
+      useMarkup,
+    });
   }
 
   tools.updatePost = createUpdatePostTool(

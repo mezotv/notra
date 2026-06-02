@@ -147,6 +147,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         enableThinking,
         thinkingLevel,
         timezone,
+        useMarkup,
         telemetryMetadata: {
           chatId,
           feature: "standalone_chat",
