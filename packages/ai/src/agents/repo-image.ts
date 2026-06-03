@@ -362,7 +362,10 @@ export async function generateRepoImage(params: {
         await installImageGenAgentSkills({ box });
       }
 
-      const initialRun = await runRepoImageAgentStreamAllowTimeout({
+      const runInitialRepoImageAgent = restoreSnapshotId
+        ? runRepoImageAgentStream
+        : runRepoImageAgentStreamAllowTimeout;
+      const initialRun = await runInitialRepoImageAgent({
         box,
         prompt: restoreSnapshotId
           ? buildRevisionPrompt({ prompt: input.prompt ?? "" })

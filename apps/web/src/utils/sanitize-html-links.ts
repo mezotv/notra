@@ -56,7 +56,7 @@ export function addExternalLinkAttrs(html: string): string {
     if (href && !isSafeHref(href)) {
       const neutralizedAttrs = attrs.replace(
         HREF_ATTR_REPLACE_REGEX,
-        'href="#"'
+        '$1href="#"'
       );
 
       return `<a ${neutralizedAttrs}>`;
@@ -79,14 +79,17 @@ export function addExternalLinkAttrs(html: string): string {
     if (relMatch) {
       updatedAttrs = updatedAttrs.replace(
         REL_ATTR_REPLACE_REGEX,
-        `rel="${relValue}"`
+        `$1rel="${relValue}"`
       );
     } else {
       updatedAttrs += ` rel="${relValue}"`;
     }
 
     if (TARGET_ATTR_REGEX.test(updatedAttrs)) {
-      updatedAttrs = updatedAttrs.replace(TARGET_ATTR_REGEX, 'target="_blank"');
+      updatedAttrs = updatedAttrs.replace(
+        TARGET_ATTR_REGEX,
+        '$1target="_blank"'
+      );
     } else {
       updatedAttrs += ' target="_blank"';
     }

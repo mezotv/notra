@@ -1,11 +1,11 @@
-export const EXTERNAL_HREF_REGEX = /^(https?:)?\/\//;
+export const EXTERNAL_HREF_REGEX = /^(https?:)?\/\//i;
 export const ANCHOR_TAG_REGEX = /<a\s([^>]*)>/gi;
-export const HREF_ATTR_REGEX = /href=["']([^"']*)["']/;
-export const HREF_ATTR_REPLACE_REGEX = /href=["'][^"']*["']/;
-export const REL_ATTR_MATCH_REGEX = /rel=["']([^"']*)["']/;
+export const HREF_ATTR_REGEX = /(?:^|\s)href=["']([^"']*)["']/i;
+export const HREF_ATTR_REPLACE_REGEX = /(^|\s)href=["'][^"']*["']/i;
+export const REL_ATTR_MATCH_REGEX = /(?:^|\s)rel=["']([^"']*)["']/i;
 export const REL_SPLIT_REGEX = /\s+/;
-export const REL_ATTR_REPLACE_REGEX = /rel=["'][^"']*["']/;
-export const TARGET_ATTR_REGEX = /target=["'][^"']*["']/;
+export const REL_ATTR_REPLACE_REGEX = /(^|\s)rel=["'][^"']*["']/i;
+export const TARGET_ATTR_REGEX = /(^|\s)target=["'][^"']*["']/i;
 
 export const HEX_ENTITY_REGEX = /&#x([0-9a-f]+);?/gi;
 export const DECIMAL_ENTITY_REGEX = /&#(\d+);?/g;
