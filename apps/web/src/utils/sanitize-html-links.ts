@@ -1,23 +1,23 @@
-const EXTERNAL_HREF_REGEX = /^(https?:)?\/\//;
-const ANCHOR_TAG_REGEX = /<a\s([^>]*)>/gi;
-const HREF_ATTR_REGEX = /href=["']([^"']*)["']/;
-const HREF_ATTR_REPLACE_REGEX = /href=["'][^"']*["']/;
-const REL_ATTR_MATCH_REGEX = /rel=["']([^"']*)["']/;
-const REL_SPLIT_REGEX = /\s+/;
-const REL_ATTR_REPLACE_REGEX = /rel=["'][^"']*["']/;
-const TARGET_ATTR_REGEX = /target=["'][^"']*["']/;
-
-const HEX_ENTITY_REGEX = /&#x([0-9a-f]+);?/gi;
-const DECIMAL_ENTITY_REGEX = /&#(\d+);?/g;
-const STRIPPED_URL_CHARS_REGEX = /[\t\n\r]/g;
-const URL_SCHEME_REGEX = /^([a-z][a-z0-9+.-]*):/;
-const MAX_CODE_POINT = 0x10_ff_ff;
-const SAFE_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
-
-const FIGCAPTION_REGEX = /<figcaption([^>]*)>([\s\S]*?)<\/figcaption>/gi;
-const ENCODED_ANCHOR_REGEX = /&lt;a\b([\s\S]*?)&gt;([\s\S]*?)&lt;\/a&gt;/gi;
-const ENCODED_QUOTE_REGEX = /&quot;/g;
-const ENCODED_APOS_REGEX = /&#39;/g;
+import {
+  ANCHOR_TAG_REGEX,
+  DECIMAL_ENTITY_REGEX,
+  ENCODED_ANCHOR_REGEX,
+  ENCODED_APOS_REGEX,
+  ENCODED_QUOTE_REGEX,
+  EXTERNAL_HREF_REGEX,
+  FIGCAPTION_REGEX,
+  HEX_ENTITY_REGEX,
+  HREF_ATTR_REGEX,
+  HREF_ATTR_REPLACE_REGEX,
+  MAX_CODE_POINT,
+  REL_ATTR_MATCH_REGEX,
+  REL_ATTR_REPLACE_REGEX,
+  REL_SPLIT_REGEX,
+  SAFE_SCHEMES,
+  STRIPPED_URL_CHARS_REGEX,
+  TARGET_ATTR_REGEX,
+  URL_SCHEME_REGEX,
+} from "@/lib/sanitize-html-links/constants";
 
 function decodeCodePoint(code: number): string {
   if (Number.isNaN(code) || code < 0 || code > MAX_CODE_POINT) {
