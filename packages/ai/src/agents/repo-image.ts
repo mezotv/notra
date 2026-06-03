@@ -53,6 +53,7 @@ async function runRepoImageAgentStream(params: {
   timeout: number;
   label: string;
 }) {
+  const startedAt = Date.now();
   const stream = await params.box.agent.stream({
     prompt: params.prompt,
     timeout: params.timeout,
@@ -64,12 +65,33 @@ async function runRepoImageAgentStream(params: {
     }
   }
 
+  console.log(
+    `[repo-image] ${params.label} stream completed in ${Date.now() - startedAt}ms`
+  );
+
   return {
     cost:
       typeof stream === "object" && stream !== null && "cost" in stream
         ? (stream.cost as unknown)
         : undefined,
   };
+}
+
+async function runRepoImageAgentStreamAllowTimeout(
+  params: Parameters<typeof runRepoImageAgentStream>[0]
+) {
+  try {
+    return await runRepoImageAgentStream(params);
+  } catch (error) {
+    if (!isAgentTimeoutError(error)) {
+      throw error;
+    }
+
+    console.warn(
+      `[repo-image] ${params.label} stream timed out after ${params.timeout}ms; checking for ${REPO_IMAGE_OUTPUT_HTML_PATH}`
+    );
+    return null;
+  }
 }
 
 async function hasRepoImageOutput(box: Awaited<ReturnType<typeof Box.create>>) {
@@ -115,6 +137,17 @@ function isTransientBoxError(error: unknown) {
     error.message.includes("fetch failed") ||
     error.message.includes("ECONNRESET") ||
     error.message.includes("UND_ERR")
+  );
+}
+
+function isAgentTimeoutError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("stream timed out") || message.includes("run timed out")
   );
 }
 
@@ -329,7 +362,7 @@ export async function generateRepoImage(params: {
         await installImageGenAgentSkills({ box });
       }
 
-      const initialRun = await runRepoImageAgentStream({
+      const initialRun = await runRepoImageAgentStreamAllowTimeout({
         box,
         prompt: restoreSnapshotId
           ? buildRevisionPrompt({ prompt: input.prompt ?? "" })
@@ -342,13 +375,13 @@ export async function generateRepoImage(params: {
         timeout: AGENT_TIMEOUT_MS,
         label: restoreSnapshotId ? "revision" : "initial",
       });
-      usage = extractRepoImageUsage(initialRun.cost, IMAGE_GEN_MODEL_ID);
+      usage = extractRepoImageUsage(initialRun?.cost, IMAGE_GEN_MODEL_ID);
 
       if (!(await hasRepoImageOutput(box))) {
         console.warn(
           `[repo-image] missing ${REPO_IMAGE_OUTPUT_HTML_PATH}; asking agent to recover`
         );
-        const recoveryRun = await runRepoImageAgentStream({
+        const recoveryRun = await runRepoImageAgentStreamAllowTimeout({
           box,
           prompt: buildMissingOutputRecoveryPrompt(),
           timeout: RECOVERY_AGENT_TIMEOUT_MS,
@@ -356,7 +389,7 @@ export async function generateRepoImage(params: {
         });
         usage = mergeRepoImageUsage(
           usage,
-          extractRepoImageUsage(recoveryRun.cost, IMAGE_GEN_MODEL_ID)
+          extractRepoImageUsage(recoveryRun?.cost, IMAGE_GEN_MODEL_ID)
         );
       }
 

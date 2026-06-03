@@ -1,7 +1,7 @@
 import type { FontSpec } from "@notra/ai/types/repo-image";
 import { OpenCodeModel } from "@upstash/box";
 
-export const AGENT_TIMEOUT_MS = 480_000;
+export const AGENT_TIMEOUT_MS = 960_000;
 export const RECOVERY_AGENT_TIMEOUT_MS = 180_000;
 export const REPO_IMAGE_OUTPUT_HTML_PATH = "/workspace/home/output.html";
 export const IMAGE_GEN_AGENT_SKILLS_INSTALL_COMMAND =
@@ -34,4 +34,4 @@ export const STYLE_ATTR_RE = /style\s*=\s*(['"])([\s\S]*?)\1/i;
 export const DISPLAY_STYLE_RE = /(^|;)\s*display\s*:/i;
 export const LEADING_STYLE_SEPARATOR_RE = /^\s*;?/;
 
-export const TEN_MINUTES_MS = 600_000;
+export const LONG_FETCH_TIMEOUT_MS = 1_080_000;

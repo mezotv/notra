@@ -1,11 +1,11 @@
-import { TEN_MINUTES_MS } from "@notra/ai/constants/repo-image";
+import { LONG_FETCH_TIMEOUT_MS } from "@notra/ai/constants/repo-image";
 import { Agent, getGlobalDispatcher, setGlobalDispatcher } from "undici";
 
 export async function withLongFetchTimeouts<T>(callback: () => Promise<T>) {
   const previousDispatcher = getGlobalDispatcher();
   const dispatcher = new Agent({
-    headersTimeout: TEN_MINUTES_MS,
-    bodyTimeout: TEN_MINUTES_MS,
+    headersTimeout: LONG_FETCH_TIMEOUT_MS,
+    bodyTimeout: LONG_FETCH_TIMEOUT_MS,
     keepAliveTimeout: 60_000,
   });
 
