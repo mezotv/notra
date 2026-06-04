@@ -6,10 +6,12 @@ import { notFound } from "next/navigation";
 import { ViewTransition } from "react";
 import { BlogArticle } from "@/components/blog-article";
 import { BlogCopyArticle } from "@/components/blog-copy-article";
+import { BlogPostPagination } from "@/components/blog-post-pagination";
 import { BlogPostSidebar } from "@/components/blog-post-sidebar";
 import {
   formatBlogDate,
   getNotraBlogPostBySlug,
+  getNotraBlogPostPagination,
   listNotraBlogPosts,
 } from "@/utils/blog";
 import {
@@ -81,6 +83,7 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   const { html: htmlWithIds, toc } = extractBlogToc(post.content);
   const content = await highlightCodeBlocks(htmlWithIds);
   const readingMinutes = getReadingTimeMinutes(post.markdown);
+  const { previous, next } = await getNotraBlogPostPagination(slug);
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -148,6 +151,8 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
           </div>
 
           <BlogArticle html={content} />
+
+          <BlogPostPagination next={next} previous={previous} />
         </article>
 
         <BlogPostSidebar authors={post.authors} toc={toc} />

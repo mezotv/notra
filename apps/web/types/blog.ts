@@ -74,6 +74,23 @@ interface BlogCardAuthor {
   href: string;
 }
 
+export interface BlogPaginationLink {
+  slug: string;
+  href: string;
+  title: string;
+  author: BlogCardAuthor | null;
+}
+
+export interface BlogPostPaginationProps {
+  previous: BlogPaginationLink | null;
+  next: BlogPaginationLink | null;
+}
+
+export interface BlogPaginationCardProps {
+  link: BlogPaginationLink;
+  direction: "previous" | "next";
+}
+
 export interface BlogCardItem {
   id: string;
   slug: string;
