@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     turbopackFileSystemCacheForDev: false,
+    viewTransition: true,
   },
   transpilePackages: ["@notra/ui"],
   rewrites: async () => {

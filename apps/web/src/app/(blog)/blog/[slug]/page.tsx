@@ -1,5 +1,9 @@
+import { ArrowLeft02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ViewTransition } from "react";
 import { BlogArticle } from "@/components/blog-article";
 import { BlogCopyArticle } from "@/components/blog-copy-article";
 import { BlogPostSidebar } from "@/components/blog-post-sidebar";
@@ -13,6 +17,7 @@ import {
   buildBlogFaqJsonLd,
 } from "@/utils/blog-jsonld";
 import { extractBlogToc } from "@/utils/blog-toc";
+import { blogPostTitleTransitionName } from "@/utils/blog-view-transitions";
 import { highlightCodeBlocks } from "@/utils/highlight-code";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
@@ -106,13 +111,29 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
 
       <div className="grid w-full grid-cols-1 gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_16rem]">
         <article className="min-w-0 [&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24 [&_h4]:scroll-mt-24">
+          <ViewTransition name="blog-back-button">
+            <Link
+              className="group mb-6 inline-flex items-center gap-2 font-mono text-neutral-500 text-sm transition-colors hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-50"
+              href="/blog"
+            >
+              <HugeiconsIcon
+                className="group-hover:-translate-x-0.5 size-4 transition-transform"
+                icon={ArrowLeft02Icon}
+                strokeWidth={2}
+              />
+              Back to blog
+            </Link>
+          </ViewTransition>
+
           <time className="block font-mono text-neutral-700 text-sm dark:text-neutral-200">
             Published {formatBlogDate(post.createdAt)}
           </time>
 
-          <h1 className="mt-6 max-w-3xl text-balance font-sans font-semibold text-4xl leading-[1.05] tracking-tight sm:text-5xl">
-            {post.title}
-          </h1>
+          <ViewTransition name={blogPostTitleTransitionName(slug)}>
+            <h1 className="mt-6 max-w-3xl text-balance font-sans font-semibold text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+              {post.title}
+            </h1>
+          </ViewTransition>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-border border-b pb-6">
             <span className="font-mono text-neutral-700 text-sm dark:text-neutral-200">

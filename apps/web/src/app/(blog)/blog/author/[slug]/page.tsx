@@ -7,6 +7,7 @@ import {
 import { buttonVariants } from "@notra/ui/components/ui/button";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ViewTransition } from "react";
 import { BlogPostCard } from "@/components/blog-post-card";
 import { resolveSocialLink } from "@/utils/author-socials";
 import {
@@ -15,6 +16,10 @@ import {
   listNotraAuthors,
 } from "@/utils/authors";
 import { buildBlogCardItems, listNotraBlogPosts } from "@/utils/blog";
+import {
+  blogAuthorAvatarTransitionName,
+  blogAuthorNameTransitionName,
+} from "@/utils/blog-view-transitions";
 import { TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 import type { BlogAuthorPageProps } from "~types/blog";
@@ -82,19 +87,23 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
   return (
     <div className="mx-auto w-full max-w-220">
       <div className="flex flex-col items-start gap-5">
-        <Avatar className="size-20" size="default">
-          {author.image ? (
-            <AvatarImage alt={author.name} src={author.image} />
-          ) : null}
-          <AvatarFallback className="text-2xl">
-            {author.name.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        <ViewTransition name={blogAuthorAvatarTransitionName(author.slug)}>
+          <Avatar className="size-20" size="default">
+            {author.image ? (
+              <AvatarImage alt={author.name} src={author.image} />
+            ) : null}
+            <AvatarFallback className="text-2xl">
+              {author.name.charAt(0)}
+            </AvatarFallback>
+          </Avatar>
+        </ViewTransition>
 
         <div className="flex flex-col gap-1">
-          <h1 className="font-sans font-semibold text-4xl tracking-tight">
-            {author.name}
-          </h1>
+          <ViewTransition name={blogAuthorNameTransitionName(author.slug)}>
+            <h1 className="font-sans font-semibold text-4xl tracking-tight">
+              {author.name}
+            </h1>
+          </ViewTransition>
           {author.role ? (
             <p className="font-mono text-foreground/50 text-sm">
               {author.role}

@@ -165,6 +165,7 @@ export function buildBlogCardItems(posts: NotraBlogPost[]): BlogCardItem[] {
 
     return {
       id: post.id,
+      slug: post.slug,
       title: post.title,
       description: post.excerpt,
       href: getBlogPostHref(post.slug),

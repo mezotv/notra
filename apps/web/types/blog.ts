@@ -76,6 +76,7 @@ interface BlogCardAuthor {
 
 export interface BlogCardItem {
   id: string;
+  slug: string;
   title: string;
   description: string;
   href: string;

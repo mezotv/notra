@@ -4,16 +4,20 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { formatBlogDate } from "@/utils/blog";
+import { blogPostTitleTransitionName } from "@/utils/blog-view-transitions";
 import type { BlogPostCardProps } from "~types/blog";
 
 export function BlogPostCard({ item }: BlogPostCardProps) {
   return (
     <article className="group flex h-full flex-col">
       <Link className="flex flex-col gap-3" href={item.href}>
-        <h2 className="font-sans font-semibold text-foreground text-xl tracking-tight transition-colors group-hover:text-primary sm:text-2xl">
-          {item.title}
-        </h2>
+        <ViewTransition name={blogPostTitleTransitionName(item.slug)}>
+          <h2 className="font-sans font-semibold text-foreground text-xl tracking-tight transition-colors group-hover:text-primary sm:text-2xl">
+            {item.title}
+          </h2>
+        </ViewTransition>
         <p className="line-clamp-3 font-sans text-base text-muted-foreground leading-7">
           {item.description}
         </p>
