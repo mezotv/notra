@@ -1,4 +1,5 @@
 import type { IconSvgElement } from "@hugeicons/react";
+import type { TOCItemType } from "fumadocs-core/toc";
 import type { ReactNode } from "react";
 
 export interface NotraAuthorSocial {
@@ -113,6 +114,19 @@ export interface BlogJsonLdInput {
 
 export interface BlogArticleProps {
   html: string;
+}
+
+export interface BlogPostAuthorCardProps {
+  authors: NotraBlogAuthor[];
+}
+
+export interface BlogPostTocProps {
+  toc: TOCItemType[];
+}
+
+export interface BlogPostSidebarProps {
+  authors: NotraBlogAuthor[];
+  toc: TOCItemType[];
 }
 
 export interface ResolvedSocialLink {

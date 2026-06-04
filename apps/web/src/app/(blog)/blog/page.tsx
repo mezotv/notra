@@ -36,7 +36,7 @@ export default async function BlogPage() {
   const cardItems = buildBlogCardItems(posts);
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-220">
       <div className="flex w-full flex-col items-start gap-4">
         <h1 className="text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
           The Notra <span className="text-primary">Blog</span>
@@ -58,12 +58,14 @@ export default async function BlogPage() {
           </div>
         </div>
       ) : (
-        <div className="mt-14 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
+        <ul className="mt-14 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
           {cardItems.map((item) => (
-            <BlogPostCard item={item} key={item.id} />
+            <li className="h-full" key={item.id}>
+              <BlogPostCard item={item} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </>
+    </div>
   );
 }

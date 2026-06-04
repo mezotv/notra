@@ -1,14 +1,8 @@
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@notra/ui/components/ui/avatar";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogArticle } from "@/components/blog-article";
 import { BlogCopyArticle } from "@/components/blog-copy-article";
-import { getAuthorHref } from "@/utils/authors";
+import { BlogPostSidebar } from "@/components/blog-post-sidebar";
 import {
   formatBlogDate,
   getNotraBlogPostBySlug,
@@ -18,6 +12,7 @@ import {
   buildBlogArticleJsonLd,
   buildBlogFaqJsonLd,
 } from "@/utils/blog-jsonld";
+import { extractBlogToc } from "@/utils/blog-toc";
 import { highlightCodeBlocks } from "@/utils/highlight-code";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
@@ -78,9 +73,9 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   const url = `${SITE_URL}/blog/${slug}`;
   const markdownUrl = `${SITE_URL}/blog/${slug}.md`;
   const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
-  const content = await highlightCodeBlocks(post.content);
+  const { html: htmlWithIds, toc } = extractBlogToc(post.content);
+  const content = await highlightCodeBlocks(htmlWithIds);
   const readingMinutes = getReadingTimeMinutes(post.markdown);
-  const author = post.authors.at(0) ?? null;
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -109,44 +104,33 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
         />
       ) : null}
 
-      <time className="block font-mono text-foreground/40 text-sm">
-        Published {formatBlogDate(post.createdAt)}
-      </time>
+      <div className="grid w-full grid-cols-1 gap-x-16 gap-y-12 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        <article className="min-w-0 [&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24 [&_h4]:scroll-mt-24">
+          <time className="block font-mono text-neutral-700 text-sm dark:text-neutral-200">
+            Published {formatBlogDate(post.createdAt)}
+          </time>
 
-      <h1 className="mt-6 max-w-3xl text-balance font-sans font-semibold text-4xl leading-[1.05] tracking-tight sm:text-5xl">
-        {post.title}
-      </h1>
+          <h1 className="mt-6 max-w-3xl text-balance font-sans font-semibold text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+            {post.title}
+          </h1>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-border border-b pb-6">
-        <div className="flex items-center gap-3 font-mono text-foreground/50 text-sm">
-          <span>{readingMinutes} min read</span>
-          {author ? (
-            <>
-              <span aria-hidden="true">&middot;</span>
-              <Link
-                className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
-                href={getAuthorHref(author.slug)}
-              >
-                <Avatar size="sm">
-                  {author.image ? (
-                    <AvatarImage alt={author.name} src={author.image} />
-                  ) : null}
-                  <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <span>{author.name}</span>
-              </Link>
-            </>
-          ) : null}
-        </div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-border border-b pb-6">
+            <span className="font-mono text-neutral-700 text-sm dark:text-neutral-200">
+              {readingMinutes} min read
+            </span>
 
-        <BlogCopyArticle
-          markdown={post.markdown}
-          markdownUrl={markdownUrl}
-          title={post.title}
-        />
+            <BlogCopyArticle
+              markdown={post.markdown}
+              markdownUrl={markdownUrl}
+              title={post.title}
+            />
+          </div>
+
+          <BlogArticle html={content} />
+        </article>
+
+        <BlogPostSidebar authors={post.authors} toc={toc} />
       </div>
-
-      <BlogArticle html={content} />
     </>
   );
 }

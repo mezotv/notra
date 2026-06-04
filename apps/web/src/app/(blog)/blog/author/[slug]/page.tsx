@@ -80,7 +80,7 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
   const postLabel = authorPosts.length === 1 ? "post" : "posts";
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-220">
       <div className="flex flex-col items-start gap-5">
         <Avatar className="size-20" size="default">
           {author.image ? (
@@ -103,24 +103,28 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
         </div>
 
         {socials.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <ul className="flex flex-wrap gap-2">
             {socials.map((social) => (
-              <a
-                aria-label={social.displayUrl}
-                className={buttonVariants({ size: "icon", variant: "outline" })}
-                href={social.url}
-                key={social.url}
-                rel="noopener"
-                target="_blank"
-              >
-                <HugeiconsIcon
-                  className="size-4"
-                  icon={social.icon}
-                  strokeWidth={2}
-                />
-              </a>
+              <li key={social.url}>
+                <a
+                  aria-label={social.displayUrl}
+                  className={buttonVariants({
+                    size: "icon",
+                    variant: "outline",
+                  })}
+                  href={social.url}
+                  rel="noopener"
+                  target="_blank"
+                >
+                  <HugeiconsIcon
+                    className="size-4"
+                    icon={social.icon}
+                    strokeWidth={2}
+                  />
+                </a>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : null}
       </div>
 
@@ -130,17 +134,19 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
         </h2>
 
         {cardItems.length > 0 ? (
-          <div className="mt-6 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
+          <ul className="mt-6 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
             {cardItems.map((item) => (
-              <BlogPostCard item={item} key={item.id} />
+              <li className="h-full" key={item.id}>
+                <BlogPostCard item={item} />
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
           <p className="mt-4 font-sans text-muted-foreground text-sm leading-6">
             No posts published yet.
           </p>
         )}
       </div>
-    </>
+    </div>
   );
 }
