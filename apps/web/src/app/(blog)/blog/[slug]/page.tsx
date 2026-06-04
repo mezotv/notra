@@ -81,9 +81,11 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   const markdownUrl = `${SITE_URL}/blog/${slug}.md`;
   const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
   const { html: htmlWithIds, toc } = extractBlogToc(post.content);
-  const content = await highlightCodeBlocks(htmlWithIds);
   const readingMinutes = getReadingTimeMinutes(post.markdown);
-  const { previous, next } = await getNotraBlogPostPagination(slug);
+  const [content, { previous, next }] = await Promise.all([
+    highlightCodeBlocks(htmlWithIds),
+    getNotraBlogPostPagination(slug),
+  ]);
   const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
   const faqJsonLd = buildBlogFaqJsonLd(post);
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

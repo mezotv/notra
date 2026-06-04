@@ -67,7 +67,7 @@ interface BlogTimelineItem {
   date: string;
 }
 
-interface BlogCardAuthor {
+export interface BlogCardAuthor {
   name: string;
   image: string | null;
   slug: string;

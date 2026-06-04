@@ -13,6 +13,7 @@ import {
   type MarblePublishedPost,
 } from "@/utils/marble";
 import type {
+  BlogCardAuthor,
   BlogCardItem,
   BlogPaginationLink,
   NotraBlogAuthor,
@@ -164,44 +165,39 @@ export async function getNotraBlogPostBySlug(slug: string) {
   return posts.find((post) => post.slug === slug) ?? null;
 }
 
-export function buildBlogCardItems(posts: NotraBlogPost[]): BlogCardItem[] {
-  return posts.map((post) => {
-    const [primaryAuthor] = post.authors;
+function toBlogCardAuthor(
+  author: NotraBlogAuthor | undefined
+): BlogCardAuthor | null {
+  if (!author) {
+    return null;
+  }
 
-    return {
-      id: post.id,
-      slug: post.slug,
-      title: post.title,
-      description: post.excerpt,
-      href: getBlogPostHref(post.slug),
-      date: post.createdAt,
-      author: primaryAuthor
-        ? {
-            name: primaryAuthor.name,
-            image: primaryAuthor.image,
-            slug: primaryAuthor.slug,
-            href: getAuthorHref(primaryAuthor.slug),
-          }
-        : null,
-    };
-  });
+  return {
+    name: author.name,
+    image: author.image,
+    slug: author.slug,
+    href: getAuthorHref(author.slug),
+  };
+}
+
+export function buildBlogCardItems(posts: NotraBlogPost[]): BlogCardItem[] {
+  return posts.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    description: post.excerpt,
+    href: getBlogPostHref(post.slug),
+    date: post.createdAt,
+    author: toBlogCardAuthor(post.authors[0]),
+  }));
 }
 
 function buildBlogPaginationLink(post: NotraBlogPost): BlogPaginationLink {
-  const [primaryAuthor] = post.authors;
-
   return {
     slug: post.slug,
     href: getBlogPostHref(post.slug),
     title: post.title,
-    author: primaryAuthor
-      ? {
-          name: primaryAuthor.name,
-          image: primaryAuthor.image,
-          slug: primaryAuthor.slug,
-          href: getAuthorHref(primaryAuthor.slug),
-        }
-      : null,
+    author: toBlogCardAuthor(post.authors[0]),
   };
 }
 
