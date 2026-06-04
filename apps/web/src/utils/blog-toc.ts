@@ -74,11 +74,15 @@ export function extractBlogToc(html: string): {
         depth: Number(levelGroup),
       });
 
-      if (existingId) {
+      if (existingId === id) {
         return match;
       }
 
-      return `<h${levelGroup}${attributes} id="${id}">${content}</h${levelGroup}>`;
+      const attributesWithoutId = existingId
+        ? attributes.replace(ID_ATTRIBUTE_REGEX, "")
+        : attributes;
+
+      return `<h${levelGroup}${attributesWithoutId} id="${id}">${content}</h${levelGroup}>`;
     }
   );
 
