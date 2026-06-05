@@ -210,6 +210,7 @@
       "name": "@notra/ai",
       "version": "0.0.1",
       "dependencies": {
+        "@ai-sdk/devtools": "^0.0.18",
         "@ai-sdk/gateway": "3.0.119",
         "@ai-sdk/mcp": "1.0.43",
         "@aws-sdk/client-s3": "^3.990.0",
@@ -372,6 +373,8 @@
   ],
   "packages": {
     "@ai-sdk/anthropic": ["@ai-sdk/anthropic@2.0.79", "", { "dependencies": { "@ai-sdk/provider": "2.0.3", "@ai-sdk/provider-utils": "3.0.25" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-K0U09FPDO1kmLPjRLXFcNSvmnKHJBMARCb8r3Ulw7wU6/+Zh9djWcFDiPPNsklg6yAezcdLTcYPszgWJJ6iOTA=="],
+
+    "@ai-sdk/devtools": ["@ai-sdk/devtools@0.0.18", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@hono/node-server": "^1.13.7", "hono": "^4.6.14" }, "bin": { "devtools": "bin/cli.js" } }, "sha512-0J25Q7occrkMJM1MrP0KeR8XNdGGKNgzxhOLfxBe/qZBQP6yXgV4H5Gf2DnDC3UgXDBJBskH9nh23doCo2Pebw=="],
 
     "@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.119", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.27", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-VAhfRWC+JexZakkVfmjaJKaTj00x7/UHdE8kMWL3NhuQAlf8oXtg9r4dfvFZrByXxchGRBvYE3biEUyibkg0xg=="],
 

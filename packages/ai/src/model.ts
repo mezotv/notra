@@ -1,3 +1,4 @@
+import { devToolsMiddleware } from "@ai-sdk/devtools";
 import { gateway } from "@notra/ai/gateway";
 import {
   type AILogTarget,
@@ -6,6 +7,7 @@ import {
 import type { GatewayArgs, GatewayResult } from "@notra/ai/types/gateway";
 import type { SupermemoryOptions } from "@notra/ai/types/model";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
+import { wrapLanguageModel } from "ai";
 
 export interface CreateModelOptions {
   supermemory?: Omit<SupermemoryOptions, "mode" | "addMemory">;
@@ -21,12 +23,12 @@ export function createModel(
   const base = gateway(modelId);
 
   if (!organizationId || options?.disableMemory) {
-    return wrapModelWithObservability(base, log);
+    return wrapModelForDevTools(wrapModelWithObservability(base, log));
   }
 
   const supermemoryApiKey = process.env.SUPERMEMORY_API_KEY?.trim();
   if (!supermemoryApiKey) {
-    return wrapModelWithObservability(base, log);
+    return wrapModelForDevTools(wrapModelWithObservability(base, log));
   }
 
   const model = withSupermemory(base, organizationId, {
@@ -36,5 +38,19 @@ export function createModel(
     ...options?.supermemory,
   });
 
-  return wrapModelWithObservability(model, log);
+  return wrapModelForDevTools(wrapModelWithObservability(model, log));
+}
+
+function wrapModelForDevTools(model: GatewayResult): GatewayResult {
+  if (
+    process.env.NODE_ENV !== "development" ||
+    process.env.AI_SDK_DEVTOOLS !== "true"
+  ) {
+    return model;
+  }
+
+  return wrapLanguageModel({
+    model,
+    middleware: devToolsMiddleware(),
+  }) as GatewayResult;
 }
