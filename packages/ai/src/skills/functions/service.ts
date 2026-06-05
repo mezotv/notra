@@ -12,7 +12,7 @@ import { normalizeSkillSummary } from "./guidance";
 const promptableSkillWhere = (organizationId: string) =>
   and(
     eq(skills.organizationId, organizationId),
-    sql`length(trim(${skills.description})) > 0`
+    sql`length(regexp_replace(${skills.description}, '^[[:space:]]+|[[:space:]]+$', '', 'g')) > 0`
   );
 
 export async function listSkillCatalog(
