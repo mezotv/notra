@@ -32,7 +32,6 @@
     "./crypto/*": "./src/crypto/*.ts"
   },
   "dependencies": {
-    "@ai-sdk/devtools": "^0.0.18",
     "@ai-sdk/gateway": "3.0.119",
     "@ai-sdk/mcp": "1.0.43",
     "@aws-sdk/client-s3": "^3.990.0",
@@ -66,6 +65,7 @@
     "zod": "^4.3.4"
   },
   "devDependencies": {
+    "@ai-sdk/devtools": "^0.0.18",
     "@notra/typescript-config": "workspace:*",
     "@types/react": "^19.2.14",
     "@types/sanitize-html": "^2.16.0",

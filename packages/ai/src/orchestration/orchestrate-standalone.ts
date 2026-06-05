@@ -397,7 +397,8 @@ function createStandaloneToolProvisioningRuntime({
       }),
       execute: async ({ toolNames }) => {
         const deactivated: string[] = [];
-        for (const toolName of toolNames) {
+        for (const requestedToolName of toolNames) {
+          const toolName = resolveNotraToolName(requestedToolName);
           if (
             defaultToolNameSet.has(toolName) ||
             managerToolNameSet.has(toolName)
@@ -638,7 +639,14 @@ function getThinkingProviderOptions(
       } satisfies StreamProviderOptions;
     }
 
-    return undefined;
+    return {
+      anthropic: {
+        thinking: {
+          type: "enabled",
+          budgetTokens: getAnthropicThinkingBudget(thinkingLevel),
+        },
+      },
+    } satisfies StreamProviderOptions;
   }
 
   if (modelId.startsWith("openai/")) {
@@ -653,9 +661,22 @@ function getThinkingProviderOptions(
 }
 
 function usesAdaptiveThinking(modelId: string): boolean {
-  return ["anthropic/claude-opus-4.7", "anthropic/claude-opus-4.8"].includes(
-    modelId
-  );
+  return modelId.startsWith("anthropic/claude-opus-");
+}
+
+function getAnthropicThinkingBudget(
+  thinkingLevel: "off" | "low" | "medium" | "high"
+): number {
+  switch (thinkingLevel) {
+    case "low":
+      return 1024;
+    case "high":
+      return 8192;
+    case "medium":
+      return 4096;
+    default:
+      return 0;
+  }
 }
 
 async function validateStandaloneIntegrations(

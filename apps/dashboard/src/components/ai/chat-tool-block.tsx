@@ -219,6 +219,11 @@ function getArrayLength(value: unknown, key: string): number | undefined {
   return Array.isArray(array) ? array.length : undefined;
 }
 
+function getNumericValue(value: unknown, key: string): number | undefined {
+  const number = asRecord(value)?.[key];
+  return typeof number === "number" ? number : undefined;
+}
+
 function getStringArray(value: unknown, key: string): string[] {
   const array = asRecord(value)?.[key];
   return Array.isArray(array)
@@ -290,7 +295,10 @@ function activeToolsSuffix(output: unknown): string | undefined {
 
 function deactivatedToolsSuffix(output: unknown): string | undefined {
   return countSuffix(
-    getArrayLength(output, "deactivated") ?? getArrayLength(output, "removed"),
+    getArrayLength(output, "deactivated") ??
+      getNumericValue(output, "deactivated") ??
+      getArrayLength(output, "removed") ??
+      getNumericValue(output, "removed"),
     "tool",
     "tools"
   );

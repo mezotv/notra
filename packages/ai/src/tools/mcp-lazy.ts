@@ -18,12 +18,11 @@ import {
   activateSessionMcpTools,
   deactivateSessionMcpTools,
   getIndexedMcpToolByRuntimeName,
-  getIndexedMcpToolsForRuntime,
   getSessionActivatedMcpTools,
+  hasActiveIndexedMcpToolsForOrganization,
   type IndexedMcpTool,
   isMcpToolActivatedForSession,
   MCP_EXECUTION_TIMEOUT_MS,
-  MCP_MAX_RUNTIME_WRAPPERS,
   MCP_SEARCH_LIMIT_DEFAULT,
   MCP_SEARCH_LIMIT_MAX,
   MCP_SESSION_ACTIVE_TOOL_LIMIT,
@@ -71,14 +70,12 @@ export async function createLazyMcpRuntime({
   surface,
   baseActiveToolNames,
   tools: sharedTools,
-  maxRuntimeTools = MCP_MAX_RUNTIME_WRAPPERS,
 }: LazyMcpRuntimeParams): Promise<LazyMcpRuntime> {
   const clients = new Map<string, Promise<MCPClient>>();
-  const runtimeTools = await getIndexedMcpToolsForRuntime({
+  const hasActiveIndexedTools = await hasActiveIndexedMcpToolsForOrganization({
     organizationId,
-    limit: maxRuntimeTools,
   });
-  if (runtimeTools.length === 0) {
+  if (!hasActiveIndexedTools) {
     await refreshMcpToolIndexForOrganization({ organizationId }).catch(
       (error) => {
         console.error("[Lazy MCP Runtime Index Refresh Error]", {

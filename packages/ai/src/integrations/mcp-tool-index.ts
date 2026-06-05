@@ -375,6 +375,30 @@ export async function getIndexedMcpToolsForRuntime({
     );
 }
 
+export async function hasActiveIndexedMcpToolsForOrganization({
+  organizationId,
+}: {
+  organizationId: string;
+}) {
+  const [row] = await db
+    .select({ value: count() })
+    .from(mcpToolIndex)
+    .innerJoin(
+      mcpServerIntegrations,
+      eq(mcpToolIndex.serverIntegrationId, mcpServerIntegrations.id)
+    )
+    .where(
+      and(
+        eq(mcpToolIndex.organizationId, organizationId),
+        eq(mcpToolIndex.status, "active"),
+        eq(mcpServerIntegrations.enabled, true)
+      )
+    )
+    .limit(1);
+
+  return (row?.value ?? 0) > 0;
+}
+
 export async function getSessionActivatedMcpTools({
   organizationId,
   sessionId,
