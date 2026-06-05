@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+import { RefreshCcwIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { getMcpFaviconUrl, MCP_ACCENT_COLOR } from "@/lib/integrations/mcp";
@@ -38,6 +39,8 @@ export function McpServerCard({
   server,
   onToggle,
   onDelete,
+  onRefreshTools,
+  refreshing = false,
 }: McpServerCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -70,6 +73,16 @@ export function McpServerCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer"
+                  disabled={refreshing || !server.enabled}
+                  onClick={() => onRefreshTools?.(server.id)}
+                >
+                  <RefreshCcwIcon
+                    className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                  Refresh tools
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
                   onClick={(event) => {
                     event.preventDefault();
                     setShowDeleteDialog(true);
@@ -98,12 +111,30 @@ export function McpServerCard({
         }
       >
         <div className="space-y-1">
-          <Badge className="font-normal text-xs" variant="secondary">
-            Streamable HTTP
-          </Badge>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge className="font-normal text-xs" variant="secondary">
+              Streamable HTTP
+            </Badge>
+            <Badge
+              className="font-normal text-xs"
+              variant={
+                server.toolSyncStatus === "error" ? "destructive" : "secondary"
+              }
+            >
+              {getSyncLabel(server.toolSyncStatus)}
+            </Badge>
+            <Badge className="font-normal text-xs" variant="outline">
+              {server.indexedToolCount ?? 0} tools
+            </Badge>
+          </div>
           <p className="truncate font-mono text-muted-foreground text-xs">
             {server.url}
           </p>
+          {server.toolSyncError ? (
+            <p className="truncate text-destructive text-xs">
+              {server.toolSyncError}
+            </p>
+          ) : null}
         </div>
       </TitleCard>
 
@@ -137,4 +168,17 @@ export function McpServerCard({
       </ResponsiveAlertDialog>
     </>
   );
+}
+
+function getSyncLabel(status: McpServerCardProps["server"]["toolSyncStatus"]) {
+  switch (status) {
+    case "syncing":
+      return "Syncing";
+    case "synced":
+      return "Synced";
+    case "error":
+      return "Sync error";
+    default:
+      return "Not synced";
+  }
 }

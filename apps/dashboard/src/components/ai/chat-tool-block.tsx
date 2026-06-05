@@ -8,13 +8,15 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { cn } from "@notra/ui/lib/utils";
-import { type ReactNode, useState } from "react";
+import { CheckIcon, XIcon } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   commitsByTimeframeInputSchema,
   type MemoryToolInput,
@@ -398,19 +400,27 @@ function getSubtitle({
   input,
   output,
   isStreaming,
+  isAwaitingApproval,
   toolMetadata,
 }: {
   toolName: string;
   input: unknown;
   output: unknown;
   isStreaming: boolean;
+  isAwaitingApproval: boolean;
   toolMetadata?: unknown;
 }): string {
   const copy = TOOL_COPY[toolName];
   if (!copy) {
     if (MCP_TOOL_NAME_REGEX.test(toolName)) {
       const label = getMcpToolLabel(toolName, toolMetadata);
+      if (isAwaitingApproval) {
+        return `Approve ${label}`;
+      }
       return isStreaming ? `Calling ${label}` : `Called ${label}`;
+    }
+    if (isAwaitingApproval) {
+      return `Approve ${toolName}`;
     }
     return isStreaming ? `Running ${toolName}` : `Ran ${toolName}`;
   }
@@ -418,8 +428,11 @@ function getSubtitle({
   if (subtitle) {
     return subtitle;
   }
-  const verb = copy.verbs[isStreaming ? 0 : 1];
   const suffix = copy.suffix?.(input, isStreaming ? undefined : output);
+  if (isAwaitingApproval) {
+    return suffix ? `Approve ${copy.noun} ${suffix}` : `Approve ${copy.noun}`;
+  }
+  const verb = copy.verbs[isStreaming ? 0 : 1];
   return suffix ? `${verb} ${copy.noun} ${suffix}` : `${verb} ${copy.noun}`;
 }
 
@@ -515,6 +528,8 @@ interface ChatToolBlockProps {
   state: string;
   input?: unknown;
   output?: unknown;
+  onApprove?: () => void;
+  onDeny?: () => void;
   isMcp?: boolean;
   iconUrl?: string;
   toolMetadata?: unknown;
@@ -525,23 +540,35 @@ export function ChatToolBlock({
   state,
   input,
   output,
+  onApprove,
+  onDeny,
   isMcp = false,
   iconUrl,
   toolMetadata,
 }: ChatToolBlockProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const isAwaitingApproval = state === "approval-requested";
+  const [isOpen, setIsOpen] = useState(isAwaitingApproval);
   const isStreaming =
     state === "input-streaming" || state === "input-available";
+
+  useEffect(() => {
+    if (isAwaitingApproval) {
+      setIsOpen(true);
+    }
+  }, [isAwaitingApproval]);
+
   const subtitle = getSubtitle({
     toolName,
     input,
     output,
     isStreaming,
+    isAwaitingApproval,
     toolMetadata,
   });
   const hasInput = input != null;
   const hasOutput = output != null;
-  const hasDetails = hasInput || hasOutput;
+  const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
+  const hasDetails = hasInput || hasOutput || hasApprovalActions;
   let toolIcon: ReactNode = null;
 
   if (iconUrl) {
@@ -598,6 +625,27 @@ export function ChatToolBlock({
         <div className="mt-3 space-y-4">
           {hasInput ? <ToolDataSection label="Input" value={input} /> : null}
           {hasOutput ? <ToolDataSection label="Output" value={output} /> : null}
+          {hasApprovalActions ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {onApprove ? (
+                <Button onClick={onApprove} size="sm" type="button">
+                  <CheckIcon className="size-3.5" />
+                  Allow
+                </Button>
+              ) : null}
+              {onDeny ? (
+                <Button
+                  onClick={onDeny}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <XIcon className="size-3.5" />
+                  Deny
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </CollapsibleContent>
     </Collapsible>

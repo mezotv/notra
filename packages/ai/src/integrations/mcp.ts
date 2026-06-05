@@ -11,6 +11,7 @@ import type {
   McpHeaderMap,
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
+import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -53,6 +54,10 @@ export function serializeMcpServerIntegration<
     description: string | null;
     encryptedHeaders: McpHeaderMap;
     enabled: boolean;
+    lastToolSyncAt?: Date | null;
+    toolSyncStatus?: string;
+    toolSyncError?: string | null;
+    indexedToolCount?: number;
     createdAt: Date;
     createdByUser?: {
       id: string;
@@ -70,6 +75,10 @@ export function serializeMcpServerIntegration<
     enabled: integration.enabled,
     headerNames: Object.keys(integration.encryptedHeaders ?? {}),
     hasHeaders: Object.keys(integration.encryptedHeaders ?? {}).length > 0,
+    lastToolSyncAt: integration.lastToolSyncAt?.toISOString() ?? null,
+    toolSyncStatus: integration.toolSyncStatus ?? "idle",
+    toolSyncError: integration.toolSyncError ?? null,
+    indexedToolCount: integration.indexedToolCount ?? 0,
     createdAt: integration.createdAt.toISOString(),
     ...(integration.createdByUser
       ? { createdByUser: integration.createdByUser }
@@ -99,6 +108,11 @@ export async function createMcpServerIntegration(
   if (!integration) {
     throw new Error("Failed to create MCP server integration.");
   }
+
+  await refreshMcpToolIndexForIntegration({
+    organizationId: params.organizationId,
+    integrationId: integration.id,
+  }).catch(() => undefined);
 
   return integration;
 }
@@ -178,6 +192,13 @@ export async function updateMcpServerIntegration(
     })
     .where(eq(mcpServerIntegrations.id, integrationId))
     .returning();
+
+  if (updated) {
+    await refreshMcpToolIndexForIntegration({
+      organizationId: updated.organizationId,
+      integrationId: updated.id,
+    }).catch(() => undefined);
+  }
 
   return updated ?? null;
 }

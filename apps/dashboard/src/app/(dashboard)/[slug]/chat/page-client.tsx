@@ -28,7 +28,13 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DefaultChatTransport, isToolUIPart } from "ai";
+import {
+  DefaultChatTransport,
+  type DynamicToolUIPart,
+  getToolName,
+  isToolUIPart,
+  type ToolUIPart,
+} from "ai";
 import { Loader2Icon } from "lucide-react";
 import { motion } from "motion/react";
 import { nanoid } from "nanoid";
@@ -199,6 +205,8 @@ const CREATE_TOOL_TYPES = {
   "tool-createLinkedInPost": "linkedin_post",
   "tool-createTwitterPost": "twitter_post",
 } satisfies Record<string, ContentType>;
+
+type RenderableToolPart = DynamicToolUIPart | ToolUIPart;
 
 function isCreateTool(type: string): boolean {
   return type in CREATE_TOOL_TYPES;
@@ -1465,7 +1473,7 @@ function StandaloneChatPageClient({
   const handleClearError = useCallback(() => setChatError(null), []);
 
   function renderPart(
-    part: { type: string; [key: string]: unknown },
+    part: ChatUIMessage["parts"][number],
     messageId: string,
     index: number
   ) {
@@ -1556,23 +1564,21 @@ function StandaloneChatPageClient({
       );
     }
 
-    if (part.type.startsWith("tool-")) {
-      const toolPart = part as {
-        type: string;
-        state: string;
-        toolCallId: string;
-        input?: { title?: string; markdown?: string };
-        output?: { postId?: string; status?: string };
-        approval?: { id: string; approved?: boolean; reason?: string };
-      };
-      const toolName = toolPart.type.replace("tool-", "");
+    if (isToolUIPart(part)) {
+      const toolPart = part as RenderableToolPart;
+      const toolName = getToolName(toolPart);
+      const staticToolType =
+        toolPart.type === "dynamic-tool" ? null : toolPart.type;
 
-      if (isCreateTool(toolPart.type)) {
+      if (staticToolType && isCreateTool(staticToolType)) {
         const contentType = getCreateToolContentType(
-          toolPart.type as keyof typeof CREATE_TOOL_TYPES
+          staticToolType as keyof typeof CREATE_TOOL_TYPES
         );
-        const title = toolPart.input?.title ?? "Untitled";
-        const markdown = toolPart.input?.markdown ?? "";
+        const input = toolPart.input as
+          | { title?: string; markdown?: string }
+          | undefined;
+        const title = input?.title ?? "Untitled";
+        const markdown = input?.markdown ?? "";
 
         if (
           toolPart.state === "input-streaming" ||
@@ -1744,14 +1750,47 @@ function StandaloneChatPageClient({
       if (
         toolPart.state === "input-streaming" ||
         toolPart.state === "input-available" ||
-        toolPart.state === "output-available"
+        toolPart.state === "approval-requested" ||
+        toolPart.state === "output-available" ||
+        toolPart.state === "output-error"
       ) {
+        const approvalId =
+          toolPart.state === "approval-requested"
+            ? toolPart.approval.id
+            : undefined;
+        const handleApprove = approvalId
+          ? () =>
+              addToolApprovalResponse({
+                id: approvalId,
+                approved: true,
+              })
+          : undefined;
+        const handleDeny = approvalId
+          ? () =>
+              addToolApprovalResponse({
+                id: approvalId,
+                approved: false,
+              })
+          : undefined;
+        const output =
+          toolPart.state === "output-error"
+            ? { error: toolPart.errorText }
+            : toolPart.output;
+
         return (
           <ChatToolBlock
             input={toolPart.input}
+            isMcp={toolName.startsWith("mcp_")}
             key={toolPart.toolCallId}
-            output={toolPart.output}
+            onApprove={handleApprove}
+            onDeny={handleDeny}
+            output={output}
             state={toolPart.state}
+            toolMetadata={
+              toolPart.type === "dynamic-tool"
+                ? toolPart.toolMetadata
+                : undefined
+            }
             toolName={toolName}
           />
         );
@@ -1876,7 +1915,7 @@ function StandaloneChatPageClient({
           (p) =>
             (p.type === "text" && p.text.trim()) ||
             p.type === "reasoning" ||
-            p.type.startsWith("tool-")
+            isToolUIPart(p)
         )));
   const thinkingIndicatorLabel =
     lastMessage?.role === "user" ? "Getting Started" : "Thinking";

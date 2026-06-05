@@ -1,9 +1,10 @@
+import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index";
 import { createModel } from "@notra/ai/model";
 import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { createMarkdownTools } from "@notra/ai/tools/edit-markdown";
 import { exampleTool } from "@notra/ai/tools/example";
-import { createMcpRuntimeToolSet } from "@notra/ai/tools/mcp";
+import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
   createWebSearchTool,
@@ -13,16 +14,19 @@ import {
 } from "@notra/ai/tools/web-search";
 import type { ChatAgentContext } from "@notra/ai/types/agents";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
-import { stepCountIs, ToolLoopAgent } from "ai";
+import { stepCountIs, type Tool, ToolLoopAgent } from "ai";
 
 export async function createChatAgent(
   context: ChatAgentContext,
   instruction: string
 ) {
   const { organizationId } = context;
+  const isDev = process.env.NODE_ENV === "development";
+  const hasWebSearch = isWebSearchAvailable();
+  const hasMcp = (await getEnabledMcpServerCount(organizationId)) > 0;
   const decision = await routeMessage(
     instruction,
-    false,
+    hasMcp || hasWebSearch,
     context.log,
     false,
     context.telemetryMetadata
@@ -41,16 +45,29 @@ export async function createChatAgent(
     onUpdate: context.onMarkdownUpdate,
   });
 
-  const isDev = process.env.NODE_ENV === "development";
-  const hasWebSearch = isWebSearchAvailable();
-  const mcpToolSet = await createMcpRuntimeToolSet(organizationId);
+  const baseTools: Record<string, Tool> = {
+    getMarkdown,
+    editMarkdown,
+    listAvailableSkills: listAvailableSkills({ organizationId }),
+    getSkillByName: getSkillByName({ organizationId }),
+    ...(hasWebSearch ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() } : {}),
+    ...(isDev ? { example: exampleTool() } : {}),
+  };
+  const lazyMcpRuntime = hasMcp
+    ? await createLazyMcpRuntime({
+        organizationId,
+        sessionId: getEditorSessionId(context),
+        surface: "editor-chat",
+        baseActiveToolNames: Object.keys(baseTools),
+      })
+    : null;
   let mcpCleanupStarted = false;
   const cleanupMcpTools = async () => {
     if (mcpCleanupStarted) {
       return;
     }
     mcpCleanupStarted = true;
-    await mcpToolSet.cleanup();
+    await lazyMcpRuntime?.cleanup();
   };
 
   const selectionContext = context.selectedText
@@ -64,23 +81,21 @@ export async function createChatAgent(
   const agent = new ToolLoopAgent({
     model: modelWithMemory,
     providerOptions: withGatewayAutomaticCaching(),
-    tools: {
-      getMarkdown,
-      editMarkdown,
-      listAvailableSkills: listAvailableSkills({ organizationId }),
-      getSkillByName: getSkillByName({ organizationId }),
-      ...(hasWebSearch
-        ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() }
-        : {}),
-      ...mcpToolSet.tools,
-      ...(isDev ? { example: exampleTool() } : {}),
-    },
+    tools: lazyMcpRuntime
+      ? { ...baseTools, ...lazyMcpRuntime.tools }
+      : baseTools,
+    ...(lazyMcpRuntime
+      ? {
+          activeTools: lazyMcpRuntime.initialActiveTools,
+          prepareStep: lazyMcpRuntime.prepareStep,
+        }
+      : {}),
     instructions: `You are a content editor assistant for a markdown document. You have two response modes depending on what the user asks.${brandContext}
 
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
 
-${hasWebSearch || mcpToolSet.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...mcpToolSet.descriptions.map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
+${hasWebSearch || lazyMcpRuntime?.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...(lazyMcpRuntime?.descriptions ?? []).map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.
@@ -193,4 +208,14 @@ function withCleanupOnReadableStreamClose<TStream extends ReadableStream>(
       }
     },
   }) as TStream;
+}
+
+function getEditorSessionId(context: ChatAgentContext) {
+  if (context.sessionId) {
+    return context.sessionId;
+  }
+  const chatId = context.telemetryMetadata?.chatId;
+  return typeof chatId === "string" && chatId.length > 0
+    ? chatId
+    : `editor:${context.organizationId}`;
 }

@@ -8,6 +8,10 @@ export interface McpServer {
   headerNames?: string[];
   hasHeaders?: boolean;
   enabled: boolean;
+  lastToolSyncAt?: string | null;
+  toolSyncStatus?: "idle" | "syncing" | "synced" | "error" | string;
+  toolSyncError?: string | null;
+  indexedToolCount?: number;
 }
 
 export interface AddMcpServerDialogProps {
@@ -22,6 +26,8 @@ export interface McpServerCardProps {
   server: McpServer;
   onToggle?: (id: string, enabled: boolean) => void;
   onDelete?: (id: string) => void;
+  onRefreshTools?: (id: string) => void;
+  refreshing?: boolean;
 }
 
 export interface McpIntegrationCardProps {

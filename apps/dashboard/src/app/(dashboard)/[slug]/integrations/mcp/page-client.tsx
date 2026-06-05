@@ -78,6 +78,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: async (id: string) =>
+      dashboardOrpc.integrations.mcp.refreshTools.call({
+        organizationId,
+        serverId: id,
+      }),
+    onSuccess: (result) => {
+      invalidate();
+      toast.success(`Indexed ${result.indexedToolCount} MCP tools`);
+    },
+    onError: (error) => {
+      invalidate();
+      toast.error(error.message);
+    },
+  });
+
   const servers = data?.servers ?? [];
   const showLoading = Boolean(organizationId) && isLoading && !data;
 
@@ -124,8 +140,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <McpServerCard
                   key={server.id}
                   onDelete={(id) => deleteMutation.mutate(id)}
+                  onRefreshTools={(id) => refreshMutation.mutate(id)}
                   onToggle={(id, enabled) =>
                     toggleMutation.mutate({ id, enabled })
+                  }
+                  refreshing={
+                    refreshMutation.isPending &&
+                    refreshMutation.variables === server.id
                   }
                   server={server}
                 />

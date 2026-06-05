@@ -1,5 +1,7 @@
+import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index";
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
+import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import {
   createCreatePostTool,
   createUpdatePostTool,
@@ -39,6 +41,8 @@ import {
 } from "./standalone-tool-registry";
 
 const SKILLS_MENTION_REGEX = /\bskills?\b/i;
+const MCP_TOOLING_MENTION_REGEX =
+  /\b(mcp|tool|tools|integration|integrations|external system|external systems|capabilit(?:y|ies))\b/i;
 
 const TRIVIAL_HISTORY_LIMIT = 6;
 const MINIMAL_STANDALONE_PROMPT =
@@ -77,6 +81,7 @@ export async function orchestrateStandaloneChat(
 
   const hasGitHub = hasEnabledGitHubIntegration(validatedIntegrations);
   const hasLinear = hasEnabledLinearIntegration(validatedIntegrations);
+  const hasMcp = (await getEnabledMcpServerCount(organizationId)) > 0;
 
   const lastUserMessage = getLastUserMessage(messages);
   // Never short-circuit when the user attached files — the fast path strips
@@ -99,7 +104,7 @@ export async function orchestrateStandaloneChat(
   if (isAuto) {
     const decision = await routeMessage(
       lastUserMessage,
-      hasGitHub || hasLinear,
+      hasGitHub || hasLinear || hasMcp,
       log,
       hasNonTextPartsOnLatestTurn,
       telemetryMetadata
@@ -122,6 +127,11 @@ export async function orchestrateStandaloneChat(
     decisionReasoning = `${decisionReasoning} (forced tools: message mentions skills)`;
   }
 
+  if (hasMcp && MCP_TOOLING_MENTION_REGEX.test(lastUserMessage)) {
+    decisionRequiresTools = true;
+    decisionReasoning = `${decisionReasoning} (forced tools: message may need MCP/tool discovery)`;
+  }
+
   const routingDecision = {
     model: selectedModel,
     complexity: decisionComplexity,
@@ -142,7 +152,7 @@ export async function orchestrateStandaloneChat(
 
   const postResult: PostToolsResult = {};
 
-  const { tools, descriptions } = isSimpleNoTools
+  const baseToolSet = isSimpleNoTools
     ? { tools: {}, descriptions: [] as string[] }
     : buildStandaloneToolSet(
         {
@@ -158,6 +168,23 @@ export async function orchestrateStandaloneChat(
           resolveLinearContext: deps?.resolveLinearContext,
         }
       );
+
+  const lazyMcpRuntime =
+    isSimpleNoTools || !chatId || !hasMcp
+      ? null
+      : await createLazyMcpRuntime({
+          organizationId,
+          sessionId: chatId,
+          surface: "standalone-chat",
+          baseActiveToolNames: Object.keys(baseToolSet.tools),
+        });
+
+  const tools = lazyMcpRuntime
+    ? { ...baseToolSet.tools, ...lazyMcpRuntime.tools }
+    : baseToolSet.tools;
+  const descriptions = lazyMcpRuntime
+    ? [...baseToolSet.descriptions, ...lazyMcpRuntime.descriptions]
+    : baseToolSet.descriptions;
 
   const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
   const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
@@ -199,6 +226,12 @@ export async function orchestrateStandaloneChat(
     system: systemPrompt,
     messages: modelMessages,
     tools,
+    ...(lazyMcpRuntime
+      ? {
+          activeTools: lazyMcpRuntime.initialActiveTools,
+          prepareStep: lazyMcpRuntime.prepareStep,
+        }
+      : {}),
     stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
@@ -219,11 +252,14 @@ export async function orchestrateStandaloneChat(
         model: routingDecision.model,
         completedSteps: steps.length,
       });
+      lazyMcpRuntime?.cleanup().catch(() => undefined);
     },
     async onFinish({ totalUsage }) {
       await deps?.onUsage?.(totalUsage, routingDecision.model);
+      await lazyMcpRuntime?.cleanup();
     },
     onError({ error }) {
+      lazyMcpRuntime?.cleanup().catch(() => undefined);
       console.error("[Standalone Chat Stream Error]", {
         organizationId,
         model: routingDecision.model,

@@ -35,6 +35,7 @@ import {
   testMcpServerConnection,
   updateMcpServerIntegration,
 } from "@notra/ai/integrations/mcp";
+import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
@@ -983,6 +984,37 @@ export const integrationsRouter = {
         await deleteMcpServerIntegration(input.serverId);
 
         return { success: true };
+      }),
+    refreshTools: baseProcedure
+      .input(mcpServerInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const existing = await getMcpServerIntegrationById(input.serverId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("MCP server not found");
+        }
+
+        try {
+          const result = await refreshMcpToolIndexForIntegration({
+            organizationId: input.organizationId,
+            integrationId: input.serverId,
+          });
+          const refreshed = await getMcpServerIntegrationById(input.serverId);
+          return {
+            success: true,
+            indexedToolCount: result.indexedToolCount,
+            server: refreshed
+              ? serializeMcpServerIntegration(refreshed)
+              : undefined,
+          };
+        } catch (error) {
+          throw internalServerError("Failed to refresh MCP tools", error);
+        }
       }),
     test: baseProcedure
       .input(testMcpServerRequestSchema)

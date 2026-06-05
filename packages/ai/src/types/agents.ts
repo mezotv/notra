@@ -216,6 +216,7 @@ export interface BlogPostAgentOptions {
 
 export interface ChatAgentContext {
   organizationId: string;
+  sessionId?: string;
   currentMarkdown: string;
   selectedText?: string;
   onMarkdownUpdate: (markdown: string) => void;

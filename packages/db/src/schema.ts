@@ -328,6 +328,10 @@ export const mcpServerIntegrations = pgTable(
       .default(sql`'{}'::jsonb`)
       .notNull(),
     enabled: boolean("enabled").default(true).notNull(),
+    lastToolSyncAt: timestamp("last_tool_sync_at"),
+    toolSyncStatus: text("tool_sync_status").default("idle").notNull(),
+    toolSyncError: text("tool_sync_error"),
+    indexedToolCount: integer("indexed_tool_count").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -343,6 +347,94 @@ export const mcpServerIntegrations = pgTable(
       table.organizationId,
       table.name
     ),
+  ]
+);
+
+export const mcpToolIndex = pgTable(
+  "mcp_tool_index",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    serverIntegrationId: text("server_integration_id")
+      .notNull()
+      .references(() => mcpServerIntegrations.id, { onDelete: "cascade" }),
+    serverToolName: text("server_tool_name").notNull(),
+    runtimeToolName: text("runtime_tool_name").notNull(),
+    title: text("title"),
+    description: text("description"),
+    inputSchema: jsonb("input_schema").notNull(),
+    outputSchema: jsonb("output_schema"),
+    annotations: jsonb("annotations"),
+    meta: jsonb("meta"),
+    schemaHash: text("schema_hash").notNull(),
+    searchText: text("search_text").notNull(),
+    status: text("status").default("active").notNull(),
+    lastSeenAt: timestamp("last_seen_at"),
+    lastIndexedAt: timestamp("last_indexed_at").defaultNow().notNull(),
+    errorMessage: text("error_message"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("mcpToolIndex_server_tool_uidx").on(
+      table.serverIntegrationId,
+      table.serverToolName
+    ),
+    uniqueIndex("mcpToolIndex_org_runtime_tool_uidx").on(
+      table.organizationId,
+      table.runtimeToolName
+    ),
+    index("mcpToolIndex_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    index("mcpToolIndex_serverIntegrationId_status_idx").on(
+      table.serverIntegrationId,
+      table.status
+    ),
+    index("mcpToolIndex_searchText_gin_idx").using(
+      "gin",
+      sql`to_tsvector('english', ${table.searchText})`
+    ),
+  ]
+);
+
+export const mcpSessionToolActivations = pgTable(
+  "mcp_session_tool_activations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    sessionId: text("session_id").notNull(),
+    surface: text("surface").notNull(),
+    mcpToolIndexId: text("mcp_tool_index_id")
+      .notNull()
+      .references(() => mcpToolIndex.id, { onDelete: "cascade" }),
+    runtimeToolName: text("runtime_tool_name").notNull(),
+    sourceQuery: text("source_query"),
+    activatedAt: timestamp("activated_at").defaultNow().notNull(),
+    lastUsedAt: timestamp("last_used_at"),
+    expiresAt: timestamp("expires_at"),
+  },
+  (table) => [
+    uniqueIndex("mcpSessionToolActivations_session_tool_uidx").on(
+      table.organizationId,
+      table.sessionId,
+      table.surface,
+      table.mcpToolIndexId
+    ),
+    index("mcpSessionToolActivations_session_idx").on(
+      table.organizationId,
+      table.sessionId,
+      table.surface
+    ),
+    index("mcpSessionToolActivations_expiresAt_idx").on(table.expiresAt),
   ]
 );
 
@@ -747,6 +839,8 @@ export const organizationsRelations = relations(
     githubIntegrations: many(githubIntegrations),
     linearIntegrations: many(linearIntegrations),
     mcpServerIntegrations: many(mcpServerIntegrations),
+    mcpToolIndex: many(mcpToolIndex),
+    mcpSessionToolActivations: many(mcpSessionToolActivations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -811,7 +905,7 @@ export const linearIntegrationsRelations = relations(
 
 export const mcpServerIntegrationsRelations = relations(
   mcpServerIntegrations,
-  ({ one }) => ({
+  ({ one, many }) => ({
     organization: one(organizations, {
       fields: [mcpServerIntegrations.organizationId],
       references: [organizations.id],
@@ -819,6 +913,36 @@ export const mcpServerIntegrationsRelations = relations(
     createdByUser: one(users, {
       fields: [mcpServerIntegrations.createdByUserId],
       references: [users.id],
+    }),
+    tools: many(mcpToolIndex),
+  })
+);
+
+export const mcpToolIndexRelations = relations(
+  mcpToolIndex,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [mcpToolIndex.organizationId],
+      references: [organizations.id],
+    }),
+    serverIntegration: one(mcpServerIntegrations, {
+      fields: [mcpToolIndex.serverIntegrationId],
+      references: [mcpServerIntegrations.id],
+    }),
+    activations: many(mcpSessionToolActivations),
+  })
+);
+
+export const mcpSessionToolActivationsRelations = relations(
+  mcpSessionToolActivations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [mcpSessionToolActivations.organizationId],
+      references: [organizations.id],
+    }),
+    tool: one(mcpToolIndex, {
+      fields: [mcpSessionToolActivations.mcpToolIndexId],
+      references: [mcpToolIndex.id],
     }),
   })
 );
