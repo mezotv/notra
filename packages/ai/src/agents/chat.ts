@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index";
 import { createModel } from "@notra/ai/model";
 import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
@@ -215,8 +214,34 @@ function getEditorSessionId(context: ChatAgentContext) {
   if (context.sessionId) {
     return context.sessionId;
   }
-  const chatId = context.telemetryMetadata?.chatId;
-  return typeof chatId === "string" && chatId.length > 0
-    ? chatId
-    : `editor:${context.organizationId}:${randomUUID()}`;
+  const metadataSessionId = getFirstMetadataString(context, [
+    "chatId",
+    "tcc.sessionId",
+    "contentId",
+    "postId",
+    "currentPostId",
+    "documentId",
+  ]);
+  if (metadataSessionId) {
+    return metadataSessionId;
+  }
+
+  // Last-resort compatibility fallback for callers that have not been wired to
+  // pass a stable editor session id yet. This preserves activation continuity
+  // across turns, but callers should prefer context.sessionId to avoid sharing
+  // activations across editor chats in the same organization.
+  return `editor:${context.organizationId}:default`;
+}
+
+function getFirstMetadataString(
+  context: ChatAgentContext,
+  keys: readonly string[]
+) {
+  for (const key of keys) {
+    const value = context.telemetryMetadata?.[key];
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
 }
