@@ -208,7 +208,135 @@ function getWebSearchResultCount(output: unknown): number | undefined {
     : undefined;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function getArrayLength(value: unknown, key: string): number | undefined {
+  const array = asRecord(value)?.[key];
+  return Array.isArray(array) ? array.length : undefined;
+}
+
+function getStringArray(value: unknown, key: string): string[] {
+  const array = asRecord(value)?.[key];
+  return Array.isArray(array)
+    ? array.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function getToolObjectNames(value: unknown, key: string): string[] {
+  const array = asRecord(value)?.[key];
+  if (!Array.isArray(array)) {
+    return [];
+  }
+
+  return array
+    .map((item) => {
+      const record = asRecord(item);
+      const name =
+        record?.toolName ??
+        record?.runtimeToolName ??
+        record?.title ??
+        record?.serverName;
+      return typeof name === "string" ? name : undefined;
+    })
+    .filter((name): name is string => Boolean(name));
+}
+
+function countSuffix(
+  count: number | undefined,
+  singular: string,
+  plural: string
+) {
+  if (count === undefined) {
+    return undefined;
+  }
+  return `(${count} ${count === 1 ? singular : plural})`;
+}
+
+function toolSearchSuffix(input: unknown, output: unknown): string | undefined {
+  const query = quotedSuffix(input, ["query"]);
+  const count = getArrayLength(output, "results");
+  const resultCount = countSuffix(count, "result", "results");
+  if (query && resultCount) {
+    return `for ${query} ${resultCount}`;
+  }
+  return query ?? resultCount;
+}
+
+function activatedToolsSuffix(output: unknown): string | undefined {
+  const names = getToolObjectNames(output, "activated");
+  if (names.length === 0) {
+    return countSuffix(getArrayLength(output, "activated"), "tool", "tools");
+  }
+  if (names.length === 1) {
+    return names[0];
+  }
+  return `(${names.length} tools)`;
+}
+
+function activeToolsSuffix(output: unknown): string | undefined {
+  const names = [
+    ...getStringArray(output, "activeTools"),
+    ...getToolObjectNames(output, "activeTools"),
+  ];
+  if (names.length === 0) {
+    return countSuffix(getArrayLength(output, "activeTools"), "tool", "tools");
+  }
+  return `(${names.length} active)`;
+}
+
+function deactivatedToolsSuffix(output: unknown): string | undefined {
+  return countSuffix(
+    getArrayLength(output, "deactivated") ?? getArrayLength(output, "removed"),
+    "tool",
+    "tools"
+  );
+}
+
 const TOOL_COPY: Record<string, ToolCopy> = {
+  searchNotraTools: {
+    verbs: ["Searching", "Searched"],
+    noun: "tools",
+    suffix: toolSearchSuffix,
+  },
+  activateNotraTools: {
+    verbs: ["Loading", "Loaded"],
+    noun: "tool",
+    suffix: (_input, output) => activatedToolsSuffix(output),
+  },
+  listActiveNotraTools: {
+    verbs: ["Checking", "Checked"],
+    noun: "active tools",
+    suffix: (_input, output) => activeToolsSuffix(output),
+  },
+  deactivateNotraTools: {
+    verbs: ["Unloading", "Unloaded"],
+    noun: "tools",
+    suffix: (_input, output) => deactivatedToolsSuffix(output),
+  },
+  searchMcpTools: {
+    verbs: ["Searching", "Searched"],
+    noun: "MCP tools",
+    suffix: toolSearchSuffix,
+  },
+  activateMcpTools: {
+    verbs: ["Loading", "Loaded"],
+    noun: "MCP tool",
+    suffix: (_input, output) => activatedToolsSuffix(output),
+  },
+  listActiveMcpTools: {
+    verbs: ["Checking", "Checked"],
+    noun: "active MCP tools",
+    suffix: (_input, output) => activeToolsSuffix(output),
+  },
+  deactivateMcpTools: {
+    verbs: ["Unloading", "Unloaded"],
+    noun: "MCP tools",
+    suffix: (_input, output) => deactivatedToolsSuffix(output),
+  },
   getPullRequests: {
     verbs: ["Fetching", "Fetched"],
     noun: "pull request",

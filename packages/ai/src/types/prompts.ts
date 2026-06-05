@@ -36,6 +36,10 @@ export interface ContentEditorChatPromptParams {
 }
 
 export interface StandaloneChatPromptParams {
+  skillSummaries?: Array<{
+    name: string;
+    description: string;
+  }>;
   repoContext?: Array<{
     integrationId: string;
     owner?: string;

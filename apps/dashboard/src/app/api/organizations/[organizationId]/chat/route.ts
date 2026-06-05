@@ -115,9 +115,7 @@ export const POST = withEvlog(async function POST(
     cleanupChatId = chatId;
     const validatedIntegrations =
       await getStandaloneChatIntegrations(organizationId);
-    const context =
-      parseResult.data.context ??
-      deriveContextFromValidatedIntegrations(validatedIntegrations);
+    const context = parseResult.data.context ?? [];
 
     if (!messages.length) {
       return NextResponse.json(
@@ -261,39 +259,6 @@ function canUseUpstashWorkflowStreaming() {
   } catch {
     return false;
   }
-}
-
-function deriveContextFromValidatedIntegrations(
-  validatedIntegrations: ValidatedIntegration[]
-): StandaloneChatContextItem[] {
-  const items: StandaloneChatContextItem[] = [];
-  for (const integration of validatedIntegrations) {
-    if (integration.type === "github") {
-      for (const repository of integration.repositories) {
-        if (
-          repository.enabled &&
-          typeof repository.owner === "string" &&
-          repository.owner.length > 0 &&
-          typeof repository.repo === "string" &&
-          repository.repo.length > 0
-        ) {
-          items.push({
-            type: "github-repo",
-            integrationId: integration.id,
-            owner: repository.owner,
-            repo: repository.repo,
-          });
-        }
-      }
-    } else if (integration.type === "linear") {
-      items.push({
-        type: "linear-team",
-        integrationId: integration.id,
-        teamName: integration.linearTeamName ?? undefined,
-      });
-    }
-  }
-  return items;
 }
 
 async function createDirectStandaloneChatResponse({

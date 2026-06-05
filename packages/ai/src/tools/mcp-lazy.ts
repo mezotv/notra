@@ -40,6 +40,7 @@ export interface LazyMcpRuntimeParams {
   sessionId: string;
   surface: McpSessionSurface;
   baseActiveToolNames: string[];
+  tools?: Record<string, Tool>;
   maxRuntimeTools?: number;
 }
 
@@ -69,10 +70,11 @@ export async function createLazyMcpRuntime({
   sessionId,
   surface,
   baseActiveToolNames,
+  tools: sharedTools,
   maxRuntimeTools = MCP_MAX_RUNTIME_WRAPPERS,
 }: LazyMcpRuntimeParams): Promise<LazyMcpRuntime> {
   const clients = new Map<string, Promise<MCPClient>>();
-  let runtimeTools = await getIndexedMcpToolsForRuntime({
+  const runtimeTools = await getIndexedMcpToolsForRuntime({
     organizationId,
     limit: maxRuntimeTools,
   });
@@ -85,10 +87,6 @@ export async function createLazyMcpRuntime({
         });
       }
     );
-    runtimeTools = await getIndexedMcpToolsForRuntime({
-      organizationId,
-      limit: maxRuntimeTools,
-    });
   }
   const activatedTools = await getSessionActivatedMcpTools({
     organizationId,
@@ -105,7 +103,7 @@ export async function createLazyMcpRuntime({
     ...activeMcpToolNames,
   ]);
 
-  const tools: Record<string, Tool> = {};
+  const tools: Record<string, Tool> = sharedTools ?? {};
 
   const ensureRuntimeTool = (indexedTool: IndexedMcpTool) => {
     tools[indexedTool.runtimeToolName] ??= createRuntimeMcpTool({
@@ -255,9 +253,6 @@ export async function createLazyMcpRuntime({
     }),
   });
 
-  for (const indexedTool of runtimeTools) {
-    ensureRuntimeTool(indexedTool);
-  }
   setActiveTools(activatedTools);
 
   return {

@@ -529,15 +529,24 @@ function StandaloneChatPageClient({
     // Populated after dispatchMessage is defined below.
   });
 
-  const handleFinish = useCallback(() => {
-    setPendingMessageId(null);
-    queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
-    queryClient.invalidateQueries({
-      queryKey: ["chat-sessions", organizationId],
-    });
-    isDrainingRef.current = false;
-    drainQueueRef.current();
-  }, [organizationId, queryClient]);
+  const handleFinish = useCallback(
+    ({ message }: { message: ChatUIMessage }) => {
+      const pinnedModel = getPinnedModelFromAutoMetadata(message.metadata);
+      if (pinnedModel) {
+        selectedModelRef.current = pinnedModel;
+        setSelectedModel(pinnedModel);
+      }
+
+      setPendingMessageId(null);
+      queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
+      queryClient.invalidateQueries({
+        queryKey: ["chat-sessions", organizationId],
+      });
+      isDrainingRef.current = false;
+      drainQueueRef.current();
+    },
+    [organizationId, queryClient]
+  );
 
   const {
     messages,
@@ -729,7 +738,10 @@ function StandaloneChatPageClient({
         }
 
         if (!modelRestored) {
-          const modelToRestore = metadata.requestedModel ?? metadata.model;
+          const modelToRestore =
+            metadata.requestedModel === "auto"
+              ? metadata.model
+              : (metadata.requestedModel ?? metadata.model);
           if (modelToRestore) {
             const parsedModel = parseStoredChatModel(modelToRestore);
             if (parsedModel) {
@@ -1926,13 +1938,16 @@ function StandaloneChatPageClient({
 
   return (
     <>
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
-          <div className="relative flex min-h-full flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div
+          className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden"
+          ref={scrollContainerRef}
+        >
+          <div className="relative flex min-h-full min-w-0 flex-col">
             <div className="flex flex-1 flex-col px-4 pt-6 pb-28">
               <div
                 className={cn(
-                  "mx-auto flex w-full max-w-2xl flex-col gap-4",
+                  "mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4",
                   isFirstMessageTransition && "chat-messages-fade-in"
                 )}
               >
@@ -2104,6 +2119,17 @@ function StandaloneChatPageClient({
       />
     </>
   );
+}
+
+function getPinnedModelFromAutoMetadata(
+  metadata: ChatUIMessage["metadata"] | undefined
+) {
+  if (metadata?.requestedModel !== "auto" || !metadata.model) {
+    return null;
+  }
+
+  const parsedModel = parseStoredChatModel(metadata.model);
+  return parsedModel && parsedModel !== "auto" ? parsedModel : null;
 }
 
 export default function PageClient(props: StandaloneChatPageClientProps) {

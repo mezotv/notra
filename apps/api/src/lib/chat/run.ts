@@ -19,7 +19,6 @@ import type { CheckResponse } from "autumn-js";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
 import type { sendChatMessageRequestSchema } from "../../schemas/chats";
-import { deriveContextFromValidatedIntegrations } from "./context";
 import { createDirectStandaloneChatResponse } from "./direct-stream";
 import { buildApiChatTelemetryMetadata } from "./tcc";
 
@@ -128,9 +127,7 @@ export async function runChatMessage({
 
   const validatedIntegrations =
     await getStandaloneChatIntegrations(organizationId);
-  const context =
-    inputContext ??
-    deriveContextFromValidatedIntegrations(validatedIntegrations);
+  const context = inputContext ?? [];
 
   const externalChannelIdForInsert =
     isNewChat && !externalChannelClaimed ? externalChannelId : undefined;

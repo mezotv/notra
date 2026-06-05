@@ -2,11 +2,6 @@ import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index"
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
-import {
-  createCreatePostTool,
-  createUpdatePostTool,
-  createViewPostTool,
-} from "@notra/ai/tools/post";
 import type {
   AutoThinkingLevel,
   IntegrationFetchers,
@@ -21,14 +16,20 @@ import type {
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { db } from "@notra/db/drizzle";
+import { skills } from "@notra/db/schema";
 import {
   convertToModelMessages,
   isToolUIPart,
   smoothStream,
   stepCountIs,
   streamText,
+  type Tool,
+  tool,
   type UIMessage,
 } from "ai";
+import { asc, eq } from "drizzle-orm";
+import { z } from "zod";
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -39,6 +40,28 @@ import {
   getLinearContextFromIntegrations,
   getRepoContextFromIntegrations,
 } from "./standalone-tool-registry";
+
+const NOTRA_MANAGER_TOOL_NAMES = [
+  "searchNotraTools",
+  "activateNotraTools",
+  "listActiveNotraTools",
+  "deactivateNotraTools",
+] as const;
+
+const DEFAULT_STANDALONE_TOOL_NAMES = [
+  "listAvailableSkills",
+  "getSkillByName",
+  "getAvailableIntegrations",
+  "webSearch",
+] as const;
+
+const NOTRA_TOOLING_DESCRIPTION =
+  "Notra app tools are available through lazy discovery. Use searchNotraTools to find built-in content, brand, GitHub, Linear, and post tools by intent, then activateNotraTools before calling them. Basic skills, integration discovery, and web search tools are available by default when configured.";
+const WHITESPACE_REGEX = /\s+/;
+const LEGACY_NOTRA_TOOL_ALIASES: Record<string, string> = {
+  getBrandReferences: "getAvailableBrandReferences",
+  searchBrandReferences: "getAvailableBrandReferences",
+};
 
 export async function orchestrateStandaloneChat(
   input: StandaloneChatInput,
@@ -135,6 +158,14 @@ export async function orchestrateStandaloneChat(
       resolveLinearContext: deps?.resolveLinearContext,
     }
   );
+  const notraToolRuntime = createStandaloneToolProvisioningRuntime({
+    tools: baseToolSet.tools,
+    defaultActiveToolNames: getDefaultStandaloneActiveToolNames({
+      tools: baseToolSet.tools,
+      context,
+    }),
+  });
+  const tools = notraToolRuntime.tools;
 
   const lazyMcpRuntime =
     !chatId || !hasMcp
@@ -143,25 +174,34 @@ export async function orchestrateStandaloneChat(
           organizationId,
           sessionId: chatId,
           surface: "standalone-chat",
-          baseActiveToolNames: Object.keys(baseToolSet.tools),
+          baseActiveToolNames: notraToolRuntime.getActiveToolNames(),
+          tools,
         });
 
-  const tools = lazyMcpRuntime
-    ? { ...baseToolSet.tools, ...lazyMcpRuntime.tools }
-    : baseToolSet.tools;
   const descriptions = lazyMcpRuntime
-    ? [...baseToolSet.descriptions, ...lazyMcpRuntime.descriptions]
-    : baseToolSet.descriptions;
+    ? [NOTRA_TOOLING_DESCRIPTION, ...lazyMcpRuntime.descriptions]
+    : [NOTRA_TOOLING_DESCRIPTION];
 
-  const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
-  const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
+  const hasGitHubToolsActive = notraToolRuntime
+    .getActiveToolNames()
+    .some(isGitHubToolName);
+  const hasLinearToolsActive = notraToolRuntime
+    .getActiveToolNames()
+    .some(isLinearToolName);
+  const repoContext = hasGitHubToolsActive
+    ? getRepoContextFromIntegrations(validatedIntegrations)
+    : [];
+  const linearContext = hasLinearToolsActive
+    ? getLinearContextFromIntegrations(validatedIntegrations)
+    : [];
 
   const systemPrompt = getStandaloneChatPrompt({
+    skillSummaries: await getStandaloneSkillSummaries(organizationId),
     repoContext,
     linearContext,
     toolDescriptions: descriptions,
-    hasGitHubEnabled: hasGitHub,
-    hasLinearEnabled: hasLinear,
+    hasGitHubEnabled: hasGitHubToolsActive,
+    hasLinearEnabled: hasLinearToolsActive,
     timezone,
   });
 
@@ -180,6 +220,17 @@ export async function orchestrateStandaloneChat(
   const modelMessages = await convertToModelMessages(messagesForModel, {
     ignoreIncompleteToolCalls: true,
   });
+  const getActiveToolNames = async (
+    options: Parameters<NonNullable<typeof lazyMcpRuntime>["prepareStep"]>[0]
+  ) => {
+    const lazyStep = await lazyMcpRuntime?.prepareStep(options);
+    return Array.from(
+      new Set([
+        ...notraToolRuntime.getActiveToolNames(),
+        ...(lazyStep?.activeTools?.map(String) ?? []),
+      ])
+    );
+  };
 
   let firstChunkFired = false;
   const stream = streamText({
@@ -187,12 +238,15 @@ export async function orchestrateStandaloneChat(
     system: systemPrompt,
     messages: modelMessages,
     tools,
-    ...(lazyMcpRuntime
-      ? {
-          activeTools: lazyMcpRuntime.initialActiveTools,
-          prepareStep: lazyMcpRuntime.prepareStep,
-        }
-      : {}),
+    activeTools: Array.from(
+      new Set([
+        ...notraToolRuntime.getActiveToolNames(),
+        ...(lazyMcpRuntime?.initialActiveTools ?? []),
+      ])
+    ),
+    prepareStep: async (options) => ({
+      activeTools: await getActiveToolNames(options),
+    }),
     stopWhen: stepCountIs(maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
@@ -230,6 +284,257 @@ export async function orchestrateStandaloneChat(
   });
 
   return { stream, routingDecision };
+}
+
+async function getStandaloneSkillSummaries(organizationId: string) {
+  const rows = await db
+    .select({
+      name: skills.name,
+      description: skills.description,
+    })
+    .from(skills)
+    .where(eq(skills.organizationId, organizationId))
+    .orderBy(asc(skills.name))
+    .limit(30);
+
+  return rows.map((row) => ({
+    name: row.name,
+    description: row.description,
+  }));
+}
+
+function createStandaloneToolProvisioningRuntime({
+  tools,
+  defaultActiveToolNames,
+}: {
+  tools: Record<string, Tool>;
+  defaultActiveToolNames: string[];
+}) {
+  const exposedTools: Record<string, Tool> = {};
+  const activeToolNames = new Set([
+    ...defaultActiveToolNames.filter((name) => name in tools),
+    ...NOTRA_MANAGER_TOOL_NAMES,
+  ]);
+  const managerToolNameSet = new Set<string>(NOTRA_MANAGER_TOOL_NAMES);
+  const defaultToolNameSet = new Set(defaultActiveToolNames);
+  const provisionableToolNames = Object.keys(tools).filter(
+    (name) => !(managerToolNameSet.has(name) || defaultToolNameSet.has(name))
+  );
+  const getActiveToolNames = () =>
+    Array.from(activeToolNames).filter(
+      (name) => name in exposedTools || managerToolNameSet.has(name)
+    );
+  for (const toolName of defaultActiveToolNames) {
+    if (toolName in tools) {
+      exposedTools[toolName] = tools[toolName] as Tool;
+    }
+  }
+  const managerTools: Record<string, Tool> = {
+    searchNotraTools: tool({
+      description:
+        "Search built-in Notra app tools by intent before activating them. Use this for content creation, post lookup, brand context, GitHub, Linear, and other Notra capabilities that are not currently active.",
+      inputSchema: z.object({
+        query: z.string().min(1),
+        limit: z.number().int().min(1).max(12).default(8),
+      }),
+      execute: async ({ query, limit }) => ({
+        results: searchProvisionableTools({
+          tools,
+          toolNames: provisionableToolNames,
+          query,
+          limit,
+          activeToolNames,
+        }),
+      }),
+    }),
+    activateNotraTools: tool({
+      description:
+        "Activate built-in Notra app tools for this chat run. Search first unless you already know the exact tool names.",
+      inputSchema: z.object({
+        toolNames: z.array(z.string().min(1)).min(1).max(8),
+        reason: z.string().max(500).optional(),
+      }),
+      execute: async ({ toolNames }) => {
+        const activated: Array<{
+          toolName: string;
+          description: string | undefined;
+        }> = [];
+        const unknown: string[] = [];
+        for (const requestedToolName of Array.from(new Set(toolNames))) {
+          const toolName = resolveNotraToolName(requestedToolName);
+          if (!(toolName in tools)) {
+            unknown.push(requestedToolName);
+            continue;
+          }
+          exposedTools[toolName] = tools[toolName] as Tool;
+          activeToolNames.add(toolName);
+          activated.push({
+            toolName,
+            description: tools[toolName]?.description,
+          });
+        }
+        return {
+          activated,
+          unknown,
+          activeTools: getActiveToolNames(),
+        };
+      },
+    }),
+    listActiveNotraTools: tool({
+      description: "List built-in Notra app tools currently active.",
+      inputSchema: z.object({}),
+      execute: async () => ({
+        activeTools: getActiveToolNames().filter(
+          (name) => !managerToolNameSet.has(name)
+        ),
+      }),
+    }),
+    deactivateNotraTools: tool({
+      description:
+        "Deactivate built-in Notra app tools that are no longer needed. Basic discovery tools and manager tools remain active.",
+      inputSchema: z.object({
+        toolNames: z.array(z.string().min(1)).min(1),
+      }),
+      execute: async ({ toolNames }) => {
+        const deactivated: string[] = [];
+        for (const toolName of toolNames) {
+          if (
+            defaultToolNameSet.has(toolName) ||
+            managerToolNameSet.has(toolName)
+          ) {
+            continue;
+          }
+          if (activeToolNames.delete(toolName)) {
+            delete exposedTools[toolName];
+            deactivated.push(toolName);
+          }
+        }
+        return {
+          deactivated,
+          activeTools: getActiveToolNames(),
+        };
+      },
+    }),
+  };
+  Object.assign(exposedTools, managerTools);
+
+  return {
+    tools: exposedTools,
+    getActiveToolNames,
+  };
+}
+
+function getDefaultStandaloneActiveToolNames({
+  tools,
+  context,
+}: {
+  tools: Record<string, Tool>;
+  context: StandaloneChatContextItem[];
+}) {
+  const active = new Set<string>(
+    DEFAULT_STANDALONE_TOOL_NAMES.filter((name) => name in tools)
+  );
+
+  if (context.some((item) => item.type === "github-repo")) {
+    for (const toolName of [
+      "getPullRequests",
+      "getReleaseByTag",
+      "getCommitsByTimeframe",
+    ]) {
+      if (toolName in tools) {
+        active.add(toolName);
+      }
+    }
+  }
+
+  if (context.some((item) => item.type === "linear-team")) {
+    for (const toolName of [
+      "getLinearIssues",
+      "getLinearProjects",
+      "getLinearCycles",
+    ]) {
+      if (toolName in tools) {
+        active.add(toolName);
+      }
+    }
+  }
+
+  return Array.from(active);
+}
+
+function searchProvisionableTools({
+  tools,
+  toolNames,
+  query,
+  limit,
+  activeToolNames,
+}: {
+  tools: Record<string, Tool>;
+  toolNames: string[];
+  query: string;
+  limit: number;
+  activeToolNames: Set<string>;
+}) {
+  const terms = query
+    .toLowerCase()
+    .split(WHITESPACE_REGEX)
+    .map((term) => term.trim())
+    .filter(Boolean);
+
+  return toolNames
+    .map((toolName) => {
+      const description = tools[toolName]?.description ?? "";
+      const aliases = getLegacyAliasesForToolName(toolName);
+      const haystack =
+        `${toolName} ${aliases.join(" ")} ${description}`.toLowerCase();
+      const score = terms.reduce((total, term) => {
+        if (
+          toolName.toLowerCase().includes(term) ||
+          aliases.some((alias) => alias.toLowerCase().includes(term))
+        ) {
+          return total + 4;
+        }
+        if (haystack.includes(term)) {
+          return total + 1;
+        }
+        return total;
+      }, 0);
+      return {
+        toolName,
+        aliases,
+        description,
+        alreadyActive: activeToolNames.has(toolName),
+        score,
+      };
+    })
+    .filter((result) => result.score > 0 || terms.length === 0)
+    .sort((a, b) => b.score - a.score || a.toolName.localeCompare(b.toolName))
+    .slice(0, limit)
+    .map(({ score: _score, ...result }) => result);
+}
+
+function resolveNotraToolName(toolName: string) {
+  return LEGACY_NOTRA_TOOL_ALIASES[toolName] ?? toolName;
+}
+
+function getLegacyAliasesForToolName(toolName: string) {
+  return Object.entries(LEGACY_NOTRA_TOOL_ALIASES)
+    .filter(([, currentToolName]) => currentToolName === toolName)
+    .map(([legacyToolName]) => legacyToolName);
+}
+
+function isGitHubToolName(toolName: string) {
+  return [
+    "getPullRequests",
+    "getReleaseByTag",
+    "getCommitsByTimeframe",
+  ].includes(toolName);
+}
+
+function isLinearToolName(toolName: string) {
+  return ["getLinearIssues", "getLinearProjects", "getLinearCycles"].includes(
+    toolName
+  );
 }
 
 function lastUserMessageHasNonTextParts(messages: UIMessage[]): boolean {
@@ -333,14 +638,7 @@ function getThinkingProviderOptions(
       } satisfies StreamProviderOptions;
     }
 
-    return {
-      anthropic: {
-        thinking: {
-          type: "enabled",
-          budgetTokens: getAnthropicThinkingBudget(thinkingLevel),
-        },
-      },
-    } satisfies StreamProviderOptions;
+    return undefined;
   }
 
   if (modelId.startsWith("openai/")) {
@@ -355,22 +653,9 @@ function getThinkingProviderOptions(
 }
 
 function usesAdaptiveThinking(modelId: string): boolean {
-  return modelId === "anthropic/claude-opus-4.7";
-}
-
-function getAnthropicThinkingBudget(
-  thinkingLevel: "off" | "low" | "medium" | "high"
-): number {
-  switch (thinkingLevel) {
-    case "low":
-      return 1024;
-    case "high":
-      return 8192;
-    case "medium":
-      return 4096;
-    default:
-      return 0;
-  }
+  return ["anthropic/claude-opus-4.7", "anthropic/claude-opus-4.8"].includes(
+    modelId
+  );
 }
 
 async function validateStandaloneIntegrations(
