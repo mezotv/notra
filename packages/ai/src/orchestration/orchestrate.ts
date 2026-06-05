@@ -59,21 +59,25 @@ export async function orchestrateChat(
 
   const lastUserMessage = getLastUserMessage(messages);
   const hasAttachments = lastUserMessageHasNonTextParts(messages);
-  const routingDecision = await routeAndSelectModel(
+  const routedDecision = await routeAndSelectModel(
     lastUserMessage,
     hasIntegrationContext,
     log,
     hasAttachments,
     telemetryMetadata
   );
-
-  const isSimpleNoTools =
-    routingDecision.complexity === "simple" && !routingDecision.requiresTools;
+  const routingDecision = {
+    ...routedDecision,
+    requiresTools: true,
+    reasoning: routedDecision.requiresTools
+      ? routedDecision.reasoning
+      : `${routedDecision.reasoning} (tools available by default)`,
+  };
 
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    { disableMemory: isSimpleNoTools },
+    undefined,
     log
   );
 
@@ -91,34 +95,27 @@ export async function orchestrateChat(
     {
       resolveContext: deps?.resolveContext,
       resolveLinearContext: deps?.resolveLinearContext,
-      skipTools: !routingDecision.requiresTools,
     }
   );
 
   const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
   const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
 
-  const systemPrompt = isSimpleNoTools
-    ? MINIMAL_CHAT_PROMPT
-    : getContentEditorChatPrompt({
-        selection,
-        contentType,
-        repoContext,
-        linearContext,
-        toolDescriptions: descriptions,
-        hasGitHubEnabled: hasGitHub,
-        hasLinearEnabled: hasLinear,
-        timezone,
-      });
-
-  const messagesForModel = isSimpleNoTools
-    ? trimMessagesForSimpleChat(messages)
-    : messages;
+  const systemPrompt = getContentEditorChatPrompt({
+    selection,
+    contentType,
+    repoContext,
+    linearContext,
+    toolDescriptions: descriptions,
+    hasGitHubEnabled: hasGitHub,
+    hasLinearEnabled: hasLinear,
+    timezone,
+  });
 
   const stream = streamText({
     model: modelWithMemory,
     system: systemPrompt,
-    messages: await convertToModelMessages(messagesForModel, {
+    messages: await convertToModelMessages(messages, {
       ignoreIncompleteToolCalls: true,
     }),
     tools,
@@ -137,27 +134,6 @@ export async function orchestrateChat(
   });
 
   return { stream, routingDecision };
-}
-
-const MINIMAL_CHAT_PROMPT =
-  "You are a concise writing assistant inside a content editor. Reply briefly and directly. If the user asks for edits, let them know they can ask you to modify the document and you'll use editing tools on the next turn.";
-
-const SIMPLE_CHAT_HISTORY_LIMIT = 6;
-
-function trimMessagesForSimpleChat(messages: UIMessage[]): UIMessage[] {
-  const recent = messages.slice(-SIMPLE_CHAT_HISTORY_LIMIT);
-  // Keep the latest message intact so user-submitted attachments still reach
-  // the model; only historical turns get stripped to text.
-  return recent.map((message, index) => {
-    if (!Array.isArray(message.parts) || index === recent.length - 1) {
-      return message;
-    }
-    const textParts = message.parts.filter((part) => part.type === "text");
-    if (textParts.length === message.parts.length) {
-      return message;
-    }
-    return { ...message, parts: textParts };
-  });
 }
 
 function lastUserMessageHasNonTextParts(messages: UIMessage[]): boolean {

@@ -33,20 +33,12 @@ import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
 } from "./integration-validator";
-import { isTrivialMessage, routeMessage, selectAutoModel } from "./router";
+import { routeMessage, selectAutoModel } from "./router";
 import {
   buildStandaloneToolSet,
   getLinearContextFromIntegrations,
   getRepoContextFromIntegrations,
 } from "./standalone-tool-registry";
-
-const SKILLS_MENTION_REGEX = /\bskills?\b/i;
-const MCP_TOOLING_MENTION_REGEX =
-  /\b(mcp|tool|tools|integration|integrations|external system|external systems|capabilit(?:y|ies))\b/i;
-
-const TRIVIAL_HISTORY_LIMIT = 6;
-const MINIMAL_STANDALONE_PROMPT =
-  "You are Notra, an AI assistant for content teams. Reply briefly and warmly. Do not call tools on this turn.";
 
 export async function orchestrateStandaloneChat(
   input: StandaloneChatInput,
@@ -84,22 +76,13 @@ export async function orchestrateStandaloneChat(
   const hasMcp = (await getEnabledMcpServerCount(organizationId)) > 0;
 
   const lastUserMessage = getLastUserMessage(messages);
-  // Never short-circuit when the user attached files — the fast path strips
-  // tools and trims history, which would drop image/file parts and force a
-  // blind reply to "ok" + image.
   const hasNonTextPartsOnLatestTurn = lastUserMessageHasNonTextParts(messages);
-  const isTrivial =
-    !hasNonTextPartsOnLatestTurn && isTrivialMessage(lastUserMessage);
-  const mentionsSkills = SKILLS_MENTION_REGEX.test(lastUserMessage);
   const isAuto = requestedModel === undefined || requestedModel === "auto";
 
   let selectedModel: string;
   let autoThinkingLevel: AutoThinkingLevel | undefined;
   let decisionReasoning: string;
-  let decisionComplexity: "simple" | "complex" = isTrivial
-    ? "simple"
-    : "complex";
-  let decisionRequiresTools = !isTrivial;
+  let decisionComplexity: "simple" | "complex" = "complex";
 
   if (isAuto) {
     const decision = await routeMessage(
@@ -113,64 +96,48 @@ export async function orchestrateStandaloneChat(
     selectedModel = auto.model;
     autoThinkingLevel = auto.thinkingLevel;
     decisionComplexity = decision.complexity;
-    decisionRequiresTools = decision.requiresTools;
-    decisionReasoning = `auto → ${auto.model}: ${decision.reasoning}`;
+    decisionReasoning = decision.requiresTools
+      ? `auto → ${auto.model}: ${decision.reasoning}`
+      : `auto → ${auto.model}: ${decision.reasoning} (tools available by default)`;
   } else {
     selectedModel = requestedModel;
-    decisionReasoning = isTrivial
-      ? "Trivial greeting/acknowledgement — minimal prompt, no tools, no thinking"
-      : "User selected model explicitly";
-  }
-
-  if (mentionsSkills && !decisionRequiresTools) {
-    decisionRequiresTools = true;
-    decisionReasoning = `${decisionReasoning} (forced tools: message mentions skills)`;
-  }
-
-  if (hasMcp && MCP_TOOLING_MENTION_REGEX.test(lastUserMessage)) {
-    decisionRequiresTools = true;
-    decisionReasoning = `${decisionReasoning} (forced tools: message may need MCP/tool discovery)`;
+    decisionReasoning = "User selected model explicitly";
   }
 
   const routingDecision = {
     model: selectedModel,
     complexity: decisionComplexity,
-    requiresTools: decisionRequiresTools,
+    requiresTools: true,
     reasoning: decisionReasoning,
     thinkingLevel: autoThinkingLevel,
   };
 
-  const isSimpleNoTools =
-    routingDecision.complexity === "simple" && !routingDecision.requiresTools;
-
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    { disableMemory: isSimpleNoTools },
+    undefined,
     log
   );
 
   const postResult: PostToolsResult = {};
 
-  const baseToolSet = isSimpleNoTools
-    ? { tools: {}, descriptions: [] as string[] }
-    : buildStandaloneToolSet(
-        {
-          organizationId,
-          chatId,
-          userId,
-          useMarkup,
-          validatedIntegrations,
-          postResult,
-        },
-        {
-          resolveContext: deps?.resolveContext,
-          resolveLinearContext: deps?.resolveLinearContext,
-        }
-      );
+  const baseToolSet = buildStandaloneToolSet(
+    {
+      organizationId,
+      chatId,
+      userId,
+      useMarkup,
+      validatedIntegrations,
+      postResult,
+    },
+    {
+      resolveContext: deps?.resolveContext,
+      resolveLinearContext: deps?.resolveLinearContext,
+    }
+  );
 
   const lazyMcpRuntime =
-    isSimpleNoTools || !chatId || !hasMcp
+    !chatId || !hasMcp
       ? null
       : await createLazyMcpRuntime({
           organizationId,
@@ -189,32 +156,26 @@ export async function orchestrateStandaloneChat(
   const repoContext = getRepoContextFromIntegrations(validatedIntegrations);
   const linearContext = getLinearContextFromIntegrations(validatedIntegrations);
 
-  const systemPrompt = isSimpleNoTools
-    ? MINIMAL_STANDALONE_PROMPT
-    : getStandaloneChatPrompt({
-        repoContext,
-        linearContext,
-        toolDescriptions: descriptions,
-        hasGitHubEnabled: hasGitHub,
-        hasLinearEnabled: hasLinear,
-        timezone,
-      });
+  const systemPrompt = getStandaloneChatPrompt({
+    repoContext,
+    linearContext,
+    toolDescriptions: descriptions,
+    hasGitHubEnabled: hasGitHub,
+    hasLinearEnabled: hasLinear,
+    timezone,
+  });
 
   const effectiveThinkingLevel = autoThinkingLevel ?? thinkingLevel;
   const effectiveEnableThinking =
     enableThinking && (autoThinkingLevel ? autoThinkingLevel !== "off" : true);
 
-  const providerOptions = isSimpleNoTools
-    ? undefined
-    : getThinkingProviderOptions(
-        routingDecision.model,
-        effectiveEnableThinking,
-        effectiveThinkingLevel
-      );
-
-  const messagesForModel = stripIncompleteToolParts(
-    isSimpleNoTools ? trimTrivialHistory(messages) : messages
+  const providerOptions = getThinkingProviderOptions(
+    routingDecision.model,
+    effectiveEnableThinking,
+    effectiveThinkingLevel
   );
+
+  const messagesForModel = stripIncompleteToolParts(messages);
 
   const modelMessages = await convertToModelMessages(messagesForModel, {
     ignoreIncompleteToolCalls: true,
@@ -232,7 +193,7 @@ export async function orchestrateStandaloneChat(
           prepareStep: lazyMcpRuntime.prepareStep,
         }
       : {}),
-    stopWhen: stepCountIs(isSimpleNoTools ? 1 : maxSteps),
+    stopWhen: stepCountIs(maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
     abortSignal,
@@ -350,22 +311,6 @@ function stripIncompleteToolParts(messages: UIMessage[]): UIMessage[] {
       return message;
     }
     return { ...message, parts: filtered };
-  });
-}
-
-function trimTrivialHistory(messages: UIMessage[]): UIMessage[] {
-  const recent = messages.slice(-TRIVIAL_HISTORY_LIMIT);
-  // Keep the latest message intact so user-submitted attachments still reach
-  // the model; only historical turns get stripped to text.
-  return recent.map((message, index) => {
-    if (!Array.isArray(message.parts) || index === recent.length - 1) {
-      return message;
-    }
-    const textParts = message.parts.filter((part) => part.type === "text");
-    if (textParts.length === message.parts.length) {
-      return message;
-    }
-    return { ...message, parts: textParts };
   });
 }
 
