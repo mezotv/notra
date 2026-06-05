@@ -1,4 +1,4 @@
-import { renderSkillGuidance } from "@notra/ai/skills/guidance";
+import { renderSkillGuidance } from "@notra/ai/skills/functions/guidance";
 import type { StandaloneChatPromptParams } from "@notra/ai/types/prompts";
 import { formatCurrentDate } from "@notra/ai/utils/current-date";
 import dedent from "dedent";

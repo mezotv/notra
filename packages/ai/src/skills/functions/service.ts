@@ -1,26 +1,19 @@
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { and, asc, count, eq } from "drizzle-orm";
-import {
-  filterPromptableSkills,
-  normalizeSkillSummary,
-  type SkillContent,
-} from "./guidance";
-
-export interface SkillServiceContext {
-  organizationId: string;
-}
-
-export interface ListSkillsOptions {
-  limit?: number;
-  offset?: number;
-}
+import { DEFAULT_SKILL_CATALOG_LIMIT } from "../constants";
+import type {
+  ListSkillsOptions,
+  SkillContent,
+  SkillServiceContext,
+} from "../types";
+import { filterPromptableSkills, normalizeSkillSummary } from "./guidance";
 
 export async function listSkillCatalog(
   ctx: SkillServiceContext,
   options: ListSkillsOptions = {}
 ) {
-  const limit = options.limit ?? 20;
+  const limit = options.limit ?? DEFAULT_SKILL_CATALOG_LIMIT;
   const offset = options.offset ?? 0;
 
   const [rows, totalResult] = await Promise.all([

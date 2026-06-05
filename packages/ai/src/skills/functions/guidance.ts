@@ -1,17 +1,10 @@
 import dedent from "dedent";
-
-export interface SkillSummary {
-  name: string;
-  description: string;
-}
-
-export interface SkillContent {
-  name: string;
-  description: string;
-  content: string;
-}
-
-const WHITESPACE_REGEX = /\s+/g;
+import type { SkillContent, SkillSummary } from "../types";
+import {
+  escapeXmlAttribute,
+  escapeXmlText,
+  normalizeInlineText,
+} from "./format";
 
 export function filterPromptableSkills<T extends SkillSummary>(
   skills: T[]
@@ -54,23 +47,4 @@ export function renderSkillToolOutput(skill: SkillContent) {
     ${skill.content.trim()}
     </skill_content>
   `;
-}
-
-function normalizeInlineText(value: string) {
-  return value.replace(WHITESPACE_REGEX, " ").trim();
-}
-
-function escapeXmlAttribute(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function escapeXmlText(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
 }

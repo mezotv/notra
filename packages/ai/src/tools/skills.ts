@@ -1,5 +1,8 @@
-import { renderSkillToolOutput } from "@notra/ai/skills/guidance";
-import { listSkillCatalog, loadSkillByName } from "@notra/ai/skills/service";
+import { renderSkillToolOutput } from "@notra/ai/skills/functions/guidance";
+import {
+  listSkillCatalog,
+  loadSkillByName,
+} from "@notra/ai/skills/functions/service";
 import { type Tool, tool } from "ai";
 import z from "zod";
 

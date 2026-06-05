@@ -24,6 +24,7 @@
     "./types/*": "./src/types/*.ts",
     "./schemas/*": "./src/schemas/*.ts",
     "./skills/*": "./src/skills/*.ts",
+    "./skills/functions/*": "./src/skills/functions/*.ts",
     "./utils/*": "./src/utils/*.ts",
     "./constants/*": "./src/constants/*.ts",
     "./chat/*": "./src/chat/*.ts",
