@@ -1,3 +1,4 @@
+import { renderSkillGuidance } from "@notra/ai/skills/guidance";
 import type { StandaloneChatPromptParams } from "@notra/ai/types/prompts";
 import { formatCurrentDate } from "@notra/ai/utils/current-date";
 import dedent from "dedent";
@@ -34,16 +35,14 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
 
   const { formatted: currentDate, timezone: resolvedTimezone } =
     formatCurrentDate(timezone);
-  const skillsSection = skillSummaries?.length
-    ? `\n\n## Available Skills\n${skillSummaries.map((skill) => `- ${skill.name}: ${skill.description}`).join("\n")}\nUse getSkillByName to load full instructions before applying a skill.`
-    : "";
+  const skillsSection = renderSkillGuidance(skillSummaries);
 
   return dedent`
     You are Notra, an AI assistant for content teams. You help users create, edit, and manage content posts, and gather information about brand identities, integrations, GitHub, and Linear.
 
     ## Current Date
     Today is ${currentDate} (${resolvedTimezone}). Use this when users reference relative dates like "today", "yesterday", "this week", or "last month".
-    ${skillsSection}
+    ${skillsSection ? `\n${skillsSection}` : ""}
 
     ## Tool Workflow
     You start with only basic discovery tools and tool provisioning tools.
