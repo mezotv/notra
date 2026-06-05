@@ -114,7 +114,7 @@ export async function createMcpServerIntegration(
     integrationId: integration.id,
   }).catch(() => undefined);
 
-  return integration;
+  return (await getMcpServerIntegrationById(integration.id)) ?? integration;
 }
 
 export async function getMcpServerIntegrationById(integrationId: string) {

@@ -456,20 +456,24 @@ export async function activateSessionMcpTools({
   }
 
   let tools = await getToolsByIds(organizationId, uniqueToolIds);
-  const staleTools = tools.filter((tool) => tool.status === "stale");
-  for (const tool of staleTools) {
+  const staleIntegrationIds = new Set(
+    tools
+      .filter((tool) => tool.status === "stale")
+      .map((tool) => tool.serverIntegrationId)
+  );
+  for (const integrationId of staleIntegrationIds) {
     await refreshMcpToolIndexForIntegration({
       organizationId,
-      integrationId: tool.serverIntegrationId,
+      integrationId,
     }).catch((error) => {
       console.error("[MCP Tool Index Stale Refresh Error]", {
         organizationId,
-        integrationId: tool.serverIntegrationId,
+        integrationId,
         error: error instanceof Error ? error.message : String(error),
       });
     });
   }
-  if (staleTools.length > 0) {
+  if (staleIntegrationIds.size > 0) {
     tools = await getToolsByIds(organizationId, uniqueToolIds);
   }
 
@@ -601,12 +605,12 @@ export async function isMcpToolActivatedForSession({
   organizationId,
   sessionId,
   surface,
-  runtimeToolName,
+  toolId,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
-  runtimeToolName: string;
+  toolId: string;
 }) {
   const now = new Date();
   const [row] = await db
@@ -617,7 +621,7 @@ export async function isMcpToolActivatedForSession({
         eq(mcpSessionToolActivations.organizationId, organizationId),
         eq(mcpSessionToolActivations.sessionId, sessionId),
         eq(mcpSessionToolActivations.surface, surface),
-        eq(mcpSessionToolActivations.runtimeToolName, runtimeToolName),
+        eq(mcpSessionToolActivations.mcpToolIndexId, toolId),
         or(
           isNull(mcpSessionToolActivations.expiresAt),
           gt(mcpSessionToolActivations.expiresAt, now)
@@ -633,12 +637,12 @@ export async function touchMcpSessionToolActivation({
   organizationId,
   sessionId,
   surface,
-  runtimeToolName,
+  toolId,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
-  runtimeToolName: string;
+  toolId: string;
 }) {
   await db
     .update(mcpSessionToolActivations)
@@ -648,7 +652,7 @@ export async function touchMcpSessionToolActivation({
         eq(mcpSessionToolActivations.organizationId, organizationId),
         eq(mcpSessionToolActivations.sessionId, sessionId),
         eq(mcpSessionToolActivations.surface, surface),
-        eq(mcpSessionToolActivations.runtimeToolName, runtimeToolName)
+        eq(mcpSessionToolActivations.mcpToolIndexId, toolId)
       )
     );
 }
@@ -734,12 +738,63 @@ async function upsertIndexedTool({
     meta: definition._meta,
   });
 
+  try {
+    await upsertIndexedToolWithRuntimeName({
+      organizationId,
+      integrationId: integration.id,
+      definition,
+      runtimeToolName,
+      searchText,
+      schemaHash,
+    });
+  } catch (error) {
+    if (!isRuntimeToolNameConflict(error)) {
+      throw error;
+    }
+
+    const collisionRuntimeToolName = createMcpRuntimeToolName({
+      integrationId: integration.id,
+      serverName: integration.name,
+      serverToolName: definition.name,
+      withHash: true,
+    });
+    await upsertIndexedToolWithRuntimeName({
+      organizationId,
+      integrationId: integration.id,
+      definition,
+      runtimeToolName: collisionRuntimeToolName,
+      searchText: createSearchText({
+        integrationName: integration.name,
+        integrationDescription: integration.description,
+        definition,
+        runtimeToolName: collisionRuntimeToolName,
+      }),
+      schemaHash,
+    });
+  }
+}
+
+async function upsertIndexedToolWithRuntimeName({
+  organizationId,
+  integrationId,
+  definition,
+  runtimeToolName,
+  searchText,
+  schemaHash,
+}: {
+  organizationId: string;
+  integrationId: string;
+  definition: McpToolDefinition;
+  runtimeToolName: string;
+  searchText: string;
+  schemaHash: string;
+}) {
   await db
     .insert(mcpToolIndex)
     .values({
       id: `mcpt_${nanoid()}`,
       organizationId,
-      serverIntegrationId: integration.id,
+      serverIntegrationId: integrationId,
       serverToolName: definition.name,
       runtimeToolName,
       title: definition.title ?? definition.annotations?.title ?? null,
@@ -949,4 +1004,17 @@ function sortJson(value: unknown): unknown {
 
 function sanitizeErrorMessage(message: string) {
   return message.replace(/\s+/g, " ").trim().slice(0, 1000);
+}
+
+function isRuntimeToolNameConflict(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return (
+    error.message.includes("mcpToolIndex_org_runtime_tool_uidx") ||
+    error.message.includes(
+      "mcp_tool_index_organization_id_runtime_tool_name"
+    ) ||
+    error.message.includes("runtime_tool_name")
+  );
 }

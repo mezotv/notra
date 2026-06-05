@@ -1013,6 +1013,10 @@ export const integrationsRouter = {
               : undefined,
           };
         } catch (error) {
+          if (error instanceof PublicUrlValidationError) {
+            throw badRequest(error.message);
+          }
+
           throw internalServerError("Failed to refresh MCP tools", error);
         }
       }),

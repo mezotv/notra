@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -343,6 +344,10 @@ export const mcpServerIntegrations = pgTable(
     index("mcpServerIntegrations_createdByUserId_idx").on(
       table.createdByUserId
     ),
+    uniqueIndex("mcpServerIntegrations_org_id_uidx").on(
+      table.organizationId,
+      table.id
+    ),
     uniqueIndex("mcpServerIntegrations_org_name_uidx").on(
       table.organizationId,
       table.name
@@ -385,6 +390,7 @@ export const mcpToolIndex = pgTable(
       table.serverIntegrationId,
       table.serverToolName
     ),
+    uniqueIndex("mcpToolIndex_org_id_uidx").on(table.organizationId, table.id),
     uniqueIndex("mcpToolIndex_org_runtime_tool_uidx").on(
       table.organizationId,
       table.runtimeToolName
@@ -401,6 +407,14 @@ export const mcpToolIndex = pgTable(
       "gin",
       sql`to_tsvector('english', ${table.searchText})`
     ),
+    foreignKey({
+      columns: [table.organizationId, table.serverIntegrationId],
+      foreignColumns: [
+        mcpServerIntegrations.organizationId,
+        mcpServerIntegrations.id,
+      ],
+      name: "mcpToolIndex_org_server_fk",
+    }).onDelete("cascade"),
   ]
 );
 
@@ -435,6 +449,11 @@ export const mcpSessionToolActivations = pgTable(
       table.surface
     ),
     index("mcpSessionToolActivations_expiresAt_idx").on(table.expiresAt),
+    foreignKey({
+      columns: [table.organizationId, table.mcpToolIndexId],
+      foreignColumns: [mcpToolIndex.organizationId, mcpToolIndex.id],
+      name: "mcpSessionToolActivations_org_tool_fk",
+    }).onDelete("cascade"),
   ]
 );
 

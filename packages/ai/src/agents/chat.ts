@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index";
 import { createModel } from "@notra/ai/model";
 import { routeMessage, selectModel } from "@notra/ai/orchestration/router";
@@ -217,5 +218,5 @@ function getEditorSessionId(context: ChatAgentContext) {
   const chatId = context.telemetryMetadata?.chatId;
   return typeof chatId === "string" && chatId.length > 0
     ? chatId
-    : `editor:${context.organizationId}`;
+    : `editor:${context.organizationId}:${randomUUID()}`;
 }

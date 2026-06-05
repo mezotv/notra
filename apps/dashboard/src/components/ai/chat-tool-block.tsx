@@ -41,6 +41,7 @@ interface ToolCopy {
     input: unknown;
     output: unknown;
     isStreaming: boolean;
+    isError: boolean;
   }) => string | undefined;
   suffix?: (input: unknown, output: unknown) => string | undefined;
 }
@@ -400,6 +401,7 @@ function getSubtitle({
   input,
   output,
   isStreaming,
+  isError,
   isAwaitingApproval,
   toolMetadata,
 }: {
@@ -407,30 +409,41 @@ function getSubtitle({
   input: unknown;
   output: unknown;
   isStreaming: boolean;
+  isError: boolean;
   isAwaitingApproval: boolean;
   toolMetadata?: unknown;
 }): string {
   const copy = TOOL_COPY[toolName];
+  const failurePrefix = isError ? "Failed to call" : undefined;
   if (!copy) {
     if (MCP_TOOL_NAME_REGEX.test(toolName)) {
       const label = getMcpToolLabel(toolName, toolMetadata);
       if (isAwaitingApproval) {
         return `Approve ${label}`;
       }
+      if (failurePrefix) {
+        return `${failurePrefix} ${label}`;
+      }
       return isStreaming ? `Calling ${label}` : `Called ${label}`;
     }
     if (isAwaitingApproval) {
       return `Approve ${toolName}`;
     }
+    if (failurePrefix) {
+      return `${failurePrefix} ${toolName}`;
+    }
     return isStreaming ? `Running ${toolName}` : `Ran ${toolName}`;
-  }
-  const subtitle = copy.subtitle?.({ input, output, isStreaming });
-  if (subtitle) {
-    return subtitle;
   }
   const suffix = copy.suffix?.(input, isStreaming ? undefined : output);
   if (isAwaitingApproval) {
     return suffix ? `Approve ${copy.noun} ${suffix}` : `Approve ${copy.noun}`;
+  }
+  if (isError) {
+    return suffix ? `Failed ${copy.noun} ${suffix}` : `Failed ${copy.noun}`;
+  }
+  const subtitle = copy.subtitle?.({ input, output, isStreaming, isError });
+  if (subtitle) {
+    return subtitle;
   }
   const verb = copy.verbs[isStreaming ? 0 : 1];
   return suffix ? `${verb} ${copy.noun} ${suffix}` : `${verb} ${copy.noun}`;
@@ -548,6 +561,7 @@ export function ChatToolBlock({
 }: ChatToolBlockProps) {
   const isAwaitingApproval = state === "approval-requested";
   const [isOpen, setIsOpen] = useState(isAwaitingApproval);
+  const isError = state === "output-error";
   const isStreaming =
     state === "input-streaming" || state === "input-available";
 
@@ -562,6 +576,7 @@ export function ChatToolBlock({
     input,
     output,
     isStreaming,
+    isError,
     isAwaitingApproval,
     toolMetadata,
   });

@@ -274,6 +274,13 @@
       "when": 1780662908277,
       "tag": "0038_lush_whiplash",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1780676158854,
+      "tag": "0039_confused_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

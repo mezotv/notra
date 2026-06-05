@@ -59,7 +59,7 @@ const MCP_MANAGER_TOOL_NAMES = [
 ] as const;
 
 const MCP_STALE_TOOL_ERROR_REGEX =
-  /unknown tool|tool.*not found|schema|invalid params|invalid request/i;
+  /unknown tool|tool.*not found|no such tool|method not found|invalid params.*schema|schema validation|input schema|output schema|invalid request.*tool/i;
 
 const LAZY_MCP_DESCRIPTION =
   "MCP tools are available through lazy discovery. Use searchMcpTools to find external tools by intent, activateMcpTools before using them, then call the activated runtime tool by name. Do not invent MCP tool names.";
@@ -105,14 +105,27 @@ export async function createLazyMcpRuntime({
     ...activeMcpToolNames,
   ]);
 
-  const setActiveTools = (tools: ActivatedMcpTool[]) => {
-    for (const tool of tools) {
+  const tools: Record<string, Tool> = {};
+
+  const ensureRuntimeTool = (indexedTool: IndexedMcpTool) => {
+    tools[indexedTool.runtimeToolName] ??= createRuntimeMcpTool({
+      organizationId,
+      sessionId,
+      surface,
+      indexedTool,
+      clients,
+    });
+  };
+
+  const setActiveTools = (mcpTools: ActivatedMcpTool[]) => {
+    for (const tool of mcpTools) {
+      ensureRuntimeTool(tool);
       activeMcpToolNames.add(tool.runtimeToolName);
       activeToolNames.add(tool.runtimeToolName);
     }
   };
 
-  const tools: Record<string, Tool> = {
+  Object.assign(tools, {
     searchMcpTools: tool({
       description:
         "Search indexed MCP tools by capability, service, or parameter name. Use this before activating unknown external tools.",
@@ -240,17 +253,12 @@ export async function createLazyMcpRuntime({
         return result;
       },
     }),
-  };
+  });
 
   for (const indexedTool of runtimeTools) {
-    tools[indexedTool.runtimeToolName] = createRuntimeMcpTool({
-      organizationId,
-      sessionId,
-      surface,
-      indexedTool,
-      clients,
-    });
+    ensureRuntimeTool(indexedTool);
   }
+  setActiveTools(activatedTools);
 
   return {
     tools,
@@ -299,7 +307,7 @@ function createRuntimeMcpTool({
         organizationId,
         sessionId,
         surface,
-        runtimeToolName: indexedTool.runtimeToolName,
+        toolId: indexedTool.id,
       });
 
       if (!isActivated) {
@@ -344,7 +352,7 @@ function createRuntimeMcpTool({
           organizationId,
           sessionId,
           surface,
-          runtimeToolName: indexedTool.runtimeToolName,
+          toolId: indexedTool.id,
         });
 
         return output;
@@ -394,6 +402,9 @@ async function getMcpClient({
   const promise = createMcpClientForIntegration({
     organizationId,
     integrationId,
+  }).catch((error) => {
+    clients.delete(integrationId);
+    throw error;
   });
   clients.set(integrationId, promise);
   return promise;
