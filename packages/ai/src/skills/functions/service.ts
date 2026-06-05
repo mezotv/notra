@@ -1,13 +1,19 @@
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { DEFAULT_SKILL_CATALOG_LIMIT } from "../constants";
 import type {
   ListSkillsOptions,
   SkillContent,
   SkillServiceContext,
 } from "../types";
-import { filterPromptableSkills, normalizeSkillSummary } from "./guidance";
+import { normalizeSkillSummary } from "./guidance";
+
+const promptableSkillWhere = (organizationId: string) =>
+  and(
+    eq(skills.organizationId, organizationId),
+    sql`length(trim(${skills.description})) > 0`
+  );
 
 export async function listSkillCatalog(
   ctx: SkillServiceContext,
@@ -15,6 +21,7 @@ export async function listSkillCatalog(
 ) {
   const limit = options.limit ?? DEFAULT_SKILL_CATALOG_LIMIT;
   const offset = options.offset ?? 0;
+  const where = promptableSkillWhere(ctx.organizationId);
 
   const [rows, totalResult] = await Promise.all([
     db
@@ -24,20 +31,35 @@ export async function listSkillCatalog(
         isSystem: skills.isSystem,
       })
       .from(skills)
-      .where(eq(skills.organizationId, ctx.organizationId))
+      .where(where)
       .orderBy(asc(skills.name))
       .limit(limit)
       .offset(offset),
-    db
-      .select({ total: count() })
-      .from(skills)
-      .where(eq(skills.organizationId, ctx.organizationId)),
+    db.select({ total: count() }).from(skills).where(where),
   ]);
 
   return {
-    skills: filterPromptableSkills(rows.map(normalizeSkillSummary)),
+    skills: rows.map(normalizeSkillSummary),
     total: totalResult[0]?.total ?? 0,
   };
+}
+
+export async function listSkillSummaries(
+  ctx: SkillServiceContext,
+  options: Pick<ListSkillsOptions, "limit"> = {}
+) {
+  const limit = options.limit ?? DEFAULT_SKILL_CATALOG_LIMIT;
+  const rows = await db
+    .select({
+      name: skills.name,
+      description: skills.description,
+    })
+    .from(skills)
+    .where(promptableSkillWhere(ctx.organizationId))
+    .orderBy(asc(skills.name))
+    .limit(limit);
+
+  return rows.map(normalizeSkillSummary);
 }
 
 export async function loadSkillByName(

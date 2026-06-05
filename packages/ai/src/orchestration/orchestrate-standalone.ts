@@ -2,7 +2,7 @@ import { getEnabledMcpServerCount } from "@notra/ai/integrations/mcp-tool-index"
 import { createModel } from "@notra/ai/model";
 import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import { STANDALONE_SKILL_CATALOG_LIMIT } from "@notra/ai/skills/constants";
-import { listSkillCatalog } from "@notra/ai/skills/functions/service";
+import { listSkillSummaries } from "@notra/ai/skills/functions/service";
 import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import type {
   AutoThinkingLevel,
@@ -286,12 +286,10 @@ export async function orchestrateStandaloneChat(
 }
 
 async function getStandaloneSkillSummaries(organizationId: string) {
-  return (
-    await listSkillCatalog(
-      { organizationId },
-      { limit: STANDALONE_SKILL_CATALOG_LIMIT }
-    )
-  ).skills;
+  return listSkillSummaries(
+    { organizationId },
+    { limit: STANDALONE_SKILL_CATALOG_LIMIT }
+  );
 }
 
 function createStandaloneToolProvisioningRuntime({

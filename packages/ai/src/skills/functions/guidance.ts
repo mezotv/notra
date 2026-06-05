@@ -35,7 +35,7 @@ export function renderSkillGuidance(skills: SkillSummary[] = []) {
     Use getSkillByName to load the full skill body before applying a matching skill. Do not invent skill names.
 
     <available_skills>
-    ${promptableSkills.map((skill) => `- ${skill.name}: ${skill.description}`).join("\n")}
+    ${promptableSkills.map(formatSkillCatalogLine).join("\n")}
     </available_skills>
   `;
 }
@@ -44,7 +44,11 @@ export function renderSkillToolOutput(skill: SkillContent) {
   return dedent`
     <skill_content name="${escapeXmlAttribute(skill.name)}">
     <description>${escapeXmlText(normalizeInlineText(skill.description))}</description>
-    ${skill.content.trim()}
+    ${escapeXmlText(skill.content.trim())}
     </skill_content>
   `;
+}
+
+function formatSkillCatalogLine(skill: SkillSummary) {
+  return `- ${escapeXmlText(skill.name)}: ${escapeXmlText(skill.description)}`;
 }
