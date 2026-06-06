@@ -102,10 +102,57 @@ export async function handleImage(
   }
 }
 
+function buildSelectedItemsContext(ctx: ContentGenerationContext): string {
+  const filters = ctx.selectionFilters;
+
+  if (!filters) {
+    return "";
+  }
+
+  const lines: string[] = [];
+
+  const commitShas = filters.allowedCommitShas ?? [];
+  if (commitShas.length > 0) {
+    lines.push(
+      `Commits: ${commitShas.join(", ")}. Read each one with \`git show <sha>\` to see exactly what code changed.`
+    );
+  }
+
+  const prNumbers = Object.values(
+    filters.allowedPullRequestNumbersByIntegrationId ?? {}
+  ).flat();
+  if (prNumbers.length > 0) {
+    lines.push(
+      `Pull requests: ${prNumbers.map((number) => `#${number}`).join(", ")}. Read each diff with \`gh pr diff <number>\` (or \`git show\` on its merge commit) to see exactly what code changed.`
+    );
+  }
+
+  const releaseTags = [
+    ...(filters.allowedReleaseTagsGlobal ?? []),
+    ...Object.values(filters.allowedReleaseTagsByIntegrationId ?? {}).flat(),
+  ];
+  if (releaseTags.length > 0) {
+    lines.push(
+      `Releases: ${releaseTags.join(", ")}. Inspect the code these tags introduced.`
+    );
+  }
+
+  if (lines.length === 0) {
+    return "";
+  }
+
+  return [
+    "This image must be about ONLY these specific items the user cherry-picked. Open the code they changed, understand what the change does for the user, and design the image around that outcome. Do not depict any other repository activity.",
+    ...lines,
+  ].join("\n");
+}
+
 function buildImagePrompt(ctx: ContentGenerationContext) {
+  const selectedItemsContext = buildSelectedItemsContext(ctx);
   const promptParts = [
     `Create a polished 1200x630 marketing asset for: ${ctx.promptInput.sourceTargets}.`,
-    `Use repository activity from ${ctx.promptInput.lookbackLabel} (${ctx.promptInput.lookbackStartIso} to ${ctx.promptInput.lookbackEndIso}).`,
+    selectedItemsContext ||
+      `Use repository activity from ${ctx.promptInput.lookbackLabel} (${ctx.promptInput.lookbackStartIso} to ${ctx.promptInput.lookbackEndIso}).`,
     ctx.promptInput.companyName
       ? `Company name: ${ctx.promptInput.companyName}.`
       : "",

@@ -10,7 +10,7 @@ function describeSource(source: RepoImageSourceContext): string {
     return [
       "<source-type>prompt</source-type>",
       `<user-prompt>${source.prompt}</user-prompt>`,
-      `<guidance>If the prompt names a feature, page, route, or component (e.g. "chat", "billing", "editor"), find that feature in the repo and copy its visual style. Otherwise use the landing page.</guidance>`,
+      `<guidance>If the prompt names specific commits, pull requests, or releases, read the actual code they changed (\`git show <sha>\`, \`gh pr diff <number>\`) and design the image around what that change does for the user. If it names a feature, page, route, or component (e.g. "chat", "billing", "editor"), find that feature in the repo and copy its visual style. Otherwise use the landing page.</guidance>`,
     ].join("\n");
   }
   if (source.mode === "pr") {
@@ -20,7 +20,7 @@ function describeSource(source: RepoImageSourceContext): string {
       `<pr-title>${source.title}</pr-title>`,
       `<pr-body>${source.body.slice(0, 240)}</pr-body>`,
       `<top-files>${source.topFiles.slice(0, 6).join(", ")}</top-files>`,
-      `<guidance>Open the changed files. Use those components' visual style.</guidance>`,
+      `<guidance>This image is about pull request #${source.prNumber}. Read its actual diff with \`gh pr diff ${source.prNumber}\` or \`git show\` / \`git diff\` on the listed files, and open the changed files. Understand what the change does for the user, then design from those components' visual style.</guidance>`,
     ].join("\n");
   }
   return [
@@ -28,7 +28,7 @@ function describeSource(source: RepoImageSourceContext): string {
     `<commit-sha>${source.shortSha}</commit-sha>`,
     `<commit-message>${source.message.slice(0, 240)}</commit-message>`,
     `<top-files>${source.topFiles.slice(0, 6).join(", ")}</top-files>`,
-    `<guidance>Open the changed files. Use those components' visual style.</guidance>`,
+    `<guidance>This image is about commit ${source.shortSha}. Read its actual diff with \`git show ${source.shortSha}\`, and open the changed files. Understand what the change does for the user, then design from those components' visual style.</guidance>`,
   ].join("\n");
 }
 
@@ -78,6 +78,18 @@ Gather source material before designing. Skipping this step produces generic out
 5. Component translation: When the feature is built in JSX, TSX, or Vue, manually translate the real component markup into static HTML. Match components as they are actually composed in the app, not their isolated primitive definitions. Inspect the route or parent that uses them, then preserve the real visual hierarchy, labels, spacing, colors, surfaces, button variants, input/table/card states, and radius values as closely as possible. Convert class-based styles and design tokens into inline styles. You may scale components up to make the 1200x630 image stronger, but scaling must preserve proportions and spacing. Do not invent a generic marketing layout when a real component exists.
 </research>
 
+<image-plan>
+After research and before writing any HTML, write a short image plan that locks in the visual angle for this specific change. The plan is your own design brief; do not write it to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Base it on what the changed code actually does for the user, not on the raw diff. Use exactly these five bolded sections, each one or a few short lines:
+
+- **Approach:** One sentence naming the visual strategy (e.g. "Outcome/benefit visual") and a because-clause justifying it from the nature of the change. Most backend, runtime, API, performance, and docs changes should show the user-felt outcome, not code or dashboards.
+- **Concept:** One sentence describing the single image idea, its focal subject, and what it implies.
+- **Layout:** Composition in 2-3 lines: the focal element and where it sits, what is cropped out (no full browser chrome or dashboard), the background treatment, and any subordinate supporting elements.
+- **Content:** The concrete elements to depict in 2-3 lines: real component, labels, rows, chips, status cues, and recognizable vendor or brand icons the change implies. Keep on-image text minimal.
+- **Style notes:** Aesthetic and guardrails in 1-2 lines: the repo's tokens and one accent color, plus the avoid-list (no code snippets, no charts, no version or PR eyebrows baked into the image).
+
+Then execute this plan: every HTML decision must follow it. If you deviate while designing, update the plan first so it stays the source of truth.
+</image-plan>
+
 <html-contract>
 The loaded satori and marketing-image-generation skills contain the general renderer rules, marketing workflow, anti-slop patterns, and quality checks. Follow them. These additional constraints are specific to this repo-image pipeline:
 
@@ -113,14 +125,15 @@ The HTML follows this shape (this is structure only; replace the content with ma
 </output-format>
 
 <the-ask>
-1. Run the research steps to gather tokens, brand assets, and the real component to translate.
-2. Design the 1200x630 image as inline-styled HTML following every rule in <html-contract>.
-3. Run the <quality-loop> on a draft until it would pass at Fortune 500 standards.
-4. Use the Write tool to create ${REPO_IMAGE_OUTPUT_HTML_PATH} with the final HTML. Stop after the file exists.
+1. Read the diff of the commit, PR, or release this image is about and run the research steps to gather tokens, brand assets, and the real component to translate.
+2. Write the <image-plan> for this specific change.
+3. Execute the plan: design the 1200x630 image as inline-styled HTML following the plan and every rule in <html-contract>.
+4. Run the <quality-loop> on a draft until it would pass at Fortune 500 standards and still matches the plan.
+5. Use the Write tool to create ${REPO_IMAGE_OUTPUT_HTML_PATH} with the final HTML. Stop after the file exists.
 </the-ask>
 
 <thinking-instructions>
-Before writing HTML, decide which real component or page in this repo best matches the subject and which globals.css tokens you will use. Plan the layout math (widths + padding + gaps for each row and column) so you know the design will fit 1200x630 with safe margins. Only then draft the HTML and run the quality loop.
+First read what the named commit, PR, or release actually changed and what it does for the user. Then decide which real component or page in this repo best matches the subject and which globals.css tokens you will use, and commit to that in the <image-plan>. Plan the layout math (widths + padding + gaps for each row and column) so you know the design will fit 1200x630 with safe margins. Only then draft the HTML and run the quality loop.
 </thinking-instructions>`;
 }
 
