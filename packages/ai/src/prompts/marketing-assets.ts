@@ -89,6 +89,8 @@ After research and before writing any HTML, write a short image plan that locks 
 - **Style notes:** Aesthetic and guardrails in 1-2 lines: the repo's globals.css tokens and one accent color, plus the avoid-list (no code snippets, no charts, no version or PR eyebrows, no generic SaaS illustration in place of a real component).
 
 Then execute this plan: every HTML decision must follow it, and the rendered image must look like a real screenshot of the anchor component. If you deviate while designing, update the plan first so it stays the source of truth.
+
+You may save the plan as a Markdown file such as image-plan.md in the current working directory for future context. This context file is optional and must not replace or delay the required ${REPO_IMAGE_OUTPUT_HTML_PATH} deliverable.
 </image-plan>
 
 <html-contract>
@@ -182,6 +184,31 @@ You MUST edit the file on disk. Use the Read tool or shell command to read ${REP
 <quality-loop>
 After editing, inspect the final HTML for broken layout, clipping, missing text, and accidental changes outside the requested edit. If the requested text appears in the existing design, replace it exactly. If the text is rendered through an image or SVG asset, recreate that part with normal HTML text or an SVG path-safe alternative so the requested wording is visible.
 </quality-loop>`;
+}
+
+export function buildMarketingAssetLogoReviewPrompt(params: {
+  owner: string;
+  repo: string;
+  branch: string;
+  source: RepoImageSourceContext;
+}) {
+  const sourceContext = describeSource(params.source);
+
+  return dedent`Review the attached rendered 1200x630 marketing image for unofficial or fabricated company, product, or vendor logos.
+
+Repository context: ${params.owner}/${params.repo}@${params.branch}
+
+Subject:
+${sourceContext}
+
+Rules:
+- Focus only on visible company/product/vendor logos and brand marks, including stylized wordmarks and app icons that imply a real organization.
+- Pass if the image uses the repo's own real logo, official brand assets, or no company logos.
+- Pass if the only marks are generic UI icons, abstract shapes, avatars, status dots, or decorative glyphs that do not claim to be a company logo.
+- Fail if any logo looks hand-drawn, approximated, fabricated, misspelled, or likely not the real official mark for the company/product it represents.
+- Fail if a recognizable vendor logo is used as the focal subject instead of a subordinate accent.
+
+If it fails, produce a concise revision prompt for the sandbox agent. The prompt must tell it exactly which logo issue to fix and instruct it to use official assets through the brand-logos skill, use real repo assets, or remove the questionable logo. Preserve the existing layout unless replacing/removing the logo requires a minor spacing adjustment.`;
 }
 
 export function buildMarketingAssetMissingOutputPrompt() {

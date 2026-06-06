@@ -3,10 +3,12 @@ import {
   BOX_BASE_URL,
   IMAGE_GEN_AGENT_SKILLS_INSTALL_COMMAND,
   IMAGE_GEN_MODEL_ID,
+  IMAGE_REVIEW_MODEL_ID,
   RECOVERY_AGENT_TIMEOUT_MS,
   REPO_IMAGE_OUTPUT_HTML_PATH,
   TRAILING_SLASH_RE,
 } from "@notra/ai/constants/repo-image";
+import { gateway } from "@notra/ai/gateway";
 import {
   getDecryptedToken,
   getGitHubIntegrationById,
@@ -14,6 +16,7 @@ import {
 } from "@notra/ai/integrations/github";
 import {
   buildMarketingAssetExtractionPrompt,
+  buildMarketingAssetLogoReviewPrompt,
   buildMarketingAssetMissingOutputPrompt,
   buildMarketingAssetRevisionPrompt,
 } from "@notra/ai/prompts/marketing-assets";
@@ -28,6 +31,8 @@ import { shortSha } from "@notra/ai/utils/repo-image";
 import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
 import { withLongFetchTimeouts } from "@notra/ai/utils/undici-dispatcher";
 import { Agent, Box } from "@upstash/box";
+import { generateText, Output } from "ai";
+import { z } from "zod";
 
 export class RepoImageError extends Error {
   readonly code: RepoImageErrorCode;
@@ -157,6 +162,44 @@ function sleep(ms: number) {
 }
 
 const MISSING_OUTPUT_RECOVERY_ATTEMPTS = 3;
+
+const repoImageLogoReviewSchema = z.object({
+  needsRevision: z.boolean(),
+  reason: z.string().min(1),
+  revisionPrompt: z.string().nullable(),
+});
+
+async function reviewRenderedRepoImageForLogoIssues(params: {
+  pngBase64: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  source: RepoImageSourceContext;
+}) {
+  const { output } = await generateText({
+    model: gateway(IMAGE_REVIEW_MODEL_ID),
+    output: Output.object({ schema: repoImageLogoReviewSchema }),
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: buildMarketingAssetLogoReviewPrompt(params),
+          },
+          {
+            type: "image",
+            image: params.pngBase64,
+            mediaType: "image/png",
+          },
+        ],
+      },
+    ],
+    maxOutputTokens: 700,
+  });
+
+  return output;
+}
 
 async function buildSourceContext(params: {
   mode: GenerateRepoImageInput["mode"];
@@ -337,6 +380,7 @@ export async function generateRepoImage(params: {
       : await withBoxRetry(() => Box.create(boxConfig));
 
     let html: string;
+    let rendered: Awaited<ReturnType<typeof renderHtmlToImages>>;
     let usage: GenerateRepoImageResult["usage"];
     let snapshot: Awaited<ReturnType<typeof box.snapshot>> | null = null;
 
@@ -416,6 +460,56 @@ export async function generateRepoImage(params: {
       html = await withBoxRetry(() =>
         box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH)
       );
+      rendered = await renderHtmlToImages(html);
+
+      let review: z.infer<typeof repoImageLogoReviewSchema> | null = null;
+      try {
+        review = await reviewRenderedRepoImageForLogoIssues({
+          pngBase64: rendered.pngBase64,
+          owner: repository.owner,
+          repo: repository.repo,
+          branch: input.branch,
+          source,
+        });
+      } catch (error) {
+        console.warn("[repo-image] logo review skipped after error", error);
+      }
+
+      if (review?.needsRevision) {
+        const revisionPrompt =
+          review.revisionPrompt ??
+          "Review the rendered image for unofficial or fabricated company logos. Replace any questionable logos with official assets from the brand-logos skill or real repo assets, or remove them if no official source is available. Preserve the current layout as much as possible.";
+
+        console.log(
+          `[repo-image] logo review requested revision: ${review.reason}`
+        );
+
+        const reviewRevisionRun = await runRepoImageAgentStream({
+          box,
+          prompt: buildMarketingAssetRevisionPrompt({
+            prompt: revisionPrompt,
+          }),
+          timeout: RECOVERY_AGENT_TIMEOUT_MS,
+          label: "logo-review-revision",
+        });
+        usage = mergeRepoImageUsage(
+          usage,
+          extractRepoImageUsage(reviewRevisionRun.cost, IMAGE_GEN_MODEL_ID)
+        );
+
+        if (!(await hasRepoImageOutput(box))) {
+          throw new RepoImageError(
+            "agent_failed",
+            `Logo review revision removed ${REPO_IMAGE_OUTPUT_HTML_PATH}`
+          );
+        }
+
+        html = await withBoxRetry(() =>
+          box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH)
+        );
+        rendered = await renderHtmlToImages(html);
+      }
+
       snapshot = await withBoxRetry(() =>
         box.snapshot({
           name:
@@ -429,11 +523,9 @@ export async function generateRepoImage(params: {
       });
     }
 
-    const { svg, pngBase64 } = await renderHtmlToImages(html);
-
     return {
-      pngBase64,
-      svg,
+      pngBase64: rendered.pngBase64,
+      svg: rendered.svg,
       html,
       sandbox: snapshot
         ? {
