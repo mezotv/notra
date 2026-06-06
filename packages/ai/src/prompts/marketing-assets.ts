@@ -79,15 +79,16 @@ Gather source material before designing. Skipping this step produces generic out
 </research>
 
 <image-plan>
-After research and before writing any HTML, write a short image plan that locks in the visual angle for this specific change. The plan is your own design brief; do not write it to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Base it on what the changed code actually does for the user, not on the raw diff. Use exactly these five bolded sections, each one or a few short lines:
+After research and before writing any HTML, write a short image plan that locks in the visual angle for this specific change. The plan is your own design brief; do not write it to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Base it on what the changed code actually does for the user, not on the raw diff. Use exactly these six bolded sections, each one or a few short lines:
 
-- **Approach:** One sentence naming the visual strategy (e.g. "Outcome/benefit visual") and a because-clause justifying it from the nature of the change. Most backend, runtime, API, performance, and docs changes should show the user-felt outcome, not code or dashboards.
+- **Approach:** One sentence naming the visual strategy (e.g. "Outcome/benefit visual") and a because-clause justifying it from the nature of the change. Most backend, runtime, API, performance, and docs changes should show the user-felt outcome rather than code or dashboards — but the outcome must still be depicted with the repo's real product UI, not abstract illustration.
 - **Concept:** One sentence describing the single image idea, its focal subject, and what it implies.
-- **Layout:** Composition in 2-3 lines: the focal element and where it sits, what is cropped out (no full browser chrome or dashboard), the background treatment, and any subordinate supporting elements.
-- **Content:** The concrete elements to depict in 2-3 lines: real component, labels, rows, chips, status cues, and recognizable vendor or brand icons the change implies. Keep on-image text minimal.
-- **Style notes:** Aesthetic and guardrails in 1-2 lines: the repo's tokens and one accent color, plus the avoid-list (no code snippets, no charts, no version or PR eyebrows baked into the image).
+- **Anchor component:** Name the exact real component or page from this repo that is the focal subject, with the file path you found during research. Every plan must have one. If the change is backend-only, pick the real surface a user touches that this change improves. Never make the focal subject a generic illustration, abstract icon cluster, or invented mockup.
+- **Layout:** Composition in 2-3 lines: where the anchor component sits, what is cropped out (no full browser chrome or dashboard), the background treatment, and any subordinate supporting elements.
+- **Content:** The concrete elements to depict in 2-3 lines, drawn from the anchor component's actual markup: its real labels, rows, chips, surfaces, button variants, and status cues. Recognizable vendor or brand icons may appear only as subordinate accents, never as the focal subject. Keep on-image text minimal.
+- **Style notes:** Aesthetic and guardrails in 1-2 lines: the repo's globals.css tokens and one accent color, plus the avoid-list (no code snippets, no charts, no version or PR eyebrows, no generic SaaS illustration in place of a real component).
 
-Then execute this plan: every HTML decision must follow it. If you deviate while designing, update the plan first so it stays the source of truth.
+Then execute this plan: every HTML decision must follow it, and the rendered image must look like a real screenshot of the anchor component. If you deviate while designing, update the plan first so it stays the source of truth.
 </image-plan>
 
 <html-contract>
