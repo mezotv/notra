@@ -25,6 +25,13 @@ export const PAID_OR_LEGACY_PLAN_IDS: Set<string> = new Set([
   PLANS.PRO_YEARLY,
 ]);
 
+export const ACTIVE_PAID_PLAN_IDS: Set<string> = new Set([
+  PLANS.BASIC,
+  PLANS.BASIC_YEARLY,
+  PLANS.PRO,
+  PLANS.PRO_YEARLY,
+]);
+
 export const ADDONS = {
   AI_CREDITS_TOPUP: "ai_credits_top_up",
 } as const;

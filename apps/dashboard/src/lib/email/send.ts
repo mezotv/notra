@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
 import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
@@ -12,6 +13,7 @@ import { FEEDBACK_SENTIMENT_META } from "@notra/email/utils/feedback";
 import type { Resend } from "resend";
 import type {
   EmailResult,
+  SendAiCreditsDepletedEmailProps,
   SendFeedbackEmailProps,
   SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
@@ -295,6 +297,39 @@ export async function sendScheduledContentSkippedEmail(
       tags: [{ name: "category", value: "schedule-content-skipped" }],
     },
     `notra:schedule-content-skipped:${recipientEmail}:${scheduleName}:${Date.now()}`
+  );
+}
+
+export async function sendAiCreditsDepletedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    automationName,
+    organizationSlug,
+    subject,
+  }: SendAiCreditsDepletedEmailProps
+) {
+  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
+  const today = new Date().toISOString().slice(0, 10);
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject: subject ?? "Your Notra AI credits are depleted",
+      react: AiCreditsDepletedEmail({
+        organizationName,
+        organizationSlug,
+        automationName,
+        creditsLink,
+      }),
+      tags: [{ name: "category", value: "ai-credits-depleted" }],
+    },
+    `notra:ai-credits-depleted:${recipientEmail}:${organizationSlug}:${automationName}:${today}`
   );
 }
 

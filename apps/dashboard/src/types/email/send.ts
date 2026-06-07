@@ -44,6 +44,14 @@ export interface SendScheduledContentSkippedEmailProps {
   subject?: string;
 }
 
+export interface SendAiCreditsDepletedEmailProps {
+  recipientEmail: string;
+  organizationName: string;
+  organizationSlug: string;
+  automationName: string;
+  subject?: string;
+}
+
 export interface ScheduledCreatedContentItem {
   title: string;
   contentLink: string;

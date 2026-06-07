@@ -1,9 +1,6 @@
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
-import {
-  calculateTokenCostCents,
-  shouldApplyMarkup,
-} from "@notra/ai/billing/token-pricing";
+import { calculateTokenCostCents } from "@notra/ai/billing/token-pricing";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
@@ -24,9 +21,9 @@ import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
-import type { CheckResponse } from "autumn-js";
 import { and, eq } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
+import { checkWorkflowAiCredits } from "@/lib/billing/workflow-ai-credits";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
@@ -40,6 +37,7 @@ import {
 } from "@/lib/generations/tracking";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
+import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
 import {
   parseLookbackWindow,
   parseTriggerOutputConfig,
@@ -102,6 +100,37 @@ export const { POST } = serve<EventWorkflowPayload>(
 
     if (!trigger.enabled) {
       console.log(`[Event] Trigger ${triggerId} is disabled, canceling`);
+      await context.cancel();
+      return;
+    }
+
+    const aiCreditReservation = await context.run(
+      "check-ai-credit-balance",
+      async () => checkWorkflowAiCredits(trigger.organizationId)
+    );
+
+    if (!aiCreditReservation.allowed) {
+      if (aiCreditReservation.reason === "no_active_paid_plan") {
+        console.warn(
+          `[Event] No active paid plan for org ${trigger.organizationId}, canceling trigger ${triggerId} without notification`
+        );
+      }
+
+      if (aiCreditReservation.shouldNotify) {
+        await context.run("send-ai-credits-depleted-emails", () =>
+          sendAiCreditsDepletedEmails({
+            organizationId: trigger.organizationId,
+            automationName: trigger.name.trim() || `${eventType} event`,
+            logPrefix: "Event",
+          })
+        );
+
+        console.warn(
+          `[Event] AI credits depleted for paid org ${trigger.organizationId}, canceling trigger ${triggerId}`,
+          { balanceRemaining: aiCreditReservation.balanceRemaining }
+        );
+      }
+
       await context.cancel();
       return;
     }
@@ -192,44 +221,6 @@ export const { POST } = serve<EventWorkflowPayload>(
         };
       }
     );
-
-    const aiCreditReservation = await context.run<{
-      canceled: boolean;
-      reserved: boolean;
-      useMarkup: boolean;
-    }>("reserve-ai-credit", async () => {
-      if (!autumn) {
-        return { canceled: false, reserved: false, useMarkup: false };
-      }
-
-      let data: CheckResponse | null = null;
-      try {
-        data = await autumn.check({
-          customerId: trigger.organizationId,
-          featureId: FEATURES.AI_CREDITS,
-          requiredBalance: 1,
-        });
-      } catch (error) {
-        throw new Error(`Autumn check failed: ${String(error)}`);
-      }
-
-      if (!data?.allowed) {
-        console.warn(
-          `[Event] AI credit limit reached for org ${trigger.organizationId}, canceling trigger ${triggerId}`,
-          { balance: data?.balance ?? 0 }
-        );
-        await context.cancel();
-        return { canceled: true, reserved: false, useMarkup: false };
-      }
-
-      const useMarkup = shouldApplyMarkup(data?.balance ?? null);
-
-      return { canceled: false, reserved: true, useMarkup };
-    });
-
-    if (aiCreditReservation.canceled) {
-      return;
-    }
 
     const logRetentionDays = await context.run<LogRetentionDays>(
       "fetch-retention",

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "exports": {
     "./emails/feedback": "./src/emails/feedback.tsx",
+    "./emails/ai-credits-depleted": "./src/emails/ai-credits-depleted.tsx",
     "./emails/invite": "./src/emails/invite.tsx",
     "./emails/reset": "./src/emails/reset.tsx",
     "./emails/schedule-content-created": "./src/emails/schedule-content-created.tsx",
@@ -10,6 +11,7 @@
     "./emails/schedule-content-skipped": "./src/emails/schedule-content-skipped.tsx",
     "./emails/verify": "./src/emails/verify.tsx",
     "./emails/welcome": "./src/emails/welcome.tsx",
+    "./types/ai-credits-depleted": "./src/types/ai-credits-depleted.ts",
     "./types/feedback": "./src/types/feedback.ts",
     "./utils/config": "./src/utils/config.ts",
     "./utils/dev": "./src/utils/dev.ts",
