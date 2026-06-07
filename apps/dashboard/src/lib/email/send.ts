@@ -312,7 +312,12 @@ export async function sendAiCreditsDepletedEmail(
 ) {
   const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
   const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
-  const today = new Date().toISOString().slice(0, 10);
+  const idempotencyKey = createHash("sha256")
+    .update(
+      `${recipientEmail}:${organizationSlug}:${automationName}:${Date.now()}`
+    )
+    .digest("hex")
+    .slice(0, 32);
 
   return sendWithRetry(
     resend,
@@ -329,7 +334,7 @@ export async function sendAiCreditsDepletedEmail(
       }),
       tags: [{ name: "category", value: "ai-credits-depleted" }],
     },
-    `notra:ai-credits-depleted:${recipientEmail}:${organizationSlug}:${automationName}:${today}`
+    idempotencyKey
   );
 }
 
