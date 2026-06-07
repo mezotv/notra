@@ -1,11 +1,16 @@
 import { unstable_cache } from "next/cache";
 import { getAuthorHref } from "@/utils/authors";
 import {
+  BLOG_CATEGORY_FALLBACK_DESCRIPTION,
+  BLOG_CATEGORY_PATH,
   BLOG_INDEX_PATH,
-  MARBLE_BLOG_CATEGORY_SLUG,
+  BLOG_TAB_CHANGELOG_LABEL,
+  BLOG_TAB_OVERVIEW_LABEL,
   MARBLE_CACHE_KEYS,
   MARBLE_CACHE_TAGS,
+  MARBLE_CHANGELOG_CATEGORY_SLUG,
   MARBLE_REVALIDATE_SECONDS,
+  NOTRA_CHANGELOG_INDEX_PATH,
 } from "@/utils/constants";
 import {
   getMarblePostCacheTag,
@@ -15,6 +20,8 @@ import {
 import type {
   BlogCardAuthor,
   BlogCardItem,
+  BlogCategory,
+  BlogCategoryTab,
   BlogPaginationLink,
   NotraBlogAuthor,
   NotraBlogPost,
@@ -77,7 +84,7 @@ function normalizePost(post: MarblePublishedPost): NotraBlogPost {
     apiSlug.length > 0 ? apiSlug : createBlogPostSlug({ title: post.title });
   const createdAt = post.publishedAt.toISOString();
   const markdown = post.markdown || post.content;
-  const authors: NotraBlogAuthor[] = post.authors.map((author) => ({
+  const authors: NotraBlogAuthor[] = (post.authors ?? []).map((author) => ({
     id: author.id,
     name: author.name,
     image: author.image,
@@ -104,6 +111,13 @@ function normalizePost(post: MarblePublishedPost): NotraBlogPost {
     slug,
     excerpt: post.description.trim() || getPostExcerpt(markdown, post.title),
     authors,
+    category: post.category
+      ? {
+          name: post.category.name,
+          slug: post.category.slug,
+          description: post.category.description,
+        }
+      : null,
   };
 }
 
@@ -111,7 +125,7 @@ const fetchBlogPosts = unstable_cache(
   async () => {
     try {
       const posts = await listMarblePublishedPosts({
-        category: MARBLE_BLOG_CATEGORY_SLUG,
+        excludeCategory: MARBLE_CHANGELOG_CATEGORY_SLUG,
       });
       return posts.map(normalizePost);
     } catch (error) {
@@ -122,10 +136,7 @@ const fetchBlogPosts = unstable_cache(
   [MARBLE_CACHE_KEYS.blogPosts],
   {
     revalidate: MARBLE_REVALIDATE_SECONDS.blogPosts,
-    tags: [
-      MARBLE_CACHE_TAGS.blogPosts,
-      `${MARBLE_CACHE_TAGS.blogPosts}:${MARBLE_BLOG_CATEGORY_SLUG}`,
-    ],
+    tags: [MARBLE_CACHE_TAGS.blogPosts],
   }
 );
 
@@ -155,17 +166,13 @@ export async function getNotraBlogPostBySlug(slug: string) {
     [MARBLE_CACHE_KEYS.blogPosts, slug],
     {
       revalidate: MARBLE_REVALIDATE_SECONDS.blogPosts,
-      tags: [
-        MARBLE_CACHE_TAGS.blogPosts,
-        `${MARBLE_CACHE_TAGS.blogPosts}:${MARBLE_BLOG_CATEGORY_SLUG}`,
-        getMarblePostCacheTag(slug),
-      ],
+      tags: [MARBLE_CACHE_TAGS.blogPosts, getMarblePostCacheTag(slug)],
     }
   )();
   return posts.find((post) => post.slug === slug) ?? null;
 }
 
-function toBlogCardAuthor(
+export function toBlogCardAuthor(
   author: NotraBlogAuthor | undefined
 ): BlogCardAuthor | null {
   if (!author) {
@@ -189,7 +196,86 @@ export function buildBlogCardItems(posts: NotraBlogPost[]): BlogCardItem[] {
     href: getBlogPostHref(post.slug),
     date: post.createdAt,
     author: toBlogCardAuthor(post.authors[0]),
+    kind: "blog",
   }));
+}
+
+export async function listNotraBlogPostsByCategory(categorySlug: string) {
+  const posts = await listNotraBlogPosts();
+  return posts.filter((post) => post.category?.slug === categorySlug);
+}
+
+export async function listBlogCategories(): Promise<BlogCategory[]> {
+  const posts = await listNotraBlogPosts();
+  const categories = new Map<string, BlogCategory>();
+
+  for (const post of posts) {
+    if (!post.category) {
+      continue;
+    }
+
+    const existing = categories.get(post.category.slug);
+
+    if (existing) {
+      existing.count += 1;
+      continue;
+    }
+
+    categories.set(post.category.slug, {
+      name: post.category.name,
+      slug: post.category.slug,
+      description: post.category.description,
+      count: 1,
+    });
+  }
+
+  return [...categories.values()].sort((left, right) => {
+    if (right.count !== left.count) {
+      return right.count - left.count;
+    }
+
+    return left.name.localeCompare(right.name);
+  });
+}
+
+export async function getBlogCategoryBySlug(categorySlug: string) {
+  const categories = await listBlogCategories();
+  return categories.find((category) => category.slug === categorySlug) ?? null;
+}
+
+export function getBlogCategoryHref(categorySlug: string) {
+  return `${BLOG_CATEGORY_PATH}/${categorySlug}`;
+}
+
+export function getBlogCategoryDescription(category: BlogCategory) {
+  return category.description?.trim() || BLOG_CATEGORY_FALLBACK_DESCRIPTION;
+}
+
+export function buildBlogCategoryTabs(
+  categories: BlogCategory[]
+): BlogCategoryTab[] {
+  return [
+    {
+      key: "overview",
+      name: BLOG_TAB_OVERVIEW_LABEL,
+      href: BLOG_INDEX_PATH,
+      kind: "overview",
+    },
+    ...categories.map(
+      (category): BlogCategoryTab => ({
+        key: category.slug,
+        name: category.name,
+        href: getBlogCategoryHref(category.slug),
+        kind: "category",
+      })
+    ),
+    {
+      key: "changelog",
+      name: BLOG_TAB_CHANGELOG_LABEL,
+      href: NOTRA_CHANGELOG_INDEX_PATH,
+      kind: "changelog",
+    },
+  ];
 }
 
 function buildBlogPaginationLink(post: NotraBlogPost): BlogPaginationLink {

@@ -1,6 +1,9 @@
 export const blogPostTitleTransitionName = (slug: string) =>
   `blog-post-title-${slug}`;
 
+export const changelogPostTitleTransitionName = (slug: string) =>
+  `changelog-post-title-${slug}`;
+
 export const blogAuthorAvatarTransitionName = (slug: string) =>
   `blog-author-avatar-${slug}`;
 

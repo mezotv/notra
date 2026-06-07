@@ -37,6 +37,19 @@ export interface BlogCopyArticleItemProps {
   description: string;
 }
 
+export interface BlogPostCategory {
+  name: string;
+  slug: string;
+  description: string | null;
+}
+
+export interface BlogCategory {
+  name: string;
+  slug: string;
+  description: string | null;
+  count: number;
+}
+
 export interface NotraBlogPost {
   id: string;
   title: string;
@@ -51,6 +64,22 @@ export interface NotraBlogPost {
   slug: string;
   excerpt: string;
   authors: NotraBlogAuthor[];
+  category: BlogPostCategory | null;
+}
+
+export type BlogCardKind = "blog" | "changelog";
+
+export type BlogTabKind = "overview" | "category" | "changelog";
+
+export interface BlogCategoryTab {
+  key: string;
+  name: string;
+  href: string;
+  kind: BlogTabKind;
+}
+
+export interface BlogTabsNavProps {
+  tabs: BlogCategoryTab[];
 }
 
 interface BlogPageHeaderProps {
@@ -100,10 +129,21 @@ export interface BlogCardItem {
   href: string;
   date: string;
   author: BlogCardAuthor | null;
+  kind: BlogCardKind;
 }
 
 export interface BlogPostCardProps {
   item: BlogCardItem;
+}
+
+export interface BlogCardGridProps {
+  items: BlogCardItem[];
+  emptyTitle: string;
+  emptyDescription: string;
+}
+
+export interface BlogCategoryPageProps {
+  params: Promise<{ category: string }>;
 }
 
 interface BlogTimelineProps {

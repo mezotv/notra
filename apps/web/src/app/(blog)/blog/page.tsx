@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
-import { BlogPostCard } from "@/components/blog-post-card";
-import { buildBlogCardItems, listNotraBlogPosts } from "@/utils/blog";
+import { BlogCardGrid } from "@/components/blog-card-grid";
+import { BlogTabsNav } from "@/components/blog-tabs-nav";
+import {
+  buildBlogCardItems,
+  buildBlogCategoryTabs,
+  listBlogCategories,
+  listNotraBlogPosts,
+} from "@/utils/blog";
+import {
+  buildChangelogCardItems,
+  listNotraChangelogPosts,
+} from "@/utils/changelog";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
@@ -32,8 +42,19 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
-  const posts = await listNotraBlogPosts();
-  const cardItems = buildBlogCardItems(posts);
+  const [posts, changelogPosts, categories] = await Promise.all([
+    listNotraBlogPosts(),
+    listNotraChangelogPosts(),
+    listBlogCategories(),
+  ]);
+  const tabs = buildBlogCategoryTabs(categories);
+  const cardItems = [
+    ...buildBlogCardItems(posts),
+    ...buildChangelogCardItems(changelogPosts),
+  ].sort(
+    (left, right) =>
+      new Date(right.date).getTime() - new Date(left.date).getTime()
+  );
 
   return (
     <div className="mx-auto w-full max-w-220">
@@ -42,30 +63,21 @@ export default async function BlogPage() {
           The Notra <span className="text-primary">Blog</span>
         </h1>
         <div className="text-balance font-sans text-base text-muted-foreground leading-7">
-          Insights, guides, and stories from the Notra team.
+          {description}
         </div>
       </div>
 
-      {cardItems.length === 0 ? (
-        <div className="mt-14 w-full">
-          <div className="rounded-2xl border border-border border-dashed bg-muted/30 px-6 py-12 text-center">
-            <h2 className="font-sans font-semibold text-foreground text-xl">
-              No posts yet
-            </h2>
-            <p className="mt-2 font-sans text-muted-foreground text-sm leading-6">
-              We&apos;ll share new articles and insights here soon.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <ul className="mt-14 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
-          {cardItems.map((item) => (
-            <li className="h-full" key={item.id}>
-              <BlogPostCard item={item} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="mt-8 w-full">
+        <BlogTabsNav tabs={tabs} />
+      </div>
+
+      <div className="mt-12 w-full">
+        <BlogCardGrid
+          emptyDescription="We'll share new articles and insights here soon."
+          emptyTitle="No posts yet"
+          items={cardItems}
+        />
+      </div>
     </div>
   );
 }

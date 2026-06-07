@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
-import { ChangelogTimeline } from "@/components/changelog-timeline";
+import { ChangelogScrollTimeline } from "@/components/changelog-scroll-timeline";
 import {
   buildChangelogTimelineItems,
   listNotraChangelogPosts,
@@ -57,7 +57,7 @@ export default async function NotraChangelogPage() {
       />
 
       <div className="mt-14 w-full max-w-[760px] self-center">
-        <ChangelogTimeline
+        <ChangelogScrollTimeline
           emptyDescription="We'll share new releases and product improvements here soon."
           emptyTitle="No changelog entries yet"
           items={timelineItems}

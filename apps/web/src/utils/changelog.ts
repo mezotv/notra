@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { toBlogCardAuthor } from "@/utils/blog";
 import {
   MARBLE_CACHE_KEYS,
   MARBLE_CACHE_TAGS,
@@ -11,6 +12,11 @@ import {
   listMarblePublishedPosts,
   type MarblePublishedPost,
 } from "@/utils/marble";
+import type {
+  BlogCardItem,
+  BlogPaginationLink,
+  NotraBlogAuthor,
+} from "~types/blog";
 import type {
   ChangelogTimelineItem,
   NotraChangelogPost,
@@ -67,6 +73,18 @@ function normalizePost(post: MarblePublishedPost): NotraChangelogPost {
   const slug = post.slug || createChangelogPostSlug({ title: post.title });
   const createdAt = post.publishedAt.toISOString();
   const markdown = post.markdown || post.content;
+  const authors: NotraBlogAuthor[] = (post.authors ?? []).map((author) => ({
+    id: author.id,
+    name: author.name,
+    image: author.image,
+    slug: author.slug,
+    bio: author.bio,
+    role: author.role,
+    socials: (author.socials ?? []).map((social) => ({
+      url: social.url,
+      platform: social.platform,
+    })),
+  }));
 
   return {
     id: post.id,
@@ -81,6 +99,7 @@ function normalizePost(post: MarblePublishedPost): NotraChangelogPost {
     updatedAt: post.updatedAt.toISOString(),
     slug,
     excerpt: post.description.trim() || getPostExcerpt(markdown),
+    authors,
   };
 }
 
@@ -147,9 +166,53 @@ export function buildChangelogTimelineItems(
 ): ChangelogTimelineItem[] {
   return posts.map((post) => ({
     id: post.id,
+    slug: post.slug,
     title: post.title,
     description: post.excerpt,
     href: getChangelogPostHref(post.slug),
     date: post.createdAt,
   }));
+}
+
+export function buildChangelogCardItems(
+  posts: NotraChangelogPost[]
+): BlogCardItem[] {
+  return posts.map((post) => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    description: post.excerpt,
+    href: getChangelogPostHref(post.slug),
+    date: post.createdAt,
+    author: toBlogCardAuthor(post.authors[0]),
+    kind: "changelog",
+  }));
+}
+
+function buildChangelogPaginationLink(
+  post: NotraChangelogPost
+): BlogPaginationLink {
+  return {
+    slug: post.slug,
+    href: getChangelogPostHref(post.slug),
+    title: post.title,
+    author: null,
+  };
+}
+
+export async function getNotraChangelogPostPagination(slug: string) {
+  const posts = await listNotraChangelogPosts();
+  const index = posts.findIndex((post) => post.slug === slug);
+
+  if (index === -1) {
+    return { previous: null, next: null };
+  }
+
+  const olderPost = posts[index + 1] ?? null;
+  const newerPost = posts[index - 1] ?? null;
+
+  return {
+    previous: olderPost ? buildChangelogPaginationLink(olderPost) : null,
+    next: newerPost ? buildChangelogPaginationLink(newerPost) : null,
+  };
 }

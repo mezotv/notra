@@ -10,7 +10,8 @@ interface MarbleConfig {
 }
 
 interface ListMarblePublishedPostsOptions {
-  category: string;
+  category?: string;
+  excludeCategory?: string;
 }
 
 export interface MarblePublishedPost extends Omit<Post, "content"> {
@@ -45,11 +46,12 @@ function sortMarblePostsByPublishedAt<T extends Pick<Post, "publishedAt">>(
 
 async function listPostsByFormat(
   client: Marble,
-  { category }: ListMarblePublishedPostsOptions,
+  { category, excludeCategory }: ListMarblePublishedPostsOptions,
   format: ContentFormat
 ) {
   const iterator = await client.posts.list({
-    categories: [category],
+    ...(category ? { categories: [category] } : {}),
+    ...(excludeCategory ? { excludeCategories: [excludeCategory] } : {}),
     format,
     limit: MARBLE_DEFAULT_POST_LIMIT,
     order: "desc",
@@ -67,7 +69,7 @@ async function listPostsByFormat(
 
 export async function listMarblePublishedPosts({
   category,
-}: ListMarblePublishedPostsOptions): Promise<MarblePublishedPost[]> {
+}: ListMarblePublishedPostsOptions = {}): Promise<MarblePublishedPost[]> {
   const { apiKey } = getMarbleConfig();
 
   if (!apiKey) {

@@ -6,7 +6,6 @@ import {
   CHANGELOG_INDEX_PATH,
   LLMS_FULL_PATH,
   LLMS_PATH,
-  MARBLE_BLOG_CATEGORY_SLUG,
   MARBLE_CACHE_TAGS,
   MARBLE_CHANGELOG_CATEGORY_SLUG,
   NOTRA_CHANGELOG_INDEX_PATH,
@@ -57,9 +56,6 @@ function revalidateSharedContentPaths() {
 
 function revalidateBlogContent(slug?: string) {
   revalidateTag(MARBLE_CACHE_TAGS.blogPosts, { expire: 0 });
-  revalidateTag(`${MARBLE_CACHE_TAGS.blogPosts}:${MARBLE_BLOG_CATEGORY_SLUG}`, {
-    expire: 0,
-  });
   revalidatePath(BLOG_INDEX_PATH);
   revalidatePath(RSS_FEED_PATH);
 
@@ -125,11 +121,10 @@ export function revalidateMarbleContent({
   slug,
 }: RevalidateMarbleContentOptions = {}) {
   const normalizedCategory = category?.toLowerCase();
-  const shouldRevalidateBlog =
-    !normalizedCategory || normalizedCategory === MARBLE_BLOG_CATEGORY_SLUG;
-  const shouldRevalidateChangelog =
-    !normalizedCategory ||
+  const isChangelogCategory =
     normalizedCategory === MARBLE_CHANGELOG_CATEGORY_SLUG;
+  const shouldRevalidateBlog = !normalizedCategory || !isChangelogCategory;
+  const shouldRevalidateChangelog = !normalizedCategory || isChangelogCategory;
 
   if (shouldRevalidateBlog) {
     revalidateBlogContent(slug);

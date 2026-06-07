@@ -63,7 +63,7 @@ export default async function ChangelogHubPage() {
     }));
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-220">
       <ChangelogPageHeader
         description={
           <>
@@ -85,6 +85,6 @@ export default async function ChangelogHubPage() {
         Notra is not affiliated with any of the companies listed above. These
         changelogs are generated for demonstration purposes only.
       </p>
-    </>
+    </div>
   );
 }

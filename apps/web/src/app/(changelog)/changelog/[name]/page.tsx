@@ -72,13 +72,17 @@ export default async function ShowcaseCompanyPage({
       (left, right) =>
         new Date(right.date).getTime() - new Date(left.date).getTime()
     )
-    .map((entry) => ({
-      id: entry.info.path,
-      title: entry.title,
-      description: entry.description,
-      href: `/changelog/${name}/${getShowcaseEntrySlug(entry.info.path)}`,
-      date: entry.date,
-    }));
+    .map((entry) => {
+      const slug = getShowcaseEntrySlug(entry.info.path);
+      return {
+        id: entry.info.path,
+        slug,
+        title: entry.title,
+        description: entry.description,
+        href: `/changelog/${name}/${slug}`,
+        date: entry.date,
+      };
+    });
 
   return (
     <>

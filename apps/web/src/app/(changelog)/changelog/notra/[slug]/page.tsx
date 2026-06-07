@@ -1,20 +1,31 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChangelogHtmlArticle } from "@/components/changelog-html-article";
-import { NotraMark } from "@/components/notra-mark";
+import { ArticleLayout } from "@/components/article-layout";
+import { extractBlogToc } from "@/utils/blog-toc";
+import { changelogPostTitleTransitionName } from "@/utils/blog-view-transitions";
 import {
   formatChangelogDate,
   getNotraChangelogPostBySlug,
+  getNotraChangelogPostPagination,
+  listNotraChangelogPosts,
 } from "@/utils/changelog";
+import { highlightCodeBlocks } from "@/utils/highlight-code";
 import {
   buildArticleJsonLd,
   buildBreadcrumbJsonLd,
   serializeJsonLd,
 } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { getReadingTimeMinutes } from "@/utils/reading-time";
 import { SITE_URL } from "@/utils/urls";
 import type { ChangelogEntryPageProps } from "~types/changelog";
+
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  const posts = await listNotraChangelogPosts();
+  return posts.map((post) => ({ slug: post.slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -64,6 +75,13 @@ export default async function ChangelogEntryPage({
   }
 
   const url = `${SITE_URL}/changelog/notra/${slug}`;
+  const markdownUrl = `${SITE_URL}/changelog/notra/${slug}.md`;
+  const { html: htmlWithIds, toc } = extractBlogToc(post.content);
+  const readingMinutes = getReadingTimeMinutes(post.markdown);
+  const [content, { previous, next }] = await Promise.all([
+    highlightCodeBlocks(htmlWithIds),
+    getNotraChangelogPostPagination(slug),
+  ]);
   const articleJsonLd = buildArticleJsonLd({
     url,
     title: post.title,
@@ -91,30 +109,22 @@ export default async function ChangelogEntryPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
-      <Link
-        className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
-        href="/changelog/notra"
-      >
-        &larr; All updates
-      </Link>
 
-      <h1 className="font-sans font-semibold text-3xl tracking-tight sm:text-4xl">
-        {post.title}
-      </h1>
-      <time className="mt-2 block font-sans text-foreground/40 text-sm">
-        {formatChangelogDate(post.createdAt)}
-      </time>
-
-      <div className="mt-4 flex items-center gap-1.5">
-        <span className="text-primary">
-          <NotraMark className="size-3.5 shrink-0" />
-        </span>
-        <p className="font-sans text-muted-foreground text-xs">
-          Published by the Notra team.
-        </p>
-      </div>
-
-      <ChangelogHtmlArticle html={post.content} />
+      <ArticleLayout
+        authors={post.authors}
+        backHref="/changelog/notra"
+        backLabel="All updates"
+        backTransitionName="changelog-back-button"
+        contentHtml={content}
+        copy={{ markdown: post.markdown, markdownUrl, title: post.title }}
+        dateLabel={`Published ${formatChangelogDate(post.createdAt)}`}
+        dateTime={post.createdAt}
+        pagination={{ previous, next }}
+        readingMinutes={readingMinutes}
+        title={post.title}
+        titleTransitionName={changelogPostTitleTransitionName(slug)}
+        toc={toc}
+      />
     </>
   );
 }

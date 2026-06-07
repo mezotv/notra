@@ -14,18 +14,23 @@ export const RSS_FEED_LANGUAGE = "en-us";
 
 export const BLOG_INDEX_PATH = "/blog";
 export const BLOG_AUTHOR_PATH = "/blog/author";
+export const BLOG_CATEGORY_PATH = "/blog/category";
 export const CHANGELOG_INDEX_PATH = "/changelog";
 export const NOTRA_CHANGELOG_INDEX_PATH = "/changelog/notra";
+
+export const BLOG_TAB_OVERVIEW_LABEL = "Overview";
+export const BLOG_TAB_CHANGELOG_LABEL = "Changelog";
+export const BLOG_CATEGORY_FALLBACK_DESCRIPTION =
+  "Insights, guides, and stories from the Notra team.";
 export const SITEMAP_PATH = "/sitemap.xml";
 export const LLMS_PATH = "/llms.txt";
 export const LLMS_FULL_PATH = "/llms-full.txt";
 
-export const MARBLE_BLOG_CATEGORY_SLUG = "blog";
 export const MARBLE_CHANGELOG_CATEGORY_SLUG = "changelog";
 export const MARBLE_DEFAULT_POST_LIMIT = 100;
 
 export const MARBLE_CACHE_KEYS = {
-  blogPosts: "marble-blog-posts-v4",
+  blogPosts: "marble-blog-posts-v6",
   blogAuthors: "marble-blog-authors-v1",
   changelogPosts: "marble-changelog-posts-v2",
 } as const;

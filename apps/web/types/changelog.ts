@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { NotraBlogAuthor } from "~types/blog";
 
 interface NotraSourceRepository {
   owner: string;
@@ -29,6 +30,7 @@ export interface NotraChangelogPost {
   updatedAt: string;
   slug: string;
   excerpt: string;
+  authors: NotraBlogAuthor[];
 }
 
 export interface ChangelogPageHeaderProps {
@@ -40,6 +42,7 @@ export interface ChangelogPageHeaderProps {
 
 export interface ChangelogTimelineItem {
   id: string;
+  slug: string;
   title: string;
   description: string;
   href: string;
