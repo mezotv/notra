@@ -18,7 +18,8 @@ let lastCreditCheck:
     }
   | undefined;
 
-const CREDIT_CHECK_TTL_MS = 30_000;
+const POSITIVE_CREDIT_CHECK_TTL_MS = 5_000;
+const NEGATIVE_CREDIT_CHECK_TTL_MS = 30_000;
 
 export class GatewayCreditBalanceError extends Error {
   constructor(balance: number) {
@@ -45,12 +46,20 @@ export const gateway = (...args: GatewayArgs): GatewayResult => {
 
 export async function assertGatewayHasCredits() {
   const now = Date.now();
-  if (
-    lastCreditCheck &&
-    now - lastCreditCheck.checkedAt < CREDIT_CHECK_TTL_MS &&
-    lastCreditCheck.balance <= 0
-  ) {
-    throw new GatewayCreditBalanceError(lastCreditCheck.balance);
+  if (lastCreditCheck) {
+    const ageMs = now - lastCreditCheck.checkedAt;
+    if (
+      lastCreditCheck.balance > 0 &&
+      ageMs < POSITIVE_CREDIT_CHECK_TTL_MS
+    ) {
+      return;
+    }
+    if (
+      lastCreditCheck.balance <= 0 &&
+      ageMs < NEGATIVE_CREDIT_CHECK_TTL_MS
+    ) {
+      throw new GatewayCreditBalanceError(lastCreditCheck.balance);
+    }
   }
 
   const client = getGatewayClient();
