@@ -22,9 +22,12 @@ function createExportElement(html: string): HTMLDivElement {
 async function withExportElement(
   element: HTMLElement | null,
   html: string | null | undefined,
+  htmlUrl: string | null | undefined,
   copy: (element: HTMLElement) => Promise<void>
 ): Promise<boolean> {
-  if (!html?.trim()) {
+  let exportHtml = html?.trim() ? html : null;
+
+  if (!(exportHtml || htmlUrl?.trim())) {
     if (!element) {
       return false;
     }
@@ -32,7 +35,21 @@ async function withExportElement(
     return true;
   }
 
-  const exportElement = createExportElement(html);
+  if (!exportHtml && htmlUrl) {
+    const response = await fetch(htmlUrl);
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch image HTML artifact: ${response.status}`
+      );
+    }
+    exportHtml = await response.text();
+  }
+
+  if (!exportHtml?.trim()) {
+    return false;
+  }
+
+  const exportElement = createExportElement(exportHtml);
   try {
     await copy(exportElement);
   } finally {
@@ -44,11 +61,15 @@ async function withExportElement(
 export async function copyImageAsFigma(
   element: HTMLElement | null,
   label?: string,
-  html?: string | null
+  html?: string | null,
+  htmlUrl?: string | null
 ): Promise<void> {
   try {
-    const copied = await withExportElement(element, html, (exportElement) =>
-      copyAsFigma(exportElement, { label, name: label })
+    const copied = await withExportElement(
+      element,
+      html,
+      htmlUrl,
+      (exportElement) => copyAsFigma(exportElement, { label, name: label })
     );
     if (!copied) {
       toast.error("Image is not ready yet");
@@ -64,11 +85,15 @@ export async function copyImageAsFigma(
 export async function copyImageAsPaper(
   element: HTMLElement | null,
   label?: string,
-  html?: string | null
+  html?: string | null,
+  htmlUrl?: string | null
 ): Promise<void> {
   try {
-    const copied = await withExportElement(element, html, (exportElement) =>
-      copyAsPaper(exportElement, { label, name: label })
+    const copied = await withExportElement(
+      element,
+      html,
+      htmlUrl,
+      (exportElement) => copyAsPaper(exportElement, { label, name: label })
     );
     if (!copied) {
       toast.error("Image is not ready yet");

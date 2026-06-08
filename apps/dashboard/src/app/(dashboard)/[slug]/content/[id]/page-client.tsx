@@ -687,6 +687,8 @@ export default function PageClient({
   const content = data.content;
   const imageExportHtml =
     content.contentType === "image" ? getImageExportHtml(content) : null;
+  const imageExportHtmlUrl =
+    content.contentType === "image" ? content.htmlUrl : null;
   const collection = data.collection;
   const backHref = collection
     ? `/${organizationSlug}/collection/${collection.id}`
@@ -914,7 +916,8 @@ export default function PageClient({
                       copyImageAsFigma(
                         imageExportRef.current,
                         title,
-                        imageExportHtml
+                        imageExportHtml,
+                        imageExportHtmlUrl
                       )
                     }
                     size="sm"
@@ -928,7 +931,8 @@ export default function PageClient({
                       copyImageAsPaper(
                         imageExportRef.current,
                         title,
-                        imageExportHtml
+                        imageExportHtml,
+                        imageExportHtmlUrl
                       )
                     }
                     size="sm"
@@ -961,6 +965,7 @@ export default function PageClient({
               title: content.title,
               slug: content.slug,
               content: content.content,
+              htmlUrl: content.htmlUrl,
               rawHtml: content.rawHtml,
               markdown: content.markdown,
               contentType: content.contentType,

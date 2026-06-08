@@ -672,7 +672,35 @@ function MessageTableCell({
   );
 }
 
+function MessageLink({
+  children,
+  className,
+  href,
+  node: _node,
+  rel,
+  target,
+  ...props
+}: ComponentProps<"a"> & { node?: unknown }) {
+  const isExternal = typeof href === "string" && /^https?:\/\//i.test(href);
+
+  return (
+    <a
+      className={cn(
+        "font-medium text-foreground underline underline-offset-3 transition-colors hover:text-foreground/80",
+        className
+      )}
+      href={href}
+      rel={rel ?? (isExternal ? "noopener noreferrer" : undefined)}
+      target={target ?? (isExternal ? "_blank" : undefined)}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
+
 const messageResponseComponents = {
+  a: MessageLink,
   table: MessageMarkdownTable,
   thead: MessageTableHead,
   tbody: MessageTableBody,

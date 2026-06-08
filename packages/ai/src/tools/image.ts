@@ -16,7 +16,10 @@ import type {
   ImageToolConfig,
 } from "@notra/ai/types/repo-image";
 import { toolDescription } from "@notra/ai/utils/description";
-import { uploadGeneratedImageAsset } from "@notra/ai/utils/image-assets";
+import {
+  uploadGeneratedHtmlAsset,
+  uploadGeneratedImageAsset,
+} from "@notra/ai/utils/image-assets";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
@@ -40,12 +43,15 @@ export function createImageTool(config: ImageToolConfig): Tool {
       const restoreSnapshot = sourcePostId
         ? await getImageSnapshot(config.organizationId, sourcePostId)
         : null;
+      const brandIdentityId =
+        input.brandIdentityId ?? restoreSnapshot?.brandIdentityId;
 
       const result = await generateRepoImage({
         input: {
           organizationId: config.organizationId,
           integrationId: input.integrationId,
           branch: input.branch,
+          brandIdentityId,
           mode: input.mode,
           prompt: input.prompt,
           prNumber: input.prNumber,
@@ -67,6 +73,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
           chatId: config.chatId ?? null,
           integrationId: input.integrationId,
           branch: input.branch,
+          brandIdentityId: result.brandIdentityId ?? brandIdentityId ?? null,
           mode: input.mode,
           prompt: input.prompt ?? null,
           prNumber: input.prNumber ?? null,
@@ -74,10 +81,6 @@ export function createImageTool(config: ImageToolConfig): Tool {
           sourcePostId: sourcePostId ?? null,
           sandbox: result.sandbox,
           usage: result.usage ?? null,
-          artifacts: {
-            html: result.html,
-            svg: result.svg,
-          },
         },
       });
 
@@ -124,6 +127,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
           organizationId: config.organizationId,
           integrationId: config.integrationId,
           branch: config.branch,
+          brandIdentityId: config.brandIdentityId,
           mode: "prompt",
           prompt,
         },
@@ -135,6 +139,11 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
       const imageUrl = await uploadGeneratedImageAsset({
         organizationId: config.organizationId,
         pngBase64: result.pngBase64,
+        postId: config.postId,
+      });
+      const htmlUrl = await uploadGeneratedHtmlAsset({
+        organizationId: config.organizationId,
+        html: result.html,
         postId: config.postId,
       });
       const sourceMetadata = await buildRevisionSourceMetadata({
@@ -151,8 +160,8 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
         .set({
           title: nextTitle,
           content: imageUrl,
+          htmlUrl,
           markdown: null,
-          rawHtml: result.html,
           sourceMetadata,
           updatedAt: new Date(),
         })
@@ -216,15 +225,13 @@ async function buildRevisionSourceMetadata(params: {
     type: "generated_image",
     integrationId: params.integrationId,
     branch: params.branch,
+    brandIdentityId:
+      params.result.brandIdentityId ?? getStoredBrandIdentityId(existing),
     mode: "prompt",
     prompt: params.prompt,
     sourcePostId: params.postId,
     sandbox: params.result.sandbox,
     usage: params.result.usage ?? null,
-    artifacts: {
-      html: params.result.html,
-      svg: params.result.svg,
-    },
   };
 }
 
@@ -243,6 +250,26 @@ async function trackImageGenerationUsage(params: {
     params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
     params.useMarkup ?? false
   );
+  const reportedCostCents =
+    typeof params.usage.totalUsd === "number"
+      ? Math.ceil(params.usage.totalUsd * 100)
+      : undefined;
+
+  console.info("[Autumn] Marketing asset usage cost comparison", {
+    organizationId: params.organizationId,
+    postId: params.postId,
+    model: params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
+    billingBasis: "tokens",
+    computedCostCents: costCents,
+    reportedCostCents,
+    reportedTotalUsd: params.usage.totalUsd,
+    inputTokens: params.usage.inputTokens,
+    outputTokens: params.usage.outputTokens,
+    cacheReadTokens: params.usage.cacheReadTokens,
+    cacheWriteTokens: params.usage.cacheWriteTokens,
+    totalTokens: params.usage.totalTokens,
+    markupApplied: params.useMarkup ?? false,
+  });
 
   try {
     await autumn.track({
@@ -302,8 +329,24 @@ async function getImageSnapshot(organizationId: string, postId: string) {
     "boxId" in metadata.sandbox && typeof metadata.sandbox.boxId === "string"
       ? metadata.sandbox.boxId
       : undefined;
+  const brandIdentityId = getStoredBrandIdentityId(metadata) ?? undefined;
 
-  return { boxId, snapshotId: metadata.sandbox.snapshotId };
+  return { boxId, snapshotId: metadata.sandbox.snapshotId, brandIdentityId };
+}
+
+function getStoredBrandIdentityId(metadata: object) {
+  if (
+    "brandIdentityId" in metadata &&
+    typeof metadata.brandIdentityId === "string"
+  ) {
+    return metadata.brandIdentityId;
+  }
+
+  if ("brandVoiceId" in metadata && typeof metadata.brandVoiceId === "string") {
+    return metadata.brandVoiceId;
+  }
+
+  return null;
 }
 
 async function saveGeneratedImagePost(params: {
@@ -318,6 +361,11 @@ async function saveGeneratedImagePost(params: {
   const imageUrl = await uploadGeneratedImageAsset({
     organizationId: params.organizationId,
     pngBase64: params.pngBase64,
+    postId,
+  });
+  const htmlUrl = await uploadGeneratedHtmlAsset({
+    organizationId: params.organizationId,
+    html: params.html,
     postId,
   });
   const collectionId = nanoid();
@@ -371,8 +419,8 @@ async function saveGeneratedImagePost(params: {
     title: params.title,
     slug: null,
     content: imageUrl,
+    htmlUrl,
     markdown: null,
-    rawHtml: params.html,
     recommendations: null,
     contentType: "image",
     status: "draft",

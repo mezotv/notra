@@ -1,5 +1,37 @@
-import { ANALYSIS_STEPS, FULL_URL_REGEX } from "../constants/brand-identity";
+import {
+  ANALYSIS_STEPS,
+  FULL_URL_REGEX,
+  LANGUAGE_FLAGS,
+} from "../constants/brand-identity";
 import type { StepIconState } from "../types/brand-identity";
+
+const BRITISH_ENGLISH_LOCALE_REGEX = /^en[-_]GB\b/i;
+
+function isBritishEnglishLocale(locale: string) {
+  try {
+    const parsedLocale = new Intl.Locale(locale);
+    return (
+      parsedLocale.language.toLowerCase() === "en" &&
+      parsedLocale.region?.toUpperCase() === "GB"
+    );
+  } catch {
+    return BRITISH_ENGLISH_LOCALE_REGEX.test(locale);
+  }
+}
+
+export function getLanguageFlag(
+  language: string,
+  userLocales: readonly string[] = []
+) {
+  if (
+    language === "English" &&
+    userLocales.some((locale) => isBritishEnglishLocale(locale))
+  ) {
+    return "🇬🇧";
+  }
+
+  return LANGUAGE_FLAGS[language as keyof typeof LANGUAGE_FLAGS] ?? "🏳️";
+}
 
 export function getStepperValue(status: string, currentStep: number): string {
   if (status === "idle" || status === "failed") {

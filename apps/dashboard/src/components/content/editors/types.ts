@@ -6,6 +6,7 @@ interface ContentData {
   title: string;
   slug: string | null;
   content: string;
+  htmlUrl: string | null;
   markdown: string | null;
   rawHtml: string | null;
   contentType: string;

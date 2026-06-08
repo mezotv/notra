@@ -364,12 +364,16 @@ const postResponseSchema = z.object({
     description:
       "Rendered HTML for text posts. For image posts, this is the public CDN URL of the rendered image.",
   }),
+  htmlUrl: z.string().nullable().openapi({
+    description:
+      "Public CDN URL of the generated HTML artifact for image posts. Null for non-image posts.",
+  }),
   markdown: z.string().nullable().openapi({
     description: "Markdown source for text posts. Null for image posts.",
   }),
   rawHtml: z.string().nullable().openapi({
     description:
-      "Raw generated HTML for image posts, used for design/export workflows. Null for non-image posts.",
+      "Legacy inline generated HTML for image posts. New generated image HTML is stored as htmlUrl. Null for non-image posts.",
   }),
   recommendations: z.string().nullable(),
   contentType: postContentTypeSchema,

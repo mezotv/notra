@@ -180,6 +180,7 @@ export const mcpToolMetadataSchema = z
         .object({
           label: optionalStringSchema,
           serverName: optionalStringSchema,
+          serverUrl: optionalStringSchema,
           toolName: optionalStringSchema,
         })
         .passthrough()

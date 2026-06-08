@@ -718,8 +718,8 @@ export const posts = pgTable(
     title: text("title").notNull(),
     slug: text("slug"),
     content: text("content").notNull(),
+    htmlUrl: text("html_url"),
     markdown: text("markdown"),
-    rawHtml: text("raw_html"),
     recommendations: text("recommendations"),
     contentType: text("content_type").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -798,10 +798,6 @@ export interface PostSourceMetadata {
     snapshotCreatedAt?: string;
   } | null;
   usage?: unknown;
-  artifacts?: {
-    html?: string;
-    svg?: string;
-  };
 }
 
 export const usersRelations = relations(users, ({ many }) => ({

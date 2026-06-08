@@ -52,12 +52,6 @@ export const sourceMetadataSchema = z
       })
       .nullable()
       .optional(),
-    artifacts: z
-      .object({
-        html: z.string().optional(),
-        svg: z.string().optional(),
-      })
-      .optional(),
   })
   .nullable()
   .optional();
@@ -69,6 +63,7 @@ export const contentSchema = z.object({
   title: z.string(),
   slug: z.string().nullable(),
   content: z.string(),
+  htmlUrl: z.string().nullable(),
   markdown: z.string().nullable(),
   rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
@@ -85,6 +80,7 @@ export const postSchema = z.object({
   title: z.string(),
   slug: z.string().nullable(),
   content: z.string(),
+  htmlUrl: z.string().nullable(),
   markdown: z.string().nullable(),
   rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),

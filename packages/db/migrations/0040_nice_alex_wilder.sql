@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ADD COLUMN "html_url" text;

@@ -20,17 +20,17 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
 import { normalizePublicWebsiteUrl } from "../../../../../../schemas/url";
 import {
   AUTO_SAVE_DELAY,
-  getLanguageFlag,
   LANGUAGE_OPTIONS,
   TONE_OPTIONS,
 } from "../constants/brand-identity";
 import type { BrandFormProps } from "../types/brand-identity";
+import { getLanguageFlag } from "../utils/brand-identity";
 
 export function BrandForm({
   organizationId,
@@ -41,6 +41,7 @@ export function BrandForm({
 }: BrandFormProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
   const lastSavedData = useRef<string>(JSON.stringify(initialData));
+  const [userLocales, setUserLocales] = useState<readonly string[]>([]);
 
   const debouncer = useAsyncDebouncer(
     async (values: typeof initialData) => {
@@ -100,6 +101,12 @@ export function BrandForm({
       onSavingChange?.(false);
     };
   }, [onSavingChange]);
+
+  useEffect(() => {
+    setUserLocales(
+      navigator.languages?.length ? navigator.languages : [navigator.language]
+    );
+  }, []);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -309,7 +316,7 @@ export function BrandForm({
                     aria-hidden="true"
                     className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 z-10 text-base leading-none"
                   >
-                    {getLanguageFlag(field.state.value)}
+                    {getLanguageFlag(field.state.value, userLocales)}
                   </span>
                   <Combobox
                     items={LANGUAGE_OPTIONS}
@@ -333,7 +340,7 @@ export function BrandForm({
                               aria-hidden="true"
                               className="text-base leading-none"
                             >
-                              {getLanguageFlag(lang)}
+                              {getLanguageFlag(lang, userLocales)}
                             </span>
                             <span>{lang}</span>
                           </ComboboxItem>

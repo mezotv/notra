@@ -65,6 +65,7 @@ export function buildToolSet(
         title: imageDefaults.title,
         integrationId: imageDefaults.integrationId,
         branch: imageDefaults.branch,
+        brandIdentityId: imageDefaults.brandIdentityId,
         useMarkup,
       });
       descriptions.unshift(

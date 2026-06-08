@@ -77,6 +77,7 @@ const postReadColumns = {
   title: true,
   slug: true,
   content: true,
+  htmlUrl: true,
   markdown: true,
   recommendations: true,
   contentType: true,
@@ -90,6 +91,7 @@ function serializePost(post: {
   content: string;
   contentType: string;
   createdAt: Date;
+  htmlUrl: string | null;
   id: string;
   markdown: string | null;
   sourceMetadata: unknown;
@@ -104,6 +106,7 @@ function serializePost(post: {
     title: post.title,
     slug: post.slug,
     content: post.content,
+    htmlUrl: post.contentType === "image" ? post.htmlUrl : null,
     markdown: post.markdown,
     rawHtml: extractImageArtifactHtml(post.sourceMetadata),
     recommendations: post.recommendations,
@@ -119,6 +122,7 @@ function serializeContent(post: {
   content: string;
   contentType: string;
   createdAt: Date;
+  htmlUrl: string | null;
   id: string;
   markdown: string | null;
   recommendations: string | null;
@@ -132,6 +136,7 @@ function serializeContent(post: {
     title: post.title,
     slug: post.slug,
     content: post.content,
+    htmlUrl: post.contentType === "image" ? post.htmlUrl : null,
     markdown: post.markdown,
     rawHtml: extractImageArtifactHtml(post.sourceMetadata),
     recommendations: post.recommendations,
@@ -601,6 +606,7 @@ export const contentRouter = {
             title: posts.title,
             slug: posts.slug,
             content: posts.content,
+            htmlUrl: posts.htmlUrl,
             markdown: posts.markdown,
             recommendations: posts.recommendations,
             contentType: posts.contentType,

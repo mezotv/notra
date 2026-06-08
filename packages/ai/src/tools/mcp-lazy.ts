@@ -370,6 +370,7 @@ function createRuntimeMcpTool({
         type: "mcp",
         serverId: indexedTool.serverIntegrationId,
         serverName: indexedTool.serverName,
+        serverUrl: indexedTool.serverUrl,
         toolName: indexedTool.serverToolName,
         runtimeToolName: indexedTool.runtimeToolName,
       },

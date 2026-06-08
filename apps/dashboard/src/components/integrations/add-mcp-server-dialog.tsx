@@ -20,6 +20,11 @@ import {
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -41,6 +46,7 @@ import { Button } from "@/components/button";
 import {
   buildMcpHeaders,
   buildMcpUrl,
+  getMcpFaviconUrl,
   getMcpFormErrorMessage,
 } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -219,9 +225,19 @@ export function AddMcpServerDialog({
       <ResponsiveDialogContent className="sm:max-w-[32.5rem]">
         <ResponsiveDialogHeader>
           <div className="flex items-start gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-              <HugeiconsIcon className="size-5" icon={CpuIcon} />
-            </span>
+            <form.Subscribe selector={(state) => state.values.url}>
+              {(url) => (
+                <Avatar className="size-9 shrink-0 rounded-lg bg-muted after:hidden">
+                  <AvatarImage
+                    className="rounded-lg"
+                    src={getMcpFaviconUrl(buildMcpUrl(url))}
+                  />
+                  <AvatarFallback className="rounded-lg bg-transparent text-foreground">
+                    <HugeiconsIcon className="size-5" icon={CpuIcon} />
+                  </AvatarFallback>
+                </Avatar>
+              )}
+            </form.Subscribe>
             <div>
               <ResponsiveDialogTitle className="text-xl">
                 Add MCP Server
@@ -252,7 +268,9 @@ export function AddMcpServerDialog({
             >
               {(field) => (
                 <Field>
-                  <FieldLabel htmlFor="mcp-name">Name</FieldLabel>
+                  <FieldLabel htmlFor="mcp-name">
+                    Name <span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
                   <Input
                     autoComplete="off"
                     id="mcp-name"
@@ -280,7 +298,9 @@ export function AddMcpServerDialog({
             >
               {(field) => (
                 <Field>
-                  <FieldLabel htmlFor="mcp-url">Server URL</FieldLabel>
+                  <FieldLabel htmlFor="mcp-url">
+                    Server URL <span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
                   <div
                     className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
                   >
@@ -454,7 +474,7 @@ export function AddMcpServerDialog({
                               );
                               invalidateTestResult();
                             }}
-                            size="icon"
+                            size="icon-sm"
                             type="button"
                             variant="outline"
                           >

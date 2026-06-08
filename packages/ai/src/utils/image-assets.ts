@@ -92,3 +92,26 @@ export async function uploadGeneratedImageAsset(params: {
 
   return `${env.publicUrl.replace(TRAILING_SLASHES_RE, "")}/${key}`;
 }
+
+export async function uploadGeneratedHtmlAsset(params: {
+  organizationId: string;
+  html: string;
+  postId: string;
+}) {
+  const env = getR2Env();
+  const key = `organization/${params.organizationId}/content/${params.postId}-${Date.now()}.html`;
+  const body = Buffer.from(params.html, "utf-8");
+
+  await getR2Client().send(
+    new PutObjectCommand({
+      Body: body,
+      Bucket: env.bucketName,
+      CacheControl: "public, max-age=31536000",
+      ContentLength: body.byteLength,
+      ContentType: "text/html; charset=utf-8",
+      Key: key,
+    })
+  );
+
+  return `${env.publicUrl.replace(TRAILING_SLASHES_RE, "")}/${key}`;
+}

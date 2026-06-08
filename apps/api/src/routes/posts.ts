@@ -85,6 +85,7 @@ function serializePost(post: {
   contentType: string;
   createdAt: Date;
   id: string;
+  htmlUrl?: string | null;
   markdown: string | null;
   rawHtml?: string | null;
   recommendations: string | null;
@@ -101,10 +102,9 @@ function serializePost(post: {
     title: post.title,
     slug: post.slug,
     content: post.content,
+    htmlUrl: post.contentType === "image" ? (post.htmlUrl ?? null) : null,
     markdown: isImage ? null : post.markdown,
-    rawHtml: isImage
-      ? (post.rawHtml ?? extractImageArtifactHtml(post.sourceMetadata))
-      : null,
+    rawHtml: isImage ? extractImageArtifactHtml(post.sourceMetadata) : null,
     recommendations: post.recommendations,
     contentType: post.contentType as PostResponseContentType,
     sourceMetadata: post.sourceMetadata,
@@ -540,6 +540,7 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     title: string;
     slug: string | null;
     content: string;
+    htmlUrl?: string | null;
     markdown: string | null;
     rawHtml?: string | null;
     recommendations: string | null;

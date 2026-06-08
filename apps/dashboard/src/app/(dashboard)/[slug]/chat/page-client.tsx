@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { ArrowDown01Icon, X } from "@hugeicons/core-free-icons";
+import { AiBrain01Icon, ArrowDown01Icon, X } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   chatErrorPayloadSchema,
@@ -178,7 +178,7 @@ function ChatReasoningBlock({
         {isStreaming ? (
           <Loader2Icon className="size-4 animate-spin" />
         ) : (
-          <span className="size-4" />
+          <HugeiconsIcon className="size-4" icon={AiBrain01Icon} />
         )}
         <span>{statusLabel}</span>
         <HugeiconsIcon
@@ -1926,6 +1926,7 @@ function StandaloneChatPageClient({
         !lastMessage.parts.some(
           (p) =>
             (p.type === "text" && p.text.trim()) ||
+            p.type === "file" ||
             p.type === "reasoning" ||
             isToolUIPart(p)
         )));

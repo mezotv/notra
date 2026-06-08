@@ -7,6 +7,14 @@ export const REPO_IMAGE_MODES = repoImageModeSchema.options;
 const repoImageRequestFields = {
   integrationId: z.string().min(1, "Integration ID is required"),
   branch: z.string().trim().min(1, "Branch is required"),
+  brandIdentityId: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .describe(
+      "Optional brand identity id to inject into the image sandbox. Omit to use the default brand identity."
+    ),
   mode: repoImageModeSchema,
   prompt: z.string().trim().max(500).optional(),
   prNumber: z.number().int().positive().optional(),

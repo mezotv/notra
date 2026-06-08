@@ -294,7 +294,9 @@ export async function POST(request: NextRequest) {
           : "No matching entities found.",
         `User query: ${query}`,
       ].join("\n"),
-      providerOptions: withGatewayAutomaticCaching(),
+      providerOptions: withGatewayAutomaticCaching(undefined, {
+        modelId: "anthropic/claude-sonnet-4.6",
+      }),
       abortSignal: request.signal,
       experimental_telemetry: buildExperimentalTelemetry({
         feature: "command_palette",

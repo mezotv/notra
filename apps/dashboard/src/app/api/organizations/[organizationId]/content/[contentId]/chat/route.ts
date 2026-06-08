@@ -270,6 +270,7 @@ async function getImageDefaults(params: {
     "branch" in metadata && typeof metadata.branch === "string"
       ? metadata.branch
       : null;
+  const brandIdentityId = getStoredBrandIdentityId(metadata);
   const sandbox =
     "sandbox" in metadata &&
     metadata.sandbox &&
@@ -289,5 +290,21 @@ async function getImageDefaults(params: {
     integrationId,
     branch,
     title: post.title,
+    brandIdentityId,
   };
+}
+
+function getStoredBrandIdentityId(metadata: object) {
+  if (
+    "brandIdentityId" in metadata &&
+    typeof metadata.brandIdentityId === "string"
+  ) {
+    return metadata.brandIdentityId;
+  }
+
+  if ("brandVoiceId" in metadata && typeof metadata.brandVoiceId === "string") {
+    return metadata.brandVoiceId;
+  }
+
+  return undefined;
 }

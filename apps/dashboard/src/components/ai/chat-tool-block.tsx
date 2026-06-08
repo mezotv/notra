@@ -20,7 +20,6 @@ import { type ReactNode, useEffect, useState } from "react";
 import {
   commitsByTimeframeInputSchema,
   type MemoryToolInput,
-  mcpToolMetadataSchema,
   memoryIdentifierInputSchema,
   memoryIdentifierOutputSchema,
   memoryToolInputSchema,
@@ -33,18 +32,14 @@ import {
   webSearchInputSchema,
   webSearchOutputSchema,
 } from "@/schemas/ai/chat-tool-block";
-
-interface ToolCopy {
-  verbs: readonly [present: string, past: string];
-  noun: string;
-  subtitle?: (params: {
-    input: unknown;
-    output: unknown;
-    isStreaming: boolean;
-    isError: boolean;
-  }) => string | undefined;
-  suffix?: (input: unknown, output: unknown) => string | undefined;
-}
+import {
+  getMcpToolIconUrl,
+  getMcpToolLabel,
+  isMcpToolName,
+} from "./chat-tool-block/mcp/utils";
+import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
+import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
+import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
 
 function firstStringValue<T extends object>(
   values: T,
@@ -507,31 +502,6 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   },
 };
 
-const MCP_TOOL_NAME_REGEX = /^mcp_/;
-const UNDERSCORE_REGEX = /_+/g;
-
-function formatMcpToolName(toolName: string): string {
-  const label = toolName
-    .replace(MCP_TOOL_NAME_REGEX, "")
-    .replace(UNDERSCORE_REGEX, " ")
-    .trim();
-  return label || "MCP tool";
-}
-
-function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
-  const parsed = mcpToolMetadataSchema.safeParse(toolMetadata);
-  const notraMetadata = parsed.success ? parsed.data.notra : undefined;
-  if (notraMetadata?.label) {
-    return notraMetadata.label;
-  }
-
-  if (notraMetadata?.serverName && notraMetadata.toolName) {
-    return `${notraMetadata.serverName} - ${notraMetadata.toolName}`;
-  }
-
-  return formatMcpToolName(toolName);
-}
-
 function getSubtitle({
   toolName,
   input,
@@ -552,7 +522,7 @@ function getSubtitle({
   const copy = TOOL_COPY[toolName];
   const failurePrefix = isError ? "Failed to call" : undefined;
   if (!copy) {
-    if (MCP_TOOL_NAME_REGEX.test(toolName)) {
+    if (isMcpToolName(toolName)) {
       const label = getMcpToolLabel(toolName, toolMetadata);
       if (isAwaitingApproval) {
         return `Approve ${label}`;
@@ -672,18 +642,6 @@ function ToolDataSection({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-interface ChatToolBlockProps {
-  toolName: string;
-  state: string;
-  input?: unknown;
-  output?: unknown;
-  onApprove?: () => void;
-  onDeny?: () => void;
-  isMcp?: boolean;
-  iconUrl?: string;
-  toolMetadata?: unknown;
-}
-
 export function ChatToolBlock({
   toolName,
   state,
@@ -720,22 +678,23 @@ export function ChatToolBlock({
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
   const hasDetails = hasInput || hasOutput || hasApprovalActions;
+  const outputImages =
+    hasOutput && !isError && !isStreaming
+      ? collectToolOutputImages(output)
+      : [];
   let toolIcon: ReactNode = null;
 
-  if (iconUrl) {
+  const resolvedIconUrl =
+    iconUrl ?? (isMcp ? getMcpToolIconUrl(toolMetadata) : undefined);
+
+  if (resolvedIconUrl || isMcp) {
     toolIcon = (
       <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
-        <AvatarImage className="rounded-sm" src={iconUrl} />
+        <AvatarImage className="rounded-sm" src={resolvedIconUrl} />
         <AvatarFallback className="rounded-sm bg-transparent">
           <HugeiconsIcon className="size-3" icon={CpuIcon} />
         </AvatarFallback>
       </Avatar>
-    );
-  } else if (isMcp) {
-    toolIcon = (
-      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
-        MCP
-      </span>
     );
   }
 
@@ -772,6 +731,7 @@ export function ChatToolBlock({
           icon={ArrowDown01Icon}
         />
       </CollapsibleTrigger>
+      <ToolOutputImages images={outputImages} />
       <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-300 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
         <div className="mt-3 space-y-4">
           {hasInput ? <ToolDataSection label="Input" value={input} /> : null}

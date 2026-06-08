@@ -83,6 +83,7 @@ export async function createMcpRuntimeToolSet(
               type: "mcp",
               serverId: integration.id,
               serverName: integration.name,
+              serverUrl: integration.url,
               toolName,
               label: `${integration.name} - ${displayName}`,
             },

@@ -194,7 +194,9 @@ Extract the following information:
 4. audience: A description of their target audience (1-2 sentences)
 5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
               system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
-              providerOptions: withGatewayAutomaticCaching(),
+              providerOptions: withGatewayAutomaticCaching(undefined, {
+                modelId: "anthropic/claude-sonnet-4.6",
+              }),
               experimental_telemetry: buildExperimentalTelemetry({
                 feature: "brand_analysis",
                 jobId,

@@ -9,7 +9,16 @@ const CLAUDE_SONNET_4_6_PRICING: ModelPricing = {
   cacheWritePerMillionTokens: 3.75,
 };
 
+const CLAUDE_OPUS_4_8_PRICING: ModelPricing = {
+  inputPerMillionTokens: 5.0,
+  outputPerMillionTokens: 25.0,
+  cacheReadPerMillionTokens: 0.5,
+  cacheWritePerMillionTokens: 6.25,
+};
+
 export const MODEL_PRICING: Record<string, ModelPricing> = {
+  "opencode/claude-opus-4-8": CLAUDE_OPUS_4_8_PRICING,
+  "anthropic/claude-opus-4.8": CLAUDE_OPUS_4_8_PRICING,
   "opencode/claude-sonnet-4-6": CLAUDE_SONNET_4_6_PRICING,
   "anthropic/claude-sonnet-4.6": CLAUDE_SONNET_4_6_PRICING,
   "anthropic/claude-haiku-4.5": {
@@ -18,7 +27,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheReadPerMillionTokens: 0.08,
     cacheWritePerMillionTokens: 1.0,
   },
-  "openai/gpt-5.1-instant": {
+  "openai/gpt-5.4-mini": {
     inputPerMillionTokens: 0.1,
     outputPerMillionTokens: 0.4,
     cacheReadPerMillionTokens: 0.05,

@@ -21,6 +21,7 @@ export interface GenerateRepoImageResult {
   pngBase64: string;
   svg: string;
   html: string;
+  brandIdentityId?: string;
   sandbox: {
     boxId?: string;
     snapshotId?: string;
@@ -45,6 +46,7 @@ export interface ImageRevisionToolConfig {
   title: string;
   integrationId: string;
   branch: string;
+  brandIdentityId?: string;
   useMarkup?: boolean;
 }
 
