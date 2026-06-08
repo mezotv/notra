@@ -188,11 +188,16 @@ export default function PageClient({ slug }: PageClientProps) {
                     <CardTitle className="font-mono text-base">
                       {skill.name}
                     </CardTitle>
-                    <CardDescription className="line-clamp-3">
+                    <CardDescription className="line-clamp-3 text-pretty">
                       {skill.description}
                     </CardDescription>
                     <p className="pt-1 text-muted-foreground text-xs">
-                      Updated {new Date(skill.updatedAt).toLocaleDateString()}
+                      Updated{" "}
+                      {new Date(skill.updatedAt).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </p>
                   </CardHeader>
                 </Card>
