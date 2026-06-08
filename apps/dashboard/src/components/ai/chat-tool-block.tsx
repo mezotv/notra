@@ -3,6 +3,7 @@
 import { ArrowDown01Icon, CpuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Shimmer } from "@notra/ui/components/ai-elements/shimmer";
+import { ImageZoom } from "@notra/ui/components/kibo-ui/image-zoom";
 import {
   Avatar,
   AvatarFallback,
@@ -15,8 +16,10 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { cn } from "@notra/ui/lib/utils";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, DownloadIcon, XIcon } from "lucide-react";
+import Image from "next/image";
 import { type ReactNode, useEffect, useState } from "react";
+import { getMcpFaviconUrl } from "@/lib/integrations/mcp";
 import {
   commitsByTimeframeInputSchema,
   type MemoryToolInput,
@@ -509,12 +512,25 @@ const TOOL_COPY: Record<string, ToolCopy> = {
 
 const MCP_TOOL_NAME_REGEX = /^mcp_/;
 const UNDERSCORE_REGEX = /_+/g;
+const NON_ALPHANUMERIC_WORD_SEPARATOR_REGEX = /[^a-zA-Z0-9]+/g;
+
+function formatToolDisplayName(value: string): string {
+  return value
+    .replace(NON_ALPHANUMERIC_WORD_SEPARATOR_REGEX, " ")
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
 
 function formatMcpToolName(toolName: string): string {
   const label = toolName
     .replace(MCP_TOOL_NAME_REGEX, "")
-    .replace(UNDERSCORE_REGEX, " ")
-    .trim();
+    .replace(UNDERSCORE_REGEX, " ");
+  const displayName = formatToolDisplayName(label);
+  return displayName || "MCP Tool";
+}
+
+function formatMcpToolLabelPart(value: string): string {
+  const label = formatToolDisplayName(value);
   return label || "MCP tool";
 }
 
@@ -522,14 +538,20 @@ function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
   const parsed = mcpToolMetadataSchema.safeParse(toolMetadata);
   const notraMetadata = parsed.success ? parsed.data.notra : undefined;
   if (notraMetadata?.label) {
-    return notraMetadata.label;
+    return formatMcpToolLabelPart(notraMetadata.label);
   }
 
   if (notraMetadata?.serverName && notraMetadata.toolName) {
-    return `${notraMetadata.serverName} - ${notraMetadata.toolName}`;
+    return `${notraMetadata.serverName} - ${formatMcpToolLabelPart(notraMetadata.toolName)}`;
   }
 
   return formatMcpToolName(toolName);
+}
+
+function getMcpToolIconUrl(toolMetadata: unknown) {
+  const parsed = mcpToolMetadataSchema.safeParse(toolMetadata);
+  const notraMetadata = parsed.success ? parsed.data.notra : undefined;
+  return getMcpFaviconUrl(notraMetadata?.serverUrl);
 }
 
 function getSubtitle({
@@ -588,6 +610,207 @@ function getSubtitle({
 const JSON_TOKEN_RE =
   /"(?:\\.|[^"\\])*"(?:\s*:)?|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 const MAX_JSON_RENDER_CHARS = 20_000;
+const DATA_IMAGE_URL_REGEX = /^data:image\/[a-z0-9.+-]+;base64,/i;
+const HTTP_URL_REGEX = /^https?:\/\//i;
+const IMAGE_EXTENSION_REGEX = /\.(?:avif|gif|jpe?g|png|svg|webp)(?:[?#]|$)/i;
+const FILENAME_EXTENSION_REGEX = /\.[a-z0-9]+$/i;
+const LEADING_DOT_REGEX = /^[.]/;
+const URL_SUFFIX_REGEX = /[?#].*$/;
+const IMAGE_SPECIFIC_URL_KEYS = [
+  "image_url",
+  "imageUrl",
+  "thumbnail_url",
+  "thumbnailUrl",
+  "src",
+  "image",
+] as const;
+const GENERIC_URL_KEYS = ["url", "uri", "href"] as const;
+const IMAGE_DATA_KEYS = ["data", "blob", "base64", "image"] as const;
+const IMAGE_CONTAINER_KEYS = [
+  "content",
+  "contents",
+  "structuredContent",
+  "images",
+  "files",
+  "artifacts",
+  "result",
+  "results",
+] as const;
+
+interface ToolOutputImage {
+  url: string;
+  mediaType: string;
+  filename?: string;
+}
+
+function imageExtensionFromMediaType(mediaType: string) {
+  switch (mediaType.toLowerCase()) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/svg+xml":
+      return "svg";
+    case "image/avif":
+      return "avif";
+    case "image/gif":
+      return "gif";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    default:
+      return undefined;
+  }
+}
+
+function sanitizeDownloadFilename(filename: string) {
+  return filename
+    .trim()
+    .replace(/[^\w.-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 96);
+}
+
+function getImageDownloadFilename(image: ToolOutputImage, mediaType: string) {
+  const baseName = sanitizeDownloadFilename(
+    image.filename ?? "tool-output-image"
+  );
+  const filename = baseName || "tool-output-image";
+  if (FILENAME_EXTENSION_REGEX.test(filename)) {
+    return filename;
+  }
+
+  const extension =
+    imageExtensionFromMediaType(mediaType) ??
+    imageExtensionFromMediaType(image.mediaType);
+  return extension ? `${filename}.${extension}` : filename;
+}
+
+async function downloadToolOutputImage(image: ToolOutputImage) {
+  try {
+    const response = await fetch(image.url);
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = getImageDownloadFilename(image, blob.type);
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    window.open(image.url, "_blank", "noopener,noreferrer");
+  }
+}
+
+function isImageMediaType(value: unknown): value is string {
+  return typeof value === "string" && value.toLowerCase().startsWith("image/");
+}
+
+function getStringField(
+  record: Record<string, unknown>,
+  keys: readonly string[]
+) {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function toImageUrl(value: string, mediaType?: string) {
+  if (DATA_IMAGE_URL_REGEX.test(value)) {
+    return value;
+  }
+  if (HTTP_URL_REGEX.test(value)) {
+    return value;
+  }
+  if (mediaType && isImageMediaType(mediaType)) {
+    return `data:${mediaType};base64,${value}`;
+  }
+  return undefined;
+}
+
+function inferImageMediaType(url: string) {
+  const match = url.match(IMAGE_EXTENSION_REGEX);
+  if (!match) {
+    return undefined;
+  }
+
+  const extension = match[0]
+    .replace(LEADING_DOT_REGEX, "")
+    .replace(URL_SUFFIX_REGEX, "");
+  if (extension === "jpg") {
+    return "image/jpeg";
+  }
+  if (extension === "svg") {
+    return "image/svg+xml";
+  }
+  return `image/${extension}`;
+}
+
+function collectToolOutputImages(
+  value: unknown,
+  images: ToolOutputImage[] = [],
+  seen = new Set<string>(),
+  depth = 0
+): ToolOutputImage[] {
+  if (value == null || depth > 5) {
+    return images;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectToolOutputImages(item, images, seen, depth + 1);
+    }
+    return images;
+  }
+
+  if (typeof value !== "object") {
+    return images;
+  }
+
+  const record = value as Record<string, unknown>;
+  const mediaType = getStringField(record, ["mediaType", "mimeType"]);
+  const filename = getStringField(record, ["filename", "name", "title"]);
+  const imageSpecificUrl = getStringField(record, IMAGE_SPECIFIC_URL_KEYS);
+  const genericUrl = getStringField(record, GENERIC_URL_KEYS);
+  const rawUrl = imageSpecificUrl ?? genericUrl;
+  const rawData = getStringField(record, IMAGE_DATA_KEYS);
+  const url =
+    (rawUrl ? toImageUrl(rawUrl, mediaType) : undefined) ??
+    (rawData ? toImageUrl(rawData, mediaType) : undefined);
+  const inferredMediaType =
+    mediaType ?? (url ? inferImageMediaType(url) : undefined);
+
+  if (
+    url &&
+    (Boolean(imageSpecificUrl) ||
+      isImageMediaType(inferredMediaType) ||
+      DATA_IMAGE_URL_REGEX.test(url))
+  ) {
+    const key = `${inferredMediaType ?? "image"}:${url}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      images.push({
+        url,
+        mediaType: inferredMediaType ?? "image/*",
+        filename,
+      });
+    }
+  }
+
+  for (const key of IMAGE_CONTAINER_KEYS) {
+    collectToolOutputImages(record[key], images, seen, depth + 1);
+  }
+
+  return images;
+}
 
 function stringifyForDisplay(value: unknown): string | undefined {
   try {
@@ -672,6 +895,48 @@ function ToolDataSection({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+function ToolOutputImages({ images }: { images: ToolOutputImage[] }) {
+  if (images.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      {images.map((image, index) => (
+        <div
+          className="group/image relative w-fit max-w-full overflow-hidden rounded-lg border border-border bg-muted/20"
+          key={`${image.url}-${index}`}
+        >
+          <ImageZoom
+            className="block max-w-full transition-opacity group-hover/image:opacity-90"
+            zoomMargin={24}
+          >
+            <Image
+              alt={image.filename ?? "tool output image"}
+              className="block h-auto max-h-64 w-auto max-w-full cursor-pointer"
+              height={512}
+              src={image.url}
+              unoptimized
+              width={768}
+            />
+          </ImageZoom>
+          <button
+            aria-label="Download image"
+            className="absolute top-2 right-2 inline-flex size-8 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity hover:bg-muted focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover/image:opacity-100"
+            onClick={() => {
+              downloadToolOutputImage(image);
+            }}
+            title="Download image"
+            type="button"
+          >
+            <DownloadIcon aria-hidden="true" className="size-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 interface ChatToolBlockProps {
   toolName: string;
   state: string;
@@ -720,22 +985,23 @@ export function ChatToolBlock({
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
   const hasDetails = hasInput || hasOutput || hasApprovalActions;
+  const outputImages =
+    hasOutput && !isError && !isStreaming
+      ? collectToolOutputImages(output)
+      : [];
   let toolIcon: ReactNode = null;
 
-  if (iconUrl) {
+  const resolvedIconUrl =
+    iconUrl ?? (isMcp ? getMcpToolIconUrl(toolMetadata) : undefined);
+
+  if (resolvedIconUrl || isMcp) {
     toolIcon = (
       <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
-        <AvatarImage className="rounded-sm" src={iconUrl} />
+        <AvatarImage className="rounded-sm" src={resolvedIconUrl} />
         <AvatarFallback className="rounded-sm bg-transparent">
           <HugeiconsIcon className="size-3" icon={CpuIcon} />
         </AvatarFallback>
       </Avatar>
-    );
-  } else if (isMcp) {
-    toolIcon = (
-      <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium text-[0.625rem] text-muted-foreground uppercase tracking-wide">
-        MCP
-      </span>
     );
   }
 
@@ -772,6 +1038,7 @@ export function ChatToolBlock({
           icon={ArrowDown01Icon}
         />
       </CollapsibleTrigger>
+      <ToolOutputImages images={outputImages} />
       <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-300 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
         <div className="mt-3 space-y-4">
           {hasInput ? <ToolDataSection label="Input" value={input} /> : null}

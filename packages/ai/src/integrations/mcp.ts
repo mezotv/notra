@@ -252,17 +252,27 @@ export async function testMcpServerConnection(input: {
       signal: AbortSignal.timeout(timeoutMs),
       timeout: timeoutMs,
     });
+    const definitions = await client.listTools(
+      {},
+      {
+        signal: AbortSignal.timeout(timeoutMs),
+        timeout: timeoutMs,
+      }
+    );
+    const toolCount = definitions.tools.length;
 
     return {
       success: true,
       status: null,
-      message: "MCP connection successful",
+      message: `MCP connection successful. Discovered ${toolCount} ${toolCount === 1 ? "tool" : "tools"}.`,
+      toolCount,
     };
   } catch (error) {
     return {
       success: false,
       status: null,
       message: "Could not reach the MCP server. Check the URL and headers.",
+      toolCount: 0,
     };
   } finally {
     await client.close().catch(() => undefined);
