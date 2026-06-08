@@ -31,6 +31,11 @@ function formatMcpToolLabelPart(value: string): string {
   return label || "MCP tool";
 }
 
+function formatMcpServerName(value: string): string | undefined {
+  const serverName = value.trim();
+  return serverName || undefined;
+}
+
 function getNotraMcpMetadata(toolMetadata: unknown) {
   const parsed = mcpToolMetadataSchema.safeParse(toolMetadata);
   return parsed.success ? parsed.data.notra : undefined;
@@ -38,9 +43,15 @@ function getNotraMcpMetadata(toolMetadata: unknown) {
 
 export function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
   const notraMetadata = getNotraMcpMetadata(toolMetadata);
+  const serverName = notraMetadata?.serverName
+    ? formatMcpServerName(notraMetadata.serverName)
+    : undefined;
+  const metadataToolName = notraMetadata?.toolName
+    ? formatMcpToolLabelPart(notraMetadata.toolName)
+    : undefined;
 
-  if (notraMetadata?.serverName && notraMetadata.toolName) {
-    return `${notraMetadata.serverName} - ${formatMcpToolLabelPart(notraMetadata.toolName)}`;
+  if (serverName && metadataToolName) {
+    return `${serverName} - ${metadataToolName}`;
   }
 
   if (notraMetadata?.label) {

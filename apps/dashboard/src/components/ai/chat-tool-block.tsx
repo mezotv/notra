@@ -36,7 +36,7 @@ import {
   getMcpToolIconUrl,
   getMcpToolLabel,
   isMcpToolName,
-} from "./chat-tool-block/mcp";
+} from "./chat-tool-block/mcp/utils";
 import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
 import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
 import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
