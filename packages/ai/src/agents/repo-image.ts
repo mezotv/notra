@@ -29,7 +29,12 @@ import type {
 } from "@notra/ai/types/repo-image";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { shortSha } from "@notra/ai/utils/repo-image";
+import { withBoxRetry } from "@notra/ai/utils/repo-image-box";
 import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
+import {
+  injectBrandIdentitySkill,
+  injectHumanizerSkill,
+} from "@notra/ai/utils/repo-image-skills";
 import { withLongFetchTimeouts } from "@notra/ai/utils/undici-dispatcher";
 import { Agent, Box } from "@upstash/box";
 import { generateText, Output } from "ai";
@@ -121,35 +126,6 @@ async function installImageGenAgentSkills(params: {
   );
 }
 
-async function withBoxRetry<T>(callback: () => Promise<T>, attempts = 3) {
-  let lastError: unknown;
-
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      return await callback();
-    } catch (error) {
-      lastError = error;
-      if (attempt === attempts || !isTransientBoxError(error)) {
-        break;
-      }
-      await sleep(1000 * attempt);
-    }
-  }
-
-  throw lastError;
-}
-
-function isTransientBoxError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  return (
-    error.message.includes("fetch failed") ||
-    error.message.includes("ECONNRESET") ||
-    error.message.includes("UND_ERR")
-  );
-}
-
 function isAgentTimeoutError(error: unknown) {
   if (!(error instanceof Error)) {
     return false;
@@ -159,10 +135,6 @@ function isAgentTimeoutError(error: unknown) {
   return (
     message.includes("stream timed out") || message.includes("run timed out")
   );
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 const MISSING_OUTPUT_RECOVERY_ATTEMPTS = 3;
@@ -390,6 +362,7 @@ export async function generateRepoImage(params: {
     let rendered: Awaited<ReturnType<typeof renderHtmlToImages>>;
     let usage: GenerateRepoImageResult["usage"];
     let snapshot: Awaited<ReturnType<typeof box.snapshot>> | null = null;
+    let injectedBrandIdentityId: string | undefined;
 
     try {
       if (!restoreSnapshotId) {
@@ -403,6 +376,16 @@ export async function generateRepoImage(params: {
       if (!restoreSnapshotId) {
         await installImageGenAgentSkills({ box });
       }
+      injectedBrandIdentityId =
+        (await injectBrandIdentitySkill({
+          box,
+          organizationId: input.organizationId,
+          brandIdentityId: input.brandIdentityId,
+        })) ?? undefined;
+      await injectHumanizerSkill({
+        box,
+        organizationId: input.organizationId,
+      });
 
       const runInitialRepoImageAgent = restoreSnapshotId
         ? runRepoImageAgentStream
@@ -534,6 +517,7 @@ export async function generateRepoImage(params: {
       pngBase64: rendered.pngBase64,
       svg: rendered.svg,
       html,
+      brandIdentityId: injectedBrandIdentityId,
       sandbox: snapshot
         ? {
             boxId: readSnapshotString(snapshot, "boxId"),

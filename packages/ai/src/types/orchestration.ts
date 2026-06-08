@@ -97,6 +97,7 @@ export interface ImageDefaults {
   integrationId: string;
   branch: string;
   title: string;
+  brandIdentityId?: string;
 }
 
 export interface RepoContext {

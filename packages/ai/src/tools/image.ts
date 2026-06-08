@@ -40,12 +40,15 @@ export function createImageTool(config: ImageToolConfig): Tool {
       const restoreSnapshot = sourcePostId
         ? await getImageSnapshot(config.organizationId, sourcePostId)
         : null;
+      const brandIdentityId =
+        input.brandIdentityId ?? restoreSnapshot?.brandIdentityId;
 
       const result = await generateRepoImage({
         input: {
           organizationId: config.organizationId,
           integrationId: input.integrationId,
           branch: input.branch,
+          brandIdentityId,
           mode: input.mode,
           prompt: input.prompt,
           prNumber: input.prNumber,
@@ -67,6 +70,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
           chatId: config.chatId ?? null,
           integrationId: input.integrationId,
           branch: input.branch,
+          brandIdentityId: result.brandIdentityId ?? brandIdentityId ?? null,
           mode: input.mode,
           prompt: input.prompt ?? null,
           prNumber: input.prNumber ?? null,
@@ -124,6 +128,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
           organizationId: config.organizationId,
           integrationId: config.integrationId,
           branch: config.branch,
+          brandIdentityId: config.brandIdentityId,
           mode: "prompt",
           prompt,
         },
@@ -216,6 +221,8 @@ async function buildRevisionSourceMetadata(params: {
     type: "generated_image",
     integrationId: params.integrationId,
     branch: params.branch,
+    brandIdentityId:
+      params.result.brandIdentityId ?? getStoredBrandIdentityId(existing),
     mode: "prompt",
     prompt: params.prompt,
     sourcePostId: params.postId,
@@ -302,8 +309,24 @@ async function getImageSnapshot(organizationId: string, postId: string) {
     "boxId" in metadata.sandbox && typeof metadata.sandbox.boxId === "string"
       ? metadata.sandbox.boxId
       : undefined;
+  const brandIdentityId = getStoredBrandIdentityId(metadata) ?? undefined;
 
-  return { boxId, snapshotId: metadata.sandbox.snapshotId };
+  return { boxId, snapshotId: metadata.sandbox.snapshotId, brandIdentityId };
+}
+
+function getStoredBrandIdentityId(metadata: object) {
+  if (
+    "brandIdentityId" in metadata &&
+    typeof metadata.brandIdentityId === "string"
+  ) {
+    return metadata.brandIdentityId;
+  }
+
+  if ("brandVoiceId" in metadata && typeof metadata.brandVoiceId === "string") {
+    return metadata.brandVoiceId;
+  }
+
+  return null;
 }
 
 async function saveGeneratedImagePost(params: {

@@ -49,7 +49,7 @@ The repository ${owner}/${repo}@${branch} is cloned at /workspace/home/${repo}, 
 </task-context>
 
 <required-skills>
-You MUST use the satori skill and the marketing-image-generation skill. They are not optional reference material. Load, read, and apply both before designing or writing HTML, and let their instructions override any weaker habit or generic HTML/image-generation approach. Do not proceed from this prompt alone.
+You MUST use the satori skill and the marketing-image-generation skill. They are not optional reference material. Load, read, and apply both before designing or writing HTML, and let their instructions override any weaker habit or generic HTML/image-generation approach. If a brand-identity skill exists, load and apply it as the publishing brand identity for copy, framing, tone, language, and saved brand references. If a humanizer skill exists, load it and apply it as a final pass to every visible text string before writing the final HTML. Do not proceed from this prompt alone.
 </required-skills>
 
 <deliverable>
@@ -152,7 +152,7 @@ ${params.prompt}
 </task>
 
 <required-skills>
-You MUST use the satori skill and the marketing-image-generation skill for this revision. They are not optional reference material. Load, read, and apply both before editing the HTML, and keep the revised file compatible with the Satori render pipeline.
+You MUST use the satori skill and the marketing-image-generation skill for this revision. They are not optional reference material. Load, read, and apply both before editing the HTML, and keep the revised file compatible with the Satori render pipeline. If a brand-identity skill exists, load and apply it as the publishing brand identity for copy, framing, tone, language, and saved brand references. If a humanizer skill exists, load it and apply it as a final pass to every visible text string before writing the revised HTML.
 </required-skills>
 
 <deliverable>
