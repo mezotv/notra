@@ -47,12 +47,10 @@ export async function assertGatewayHasCredits() {
   const now = Date.now();
   if (
     lastCreditCheck &&
-    now - lastCreditCheck.checkedAt < CREDIT_CHECK_TTL_MS
+    now - lastCreditCheck.checkedAt < CREDIT_CHECK_TTL_MS &&
+    lastCreditCheck.balance <= 0
   ) {
-    if (lastCreditCheck.balance <= 0) {
-      throw new GatewayCreditBalanceError(lastCreditCheck.balance);
-    }
-    return;
+    throw new GatewayCreditBalanceError(lastCreditCheck.balance);
   }
 
   const client = getGatewayClient();

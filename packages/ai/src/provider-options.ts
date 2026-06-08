@@ -24,7 +24,9 @@ export function getGatewayFallbackModels(modelId?: string): string[] {
   }
 
   if (modelId.startsWith("openai/")) {
-    return ["openai/gpt-5.4-mini"];
+    return modelId === "openai/gpt-5.4-mini"
+      ? ["openai/gpt-5.4-nano"]
+      : ["openai/gpt-5.4-mini"];
   }
 
   return DEFAULT_GATEWAY_FALLBACK_MODELS.filter((model) => model !== modelId);
