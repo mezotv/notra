@@ -1,5 +1,6 @@
 import { createModel } from "@notra/ai/model";
 import { getContentEditorChatPrompt } from "@notra/ai/prompts/content-editor";
+import { withGatewayDefaults } from "@notra/ai/provider-options";
 import type {
   OrchestrateDeps,
   OrchestrateInput,
@@ -120,6 +121,9 @@ export async function orchestrateChat(
     }),
     tools,
     stopWhen: stepCountIs(maxSteps),
+    providerOptions: withGatewayDefaults(undefined, {
+      modelId: routingDecision.model,
+    }),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     async onFinish({ totalUsage }) {
       await deps?.onUsage?.(totalUsage, routingDecision.model);

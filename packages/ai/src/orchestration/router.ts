@@ -19,7 +19,7 @@ import { generateText, Output } from "ai";
 
 const MODELS = {
   router: "openai/gpt-oss-120b",
-  simple: "openai/gpt-5.1-instant",
+  simple: "openai/gpt-5.4-mini",
   complex: "anthropic/claude-sonnet-4.6",
 } as const;
 
@@ -126,7 +126,9 @@ export async function routeMessage(
     prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
-    providerOptions: withGatewayAutomaticCaching(),
+    providerOptions: withGatewayAutomaticCaching(undefined, {
+      modelId: MODELS.router,
+    }),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });
 

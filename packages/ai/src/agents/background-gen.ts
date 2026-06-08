@@ -1,6 +1,8 @@
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
+import { assertGatewayHasCredits } from "@notra/ai/gateway";
 import { createModel } from "@notra/ai/model";
 import { getUserPrompt } from "@notra/ai/prompts/user";
+import { withGatewayDefaults } from "@notra/ai/provider-options";
 import {
   createGetBrandReferencesTool,
   createSearchBrandReferencesTool,
@@ -103,6 +105,8 @@ export async function runBackgroundGen(
     primarySkillName: skillName,
   });
 
+  await assertGatewayHasCredits();
+
   const model = createModel(
     organizationId,
     AGENT_DEFAULT_MODEL,
@@ -152,11 +156,14 @@ export async function runBackgroundGen(
 
   const agent = new ToolLoopAgent({
     model,
-    providerOptions: {
-      anthropic: {
-        thinking: { type: "enabled", budgetTokens: 4096 },
+    providerOptions: withGatewayDefaults(
+      {
+        anthropic: {
+          thinking: { type: "enabled", budgetTokens: 4096 },
+        },
       },
-    },
+      { modelId: AGENT_DEFAULT_MODEL }
+    ),
     tools: {
       ...brandReferenceTools,
       ...buildGitHubDataTools({

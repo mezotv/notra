@@ -18,7 +18,7 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheReadPerMillionTokens: 0.08,
     cacheWritePerMillionTokens: 1.0,
   },
-  "openai/gpt-5.1-instant": {
+  "openai/gpt-5.4-mini": {
     inputPerMillionTokens: 0.1,
     outputPerMillionTokens: 0.4,
     cacheReadPerMillionTokens: 0.05,

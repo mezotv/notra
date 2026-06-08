@@ -80,7 +80,7 @@ export async function createChatAgent(
 
   const agent = new ToolLoopAgent({
     model: modelWithMemory,
-    providerOptions: withGatewayAutomaticCaching(),
+    providerOptions: withGatewayAutomaticCaching(undefined, { modelId: model }),
     tools: lazyMcpRuntime
       ? { ...baseTools, ...lazyMcpRuntime.tools }
       : baseTools,
