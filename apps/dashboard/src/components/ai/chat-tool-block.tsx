@@ -402,10 +402,10 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     suffix: (input) => quotedSuffix(input, ["title"]),
   },
   getAvailablePosts: { verbs: ["Loading", "Loaded"], noun: "posts" },
-  getPostById: {
+  getPost: {
     verbs: ["Loading", "Loaded"],
     noun: "post",
-    suffix: (input) => idSuffix(input, ["id", "postId"]),
+    suffix: (input) => idSuffix(input, ["id", "postId", "identifier"]),
   },
   listBrandIdentities: {
     verbs: ["Listing", "Listed"],

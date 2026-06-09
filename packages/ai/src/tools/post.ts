@@ -18,7 +18,7 @@ import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { marked } from "marked";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
@@ -548,23 +548,29 @@ export function createGetAvailablePostsTool(config: PostToolConfig): Tool {
   });
 }
 
-export function createGetPostByIdTool(config: PostToolConfig): Tool {
+export function createGetPostTool(config: PostToolConfig): Tool {
   return tool({
     description: toolDescription({
-      toolName: "getPostById",
-      intro: "Gets one existing post by ID.",
+      toolName: "getPost",
+      intro: "Gets one existing post by ID, slug, or title.",
       whenToUse:
         "Use when the user asks for details or content of a specific existing post.",
       usageNotes:
-        "Pass a post id from getAvailablePosts or from prior context. Returns markdown and post metadata.",
+        "Pass a post id, slug, or exact title from getAvailablePosts or from prior context. Returns markdown and post metadata.",
     }),
     inputSchema: z.object({
-      postId: z.string().describe("The ID of the post to fetch"),
+      identifier: z
+        .string()
+        .describe("The ID, slug, or exact title of the post to fetch"),
     }),
-    execute: async ({ postId }) => {
+    execute: async ({ identifier }) => {
       const post = await db.query.posts.findFirst({
         where: and(
-          eq(posts.id, postId),
+          or(
+            eq(posts.id, identifier),
+            eq(posts.slug, identifier),
+            eq(posts.title, identifier)
+          ),
           eq(posts.organizationId, config.organizationId)
         ),
       });

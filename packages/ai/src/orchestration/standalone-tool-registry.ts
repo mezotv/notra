@@ -20,7 +20,7 @@ import {
 import {
   createCreatePostTool,
   createGetAvailablePostsTool,
-  createGetPostByIdTool,
+  createGetPostTool,
   createUpdatePostTool,
   createViewPostTool,
   getCreatePostToolName,
@@ -87,7 +87,7 @@ export function buildStandaloneToolSet(
     contentType: "blog_post",
   });
   tools.getAvailablePosts = createGetAvailablePostsTool({ organizationId });
-  tools.getPostById = createGetPostByIdTool({ organizationId });
+  tools.getPost = createGetPostTool({ organizationId });
   tools.listBrandIdentities = createListBrandIdentitiesTool({ organizationId });
   tools.getBrandIdentity = createGetBrandIdentityTool({ organizationId });
   tools.getAvailableIntegrations = createGetAvailableIntegrationsTool({
@@ -103,7 +103,7 @@ export function buildStandaloneToolSet(
       : "**Content Creation**: Create posts using createChangelog, createBlogPost, createTwitterPost, createLinkedInPost, createInvestorUpdate, plus updatePost and viewPost"
   );
   descriptions.push(
-    "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPostById"
+    "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPost"
   );
 
   tools.listAvailableSkills = listAvailableSkills({ organizationId });
