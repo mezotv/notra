@@ -13,7 +13,8 @@ export function sanitizeDownloadFilename(filename: string) {
 }
 
 export function imageExtensionFromMediaType(mediaType: string) {
-  switch (mediaType.toLowerCase()) {
+  const [baseMediaType = ""] = mediaType.toLowerCase().split(";");
+  switch (baseMediaType.trim()) {
     case "image/jpeg":
       return "jpg";
     case "image/svg+xml":
