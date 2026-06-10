@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
       permanent: true,
     },
     {
+      source: "/branding",
+      destination: "/brand",
+      permanent: true,
+    },
+    {
       source: "/discord",
       destination: SOCIAL_LINKS.discord,
       permanent: false,

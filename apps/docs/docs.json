@@ -243,8 +243,8 @@
     }
   },
   "logo": {
-    "light": "favicon.svg",
-    "dark": "favicon.svg"
+    "light": "logo/notra-wordmark.svg",
+    "dark": "logo/notra-wordmark-dark.svg"
   },
   "navbar": {
     "primary": {

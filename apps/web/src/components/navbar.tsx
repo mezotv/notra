@@ -3,8 +3,9 @@
 import {
   Cancel01Icon,
   Copy01Icon,
-  DashboardSquare01Icon,
+  Download01Icon,
   Menu02Icon,
+  PaintBoardIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -14,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { GlassDropdownMenuContent } from "@notra/ui/components/ui/glasscn/glass-dropdown-menu";
 import { LiquidGlass } from "@notra/ui/components/ui/glasscn/liquid-glass";
 import {
   AnimatePresence,
@@ -28,8 +28,10 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
 import type { NavbarProps } from "@/types/navbar";
+import { copySvgAsset } from "@/utils/copy-svg-asset";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import {
   MARKETING_NAV,
@@ -42,7 +44,6 @@ import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";
 
 const SIGNIN_URL = "https://app.usenotra.com/login";
-const DASHBOARD_URL = "https://app.usenotra.com";
 const HOVER_CLOSE_DELAY = 120;
 const CONTENT_SLIDE = 48;
 const EASE = [0.32, 0.72, 0, 1] as const;
@@ -94,7 +95,10 @@ const contentVariants = {
   }),
 };
 
-type PanelSize = { width: number; height: number };
+interface PanelSize {
+  width: number;
+  height: number;
+}
 
 const SECTION_HEADING_CLASS =
   "px-2 pb-1 font-medium text-neutral-400 text-xs uppercase tracking-wider dark:text-neutral-500";
@@ -335,7 +339,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
       observer.observe(node);
     }
     return () => observer.disconnect();
-  }, [groups]);
+  }, []);
 
   useEffect(() => {
     previousGroupRef.current = activeGroup;
@@ -385,7 +389,12 @@ export function Navbar({ variant }: NavbarProps = {}) {
           transition={shellTransition}
         >
           <div className="px-4 sm:px-6">
-            <div className="flex h-16 items-center justify-between gap-4">
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
+            {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: see above */}
+            <div
+              className="flex h-16 items-center justify-between gap-4"
+              onMouseLeave={scheduleClose}
+            >
               <DropdownMenu
                 onOpenChange={(open, details) => {
                   if (open && details.reason === "trigger-press") {
@@ -410,20 +419,17 @@ export function Navbar({ variant }: NavbarProps = {}) {
                   }
                 >
                   <span className="inline-flex origin-left items-center gap-2 transition-transform duration-150 ease-out group-active:scale-95">
-                    <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#f3eeea] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
-                      <NotraMark className="size-6 shrink-0" />
+                    <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#F6F3F1] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
+                      <NotraMark className="size-7 shrink-0" />
                     </span>
                     <span className="font-semibold text-lg text-neutral-950 dark:text-white">
                       Notra
                     </span>
                   </span>
                 </DropdownMenuTrigger>
-                <GlassDropdownMenuContent
+                <DropdownMenuContent
                   align="start"
-                  className="w-56 bg-white/60 dark:bg-neutral-950/60"
-                  glassClassName="border-black/5 dark:border-white/10"
-                  glassVariant="liquid-refract"
-                  showBackdrop
+                  className="w-56"
                   side="bottom"
                 >
                   <DropdownMenuItem
@@ -432,21 +438,36 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     }
                   >
                     <HugeiconsIcon icon={Copy01Icon} />
-                    Copy as SVG
+                    Copy logo as SVG
                   </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      copySvgAsset(
+                        BRAND_ASSETS.wordmark.svg,
+                        "Copied wordmark as SVG"
+                      )
+                    }
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} />
+                    Copy wordmark as SVG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    render={
+                      <a download href={BRAND_ASSETS.zip}>
+                        <HugeiconsIcon icon={Download01Icon} />
+                        Download brand kit
+                      </a>
+                    }
+                  />
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem render={<Link href={DASHBOARD_URL} />}>
-                    <HugeiconsIcon icon={DashboardSquare01Icon} />
-                    Dashboard
+                  <DropdownMenuItem render={<Link href="/brand" />}>
+                    <HugeiconsIcon icon={PaintBoardIcon} />
+                    Brand Guidelines
                   </DropdownMenuItem>
-                </GlassDropdownMenuContent>
+                </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
-              <nav
-                className="relative hidden items-center gap-1 lg:flex"
-                onMouseLeave={scheduleClose}
-              >
+              <nav className="relative hidden items-center gap-1 lg:flex">
                 {MARKETING_NAV.map((entry) => {
                   if (entry.type === "link") {
                     return (
@@ -582,7 +603,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     Sign in
                   </Link>
                   <TrackedSignupLink
-                    className="corner-squircle overflow-hidden rounded-[1rem] border-transparent bg-primary px-4 py-1.5 font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
+                    className="corner-squircle overflow-hidden rounded-2xl border-transparent bg-primary px-4 py-1.5 font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
                     source="navbar_desktop_signup"
                   >
                     Sign up
@@ -683,7 +704,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           Sign in
         </Link>
         <TrackedSignupLink
-          className="corner-squircle overflow-hidden rounded-[1rem] border-transparent bg-primary px-3 py-2 text-center font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
+          className="corner-squircle overflow-hidden rounded-2xl border-transparent bg-primary px-3 py-2 text-center font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
           onClick={onNavigate}
           source="navbar_mobile_signup"
         >

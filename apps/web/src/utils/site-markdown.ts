@@ -1,9 +1,11 @@
+import { BRAND_ASSETS, BRAND_COLORS, BRAND_FONTS } from "@/lib/brand/constants";
 import {
   COMPARISON_FEATURES,
   PRICING_PLANS,
   SOCIAL_PROOF_LOGOS,
 } from "@/utils/constants";
 import { markdownSection } from "@/utils/markdown";
+import { SITE_URL } from "@/utils/urls";
 
 const FAQ_ITEMS = [
   {
@@ -206,6 +208,38 @@ export function buildLandingMarkdown() {
       "Your team ships every week. Let Notra turn it into the posts and announcements your audience should be seeing.",
       "",
       "[Start for free](https://app.usenotra.com/signup)",
+    ]),
+  ].join("\n");
+}
+
+export function buildBrandMarkdown() {
+  const colorLines = BRAND_COLORS.map(
+    (color) => `- ${color.name}: ${color.hex} (${color.value}) - ${color.usage}`
+  );
+  const fontLines = BRAND_FONTS.map(
+    (font) => `- [${font.name}](${font.googleFontsUrl}) - ${font.role}`
+  );
+
+  return [
+    "# Brand Guidelines",
+    "",
+    "Official assets and guidelines to help you reference the Notra brand, including our logo, colors and typography.",
+    "",
+    markdownSection("Assets", [
+      `- [Brand kit (zip)](${SITE_URL}${BRAND_ASSETS.zip})`,
+      `- Logo: [SVG](${SITE_URL}${BRAND_ASSETS.mark.svg}) / [PNG](${SITE_URL}${BRAND_ASSETS.mark.png})`,
+      `- Wordmark: [SVG](${SITE_URL}${BRAND_ASSETS.wordmark.svg}) / [PNG](${SITE_URL}${BRAND_ASSETS.wordmark.png})`,
+      `- Wordmark for dark surfaces: [SVG](${SITE_URL}${BRAND_ASSETS.wordmarkDark.svg}) / [PNG](${SITE_URL}${BRAND_ASSETS.wordmarkDark.png})`,
+    ]),
+    markdownSection("Logo", [
+      "The Notra mark is a feather with a lavender fill and ink strokes.",
+      "Keep it on a light surface and give it room to breathe. On dark surfaces, place the mark on a cream tile.",
+    ]),
+    markdownSection("Colors", colorLines),
+    markdownSection("Typography", [
+      ...fontLines,
+      "",
+      "The wordmark sets the Notra name in Inter Semibold next to the mark.",
     ]),
   ].join("\n");
 }

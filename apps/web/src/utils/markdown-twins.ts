@@ -15,6 +15,7 @@ import {
   SHOWCASE_COMPANIES,
 } from "@/utils/showcase";
 import {
+  buildBrandMarkdown,
   buildFeaturesMarkdown,
   buildLandingMarkdown,
   buildPricingMarkdown,
@@ -270,6 +271,7 @@ export function buildDualmarkStaticPages(): StaticPageConfig[] {
     { pattern: "/", render: () => buildLandingMarkdown() },
     { pattern: "/features", render: () => buildFeaturesMarkdown() },
     { pattern: "/pricing", render: () => buildPricingMarkdown() },
+    { pattern: "/brand", render: () => buildBrandMarkdown() },
     { pattern: "/blog", render: () => buildBlogIndexMarkdown() },
     { pattern: "/changelog", render: () => buildChangelogHubMarkdown() },
     {
