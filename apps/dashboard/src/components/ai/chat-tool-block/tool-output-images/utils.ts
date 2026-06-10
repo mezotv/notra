@@ -1,6 +1,11 @@
 import {
+  buildImageDownloadFilename,
+  downloadBlob,
+  imageExtensionFromMediaType,
+  sanitizeDownloadFilename,
+} from "@/utils/download";
+import {
   DATA_IMAGE_URL_REGEX,
-  FILENAME_EXTENSION_REGEX,
   GENERIC_URL_KEYS,
   HTTP_URL_REGEX,
   IMAGE_CONTAINER_KEYS,
@@ -12,46 +17,15 @@ import {
 } from "./constants";
 import type { ToolOutputImage } from "./types";
 
-function imageExtensionFromMediaType(mediaType: string) {
-  switch (mediaType.toLowerCase()) {
-    case "image/jpeg":
-      return "jpg";
-    case "image/svg+xml":
-      return "svg";
-    case "image/avif":
-      return "avif";
-    case "image/gif":
-      return "gif";
-    case "image/png":
-      return "png";
-    case "image/webp":
-      return "webp";
-    default:
-      return undefined;
-  }
-}
-
-function sanitizeDownloadFilename(filename: string) {
-  return filename
-    .trim()
-    .replace(/[^\w.-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 96);
-}
-
 function getImageDownloadFilename(image: ToolOutputImage, mediaType: string) {
-  const baseName = sanitizeDownloadFilename(
-    image.filename ?? "tool-output-image"
+  const baseName =
+    sanitizeDownloadFilename(image.filename ?? "tool-output-image") ||
+    "tool-output-image";
+  return buildImageDownloadFilename(
+    baseName,
+    mediaType,
+    imageExtensionFromMediaType(image.mediaType)
   );
-  const filename = baseName || "tool-output-image";
-  if (FILENAME_EXTENSION_REGEX.test(filename)) {
-    return filename;
-  }
-
-  const extension =
-    imageExtensionFromMediaType(mediaType) ??
-    imageExtensionFromMediaType(image.mediaType);
-  return extension ? `${filename}.${extension}` : filename;
 }
 
 export async function downloadToolOutputImage(image: ToolOutputImage) {
@@ -62,14 +36,7 @@ export async function downloadToolOutputImage(image: ToolOutputImage) {
     }
 
     const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = objectUrl;
-    anchor.download = getImageDownloadFilename(image, blob.type);
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(objectUrl);
+    downloadBlob(blob, getImageDownloadFilename(image, blob.type));
   } catch {
     window.open(image.url, "_blank", "noopener,noreferrer");
   }

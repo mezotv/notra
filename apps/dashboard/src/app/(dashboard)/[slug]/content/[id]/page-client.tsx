@@ -2,7 +2,9 @@
 
 import { useChat } from "@ai-sdk/react";
 import {
+  ArrowDown01Icon,
   ArrowLeft02Icon,
+  Download01Icon,
   SentIcon,
   TextIcon,
 } from "@hugeicons/core-free-icons";
@@ -26,9 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
-import { Figma } from "@notra/ui/components/ui/svgs/figma";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
-import { Paper } from "@notra/ui/components/ui/svgs/paper";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
@@ -37,7 +37,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
-import { ChevronDownIcon, DownloadIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import remend from "remend";
@@ -46,6 +45,7 @@ import ChatInput from "@/components/chat-input";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
+import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { CONTENT_TITLE_REGEX } from "@/constants/content-detail";
@@ -56,7 +56,7 @@ import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import {
   copyImageAsFigma,
   copyImageAsPaper,
-  downloadImageAsPng,
+  downloadImage,
 } from "@/lib/content/image-export";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
@@ -88,25 +88,6 @@ function formatDate(date: Date): string {
 function extractTitleFromMarkdown(markdown: string): string {
   const match = markdown.match(CONTENT_TITLE_REGEX);
   return match?.[1] ?? "Untitled";
-}
-
-function ImageExportTargetIcon({
-  target,
-  className,
-}: {
-  target: ImageExportTarget;
-  className?: string;
-}) {
-  switch (target) {
-    case "figma":
-      return <Figma className={className} />;
-    case "wonder":
-      return <SparklesIcon className={className} />;
-    case "paper":
-      return <Paper className={className} />;
-    default:
-      return <Paper className={className} />;
-  }
 }
 
 function formatLookbackWindow(window: string): string {
@@ -769,11 +750,6 @@ export default function PageClient({
       return;
     }
 
-    if (imageExportTarget === "wonder") {
-      toast.info("Wonder export is coming soon");
-      return;
-    }
-
     copyImageAsPaper(
       imageExportRef.current,
       title,
@@ -1004,12 +980,12 @@ export default function PageClient({
               {content.contentType === "image" && (
                 <>
                   <Button
-                    onClick={() => downloadImageAsPng(imageDownloadUrl, title)}
+                    onClick={() => downloadImage(imageDownloadUrl, title)}
                     size="sm"
                     variant="outline"
                   >
-                    <DownloadIcon className="size-4" />
-                    Download PNG
+                    <HugeiconsIcon className="size-4" icon={Download01Icon} />
+                    Download image
                   </Button>
                   <ButtonGroup>
                     <Button
@@ -1028,7 +1004,10 @@ export default function PageClient({
                         render={<Button size="icon-sm" variant="outline" />}
                       >
                         <span className="sr-only">Select export target</span>
-                        <ChevronDownIcon className="size-4" />
+                        <HugeiconsIcon
+                          className="size-4"
+                          icon={ArrowDown01Icon}
+                        />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuLabel>Copy target</DropdownMenuLabel>

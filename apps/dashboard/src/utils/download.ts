@@ -1,5 +1,6 @@
 import {
   DOWNLOAD_FILENAME_EDGE_DASHES_REGEX,
+  DOWNLOAD_FILENAME_EXTENSION_REGEX,
   DOWNLOAD_FILENAME_INVALID_CHARS_REGEX,
 } from "@/constants/download";
 
@@ -9,6 +10,38 @@ export function sanitizeDownloadFilename(filename: string) {
     .replace(DOWNLOAD_FILENAME_INVALID_CHARS_REGEX, "-")
     .replace(DOWNLOAD_FILENAME_EDGE_DASHES_REGEX, "")
     .slice(0, 96);
+}
+
+export function imageExtensionFromMediaType(mediaType: string) {
+  switch (mediaType.toLowerCase()) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/svg+xml":
+      return "svg";
+    case "image/avif":
+      return "avif";
+    case "image/gif":
+      return "gif";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    default:
+      return undefined;
+  }
+}
+
+export function buildImageDownloadFilename(
+  baseName: string,
+  mediaType: string,
+  fallbackExtension?: string
+) {
+  if (DOWNLOAD_FILENAME_EXTENSION_REGEX.test(baseName)) {
+    return baseName;
+  }
+
+  const extension = imageExtensionFromMediaType(mediaType) ?? fallbackExtension;
+  return extension ? `${baseName}.${extension}` : baseName;
 }
 
 export function downloadBlob(blob: Blob, filename: string) {
