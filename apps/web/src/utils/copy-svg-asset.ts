@@ -13,7 +13,7 @@ export async function copySvgAsset(
     const svg = await response.text();
     return await copyToClipboard(svg, successMessage);
   } catch {
-    toast.error("Failed to copy to clipboard");
+    toast.error("Failed to load the SVG asset");
     return false;
   }
 }
