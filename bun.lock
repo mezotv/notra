@@ -220,7 +220,7 @@
         "@octokit/core": "^7.0.6",
         "@resvg/resvg-js": "^2.6.2",
         "@supermemory/tools": "^1.3.64",
-        "@upstash/box": "^0.4.5",
+        "@upstash/box": "^0.5.0",
         "@upstash/qstash": "2.9.0-rc",
         "@upstash/realtime": "^1.0.3",
         "@upstash/redis": "^1.35.8",
@@ -1768,7 +1768,7 @@
 
     "@upsetjs/venn.js": ["@upsetjs/venn.js@2.0.0", "", { "optionalDependencies": { "d3-selection": "^3.0.0", "d3-transition": "^3.0.1" } }, "sha512-WbBhLrooyePuQ1VZxrJjtLvTc4NVfpOyKx0sKqioq9bX1C1m7Jgykkn8gLrtwumBioXIqam8DLxp88Adbue6Hw=="],
 
-    "@upstash/box": ["@upstash/box@0.4.5", "", { "dependencies": { "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-BOR0EPqIhxLguBsojZH5cBqI1Ax6fng2ob8vnVAXrdEcWLm4dJEsVsK/RqzxJ09MsEvQ4Vv46X0yLf6UIHEoDA=="],
+    "@upstash/box": ["@upstash/box@0.5.0", "", { "dependencies": { "zod-to-json-schema": "^3.25.1" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-0Cm1xU0390zHdbhjjw09jXxAz7bEwf66FYVimBqa0ZgeENyT3+TMal7zeatu9VANq1DJ9PJZl4LJMvHN+GKXiQ=="],
 
     "@upstash/core-analytics": ["@upstash/core-analytics@0.0.10", "", { "dependencies": { "@upstash/redis": "^1.28.3" } }, "sha512-7qJHGxpQgQr9/vmeS1PktEwvNAF7TI4iJDi8Pu2CFZ9YUGHZH4fOP5TfYlZ4aVxfopnELiE4BS4FBjyK7V1/xQ=="],
 
