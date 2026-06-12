@@ -35,6 +35,7 @@ import {
   injectBrandIdentitySkill,
   injectHumanizerSkill,
 } from "@notra/ai/utils/repo-image-skills";
+import { extractRepoImageUsage } from "@notra/ai/utils/repo-image-usage";
 import { withLongFetchTimeouts } from "@notra/ai/utils/undici-dispatcher";
 import { Agent, Box } from "@upstash/box";
 import { generateText, Output } from "ai";
@@ -588,44 +589,6 @@ function readSnapshotNumber(snapshot: unknown, key: string) {
   }
   const value = (snapshot as Record<string, unknown>)[key];
   return typeof value === "number" ? value : undefined;
-}
-
-function extractRepoImageUsage(
-  cost: unknown,
-  modelId: string
-): GenerateRepoImageResult["usage"] {
-  if (!cost || typeof cost !== "object") {
-    return undefined;
-  }
-
-  const inputTokens =
-    "inputTokens" in cost && typeof cost.inputTokens === "number"
-      ? cost.inputTokens
-      : 0;
-  const outputTokens =
-    "outputTokens" in cost && typeof cost.outputTokens === "number"
-      ? cost.outputTokens
-      : 0;
-  const computeMs =
-    "computeMs" in cost && typeof cost.computeMs === "number"
-      ? cost.computeMs
-      : undefined;
-  const totalUsd =
-    "totalUsd" in cost && typeof cost.totalUsd === "number"
-      ? cost.totalUsd
-      : undefined;
-
-  return {
-    inputTokens,
-    outputTokens,
-    totalTokens: inputTokens + outputTokens,
-    cacheReadTokens: 0,
-    cacheWriteTokens: 0,
-    modelId,
-    ...(computeMs === undefined ? {} : { computeMs }),
-    ...(totalUsd === undefined ? {} : { totalUsd }),
-    raw: cost,
-  };
 }
 
 function mergeRepoImageUsage(

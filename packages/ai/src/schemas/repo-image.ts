@@ -103,3 +103,45 @@ export const imageRevisionToolInputSchema = z.object({
 export const unavailableImageRevisionToolInputSchema = z.object({
   prompt: z.string().optional(),
 });
+
+const repoImageCostNumberSchema = z.number().finite().nonnegative();
+
+const repoImageCostInputTokenDetailsSchema = z
+  .object({
+    cacheReadTokens: repoImageCostNumberSchema.optional(),
+    cacheWriteTokens: repoImageCostNumberSchema.optional(),
+    cacheCreationInputTokens: repoImageCostNumberSchema.optional(),
+    cache_read_tokens: repoImageCostNumberSchema.optional(),
+    cache_write_tokens: repoImageCostNumberSchema.optional(),
+    cache_creation_input_tokens: repoImageCostNumberSchema.optional(),
+  })
+  .passthrough();
+
+export const repoImageCostSchema = z
+  .object({
+    inputTokens: repoImageCostNumberSchema.optional(),
+    input_tokens: repoImageCostNumberSchema.optional(),
+    input: repoImageCostNumberSchema.optional(),
+    outputTokens: repoImageCostNumberSchema.optional(),
+    output_tokens: repoImageCostNumberSchema.optional(),
+    output: repoImageCostNumberSchema.optional(),
+    cacheReadTokens: repoImageCostNumberSchema.optional(),
+    cacheReadInputTokens: repoImageCostNumberSchema.optional(),
+    cachedInputTokens: repoImageCostNumberSchema.optional(),
+    cache_read_tokens: repoImageCostNumberSchema.optional(),
+    cache_read_input_tokens: repoImageCostNumberSchema.optional(),
+    cached_input_tokens: repoImageCostNumberSchema.optional(),
+    cacheWriteTokens: repoImageCostNumberSchema.optional(),
+    cacheWriteInputTokens: repoImageCostNumberSchema.optional(),
+    cacheCreationInputTokens: repoImageCostNumberSchema.optional(),
+    cache_write_tokens: repoImageCostNumberSchema.optional(),
+    cache_write_input_tokens: repoImageCostNumberSchema.optional(),
+    cache_creation_input_tokens: repoImageCostNumberSchema.optional(),
+    inputTokenDetails: repoImageCostInputTokenDetailsSchema.optional(),
+    input_token_details: repoImageCostInputTokenDetailsSchema.optional(),
+    computeMs: repoImageCostNumberSchema.optional(),
+    compute_ms: repoImageCostNumberSchema.optional(),
+    totalUsd: repoImageCostNumberSchema.optional(),
+    total_usd: repoImageCostNumberSchema.optional(),
+  })
+  .passthrough();
