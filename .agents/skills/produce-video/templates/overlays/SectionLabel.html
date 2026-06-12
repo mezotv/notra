@@ -1,0 +1,153 @@
+<!--
+  Overlay template: SectionLabel
+  Purpose: A lower-third label (small kicker + larger title) sliding up from the bottom-left
+           safe zone. Holds, then slides/fades out.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{KICKER}}  small eyebrow/kicker text above the title (may be blank)
+    {{TITLE}}   the lower-third title
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-section-label-1).
+
+  TIMING CONTRACT: NOMINAL 4s dwell (DUR). Entrance ~0.5s, hold, exit ~0.3s at the tail.
+  Set the mount data-duration to ~4s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-section-label"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="4"
+    >
+      <div class="ov-sl-wrap">
+        <div class="ov-sl-bar" aria-hidden="true"></div>
+        <div class="ov-sl-text">
+          <div class="ov-sl-kicker">{{KICKER}}</div>
+          <div class="ov-sl-title">{{TITLE}}</div>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-section-label"] .ov-sl-wrap {
+        position: absolute;
+        left: 90px;
+        bottom: 110px;
+        display: flex;
+        align-items: stretch;
+        gap: 22px;
+        max-width: 60%;
+        pointer-events: none;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      [data-composition-id="ov-section-label"] .ov-sl-bar {
+        flex: 0 0 auto;
+        width: 8px;
+        border-radius: 4px;
+        background: var(--brand-accent);
+        transform-origin: bottom center;
+      }
+      [data-composition-id="ov-section-label"] .ov-sl-text {
+        padding: 20px 26px;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      }
+      [data-composition-id="ov-section-label"] .ov-sl-kicker {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        margin-bottom: 8px;
+      }
+      [data-composition-id="ov-section-label"] .ov-sl-kicker:empty {
+        display: none;
+      }
+      [data-composition-id="ov-section-label"] .ov-sl-title {
+        font-size: 60px;
+        font-weight: 800;
+        line-height: 1.05;
+        letter-spacing: -0.02em;
+        color: var(--brand-text);
+        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-section-label";
+        var DUR = 4;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var bar = root.querySelector(".ov-sl-bar");
+        var kicker = root.querySelector(".ov-sl-kicker");
+        var title = root.querySelector(".ov-sl-title");
+
+        // Entrance: bar grows up, kicker + title slide up and fade in.
+        tl.from(bar, { scaleY: 0, duration: 0.4, ease: "power3.out" }, 0);
+        if (kicker.textContent.trim()) {
+          tl.from(
+            kicker,
+            { y: 24, autoAlpha: 0, duration: 0.35, ease: "power2.out" },
+            0.15
+          );
+        }
+        tl.from(
+          title,
+          { y: 36, autoAlpha: 0, duration: 0.45, ease: "power3.out" },
+          0.22
+        );
+
+        // Exit in the final ~0.3s.
+        tl.to(
+          [bar, kicker, title],
+          { autoAlpha: 0, y: 18, duration: 0.3, ease: "power2.in" },
+          DUR - 0.3
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

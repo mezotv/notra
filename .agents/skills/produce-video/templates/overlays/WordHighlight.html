@@ -1,0 +1,227 @@
+<!--
+  Overlay template: WordHighlight
+  Purpose: A short caption word/phrase at a screen anchor with a marker sweep, hand-drawn
+           circle, or underline behind/around it.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{TEXT}}     the word / short phrase to emphasize
+    {{ANCHOR}}   one of: bottom-center | top-center  (set as the data-anchor attribute below)
+    {{STYLE}}    one of: marker | circle | underline  (set as the data-style attribute below)
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-word-highlight-1).
+
+  TIMING CONTRACT: NOMINAL 3s dwell (DUR). Entrance ~0.5s, hold, exit ~0.3s at the tail.
+  Set the mount data-duration to ~3s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-word-highlight"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="3"
+    >
+      <div class="ov-wh-stage" data-anchor="{{ANCHOR}}">
+        <div class="ov-wh-chip" data-style="{{STYLE}}">
+          <svg
+            class="ov-wh-mark"
+            viewBox="0 0 300 120"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path
+              class="ov-wh-circle"
+              d="M150 14 C 60 14, 18 40, 18 62 C 18 92, 96 108, 150 108 C 230 108, 286 86, 282 58 C 279 34, 226 16, 150 18"
+              fill="none"
+              stroke="var(--brand-accent)"
+              stroke-width="6"
+              stroke-linecap="round"
+            />
+          </svg>
+          <span class="ov-wh-sweep" aria-hidden="true"></span>
+          <span class="ov-wh-underline" aria-hidden="true"></span>
+          <span class="ov-wh-text">{{TEXT}}</span>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-word-highlight"] .ov-wh-stage {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-word-highlight"]
+        .ov-wh-stage[data-anchor="bottom-center"] {
+        bottom: 150px;
+      }
+      [data-composition-id="ov-word-highlight"]
+        .ov-wh-stage[data-anchor="top-center"] {
+        top: 130px;
+      }
+      [data-composition-id="ov-word-highlight"] .ov-wh-chip {
+        position: relative;
+        display: inline-block;
+        padding: 18px 30px;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 56px;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+      [data-composition-id="ov-word-highlight"] .ov-wh-text {
+        position: relative;
+        z-index: 2;
+      }
+      [data-composition-id="ov-word-highlight"] .ov-wh-sweep {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        top: 18%;
+        bottom: 16%;
+        z-index: 1;
+        border-radius: 6px;
+        background: color-mix(in srgb, var(--brand-accent) 40%, transparent);
+        transform-origin: left center;
+        display: none;
+      }
+      [data-composition-id="ov-word-highlight"] .ov-wh-underline {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 4px;
+        height: 10px;
+        z-index: 1;
+        border-radius: 6px;
+        background: var(--brand-accent);
+        transform-origin: left center;
+        display: none;
+      }
+      [data-composition-id="ov-word-highlight"] .ov-wh-mark {
+        position: absolute;
+        left: -14px;
+        top: -6px;
+        width: calc(100% + 28px);
+        height: calc(100% + 12px);
+        z-index: 1;
+        display: none;
+        overflow: visible;
+      }
+      [data-composition-id="ov-word-highlight"]
+        .ov-wh-chip[data-style="marker"]
+        .ov-wh-sweep {
+        display: block;
+      }
+      [data-composition-id="ov-word-highlight"]
+        .ov-wh-chip[data-style="underline"]
+        .ov-wh-underline {
+        display: block;
+      }
+      [data-composition-id="ov-word-highlight"]
+        .ov-wh-chip[data-style="circle"]
+        .ov-wh-mark {
+        display: block;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-word-highlight";
+        var DUR = 3;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var chip = root.querySelector(".ov-wh-chip");
+        var text = root.querySelector(".ov-wh-text");
+        var style = chip.getAttribute("data-style");
+
+        // Entrance: text pops up.
+        tl.from(
+          text,
+          { y: 22, autoAlpha: 0, duration: 0.4, ease: "power3.out" },
+          0
+        );
+
+        // Style-specific draw-in of the emphasis mark.
+        if (style === "marker") {
+          tl.fromTo(
+            root.querySelector(".ov-wh-sweep"),
+            { scaleX: 0 },
+            { scaleX: 1, duration: 0.4, ease: "power2.out" },
+            0.18
+          );
+        } else if (style === "underline") {
+          tl.fromTo(
+            root.querySelector(".ov-wh-underline"),
+            { scaleX: 0 },
+            { scaleX: 1, duration: 0.4, ease: "power2.out" },
+            0.2
+          );
+        } else if (style === "circle") {
+          var path = root.querySelector(".ov-wh-circle");
+          var len = path.getTotalLength();
+          gsap.set(path, { strokeDasharray: len, strokeDashoffset: len });
+          tl.to(
+            path,
+            { strokeDashoffset: 0, duration: 0.55, ease: "power1.inOut" },
+            0.2
+          );
+        }
+
+        // Exit in the final ~0.3s.
+        tl.to(
+          chip,
+          { autoAlpha: 0, y: -14, duration: 0.3, ease: "power2.in" },
+          DUR - 0.3
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

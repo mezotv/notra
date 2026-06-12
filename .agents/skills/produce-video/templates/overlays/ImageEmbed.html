@@ -1,0 +1,170 @@
+<!--
+  Overlay template: ImageEmbed
+  Purpose: A framed screenshot/image with a subtle scale-in. Optional caption below the
+           frame. Holds, then fades out.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{SRC}}      image URL or project-relative path for the <img>
+    {{CAPTION}}  optional caption under the frame (may be blank)
+
+  NOTE: <img> uses crossorigin="anonymous" so the capture engine can read pixels. For remote
+        URLs ensure the host serves an Access-Control-Allow-Origin header; otherwise copy the
+        image into the project and reference it by relative path.
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-image-embed-1).
+
+  TIMING CONTRACT: NOMINAL 5s dwell (DUR). Entrance ~0.55s, hold, exit ~0.35s at the tail.
+  Set the mount data-duration to ~5s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-image-embed"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="5"
+    >
+      <div class="ov-ie-wrap">
+        <figure class="ov-ie-fig">
+          <div class="ov-ie-frame">
+            <img class="ov-ie-img" src="{{SRC}}" crossorigin="anonymous" alt="">
+          </div>
+          <figcaption class="ov-ie-cap">{{CAPTION}}</figcaption>
+        </figure>
+      </div>
+
+      <style>
+      [data-composition-id="ov-image-embed"] .ov-ie-wrap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 50%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 80px;
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-image-embed"] .ov-ie-fig {
+        margin: 0;
+        max-width: 760px;
+        text-align: center;
+      }
+      [data-composition-id="ov-image-embed"] .ov-ie-frame {
+        padding: 12px;
+        background: var(--brand-bg);
+        border: 1px solid
+          color-mix(in srgb, var(--brand-muted) 45%, transparent);
+        border-radius: 16px;
+        box-shadow: 0 36px 80px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+      }
+      [data-composition-id="ov-image-embed"] .ov-ie-img {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-height: 720px;
+        object-fit: contain;
+        border-radius: 8px;
+      }
+      [data-composition-id="ov-image-embed"] .ov-ie-cap {
+        display: inline-block;
+        margin: 18px auto 0;
+        padding: 12px 20px;
+        text-align: center;
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 24px;
+        font-weight: 500;
+        color: #ffffff;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      }
+      [data-composition-id="ov-image-embed"] .ov-ie-cap:empty {
+        display: none;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-image-embed";
+        var DUR = 5;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var frame = root.querySelector(".ov-ie-frame");
+        var cap = root.querySelector(".ov-ie-cap");
+
+        // Entrance: subtle scale-in + fade.
+        tl.from(
+          frame,
+          {
+            scale: 0.88,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.5,
+            ease: "power3.out",
+          },
+          0
+        );
+        if (cap.textContent.trim()) {
+          tl.from(
+            cap,
+            { y: 16, autoAlpha: 0, duration: 0.35, ease: "power2.out" },
+            0.25
+          );
+        }
+
+        // Exit in the final ~0.35s.
+        tl.to(
+          [frame, cap],
+          { autoAlpha: 0, scale: 0.96, duration: 0.35, ease: "power2.in" },
+          DUR - 0.35
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

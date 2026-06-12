@@ -1,0 +1,75 @@
+import { AbsoluteFill, Sequence } from "remotion";
+import { story } from "./story";
+import { HookTitle } from "./scenes/HookTitle";
+import { ProblemSetup } from "./scenes/ProblemSetup";
+import { CodeSnippet } from "./scenes/CodeSnippet";
+import { LibrarySwap } from "./scenes/LibrarySwap";
+import { BeforeAfter } from "./scenes/BeforeAfter";
+import { MetricCompare } from "./scenes/MetricCompare";
+import { BulletList } from "./scenes/BulletList";
+import { CTAEndScreen } from "./scenes/CTAEndScreen";
+import { UIShowcase } from "./scenes/UIShowcase";
+import type { Scene } from "./story-types";
+
+const renderScene = (scene: Scene): React.ReactElement => {
+  switch (scene.type) {
+    case "HookTitle": {
+      const { type: _t, ...props } = scene;
+      return <HookTitle {...props} />;
+    }
+    case "ProblemSetup": {
+      const { type: _t, ...props } = scene;
+      return <ProblemSetup {...props} />;
+    }
+    case "CodeSnippet": {
+      const { type: _t, ...props } = scene;
+      return <CodeSnippet {...props} />;
+    }
+    case "LibrarySwap": {
+      const { type: _t, ...props } = scene;
+      return <LibrarySwap {...props} />;
+    }
+    case "BeforeAfter": {
+      const { type: _t, ...props } = scene;
+      return <BeforeAfter {...props} />;
+    }
+    case "MetricCompare": {
+      const { type: _t, ...props } = scene;
+      return <MetricCompare {...props} />;
+    }
+    case "BulletList": {
+      const { type: _t, ...props } = scene;
+      return <BulletList {...props} />;
+    }
+    case "CTAEndScreen": {
+      const { type: _t, ...props } = scene;
+      return <CTAEndScreen {...props} />;
+    }
+    case "UIShowcase": {
+      const { type: _t, ...props } = scene;
+      return <UIShowcase {...props} />;
+    }
+    case "Custom":
+      throw new Error(
+        `Custom scene "${scene.componentName}" must be dispatched from a skill-generated extension. ` +
+        `The base Main.tsx template does not know how to render custom scenes; the skill extends this switch when a Custom scene is added.`
+      );
+  }
+};
+
+export const Main: React.FC = () => {
+  let offset = 0;
+  return (
+    <AbsoluteFill style={{ backgroundColor: story.brand.colors.background }}>
+      {story.scenes.map((scene, i) => {
+        const from = offset;
+        offset += scene.durationFrames;
+        return (
+          <Sequence key={i} from={from} durationInFrames={scene.durationFrames}>
+            {renderScene(scene)}
+          </Sequence>
+        );
+      })}
+    </AbsoluteFill>
+  );
+};

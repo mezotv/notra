@@ -1,0 +1,30 @@
+import { Composition } from "remotion";
+import { story } from "./story";
+import { Main } from "./Main";
+
+const ASPECT_DIMENSIONS: Record<"16:9" | "1:1" | "9:16", { width: number; height: number }> = {
+  "16:9": { width: 1920, height: 1080 },
+  "1:1": { width: 1080, height: 1080 },
+  "9:16": { width: 1080, height: 1920 },
+};
+
+export const RemotionRoot: React.FC = () => {
+  const { width, height } = ASPECT_DIMENSIONS[story.meta.aspectRatio];
+  const durationInFrames = story.scenes.reduce(
+    (acc, scene) => acc + scene.durationFrames,
+    0,
+  );
+
+  return (
+    <>
+      <Composition
+        id="Main"
+        component={Main}
+        durationInFrames={durationInFrames}
+        fps={story.meta.fps}
+        width={width}
+        height={height}
+      />
+    </>
+  );
+};

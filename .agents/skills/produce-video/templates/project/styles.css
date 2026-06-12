@@ -1,0 +1,20 @@
+/* Project-level brand tokens consumed by every overlay template (var(--brand-*)).
+   The skill rewrites these values from the detected/confirmed brand (P0 Visual
+   Identity Gate). Neutral dark defaults below are placeholders only. */
+:root {
+  --brand-primary: #3b82f6; /* neutral blue */
+  --brand-accent: #8b5cf6; /* neutral violet */
+  --brand-bg: #0a0a0a; /* near-black */
+  --brand-text: #ffffff;
+  --brand-muted: #9ca3af;
+  --brand-success: #22c55e;
+  --brand-danger: #ef4444;
+
+  --brand-font: "Geist", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --brand-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Overlays sit above the video. Track index does not control stacking — z-index does. */
+[data-composition-id^="ov-"] {
+  z-index: 10;
+}

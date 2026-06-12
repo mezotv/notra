@@ -1,0 +1,240 @@
+<!--
+  Overlay template: CodeSnippet
+  Purpose: A code card that slides in from a side safe-zone. Monospace. Supports an
+           optional highlighted line.
+
+  Layering: This is an OVERLAY clip that sits ON TOP of the talking-head/screen video
+            (video is track 0). Mount it as a sub-composition with a higher CSS z-index
+            and a transcript-derived data-start. It animates ITSELF in AND out within its
+            own data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a sub-composition is a FULL standalone
+  HTML document (doctype + head + body). The composition root is a body-level div carrying
+  data-composition-id + data-width/height. Do NOT wrap it in a template element. Mount it
+  from the parent index.html as a clip div with these attributes:
+      class="clip"
+      data-composition-id="ov-code-snippet"
+      data-composition-src="compositions/codesnippet.html"
+      data-start="<t>"  data-duration="5"  data-width="1920"  data-height="1080"
+      data-track-index="1"  style="position:absolute; inset:0; z-index:10"
+
+  This is the standard "terminal/window" code look (traffic-light dots + filename bar +
+  dark high-contrast panel). Always use it for code; don't invent another code container.
+
+  Tokens (filled by the skill at build time):
+    {{CODE_HTML}}       PROPERLY FORMATTED code, one statement per line, correct/consistent
+                        indentation (2 or 4 spaces), blank lines between logical groups,
+                        idiomatic syntax + real API names. Each line is <span data-line="N">...</span>.
+                        Wrap tokens in .ov-cs-kw / .ov-cs-str / .ov-cs-com for color. Keep lines
+                        short enough to fit the card (~≤46 chars); never overflow — elide with "// …".
+    {{TITLE}}           filename / label shown in the card header
+    {{HIGHLIGHT_LINE}}  a line number (data-line value) to emphasize; may be left blank
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id per instance (e.g. ov-code-snippet-1).
+
+  TIMING CONTRACT: authored for a NOMINAL 5s dwell (DUR). Entrance ~0.45s, hold, exit ~0.35s
+  at the tail. Set the mount data-duration to ~5s (or scale DUR to match data-duration).
+
+  BRAND TOKENS: uses var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-code-snippet"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="5"
+    >
+      <div class="ov-cs-wrap">
+        <div class="ov-cs-card">
+          <div class="ov-cs-head">
+            <span class="ov-cs-dots"
+              ><i></i><i></i><i></i></span
+            >
+            <span class="ov-cs-title">{{TITLE}}</span>
+          </div>
+          <pre class="ov-cs-code"><code>{{CODE_HTML}}</code></pre>
+          <div
+            class="ov-cs-hl"
+            aria-hidden="true"
+            data-layout-allow-overflow
+          ></div>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-code-snippet"] .ov-cs-wrap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 46%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 80px;
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-card {
+        position: relative;
+        width: 100%;
+        max-width: 720px;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-head {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 18px 26px;
+        background: color-mix(in srgb, var(--brand-muted) 18%, var(--brand-bg));
+        border-bottom: 1px solid
+          color-mix(in srgb, var(--brand-muted) 35%, transparent);
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-dots {
+        display: inline-flex;
+        gap: 9px;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-dots i {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--brand-muted) 60%, transparent);
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-title {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--brand-text);
+        letter-spacing: 0.01em;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-code {
+        margin: 0;
+        padding: 28px 30px;
+        font-family: "JetBrains Mono", ui-monospace, monospace;
+        font-size: 26px;
+        line-height: 1.55;
+        color: var(--brand-text);
+        white-space: pre;
+        overflow: hidden;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-code [data-line] {
+        display: block;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-code .ov-cs-kw {
+        color: #a78bfa;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-code .ov-cs-str {
+        color: #7dd3fc;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-code .ov-cs-com {
+        color: #94a3b8;
+      }
+      [data-composition-id="ov-code-snippet"] .ov-cs-hl {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 0;
+        background: color-mix(in srgb, var(--brand-accent) 22%, transparent);
+        border-left: 4px solid var(--brand-accent);
+        opacity: 0;
+        pointer-events: none;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-code-snippet";
+        var DUR = 5; // nominal dwell; keep in sync with mount data-duration
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var card = root.querySelector(".ov-cs-card");
+        var lines = root.querySelectorAll(".ov-cs-code [data-line]");
+        var hl = root.querySelector(".ov-cs-hl");
+        var hlNum = "{{HIGHLIGHT_LINE}}".trim();
+
+        // Entrance: slide in from the right safe-zone + fade.
+        tl.from(
+          card,
+          { x: 90, autoAlpha: 0, duration: 0.45, ease: "power3.out" },
+          0
+        );
+        tl.from(
+          lines,
+          {
+            x: 26,
+            autoAlpha: 0,
+            duration: 0.3,
+            ease: "power2.out",
+            stagger: 0.06,
+          },
+          0.15
+        );
+
+        // Optional highlight sweep over the emphasized line.
+        if (hlNum) {
+          var target = root.querySelector(
+            '.ov-cs-code [data-line="' + hlNum + '"]'
+          );
+          if (target) {
+            var code = root.querySelector(".ov-cs-code");
+            gsap.set(hl, {
+              top: target.offsetTop + code.offsetTop,
+              height: target.offsetHeight,
+            });
+            tl.fromTo(
+              hl,
+              { scaleX: 0, transformOrigin: "left center", opacity: 0 },
+              { scaleX: 1, opacity: 1, duration: 0.4, ease: "power2.inOut" },
+              0.6
+            );
+          }
+        }
+
+        // Exit (overlays must animate themselves out): slide back + fade in the final ~0.35s.
+        tl.to(
+          card,
+          { x: 70, autoAlpha: 0, duration: 0.35, ease: "power2.in" },
+          DUR - 0.35
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

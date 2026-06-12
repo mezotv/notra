@@ -1,0 +1,39 @@
+import { fontFamily } from "./fonts";
+
+export type Brand = {
+  logoPath: string | null;
+  colors: {
+    primary: string;
+    accent: string;
+    background: string;
+    text: string;
+    muted: string;
+    success: string;
+    danger: string;
+  };
+  font: {
+    family: string;
+    googleFont: string | null;
+  };
+  introPath: string | null;
+  outroPath: string | null;
+};
+
+export const brand: Brand = {
+  logoPath: null,
+  colors: {
+    primary: "#3B82F6",   // neutral blue
+    accent: "#8B5CF6",    // neutral violet
+    background: "#0A0A0A", // near-black
+    text: "#FFFFFF",
+    muted: "#9CA3AF",
+    success: "#22C55E",
+    danger: "#EF4444",
+  },
+  font: {
+    family: fontFamily,
+    googleFont: "Geist",
+  },
+  introPath: null,
+  outroPath: null,
+};

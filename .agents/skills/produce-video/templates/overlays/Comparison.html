@@ -1,0 +1,206 @@
+<!--
+  Overlay template: Comparison
+  Purpose: Two side-by-side panels (before/after or X vs Y). Panels slide in from opposite
+           sides, hold, then exit. Under [data-aspect="vertical"] the panels STACK.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  For VERTICAL (1080x1920) renders, set data-aspect="vertical" on the root div (or an
+  ancestor) and change data-width/height to 1080/1920 — the panels then stack.
+
+  Tokens (filled by the skill at build time):
+    {{LEFT_TITLE}}   {{LEFT_BODY}}
+    {{RIGHT_TITLE}}  {{RIGHT_BODY}}
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-comparison-1).
+
+  TIMING CONTRACT: NOMINAL 5s dwell (DUR). Entrance ~0.6s, hold, exit ~0.35s at the tail.
+  Set the mount data-duration to ~5s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-comparison"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="5"
+    >
+      <div class="ov-cmp-wrap">
+        <div class="ov-cmp-grid">
+          <div class="ov-cmp-panel ov-cmp-left">
+            <div class="ov-cmp-title">{{LEFT_TITLE}}</div>
+            <div class="ov-cmp-body">{{LEFT_BODY}}</div>
+          </div>
+          <div class="ov-cmp-vs" aria-hidden="true">vs</div>
+          <div class="ov-cmp-panel ov-cmp-right">
+            <div class="ov-cmp-title">{{RIGHT_TITLE}}</div>
+            <div class="ov-cmp-body">{{RIGHT_BODY}}</div>
+          </div>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-comparison"] .ov-cmp-wrap {
+        position: absolute;
+        left: 0;
+        bottom: 120px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 0 80px;
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-grid {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        justify-content: center;
+        gap: 28px;
+        width: 100%;
+        max-width: 1300px;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-panel {
+        flex: 1 1 0;
+        max-width: 600px;
+        padding: 30px 34px;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-left {
+        border-top: 5px solid var(--brand-muted);
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-right {
+        border-top: 5px solid var(--brand-accent);
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-title {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--brand-text);
+        margin-bottom: 12px;
+        letter-spacing: -0.01em;
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-body {
+        font-size: 25px;
+        line-height: 1.4;
+        color: var(--brand-text);
+      }
+      [data-composition-id="ov-comparison"] .ov-cmp-vs {
+        align-self: center;
+        flex: 0 0 auto;
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 800;
+        font-style: italic;
+        color: var(--brand-bg);
+        background: var(--brand-primary);
+        border-radius: 50%;
+      }
+      /* Vertical aspect: stack panels */
+      [data-composition-id="ov-comparison"][data-aspect="vertical"]
+        .ov-cmp-grid,
+      [data-aspect="vertical"]
+        [data-composition-id="ov-comparison"]
+        .ov-cmp-grid {
+        flex-direction: column;
+        align-items: stretch;
+        max-width: 760px;
+      }
+      [data-composition-id="ov-comparison"][data-aspect="vertical"]
+        .ov-cmp-panel,
+      [data-aspect="vertical"]
+        [data-composition-id="ov-comparison"]
+        .ov-cmp-panel {
+        max-width: none;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-comparison";
+        var DUR = 5;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var left = root.querySelector(".ov-cmp-left");
+        var right = root.querySelector(".ov-cmp-right");
+        var vs = root.querySelector(".ov-cmp-vs");
+
+        // Entrance: panels slide in from opposite sides, vs pops between them.
+        tl.from(
+          left,
+          { x: -70, autoAlpha: 0, duration: 0.5, ease: "power3.out" },
+          0
+        );
+        tl.from(
+          right,
+          { x: 70, autoAlpha: 0, duration: 0.5, ease: "power3.out" },
+          0.08
+        );
+        tl.from(
+          vs,
+          {
+            scale: 0,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.4,
+            ease: "back.out(2)",
+          },
+          0.32
+        );
+
+        // Exit in the final ~0.35s.
+        tl.to(
+          [left, right, vs],
+          { autoAlpha: 0, y: 24, duration: 0.35, ease: "power2.in" },
+          DUR - 0.35
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

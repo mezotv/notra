@@ -1,0 +1,164 @@
+<!--
+  Overlay template: OnScreenHighlight
+  Purpose: An absolutely-positioned highlight (box + marker-sweep underline) PINNED over
+           coordinates of code/UI/region already visible in the underlying video frame.
+           The box scales in, the sweep draws, holds, then fades out.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{X}} {{Y}} {{W}} {{H}}  position + size as PERCENTAGES of the 1920x1080 canvas (e.g. 12%)
+    {{LABEL}}                optional small caption pinned above the box (may be blank)
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-onscreen-highlight-1).
+
+  TIMING CONTRACT: NOMINAL 4s dwell (DUR). Entrance ~0.5s, hold, exit ~0.3s at the tail.
+  Set the mount data-duration to ~4s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-onscreen-highlight"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="4"
+    >
+      <div class="ov-osh-pin">
+        <div class="ov-osh-box" aria-hidden="true"></div>
+        <div class="ov-osh-sweep" aria-hidden="true"></div>
+        <div class="ov-osh-label">{{LABEL}}</div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-onscreen-highlight"] .ov-osh-pin {
+        position: absolute;
+        left: {{X;
+      }
+      };
+      top: {{Y}};
+          width: {{W}};
+          height: {{H}};
+          pointer-events: none;
+        }
+        [data-composition-id="ov-onscreen-highlight"] .ov-osh-box {
+          position: absolute;
+          inset: 0;
+          border: 4px solid var(--brand-accent);
+          border-radius: 12px;
+          box-shadow: 0 14px 40px color-mix(in srgb, var(--brand-accent) 35%, transparent);
+        }
+        [data-composition-id="ov-onscreen-highlight"] .ov-osh-sweep {
+          position: absolute;
+          left: 0;
+          bottom: -10px;
+          width: 100%;
+          height: 10px;
+          border-radius: 6px;
+          background: var(--brand-accent);
+          transform-origin: left center;
+        }
+        [data-composition-id="ov-onscreen-highlight"] .ov-osh-label {
+          position: absolute;
+          left: 0;
+          top: -62px;
+          max-width: 520px;
+          padding: 10px 18px;
+          font-family: "Inter", system-ui, sans-serif;
+          font-size: 24px;
+          font-weight: 600;
+          line-height: 1.2;
+          color: #FFFFFF;
+          background: rgba(8, 10, 14, 0.92);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+          white-space: nowrap;
+        }
+        [data-composition-id="ov-onscreen-highlight"] .ov-osh-label:empty { display: none; }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-onscreen-highlight";
+        var DUR = 4;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var box = root.querySelector(".ov-osh-box");
+        var sweep = root.querySelector(".ov-osh-sweep");
+        var label = root.querySelector(".ov-osh-label");
+
+        // Entrance: box scales from center, sweep draws left-to-right, label pops.
+        tl.from(
+          box,
+          {
+            scale: 0.82,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.4,
+            ease: "back.out(1.6)",
+          },
+          0
+        );
+        tl.fromTo(
+          sweep,
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.45, ease: "power2.inOut" },
+          0.18
+        );
+        if (label.textContent.trim()) {
+          tl.from(
+            label,
+            { y: 12, autoAlpha: 0, duration: 0.3, ease: "power2.out" },
+            0.3
+          );
+        }
+
+        // Exit in the final ~0.3s.
+        tl.to(
+          [box, sweep, label],
+          { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
+          DUR - 0.3
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

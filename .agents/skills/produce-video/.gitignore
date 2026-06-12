@@ -1,0 +1,10 @@
+node_modules/
+.env
+__pycache__/
+*.pyc
+*.wav
+renders/
+transcript.txt
+transcript.srt
+transcript.words.json
+*.mp4

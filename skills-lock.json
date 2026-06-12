@@ -24,6 +24,24 @@
       "sourceType": "github",
       "computedHash": "8f05f0f8c7a0dbdd0b274ae4cb76cb887cc3ca794310907cc15f158c50bfd704"
     },
+    "produce-video": {
+      "source": "alemtuzlak/skills",
+      "sourceType": "github",
+      "skillPath": "skills/produce-video/SKILL.md",
+      "computedHash": "f4efb3db471219ba21bf332137ff6941415cf3b54ddf1d6033d4ec1ddfec8c6a"
+    },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion/SKILL.md",
+      "computedHash": "006f8413941b59eff54a7ce64851b8a2fb79e7a3a5f1a895e97a48f01482553d"
+    },
+    "remotion-video": {
+      "source": "alemtuzlak/skills",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-video/SKILL.md",
+      "computedHash": "e091d624d535bf2ca82f979d16916b58a7e52835b199908ee5d764f25c7acce3"
+    },
     "satori": {
       "source": "usenotra/skills",
       "sourceType": "github",

@@ -1,0 +1,235 @@
+<!--
+  Overlay template: Diagram
+  Purpose: A simple 3-node box-and-arrow flow (A -> B -> C). Nodes and arrows draw in
+           sequence, hold, then the whole diagram exits.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{NODE1}}  {{NODE2}}  {{NODE3}}   short label inside each node
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-diagram-1).
+
+  TIMING CONTRACT: NOMINAL 5s dwell (DUR). Sequenced entrance over the first ~1.8s, hold,
+  exit ~0.35s at the tail. Set the mount data-duration to ~5s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-diagram"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="5"
+    >
+      <div class="ov-dg-wrap">
+        <div class="ov-dg-flow">
+          <div class="ov-dg-node" data-n="1">{{NODE1}}</div>
+          <svg
+            class="ov-dg-arrow"
+            data-a="1"
+            viewBox="0 0 120 40"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <line
+              class="ov-dg-line"
+              x1="4"
+              y1="20"
+              x2="98"
+              y2="20"
+              stroke="var(--brand-accent)"
+              stroke-width="5"
+              stroke-linecap="round"
+            />
+            <path
+              class="ov-dg-head"
+              d="M96 9 L116 20 L96 31"
+              fill="none"
+              stroke="var(--brand-accent)"
+              stroke-width="5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <div class="ov-dg-node" data-n="2">{{NODE2}}</div>
+          <svg
+            class="ov-dg-arrow"
+            data-a="2"
+            viewBox="0 0 120 40"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <line
+              class="ov-dg-line"
+              x1="4"
+              y1="20"
+              x2="98"
+              y2="20"
+              stroke="var(--brand-accent)"
+              stroke-width="5"
+              stroke-linecap="round"
+            />
+            <path
+              class="ov-dg-head"
+              d="M96 9 L116 20 L96 31"
+              fill="none"
+              stroke="var(--brand-accent)"
+              stroke-width="5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <div class="ov-dg-node" data-n="3">{{NODE3}}</div>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-diagram"] .ov-dg-wrap {
+        position: absolute;
+        left: 0;
+        bottom: 150px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 0 80px;
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-diagram"] .ov-dg-flow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      [data-composition-id="ov-diagram"] .ov-dg-node {
+        min-width: 200px;
+        max-width: 320px;
+        padding: 26px 30px;
+        text-align: center;
+        font-size: 30px;
+        font-weight: 700;
+        color: #ffffff;
+        background: rgba(8, 10, 14, 0.92);
+        border: 2px solid var(--brand-primary);
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      }
+      [data-composition-id="ov-diagram"] .ov-dg-arrow {
+        flex: 0 0 auto;
+        width: 110px;
+        height: 44px;
+        overflow: visible;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-diagram";
+        var DUR = 5;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var nodes = root.querySelectorAll(".ov-dg-node");
+        var arrows = root.querySelectorAll(".ov-dg-arrow");
+
+        // Prep arrow strokes for draw-on.
+        arrows.forEach((svg) => {
+          svg.querySelectorAll(".ov-dg-line, .ov-dg-head").forEach((el) => {
+            var len = el.getTotalLength();
+            gsap.set(el, { strokeDasharray: len, strokeDashoffset: len });
+          });
+        });
+
+        // Entrance: node A in, arrow 1 draws, node B in, arrow 2 draws, node C in.
+        tl.from(
+          nodes[0],
+          {
+            scale: 0.8,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.4,
+            ease: "back.out(1.6)",
+          },
+          0
+        );
+        tl.to(
+          arrows[0].querySelectorAll(".ov-dg-line, .ov-dg-head"),
+          { strokeDashoffset: 0, duration: 0.35, ease: "power1.inOut" },
+          0.38
+        );
+        tl.from(
+          nodes[1],
+          {
+            scale: 0.8,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.4,
+            ease: "back.out(1.6)",
+          },
+          0.7
+        );
+        tl.to(
+          arrows[1].querySelectorAll(".ov-dg-line, .ov-dg-head"),
+          { strokeDashoffset: 0, duration: 0.35, ease: "power1.inOut" },
+          1.08
+        );
+        tl.from(
+          nodes[2],
+          {
+            scale: 0.8,
+            autoAlpha: 0,
+            transformOrigin: "center center",
+            duration: 0.4,
+            ease: "back.out(1.6)",
+          },
+          1.4
+        );
+
+        // Exit in the final ~0.35s (querySelectorAll returns a flat NodeList GSAP accepts).
+        tl.to(
+          root.querySelectorAll(".ov-dg-node, .ov-dg-arrow"),
+          { autoAlpha: 0, y: 22, duration: 0.35, ease: "power2.in" },
+          DUR - 0.35
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

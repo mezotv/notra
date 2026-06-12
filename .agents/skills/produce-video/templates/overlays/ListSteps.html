@@ -1,0 +1,189 @@
+<!--
+  Overlay template: ListSteps
+  Purpose: A vertical numbered list pinned to a side rail; items reveal one-by-one
+           (staggered), then the whole list exits.
+
+  Layering: OVERLAY clip over the video (track 0). Mount as a sub-composition with higher
+            z-index + transcript-derived data-start. Animates itself in AND out within its
+            data-duration.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{HEADING}}  optional heading above the list (may be blank)
+    {{ITEMS}}    the list items, each rendered as a <li>...</li>  (skill emits the <li> tags)
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-list-steps-1).
+
+  TIMING CONTRACT: NOMINAL 6s dwell (DUR). Staggered entrance over the first ~1.5s, hold,
+  exit ~0.35s at the tail. Set the mount data-duration to ~6s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-list-steps"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="6"
+    >
+      <div class="ov-ls-wrap">
+        <div class="ov-ls-card">
+          <h3 class="ov-ls-heading">{{HEADING}}</h3>
+          <ol class="ov-ls-list">
+            {{ITEMS}}
+          </ol>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-list-steps"] .ov-ls-wrap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 42%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 80px;
+        box-sizing: border-box;
+        pointer-events: none;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-card {
+        width: 100%;
+        max-width: 640px;
+        padding: 40px 46px;
+        background: rgba(8, 10, 14, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(6px);
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-heading {
+        margin: 0 0 22px;
+        font-size: 34px;
+        font-weight: 800;
+        color: var(--brand-text);
+        letter-spacing: -0.01em;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-heading:empty {
+        display: none;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        counter-reset: ov-ls;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-list li {
+        counter-increment: ov-ls;
+        position: relative;
+        padding-left: 64px;
+        font-size: 28px;
+        line-height: 1.35;
+        color: var(--brand-text);
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      [data-composition-id="ov-list-steps"] .ov-ls-list li::before {
+        content: counter(ov-ls);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--brand-bg);
+        background: var(--brand-primary);
+        border-radius: 50%;
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-list-steps";
+        var DUR = 6;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var card = root.querySelector(".ov-ls-card");
+        var heading = root.querySelector(".ov-ls-heading");
+        var items = root.querySelectorAll(".ov-ls-list li");
+
+        // Entrance: card slides in, heading drops, items reveal one-by-one.
+        tl.from(
+          card,
+          { x: -60, autoAlpha: 0, duration: 0.4, ease: "power3.out" },
+          0
+        );
+        if (heading.textContent.trim()) {
+          tl.from(
+            heading,
+            { y: 18, autoAlpha: 0, duration: 0.35, ease: "power2.out" },
+            0.15
+          );
+        }
+        tl.from(
+          items,
+          {
+            x: -30,
+            autoAlpha: 0,
+            duration: 0.4,
+            ease: "back.out(1.4)",
+            stagger: 0.18,
+          },
+          0.3
+        );
+
+        // Exit in the final ~0.35s.
+        tl.to(
+          card,
+          { x: -50, autoAlpha: 0, duration: 0.35, ease: "power2.in" },
+          DUR - 0.35
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,149 @@
+<!--
+  Overlay template: PunchInZoom
+  Purpose: An emphasis "punch-in" that fakes a zoom toward a region by scaling/translating a
+           WRAPPER DIV, holds, then eases back out. Adds motion emphasis WITHOUT touching the
+           <video> element.
+
+  *** CRITICAL — READ BEFORE MOUNTING ***
+  HyperFrames FORBIDS animating the <video> element's dimensions/transform directly. This
+  template demonstrates the punch-in TRANSFORM + TIMELINE you apply to a WRAPPER DIV that
+  contains the video. At build time the skill nests the a-roll <video> inside a non-timed
+  wrapper div and copies the .ov-pz-stage transform-origin + the scale timeline below onto
+  THAT wrapper — never onto the <video> itself.
+
+  In THIS standalone template the stage wraps a stand-in placeholder so lint/inspect can
+  render and verify the motion in isolation. The transform-origin + scale below are the
+  exact values that get transplanted onto the real video wrapper.
+
+  SUB-COMPOSITION FORMAT (HyperFrames CLI >= 0.6.x): a full standalone HTML document; the
+  root div carries data-composition-id + data-width/height. NOT wrapped in <template>.
+
+  Tokens (filled by the skill at build time):
+    {{SCALE}}     punch-in scale factor, e.g. 1.25
+    {{ORIGIN_X}}  transform-origin X as a percentage, e.g. 40%
+    {{ORIGIN_Y}}  transform-origin Y as a percentage, e.g. 35%
+
+  IMPORTANT: When mounting multiple instances, rename the data-composition-id, the
+  [data-composition-id="..."] style selector, the scope var S, and the window.__timelines
+  key to a unique id (e.g. ov-punch-in-zoom-1).
+
+  TIMING CONTRACT: NOMINAL 3.5s dwell (DUR). Punch-in over ~0.6s, hold, ease back to scale 1
+  over the final ~0.5s. Set the mount data-duration to ~3.5s (or scale DUR to match).
+
+  BRAND TOKENS: var(--brand-bg|text|primary|accent|muted) from the host styles.css.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script
+      src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"
+    ></script>
+    <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: transparent;
+    }
+    </style>
+  </head>
+  <body>
+    <div
+      data-composition-id="ov-punch-in-zoom"
+      data-width="1920"
+      data-height="1080"
+      data-start="0"
+      data-duration="3.5"
+    >
+      <div class="ov-pz-clip">
+        <!-- In the host comp, replace this stand-in with the video wrapper div. -->
+        <!-- data-layout-allow-overflow: the stage is INTENTIONALLY scaled past the frame
+             (the zoom). .ov-pz-clip has overflow:hidden and crops it — that is the effect. -->
+        <div class="ov-pz-stage" data-layout-allow-overflow>
+          <div class="ov-pz-standin" aria-hidden="true">
+            <span>PUNCH-IN STAND-IN</span>
+          </div>
+        </div>
+      </div>
+
+      <style>
+      [data-composition-id="ov-punch-in-zoom"] .ov-pz-clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+      /* This wrapper is what gets scaled. transform-origin aims the zoom. */
+      [data-composition-id="ov-punch-in-zoom"] .ov-pz-stage {
+        position: absolute;
+        inset: 0;
+        transform-origin: {{ORIGIN_X;
+      }
+      } {{
+      ORIGIN_Y}};
+          will-change: transform;
+        }
+      [data-composition-id="ov-punch-in-zoom"] .ov-pz-standin {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: repeating-linear-gradient(
+          45deg,
+          color-mix(in srgb, var(--brand-primary) 30%, var(--brand-bg)),
+          color-mix(in srgb, var(--brand-primary) 30%, var(--brand-bg)) 40px,
+          color-mix(in srgb, var(--brand-accent) 30%, var(--brand-bg)) 40px,
+          color-mix(in srgb, var(--brand-accent) 30%, var(--brand-bg)) 80px
+        );
+      }
+      [data-composition-id="ov-punch-in-zoom"] .ov-pz-standin span {
+        font-family: "Inter", system-ui, sans-serif;
+        font-size: 44px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: var(--brand-text);
+      }
+      </style>
+
+      <script>
+      "use strict";
+      (() => {
+        var ID = "ov-punch-in-zoom";
+        var DUR = 3.5;
+        var SCALE = Number.parseFloat("{{SCALE}}") || 1.25;
+        var S = '[data-composition-id="' + ID + '"]';
+        var root = document.querySelector(S);
+        var tl = gsap.timeline({ paused: true });
+
+        var stage = root.querySelector(".ov-pz-stage");
+
+        // Punch in: scale up toward transform-origin.
+        tl.fromTo(
+          stage,
+          { scale: 1 },
+          { scale: SCALE, duration: 0.6, ease: "power2.out" },
+          0
+        );
+        // Ease back to 1 over the final ~0.5s (the "exit" of the emphasis).
+        tl.to(
+          stage,
+          { scale: 1, duration: 0.5, ease: "power2.inOut" },
+          DUR - 0.5
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines[ID] = tl;
+      })();
+      </script>
+    </div>
+  </body>
+</html>

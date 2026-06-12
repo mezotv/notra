@@ -1,0 +1,94 @@
+import React, { useId } from "react";
+import { AbsoluteFill } from "remotion";
+import { brand } from "./brand";
+
+/**
+ * Wrap every scene with <SceneBackground> to get a brand-tinted base
+ * instead of a flat background color. Avoid flat fills.
+ *
+ * variant:
+ *   - "primary-glow" (default): radial glow of primary color at top-left, fading out
+ *   - "vignette": dark vignette around edges for focus scenes
+ *   - "diagonal": subtle linear gradient from top-left (accent-tinted) to bottom-right
+ *   - "flat": no overlay (only use when the scene draws its own background)
+ *
+ * All variants except "flat" include a subtle SVG-noise dither overlay.
+ * This dithers the gradient's 8-bit quantization below perceptual threshold,
+ * so the `render:compat` (8-bit yuv420p) path also looks clean without
+ * relying on 10-bit encoding to eliminate banding.
+ */
+export const SceneBackground: React.FC<{
+  variant?: "primary-glow" | "vignette" | "diagonal" | "flat";
+  children: React.ReactNode;
+}> = ({ variant = "primary-glow", children }) => {
+  const base = brand.colors.background;
+  const primary = brand.colors.primary;
+  const accent = brand.colors.accent;
+
+  const overlay: React.CSSProperties =
+    variant === "primary-glow"
+      ? {
+          background: `radial-gradient(ellipse 70% 60% at 20% 15%, ${hexToRgba(primary, 0.18)}, transparent 70%)`,
+        }
+      : variant === "vignette"
+      ? {
+          background: `radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.55) 100%)`,
+        }
+      : variant === "diagonal"
+      ? {
+          background: `linear-gradient(135deg, ${hexToRgba(accent, 0.08)} 0%, transparent 50%, ${hexToRgba(primary, 0.06)} 100%)`,
+        }
+      : {};
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: base }}>
+      {variant !== "flat" && <AbsoluteFill style={overlay} />}
+      {variant !== "flat" && <NoiseDither />}
+      <AbsoluteFill>{children}</AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * Subtle high-frequency noise overlay that dithers the gradient overlay's
+ * 8-bit quantization steps below perception. Keeps the compat (yuv420p)
+ * render path free of visible banding in SceneBackground gradients.
+ */
+const NoiseDither: React.FC = () => {
+  const rawId = useId();
+  // Sanitize to a CSS-url-safe id (some React versions emit ":r0:" style ids).
+  const filterId = `rv-noise-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  return (
+    <AbsoluteFill
+      style={{
+        opacity: 0.04,
+        mixBlendMode: "overlay",
+        pointerEvents: "none",
+      }}
+    >
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <filter id={filterId}>
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.9"
+            numOctaves="2"
+            stitchTiles="stitch"
+          />
+          <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0" />
+        </filter>
+        <rect width="100%" height="100%" filter={`url(#${filterId})`} />
+      </svg>
+    </AbsoluteFill>
+  );
+};
+
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const n = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export default SceneBackground;
