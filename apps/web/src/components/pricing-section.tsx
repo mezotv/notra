@@ -20,6 +20,7 @@ function PricingCard({
   features,
   variant = "default",
   signupSource,
+  badge,
 }: {
   name: string;
   description: string;
@@ -28,6 +29,7 @@ function PricingCard({
   features: readonly (string | { label: string; subtitle: string })[];
   signupSource: string;
   variant?: "default" | "featured";
+  badge?: string | null;
 }) {
   const isFeatured = variant === "featured";
   const ctaLink =
@@ -46,12 +48,25 @@ function PricingCard({
       }`}
     >
       <div className="flex flex-col items-start justify-start gap-2">
-        <div
-          className={`font-medium font-sans text-lg leading-7 ${
-            isFeatured ? "text-primary-foreground" : "text-primary/90"
-          }`}
-        >
-          {name}
+        <div className="flex w-full items-center justify-between gap-2">
+          <div
+            className={`font-medium font-sans text-lg leading-7 ${
+              isFeatured ? "text-primary-foreground" : "text-primary/90"
+            }`}
+          >
+            {name}
+          </div>
+          {badge && (
+            <div
+              className={`rounded-full border px-2.5 py-0.5 font-medium font-sans text-[11px] leading-4 ${
+                isFeatured
+                  ? "border-white/20 bg-white/10 text-primary-foreground"
+                  : "border-primary/10 bg-primary/5 text-primary/80"
+              }`}
+            >
+              {badge}
+            </div>
+          )}
         </div>
         <div
           className={`w-full max-w-[242px] font-normal font-sans text-sm leading-5 ${
@@ -131,6 +146,8 @@ export function PricingCards() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
 
   const { basic, pro, enterprise } = PRICING_PLANS;
+  const annualBadge =
+    billingPeriod === "annually" ? `${ANNUAL_FREE_MONTHS} months free` : null;
 
   return (
     <>
@@ -177,15 +194,6 @@ export function PricingCards() {
               >
                 Annually
               </span>
-              <span
-                className={`ml-1 font-medium font-sans text-[11px] leading-5 transition-colors duration-300 ${
-                  billingPeriod === "annually"
-                    ? "text-primary/70"
-                    : "text-muted-foreground/70"
-                }`}
-              >
-                {ANNUAL_FREE_MONTHS} months free
-              </span>
             </button>
           </div>
 
@@ -202,6 +210,7 @@ export function PricingCards() {
 
           <div className="grid flex-1 grid-cols-1 gap-y-12 py-12 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:grid-rows-[auto_auto_auto_1fr] md:gap-y-0 md:py-0">
             <PricingCard
+              badge={annualBadge}
               cta={basic.cta}
               description={basic.description}
               features={basic.features}
@@ -225,6 +234,7 @@ export function PricingCards() {
             <HatchPattern className="hidden w-6 self-stretch md:row-span-4 md:block lg:w-8" />
 
             <PricingCard
+              badge={annualBadge}
               cta={pro.cta}
               description={pro.description}
               features={pro.features}
