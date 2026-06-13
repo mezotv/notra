@@ -135,6 +135,7 @@ export function TextSlide({
             color: COLORS.ink,
             display: "flex",
             gap: 32,
+            marginRight: "0.27em",
             opacity: flip < 0.5 ? 1 : 0,
             transform: foldTo
               ? `perspective(1200px) rotateX(${titleAngle}deg)`

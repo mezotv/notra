@@ -2,7 +2,6 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { Cursor } from "../components/cursor";
 import { PaperChrome } from "../components/paper-shell";
 import { RealImage } from "../components/real-image";
-import { punchZoom } from "../lib/camera";
 import { COPY } from "../lib/copy";
 import { interFamily, serifFamily } from "../lib/fonts";
 import { PAPER_COLORS, PAPER_UI, PASTED_LAYERS } from "../lib/paper";
@@ -39,10 +38,6 @@ const HEADLINE = {
 };
 
 const TYPE_DONE = TYPE_START + NEW_WORD.length * CHAR_EVERY;
-const PUNCH_ORIGIN = {
-  x: IMAGE_LEFT + PATCH.left + PATCH.width / 2,
-  y: IMAGE_TOP + PATCH.top + PATCH.height / 2,
-};
 
 const RISE = Easing.bezier(0.16, 1, 0.3, 1);
 
@@ -93,22 +88,9 @@ export function TextEdit() {
 
   const selectedLayerId = editing ? PASTED_LAYERS[1].id : PASTED_LAYERS[0].id;
 
-  const punch = punchZoom(frame, {
-    inStart: SELECT_AT - 6,
-    inEnd: SELECT_AT + 10,
-    outStart: TYPE_DONE + 2,
-    outEnd: TITLE_AT,
-    scale: 1.1,
-  });
-
   return (
     <AbsoluteFill style={{ background: PAPER_COLORS.canvas }}>
-      <AbsoluteFill
-        style={{
-          ...steadyTransform(`scale(${punch})`),
-          transformOrigin: `${PUNCH_ORIGIN.x}px ${PUNCH_ORIGIN.y}px`,
-        }}
-      >
+      <AbsoluteFill>
         <PaperChrome pasted={PASTED_ROWS} selectedId={selectedLayerId} />
         <div
           style={{

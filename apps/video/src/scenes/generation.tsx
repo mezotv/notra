@@ -4,7 +4,6 @@ import { FigmaLogo } from "../components/logos";
 import { RealImage } from "../components/real-image";
 import { TitleCard } from "../components/title-card";
 import { ChevronDownIcon, DownloadIcon, OutlineButton } from "../components/ui";
-import { punchZoom } from "../lib/camera";
 import { COPY } from "../lib/copy";
 import { interFamily, serifFamily } from "../lib/fonts";
 import { steadyTransform } from "../lib/steady";
@@ -204,19 +203,6 @@ export function Generation() {
     extrapolateRight: "clamp",
   });
 
-  const push = interpolate(frame, [0, 120], [1, 1.05], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const punch = punchZoom(frame, {
-    inStart: REVEAL_AT,
-    inEnd: REVEAL_AT + 12,
-    outStart: SHIFT_AT,
-    outEnd: SHIFT_AT + 22,
-    scale: 1.06,
-  });
-
   const shift = interpolate(frame, [SHIFT_AT, SHIFT_AT + 26], [0, 1], {
     easing: Easing.bezier(0.16, 1, 0.3, 1),
     extrapolateLeft: "clamp",
@@ -246,8 +232,6 @@ export function Generation() {
         background: COLORS.stage,
         alignItems: "center",
         justifyContent: "center",
-        transform: `perspective(100px) scale(${push * punch})`,
-        willChange: "transform",
       }}
     >
       <div
@@ -268,6 +252,7 @@ export function Generation() {
             fontSize: 110,
             color: COLORS.ink,
             opacity: headline,
+            marginRight: "0.27em",
             ...steadyTransform(`translateY(${(1 - headline) * 26}px)`),
           }}
         >
@@ -282,7 +267,6 @@ export function Generation() {
           >
             perfect
           </span>
-          .
         </span>
         <span
           style={{

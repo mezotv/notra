@@ -32,11 +32,6 @@ export function ColdOpen() {
     extrapolateRight: "clamp",
   });
 
-  const push = interpolate(frame, [0, 90], [1, 1.06], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
   return (
     <AbsoluteFill
       style={{
@@ -44,8 +39,6 @@ export function ColdOpen() {
         alignItems: "center",
         justifyContent: "center",
         gap: 48,
-        transform: `perspective(100px) scale(${push})`,
-        willChange: "transform",
       }}
     >
       <div
@@ -77,6 +70,7 @@ export function ColdOpen() {
           fontSize: 64,
           color: COLORS.ink,
           opacity: tagline,
+          marginRight: "0.27em",
           ...steadyTransform(`translateY(${(1 - tagline) * 22}px)`),
         }}
       >

@@ -67,6 +67,7 @@ export function EndCard() {
           fontSize: 88,
           color: COLORS.ink,
           opacity: title,
+          marginRight: "0.27em",
           ...steadyTransform(`translateY(${(1 - title) * 22}px)`),
         }}
       >

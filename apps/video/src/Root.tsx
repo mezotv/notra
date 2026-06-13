@@ -1,6 +1,6 @@
 import { Composition } from "remotion";
 import { ImageGenLaunch } from "./image-gen-launch";
-import { BANNER, GALLERY, TOTAL_DURATION, VIDEO } from "./lib/theme";
+import { BANNER, GALLERY, THUMBNAIL, TOTAL_DURATION, VIDEO } from "./lib/theme";
 import { ASSETS_LOOP_DURATION, AssetsLoop } from "./scenes/assets-loop";
 import { GalleryBanner } from "./scenes/gallery-banner";
 import { GalleryBrandRepo } from "./scenes/gallery-brand-repo";
@@ -10,6 +10,7 @@ import { GalleryHero } from "./scenes/gallery-hero";
 import { GalleryPaste } from "./scenes/gallery-paste";
 import { PAPER_LOOP_DURATION, PaperPasteLoop } from "./scenes/paper-paste-loop";
 import { EDIT_LOOP_DURATION, TextEditLoop } from "./scenes/text-edit-loop";
+import { YoutubeThumbnail } from "./scenes/youtube-thumbnail";
 
 const GALLERY_CARDS = [
   { id: "GalleryHero", component: GalleryHero },
@@ -72,6 +73,14 @@ export function RemotionRoot() {
         height={BANNER.height}
         id="YoutubeBanner"
         width={BANNER.width}
+      />
+      <Composition
+        component={YoutubeThumbnail}
+        durationInFrames={1}
+        fps={VIDEO.fps}
+        height={THUMBNAIL.height}
+        id="YoutubeThumbnail"
+        width={THUMBNAIL.width}
       />
     </>
   );

@@ -13,6 +13,11 @@ export interface GalleryCardProps {
   footer?: ReactNode;
 }
 
+export interface ThumbnailExportChipProps {
+  icon: ReactNode;
+  label: string;
+}
+
 export type CursorVariant =
   | "default"
   | "handpointing"

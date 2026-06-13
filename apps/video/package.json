@@ -18,6 +18,7 @@
     "gallery:paste": "remotion still GalleryPaste out/gallery/ph-4-paste.png",
     "gallery:closer": "remotion still GalleryCloser out/gallery/ph-5-live.png",
     "gallery:banner": "remotion still YoutubeBanner out/gallery/youtube-banner.png",
+    "thumbnail": "remotion still YoutubeThumbnail out/youtube-thumbnail.png",
     "gallery": "bun run gallery:hero && bun run gallery:generic && bun run gallery:brand-repo && bun run gallery:paste && bun run gallery:closer"
   },
   "dependencies": {

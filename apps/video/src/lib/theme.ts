@@ -32,6 +32,11 @@ export const BANNER = {
   height: 1440,
 } as const;
 
+export const THUMBNAIL = {
+  width: 1280,
+  height: 720,
+} as const;
+
 export const BEAT = (VIDEO.fps * 60) / VIDEO.bpm;
 export const BAR = BEAT * 4;
 

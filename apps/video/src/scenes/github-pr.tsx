@@ -8,7 +8,6 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { Cursor } from "../components/cursor";
-import { punchZoom } from "../lib/camera";
 import { interFamily } from "../lib/fonts";
 import { steadyTransform } from "../lib/steady";
 import { BEAT, COLORS } from "../lib/theme";
@@ -578,21 +577,8 @@ export function GithubPr() {
   const frame = useCurrentFrame();
   const merged = frame >= MERGE_AT;
 
-  const punch = punchZoom(frame, {
-    inStart: MERGE_AT - 14,
-    inEnd: MERGE_AT + 6,
-    outStart: MERGE_AT + 24,
-    outEnd: MERGE_AT + 40,
-    scale: 1.12,
-  });
-
   const card = interpolate(frame, [0, 16], [0, 1], {
     easing: Easing.bezier(0.16, 1, 0.3, 1),
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-
-  const push = interpolate(frame, [16, 120], [1, 1.05], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -672,8 +658,6 @@ export function GithubPr() {
         style={{
           alignItems: "center",
           justifyContent: "center",
-          ...steadyTransform(`scale(${punch})`),
-          transformOrigin: `${MERGE_BUTTON.x}px ${MERGE_BUTTON.y}px`,
         }}
       >
         <div
@@ -688,8 +672,7 @@ export function GithubPr() {
             flexDirection: "column",
             gap: 20,
             opacity: card,
-            transform: `perspective(100px) scale(${(0.96 + 0.04 * card) * push})`,
-            willChange: "transform",
+            transform: `scale(${0.96 + 0.04 * card})`,
           }}
         >
           <FlyIn index={0}>

@@ -2,7 +2,6 @@ import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import { ConfettiBurst } from "../components/confetti-burst";
 import { PaperChrome } from "../components/paper-shell";
 import { RealImage } from "../components/real-image";
-import { punchZoom } from "../lib/camera";
 import { COPY } from "../lib/copy";
 import { interFamily, serifFamily } from "../lib/fonts";
 import { PAPER_COLORS, PAPER_UI, PASTED_LAYERS } from "../lib/paper";
@@ -126,22 +125,9 @@ function CanvasPhase({ frame }: { frame: number }) {
     { layer: PASTED_LAYERS[0], progress: drop },
   ];
 
-  const punch = punchZoom(frame, {
-    inStart: PASTE_AT - 2,
-    inEnd: PASTE_AT + 14,
-    outStart: PASTE_AT + 28,
-    outEnd: FOCUS_AT - 2,
-    scale: 1.07,
-  });
-
   return (
     <AbsoluteFill style={{ background: PAPER_COLORS.canvas }}>
-      <AbsoluteFill
-        style={{
-          ...steadyTransform(`scale(${punch})`),
-          transformOrigin: `${IMAGE_LEFT + IMAGE_WIDTH / 2}px ${IMAGE_TOP + IMAGE_HEIGHT / 2}px`,
-        }}
-      >
+      <AbsoluteFill>
         <PaperChrome
           pasted={pasted}
           selectedId={drop > 0.5 ? PASTED_LAYERS[0].id : undefined}

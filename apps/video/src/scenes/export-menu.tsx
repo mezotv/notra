@@ -66,9 +66,8 @@ export function ExportMenu() {
           position: "absolute",
           top: WINDOW_TOP,
           right: WINDOW_RIGHT,
-          transform: `perspective(100px) scale(${ZOOM * interpolate(frame, [0, 150], [1, 1.04], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })})`,
+          transform: `scale(${ZOOM})`,
           transformOrigin: "top right",
-          willChange: "transform",
         }}
       >
         <div style={{ position: "relative" }}>
