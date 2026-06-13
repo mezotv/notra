@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import { LoopVideo } from "@/components/marketing-assets/loop-video";
 import { ASSET_SHOWCASE_SECTIONS } from "@/lib/marketing-assets/constants";
+import {
+  getAssetShowcaseDescription,
+  getAssetShowcaseTitle,
+} from "@/lib/marketing-assets/utils";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -41,8 +45,8 @@ const assetsJsonLd = {
   itemListElement: ASSET_SHOWCASE_SECTIONS.map((section, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    name: `${section.headingPre}${section.headingAccent}${section.headingPost}`,
-    description: section.paragraphs[0],
+    name: getAssetShowcaseTitle(section),
+    description: getAssetShowcaseDescription(section),
   })),
 };
 

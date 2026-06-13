@@ -8,13 +8,15 @@ import { ConsentManager } from "../components/consent-manager";
 import { SiteShell } from "../components/site-shell";
 import { ThemeProvider } from "../components/theme-provider";
 import { RSS_FEED_PATH, RSS_FEED_TITLE } from "../utils/constants";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "../utils/metadata";
+import {
+  DEFAULT_SOCIAL_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  TWITTER_HANDLE,
+} from "../utils/metadata";
 import { SITE_URL } from "../utils/urls";
 
 import "@/styles/globals.css";
-
-const siteDescription =
-  "Notra turns shipped work into changelogs, launch posts, marketing assets and social updates in your voice.";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,10 +43,10 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Notra. Ship more. Write less. Reach more.",
+    default: SITE_TITLE,
     template: "%s - Notra",
   },
-  description: siteDescription,
+  description: SITE_DESCRIPTION,
   alternates: {
     canonical: SITE_URL,
     types: {
@@ -64,14 +66,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Notra",
-    title: "Notra. Ship more. Write less. Reach more.",
-    description: siteDescription,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Notra. Ship more. Write less. Reach more.",
-    description: siteDescription,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: [DEFAULT_SOCIAL_IMAGE.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,

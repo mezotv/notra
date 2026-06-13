@@ -7,6 +7,7 @@ import {
   SOCIAL_PROOF_LOGOS,
 } from "@/utils/constants";
 import { markdownSection } from "@/utils/markdown";
+import { SITE_DESCRIPTION, SITE_TAGLINE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
 const FAQ_ITEMS = [
@@ -177,9 +178,9 @@ export function buildLandingMarkdown() {
   return [
     "# Notra",
     "",
-    "Ship more. Write less. Reach more.",
+    SITE_TAGLINE,
     "",
-    "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+    SITE_DESCRIPTION,
     "",
     "Primary CTA: [Start for free](https://app.usenotra.com/signup)",
     "",

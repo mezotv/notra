@@ -10,6 +10,7 @@ import ReferencesPreview from "../components/references-preview";
 import TestimonialsSection from "../components/testimonials-section";
 import { TrackedSignupLink } from "../components/tracked-signup-link";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
+import { SITE_DESCRIPTION, SITE_TAGLINE, SITE_TITLE } from "../utils/metadata";
 import { SITE_URL } from "../utils/urls";
 
 const DocumentationSection = dynamic(
@@ -29,12 +30,9 @@ const IntegrationOrbit = dynamic(
   () => import("../components/integration-orbit")
 );
 
-const landingDescription =
-  "Notra turns shipped work into changelogs, launch posts, marketing assets and social updates in your voice.";
-
 export const metadata: Metadata = {
-  title: "Notra. Ship more. Write less. Reach more.",
-  description: landingDescription,
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
   alternates: {
     canonical: SITE_URL,
   },
@@ -47,7 +45,7 @@ const jsonLd = {
   url: SITE_URL,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  description: landingDescription,
+  description: SITE_DESCRIPTION,
   offers: {
     "@type": "Offer",
     price: "0",
@@ -68,10 +66,10 @@ export default function LandingPage() {
         <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
             <h1 className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24">
-              Ship more. Write less. Reach more.
+              {SITE_TAGLINE}
             </h1>
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              {landingDescription}
+              {SITE_DESCRIPTION}
             </div>
           </div>
         </div>

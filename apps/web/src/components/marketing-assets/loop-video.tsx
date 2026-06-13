@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { LoopVideoProps } from "@/types/marketing-assets";
+import type { LoopVideoProps } from "@/lib/marketing-assets/types";
 
 export function LoopVideo({ src, poster, label }: LoopVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);

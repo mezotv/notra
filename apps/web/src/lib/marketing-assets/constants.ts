@@ -1,6 +1,7 @@
-import type { AssetShowcaseSection } from "@/types/marketing-assets";
+import { assetShowcaseSectionsSchema } from "./schemas";
+import type { AssetShowcaseSection } from "./types";
 
-export const ASSET_SHOWCASE_SECTIONS: AssetShowcaseSection[] = [
+export const ASSET_SHOWCASE_SECTIONS = assetShowcaseSectionsSchema.parse([
   {
     id: "generate",
     headingPre: "If it looks generic, ",
@@ -44,4 +45,4 @@ export const ASSET_SHOWCASE_SECTIONS: AssetShowcaseSection[] = [
       "Editing the headline of a generated image directly on the Paper canvas",
     mediaSide: "right",
   },
-];
+]) satisfies AssetShowcaseSection[];
