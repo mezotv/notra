@@ -6,7 +6,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import Link from "next/link";
 import { useState } from "react";
-import { PRICING_PLANS } from "../utils/constants";
+import { ANNUAL_FREE_MONTHS, PRICING_PLANS } from "../utils/constants";
 import { HatchPattern } from "./hatch-pattern";
 import { TrackedSignupLink } from "./tracked-signup-link";
 
@@ -176,6 +176,15 @@ export function PricingCards() {
                 }`}
               >
                 Annually
+              </span>
+              <span
+                className={`ml-1 font-medium font-sans text-[11px] leading-5 transition-colors duration-300 ${
+                  billingPeriod === "annually"
+                    ? "text-primary/70"
+                    : "text-muted-foreground/70"
+                }`}
+              >
+                {ANNUAL_FREE_MONTHS} months free
               </span>
             </button>
           </div>

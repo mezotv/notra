@@ -1,5 +1,7 @@
 import { BRAND_ASSETS, BRAND_COLORS, BRAND_FONTS } from "@/lib/brand/constants";
 import {
+  ANNUAL_DISCOUNT_PERCENT,
+  ANNUAL_FREE_MONTHS,
   COMPARISON_FEATURES,
   PRICING_PLANS,
   SOCIAL_PROOF_LOGOS,
@@ -54,8 +56,12 @@ function renderPlanPrice(
   }
 
   const price = plan.pricing[billingPeriod];
-  const unit = billingPeriod === "monthly" ? "month" : "year";
-  return `$${price}/${unit}`;
+
+  if (billingPeriod === "annually") {
+    return `$${price}/year (save ${ANNUAL_DISCOUNT_PERCENT}% vs monthly billing)`;
+  }
+
+  return `$${price}/month`;
 }
 
 function renderPlanFeatures(
@@ -153,6 +159,8 @@ export function buildPricingMarkdown() {
     "Choose the right Notra plan for your team.",
     "",
     "Start with a 7-day free trial. Upgrade when you need more integrations, posts, or team seats.",
+    "",
+    `Annual billing saves ${ANNUAL_DISCOUNT_PERCENT}% compared to monthly billing (${ANNUAL_FREE_MONTHS} months free).`,
     "",
     planSections,
     "## Feature Comparison",
