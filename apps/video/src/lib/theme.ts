@@ -22,6 +22,16 @@ export const VIDEO = {
   bpm: 120,
 } as const;
 
+export const GALLERY = {
+  width: 2540,
+  height: 1520,
+} as const;
+
+export const BANNER = {
+  width: 2560,
+  height: 1440,
+} as const;
+
 export const BEAT = (VIDEO.fps * 60) / VIDEO.bpm;
 export const BAR = BEAT * 4;
 

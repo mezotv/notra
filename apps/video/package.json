@@ -5,7 +5,20 @@
   "scripts": {
     "dev": "remotion studio",
     "render": "remotion render ImageGenLaunch out/ImageGenLaunch.mp4",
-    "still": "remotion still ImageGenLaunch"
+    "render:assets-loop": "remotion render MarketingAssetsLoop ../web/public/marketing/marketing-assets-loop.mp4",
+    "render:paper-loop": "remotion render MarketingPaperLoop ../web/public/marketing/marketing-paper-loop.mp4",
+    "render:edit-loop": "remotion render MarketingEditLoop ../web/public/marketing/marketing-edit-loop.mp4",
+    "still:assets-loop": "remotion still MarketingAssetsLoop ../web/public/marketing/marketing-assets-loop-poster.jpg --frame=230",
+    "still:paper-loop": "remotion still MarketingPaperLoop ../web/public/marketing/marketing-paper-loop-poster.jpg --frame=200",
+    "still:edit-loop": "remotion still MarketingEditLoop ../web/public/marketing/marketing-edit-loop-poster.jpg --frame=180",
+    "still": "remotion still ImageGenLaunch",
+    "gallery:hero": "remotion still GalleryHero out/gallery/ph-1-hero.png",
+    "gallery:generic": "remotion still GalleryGeneric out/gallery/ph-2-generic.png",
+    "gallery:brand-repo": "remotion still GalleryBrandRepo out/gallery/ph-3-brand-repo.png",
+    "gallery:paste": "remotion still GalleryPaste out/gallery/ph-4-paste.png",
+    "gallery:closer": "remotion still GalleryCloser out/gallery/ph-5-live.png",
+    "gallery:banner": "remotion still YoutubeBanner out/gallery/youtube-banner.png",
+    "gallery": "bun run gallery:hero && bun run gallery:generic && bun run gallery:brand-repo && bun run gallery:paste && bun run gallery:closer"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.471",

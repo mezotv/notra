@@ -1,3 +1,18 @@
+import type { ReactNode } from "react";
+
+export type DashboardShotState = "image" | "generating" | "menu";
+
+export interface GalleryCardProps {
+  headlinePre: string;
+  headlineAccent?: string;
+  headlinePost?: string;
+  sub?: string;
+  layout?: "centered" | "split";
+  mediaSide?: "left" | "right";
+  visual?: ReactNode;
+  footer?: ReactNode;
+}
+
 export type CursorVariant =
   | "default"
   | "handpointing"
