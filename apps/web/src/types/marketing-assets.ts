@@ -3,7 +3,7 @@ export interface AssetShowcaseSection {
   headingPre: string;
   headingAccent: string;
   headingPost: string;
-  paragraphs: string[];
+  paragraphs: [string, ...string[]];
   videoSrc: string;
   posterSrc: string;
   videoLabel: string;

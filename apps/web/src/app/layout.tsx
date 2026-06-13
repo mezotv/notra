@@ -13,6 +13,9 @@ import { SITE_URL } from "../utils/urls";
 
 import "@/styles/globals.css";
 
+const siteDescription =
+  "Notra turns shipped work into changelogs, launch posts, marketing assets and social updates in your voice.";
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
@@ -41,8 +44,7 @@ export const metadata: Metadata = {
     default: "Notra. Ship more. Write less. Reach more.",
     template: "%s - Notra",
   },
-  description:
-    "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+  description: siteDescription,
   alternates: {
     canonical: SITE_URL,
     types: {
@@ -63,15 +65,13 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Notra",
     title: "Notra. Ship more. Write less. Reach more.",
-    description:
-      "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+    description: siteDescription,
     images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
     title: "Notra. Ship more. Write less. Reach more.",
-    description:
-      "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+    description: siteDescription,
     images: [DEFAULT_SOCIAL_IMAGE.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,

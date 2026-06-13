@@ -29,10 +29,12 @@ const IntegrationOrbit = dynamic(
   () => import("../components/integration-orbit")
 );
 
+const landingDescription =
+  "Notra turns shipped work into changelogs, launch posts, marketing assets and social updates in your voice.";
+
 export const metadata: Metadata = {
   title: "Notra. Ship more. Write less. Reach more.",
-  description:
-    "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+  description: landingDescription,
   alternates: {
     canonical: SITE_URL,
   },
@@ -45,8 +47,7 @@ const jsonLd = {
   url: SITE_URL,
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  description:
-    "Notra turns shipped work into changelogs, launch posts, and social updates in your voice.",
+  description: landingDescription,
   offers: {
     "@type": "Offer",
     price: "0",
@@ -70,8 +71,7 @@ export default function LandingPage() {
               Ship more. Write less. Reach more.
             </h1>
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              Notra turns shipped work into changelogs, launch posts, and social
-              updates in your voice.
+              {landingDescription}
             </div>
           </div>
         </div>

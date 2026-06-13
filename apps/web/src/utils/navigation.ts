@@ -4,6 +4,7 @@ import {
   CommandLineIcon,
   FavouriteIcon,
   Megaphone01Icon,
+  PaintBoardIcon,
   QuillWrite01Icon,
   SparklesIcon,
   TwitterIcon,
@@ -54,6 +55,12 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
         label: "Features",
         description: "Everything Notra ships for your team",
         icon: SparklesIcon,
+      },
+      {
+        href: "/features/marketing/assets",
+        label: "Marketing Assets",
+        description: "Launch visuals generated from shipped work",
+        icon: PaintBoardIcon,
       },
       {
         href: "/twitter-thread-creator",
@@ -174,6 +181,10 @@ export const FOOTER_PRODUCT_LINKS = [
   {
     href: "/features",
     label: "Features",
+  },
+  {
+    href: "/features/marketing/assets",
+    label: "Marketing Assets",
   },
   {
     href: "/pricing",
