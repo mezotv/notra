@@ -31,6 +31,7 @@ import { createOctokit } from "@notra/ai/utils/octokit";
 import { shortSha } from "@notra/ai/utils/repo-image";
 import { withBoxRetry } from "@notra/ai/utils/repo-image-box";
 import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
+import { cleanupRepoImageSandbox } from "@notra/ai/utils/repo-image-sandbox-cleanup";
 import {
   injectBrandIdentitySkill,
   injectHumanizerSkill,
@@ -386,6 +387,12 @@ export async function generateRepoImage(params: {
         });
       }
       await withBoxRetry(() => box.cd(repository.repo));
+
+      try {
+        await cleanupRepoImageSandbox({ box });
+      } catch (error) {
+        console.warn("[repo-image] sandbox cleanup skipped after error", error);
+      }
 
       if (!restoreSnapshotId) {
         await installImageGenAgentSkills({ box });
