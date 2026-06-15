@@ -388,6 +388,12 @@ export async function generateRepoImage(params: {
       }
       await withBoxRetry(() => box.cd(repository.repo));
 
+      try {
+        await cleanupRepoImageSandbox({ box });
+      } catch (error) {
+        console.warn("[repo-image] sandbox cleanup skipped after error", error);
+      }
+
       if (!restoreSnapshotId) {
         await installImageGenAgentSkills({ box });
       }
@@ -513,12 +519,6 @@ export async function generateRepoImage(params: {
           box.files.read(REPO_IMAGE_OUTPUT_HTML_PATH)
         );
         rendered = await renderHtmlToImages(html);
-      }
-
-      try {
-        await cleanupRepoImageSandbox({ box });
-      } catch (error) {
-        console.warn("[repo-image] sandbox cleanup skipped after error", error);
       }
 
       snapshot = await withBoxRetry(() =>
