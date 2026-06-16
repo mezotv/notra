@@ -1,6 +1,7 @@
 import type { SiteShellProps } from "../types/site-shell";
 import FooterSection from "./footer-section";
 import { HeroGradient } from "./hero-gradient";
+import { LandingBanner } from "./landing-banner";
 import { Navbar } from "./navbar";
 
 export function SiteShell({ children }: SiteShellProps) {
@@ -13,6 +14,7 @@ export function SiteShell({ children }: SiteShellProps) {
           <div className="absolute top-0 right-4 z-0 h-full w-px bg-border/60 [-webkit-mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] [mask-image:linear-gradient(to_bottom,transparent,#fff_40vh)] sm:right-6 md:right-8 lg:right-0" />
 
           <div className="relative z-10 flex flex-col items-center self-stretch pt-4 pb-8 md:pb-12">
+            <LandingBanner />
             <Navbar />
             {children}
             <div className="w-full">

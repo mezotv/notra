@@ -236,6 +236,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const resolvedVariant = variant ?? getNavbarVariantForPath(pathname);
   const tracksScroll = resolvedVariant === "island";
   const isStatic = resolvedVariant === "static";
+  const hasBanner = pathname === "/";
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -371,12 +372,14 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const mutedNavClass = chrome
     ? "text-neutral-500 dark:text-neutral-400"
     : "text-neutral-700 dark:text-neutral-200";
+  const bannerStickyOffset = hasBanner ? "sticky top-14" : "sticky top-4";
+  const stickyClass = isStatic ? "" : bannerStickyOffset;
 
   return (
     <LazyMotion features={domAnimation} strict>
       <m.div
         animate={{ maxWidth: chrome ? "64rem" : "80rem" }}
-        className={`z-50 mx-auto w-full ${isStatic ? "" : "sticky top-4"}`}
+        className={`z-50 mx-auto w-full ${stickyClass}`}
         initial={false}
         transition={shellTransition}
       >
