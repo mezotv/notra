@@ -24,12 +24,17 @@ export function LandingBanner() {
         href={LANDING_BANNER_HREF}
       >
         <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <HugeiconsIcon className="size-3.5" icon={SparklesIcon} />
+          <HugeiconsIcon
+            aria-hidden={true}
+            className="size-3.5"
+            icon={SparklesIcon}
+          />
         </span>
         <span>{LANDING_BANNER_TEXT}</span>
         <span className="inline-flex items-center gap-1 text-primary">
           {LANDING_BANNER_LINK_LABEL}
           <HugeiconsIcon
+            aria-hidden={true}
             className="size-4 transition-transform duration-150 ease-out group-hover:translate-x-0.5"
             icon={ArrowRight01Icon}
           />
