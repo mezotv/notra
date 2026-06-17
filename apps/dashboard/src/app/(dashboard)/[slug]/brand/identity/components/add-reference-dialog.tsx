@@ -665,6 +665,7 @@ function CustomTextStep({
         <div className="space-y-2">
           <Label htmlFor="custom-content">Content</Label>
           <Textarea
+            className="max-h-[15rem] overflow-y-auto"
             id="custom-content"
             onChange={(e) => setContent(e.target.value)}
             placeholder="Paste or write text that represents your writing style..."
@@ -696,6 +697,7 @@ function CustomTextStep({
         <div className="space-y-2">
           <Label htmlFor="custom-note">Note (optional)</Label>
           <Textarea
+            className="max-h-[7.5rem] overflow-y-auto"
             id="custom-note"
             onChange={(e) => setNote(e.target.value)}
             placeholder="When should the AI use this as reference?"
