@@ -54,7 +54,7 @@ export interface StandaloneChatPromptParams {
   hasGitHubEnabled: boolean;
   hasLinearEnabled: boolean;
   timezone?: string;
-  toolDiscoveryMode?: "custom" | "provider-native";
+  toolDiscoveryMode?: "provider-native" | "static";
 }
 
 export interface GithubWebhookMemoryPromptParams {

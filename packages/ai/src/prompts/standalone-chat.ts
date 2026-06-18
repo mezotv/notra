@@ -12,7 +12,7 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     hasGitHubEnabled,
     hasLinearEnabled,
     timezone,
-    toolDiscoveryMode = "custom",
+    toolDiscoveryMode = "static",
   } = params;
 
   const capabilitiesSection = toolDescriptions?.length
@@ -40,7 +40,7 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
   const toolWorkflowSection =
     toolDiscoveryMode === "provider-native"
       ? PROVIDER_NATIVE_TOOL_WORKFLOW
-      : CUSTOM_TOOL_WORKFLOW;
+      : STATIC_TOOL_WORKFLOW;
 
   return dedent`
     You are Notra, an AI assistant for content teams. You help users create, edit, and manage content posts, and gather information about brand identities, integrations, GitHub, and Linear.
@@ -70,21 +70,21 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
   `;
 }
 
-const CUSTOM_TOOL_WORKFLOW = dedent`
-  You start with only basic discovery tools and tool provisioning tools.
-  - Use skills and web search directly when those tools are available.
+const STATIC_TOOL_WORKFLOW = dedent`
+  This provider uses the bounded built-in Notra tool set directly.
+  - Use skills and Firecrawl directly when those tools are available.
   - Use getAvailableIntegrations to discover connected GitHub and Linear integrations before calling integration-specific tools.
-  - For built-in Notra capabilities that are not currently visible, use searchNotraTools to find the right tool, then activateNotraTools before calling it on the next step.
+  - Built-in Notra content, brand, GitHub, Linear, and post tools are already visible when configured. Call the matching tool directly instead of using a tool-provisioning flow.
   - For MCP/external capabilities, use searchMcpTools to find external tools, then activateMcpTools before calling the activated runtime tool.
-  - Do not invent tool names. If a tool is not currently visible, search and activate it first.
-  - Some loaded skills may mention internal content-agent tool names such as getBrandReferences, searchBrandReferences, createPost, or getCommitsByTimeframe. Do not call those names unless they are visible tools. Translate the intent through searchNotraTools and activate the actual visible standalone tool name first.
+  - Do not invent tool names. Use only visible tools or activated MCP runtime tools.
+  - Some loaded skills may mention internal content-agent tool names such as getBrandReferences, searchBrandReferences, createPost, or getCommitsByTimeframe. Do not call those names unless they are visible tools. Prefer the actual visible standalone tool name.
 `;
 
 const PROVIDER_NATIVE_TOOL_WORKFLOW = dedent`
   Provider-native dynamic tool discovery is enabled.
-  - Use visible skills, integration discovery, and web search tools directly when available.
+  - Use visible skills, integration discovery, and Firecrawl tools directly when available.
   - Use getAvailableIntegrations to discover connected GitHub and Linear integrations before calling integration-specific tools.
-  - When you need a built-in Notra capability that is not currently visible, use the provider's tool search/deferred loading mechanism to find and load the relevant tool. Do not call searchNotraTools or activateNotraTools unless those tools are actually visible.
+  - When you need a built-in Notra capability that is not currently visible, use the provider's tool search/deferred loading mechanism to find and load the relevant tool.
   - When external MCP servers are available, let the provider discover and call their server tools through native MCP support. If fallback MCP manager tools are visible, use searchMcpTools and activateMcpTools for those external capabilities.
   - Do not invent tool names. Use only visible tools or tools returned by provider-native tool search.
   - Some loaded skills may mention internal content-agent tool names such as getBrandReferences, searchBrandReferences, createPost, or getCommitsByTimeframe. Do not call those names unless they are visible tools or provider-native tool search loads the matching standalone tool. Prefer the actual visible standalone tool name.

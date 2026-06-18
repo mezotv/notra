@@ -11,7 +11,7 @@ export function isWebSearchAvailable(): boolean {
 }
 
 const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
-  query: z.string().min(1).describe("The web search query."),
+  query: z.string().min(1).describe("The Firecrawl search query."),
   limit: z
     .number()
     .int()
@@ -75,7 +75,7 @@ export function createWebSearchTool(): Tool {
     description: toolDescription({
       toolName: WEB_SEARCH_TOOL_NAME,
       intro:
-        "Search the live web with Firecrawl and return source-aware results.",
+        "Search live public pages with Firecrawl and return source-aware results.",
       whenToUse:
         "Use when public, current, or external context would improve accuracy, including docs, news, competitors, market context, or fact checking.",
       usageNotes:
@@ -87,4 +87,4 @@ export function createWebSearchTool(): Tool {
 }
 
 export const WEB_SEARCH_TOOL_DESCRIPTION =
-  "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, and descriptions for citations or follow-up research.";
+  "**Firecrawl**: Use webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, and descriptions for citations or follow-up research.";

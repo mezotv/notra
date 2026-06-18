@@ -1,129 +1,27 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
+import {
+  DEFAULT_NATIVE_TOOL_DISCOVERY_DESCRIPTION,
+  NATIVE_MCP_DESCRIPTION,
+  PROVIDER_TOOL_SEARCH_TOOL_NAME,
+} from "@notra/ai/constants/provider-native-tool-discovery";
 import type { StreamProviderOptions } from "@notra/ai/types/orchestration";
+import type {
+  AnthropicNativeMcpServer,
+  ProviderNativeMcpRuntime,
+  ProviderNativeToolDiscoveryProvider,
+  ProviderNativeToolRuntime,
+  ToolWithProviderOptions,
+} from "@notra/ai/types/provider-native-tool-discovery";
+import {
+  createNativeMcpServerLabel,
+  createNativeMcpToolName,
+  getAuthorizationToken,
+  getOpenAINamespaceForTool,
+  getProviderNativeToolDiscoverySupport,
+  getProviderOptionObject,
+} from "@notra/ai/utils/provider-native-tool-discovery";
 import type { Tool } from "ai";
-
-type ProviderNativeToolDiscoveryProvider = "openai" | "anthropic";
-
-interface ProviderNativeToolDiscoverySupport {
-  provider: ProviderNativeToolDiscoveryProvider;
-  supportsToolSearch: boolean;
-  supportsNativeMcp: boolean;
-}
-
-export interface ProviderNativeToolRuntime {
-  provider: ProviderNativeToolDiscoveryProvider;
-  tools: Record<string, Tool>;
-  descriptions: string[];
-}
-
-export interface ProviderNativeMcpRuntime {
-  handled: boolean;
-  tools: Record<string, Tool>;
-  providerOptions?: StreamProviderOptions;
-  descriptions: string[];
-}
-
-type ToolWithProviderOptions = Tool & {
-  providerOptions?: Record<string, unknown>;
-};
-
-interface OpenAINamespace extends Record<string, string> {
-  name: string;
-  description: string;
-}
-
-const PROVIDER_TOOL_SEARCH_TOOL_NAME = "toolSearch";
-
-const DEFAULT_NATIVE_TOOL_DISCOVERY_DESCRIPTION =
-  "Built-in Notra app tools use provider-native dynamic tool discovery. Common discovery tools are loaded immediately; content, brand, GitHub, Linear, and post tools are deferred and loaded by the provider only when relevant.";
-
-const NATIVE_MCP_DESCRIPTION =
-  "External MCP servers are connected through provider-native MCP support. The provider discovers server tools on demand without Notra loading MCP tool schemas up front.";
-
-const OPENAI_NAMESPACES = {
-  content: {
-    name: "notra_content",
-    description:
-      "Notra content creation and post management tools for drafts, updates, lookup, and viewing.",
-  },
-  organization: {
-    name: "notra_organization",
-    description:
-      "Notra organization tools for brand identities, brand references, and connected integrations.",
-  },
-  skills: {
-    name: "notra_skills",
-    description:
-      "Notra writing skill discovery and loading tools for organization-specific guidance.",
-  },
-  github: {
-    name: "notra_github",
-    description:
-      "GitHub integration tools for pull requests, releases, and commits.",
-  },
-  linear: {
-    name: "notra_linear",
-    description: "Linear integration tools for issues, projects, and cycles.",
-  },
-  search: {
-    name: "notra_search",
-    description: "Web search and miscellaneous information gathering tools.",
-  },
-  dev: {
-    name: "notra_development",
-    description: "Development-only Notra testing tools.",
-  },
-} satisfies Record<string, OpenAINamespace>;
-
-const CONTENT_TOOL_NAMES = new Set([
-  "createChangelog",
-  "createBlogPost",
-  "createTwitterPost",
-  "createLinkedInPost",
-  "createInvestorUpdate",
-  "createImage",
-  "updatePost",
-  "viewPost",
-  "getAvailablePosts",
-  "getPost",
-]);
-
-const ORGANIZATION_TOOL_NAMES = new Set([
-  "listBrandIdentities",
-  "getBrandIdentity",
-  "getAvailableIntegrations",
-  "getAvailableBrandReferences",
-]);
-
-const SKILL_TOOL_NAMES = new Set(["listAvailableSkills", "getSkillByName"]);
-const GITHUB_TOOL_NAMES = new Set([
-  "getPullRequests",
-  "getReleaseByTag",
-  "getCommitsByTimeframe",
-]);
-const LINEAR_TOOL_NAMES = new Set([
-  "getLinearIssues",
-  "getLinearProjects",
-  "getLinearCycles",
-]);
-const SEARCH_TOOL_NAMES = new Set(["webSearch"]);
-
-const INVALID_TOOL_NAME_CHARS_REGEX = /[^a-z0-9_-]+/g;
-const EDGE_UNDERSCORES_REGEX = /^_+|_+$/g;
-const MCP_ID_PREFIX_REGEX = /^mcp_/;
-const OPENAI_TOOL_SEARCH_MODEL_REGEX = /^gpt-5\.(?:[4-9]|\d{2,})(?:$|-|\.)/;
-const OPENAI_FUTURE_MODEL_REGEX = /^gpt-[6-9](?:$|-|\.)/;
-const OPENAI_NATIVE_MCP_MODEL_REGEX = /^(?:gpt-5|o[34])(?:$|-|\.)/;
-const CLAUDE_VERSION_REGEX = /claude-[a-z]+-(\d+)(?:[.-](\d+))?/;
-
-interface AnthropicNativeMcpServer {
-  type: "url";
-  name: string;
-  url: string;
-  authorizationToken?: string;
-  toolConfiguration: { enabled: true };
-}
 
 export function createProviderNativeToolRuntime({
   modelId,
@@ -256,30 +154,6 @@ export async function createProviderNativeMcpRuntime({
   };
 }
 
-export function getProviderNativeToolDiscoverySupport(
-  modelId: string
-): ProviderNativeToolDiscoverySupport | null {
-  const normalizedModelId = normalizeGatewayModelId(modelId);
-
-  if (normalizedModelId.startsWith("openai/")) {
-    return {
-      provider: "openai",
-      supportsToolSearch: supportsOpenAIToolSearch(normalizedModelId),
-      supportsNativeMcp: supportsOpenAINativeMcp(normalizedModelId),
-    };
-  }
-
-  if (normalizedModelId.startsWith("anthropic/")) {
-    return {
-      provider: "anthropic",
-      supportsToolSearch: supportsAnthropicToolSearch(normalizedModelId),
-      supportsNativeMcp: supportsAnthropicNativeMcp(normalizedModelId),
-    };
-  }
-
-  return null;
-}
-
 export function mergeProviderOptions(
   base?: StreamProviderOptions,
   extension?: StreamProviderOptions
@@ -358,124 +232,10 @@ function withProviderNativeToolOptions({
   } as unknown as Tool;
 }
 
-function getProviderOptionObject(value: unknown) {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function getOpenAINamespaceForTool(toolName: string): OpenAINamespace {
-  if (CONTENT_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.content;
-  }
-  if (ORGANIZATION_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.organization;
-  }
-  if (SKILL_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.skills;
-  }
-  if (GITHUB_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.github;
-  }
-  if (LINEAR_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.linear;
-  }
-  if (SEARCH_TOOL_NAMES.has(toolName)) {
-    return OPENAI_NAMESPACES.search;
-  }
-  return OPENAI_NAMESPACES.dev;
-}
-
-function supportsOpenAIToolSearch(modelId: string) {
-  const modelName = stripProviderPrefix(modelId, "openai/");
-  return (
-    OPENAI_TOOL_SEARCH_MODEL_REGEX.test(modelName) ||
-    OPENAI_FUTURE_MODEL_REGEX.test(modelName)
-  );
-}
-
-function supportsOpenAINativeMcp(modelId: string) {
-  const modelName = stripProviderPrefix(modelId, "openai/");
-  if (modelName.startsWith("gpt-oss-")) {
-    return false;
-  }
-  return OPENAI_NATIVE_MCP_MODEL_REGEX.test(modelName);
-}
-
-function supportsAnthropicToolSearch(modelId: string) {
-  const modelName = stripProviderPrefix(modelId, "anthropic/");
-  if (modelName.startsWith("claude-sonnet-")) {
-    return getClaudeMajorMinor(modelName).major >= 4;
-  }
-  if (modelName.startsWith("claude-opus-")) {
-    return getClaudeMajorMinor(modelName).major >= 4;
-  }
-  if (modelName.startsWith("claude-haiku-")) {
-    const version = getClaudeMajorMinor(modelName);
-    return version.major > 4 || (version.major === 4 && version.minor >= 5);
-  }
-  return (
-    modelName.startsWith("claude-fable-5") ||
-    modelName.startsWith("claude-mythos-5")
-  );
-}
-
-function supportsAnthropicNativeMcp(modelId: string) {
-  return supportsAnthropicToolSearch(modelId);
-}
-
-function getClaudeMajorMinor(modelName: string) {
-  const match = modelName.match(CLAUDE_VERSION_REGEX);
-  return {
-    major: match?.[1] ? Number(match[1]) : 0,
-    minor: match?.[2] ? Number(match[2]) : 0,
-  };
-}
-
-function normalizeGatewayModelId(modelId: string) {
-  return modelId.startsWith("vercel/")
-    ? modelId.slice("vercel/".length)
-    : modelId;
-}
-
-function stripProviderPrefix(modelId: string, prefix: string) {
-  return modelId.startsWith(prefix) ? modelId.slice(prefix.length) : modelId;
-}
-
 function emptyNativeMcpRuntime(handled: boolean): ProviderNativeMcpRuntime {
   return {
     handled,
     tools: {},
     descriptions: [],
   };
-}
-
-function createNativeMcpToolName(integration: { id: string; name: string }) {
-  return sanitizeToolName(
-    `mcp_${integration.name}_${integration.id.replace(MCP_ID_PREFIX_REGEX, "").slice(0, 10)}`
-  );
-}
-
-function createNativeMcpServerLabel(integration: { id: string; name: string }) {
-  return sanitizeToolName(
-    `${integration.name}_${integration.id.replace(MCP_ID_PREFIX_REGEX, "").slice(0, 10)}`
-  );
-}
-
-function sanitizeToolName(value: string) {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(INVALID_TOOL_NAME_CHARS_REGEX, "_")
-    .replace(EDGE_UNDERSCORES_REGEX, "");
-  return (normalized || "mcp_server").slice(0, 64);
-}
-
-function getAuthorizationToken(headers: Record<string, string>) {
-  for (const [name, value] of Object.entries(headers)) {
-    if (name.toLowerCase() === "authorization") {
-      return value;
-    }
-  }
-  return undefined;
 }
