@@ -1,6 +1,12 @@
+import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
+
+const tracker = new Tracker({
+  token: process.env.BYDEFAULT_TOKEN as string,
+  exclude: ["/api"],
+});
 
 const dualmarkProxy = createDualmarkMiddleware({
   siteUrl: SITE_URL,
@@ -38,6 +44,11 @@ function appendLinkHeader(headers: Headers, value: string) {
 
 export async function proxy(request: NextRequest) {
   const response = await dualmarkProxy(request);
+
+  // track ai traffic by `user-agent` + `accept` header
+  after(async () => {
+    await tracker.track(request);
+  });
 
   if (
     request.nextUrl.pathname === "/" &&
