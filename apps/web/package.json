@@ -9,6 +9,7 @@
     "knip": "knip"
   },
   "dependencies": {
+    "@bydefault/vercel": "^0.1.4",
     "@c15t/nextjs": "^2.0.4",
     "@databuddy/sdk": "^2.4.11",
     "@dnd-kit/core": "^6.3.1",
@@ -24,7 +25,6 @@
     "@toolwind/corner-shape": "^0.0.8-3",
     "@upstash/redis": "^1.35.8",
     "@usemarble/sdk": "^1.2.1",
-    "@usenotra/agent-analytics": "^0.0.3",
     "fumadocs-core": "^16.6.17",
     "fumadocs-mdx": "^14.2.7",
     "motion": "^12.34.2",

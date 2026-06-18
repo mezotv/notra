@@ -160,6 +160,7 @@
       "name": "web",
       "version": "0.1.0",
       "dependencies": {
+        "@bydefault/vercel": "^0.1.4",
         "@c15t/nextjs": "^2.0.4",
         "@databuddy/sdk": "^2.4.11",
         "@dnd-kit/core": "^6.3.1",
@@ -175,7 +176,6 @@
         "@toolwind/corner-shape": "^0.0.8-3",
         "@upstash/redis": "^1.35.8",
         "@usemarble/sdk": "^1.2.1",
-        "@usenotra/agent-analytics": "^0.0.3",
         "fumadocs-core": "^16.6.17",
         "fumadocs-mdx": "^14.2.7",
         "motion": "^12.34.2",
@@ -579,6 +579,8 @@
     "@braintree/sanitize-url": ["@braintree/sanitize-url@7.1.2", "", {}, "sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA=="],
 
     "@bramus/specificity": ["@bramus/specificity@2.4.2", "", { "dependencies": { "css-tree": "^3.0.0" }, "bin": { "specificity": "bin/cli.js" } }, "sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw=="],
+
+    "@bydefault/vercel": ["@bydefault/vercel@0.1.4", "", {}, "sha512-sw5GSwCZ9JE8bpLd0tG8kTPWLt6iJStmRnomfB1wX65biAbu1W+Fz67IMPmHafaF7oBaLNw10+sSnvedQk6PYw=="],
 
     "@c15t/dev-tools": ["@c15t/dev-tools@2.1.0", "", { "dependencies": { "@radix-ui/react-accordion": "1.2.12", "@radix-ui/react-scroll-area": "^1.2.10", "@radix-ui/react-slot": "1.2.4", "@radix-ui/react-switch": "1.2.6", "@radix-ui/react-tooltip": "^1.2.8", "c15t": "2.1.0", "class-variance-authority": "^0.7.1", "lucide-react": "^1.7.0", "motion": "^12.38.0", "react-draggable": "^4.5.0", "tailwind-merge": "3.5.0", "tsc-alias": "^1.8.16", "usehooks-ts": "^3.1.1", "zustand": "^5.0.12" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1ScGlw9TgaprUVAHMTusV1mUh3dxRSlH8Lgl8uzbnw3U2CiThGINN1XjutOV4x52628b39duKdS3rdKCLLI1kw=="],
 
@@ -1783,8 +1785,6 @@
     "@upstash/workflow": ["@upstash/workflow@1.3.0", "", { "dependencies": { "@upstash/qstash": "^2.11.0" }, "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "sha512-bY6JRB6MmU9rESbdL8Dd5gs9U0/C6cWYfCwiM8wgqr2IIYBcUHSrP4aWTjDWf8g8AAa4EDmd6ZBqm4E7ecdXWg=="],
 
     "@usemarble/sdk": ["@usemarble/sdk@1.2.1", "", { "dependencies": { "zod": "^3.25.65 || ^4.0.0" } }, "sha512-rklBYmj7sdN5VD0bkLZRttuzOTTj618Ob6V112+gP1a2eW6FQ3kYixPK7hahME3pP4eHiyC/sSZVSWwddg7tsQ=="],
-
-    "@usenotra/agent-analytics": ["@usenotra/agent-analytics@0.0.3", "", { "peerDependencies": { "@upstash/redis": "^1.38.0" } }, "sha512-U7NJoywZY+tIxOsns7UdioFLjARvxftiWjESsJ/fyS5zXCESW6FG18HwnuTJOAwx0a0BA3efU7pXNTroYlFIhA=="],
 
     "@vercel/oidc": ["@vercel/oidc@3.2.0", "", {}, "sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug=="],
 
