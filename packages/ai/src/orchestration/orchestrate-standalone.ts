@@ -35,6 +35,11 @@ import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
 } from "./integration-validator";
+import {
+  createProviderNativeMcpRuntime,
+  createProviderNativeToolRuntime,
+  mergeProviderOptions,
+} from "./provider-native-tool-discovery";
 import { routeMessage, selectAutoModel } from "./router";
 import {
   buildStandaloneToolSet,
@@ -159,36 +164,64 @@ export async function orchestrateStandaloneChat(
       resolveLinearContext: deps?.resolveLinearContext,
     }
   );
-  const notraToolRuntime = createStandaloneToolProvisioningRuntime({
+  const defaultActiveToolNames = getDefaultStandaloneActiveToolNames({
     tools: baseToolSet.tools,
-    defaultActiveToolNames: getDefaultStandaloneActiveToolNames({
-      tools: baseToolSet.tools,
-      context,
-    }),
+    context,
   });
-  const tools = notraToolRuntime.tools;
+  const providerNativeToolRuntime = createProviderNativeToolRuntime({
+    modelId: routingDecision.model,
+    tools: baseToolSet.tools,
+    defaultActiveToolNames,
+  });
+  const providerNativeMcpRuntime = providerNativeToolRuntime
+    ? await createProviderNativeMcpRuntime({
+        modelId: routingDecision.model,
+        organizationId,
+        hasMcp,
+      })
+    : null;
+  const toolDiscoveryMode = providerNativeToolRuntime
+    ? ("provider-native" as const)
+    : ("custom" as const);
+  const notraToolRuntime =
+    providerNativeToolRuntime ??
+    createStandaloneToolProvisioningRuntime({
+      tools: baseToolSet.tools,
+      defaultActiveToolNames,
+    });
+  const tools = providerNativeToolRuntime
+    ? {
+        ...providerNativeToolRuntime.tools,
+        ...(providerNativeMcpRuntime?.tools ?? {}),
+      }
+    : notraToolRuntime.tools;
 
-  const lazyMcpRuntime =
-    !chatId || !hasMcp
-      ? null
-      : await createLazyMcpRuntime({
-          organizationId,
-          sessionId: chatId,
-          surface: "standalone-chat",
-          baseActiveToolNames: notraToolRuntime.getActiveToolNames(),
-          tools,
-        });
+  const shouldUseFallbackMcp =
+    Boolean(chatId && hasMcp) && providerNativeMcpRuntime?.handled !== true;
+  const lazyMcpRuntime = shouldUseFallbackMcp
+    ? await createLazyMcpRuntime({
+        organizationId,
+        sessionId: chatId as string,
+        surface: "standalone-chat",
+        baseActiveToolNames: getRuntimeActiveToolNames(notraToolRuntime),
+        tools,
+      })
+    : null;
 
-  const descriptions = lazyMcpRuntime
-    ? [NOTRA_TOOLING_DESCRIPTION, ...lazyMcpRuntime.descriptions]
-    : [NOTRA_TOOLING_DESCRIPTION];
+  const descriptions = [
+    ...(providerNativeToolRuntime?.descriptions ?? [NOTRA_TOOLING_DESCRIPTION]),
+    ...(providerNativeMcpRuntime?.descriptions ?? []),
+    ...(lazyMcpRuntime?.descriptions ?? []),
+  ];
 
-  const hasGitHubToolsActive = notraToolRuntime
-    .getActiveToolNames()
-    .some(isGitHubToolName);
-  const hasLinearToolsActive = notraToolRuntime
-    .getActiveToolNames()
-    .some(isLinearToolName);
+  const initialActiveToolNames = getInitialActiveToolNames({
+    notraToolRuntime,
+    lazyMcpRuntime,
+    providerNative: Boolean(providerNativeToolRuntime),
+  });
+  const promptToolNames = initialActiveToolNames ?? Object.keys(tools);
+  const hasGitHubToolsActive = promptToolNames.some(isGitHubToolName);
+  const hasLinearToolsActive = promptToolNames.some(isLinearToolName);
   const repoContext = hasGitHubToolsActive
     ? getRepoContextFromIntegrations(validatedIntegrations)
     : [];
@@ -204,6 +237,7 @@ export async function orchestrateStandaloneChat(
     hasGitHubEnabled: hasGitHubToolsActive,
     hasLinearEnabled: hasLinearToolsActive,
     timezone,
+    toolDiscoveryMode,
   });
 
   const effectiveThinkingLevel = autoThinkingLevel ?? thinkingLevel;
@@ -211,10 +245,13 @@ export async function orchestrateStandaloneChat(
     enableThinking && (autoThinkingLevel ? autoThinkingLevel !== "off" : true);
 
   const providerOptions = withGatewayDefaults(
-    getThinkingProviderOptions(
-      routingDecision.model,
-      effectiveEnableThinking,
-      effectiveThinkingLevel
+    mergeProviderOptions(
+      getThinkingProviderOptions(
+        routingDecision.model,
+        effectiveEnableThinking,
+        effectiveThinkingLevel
+      ),
+      providerNativeMcpRuntime?.providerOptions
     ),
     { modelId: routingDecision.model }
   );
@@ -232,7 +269,7 @@ export async function orchestrateStandaloneChat(
     const lazyStep = await lazyMcpRuntime?.prepareStep(options);
     return Array.from(
       new Set([
-        ...notraToolRuntime.getActiveToolNames(),
+        ...getRuntimeActiveToolNames(notraToolRuntime),
         ...(lazyStep?.activeTools?.map(String) ?? []),
       ])
     );
@@ -244,15 +281,14 @@ export async function orchestrateStandaloneChat(
     system: systemPrompt,
     messages: modelMessages,
     tools,
-    activeTools: Array.from(
-      new Set([
-        ...notraToolRuntime.getActiveToolNames(),
-        ...(lazyMcpRuntime?.initialActiveTools ?? []),
-      ])
-    ),
-    prepareStep: async (options) => ({
-      activeTools: await getActiveToolNames(options),
-    }),
+    ...(initialActiveToolNames
+      ? {
+          activeTools: initialActiveToolNames,
+          prepareStep: async (options) => ({
+            activeTools: await getActiveToolNames(options),
+          }),
+        }
+      : {}),
     stopWhen: stepCountIs(maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
@@ -296,6 +332,37 @@ async function getStandaloneSkillSummaries(organizationId: string) {
   return listSkillSummaries(
     { organizationId },
     { limit: STANDALONE_SKILL_CATALOG_LIMIT }
+  );
+}
+
+function getRuntimeActiveToolNames(runtime: {
+  tools: Record<string, Tool>;
+  getActiveToolNames?: () => string[];
+}) {
+  return runtime.getActiveToolNames?.() ?? Object.keys(runtime.tools);
+}
+
+function getInitialActiveToolNames({
+  notraToolRuntime,
+  lazyMcpRuntime,
+  providerNative,
+}: {
+  notraToolRuntime: {
+    tools: Record<string, Tool>;
+    getActiveToolNames?: () => string[];
+  };
+  lazyMcpRuntime: { initialActiveTools: string[] } | null;
+  providerNative: boolean;
+}) {
+  if (providerNative && !lazyMcpRuntime) {
+    return undefined;
+  }
+
+  return Array.from(
+    new Set([
+      ...getRuntimeActiveToolNames(notraToolRuntime),
+      ...(lazyMcpRuntime?.initialActiveTools ?? []),
+    ])
   );
 }
 
