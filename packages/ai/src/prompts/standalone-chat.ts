@@ -74,9 +74,9 @@ const STATIC_TOOL_WORKFLOW = dedent`
   This provider uses the bounded built-in Notra tool set directly.
   - Use skills and Firecrawl directly when those tools are available.
   - Use getAvailableIntegrations to discover connected GitHub and Linear integrations before calling integration-specific tools.
-  - Built-in Notra content, brand, GitHub, Linear, and post tools are already visible when configured. Call the matching tool directly instead of using a tool-provisioning flow.
-  - For MCP/external capabilities, use searchMcpTools to find external tools, then activateMcpTools before calling the activated runtime tool.
-  - Do not invent tool names. Use only visible tools or activated MCP runtime tools.
+  - Built-in Notra content, brand, GitHub, Linear, and post tools are already visible when configured. Call the matching tool directly.
+  - External MCP server tools are not available for static-provider standalone chat. If the user needs an external MCP capability, explain that they need a model with provider-native MCP support.
+  - Do not invent tool names. Use only visible tools.
   - Some loaded skills may mention internal content-agent tool names such as getBrandReferences, searchBrandReferences, createPost, or getCommitsByTimeframe. Do not call those names unless they are visible tools. Prefer the actual visible standalone tool name.
 `;
 
@@ -85,7 +85,7 @@ const PROVIDER_NATIVE_TOOL_WORKFLOW = dedent`
   - Use visible skills, integration discovery, and Firecrawl tools directly when available.
   - Use getAvailableIntegrations to discover connected GitHub and Linear integrations before calling integration-specific tools.
   - When you need a built-in Notra capability that is not currently visible, use the provider's tool search/deferred loading mechanism to find and load the relevant tool.
-  - When external MCP servers are available, let the provider discover and call their server tools through native MCP support. If fallback MCP manager tools are visible, use searchMcpTools and activateMcpTools for those external capabilities.
+  - When external MCP servers are available, let the provider discover and call their server tools through native MCP support.
   - Do not invent tool names. Use only visible tools or tools returned by provider-native tool search.
   - Some loaded skills may mention internal content-agent tool names such as getBrandReferences, searchBrandReferences, createPost, or getCommitsByTimeframe. Do not call those names unless they are visible tools or provider-native tool search loads the matching standalone tool. Prefer the actual visible standalone tool name.
 `;

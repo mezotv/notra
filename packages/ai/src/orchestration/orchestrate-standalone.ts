@@ -8,7 +8,6 @@ import { getStandaloneChatPrompt } from "@notra/ai/prompts/standalone-chat";
 import { withGatewayDefaults } from "@notra/ai/provider-options";
 import { STANDALONE_SKILL_CATALOG_LIMIT } from "@notra/ai/skills/constants";
 import { listSkillSummaries } from "@notra/ai/skills/functions/service";
-import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import type {
   AutoThinkingLevel,
   IntegrationFetchers,
@@ -173,32 +172,14 @@ export async function orchestrateStandaloneChat(
       }
     : notraToolRuntime.tools;
 
-  const shouldUseFallbackMcp =
-    Boolean(chatId && hasMcp) && providerNativeMcpRuntime?.handled !== true;
-  const lazyMcpRuntime = shouldUseFallbackMcp
-    ? await createLazyMcpRuntime({
-        organizationId,
-        sessionId: chatId as string,
-        surface: "standalone-chat",
-        baseActiveToolNames: getRuntimeActiveToolNames(notraToolRuntime),
-        tools,
-      })
-    : null;
-
   const descriptions = [
     ...(providerNativeToolRuntime?.descriptions ?? [
       STANDALONE_TOOLING_DESCRIPTION,
     ]),
     ...(providerNativeMcpRuntime?.descriptions ?? []),
-    ...(lazyMcpRuntime?.descriptions ?? []),
   ];
 
-  const initialActiveToolNames = getInitialActiveToolNames({
-    notraToolRuntime,
-    lazyMcpRuntime,
-    providerNative: Boolean(providerNativeToolRuntime),
-  });
-  const promptToolNames = initialActiveToolNames ?? Object.keys(tools);
+  const promptToolNames = Object.keys(tools);
   const hasGitHubToolsActive = promptToolNames.some(isGitHubToolName);
   const hasLinearToolsActive = promptToolNames.some(isLinearToolName);
   const repoContext = hasGitHubToolsActive
@@ -242,17 +223,6 @@ export async function orchestrateStandaloneChat(
   const modelMessages = await convertToModelMessages(messagesForModel, {
     ignoreIncompleteToolCalls: true,
   });
-  const getActiveToolNames = async (
-    options: Parameters<NonNullable<typeof lazyMcpRuntime>["prepareStep"]>[0]
-  ) => {
-    const lazyStep = await lazyMcpRuntime?.prepareStep(options);
-    return Array.from(
-      new Set([
-        ...getRuntimeActiveToolNames(notraToolRuntime),
-        ...(lazyStep?.activeTools?.map(String) ?? []),
-      ])
-    );
-  };
 
   let firstChunkFired = false;
   const stream = streamText({
@@ -260,14 +230,6 @@ export async function orchestrateStandaloneChat(
     system: systemPrompt,
     messages: modelMessages,
     tools,
-    ...(initialActiveToolNames
-      ? {
-          activeTools: initialActiveToolNames,
-          prepareStep: async (options) => ({
-            activeTools: await getActiveToolNames(options),
-          }),
-        }
-      : {}),
     stopWhen: stepCountIs(maxSteps),
     experimental_transform: smoothStream(),
     providerOptions,
@@ -288,14 +250,11 @@ export async function orchestrateStandaloneChat(
         model: routingDecision.model,
         completedSteps: steps.length,
       });
-      lazyMcpRuntime?.cleanup().catch(() => undefined);
     },
     async onFinish({ totalUsage }) {
       await deps?.onUsage?.(totalUsage, routingDecision.model);
-      await lazyMcpRuntime?.cleanup();
     },
     onError({ error }) {
-      lazyMcpRuntime?.cleanup().catch(() => undefined);
       console.error("[Standalone Chat Stream Error]", {
         organizationId,
         model: routingDecision.model,
@@ -311,37 +270,6 @@ async function getStandaloneSkillSummaries(organizationId: string) {
   return listSkillSummaries(
     { organizationId },
     { limit: STANDALONE_SKILL_CATALOG_LIMIT }
-  );
-}
-
-function getRuntimeActiveToolNames(runtime: {
-  tools: Record<string, Tool>;
-  getActiveToolNames?: () => string[];
-}) {
-  return runtime.getActiveToolNames?.() ?? Object.keys(runtime.tools);
-}
-
-function getInitialActiveToolNames({
-  notraToolRuntime,
-  lazyMcpRuntime,
-  providerNative,
-}: {
-  notraToolRuntime: {
-    tools: Record<string, Tool>;
-    getActiveToolNames?: () => string[];
-  };
-  lazyMcpRuntime: { initialActiveTools: string[] } | null;
-  providerNative: boolean;
-}) {
-  if (providerNative && !lazyMcpRuntime) {
-    return undefined;
-  }
-
-  return Array.from(
-    new Set([
-      ...getRuntimeActiveToolNames(notraToolRuntime),
-      ...(lazyMcpRuntime?.initialActiveTools ?? []),
-    ])
   );
 }
 
