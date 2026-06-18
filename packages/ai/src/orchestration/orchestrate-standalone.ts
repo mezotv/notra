@@ -18,6 +18,7 @@ import type {
   StandaloneChatDeps,
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
+import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
@@ -218,7 +219,9 @@ export async function orchestrateStandaloneChat(
     { modelId: routingDecision.model }
   );
 
-  const messagesForModel = stripIncompleteToolParts(messages);
+  const messagesForModel = normalizeMarkdownFileAttachments(
+    stripIncompleteToolParts(messages)
+  );
 
   const modelMessages = await convertToModelMessages(messagesForModel, {
     ignoreIncompleteToolCalls: true,

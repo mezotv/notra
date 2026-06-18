@@ -6,6 +6,7 @@ import type {
   OrchestrateInput,
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
+import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
@@ -113,10 +114,12 @@ export async function orchestrateChat(
     timezone,
   });
 
+  const messagesForModel = normalizeMarkdownFileAttachments(messages);
+
   const stream = streamText({
     model: modelWithMemory,
     system: systemPrompt,
-    messages: await convertToModelMessages(messages, {
+    messages: await convertToModelMessages(messagesForModel, {
       ignoreIncompleteToolCalls: true,
     }),
     tools,
