@@ -20,14 +20,7 @@ export function startGitHubInstall(params: {
       catch: (cause) => new GitHubInstallStartError({ cause }),
     }).pipe(
       Effect.map(({ url }) => {
-        const popup = openGitHubInstallPopup(url);
-
-        if (popup) {
-          return true;
-        }
-
-        window.location.href = url;
-        return true;
+        return openGitHubInstallPopup(url);
       }),
       Effect.match({
         onFailure: () => false,

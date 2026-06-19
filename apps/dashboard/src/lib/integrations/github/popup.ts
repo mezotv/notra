@@ -3,7 +3,7 @@ import {
   GITHUB_INSTALL_POPUP_WIDTH,
 } from "@/constants/github";
 
-export function openGitHubInstallPopup(url: string): Window | null {
+export function openGitHubInstallPopup(url: string): boolean {
   const screenLeft = window.screenLeft ?? window.screenX;
   const screenTop = window.screenTop ?? window.screenY;
   const viewportWidth =
@@ -18,9 +18,11 @@ export function openGitHubInstallPopup(url: string): Window | null {
   const top =
     screenTop + Math.max(0, (viewportHeight - GITHUB_INSTALL_POPUP_HEIGHT) / 2);
 
-  return window.open(
+  window.open(
     url,
     `github-install-${crypto.randomUUID()}`,
-    `popup=yes,width=${GITHUB_INSTALL_POPUP_WIDTH},height=${GITHUB_INSTALL_POPUP_HEIGHT},left=${left},top=${top}`
+    `popup=yes,noopener,noreferrer,width=${GITHUB_INSTALL_POPUP_WIDTH},height=${GITHUB_INSTALL_POPUP_HEIGHT},left=${left},top=${top}`
   );
+
+  return true;
 }

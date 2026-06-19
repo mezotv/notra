@@ -57,13 +57,13 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    await redis.del(`github_app_install:${state}`);
-
     await upsertGitHubAppInstallation({
       organizationId: installState.organizationId,
       userId: installState.userId,
       installationId,
     });
+
+    await redis.del(`github_app_install:${state}`);
 
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, installState.callbackPath, {

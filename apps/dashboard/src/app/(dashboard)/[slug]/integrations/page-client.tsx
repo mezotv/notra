@@ -10,13 +10,13 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQuery } from "@tanstack/react-query";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
-import { GitHubIntegrationDialog } from "@/components/integrations/github/github-integration-dialog";
 import { McpIntegrationCard } from "@/components/integrations/mcp-integration-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -41,6 +41,14 @@ interface Integration {
 interface PageClientProps {
   organizationSlug: string;
 }
+
+const GitHubIntegrationDialog = dynamic(
+  () =>
+    import("@/components/integrations/github/github-integration-dialog").then(
+      (module) => module.GitHubIntegrationDialog
+    ),
+  { ssr: false }
+);
 
 const IntegrationCard = memo(function IntegrationCard({
   integration,

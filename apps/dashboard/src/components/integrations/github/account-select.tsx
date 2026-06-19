@@ -24,8 +24,9 @@ export function GitHubAccountSelect({
   onAddAccount,
   disabled = false,
 }: GitHubAccountSelectProps) {
-  const selectedAccount =
-    accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
+  const selectedAccount = accounts.find(
+    (account) => account.id === selectedAccountId
+  );
 
   return (
     <DropdownMenu>
@@ -64,7 +65,11 @@ export function GitHubAccountSelect({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="gap-2" onClick={onAddAccount}>
+        <DropdownMenuItem
+          className="gap-2"
+          disabled={!onAddAccount}
+          onClick={onAddAccount}
+        >
           <HugeiconsIcon className="size-4 shrink-0" icon={Add01Icon} />
           Add GitHub Account
         </DropdownMenuItem>

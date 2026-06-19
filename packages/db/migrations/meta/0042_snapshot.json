@@ -1,5 +1,5 @@
 {
-  "id": "1a0dc318-dffe-47ce-b4b7-cb06eda75f1d",
+  "id": "c87a25f9-c57c-4cc8-a14f-5f1f230f8f7c",
   "prevId": "3a883045-fc99-4ff3-9bfd-9d60039a5dd9",
   "version": "7",
   "dialect": "postgresql",
@@ -1424,6 +1424,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "created_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "github_integrations_github_app_installation_id_github_app_installations_id_fk": {
+          "name": "github_integrations_github_app_installation_id_github_app_installations_id_fk",
+          "tableFrom": "github_integrations",
+          "tableTo": "github_app_installations",
+          "columnsFrom": [
+            "github_app_installation_id"
           ],
           "columnsTo": [
             "id"

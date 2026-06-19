@@ -19,10 +19,12 @@ import { Button } from "@/components/button";
 import type { SelectRepositoriesDialogProps } from "@/types/integrations/github";
 import { RepositoryMultiSelect } from "./repository-multi-select";
 
+const EMPTY_SELECTED_REPOSITORY_IDS: string[] = [];
+
 export function SelectRepositoriesDialog({
   repositories,
   onSave,
-  initialSelected = [],
+  initialSelected = EMPTY_SELECTED_REPOSITORY_IDS,
   isLoading = false,
   isSaving = false,
   accounts,

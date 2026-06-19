@@ -11,7 +11,10 @@ const GitHubAppInstallationAccountSchema = Schema.Struct({
 export const GitHubAppInstallationResponseSchema = Schema.Struct({
   id: Schema.Number,
   account: Schema.NullOr(GitHubAppInstallationAccountSchema),
-  repository_selection: Schema.optional(Schema.NullOr(Schema.String)),
+  repository_selection: Schema.Union([
+    Schema.Literal("all"),
+    Schema.Literal("selected"),
+  ]),
 });
 
 export const GitHubAppRepositoryResponseSchema = Schema.Struct({

@@ -72,7 +72,7 @@ function mapGitHubAppRequestError(error: GitHubAppRequestError): never {
   }
 
   if (error.cause instanceof Error) {
-    throw badRequest(error.cause.message);
+    throw internalServerError("GitHub App request failed", error.cause);
   }
 
   throw internalServerError(error.message, error.cause);

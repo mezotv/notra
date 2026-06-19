@@ -238,44 +238,6 @@ export const invitations = pgTable(
   ]
 );
 
-export const githubIntegrations = pgTable(
-  "github_integrations",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    createdByUserId: text("created_by_user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    displayName: text("display_name").notNull(),
-    encryptedToken: text("encrypted_token"),
-    githubAppInstallationId: text("github_app_installation_id"),
-    githubRepositoryId: text("github_repository_id"),
-    githubRepositoryPrivate: boolean("github_repository_private"),
-    owner: text("owner"),
-    repo: text("repo"),
-    defaultBranch: text("default_branch"),
-    repositoryEnabled: boolean("repository_enabled").default(true).notNull(),
-    encryptedWebhookSecret: text("encrypted_webhook_secret"),
-    enabled: boolean("enabled").default(true).notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [
-    index("githubIntegrations_organizationId_idx").on(table.organizationId),
-    index("githubIntegrations_createdByUserId_idx").on(table.createdByUserId),
-    uniqueIndex("githubIntegrations_organization_owner_repo_uidx").on(
-      table.organizationId,
-      table.owner,
-      table.repo
-    ),
-  ]
-);
-
 export const githubAppInstallations = pgTable(
   "github_app_installations",
   {
@@ -308,6 +270,47 @@ export const githubAppInstallations = pgTable(
     uniqueIndex("githubAppInstallations_organization_installation_uidx").on(
       table.organizationId,
       table.installationId
+    ),
+  ]
+);
+
+export const githubIntegrations = pgTable(
+  "github_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    displayName: text("display_name").notNull(),
+    encryptedToken: text("encrypted_token"),
+    githubAppInstallationId: text("github_app_installation_id").references(
+      () => githubAppInstallations.id,
+      { onDelete: "cascade" }
+    ),
+    githubRepositoryId: text("github_repository_id"),
+    githubRepositoryPrivate: boolean("github_repository_private"),
+    owner: text("owner"),
+    repo: text("repo"),
+    defaultBranch: text("default_branch"),
+    repositoryEnabled: boolean("repository_enabled").default(true).notNull(),
+    encryptedWebhookSecret: text("encrypted_webhook_secret"),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("githubIntegrations_organizationId_idx").on(table.organizationId),
+    index("githubIntegrations_createdByUserId_idx").on(table.createdByUserId),
+    uniqueIndex("githubIntegrations_organization_owner_repo_uidx").on(
+      table.organizationId,
+      table.owner,
+      table.repo
     ),
   ]
 );
