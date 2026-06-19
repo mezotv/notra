@@ -6,7 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -26,6 +26,31 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface PageClientProps {
   organizationSlug: string;
+}
+
+interface GitHubInstallMessage {
+  type: typeof GITHUB_INSTALL_MESSAGE;
+  organizationId: string;
+}
+
+function isGitHubInstallMessage(
+  value: unknown,
+  organizationId: string
+): value is GitHubInstallMessage {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  return (
+    "type" in value &&
+    value.type === GITHUB_INSTALL_MESSAGE &&
+    "organizationId" in value &&
+    value.organizationId === organizationId
+  );
+}
+
+function getGitHubInstallStorageKey(organizationId: string) {
+  return `${GITHUB_INSTALL_CHANNEL}:${organizationId}`;
 }
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
@@ -61,66 +86,81 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
   const repositories = data?.repositories ? [...data.repositories] : [];
 
-  useEffect(() => {
-    if (searchParams.get("githubConnected") === "true") {
-      if (window.opener && window.opener !== window) {
-        window.opener.postMessage(
-          GITHUB_INSTALL_MESSAGE,
-          window.location.origin
-        );
-      } else {
-        const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-        channel.postMessage(GITHUB_INSTALL_MESSAGE);
-        channel.close();
-        window.localStorage.setItem(GITHUB_INSTALL_CHANNEL, `${Date.now()}`);
-      }
-      window.close();
-      return;
-    }
-
-    return;
-  }, [searchParams]);
+  const handleGitHubInstalled = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.github.app.get.queryKey({
+        input: { organizationId },
+      }),
+    });
+    setConnectOpen(false);
+    setReposOpen(true);
+  }, [organizationId, queryClient]);
 
   useEffect(() => {
-    const handleGitHubInstalled = () => {
-      queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.github.app.get.queryKey({
-          input: { organizationId },
-        }),
-      });
-      setConnectOpen(false);
-      setReposOpen(true);
-    };
-
     const handleMessage = (event: MessageEvent) => {
       if (
         event.origin === window.location.origin &&
-        event.data === GITHUB_INSTALL_MESSAGE
+        isGitHubInstallMessage(event.data, organizationId)
       ) {
         handleGitHubInstalled();
       }
     };
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === GITHUB_INSTALL_CHANNEL) {
+      if (event.key === getGitHubInstallStorageKey(organizationId)) {
         handleGitHubInstalled();
       }
     };
     const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-    channel.addEventListener("message", handleGitHubInstalled);
+    const handleChannelMessage = (event: MessageEvent) => {
+      if (isGitHubInstallMessage(event.data, organizationId)) {
+        handleGitHubInstalled();
+      }
+    };
+    channel.addEventListener("message", handleChannelMessage);
 
     window.addEventListener("message", handleMessage);
     window.addEventListener("storage", handleStorage);
     return () => {
-      channel.removeEventListener("message", handleGitHubInstalled);
+      channel.removeEventListener("message", handleChannelMessage);
       channel.close();
       window.removeEventListener("message", handleMessage);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [organizationId, queryClient]);
+  }, [handleGitHubInstalled, organizationId]);
 
-  useHotkey("C", () => (isConnected ? handleAddAccount() : handleConnect()), {
-    enabled: !!organizationId,
-  });
+  useEffect(() => {
+    if (searchParams.get("githubConnected") !== "true" || !organizationId) {
+      return;
+    }
+
+    const message: GitHubInstallMessage = {
+      type: GITHUB_INSTALL_MESSAGE,
+      organizationId,
+    };
+
+    if (window.opener && window.opener !== window) {
+      window.opener.postMessage(message, window.location.origin);
+      window.close();
+      return;
+    }
+
+    const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
+    channel.postMessage(message);
+    channel.close();
+    window.localStorage.setItem(
+      getGitHubInstallStorageKey(organizationId),
+      crypto.randomUUID()
+    );
+    handleGitHubInstalled();
+  }, [searchParams, organizationId, handleGitHubInstalled]);
+
+  useHotkey(
+    "C",
+    () => (isConnected ? handleAddAccount() : handleOpenConnect()),
+    {
+      enabled: !!organizationId,
+    }
+  );
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {
@@ -173,7 +213,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     }
   };
 
-  const handleConnect = () => setConnectOpen(true);
+  const handleOpenConnect = () => setConnectOpen(true);
+
+  const handleConnect = openInstallPopup;
 
   const handleAddAccount = openInstallPopup;
 
@@ -224,7 +266,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <Button
             className="gap-1.5"
-            onClick={isConnected ? handleAddAccount : handleConnect}
+            onClick={isConnected ? handleAddAccount : handleOpenConnect}
           >
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
             {isConnected ? "Add GitHub account" : "Connect GitHub"}

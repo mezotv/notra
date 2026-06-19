@@ -18,11 +18,15 @@ export function openGitHubInstallPopup(url: string): boolean {
   const top =
     screenTop + Math.max(0, (viewportHeight - GITHUB_INSTALL_POPUP_HEIGHT) / 2);
 
-  window.open(
+  const popup = window.open(
     url,
     `github-install-${crypto.randomUUID()}`,
     `popup=yes,noopener,noreferrer,width=${GITHUB_INSTALL_POPUP_WIDTH},height=${GITHUB_INSTALL_POPUP_HEIGHT},left=${left},top=${top}`
   );
+
+  if (!popup) {
+    window.location.assign(url);
+  }
 
   return true;
 }
