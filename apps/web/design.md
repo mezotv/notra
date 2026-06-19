@@ -1,6 +1,6 @@
-# Notra Web — Design Guidelines
+# `apps/web` — Design Guidelines
 
-This is the design reference for `apps/web` — Notra's public marketing, blog,
+This is the design reference for `apps/web`, the public marketing, blog,
 changelog, and brand site. It captures the conventions already in the codebase so
 new pages and components feel like they belong. When something here conflicts with
 what you find in the code, the code wins — update this file to match.
