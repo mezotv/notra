@@ -27,8 +27,8 @@ import { toast } from "sonner";
 import { StepActivity } from "@/components/content/create/step-activity";
 import { StepBrandIdentities } from "@/components/content/create/step-brand-identities";
 import { StepFormats } from "@/components/content/create/step-formats";
-import { AddIntegrationDialog } from "@/components/integrations/add-integration-dialog";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
+import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {

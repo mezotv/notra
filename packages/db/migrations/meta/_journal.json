@@ -295,6 +295,13 @@
       "when": 1780941523502,
       "tag": "0041_illegal_loa",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1781882240985,
+      "tag": "0042_cooing_lifeguard",
+      "breakpoints": true
     }
   ]
 }

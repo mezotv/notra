@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const C15T_BACKEND_URL = "https://notra-prod-notra.inth.app";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["peers-zoning-swap-arrivals.trycloudflare.com"],
   reactCompiler: true,
   outputFileTracingIncludes: {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],

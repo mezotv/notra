@@ -46,7 +46,7 @@ import type {
   GitHubIntegration,
   GitHubRepoInfo,
 } from "@/types/integrations";
-import { WebhookSetupDialog } from "./wehook-setup-dialog";
+import { WebhookSetupDialog } from "../wehook-setup-dialog";
 
 type ProbeStatus = "idle" | "loading" | "success" | "error" | "not_found";
 
@@ -60,7 +60,7 @@ function getRepoKey(owner: string, repo: string) {
   return `${owner.toLowerCase()}/${repo.toLowerCase()}`;
 }
 
-export function AddIntegrationDialog({
+export function LegacyAddIntegrationDialog({
   organizationId: propOrganizationId,
   organizationSlug: propOrganizationSlug,
   onSuccess,

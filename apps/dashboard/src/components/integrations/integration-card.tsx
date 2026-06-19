@@ -22,7 +22,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
-import { EditTokenDialog } from "@/components/integrations/edit-token-dialog";
+import { LegacyEditTokenDialog as EditTokenDialog } from "@/components/integrations/legacy/edit-token-dialog";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   AffectedTriggersData,

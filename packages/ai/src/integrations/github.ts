@@ -1,13 +1,23 @@
 import crypto from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
+  githubAppInstallations,
   githubIntegrations,
   members,
   repositoryOutputs,
 } from "@notra/db/schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { Effect } from "effect";
 import { customAlphabet } from "nanoid";
+import { GITHUB_APP_REPOSITORIES_CACHE_TTL_SECONDS } from "../constants/github-app";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
+import {
+  decodeCachedGitHubAppRepositories,
+  decodeGitHubAppInstallationResponse,
+  decodeGitHubAppRepositoriesResponse,
+  type GitHubAppRepository,
+  type GitHubAppRepositoryResponse,
+} from "../schemas/github-app";
 import type {
   AddRepositoryParams,
   ConfigureOutputParams,
@@ -16,19 +26,12 @@ import type {
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
+import type { GitHubToolRepositoryContext } from "../types/tools";
 import { createOctokit } from "../utils/octokit";
+import { redis } from "../utils/redis";
 import { getConfiguredAppUrl } from "../utils/url";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
-
-export interface GitHubToolRepositoryContext {
-  integrationId: string;
-  organizationId: string;
-  owner: string;
-  repo: string;
-  defaultBranch: string | null;
-  token: string | undefined;
-}
 
 export class GitHubBranchNotFoundError extends Error {
   constructor(owner: string, repo: string, branch: string) {
@@ -37,8 +40,113 @@ export class GitHubBranchNotFoundError extends Error {
   }
 }
 
+export class GitHubAppNotConfiguredError extends Error {
+  constructor() {
+    super("GitHub App is not configured");
+    this.name = "GitHubAppNotConfiguredError";
+  }
+}
+
 function generateWebhookSecret(): string {
   return crypto.randomBytes(32).toString("hex");
+}
+
+function base64url(value: string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function getGitHubAppConfig() {
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const slug = process.env.GITHUB_APP_SLUG ?? process.env.GITHUB_APP_NAME;
+
+  if (!(appId && privateKey && slug)) {
+    throw new GitHubAppNotConfiguredError();
+  }
+
+  return { appId, privateKey, slug };
+}
+
+function createGitHubAppJwt() {
+  const { appId, privateKey } = getGitHubAppConfig();
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const payload = base64url(
+    JSON.stringify({
+      iat: now - 60,
+      exp: now + 9 * 60,
+      iss: appId,
+    })
+  );
+  const signature = crypto
+    .createSign("RSA-SHA256")
+    .update(`${header}.${payload}`)
+    .sign(privateKey, "base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  return `${header}.${payload}.${signature}`;
+}
+
+async function createGitHubAppInstallationToken(installationId: string) {
+  const octokit = createOctokit(createGitHubAppJwt());
+  const { data } = await octokit.request(
+    "POST /app/installations/{installation_id}/access_tokens",
+    {
+      installation_id: Number(installationId),
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    }
+  );
+
+  return data.token;
+}
+
+async function getGitHubAppInstallation(installationId: string) {
+  const octokit = createOctokit(createGitHubAppJwt());
+  const { data } = await octokit.request(
+    "GET /app/installations/{installation_id}",
+    {
+      installation_id: Number(installationId),
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    }
+  );
+
+  return Effect.runPromise(decodeGitHubAppInstallationResponse(data));
+}
+
+async function insertDefaultRepositoryOutputs(repositoryId: string) {
+  await db.insert(repositoryOutputs).values([
+    {
+      id: nanoid(),
+      repositoryId,
+      outputType: "changelog",
+      enabled: true,
+      config: null,
+    },
+    {
+      id: nanoid(),
+      repositoryId,
+      outputType: "blog_post",
+      enabled: false,
+      config: null,
+    },
+    {
+      id: nanoid(),
+      repositoryId,
+      outputType: "twitter_post",
+      enabled: false,
+      config: null,
+    },
+  ]);
 }
 
 function toRepositoryRecord(integration: {
@@ -294,6 +402,327 @@ export async function createGitHubIntegration(
   }
 
   return fullIntegration;
+}
+
+export function getGitHubAppInstallUrl(state: string) {
+  const { slug } = getGitHubAppConfig();
+  const installUrl = new URL(
+    `https://github.com/apps/${slug}/installations/select_target`
+  );
+  installUrl.searchParams.set("state", state);
+  return installUrl.toString();
+}
+
+export async function upsertGitHubAppInstallation(params: {
+  organizationId: string;
+  userId: string;
+  installationId: string;
+}) {
+  const hasAccess = await validateUserOrgAccess(
+    params.userId,
+    params.organizationId
+  );
+  if (!hasAccess) {
+    throw new Error("User does not have access to this organization");
+  }
+
+  const installation = await getGitHubAppInstallation(params.installationId);
+  if (!installation.account) {
+    throw new Error("GitHub installation account is missing");
+  }
+
+  const values = {
+    id: nanoid(),
+    organizationId: params.organizationId,
+    createdByUserId: params.userId,
+    installationId: String(installation.id),
+    accountId: String(installation.account.id),
+    accountLogin: installation.account.login,
+    accountName: installation.account.name ?? null,
+    accountAvatarUrl: installation.account.avatar_url,
+    accountType: installation.account.type,
+    repositorySelection: installation.repository_selection ?? null,
+    enabled: true,
+  };
+
+  const [record] = await db
+    .insert(githubAppInstallations)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [
+        githubAppInstallations.organizationId,
+        githubAppInstallations.installationId,
+      ],
+      set: {
+        accountId: values.accountId,
+        accountLogin: values.accountLogin,
+        accountName: values.accountName,
+        accountAvatarUrl: values.accountAvatarUrl,
+        accountType: values.accountType,
+        repositorySelection: values.repositorySelection,
+        enabled: true,
+      },
+    })
+    .returning();
+
+  if (!record) {
+    throw new Error("Failed to save GitHub App installation");
+  }
+
+  return record;
+}
+
+export async function getGitHubAppInstallationByOrganization(
+  organizationId: string
+) {
+  return db.query.githubAppInstallations.findFirst({
+    where: and(
+      eq(githubAppInstallations.organizationId, organizationId),
+      eq(githubAppInstallations.enabled, true)
+    ),
+  });
+}
+
+export async function listGitHubAppRepositories(organizationId: string) {
+  const installation =
+    await getGitHubAppInstallationByOrganization(organizationId);
+
+  if (!installation) {
+    return [];
+  }
+
+  const cacheKey = `github_app_repositories:${organizationId}:${installation.installationId}`;
+  if (redis) {
+    const cached = await redis.get(cacheKey);
+    const decodedCached = await Effect.runPromise(
+      decodeCachedGitHubAppRepositories(cached).pipe(
+        Effect.match({
+          onFailure: () => null,
+          onSuccess: (repositories) => repositories,
+        })
+      )
+    );
+
+    if (decodedCached) {
+      return decodedCached;
+    }
+  }
+
+  const token = await createGitHubAppInstallationToken(
+    installation.installationId
+  );
+  const octokit = createOctokit(token);
+  const repositories: GitHubAppRepositoryResponse[] = [];
+  let page = 1;
+
+  while (true) {
+    const { data } = await octokit.request("GET /installation/repositories", {
+      per_page: 100,
+      page,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    const response = await Effect.runPromise(
+      decodeGitHubAppRepositoriesResponse(data)
+    );
+    repositories.push(...response.repositories);
+
+    if (response.repositories.length < 100) {
+      break;
+    }
+    page += 1;
+  }
+
+  const mappedRepositories: GitHubAppRepository[] = repositories.map(
+    (repo) => ({
+      id: String(repo.id),
+      owner: repo.owner.login,
+      name: repo.name,
+      fullName: repo.full_name,
+      private: repo.private,
+      description: repo.description,
+      defaultBranch: repo.default_branch,
+    })
+  );
+
+  await redis?.set(cacheKey, mappedRepositories, {
+    ex: GITHUB_APP_REPOSITORIES_CACHE_TTL_SECONDS,
+  });
+
+  return mappedRepositories;
+}
+
+export async function getSelectedGitHubAppRepositoryIds(
+  organizationId: string,
+  installationId: string
+) {
+  const selected = await db.query.githubIntegrations.findMany({
+    where: and(
+      eq(githubIntegrations.organizationId, organizationId),
+      eq(githubIntegrations.githubAppInstallationId, installationId),
+      eq(githubIntegrations.enabled, true)
+    ),
+    columns: {
+      githubRepositoryId: true,
+    },
+  });
+
+  return selected
+    .map((repo) => repo.githubRepositoryId)
+    .filter((id): id is string => Boolean(id));
+}
+
+export async function setSelectedGitHubAppRepositories(params: {
+  organizationId: string;
+  userId: string;
+  repositoryIds: string[];
+}) {
+  const installation = await getGitHubAppInstallationByOrganization(
+    params.organizationId
+  );
+
+  if (!installation) {
+    throw new Error("GitHub App installation not found");
+  }
+
+  const repositories = await listGitHubAppRepositories(params.organizationId);
+  const repositoryById = new Map(repositories.map((repo) => [repo.id, repo]));
+  const selectedRepositories = params.repositoryIds.map((repositoryId) => {
+    const repository = repositoryById.get(repositoryId);
+    if (!repository) {
+      throw new Error(
+        "Selected repository is not available to this installation"
+      );
+    }
+    return repository;
+  });
+
+  const existing = await db.query.githubIntegrations.findMany({
+    where: and(
+      eq(githubIntegrations.organizationId, params.organizationId),
+      eq(
+        githubIntegrations.githubAppInstallationId,
+        installation.installationId
+      )
+    ),
+    columns: {
+      id: true,
+      githubRepositoryId: true,
+    },
+  });
+  const existingByRepositoryId = new Map(
+    existing
+      .filter((repo) => repo.githubRepositoryId)
+      .map((repo) => [repo.githubRepositoryId as string, repo.id])
+  );
+
+  const selectedIds = new Set(params.repositoryIds);
+  const deselectedIds = existing
+    .filter(
+      (repo) =>
+        repo.githubRepositoryId && !selectedIds.has(repo.githubRepositoryId)
+    )
+    .map((repo) => repo.id);
+
+  if (deselectedIds.length > 0) {
+    await db
+      .update(githubIntegrations)
+      .set({
+        enabled: false,
+        repositoryEnabled: false,
+      })
+      .where(inArray(githubIntegrations.id, deselectedIds));
+  }
+
+  for (const repository of selectedRepositories) {
+    const existingIntegrationId = existingByRepositoryId.get(repository.id);
+
+    if (existingIntegrationId) {
+      await db
+        .update(githubIntegrations)
+        .set({
+          displayName: repository.fullName,
+          owner: repository.owner,
+          repo: repository.name,
+          defaultBranch: repository.defaultBranch,
+          githubRepositoryPrivate: repository.private,
+          repositoryEnabled: true,
+          enabled: true,
+        })
+        .where(eq(githubIntegrations.id, existingIntegrationId));
+      continue;
+    }
+
+    const webhookSecret = generateWebhookSecret();
+    const [created] = await db
+      .insert(githubIntegrations)
+      .values({
+        id: nanoid(),
+        organizationId: params.organizationId,
+        createdByUserId: params.userId,
+        displayName: repository.fullName,
+        encryptedToken: null,
+        githubAppInstallationId: installation.installationId,
+        githubRepositoryId: repository.id,
+        githubRepositoryPrivate: repository.private,
+        owner: repository.owner,
+        repo: repository.name,
+        defaultBranch: repository.defaultBranch,
+        repositoryEnabled: true,
+        encryptedWebhookSecret: encryptToken(webhookSecret),
+        enabled: true,
+      })
+      .returning();
+
+    if (created) {
+      await insertDefaultRepositoryOutputs(created.id);
+    }
+  }
+
+  await redis?.del(
+    `github_app_repositories:${params.organizationId}:${installation.installationId}`
+  );
+
+  return {
+    selectedRepositoryIds: params.repositoryIds,
+  };
+}
+
+export async function deleteGitHubAppInstallationForOrganization(
+  organizationId: string
+) {
+  const installation =
+    await getGitHubAppInstallationByOrganization(organizationId);
+
+  if (!installation) {
+    return;
+  }
+
+  await db
+    .update(githubIntegrations)
+    .set({
+      enabled: false,
+      repositoryEnabled: false,
+    })
+    .where(
+      and(
+        eq(githubIntegrations.organizationId, organizationId),
+        eq(
+          githubIntegrations.githubAppInstallationId,
+          installation.installationId
+        )
+      )
+    );
+
+  await db
+    .update(githubAppInstallations)
+    .set({ enabled: false })
+    .where(eq(githubAppInstallations.id, installation.id));
+
+  await redis?.del(
+    `github_app_repositories:${organizationId}:${installation.installationId}`
+  );
 }
 
 export async function getGitHubIntegrationsByOrganization(
@@ -678,6 +1107,7 @@ export async function getTokenForRepository(
   const [integration] = await db
     .select({
       encryptedToken: githubIntegrations.encryptedToken,
+      githubAppInstallationId: githubIntegrations.githubAppInstallationId,
       integrationEnabled: githubIntegrations.enabled,
       repositoryEnabled: githubIntegrations.repositoryEnabled,
     })
@@ -685,13 +1115,17 @@ export async function getTokenForRepository(
     .where(and(...whereClauses))
     .limit(1);
 
-  if (
-    !(
-      integration?.encryptedToken &&
-      integration.integrationEnabled &&
-      integration.repositoryEnabled
-    )
-  ) {
+  if (!(integration?.integrationEnabled && integration.repositoryEnabled)) {
+    return undefined;
+  }
+
+  if (integration.githubAppInstallationId) {
+    return createGitHubAppInstallationToken(
+      integration.githubAppInstallationId
+    );
+  }
+
+  if (!integration.encryptedToken) {
     return undefined;
   }
 
@@ -702,6 +1136,12 @@ export async function getTokenForIntegrationId(integrationId: string) {
   const integration = await db.query.githubIntegrations.findFirst({
     where: eq(githubIntegrations.id, integrationId),
   });
+
+  if (integration?.githubAppInstallationId) {
+    return createGitHubAppInstallationToken(
+      integration.githubAppInstallationId
+    );
+  }
 
   if (!integration?.encryptedToken) {
     return null;
@@ -729,6 +1169,7 @@ export async function getGitHubToolRepositoryContextByIntegrationId(
       repo: githubIntegrations.repo,
       defaultBranch: githubIntegrations.defaultBranch,
       encryptedToken: githubIntegrations.encryptedToken,
+      githubAppInstallationId: githubIntegrations.githubAppInstallationId,
       integrationEnabled: githubIntegrations.enabled,
       repositoryEnabled: githubIntegrations.repositoryEnabled,
     })
@@ -756,15 +1197,23 @@ export async function getGitHubToolRepositoryContextByIntegrationId(
     );
   }
 
+  let token: string | undefined;
+
+  if (integration.githubAppInstallationId) {
+    token = await createGitHubAppInstallationToken(
+      integration.githubAppInstallationId
+    );
+  } else if (integration.encryptedToken) {
+    token = decryptToken(integration.encryptedToken);
+  }
+
   return {
     integrationId: integration.id,
     organizationId: integration.organizationId,
     owner,
     repo,
     defaultBranch: integration.defaultBranch,
-    token: integration.encryptedToken
-      ? decryptToken(integration.encryptedToken)
-      : undefined,
+    token,
   };
 }
 

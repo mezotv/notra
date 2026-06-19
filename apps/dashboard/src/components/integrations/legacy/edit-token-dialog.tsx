@@ -25,7 +25,7 @@ import {
 } from "@/schemas/integrations";
 import type { EditTokenDialogProps } from "@/types/integrations";
 
-export function EditTokenDialog({
+export function LegacyEditTokenDialog({
   integration,
   organizationId,
   open: controlledOpen,

@@ -58,3 +58,4 @@ opencode.json
 .codex/config.toml
 
 .deepsec
+.repos/effect

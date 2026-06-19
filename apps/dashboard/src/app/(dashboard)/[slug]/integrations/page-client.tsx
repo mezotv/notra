@@ -10,13 +10,13 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQuery } from "@tanstack/react-query";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
+import { GitHubIntegrationDialog } from "@/components/integrations/github/github-integration-dialog";
 import { McpIntegrationCard } from "@/components/integrations/mcp-integration-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -29,14 +29,6 @@ import {
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { IntegrationType } from "@/schemas/integrations";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
-
-const AddIntegrationDialog = dynamic(
-  () =>
-    import("@/components/integrations/add-integration-dialog").then((mod) => ({
-      default: mod.AddIntegrationDialog,
-    })),
-  { ssr: false }
-);
 
 interface Integration {
   id: string;
@@ -134,13 +126,11 @@ const IntegrationCard = memo(function IntegrationCard({
         cardContent
       )}
       {showGitHubDialog ? (
-        <AddIntegrationDialog
+        <GitHubIntegrationDialog
           onOpenChange={setDialogOpen}
-          onSuccess={() => {
-            setDialogOpen(false);
-          }}
           open={dialogOpen}
           organizationId={organizationId}
+          organizationSlug={organizationSlug}
         />
       ) : null}
       {showLinearDialog ? (
