@@ -106,7 +106,7 @@
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
         "drizzle-orm": "^0.45.2",
-        "effect": "4.0.0-beta.84",
+        "effect": "4.0.0-beta.78",
         "evlog": "^2.13.0",
         "gray-matter": "^4.0.3",
         "isomorphic-dompurify": "^3.9.0",
@@ -229,7 +229,7 @@
         "autumn-js": "^1.2.7",
         "dedent": "^1.7.1",
         "drizzle-orm": "^0.45.2",
-        "effect": "4.0.0-beta.84",
+        "effect": "4.0.0-beta.78",
         "evlog": "^2.13.0",
         "firecrawl-aisdk": "^0.12.0",
         "gray-matter": "^4.0.3",
@@ -2313,7 +2313,7 @@
 
     "ee-first": ["ee-first@1.1.1", "", {}, "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow=="],
 
-    "effect": ["effect@4.0.0-beta.84", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "fast-check": "^4.8.0", "find-my-way-ts": "^0.1.6", "ini": "^7.0.0", "kubernetes-types": "^1.30.0", "msgpackr": "^2.0.1", "multipasta": "^0.2.7", "toml": "^4.1.1", "uuid": "^14.0.0", "yaml": "^2.9.0" } }, "sha512-zWwFI9WZ4TsddBmtcuuAO2IXGR0Dp56xIUt8cX29ZeyOEtErXqP6muDaVpro08lGiMSOGMqSpuH/C1TUxHsRAA=="],
+    "effect": ["effect@4.0.0-beta.78", "", { "dependencies": { "@standard-schema/spec": "^1.1.0", "fast-check": "^4.8.0", "find-my-way-ts": "^0.1.6", "ini": "^7.0.0", "kubernetes-types": "^1.30.0", "msgpackr": "^2.0.1", "multipasta": "^0.2.7", "toml": "^4.1.1", "uuid": "^14.0.0", "yaml": "^2.9.0" } }, "sha512-j79Rl9QpHwMz/ZJWLNpZoiVj9N7zHqiLKN5EcYd/A8J1oqejILWQLfc4HPlvqHqKC8SK55LJ+X4gy4ONJ+JpfQ=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.361", "", {}, "sha512-Q6Hts7N9FnJc5LeGRINFvLhCI9xZmNtTDe5ZbcVezQz7cU4a8Aua3GH1b8J2XY8Al9PF+OCwYqhgsOOheMdvkA=="],
 
