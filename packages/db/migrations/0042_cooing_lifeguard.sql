@@ -1,4 +1,4 @@
-CREATE TABLE "github_app_installations" (
+CREATE TABLE IF NOT EXISTS "github_app_installations" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"created_by_user_id" text NOT NULL,
@@ -14,11 +14,39 @@ CREATE TABLE "github_app_installations" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "github_integrations" ADD COLUMN "github_app_installation_id" text;--> statement-breakpoint
-ALTER TABLE "github_integrations" ADD COLUMN "github_repository_id" text;--> statement-breakpoint
-ALTER TABLE "github_integrations" ADD COLUMN "github_repository_private" boolean;--> statement-breakpoint
-ALTER TABLE "github_app_installations" ADD CONSTRAINT "github_app_installations_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "github_app_installations" ADD CONSTRAINT "github_app_installations_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "githubAppInstallations_organizationId_idx" ON "github_app_installations" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "githubAppInstallations_createdByUserId_idx" ON "github_app_installations" USING btree ("created_by_user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "githubAppInstallations_organization_installation_uidx" ON "github_app_installations" USING btree ("organization_id","installation_id");
+ALTER TABLE "github_integrations" ADD COLUMN IF NOT EXISTS "github_app_installation_id" text;--> statement-breakpoint
+ALTER TABLE "github_integrations" ADD COLUMN IF NOT EXISTS "github_repository_id" text;--> statement-breakpoint
+ALTER TABLE "github_integrations" ADD COLUMN IF NOT EXISTS "github_repository_private" boolean;--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'github_app_installations_organization_id_organizations_id_fk'
+  ) THEN
+    ALTER TABLE "github_app_installations"
+      ADD CONSTRAINT "github_app_installations_organization_id_organizations_id_fk"
+      FOREIGN KEY ("organization_id")
+      REFERENCES "public"."organizations"("id")
+      ON DELETE cascade
+      ON UPDATE no action;
+  END IF;
+END $$;--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'github_app_installations_created_by_user_id_users_id_fk'
+  ) THEN
+    ALTER TABLE "github_app_installations"
+      ADD CONSTRAINT "github_app_installations_created_by_user_id_users_id_fk"
+      FOREIGN KEY ("created_by_user_id")
+      REFERENCES "public"."users"("id")
+      ON DELETE cascade
+      ON UPDATE no action;
+  END IF;
+END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "githubAppInstallations_organizationId_idx" ON "github_app_installations" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "githubAppInstallations_createdByUserId_idx" ON "github_app_installations" USING btree ("created_by_user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "githubAppInstallations_organization_installation_uidx" ON "github_app_installations" USING btree ("organization_id","installation_id");
