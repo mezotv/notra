@@ -95,7 +95,7 @@ export function AddIdentityDialog({
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent className="sm:max-w-md">
+      <ResponsiveDialogContent className="overflow-hidden sm:max-w-md [&>*]:min-w-0">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add Brand Identity</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
@@ -104,7 +104,7 @@ export function AddIdentityDialog({
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <form
-          className="space-y-4"
+          className="min-w-0 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             handleSubmit();
@@ -122,7 +122,7 @@ export function AddIdentityDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="voice-url">Website</Label>
-            <div className="flex w-full flex-row items-center rounded-md border border-border transition-colors focus-within:border-ring focus-within:ring-ring/50">
+            <div className="flex w-full min-w-0 flex-row items-center rounded-md border border-border transition-colors focus-within:border-ring focus-within:ring-ring/50">
               <label
                 className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
                 htmlFor="voice-url"
@@ -130,7 +130,7 @@ export function AddIdentityDialog({
                 https://
               </label>
               <input
-                className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none"
+                className="min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none"
                 id="voice-url"
                 onChange={(e) => setUrl(sanitizeBrandUrlInput(e.target.value))}
                 placeholder="example.com"

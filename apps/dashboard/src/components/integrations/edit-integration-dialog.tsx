@@ -121,7 +121,7 @@ export function EditIntegrationDialog({
     <>
       {triggerElement}
       <ResponsiveDialog onOpenChange={setOpen} open={open}>
-        <ResponsiveDialogContent className="sm:max-w-[500px]">
+        <ResponsiveDialogContent className="overflow-hidden sm:max-w-[500px] [&>*]:min-w-0">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle className="text-2xl">
               Edit Integration

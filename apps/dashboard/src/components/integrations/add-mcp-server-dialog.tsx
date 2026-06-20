@@ -222,7 +222,7 @@ export function AddMcpServerDialog({
       open={open}
     >
       {triggerElement}
-      <ResponsiveDialogContent className="sm:max-w-[32.5rem]">
+      <ResponsiveDialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-[32.5rem] [&>*]:min-w-0">
         <ResponsiveDialogHeader>
           <div className="flex items-start gap-3">
             <form.Subscribe selector={(state) => state.values.url}>
@@ -348,6 +348,7 @@ export function AddMcpServerDialog({
                     Use case description
                   </FieldLabel>
                   <Textarea
+                    className="max-h-[10rem] overflow-y-auto"
                     id="mcp-description"
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}

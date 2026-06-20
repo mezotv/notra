@@ -93,7 +93,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent>
+      <DialogContent className="overflow-hidden">
         <DialogHeader>
           <DialogTitle>Create Organization</DialogTitle>
           <DialogDescription>
@@ -102,13 +102,14 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         </DialogHeader>
 
         <form
+          className="min-w-0"
           onSubmit={(e) => {
             e.preventDefault();
             e.stopPropagation();
             form.handleSubmit();
           }}
         >
-          <div className="grid gap-4 py-4">
+          <div className="grid min-w-0 gap-4 py-4">
             <form.Field
               name="name"
               validators={{
@@ -118,7 +119,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
               }}
             >
               {(field) => (
-                <div className="grid gap-2">
+                <div className="grid min-w-0 gap-2">
                   <Label htmlFor="name">
                     Organization Name{" "}
                     <span className="text-destructive">*</span>
@@ -161,7 +162,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
               }}
             >
               {(field) => (
-                <div className="grid gap-2">
+                <div className="grid min-w-0 gap-2">
                   <Label htmlFor="slug">
                     Organization Slug{" "}
                     <span className="text-destructive">*</span>
@@ -182,7 +183,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                       {field.state.meta.errors[0]}
                     </p>
                   ) : null}
-                  <p className="text-muted-foreground text-xs">
+                  <p className="break-all text-muted-foreground text-xs">
                     Used in URLs: app.usenotra.com/
                     {field.state.value || "your-slug"}
                   </p>
@@ -205,10 +206,10 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
               }}
             >
               {(field) => (
-                <div className="grid gap-2">
+                <div className="grid min-w-0 gap-2">
                   <Label htmlFor="website">Website (optional)</Label>
                   <div
-                    className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
+                    className={`flex w-full min-w-0 flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
                   >
                     <label
                       className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
@@ -217,7 +218,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
                       https://
                     </label>
                     <input
-                      className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                      className="min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isCreating}
                       id="website"
                       onBlur={field.handleBlur}

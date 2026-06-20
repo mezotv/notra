@@ -165,7 +165,7 @@ export function AddReferenceDialog({
 
   return (
     <ResponsiveDialog onOpenChange={handleClose} open={open}>
-      <ResponsiveDialogContent>
+      <ResponsiveDialogContent className="max-h-[85svh] overflow-y-auto [&>*]:min-w-0">
         {step === "source" && <SourceStep onSelect={setStep} />}
         {step === "tweet-url" && (
           <TweetUrlStep
