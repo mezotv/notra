@@ -6,6 +6,7 @@ colors:
   primary: "oklch(0.6056 0.2189 292.7172)"
   primary-hover: "oklch(0.5 0.22 292.72)"
   primary-foreground: "oklch(0.997 0 0)"
+  primary-border: "color-mix(in oklab, var(--primary) 12%, transparent)"
   background: "hsl(0 0% 100%)"
   foreground: "hsl(0 0% 9%)"
   card: "hsl(0 0% 100%)"
@@ -28,6 +29,7 @@ colors:
   logo-cream: "#F6F3F1"
   dark-background: "hsl(233 7% 8%)"
   dark-foreground: "hsl(0 0% 98%)"
+  dark-primary-foreground: "oklch(0.985 0 0)"
   dark-card: "hsl(240 6% 10%)"
   dark-card-foreground: "hsl(0 0% 98%)"
   dark-popover: "hsl(233 7% 8%)"
@@ -165,7 +167,7 @@ rounded:
   sm: 6px
   md: 8px
   lg: 10px
-  xl: 16px
+  xl: 14px
   squircle: "16px with corner-shape: round"
   full: 9999px
 components:
@@ -270,7 +272,7 @@ components:
   pricing-card-featured:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.primary-foreground}"
-    borderColor: "rgba(139,92,246,0.12)"
+    borderColor: "{colors.primary-border}"
     typography: "{typography.copy-14}"
     rounded: "{rounded.none}"
     padding: "20px 24px"
