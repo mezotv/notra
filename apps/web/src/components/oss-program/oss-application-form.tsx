@@ -9,7 +9,7 @@ import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
 import { ossProgramApplicationSchema } from "@/schemas/oss-program";
 
-type SubmitStatus = "idle" | "submitting" | "success";
+type SubmitStatus = "idle" | "submitting" | "success" | "error";
 
 const fieldErrorClass = "text-destructive text-sm";
 const labelClass = "font-medium font-sans text-foreground text-sm";
@@ -27,14 +27,30 @@ export function OssApplicationForm() {
       assetNeeds: "",
       isMaintainer: false,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const parsed = ossProgramApplicationSchema.safeParse(value);
 
       if (!parsed.success) {
         return;
       }
 
-      setStatus("success");
+      setStatus("submitting");
+
+      try {
+        const response = await fetch("/api/oss-program", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed.data),
+        });
+
+        if (!response.ok) {
+          throw new Error("Request failed");
+        }
+
+        setStatus("success");
+      } catch {
+        setStatus("error");
+      }
     },
   });
 
@@ -60,10 +76,7 @@ export function OssApplicationForm() {
       onSubmit={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        setStatus("submitting");
-        form.handleSubmit().finally(() => {
-          setStatus((current) => (current === "success" ? current : "idle"));
-        });
+        form.handleSubmit();
       }}
     >
       <div className="grid gap-5 sm:grid-cols-2">
@@ -289,6 +302,13 @@ export function OssApplicationForm() {
           </div>
         )}
       </form.Field>
+
+      {status === "error" ? (
+        <p className={fieldErrorClass}>
+          Something went wrong submitting your application. Please try again, or
+          email us at hello@usenotra.com.
+        </p>
+      ) : null}
 
       <form.Subscribe selector={(state) => state.canSubmit}>
         {(canSubmit) => (
