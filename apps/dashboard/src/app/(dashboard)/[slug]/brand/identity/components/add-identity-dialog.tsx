@@ -95,7 +95,7 @@ export function AddIdentityDialog({
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent className="overflow-hidden sm:max-w-md [&>*]:min-w-0">
+      <ResponsiveDialogContent className="overflow-x-hidden sm:max-w-md [&>*]:min-w-0">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add Brand Identity</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>

@@ -248,7 +248,7 @@ export function AddRepositoryDialog({
   return (
     <ResponsiveDialog onOpenChange={setOpen} open={open}>
       {triggerElement}
-      <ResponsiveDialogContent className="overflow-hidden [&>*]:min-w-0">
+      <ResponsiveDialogContent className="overflow-x-hidden [&>*]:min-w-0">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add Repository</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>

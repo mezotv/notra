@@ -89,7 +89,7 @@ export function LegacyEditTokenDialog({
     <>
       {triggerElement}
       <ResponsiveDialog onOpenChange={setOpen} open={open}>
-        <ResponsiveDialogContent className="overflow-hidden sm:max-w-[500px] [&>*]:min-w-0">
+        <ResponsiveDialogContent className="overflow-x-hidden sm:max-w-[500px] [&>*]:min-w-0">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle className="text-2xl">
               Update Personal Access Token

@@ -51,7 +51,7 @@ export function DeleteIntegrationDialog({
 
   return (
     <ResponsiveAlertDialog onOpenChange={handleOpenChange} open={open}>
-      <ResponsiveAlertDialogContent className="overflow-hidden sm:max-w-[520px] [&>*]:min-w-0">
+      <ResponsiveAlertDialogContent className="overflow-x-hidden sm:max-w-[520px] [&>*]:min-w-0">
         <ResponsiveAlertDialogHeader>
           <ResponsiveAlertDialogTitle className="text-lg">
             Delete {integrationName}?
