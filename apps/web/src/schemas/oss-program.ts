@@ -54,13 +54,6 @@ export const SUPPORTED_LICENSES = [
   },
 ] as const;
 
-type LicenseValue = (typeof SUPPORTED_LICENSES)[number]["value"];
-
-const LICENSE_VALUES = SUPPORTED_LICENSES.map((license) => license.value) as [
-  LicenseValue,
-  ...LicenseValue[],
-];
-
 const REPO_HOST_REGEX = /^https?:\/\/(www\.)?(github\.com|gitlab\.com)\/.+/i;
 
 export const ossProgramApplicationSchema = z.object({
@@ -81,9 +74,6 @@ export const ossProgramApplicationSchema = z.object({
       (value) => REPO_HOST_REGEX.test(value),
       "Use a public GitHub or GitLab repository URL."
     ),
-  license: z.enum(LICENSE_VALUES, {
-    error: "Select your project's license.",
-  }),
   description: z
     .string()
     .trim()

@@ -3,27 +3,13 @@
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
 import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
-import {
-  ossProgramApplicationSchema,
-  SUPPORTED_LICENSES,
-} from "@/schemas/oss-program";
+import { ossProgramApplicationSchema } from "@/schemas/oss-program";
 
 type SubmitStatus = "idle" | "submitting" | "success";
-
-const LICENSE_LABELS = new Map<string, string>(
-  SUPPORTED_LICENSES.map((license) => [license.value, license.label])
-);
 
 const fieldErrorClass = "text-destructive text-sm";
 const labelClass = "font-medium font-sans text-foreground text-sm";
@@ -37,7 +23,6 @@ export function OssApplicationForm() {
       email: "",
       projectName: "",
       repositoryUrl: "",
-      license: "",
       description: "",
       assetNeeds: "",
       isMaintainer: false,
@@ -172,43 +157,29 @@ export function OssApplicationForm() {
         </form.Field>
 
         <form.Field
-          name="license"
+          name="repositoryUrl"
           validators={{
-            onChange: ({ value }) =>
-              ossProgramApplicationSchema.shape.license.safeParse(value).error
-                ?.issues[0]?.message,
+            onBlur: ({ value }) =>
+              ossProgramApplicationSchema.shape.repositoryUrl.safeParse(value)
+                .error?.issues[0]?.message,
           }}
         >
           {(field) => (
             <div className="flex flex-col gap-2">
               <Label className={labelClass} htmlFor={field.name}>
-                License
+                Repository URL
               </Label>
-              <Select
-                onValueChange={(value) =>
-                  field.handleChange(typeof value === "string" ? value : "")
-                }
+              <Input
+                aria-invalid={field.state.meta.errors.length > 0}
+                id={field.name}
+                inputMode="url"
+                name={field.name}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                placeholder="https://github.com/your-org/your-project"
+                type="url"
                 value={field.state.value}
-              >
-                <SelectTrigger
-                  aria-invalid={field.state.meta.errors.length > 0}
-                  className="h-9 w-full"
-                  id={field.name}
-                >
-                  <SelectValue>
-                    {(value: string) =>
-                      value ? LICENSE_LABELS.get(value) : "Select a license"
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_LICENSES.map((license) => (
-                    <SelectItem key={license.value} value={license.value}>
-                      {license.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
               {field.state.meta.errors.length > 0 ? (
                 <p className={fieldErrorClass}>{field.state.meta.errors[0]}</p>
               ) : null}
@@ -216,37 +187,6 @@ export function OssApplicationForm() {
           )}
         </form.Field>
       </div>
-
-      <form.Field
-        name="repositoryUrl"
-        validators={{
-          onBlur: ({ value }) =>
-            ossProgramApplicationSchema.shape.repositoryUrl.safeParse(value)
-              .error?.issues[0]?.message,
-        }}
-      >
-        {(field) => (
-          <div className="flex flex-col gap-2">
-            <Label className={labelClass} htmlFor={field.name}>
-              Repository URL
-            </Label>
-            <Input
-              aria-invalid={field.state.meta.errors.length > 0}
-              id={field.name}
-              inputMode="url"
-              name={field.name}
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-              placeholder="https://github.com/your-org/your-project"
-              type="url"
-              value={field.state.value}
-            />
-            {field.state.meta.errors.length > 0 ? (
-              <p className={fieldErrorClass}>{field.state.meta.errors[0]}</p>
-            ) : null}
-          </div>
-        )}
-      </form.Field>
 
       <form.Field
         name="description"
