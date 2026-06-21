@@ -78,7 +78,7 @@ export function OssApplicationForm() {
           {(field) => (
             <div className="flex flex-col gap-2">
               <Label className={labelClass} htmlFor={field.name}>
-                Name
+                Your name
               </Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
@@ -86,7 +86,7 @@ export function OssApplicationForm() {
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                placeholder="Ada Lovelace"
+                placeholder="Linus Torvalds"
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 ? (
@@ -146,7 +146,7 @@ export function OssApplicationForm() {
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                placeholder="my-open-source-project"
+                placeholder="Linux"
                 value={field.state.value}
               />
               {field.state.meta.errors.length > 0 ? (
@@ -176,7 +176,7 @@ export function OssApplicationForm() {
                 name={field.name}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}
-                placeholder="https://github.com/your-org/your-project"
+                placeholder="https://github.com/torvalds/linux"
                 type="url"
                 value={field.state.value}
               />
