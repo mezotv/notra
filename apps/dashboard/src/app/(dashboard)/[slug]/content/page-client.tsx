@@ -83,7 +83,7 @@ export default function PageClient({
         )}
 
         {!isPending && collections.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border">
+          <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
             <Table>
               <TableHeader>
                 <TableRow>

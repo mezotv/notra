@@ -416,7 +416,7 @@ export default function CreditsPageClient() {
 
         <div className="space-y-4">
           <h2 className="font-semibold text-lg">Recent Activity</h2>
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
             <Table>
               <TableHeader>
                 <TableRow>

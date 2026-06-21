@@ -50,7 +50,7 @@ export function AttachmentsDataTable<TData extends { key: string }>({
 
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
         <Table>
           <TableHeader>
             <TableRow>
@@ -90,7 +90,7 @@ export function AttachmentsDataTable<TData extends { key: string }>({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

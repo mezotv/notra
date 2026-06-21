@@ -585,7 +585,7 @@ export default function BillingPage() {
 
                 <div className="space-y-3">
                   <h2 className="font-semibold text-lg">Invoices</h2>
-                  <div className="overflow-hidden rounded-lg border">
+                  <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
                     <Table>
                       <TableHeader>
                         <TableRow>
