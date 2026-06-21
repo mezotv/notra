@@ -14,7 +14,7 @@ export function GroupsPageSkeleton() {
       </div>
       {Array.from({ length: 8 }).map((_, i) => (
         <div
-          className="flex items-center gap-4 border-border/60 border-b bg-background px-4 py-3 last:border-b-0"
+          className="flex items-center gap-4 border-border/60 border-b bg-background px-4 py-3 first:rounded-t-lg last:border-b-0"
           key={`${id}-row-${i}`}
         >
           <Skeleton className="h-4 w-48" />
