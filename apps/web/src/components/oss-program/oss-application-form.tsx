@@ -22,7 +22,8 @@ type SubmitStatus =
   | "submitting"
   | "success"
   | "error"
-  | "rate-limited";
+  | "rate-limited"
+  | "validation-error";
 
 const fieldErrorClass = "text-destructive text-sm";
 const labelClass = "font-medium font-sans text-foreground text-sm";
@@ -44,6 +45,7 @@ export function OssApplicationForm() {
       const parsed = ossProgramApplicationSchema.safeParse(value);
 
       if (!parsed.success) {
+        setStatus("validation-error");
         return;
       }
 
@@ -74,7 +76,10 @@ export function OssApplicationForm() {
 
   if (status === "success") {
     return (
-      <div className="relative flex w-full flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-center">
+      <div
+        aria-live="polite"
+        className="relative flex w-full flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-center"
+      >
         <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
           <Confetti
             colors={[
@@ -376,19 +381,28 @@ export function OssApplicationForm() {
         )}
       </form.Field>
 
-      {status === "error" ? (
-        <p className={fieldErrorClass}>
-          Something went wrong submitting your application. Please try again, or
-          email us at hello@usenotra.com.
-        </p>
-      ) : null}
+      <div aria-live="assertive" role="alert">
+        {status === "validation-error" ? (
+          <p className={fieldErrorClass}>
+            Please complete the required fields before submitting your
+            application.
+          </p>
+        ) : null}
 
-      {status === "rate-limited" ? (
-        <p className={fieldErrorClass}>
-          You've submitted too many applications recently. Please try again in
-          about an hour.
-        </p>
-      ) : null}
+        {status === "error" ? (
+          <p className={fieldErrorClass}>
+            Something went wrong submitting your application. Please try again,
+            or email us at hello@usenotra.com.
+          </p>
+        ) : null}
+
+        {status === "rate-limited" ? (
+          <p className={fieldErrorClass}>
+            You've submitted too many applications recently. Please try again in
+            about an hour.
+          </p>
+        ) : null}
+      </div>
 
       <form.Subscribe selector={(state) => state.canSubmit}>
         {(canSubmit) => (
