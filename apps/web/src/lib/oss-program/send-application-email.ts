@@ -6,6 +6,8 @@ import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
 import { Data, Effect } from "effect";
 
+const OSS_APPLICATION_DEFAULT_RECIPIENT = "dominik@usenotra.com";
+
 class OssApplicationEmailError extends Data.TaggedError(
   "OssApplicationEmailError"
 )<{
@@ -14,11 +16,7 @@ class OssApplicationEmailError extends Data.TaggedError(
 }> {}
 
 function getRecipient(): string {
-  return (
-    process.env.OSS_PROGRAM_EMAIL_TO ||
-    process.env.FEEDBACK_EMAIL_TO ||
-    EMAIL_CONFIG.replyTo
-  );
+  return process.env.OSS_PROGRAM_EMAIL_TO || OSS_APPLICATION_DEFAULT_RECIPIENT;
 }
 
 function buildPlainText(application: OssApplicationEmailProps): string {
