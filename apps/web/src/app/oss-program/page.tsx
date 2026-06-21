@@ -150,12 +150,15 @@ export default function OssProgramPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               {SUPPORTED_LICENSES.map((license) => (
-                <span
-                  className="rounded-md border border-border bg-card px-2.5 py-1 font-medium font-sans text-foreground text-sm"
+                <a
+                  className="rounded-md border border-border bg-card px-2.5 py-1 font-medium font-sans text-foreground text-sm transition-colors hover:border-primary/40 hover:text-primary"
+                  href={license.href}
                   key={license.value}
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
                   {license.label}
-                </span>
+                </a>
               ))}
             </div>
             <p className="font-normal font-sans text-muted-foreground text-sm leading-6">
