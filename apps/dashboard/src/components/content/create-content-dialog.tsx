@@ -141,6 +141,10 @@ export function CreateContentDialog({
     (s) => s.values.brandVoiceIds
   );
   const lookbackWindow = useStore(form.store, (s) => s.values.lookbackWindow);
+  const timezone = useMemo(
+    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+    []
+  );
   const dataPoints = useStore(form.store, (s) => s.values.dataPoints);
 
   const [selectedCommitKeys, setSelectedCommitKeys] = useState<Set<string>>(
@@ -249,6 +253,7 @@ export function CreateContentDialog({
       organizationId,
       repositoryIds: githubRepoIds,
       lookbackWindow,
+      timezone,
       includeCommits: dataPoints.includeCommits,
       includePullRequests: dataPoints.includePullRequests,
       includeReleases: dataPoints.includeReleases,
@@ -384,6 +389,7 @@ export function CreateContentDialog({
             collectionId,
             contentType: format,
             lookbackWindow,
+            timezone,
             repositoryIds: githubRepoIds,
             linearIntegrationIds: hasLinear ? selectedLinearIds : undefined,
             brandVoiceId: voiceId || undefined,
@@ -925,6 +931,7 @@ export function CreateContentDialog({
                   onLookbackChange={handleLookbackChange}
                   onToggle={toggleFormat}
                   selected={selectedFormats}
+                  timezone={timezone}
                 />
               )}
               {step === "activity" && (

@@ -1065,7 +1065,10 @@ export const contentRouter = {
         organizationId: input.organizationId,
       });
 
-      const lookback = resolveLookbackRange(input.lookbackWindow);
+      const lookback = resolveLookbackRange(
+        input.lookbackWindow,
+        input.timezone
+      );
       const repositories = await db
         .select({
           id: githubIntegrations.id,
@@ -1457,6 +1460,7 @@ export const contentRouter = {
         runId,
         contentType: input.contentType,
         lookbackWindow: input.lookbackWindow,
+        timezone: input.timezone,
         repositoryIds: input.repositoryIds ?? input.integrations?.github,
         linearIntegrationIds,
         brandVoiceId: input.brandIdentityId ?? input.brandVoiceId,

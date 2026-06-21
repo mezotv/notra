@@ -128,6 +128,7 @@ export const contentInputSchema = contentOrganizationIdInputSchema.extend({
 export const contentPreviewRequestSchema = z.object({
   repositoryIds: z.array(z.string().min(1)),
   lookbackWindow: z.enum(LOOKBACK_WINDOWS),
+  timezone: z.string().min(1).optional(),
   includeCommits: z.boolean().default(true),
   includePullRequests: z.boolean().default(true),
   includeReleases: z.boolean().default(true),

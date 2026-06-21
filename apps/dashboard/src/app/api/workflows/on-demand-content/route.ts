@@ -43,14 +43,11 @@ import {
 } from "@/lib/workflows/on-demand/helpers";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
-import {
-  formatUtcTodayContext,
-  resolveLookbackRange,
-} from "@/lib/workflows/shared/lookback";
 import type {
   ScheduleBrandSettingsData as BrandSettingsData,
   ScheduleRepositoryData as RepositoryData,
 } from "@/types/workflows/workflows";
+import { formatTodayContext, resolveLookbackRange } from "@/utils/lookback";
 
 async function setTrackedJobStatus(
   jobId: string | undefined,
@@ -211,6 +208,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       jobId,
       contentType,
       lookbackWindow,
+      timezone,
       repositoryIds,
       brandVoiceId,
       dataPoints,
@@ -398,8 +396,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             dataPoints
           );
 
-          const lookback = resolveLookbackRange(lookbackWindow);
-          const todayUtc = formatUtcTodayContext(lookback.end);
+          const lookback = resolveLookbackRange(lookbackWindow, timezone);
+          const todayUtc = formatTodayContext(lookback.end, timezone);
 
           const restrictionInstructions =
             buildDataPointRestrictionInstructions(dataPoints);

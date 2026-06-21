@@ -35,6 +35,7 @@ export interface FormatsStepProps {
     key: keyof ContentDataPointSettings,
     value: boolean
   ) => void;
+  timezone: string;
 }
 
 export interface ActivityStepProps {

@@ -1,5 +1,7 @@
 "use client";
 
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Select,
   SelectContent,
@@ -7,6 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { CREATE_CONTENT_FORMAT_ORDER } from "@/constants/content-formats";
 import { LOOKBACK_WINDOWS, type LookbackWindow } from "@/schemas/integrations";
 import type { FormatsStepProps } from "@/types/content/create";
@@ -21,6 +28,7 @@ export function StepFormats({
   onLookbackChange,
   dataPoints,
   onDataPointChange,
+  timezone,
 }: FormatsStepProps) {
   return (
     <div className="space-y-8">
@@ -47,7 +55,29 @@ export function StepFormats({
       <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <div className="min-w-0 space-y-1">
-            <p className="font-medium text-sm">Timeframe</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-medium text-sm">Timeframe</p>
+              <Tooltip>
+                <TooltipTrigger
+                  aria-label="Timeframe timezone information"
+                  className="cursor-help text-muted-foreground transition-colors hover:text-foreground"
+                  type="button"
+                >
+                  <HugeiconsIcon
+                    className="size-3.5"
+                    icon={InformationCircleIcon}
+                  />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-60">
+                  <p>
+                    Activity is gathered in your timezone (
+                    <span className="font-medium">{timezone}</span>). Today and
+                    Yesterday follow your local day. Rolling ranges like Last 7
+                    Days are identical in every timezone.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="text-muted-foreground text-xs">
               How far back to look when gathering activity data.
             </p>

@@ -48,10 +48,6 @@ import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
 import {
-  formatUtcTodayContext,
-  resolveLookbackRange,
-} from "@/lib/workflows/shared/lookback";
-import {
   parseLookbackWindow,
   parseTriggerOutputConfig,
   parseTriggerTargets,
@@ -66,6 +62,7 @@ import type {
   ScheduleRepositoryData as RepositoryData,
   ScheduleTriggerData,
 } from "@/types/workflows/workflows";
+import { formatTodayContext, resolveLookbackRange } from "@/utils/lookback";
 
 async function deleteEmptyPostCollection(params: {
   collectionId: string;
@@ -355,7 +352,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         "generate-content",
         async () => {
           const lookbackRange = resolveLookbackRange(lookbackWindow);
-          const todayUtc = formatUtcTodayContext(lookbackRange.end);
+          const todayUtc = formatTodayContext(lookbackRange.end);
 
           const hasLinear = linearIntegrationRefs.length > 0;
           const dataPointSettings = {

@@ -79,6 +79,7 @@ export const createContentGenerationRequestSchema = z
   .object({
     contentType: onDemandContentTypeSchema,
     lookbackWindow: lookbackWindowSchema.default("last_7_days"),
+    timezone: z.string().min(1).optional(),
     brandVoiceId: z.string().min(1).optional(),
     brandIdentityId: z.string().min(1).nullable().optional(),
     repositoryIds: z.array(z.string().min(1)).optional(),
@@ -180,6 +181,7 @@ export const contentGenerationWorkflowPayloadSchema = z.object({
   jobId: z.string().min(1).optional(),
   contentType: onDemandContentTypeSchema,
   lookbackWindow: lookbackWindowSchema,
+  timezone: z.string().min(1).optional(),
   repositoryIds: z.array(z.string().min(1)).optional(),
   brandVoiceId: z.string().min(1).optional(),
   dataPoints: contentDataPointSettingsSchema,
