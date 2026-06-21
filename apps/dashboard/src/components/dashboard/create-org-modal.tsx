@@ -93,7 +93,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="overflow-x-hidden">
+      <DialogContent className="max-h-[85svh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Organization</DialogTitle>
           <DialogDescription>
