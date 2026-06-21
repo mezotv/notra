@@ -1,16 +1,7 @@
+import { DateTime, Option } from "effect";
 import type { LookbackWindow } from "@/schemas/integrations";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-
-const WEEKDAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
 
 export interface LookbackRange {
   start: Date;
@@ -18,44 +9,15 @@ export interface LookbackRange {
   label: string;
 }
 
-function isValidTimeZone(timeZone: string | undefined): timeZone is string {
+function zonedNow(now: Date, timeZone: string | undefined) {
   if (!timeZone) {
-    return false;
+    return null;
   }
 
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  }).formatToParts(date);
-
-  const lookup = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value ?? 0);
-
-  const asUtc = Date.UTC(
-    lookup("year"),
-    lookup("month") - 1,
-    lookup("day"),
-    lookup("hour"),
-    lookup("minute"),
-    lookup("second")
-  );
-
-  return asUtc - date.getTime();
+  const zone = DateTime.zoneMakeNamed(timeZone);
+  return Option.isNone(zone)
+    ? null
+    : DateTime.setZone(DateTime.makeUnsafe(now), zone.value);
 }
 
 function startOfUtcDay(date: Date): Date {
@@ -64,14 +26,8 @@ function startOfUtcDay(date: Date): Date {
   return start;
 }
 
-function startOfDayInTimeZone(date: Date, timeZone: string): Date {
-  const offset = getTimeZoneOffsetMs(date, timeZone);
-  const localMidnight = new Date(date.getTime() + offset);
-  localMidnight.setUTCHours(0, 0, 0, 0);
-
-  const candidate = new Date(localMidnight.getTime() - offset);
-  const adjustedOffset = getTimeZoneOffsetMs(candidate, timeZone);
-  return new Date(localMidnight.getTime() - adjustedOffset);
+function startOfZonedDay(zoned: DateTime.Zoned): Date {
+  return new Date(DateTime.toEpochMillis(DateTime.startOf(zoned, "day")));
 }
 
 export function resolveLookbackRange(
@@ -79,23 +35,24 @@ export function resolveLookbackRange(
   timeZone?: string
 ): LookbackRange {
   const now = new Date();
-  const zone = isValidTimeZone(timeZone) ? timeZone : undefined;
-  const zoneLabel = zone ?? "UTC";
-  const startOfDay = (date: Date) =>
-    zone ? startOfDayInTimeZone(date, zone) : startOfUtcDay(date);
+  const zoned = zonedNow(now, timeZone);
+  const zoneLabel = zoned ? timeZone : "UTC";
 
   if (window === "current_day") {
     return {
-      start: startOfDay(now),
+      start: zoned ? startOfZonedDay(zoned) : startOfUtcDay(now),
       end: now,
       label: `current day (${zoneLabel})`,
     };
   }
 
   if (window === "yesterday") {
-    const todayStart = startOfDay(now);
+    const todayStart = zoned ? startOfZonedDay(zoned) : startOfUtcDay(now);
+    const yesterdayStart = zoned
+      ? startOfZonedDay(DateTime.subtract(zoned, { days: 1 }))
+      : startOfUtcDay(new Date(todayStart.getTime() - 1));
     return {
-      start: startOfDay(new Date(now.getTime() - DAY_IN_MS)),
+      start: yesterdayStart,
       end: todayStart,
       label: `previous day (${zoneLabel})`,
     };
@@ -134,23 +91,24 @@ export function resolveLookbackRange(
 }
 
 export function formatTodayContext(now: Date, timeZone?: string): string {
-  const zone = isValidTimeZone(timeZone) ? timeZone : undefined;
+  const zoned = zonedNow(now, timeZone);
 
-  if (!zone) {
-    const weekday = WEEKDAYS[now.getUTCDay()];
+  if (!zoned) {
+    const weekday = DateTime.format(DateTime.makeUnsafe(now), {
+      locale: "en-CA",
+      timeZone: "UTC",
+      weekday: "long",
+    });
     return `${weekday}, ${now.toISOString().slice(0, 10)} (UTC)`;
   }
 
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: zone,
+  const formatted = DateTime.format(zoned, {
+    locale: "en-CA",
     weekday: "long",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).formatToParts(now);
+  });
 
-  const get = (type: string) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return `${get("weekday")}, ${get("year")}-${get("month")}-${get("day")} (${zone})`;
+  return `${formatted} (${timeZone})`;
 }
