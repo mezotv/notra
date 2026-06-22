@@ -49,14 +49,17 @@ function iconToSvg(icon: typeof Copy01Icon, className: string) {
   const children = icon
     .map(([tag, attributes]) => {
       const serializedAttributes = Object.entries(attributes)
-        .filter(([attributeName]) => attributeName !== "key")
-        .map(
-          ([attributeName, value]) =>
-            `${attributeName.replace(
-              SVG_ATTRIBUTE_CASE_REGEX,
-              (char) => `-${char.toLowerCase()}`
-            )}="${value}"`
-        )
+        .reduce<string[]>((acc, [attributeName, value]) => {
+          if (attributeName !== "key") {
+            acc.push(
+              `${attributeName.replace(
+                SVG_ATTRIBUTE_CASE_REGEX,
+                (char) => `-${char.toLowerCase()}`
+              )}="${value}"`
+            );
+          }
+          return acc;
+        }, [])
         .join(" ");
 
       return `<${tag} ${serializedAttributes} />`;

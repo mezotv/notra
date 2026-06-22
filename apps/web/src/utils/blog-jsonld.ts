@@ -121,15 +121,22 @@ function extractBlogFaqEntries(html: string): BlogFaqEntry[] {
 }
 
 function extractBlogAboutEntities(html: string) {
-  return extractHeadings(html)
-    .filter(
-      (heading) =>
-        heading.level === 2 && !BLOG_FAQ_HEADING_REGEX.test(heading.text)
-    )
-    .map((heading) =>
-      heading.text.replace(BLOG_NUMBERED_HEADING_PREFIX_REGEX, "")
-    )
-    .filter((text, index, list) => list.indexOf(text) === index);
+  const seen = new Set<string>();
+  const entities: string[] = [];
+
+  for (const heading of extractHeadings(html)) {
+    if (heading.level !== 2 || BLOG_FAQ_HEADING_REGEX.test(heading.text)) {
+      continue;
+    }
+
+    const text = heading.text.replace(BLOG_NUMBERED_HEADING_PREFIX_REGEX, "");
+    if (!seen.has(text)) {
+      seen.add(text);
+      entities.push(text);
+    }
+  }
+
+  return entities;
 }
 
 export function buildBlogArticleJsonLd({

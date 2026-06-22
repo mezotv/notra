@@ -45,17 +45,16 @@ export default async function ChangelogHubPage() {
     ])
   );
 
-  const companies = [...SHOWCASE_COMPANIES]
-    .sort((left, right) => {
-      const countDifference =
-        (postCounts.get(right.slug) ?? 0) - (postCounts.get(left.slug) ?? 0);
+  const companies = SHOWCASE_COMPANIES.toSorted((left, right) => {
+    const countDifference =
+      (postCounts.get(right.slug) ?? 0) - (postCounts.get(left.slug) ?? 0);
 
-      if (countDifference !== 0) {
-        return countDifference;
-      }
+    if (countDifference !== 0) {
+      return countDifference;
+    }
 
-      return left.name.localeCompare(right.name);
-    })
+    return left.name.localeCompare(right.name);
+  })
     .map((company) => ({
       ...company,
       entryCount: postCounts.get(company.slug) ?? 0,

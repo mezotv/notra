@@ -19,16 +19,20 @@ function isExternalHref(href?: string) {
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
     ...components,
-    a: ({ href, rel, target, ...props }) =>
+    a: ({ children, href, rel, target, ...props }) =>
       isExternalHref(href) ? (
         <a
           {...props}
           href={href}
           rel={withSafeExternalRel(rel)}
           target="_blank"
-        />
+        >
+          {children}
+        </a>
       ) : (
-        <a {...props} href={href} rel={rel} target={target} />
+        <a {...props} href={href} rel={rel} target={target}>
+          {children}
+        </a>
       ),
   };
 }

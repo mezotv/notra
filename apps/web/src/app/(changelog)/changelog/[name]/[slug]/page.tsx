@@ -22,12 +22,16 @@ import type { ShowcaseEntryPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
   return SHOWCASE_COMPANIES.flatMap((company) =>
-    changelog
-      .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
-      .map((entry) => ({
-        name: company.slug,
-        slug: getShowcaseEntrySlug(entry.info.path),
-      }))
+    changelog.flatMap((entry) =>
+      entry.info.path.startsWith(`${company.slug}/`)
+        ? [
+            {
+              name: company.slug,
+              slug: getShowcaseEntrySlug(entry.info.path),
+            },
+          ]
+        : []
+    )
   );
 }
 

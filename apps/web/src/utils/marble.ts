@@ -37,7 +37,7 @@ function createMarbleClient(apiKey: string) {
 function sortMarblePostsByPublishedAt<T extends Pick<Post, "publishedAt">>(
   posts: T[]
 ) {
-  return [...posts].sort(
+  return posts.toSorted(
     (firstPost, secondPost) =>
       secondPost.publishedAt.getTime() - firstPost.publishedAt.getTime()
   );

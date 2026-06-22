@@ -14,12 +14,16 @@ const STATIC_PAGE_LAST_MODIFIED = new Date("2026-04-24");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const showcaseEntries = SHOWCASE_COMPANIES.flatMap((company) =>
-    changelog
-      .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
-      .map((entry) => ({
-        url: `${SITE_URL}/changelog/${company.slug}/${getShowcaseEntrySlug(entry.info.path)}`,
-        lastModified: new Date(entry.date),
-      }))
+    changelog.flatMap((entry) =>
+      entry.info.path.startsWith(`${company.slug}/`)
+        ? [
+            {
+              url: `${SITE_URL}/changelog/${company.slug}/${getShowcaseEntrySlug(entry.info.path)}`,
+              lastModified: new Date(entry.date),
+            },
+          ]
+        : []
+    )
   );
 
   const notraChangelogEntries = (await listNotraChangelogPosts()).map(
@@ -64,12 +68,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const latestShowcaseByCompany = new Map<string, Date>();
   for (const company of SHOWCASE_COMPANIES) {
-    const latest = changelog
-      .filter((entry) => entry.info.path.startsWith(`${company.slug}/`))
-      .reduce<Date>((acc, entry) => {
-        const entryDate = new Date(entry.date);
-        return entryDate > acc ? entryDate : acc;
-      }, STATIC_PAGE_LAST_MODIFIED);
+    const latest = changelog.reduce<Date>((acc, entry) => {
+      if (!entry.info.path.startsWith(`${company.slug}/`)) {
+        return acc;
+      }
+
+      const entryDate = new Date(entry.date);
+      return entryDate > acc ? entryDate : acc;
+    }, STATIC_PAGE_LAST_MODIFIED);
     latestShowcaseByCompany.set(company.slug, latest);
   }
 

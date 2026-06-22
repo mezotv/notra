@@ -82,8 +82,7 @@ export async function fetchContributorsData(): Promise<ContributorsData> {
   }
 
   const contributors = (contributorsRaw ?? [])
-    .filter((c) => c.type === "User")
-    .filter((c) => !c.login.endsWith("[bot]"));
+    .filter((c) => c.type === "User" && !c.login.endsWith("[bot]"));
 
   const issues = (issuesRaw ?? [])
     .filter((issue) => !issue.pull_request)
