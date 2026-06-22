@@ -1,16 +1,16 @@
-import type { FirecrawlWebSearchInput } from "@notra/ai/types/firecrawl";
+import type { ContextDevWebSearchInput } from "@notra/ai/types/context-dev";
+import { searchWeb } from "@notra/ai/utils/context-dev";
 import { toolDescription } from "@notra/ai/utils/description";
-import { searchWeb } from "@notra/ai/utils/firecrawl";
 import { type Tool, tool } from "ai";
 import z from "zod";
 
 export const WEB_SEARCH_TOOL_NAME = "webSearch";
 
 export function isWebSearchAvailable(): boolean {
-  return Boolean(process.env.FIRECRAWL_API_KEY?.trim());
+  return Boolean(process.env.CONTEXT_DEV_API_KEY?.trim());
 }
 
-const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
+const webSearchInputSchema: z.ZodType<ContextDevWebSearchInput> = z.object({
   query: z.string().min(1).describe("The web search query."),
   limit: z
     .number()
@@ -19,14 +19,6 @@ const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
     .max(100)
     .default(5)
     .describe("Maximum number of results to return. Prefer 5 by default."),
-  sources: z
-    .array(z.enum(["web", "images", "news"]))
-    .default(["web"])
-    .describe("Sources to search. Defaults to web."),
-  categories: z
-    .array(z.object({ type: z.enum(["github", "research", "pdf"]) }))
-    .optional()
-    .describe("Optional category filters for GitHub, research, or PDFs."),
   includeDomains: z
     .array(z.string().min(1))
     .optional()
@@ -35,27 +27,21 @@ const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
     .array(z.string().min(1))
     .optional()
     .describe("Optional list of domains to exclude."),
-  tbs: z
-    .string()
+  freshness: z
+    .enum(["last_24_hours", "last_week", "last_month", "last_year"])
     .optional()
-    .describe(
-      "Optional time filter such as qdr:d, qdr:w, qdr:m, qdr:y, or a custom date range."
-    ),
-  location: z
-    .string()
+    .describe("Optional freshness window for recently published content."),
+  queryFanout: z
+    .boolean()
     .optional()
-    .describe("Optional search location, for example San Francisco,CA,US."),
-  timeout: z
+    .describe("Expand the query into parallel variants for broader recall."),
+  timeoutMS: z
     .number()
     .int()
-    .positive()
-    .max(120_000)
+    .min(1000)
+    .max(300_000)
     .default(60_000)
     .describe("Search timeout in milliseconds."),
-  ignoreInvalidURLs: z
-    .boolean()
-    .default(false)
-    .describe("Exclude URLs that are invalid for other Firecrawl endpoints."),
   scrapeOptions: z
     .object({
       formats: z
@@ -67,7 +53,7 @@ const webSearchInputSchema: z.ZodType<FirecrawlWebSearchInput> = z.object({
       maxAge: z.number().int().positive().optional(),
     })
     .optional()
-    .describe("Optional scrape options when full page content is needed."),
+    .describe("Optional scrape options when full page markdown is needed."),
 });
 
 export function createWebSearchTool(): Tool {
@@ -75,11 +61,11 @@ export function createWebSearchTool(): Tool {
     description: toolDescription({
       toolName: WEB_SEARCH_TOOL_NAME,
       intro:
-        "Search the live web with Firecrawl and return source-aware results.",
+        "Search the live web with Context.dev and return source-aware results.",
       whenToUse:
         "Use when public, current, or external context would improve accuracy, including docs, news, competitors, market context, or fact checking.",
       usageNotes:
-        "Prefer limit: 5 for discovery. Use includeDomains, excludeDomains, categories, or tbs when the user asks for a specific source type or time window. Results include titles, URLs, descriptions, and optional scraped content.",
+        "Prefer limit: 5 for discovery. Use includeDomains, excludeDomains, freshness, or scrapeOptions when the user asks for a specific source type, time window, or full page content. Results include titles, URLs, descriptions, and optional scraped markdown.",
     }),
     inputSchema: webSearchInputSchema,
     execute: async (input) => searchWeb(input),
@@ -87,4 +73,4 @@ export function createWebSearchTool(): Tool {
 }
 
 export const WEB_SEARCH_TOOL_DESCRIPTION =
-  "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, and descriptions for citations or follow-up research.";
+  "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, descriptions, and scraped markdown for citations or follow-up research.";

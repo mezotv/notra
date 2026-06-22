@@ -6,8 +6,8 @@ import {
 } from "@notra/ai/jobs/brand-analysis";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { getBaseUrl } from "@notra/ai/qstash/triggers";
-import type { FirecrawlScrapingResult } from "@notra/ai/types/firecrawl";
-import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/firecrawl";
+import type { ContextDevScrapingResult } from "@notra/ai/types/context-dev";
+import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
 import { redis } from "@notra/ai/utils/redis";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
@@ -19,8 +19,7 @@ import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { createAILogger } from "evlog/ai";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
+import { flattenError, object, string } from "zod";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 import type {
   BrandAnalysisPayload,
@@ -35,10 +34,9 @@ import {
 
 const PROGRESS_TTL = 300;
 
-const brandAnalysisPayloadSchema = z.object({
-  organizationId: z.string().min(1),
-  url: z
-    .string()
+const brandAnalysisPayloadSchema = object({
+  organizationId: string().min(1),
+  url: string()
     .url()
     .superRefine((value, ctx) => {
       try {
@@ -50,8 +48,8 @@ const brandAnalysisPayloadSchema = z.object({
         });
       }
     }),
-  voiceId: z.string().optional(),
-  jobId: z.string().optional(),
+  voiceId: string().optional(),
+  jobId: string().optional(),
 });
 
 const STEP_COUNT = 3;
@@ -112,7 +110,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
     if (!parseResult.success) {
       console.error(
         "[Brand Analysis] Invalid payload:",
-        z.flattenError(parseResult.error)
+        flattenError(parseResult.error)
       );
       log.set({ feature: "brand_analysis", invalidPayload: true });
       log.emit();
@@ -131,7 +129,6 @@ export const { POST } = serve<BrandAnalysisPayload>(
     });
 
     try {
-      // Step 1: Scrape website
       await context.run("set-progress-scraping", async () => {
         const progress = {
           status: "scraping",
@@ -142,7 +139,7 @@ export const { POST } = serve<BrandAnalysisPayload>(
         await setJobProgress(jobId, progress);
       });
 
-      const scrapingResult = await context.run<FirecrawlScrapingResult>(
+      const scrapingResult = await context.run<ContextDevScrapingResult>(
         "scrape-website",
         async () => {
           return scrapeWebsiteForBrandAnalysis(url);
@@ -164,7 +161,6 @@ export const { POST } = serve<BrandAnalysisPayload>(
         return;
       }
 
-      // Step 2: Extract brand info
       await context.run("set-progress-extracting", async () => {
         const progress = {
           status: "extracting",
@@ -235,7 +231,6 @@ Extract the following information:
         return;
       }
 
-      // Step 3: Save to database
       await context.run("set-progress-saving", async () => {
         const progress = {
           status: "saving",
@@ -281,7 +276,6 @@ Extract the following information:
         }
       });
 
-      // Mark as completed
       await context.run("set-progress-completed", async () => {
         const progress = {
           status: "completed",
@@ -302,7 +296,6 @@ Extract the following information:
     failureFunction: async ({ context, failStatus, failResponse }) => {
       const { organizationId } = context.requestPayload;
 
-      // Set failed progress on workflow failure
       if (redis) {
         const progress = {
           status: "failed",

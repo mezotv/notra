@@ -6,7 +6,7 @@ const title = "Subprocessors";
 const description =
   "Current subprocessors Notra uses to provide hosting, analytics, authentication, billing, email, AI, and integrations.";
 const url = `${SITE_URL}/subprocessors`;
-const currentAsOf = "June 9, 2026";
+const currentAsOf = "June 22, 2026";
 
 const subprocessors = [
   {
@@ -100,10 +100,10 @@ const subprocessors = [
     website: "https://linear.app",
   },
   {
-    name: "Firecrawl",
-    purpose: "Website crawling and content extraction",
+    name: "Context.dev",
+    purpose: "Website scraping and content extraction",
     location: "United States",
-    website: "https://firecrawl.dev",
+    website: "https://www.context.dev",
   },
   {
     name: "Supermemory",
