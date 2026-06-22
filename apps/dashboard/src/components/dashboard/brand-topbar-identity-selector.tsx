@@ -18,8 +18,14 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
+import {
+  findSelectedBrandIdentity,
+  readStoredBrandIdentityId,
+  writeStoredBrandIdentityId,
+} from "@/utils/brand-identity-selection";
 
 export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -31,19 +37,33 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
   const voices = data?.voices ?? [];
   const voiceParam = searchParams.get("voice");
   const isReferencesView = searchParams.get("view") === "references";
+  const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
 
-  const activeVoice =
-    (voiceParam ? voices.find((v) => v.id === voiceParam) : undefined) ??
-    voices.find((v) => v.isDefault) ??
-    voices[0];
+  useEffect(() => {
+    if (organizationId) {
+      setStoredVoiceId(readStoredBrandIdentityId(organizationId));
+    }
+  }, [organizationId]);
+
+  const activeVoice = findSelectedBrandIdentity(
+    voices,
+    voiceParam,
+    storedVoiceId
+  );
 
   const brandBasePath = `/${slug}/brand/identity`;
   const viewSuffix = isReferencesView ? "&view=references" : "";
 
+  function handleSelectVoice(voiceId: string) {
+    writeStoredBrandIdentityId(organizationId, voiceId);
+    setStoredVoiceId(voiceId);
+    router.push(`${brandBasePath}?voice=${voiceId}${viewSuffix}`);
+  }
+
   if (voices.length === 0 || !activeVoice) {
     return (
       <BreadcrumbPage className="block min-w-0 truncate">
-        Brand Identity
+        Company Info
       </BreadcrumbPage>
     );
   }
@@ -75,9 +95,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
             <DropdownMenuItem
               className="cursor-pointer gap-2 pr-8"
               key={voice.id}
-              onClick={() =>
-                router.push(`${brandBasePath}?voice=${voice.id}${viewSuffix}`)
-              }
+              onClick={() => handleSelectVoice(voice.id)}
             >
               <span className="min-w-0 flex-1 truncate">{voice.name}</span>
               {voice.isDefault ? (

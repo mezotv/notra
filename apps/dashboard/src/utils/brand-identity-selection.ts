@@ -1,6 +1,22 @@
 "use client";
 
 import { localStorageKeys } from "@/constants/storage";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
+
+export function findSelectedBrandIdentity(
+  voices: BrandSettings[],
+  voiceId: string | null,
+  storedVoiceId: string | null
+): BrandSettings | undefined {
+  return (
+    (voiceId ? voices.find((voice) => voice.id === voiceId) : undefined) ??
+    (storedVoiceId
+      ? voices.find((voice) => voice.id === storedVoiceId)
+      : undefined) ??
+    voices.find((voice) => voice.isDefault) ??
+    voices[0]
+  );
+}
 
 export function readStoredBrandIdentityId(
   organizationId: string

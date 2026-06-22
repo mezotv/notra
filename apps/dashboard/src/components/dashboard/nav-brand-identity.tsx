@@ -14,8 +14,8 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
 import {
+  findSelectedBrandIdentity,
   readStoredBrandIdentityId,
-  writeStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 
@@ -41,24 +41,12 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
     }
   }, [organizationId]);
 
-  const activeVoice =
-    (voiceParam ? voices.find((v) => v.id === voiceParam) : undefined) ??
-    (storedVoiceId ? voices.find((v) => v.id === storedVoiceId) : undefined) ??
-    voices.find((v) => v.isDefault) ??
-    voices[0];
+  const activeVoice = findSelectedBrandIdentity(
+    voices,
+    voiceParam,
+    storedVoiceId
+  );
   const activeVoiceId = activeVoice?.id;
-
-  useEffect(() => {
-    if (
-      organizationId &&
-      isOnBrandPage &&
-      voiceParam &&
-      voices.some((v) => v.id === voiceParam)
-    ) {
-      writeStoredBrandIdentityId(organizationId, voiceParam);
-      setStoredVoiceId(voiceParam);
-    }
-  }, [organizationId, isOnBrandPage, voiceParam, voices]);
 
   const { data: referencesData } = useReferences(
     organizationId,
