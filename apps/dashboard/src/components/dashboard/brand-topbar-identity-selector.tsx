@@ -6,6 +6,11 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { BreadcrumbPage } from "@notra/ui/components/ui/breadcrumb";
 import {
@@ -21,11 +26,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
+import { getBrandFaviconUrl } from "@/utils/brand";
 import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
   writeStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
+
+function BrandIdentityAvatar({
+  name,
+  websiteUrl,
+}: {
+  name: string;
+  websiteUrl: string | null;
+}) {
+  return (
+    <Avatar className="size-4 after:rounded-full" size="sm">
+      <AvatarImage src={getBrandFaviconUrl(websiteUrl)} />
+      <AvatarFallback className="text-[9px]">
+        {name.slice(0, 2).toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+  );
+}
 
 export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -73,9 +96,13 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
       <DropdownMenuTrigger
         render={
           <button
-            className="-mx-1.5 flex min-w-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 font-normal text-foreground outline-none transition-colors hover:bg-accent data-popup-open:bg-accent"
+            className="-mx-1.5 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 font-normal text-foreground outline-none transition-colors hover:bg-accent data-popup-open:bg-accent"
             type="button"
           >
+            <BrandIdentityAvatar
+              name={activeVoice.name}
+              websiteUrl={activeVoice.websiteUrl}
+            />
             <span className="truncate">{activeVoice.name}</span>
             <HugeiconsIcon
               className="size-3.5 shrink-0 text-muted-foreground"
@@ -97,6 +124,10 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
               key={voice.id}
               onClick={() => handleSelectVoice(voice.id)}
             >
+              <BrandIdentityAvatar
+                name={voice.name}
+                websiteUrl={voice.websiteUrl}
+              />
               <span className="min-w-0 flex-1 truncate">{voice.name}</span>
               {voice.isDefault ? (
                 <Badge
