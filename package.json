@@ -19,7 +19,8 @@
     "format": "ultracite fix",
     "format:unsafe": "ultracite fix --unsafe",
     "commitlint": "commitlint",
-    "prepare": "husky && ./scripts/prepare-effect.sh"
+    "prepare": "husky && ./scripts/prepare-effect.sh",
+    "doctor": "npx react-doctor@latest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.2",
