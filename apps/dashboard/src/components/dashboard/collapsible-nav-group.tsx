@@ -42,7 +42,7 @@ export function CollapsibleSidebarGroup({
             <CollapsibleTrigger className="w-full cursor-pointer hover:text-sidebar-foreground [&[data-panel-open]>svg]:rotate-0">
               {label}
               <HugeiconsIcon
-                className="-rotate-90 ml-auto text-sidebar-foreground/50 transition-transform"
+                className="-rotate-90 ml-1 size-3.5! text-sidebar-foreground/50 transition-transform"
                 icon={ArrowDown01Icon}
               />
             </CollapsibleTrigger>
