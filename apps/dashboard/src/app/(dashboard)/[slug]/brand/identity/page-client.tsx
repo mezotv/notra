@@ -107,13 +107,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
   );
   const [newIdentityParam, setNewIdentityParam] = useQueryState("new");
+  // Opening the create dialog from the sidebar/breadcrumb arrives as ?new=1.
+  // Derive the open state from the URL rather than syncing it into state via an
+  // effect, and clear the param when the dialog closes.
+  const isAddIdentityOpen = addIdentityOpen || Boolean(newIdentityParam);
 
-  useEffect(() => {
-    if (newIdentityParam) {
-      setAddIdentityOpen(true);
+  const handleAddIdentityOpenChange = (open: boolean) => {
+    setAddIdentityOpen(open);
+    if (!open && newIdentityParam) {
       setNewIdentityParam(null);
     }
-  }, [newIdentityParam, setNewIdentityParam]);
+  };
 
   useHotkey(
     "C",
@@ -124,7 +128,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         setAddReferenceOpen(true);
       }
     },
-    { enabled: !(addIdentityOpen || addReferenceOpen) }
+    { enabled: !(isAddIdentityOpen || addReferenceOpen) }
   );
 
   const selectedVoice =
@@ -439,8 +443,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
         <AddIdentityDialog
           onCreated={(voice) => setActiveVoiceId(voice.id)}
-          onOpenChange={setAddIdentityOpen}
-          open={addIdentityOpen}
+          onOpenChange={handleAddIdentityOpenChange}
+          open={isAddIdentityOpen}
           organizationId={organizationId}
           startPolling={startPolling}
         />
