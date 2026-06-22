@@ -44,6 +44,9 @@ import type {
   InvitationState,
 } from "@/types/auth/invitation";
 
+type Invitation = InvitationPageClientProps["invitation"];
+type InvitationUser = NonNullable<InvitationPageClientProps["user"]>;
+
 function invitationReducer(
   state: InvitationState,
   action: InvitationAction
@@ -166,67 +169,16 @@ function PageClient({
     );
   }
 
-  // Show auth forms if user is not logged in
   if (!user) {
     return (
-      <Card className="mx-auto w-full max-w-md rounded-[24px] border bg-transparent px-5 py-7 shadow-none">
-        <CardContent>
-          <Tabs className="w-full" defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2" variant="line">
-              <TabsTrigger value="login">Log in</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
-            </TabsList>
-            <TabsContent className="mt-6" value="login">
-              <div className="mb-6 text-center text-sm">
-                <strong>{invitation.inviterEmail}</strong> has invited you to
-                join their organization. Please sign in to proceed.
-              </div>
-              <LoginForm
-                description=""
-                returnTo={`/invitation/${invitationId}`}
-                showForgotPasswordLink={true}
-                showSignupLink={false}
-                title=""
-              />
-            </TabsContent>
-            <TabsContent className="mt-6" value="signup">
-              <div className="mb-6 text-center text-sm">
-                <strong>{invitation.inviterEmail}</strong> has invited you to
-                join their organization. Please sign up to proceed.
-              </div>
-              <SignupForm
-                description=""
-                returnTo={`/invitation/${invitationId}`}
-                showForgotPasswordLink={false}
-                showLoginLink={false}
-                title=""
-              />
-            </TabsContent>
-          </Tabs>
-          {error && (
-            <div className="mt-4 rounded-sm border border-destructive bg-destructive/10 p-3">
-              <p className="text-center text-destructive text-sm">
-                {error}
-                {isTeamMemberLimitError(error) && (
-                  <>
-                    {" "}
-                    <Link
-                      className="font-medium underline underline-offset-2"
-                      href={`/${invitation.organizationSlug}/settings/billing`}
-                    >
-                      View plans
-                    </Link>
-                  </>
-                )}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <InviteAuthCard
+        error={error}
+        invitation={invitation}
+        invitationId={invitationId}
+      />
     );
   }
 
-  // Show invitation acceptance UI if user is logged in
   return (
     <Card className="mx-auto w-full max-w-md rounded-[24px] px-5 py-7">
       <CardHeader
@@ -238,138 +190,25 @@ function PageClient({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {inviteStatus === "pending" && (
-          <div className="mt-5 flex flex-col gap-8">
-            <div className="flex items-center justify-center gap-4">
-              <Avatar className="size-14">
-                <AvatarImage src={user.image || ""} />
-                <AvatarFallback>
-                  {user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <svg
-                className="size-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1}
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <title>Arrow</title>
-                <path
-                  d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <Avatar className="size-14">
-                <AvatarImage src="" />
-                <AvatarFallback>
-                  {invitation.organizationName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <p className="text-center text-sm">
-              <strong>{invitation.inviterEmail}</strong> has invited you to join{" "}
-              <strong>{invitation.organizationName}</strong>.
-            </p>
-          </div>
-        )}
-        {inviteStatus === "accepted" && (
-          <div className="space-y-4 pt-8 pb-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <HugeiconsIcon
-                className="h-8 w-8 text-green-600"
-                icon={Tick01Icon}
-              />
-            </div>
-            <h2 className="text-center font-medium text-2xl">
-              Welcome to {invitation.organizationName}!
-            </h2>
-            <p className="text-center">
-              We&apos;re excited to have you on board!
-            </p>
-          </div>
-        )}
-        {inviteStatus === "rejected" && (
-          <div className="space-y-4 pt-8 pb-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-              <HugeiconsIcon
-                className="h-8 w-8 text-red-600"
-                icon={Cancel01Icon}
-              />
-            </div>
-            <h2 className="text-center font-medium text-2xl">Declined</h2>
-            <p className="text-center text-muted-foreground">
-              You&apos;ve declined the invitation to join{" "}
-              {invitation.organizationName}.
-            </p>
-            <div className="flex items-center justify-center">
-              <Link
-                className={buttonVariants({
-                  variant: "outline",
-                  className: "flex items-center gap-2",
-                })}
-                href="/"
-              >
-                <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
-                <span>Back home</span>
-              </Link>
-            </div>
-          </div>
-        )}
+        <InviteStatusContent
+          invitation={invitation}
+          inviteStatus={inviteStatus}
+          user={user}
+        />
       </CardContent>
       {error && inviteStatus === "pending" && (
-        <div className="mt-4 rounded-sm border border-destructive bg-destructive/10 p-3">
-          <p className="text-center text-destructive text-sm">
-            {error}
-            {isTeamMemberLimitError(error) && (
-              <>
-                {" "}
-                <Link
-                  className="font-medium underline underline-offset-2"
-                  href={`/${invitation.organizationSlug}/settings/billing`}
-                >
-                  View plans
-                </Link>
-              </>
-            )}
-          </p>
-        </div>
+        <InvitationErrorMessage
+          error={error}
+          organizationSlug={invitation.organizationSlug}
+        />
       )}
       {inviteStatus === "pending" && (
-        <CardFooter className="mt-4 grid grid-cols-2 gap-6">
-          <Button
-            disabled={rejecting || accepting}
-            onClick={handleReject}
-            variant="outline"
-          >
-            {rejecting ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              "Reject"
-            )}
-          </Button>
-          <Button
-            disabled={accepting || rejecting}
-            onClick={handleAccept}
-            variant="default"
-          >
-            {accepting ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              "Accept"
-            )}
-          </Button>
-        </CardFooter>
+        <InviteActions
+          accepting={accepting}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          rejecting={rejecting}
+        />
       )}
     </Card>
   );
@@ -406,4 +245,221 @@ function InviteError({ message }: { message: string }) {
       </CardContent>
     </Card>
   );
+}
+
+function InviteAuthCard({
+  error,
+  invitation,
+  invitationId,
+}: {
+  error: string | null;
+  invitation: Invitation;
+  invitationId: string;
+}) {
+  return (
+    <Card className="mx-auto w-full max-w-md rounded-[24px] border bg-transparent px-5 py-7 shadow-none">
+      <CardContent>
+        <Tabs className="w-full" defaultValue="login">
+          <TabsList className="grid w-full grid-cols-2" variant="line">
+            <TabsTrigger value="login">Log in</TabsTrigger>
+            <TabsTrigger value="signup">Sign up</TabsTrigger>
+          </TabsList>
+          <TabsContent className="mt-6" value="login">
+            <div className="mb-6 text-center text-sm">
+              <strong>{invitation.inviterEmail}</strong> has invited you to
+              join their organization. Please sign in to proceed.
+            </div>
+            <LoginForm
+              description=""
+              returnTo={`/invitation/${invitationId}`}
+              showForgotPasswordLink={true}
+              showSignupLink={false}
+              title=""
+            />
+          </TabsContent>
+          <TabsContent className="mt-6" value="signup">
+            <div className="mb-6 text-center text-sm">
+              <strong>{invitation.inviterEmail}</strong> has invited you to
+              join their organization. Please sign up to proceed.
+            </div>
+            <SignupForm
+              description=""
+              returnTo={`/invitation/${invitationId}`}
+              showForgotPasswordLink={false}
+              showLoginLink={false}
+              title=""
+            />
+          </TabsContent>
+        </Tabs>
+        {error && (
+          <InvitationErrorMessage
+            error={error}
+            organizationSlug={invitation.organizationSlug}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function InviteStatusContent({
+  invitation,
+  inviteStatus,
+  user,
+}: {
+  invitation: Invitation;
+  inviteStatus: InvitationState["inviteStatus"];
+  user: InvitationUser;
+}) {
+  if (inviteStatus === "accepted") {
+    return <InviteAccepted organizationName={invitation.organizationName} />;
+  }
+
+  if (inviteStatus === "rejected") {
+    return <InviteRejected organizationName={invitation.organizationName} />;
+  }
+
+  return <PendingInvite invitation={invitation} user={user} />;
+}
+
+function PendingInvite({
+  invitation,
+  user,
+}: {
+  invitation: Invitation;
+  user: InvitationUser;
+}) {
+  return (
+    <div className="mt-5 flex flex-col gap-8">
+      <div className="flex items-center justify-center gap-4">
+        <Avatar className="size-14">
+          <AvatarImage src={user.image || ""} />
+          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+        </Avatar>
+        <svg
+          className="size-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1}
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <title>Arrow</title>
+          <path
+            d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <Avatar className="size-14">
+          <AvatarImage src="" />
+          <AvatarFallback>
+            {getInitials(invitation.organizationName)}
+          </AvatarFallback>
+        </Avatar>
+      </div>
+      <p className="text-center text-sm">
+        <strong>{invitation.inviterEmail}</strong> has invited you to join{" "}
+        <strong>{invitation.organizationName}</strong>.
+      </p>
+    </div>
+  );
+}
+
+function InviteAccepted({ organizationName }: { organizationName: string }) {
+  return (
+    <div className="space-y-4 pt-8 pb-4">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+        <HugeiconsIcon className="h-8 w-8 text-green-600" icon={Tick01Icon} />
+      </div>
+      <h2 className="text-center font-medium text-2xl">
+        Welcome to {organizationName}!
+      </h2>
+      <p className="text-center">We&apos;re excited to have you on board!</p>
+    </div>
+  );
+}
+
+function InviteRejected({ organizationName }: { organizationName: string }) {
+  return (
+    <div className="space-y-4 pt-8 pb-4">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+        <HugeiconsIcon className="h-8 w-8 text-red-600" icon={Cancel01Icon} />
+      </div>
+      <h2 className="text-center font-medium text-2xl">Declined</h2>
+      <p className="text-center text-muted-foreground">
+        You&apos;ve declined the invitation to join {organizationName}.
+      </p>
+      <div className="flex items-center justify-center">
+        <Link
+          className={buttonVariants({
+            variant: "outline",
+            className: "flex items-center gap-2",
+          })}
+          href="/"
+        >
+          <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+          <span>Back home</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function InvitationErrorMessage({
+  error,
+  organizationSlug,
+}: {
+  error: string;
+  organizationSlug: string;
+}) {
+  return (
+    <div className="mt-4 rounded-sm border border-destructive bg-destructive/10 p-3">
+      <p className="text-center text-destructive text-sm">
+        {error}
+        {isTeamMemberLimitError(error) && (
+          <>
+            {" "}
+            <Link
+              className="font-medium underline underline-offset-2"
+              href={`/${organizationSlug}/settings/billing`}
+            >
+              View plans
+            </Link>
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function InviteActions({
+  accepting,
+  onAccept,
+  onReject,
+  rejecting,
+}: {
+  accepting: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+  rejecting: boolean;
+}) {
+  return (
+    <CardFooter className="mt-4 grid grid-cols-2 gap-6">
+      <Button disabled={rejecting || accepting} onClick={onReject} variant="outline">
+        {rejecting ? <Loader2Icon className="size-4 animate-spin" /> : "Reject"}
+      </Button>
+      <Button disabled={accepting || rejecting} onClick={onAccept} variant="default">
+        {accepting ? <Loader2Icon className="size-4 animate-spin" /> : "Accept"}
+      </Button>
+    </CardFooter>
+  );
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 }

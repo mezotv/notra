@@ -26,12 +26,16 @@ export default async function InvitePage(props: {
 }
 
 async function InvitePageComponent({ invitationId }: { invitationId: string }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  // Fetch invitation server-side to validate it exists
-  const invitationData = await getInvitationById(invitationId);
+  const sessionPromise = headers().then((requestHeaders) =>
+    auth.api.getSession({
+      headers: requestHeaders,
+    })
+  );
+  const invitationPromise = getInvitationById(invitationId);
+  const [session, invitationData] = await Promise.all([
+    sessionPromise,
+    invitationPromise,
+  ]);
 
   if (!invitationData) {
     notFound();

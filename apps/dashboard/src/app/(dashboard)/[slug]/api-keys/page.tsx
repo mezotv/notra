@@ -71,7 +71,7 @@ import type {
   V2KeysCreateKeyResponseData,
 } from "@unkey/api/models/components";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
@@ -119,6 +119,64 @@ type CreateApiKeyResponse = V2KeysCreateKeyResponseData & {
 
 interface ApiKeyMutationResponse {
   success: boolean;
+}
+
+type CreatedSortOrder = false | "asc" | "desc";
+
+interface ApiKeysUiState {
+  dialogOpen: boolean;
+  createdKey: string | null;
+  createError: string | null;
+  editDialogOpen: boolean;
+  deletingKey: ApiKeyListItem | null;
+  createdSortOrder: CreatedSortOrder;
+}
+
+type ApiKeysUiAction =
+  | { type: "createDialogChanged"; open: boolean }
+  | { type: "createdKeyChanged"; createdKey: string | null }
+  | { type: "createErrorChanged"; createError: string | null }
+  | { type: "editDialogChanged"; open: boolean }
+  | { type: "deletingKeyChanged"; deletingKey: ApiKeyListItem | null }
+  | { type: "createdSortOrderChanged"; sortOrder: CreatedSortOrder }
+  | { type: "createDialogReset" };
+
+const initialApiKeysUiState: ApiKeysUiState = {
+  dialogOpen: false,
+  createdKey: null,
+  createError: null,
+  editDialogOpen: false,
+  deletingKey: null,
+  createdSortOrder: false,
+};
+
+function apiKeysUiReducer(
+  state: ApiKeysUiState,
+  action: ApiKeysUiAction
+): ApiKeysUiState {
+  switch (action.type) {
+    case "createDialogChanged":
+      return { ...state, dialogOpen: action.open };
+    case "createdKeyChanged":
+      return { ...state, createdKey: action.createdKey };
+    case "createErrorChanged":
+      return { ...state, createError: action.createError };
+    case "editDialogChanged":
+      return { ...state, editDialogOpen: action.open };
+    case "deletingKeyChanged":
+      return { ...state, deletingKey: action.deletingKey };
+    case "createdSortOrderChanged":
+      return { ...state, createdSortOrder: action.sortOrder };
+    case "createDialogReset":
+      return {
+        ...state,
+        dialogOpen: false,
+        createdKey: null,
+        createError: null,
+      };
+    default:
+      return state;
+  }
 }
 
 function formatExpiry(expires: number | null) {
@@ -271,11 +329,17 @@ export default function ApiKeysPage() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [createdKey, setCreatedKey] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [deletingKey, setDeletingKey] = useState<ApiKeyListItem | null>(null);
+  const [
+    {
+      dialogOpen,
+      createdKey,
+      createError,
+      editDialogOpen,
+      deletingKey,
+      createdSortOrder,
+    },
+    dispatchUi,
+  ] = useReducer(apiKeysUiReducer, initialApiKeysUiState);
   const [newKeyConfig, setNewKeyConfig] = useQueryStates(
     NEW_KEY_CONFIG_PARSERS
   );
@@ -284,7 +348,7 @@ export default function ApiKeysPage() {
     newKeyConfig.permission !== null &&
     newKeyConfig.expiration !== null;
 
-  useHotkey("C", () => setDialogOpen(true), {
+  useHotkey("C", () => dispatchUi({ type: "createDialogChanged", open: true }), {
     enabled: !(
       dialogOpen ||
       editDialogOpen ||
@@ -292,10 +356,6 @@ export default function ApiKeysPage() {
       hasNewKeyConfig
     ),
   });
-
-  const [createdSortOrder, setCreatedSortOrder] = useState<
-    false | "asc" | "desc"
-  >(false);
 
   const { data: keys = [], isPending } = useQuery<ApiKeyListItem[]>({
     ...dashboardOrpc.apiKeys.list.queryOptions({
@@ -339,7 +399,7 @@ export default function ApiKeysPage() {
 
   useEffect(() => {
     if (hasNewKeyConfig) {
-      setDialogOpen(true);
+      dispatchUi({ type: "createDialogChanged", open: true });
     }
   }, [hasNewKeyConfig]);
 
@@ -353,19 +413,22 @@ export default function ApiKeysPage() {
       permission: preset.permission,
       expiration: preset.expiration,
     };
-    setCreateError(null);
-    setDialogOpen(true);
+    dispatchUi({ type: "createErrorChanged", createError: null });
+    dispatchUi({ type: "createDialogChanged", open: true });
     setNewKeyConfig(config);
   };
 
   const handleCreateSubmit = () => {
     const result = createApiKeySchema.safeParse(createInput);
     if (!result.success) {
-      setCreateError(result.error.issues[0]?.message ?? "Invalid API key");
+      dispatchUi({
+        type: "createErrorChanged",
+        createError: result.error.issues[0]?.message ?? "Invalid API key",
+      });
       return;
     }
 
-    setCreateError(null);
+    dispatchUi({ type: "createErrorChanged", createError: null });
     mutation.mutate(result.data);
   };
 
@@ -401,8 +464,8 @@ export default function ApiKeysPage() {
       }) as Promise<CreateApiKeyResponse>;
     },
     onSuccess: (data) => {
-      setCreatedKey(data.key);
-      setCreateError(null);
+      dispatchUi({ type: "createdKeyChanged", createdKey: data.key });
+      dispatchUi({ type: "createErrorChanged", createError: null });
       setNewKeyConfig(null);
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.apiKeys.list.queryKey({
@@ -434,7 +497,7 @@ export default function ApiKeysPage() {
       }) as Promise<ApiKeyMutationResponse>;
     },
     onSuccess: () => {
-      setEditDialogOpen(false);
+      dispatchUi({ type: "editDialogChanged", open: false });
       editForm.reset();
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.apiKeys.list.queryKey({
@@ -461,7 +524,7 @@ export default function ApiKeysPage() {
       }) as Promise<ApiKeyMutationResponse>;
     },
     onSuccess: () => {
-      setDeletingKey(null);
+      dispatchUi({ type: "deletingKeyChanged", deletingKey: null });
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.apiKeys.list.queryKey({
           input: { organizationId: organizationId ?? "" },
@@ -476,12 +539,12 @@ export default function ApiKeysPage() {
 
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      setCreateError(null);
+      dispatchUi({ type: "createErrorChanged", createError: null });
       mutation.reset();
-      setCreatedKey(null);
+      dispatchUi({ type: "createdKeyChanged", createdKey: null });
       setNewKeyConfig(null);
     }
-    setDialogOpen(open);
+    dispatchUi({ type: "createDialogChanged", open });
   };
 
   const handleEditDialogClose = (open: boolean) => {
@@ -491,7 +554,7 @@ export default function ApiKeysPage() {
       }
       editForm.reset();
     }
-    setEditDialogOpen(open);
+    dispatchUi({ type: "editDialogChanged", open });
   };
 
   const handleDeleteDialogClose = (open: boolean) => {
@@ -500,7 +563,7 @@ export default function ApiKeysPage() {
     }
 
     if (!open) {
-      setDeletingKey(null);
+      dispatchUi({ type: "deletingKeyChanged", deletingKey: null });
     }
   };
 
@@ -518,7 +581,7 @@ export default function ApiKeysPage() {
       expiration: getDefaultEditExpiration(key.createdAt, key.expires),
     });
     editForm.setFieldValue("name", key.name);
-    setEditDialogOpen(true);
+    dispatchUi({ type: "editDialogChanged", open: true });
   };
 
   const copyToClipboard = (text: string) => {
@@ -537,7 +600,12 @@ export default function ApiKeysPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+            <Button
+              className="gap-1.5"
+              onClick={() =>
+                dispatchUi({ type: "createDialogChanged", open: true })
+              }
+            >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
               Create API Key
               <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
@@ -579,9 +647,11 @@ export default function ApiKeysPage() {
                   <Button
                     className="-ml-4"
                     onClick={() =>
-                      setCreatedSortOrder(
-                        createdSortOrder === "asc" ? "desc" : "asc"
-                      )
+                      dispatchUi({
+                        type: "createdSortOrderChanged",
+                        sortOrder:
+                          createdSortOrder === "asc" ? "desc" : "asc",
+                      })
                     }
                     variant="ghost"
                   >
@@ -602,7 +672,12 @@ export default function ApiKeysPage() {
                 }
                 isPending={isPending}
                 keys={sortedKeys}
-                onDelete={(key) => setDeletingKey(key)}
+                onDelete={(key) =>
+                  dispatchUi({
+                    type: "deletingKeyChanged",
+                    deletingKey: key,
+                  })
+                }
                 onEdit={openEditDialog}
               />
             </TableBody>
@@ -680,7 +755,10 @@ export default function ApiKeysPage() {
                     <Input
                       disabled={mutation.isPending}
                       onChange={(event) => {
-                        setCreateError(null);
+                        dispatchUi({
+                          type: "createErrorChanged",
+                          createError: null,
+                        });
                         setNewKeyConfig({
                           name: event.target.value || null,
                         });
