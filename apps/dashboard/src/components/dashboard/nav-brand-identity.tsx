@@ -199,8 +199,8 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
                   side="bottom"
                   sideOffset={4}
                 >
-                  <DropdownMenuLabel>Brand identities</DropdownMenuLabel>
                   <DropdownMenuGroup>
+                    <DropdownMenuLabel>Brand identities</DropdownMenuLabel>
                     {voices.map((voice) => (
                       <DropdownMenuItem
                         className="cursor-pointer gap-2 pr-8"
