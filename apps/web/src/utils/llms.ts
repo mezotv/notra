@@ -27,7 +27,7 @@ function formatLink(title: string, path: string, description?: string) {
 }
 
 function sortShowcaseEntries() {
-  return changelog.toSorted(
+  return changelog.slice().sort(
     (left, right) =>
       new Date(right.date).getTime() - new Date(left.date).getTime()
   );

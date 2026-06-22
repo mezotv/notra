@@ -45,7 +45,7 @@ export default async function ChangelogHubPage() {
     ])
   );
 
-  const companies = SHOWCASE_COMPANIES.toSorted((left, right) => {
+  const companies = SHOWCASE_COMPANIES.slice().sort((left, right) => {
     const countDifference =
       (postCounts.get(right.slug) ?? 0) - (postCounts.get(left.slug) ?? 0);
 
