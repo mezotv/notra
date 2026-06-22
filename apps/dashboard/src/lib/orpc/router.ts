@@ -5,6 +5,7 @@ import { brandRouter } from "./routers/brand";
 import { contentRouter } from "./routers/content";
 import { feedbackRouter } from "./routers/feedback";
 import { githubRouter } from "./routers/github";
+import { htmlRouter } from "./routers/html";
 import { integrationsRouter } from "./routers/integrations";
 import { logsRouter } from "./routers/logs";
 import { notificationsRouter } from "./routers/notifications";
@@ -23,6 +24,7 @@ export const dashboardRouter = {
   content: contentRouter,
   feedback: feedbackRouter,
   github: githubRouter,
+  html: htmlRouter,
   integrations: integrationsRouter,
   logs: logsRouter,
   notifications: notificationsRouter,

@@ -1,8 +1,10 @@
 "use client";
 import {
   AnalyticsUpIcon,
+  ArrowDataTransferHorizontalIcon,
   Calendar03Icon,
   Home01Icon,
+  HtmlFile01Icon,
   Key01Icon,
   MagicWand01Icon,
   Message01Icon,
@@ -61,6 +63,18 @@ const navMainItems: NavMainItem[] = [
     link: "/skills",
     icon: MagicWand01Icon,
     label: "Skills",
+    category: "workspace",
+  },
+  {
+    link: "/gallery",
+    icon: HtmlFile01Icon,
+    label: "HTML Gallery",
+    category: "workspace",
+  },
+  {
+    link: "/image-compare",
+    icon: ArrowDataTransferHorizontalIcon,
+    label: "Image Compare",
     category: "workspace",
   },
   {

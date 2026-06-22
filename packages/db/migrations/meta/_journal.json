@@ -302,6 +302,13 @@
       "when": 1781904369212,
       "tag": "0042_silky_darkhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1782158300415,
+      "tag": "0043_whole_ultimo",
+      "breakpoints": true
     }
   ]
 }

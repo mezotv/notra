@@ -117,6 +117,33 @@ export const chatAttachments = pgTable(
   ]
 );
 
+export const htmlDocuments = pgTable(
+  "html_documents",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    content: text("content").notNull(),
+    size: integer("size").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("htmlDocuments_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+    index("htmlDocuments_userId_idx").on(table.userId),
+  ]
+);
+
 export const sessions = pgTable(
   "sessions",
   {
@@ -852,6 +879,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   linearIntegrations: many(linearIntegrations),
   mcpServerIntegrations: many(mcpServerIntegrations),
   chatAttachments: many(chatAttachments),
+  htmlDocuments: many(htmlDocuments),
 }));
 
 export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
@@ -874,6 +902,17 @@ export const chatAttachmentsRelations = relations(
     }),
   })
 );
+
+export const htmlDocumentsRelations = relations(htmlDocuments, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [htmlDocuments.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [htmlDocuments.userId],
+    references: [users.id],
+  }),
+}));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   users: one(users, {
