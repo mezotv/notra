@@ -29,36 +29,13 @@ import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import type {
   PreviewEffectiveState,
   PreviewIncomingState,
-  SocialPreviewAction,
-  SocialPreviewState,
 } from "@/types/content/ai-preview";
 import {
   copyLinkedInPostForPublishing,
   createLinkedInPostUrl,
 } from "@/utils/linkedin";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-
-function linkedInPreviewReducer(
-  state: SocialPreviewState,
-  action: SocialPreviewAction
-): SocialPreviewState {
-  switch (action.type) {
-    case "userActionChanged":
-      return { ...state, userAction: action.userAction };
-    case "draftMarkdownChanged":
-      return { ...state, draftMarkdown: action.draftMarkdown };
-    case "regenerateOpenChanged":
-      return { ...state, regenerateOpen: action.open };
-    case "regenerateOpenToggled":
-      return { ...state, regenerateOpen: !state.regenerateOpen };
-    case "regenerateInstructionsChanged":
-      return { ...state, regenerateInstructions: action.instructions };
-    case "openChanged":
-      return { ...state, isOpen: action.open };
-    default:
-      return state;
-  }
-}
+import { socialPreviewReducer } from "@/utils/social-preview-reducer";
 
 interface LinkedInPreviewProps {
   state: PreviewIncomingState;
@@ -101,7 +78,7 @@ export function LinkedInPreview({
       isOpen,
     },
     dispatch,
-  ] = useReducer(linkedInPreviewReducer, {
+  ] = useReducer(socialPreviewReducer, {
     userAction: "none",
     draftMarkdown: markdown,
     regenerateOpen: false,

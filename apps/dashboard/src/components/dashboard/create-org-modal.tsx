@@ -49,14 +49,14 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         });
 
         if (error) {
-          toast.error(error.message || "Failed to create organization");
           setIsCreating(false);
+          toast.error(error.message || "Failed to create organization");
           return;
         }
 
         if (!data) {
-          toast.error("Failed to create organization");
           setIsCreating(false);
+          toast.error("Failed to create organization");
           return;
         }
 
@@ -86,7 +86,9 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
         router.push(`/${data.slug}`);
       } catch (_error) {
+        setIsCreating(false);
         toast.error("Failed to create organization");
+        return;
       }
       setIsCreating(false);
     },

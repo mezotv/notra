@@ -60,7 +60,9 @@ export function FeedbackForm({
     } catch (error) {
       const errMessage =
         error instanceof Error ? error.message : "Failed to send feedback";
+      setIsSubmitting(false);
       toast.error(errMessage);
+      return;
     }
     setIsSubmitting(false);
   }

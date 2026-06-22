@@ -29,33 +29,10 @@ import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import type {
   PreviewEffectiveState,
   PreviewIncomingState,
-  SocialPreviewAction,
-  SocialPreviewState,
 } from "@/types/content/ai-preview";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
+import { socialPreviewReducer } from "@/utils/social-preview-reducer";
 import { createTwitterPostUrl } from "@/utils/twitter";
-
-function twitterPreviewReducer(
-  state: SocialPreviewState,
-  action: SocialPreviewAction
-): SocialPreviewState {
-  switch (action.type) {
-    case "userActionChanged":
-      return { ...state, userAction: action.userAction };
-    case "draftMarkdownChanged":
-      return { ...state, draftMarkdown: action.draftMarkdown };
-    case "regenerateOpenChanged":
-      return { ...state, regenerateOpen: action.open };
-    case "regenerateOpenToggled":
-      return { ...state, regenerateOpen: !state.regenerateOpen };
-    case "regenerateInstructionsChanged":
-      return { ...state, regenerateInstructions: action.instructions };
-    case "openChanged":
-      return { ...state, isOpen: action.open };
-    default:
-      return state;
-  }
-}
 
 interface TwitterPreviewProps {
   state: PreviewIncomingState;
@@ -98,7 +75,7 @@ export function TwitterPreview({
       isOpen,
     },
     dispatch,
-  ] = useReducer(twitterPreviewReducer, {
+  ] = useReducer(socialPreviewReducer, {
     userAction: "none",
     draftMarkdown: markdown,
     regenerateOpen: false,
