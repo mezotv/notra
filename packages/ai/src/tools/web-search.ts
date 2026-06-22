@@ -11,7 +11,7 @@ export const WEB_SEARCH_TOOL_NAME = "webSearch";
 export const FETCH_WEBPAGE_TOOL_NAME = "fetchWebpage";
 
 export function isWebSearchAvailable(): boolean {
-  return true;
+  return Boolean(process.env.CONTEXT_DEV_API_KEY?.trim());
 }
 
 const webSearchInputSchema: z.ZodType<ContextDevWebSearchInput> = z.object({
@@ -117,6 +117,26 @@ export function createWebSearchTool(): Tool {
   });
 }
 
+export function createUnavailableWebSearchTool(): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: WEB_SEARCH_TOOL_NAME,
+      intro:
+        "Explain that live web search is unavailable because Context.dev is not configured.",
+      whenToUse:
+        "Use when the user asks to search the web and Context.dev API credentials are missing.",
+      usageNotes:
+        "Return the configuration error. Do not claim that no web-search tool exists.",
+    }),
+    inputSchema: webSearchInputSchema,
+    execute: async () => ({
+      success: false,
+      error:
+        "Context.dev is not configured. Set CONTEXT_DEV_API_KEY to use web search.",
+    }),
+  });
+}
+
 export function createFetchWebpageTool(): Tool {
   return tool({
     description: toolDescription({
@@ -133,8 +153,28 @@ export function createFetchWebpageTool(): Tool {
   });
 }
 
+export function createUnavailableFetchWebpageTool(): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: FETCH_WEBPAGE_TOOL_NAME,
+      intro:
+        "Explain that webpage fetching is unavailable because Context.dev is not configured.",
+      whenToUse:
+        "Use when the user asks to fetch or read a URL and Context.dev API credentials are missing.",
+      usageNotes:
+        "Return the configuration error. Do not claim that no webpage-fetching tool exists.",
+    }),
+    inputSchema: fetchWebpageInputSchema,
+    execute: async () => ({
+      success: false,
+      error:
+        "Context.dev is not configured. Set CONTEXT_DEV_API_KEY to fetch webpages.",
+    }),
+  });
+}
+
 export const WEB_SEARCH_TOOL_DESCRIPTION =
-  "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, descriptions, and scraped markdown for citations or follow-up research.";
+  "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, descriptions, and scraped markdown for citations or follow-up research. Requires Context.dev API configuration to return live data.";
 
 export const FETCH_WEBPAGE_TOOL_DESCRIPTION =
-  "**Fetch Webpage**: Fetch a specific public URL using fetchWebpage and return clean markdown plus metadata. Use this when the user provides a URL and asks to read, browse, summarize, inspect, or extract from that page.";
+  "**Fetch Webpage**: Fetch a specific public URL using fetchWebpage and return clean markdown plus metadata. Use this when the user provides a URL and asks to read, browse, summarize, inspect, or extract from that page. Requires Context.dev API configuration to return live data.";

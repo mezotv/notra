@@ -8,6 +8,8 @@ import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
   createFetchWebpageTool,
+  createUnavailableFetchWebpageTool,
+  createUnavailableWebSearchTool,
   createWebSearchTool,
   FETCH_WEBPAGE_TOOL_DESCRIPTION,
   FETCH_WEBPAGE_TOOL_NAME,
@@ -25,11 +27,11 @@ export async function createChatAgent(
 ) {
   const { organizationId } = context;
   const isDev = process.env.NODE_ENV === "development";
-  const hasWebSearch = isWebSearchAvailable();
+  const hasContextDev = isWebSearchAvailable();
   const hasMcp = (await getEnabledMcpServerCount(organizationId)) > 0;
   const decision = await routeMessage(
     instruction,
-    hasMcp || hasWebSearch,
+    hasMcp || hasContextDev,
     context.log,
     false,
     context.telemetryMetadata
@@ -53,12 +55,12 @@ export async function createChatAgent(
     editMarkdown,
     listAvailableSkills: listAvailableSkills({ organizationId }),
     getSkillByName: getSkillByName({ organizationId }),
-    ...(hasWebSearch
-      ? {
-          [FETCH_WEBPAGE_TOOL_NAME]: createFetchWebpageTool(),
-          [WEB_SEARCH_TOOL_NAME]: createWebSearchTool(),
-        }
-      : {}),
+    [FETCH_WEBPAGE_TOOL_NAME]: hasContextDev
+      ? createFetchWebpageTool()
+      : createUnavailableFetchWebpageTool(),
+    [WEB_SEARCH_TOOL_NAME]: hasContextDev
+      ? createWebSearchTool()
+      : createUnavailableWebSearchTool(),
     ...(isDev ? { example: exampleTool() } : {}),
   };
   const lazyMcpRuntime = hasMcp
@@ -85,6 +87,11 @@ export async function createChatAgent(
   const brandContext = context.brandContext
     ? `\n\nBrand identity context:\n${context.brandContext}`
     : "";
+  const capabilityDescriptions = [
+    FETCH_WEBPAGE_TOOL_DESCRIPTION,
+    WEB_SEARCH_TOOL_DESCRIPTION,
+    ...(lazyMcpRuntime?.descriptions ?? []),
+  ];
 
   const agent = new ToolLoopAgent({
     model: modelWithMemory,
@@ -103,7 +110,8 @@ export async function createChatAgent(
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
 
-${hasWebSearch || lazyMcpRuntime?.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${FETCH_WEBPAGE_TOOL_DESCRIPTION}` : "", hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...(lazyMcpRuntime?.descriptions ?? []).map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
+## Available Capabilities
+${capabilityDescriptions.map((description) => `- ${description}`).join("\n")}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.
