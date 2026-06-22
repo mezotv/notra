@@ -40,6 +40,7 @@ import {
   CreditBalanceButton,
   CreditBalanceMenuItem,
 } from "@/components/billing/credit-balance-button";
+import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
@@ -147,80 +148,111 @@ export function SiteHeader() {
     breadcrumbSegments[0] === "content" &&
     breadcrumbSegments.length >= 2;
   const contentDetailId = isContentDetail ? breadcrumbSegments[1] : null;
+  const isBrandIdentity =
+    !isNonOrgPath &&
+    breadcrumbSegments[0] === "brand" &&
+    breadcrumbSegments[1] === "identity";
 
   const displayBreadcrumbSegments = isCollectionDetail
     ? ["content", "collection"]
     : breadcrumbSegments;
 
-  const breadcrumbs = displayBreadcrumbSegments.flatMap((segment, index) => {
-    const href = (() => {
-      if (isCollectionDetail && segment === "content") {
-        return `/${slug}/content`;
-      }
-      if (isCollectionDetail && segment === "collection") {
-        return `/${slug}/content`;
-      }
-      return isNonOrgPath
-        ? `/${segments.slice(0, index + 1).join("/")}`
-        : `/${segments.slice(0, index + 2).join("/")}`;
-    })();
-    const isLast = index === displayBreadcrumbSegments.length - 1;
-    const config = SEGMENT_CONFIG[segment];
-    const label =
-      config?.label ??
-      segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
-    const isClickable = config?.href !== null;
-    const isChatDetailLast = isChatDetail && isLast && chatDetailId;
-    const isContentDetailLast = isContentDetail && isLast && contentDetailId;
-    const content = (() => {
-      if (isChatDetailLast) {
-        return <ChatTopbarTitle chatId={chatDetailId} />;
-      }
+  const brandIdentityBreadcrumbs = [
+    <BreadcrumbItem
+      className="hover:underline"
+      key={`${id}-brand-identity-link`}
+    >
+      <BreadcrumbLink
+        render={<Link href={`/${slug}/brand/identity`}>Brand Identity</Link>}
+      />
+    </BreadcrumbItem>,
+    <BreadcrumbSeparator key={`${id}-brand-identity-sep`}>
+      <HugeiconsIcon icon={ArrowRight01Icon} />
+    </BreadcrumbSeparator>,
+    <BreadcrumbItem className="min-w-0" key={`${id}-brand-identity-selector`}>
+      <BrandTopbarIdentitySelector slug={slug ?? ""} />
+    </BreadcrumbItem>,
+  ];
 
-      if (isContentDetailLast) {
-        return <ContentTopbarTitle contentId={contentDetailId} />;
-      }
+  const genericBreadcrumbs = displayBreadcrumbSegments.flatMap(
+    (segment, index) => {
+      const href = (() => {
+        if (isCollectionDetail && segment === "content") {
+          return `/${slug}/content`;
+        }
+        if (isCollectionDetail && segment === "collection") {
+          return `/${slug}/content`;
+        }
+        return isNonOrgPath
+          ? `/${segments.slice(0, index + 1).join("/")}`
+          : `/${segments.slice(0, index + 2).join("/")}`;
+      })();
+      const isLast = index === displayBreadcrumbSegments.length - 1;
+      const config = SEGMENT_CONFIG[segment];
+      const label =
+        config?.label ??
+        segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+      const isClickable = config?.href !== null;
+      const isChatDetailLast = isChatDetail && isLast && chatDetailId;
+      const isContentDetailLast = isContentDetail && isLast && contentDetailId;
+      const content = (() => {
+        if (isChatDetailLast) {
+          return <ChatTopbarTitle chatId={chatDetailId} />;
+        }
 
-      if (isCollectionDetail && isLast) {
-        return <BreadcrumbPage>{label}</BreadcrumbPage>;
-      }
+        if (isContentDetailLast) {
+          return <ContentTopbarTitle contentId={contentDetailId} />;
+        }
 
-      if (isClickable) {
-        return <BreadcrumbLink render={<Link href={href}>{label}</Link>} />;
-      }
+        if (isCollectionDetail && isLast) {
+          return <BreadcrumbPage>{label}</BreadcrumbPage>;
+        }
+
+        if (isClickable) {
+          return <BreadcrumbLink render={<Link href={href}>{label}</Link>} />;
+        }
+
+        if (isLast) {
+          return <BreadcrumbPage>{label}</BreadcrumbPage>;
+        }
+
+        return <span>{label}</span>;
+      })();
+
+      const item = (
+        <BreadcrumbItem
+          className={cn(
+            (isChatDetailLast || isContentDetailLast) && "min-w-0",
+            isClickable &&
+              !(
+                isChatDetailLast ||
+                isCollectionDetail ||
+                isContentDetailLast
+              ) &&
+              "hover:underline"
+          )}
+          key={`${id}-item-${segment}`}
+        >
+          {content}
+        </BreadcrumbItem>
+      );
 
       if (isLast) {
-        return <BreadcrumbPage>{label}</BreadcrumbPage>;
+        return [item];
       }
 
-      return <span>{label}</span>;
-    })();
-
-    const item = (
-      <BreadcrumbItem
-        className={cn(
-          (isChatDetailLast || isContentDetailLast) && "min-w-0",
-          isClickable &&
-            !(isChatDetailLast || isCollectionDetail || isContentDetailLast) &&
-            "hover:underline"
-        )}
-        key={`${id}-item-${segment}`}
-      >
-        {content}
-      </BreadcrumbItem>
-    );
-
-    if (isLast) {
-      return [item];
+      return [
+        item,
+        <BreadcrumbSeparator key={`${id}-separator-${segment}`}>
+          <HugeiconsIcon icon={ArrowRight01Icon} />
+        </BreadcrumbSeparator>,
+      ];
     }
+  );
 
-    return [
-      item,
-      <BreadcrumbSeparator key={`${id}-separator-${segment}`}>
-        <HugeiconsIcon icon={ArrowRight01Icon} />
-      </BreadcrumbSeparator>,
-    ];
-  });
+  const breadcrumbs = isBrandIdentity
+    ? brandIdentityBreadcrumbs
+    : genericBreadcrumbs;
 
   return (
     <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-dashed transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
