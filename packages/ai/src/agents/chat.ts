@@ -7,7 +7,10 @@ import { exampleTool } from "@notra/ai/tools/example";
 import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import { getSkillByName, listAvailableSkills } from "@notra/ai/tools/skills";
 import {
+  createFetchWebpageTool,
   createWebSearchTool,
+  FETCH_WEBPAGE_TOOL_DESCRIPTION,
+  FETCH_WEBPAGE_TOOL_NAME,
   isWebSearchAvailable,
   WEB_SEARCH_TOOL_DESCRIPTION,
   WEB_SEARCH_TOOL_NAME,
@@ -50,7 +53,12 @@ export async function createChatAgent(
     editMarkdown,
     listAvailableSkills: listAvailableSkills({ organizationId }),
     getSkillByName: getSkillByName({ organizationId }),
-    ...(hasWebSearch ? { [WEB_SEARCH_TOOL_NAME]: createWebSearchTool() } : {}),
+    ...(hasWebSearch
+      ? {
+          [FETCH_WEBPAGE_TOOL_NAME]: createFetchWebpageTool(),
+          [WEB_SEARCH_TOOL_NAME]: createWebSearchTool(),
+        }
+      : {}),
     ...(isDev ? { example: exampleTool() } : {}),
   };
   const lazyMcpRuntime = hasMcp
@@ -95,7 +103,7 @@ export async function createChatAgent(
 ## Skills are first-class
 This organization has writing skills stored in a database (examples: a "humanizer" skill for removing AI-sounding text, plus content-type skills and any custom skills the user created). You do NOT know them ahead of time — you MUST call listAvailableSkills to discover what exists. NEVER make up skill names or claim to have skills you haven't verified via the tool.
 
-${hasWebSearch || lazyMcpRuntime?.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...(lazyMcpRuntime?.descriptions ?? []).map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
+${hasWebSearch || lazyMcpRuntime?.descriptions.length ? `## Available Capabilities\n${[hasWebSearch ? `- ${FETCH_WEBPAGE_TOOL_DESCRIPTION}` : "", hasWebSearch ? `- ${WEB_SEARCH_TOOL_DESCRIPTION}` : "", ...(lazyMcpRuntime?.descriptions ?? []).map((description) => `- ${description}`)].filter(Boolean).join("\n")}\n` : ""}
 
 ## Mode A — Information queries (no edit needed)
 Triggers: "what skills do you have", "what can you do", "list your skills", "describe skill X", "is there a skill for Y", etc.

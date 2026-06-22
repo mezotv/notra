@@ -37,6 +37,28 @@ export interface ContextDevWebSearchInput {
   };
 }
 
+export interface ContextDevFetchWebpageInput {
+  url: string;
+  includeLinks?: boolean;
+  includeImages?: boolean;
+  onlyMainContent?: boolean;
+  maxAgeMs?: number;
+  waitForMs?: number;
+  timeoutMS?: number;
+}
+
+export interface ContextDevFetchWebpageResponse {
+  success: true;
+  url: string;
+  markdown: string;
+  metadata?: {
+    title?: string;
+    description?: string;
+    finalUrl?: string;
+    sourceUrl?: string;
+  };
+}
+
 export interface ContextDevSearchResult {
   url: string;
   title: string;

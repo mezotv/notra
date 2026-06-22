@@ -53,6 +53,7 @@ const DEFAULT_STANDALONE_TOOL_NAMES = [
   "listAvailableSkills",
   "getSkillByName",
   "getAvailableIntegrations",
+  "fetchWebpage",
   "webSearch",
 ] as const;
 
@@ -314,7 +315,7 @@ function createStandaloneToolProvisioningRuntime({
   const managerToolNameSet = new Set<string>(NOTRA_MANAGER_TOOL_NAMES);
   const defaultToolNameSet = new Set(defaultActiveToolNames);
   const provisionableToolNames = Object.keys(tools).filter(
-    (name) => !(managerToolNameSet.has(name) || defaultToolNameSet.has(name))
+    (name) => !managerToolNameSet.has(name)
   );
   const getActiveToolNames = () =>
     Array.from(activeToolNames).filter(

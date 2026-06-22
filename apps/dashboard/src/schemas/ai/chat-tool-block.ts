@@ -33,6 +33,7 @@ export const STRING_TOOL_FIELDS = [
   "tag",
   "text",
   "title",
+  "url",
 ] as const;
 
 export type StringToolField = (typeof STRING_TOOL_FIELDS)[number];
@@ -58,6 +59,7 @@ export const stringToolFieldsSchema = z
     tag: optionalStringSchema,
     text: optionalStringSchema,
     title: optionalStringSchema,
+    url: optionalStringSchema,
   })
   .passthrough();
 

@@ -1,5 +1,7 @@
 import type {
   ContextDevErrorResponse,
+  ContextDevFetchWebpageInput,
+  ContextDevFetchWebpageResponse,
   ContextDevScrapingResult,
   ContextDevSearchResponse,
   ContextDevSearchResult,
@@ -122,23 +124,53 @@ export async function scrapeWebsiteForBrandAnalysis(
   url: string
 ): Promise<ContextDevScrapingResult> {
   try {
-    const params = new URLSearchParams({
-      includeImages: "false",
-      includeLinks: "true",
-      shortenBase64Images: "true",
-      useMainContentOnly: "true",
+    const response = await fetchWebpage({
+      includeImages: false,
+      includeLinks: true,
+      onlyMainContent: true,
       url,
     });
-    const response = await requestContextDev<{ markdown: string }>(
-      `/web/scrape/markdown?${params.toString()}`,
-      { method: "GET" }
-    );
 
     return { success: true, content: truncateContent(response.markdown) };
   } catch (error) {
     console.error("Error scraping website:", error);
     return mapContextDevError(error);
   }
+}
+
+export async function fetchWebpage(
+  input: ContextDevFetchWebpageInput
+): Promise<ContextDevFetchWebpageResponse> {
+  const params = new URLSearchParams({
+    includeImages: String(input.includeImages ?? false),
+    includeLinks: String(input.includeLinks ?? true),
+    shortenBase64Images: "true",
+    useMainContentOnly: String(input.onlyMainContent ?? true),
+    url: input.url,
+  });
+
+  if (input.maxAgeMs !== undefined) {
+    params.set("maxAgeMs", String(input.maxAgeMs));
+  }
+  if (input.waitForMs !== undefined) {
+    params.set("waitForMs", String(input.waitForMs));
+  }
+  if (input.timeoutMS !== undefined) {
+    params.set("timeoutMS", String(input.timeoutMS));
+  }
+
+  const response = await requestContextDev<{
+    markdown: string;
+    metadata?: ContextDevFetchWebpageResponse["metadata"];
+    url: string;
+  }>(`/web/scrape/markdown?${params.toString()}`, { method: "GET" });
+
+  return {
+    success: true,
+    markdown: response.markdown,
+    metadata: response.metadata,
+    url: response.url,
+  };
 }
 
 function shouldScrapeMarkdown(input: ContextDevWebSearchInput): boolean {

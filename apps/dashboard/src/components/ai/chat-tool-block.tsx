@@ -430,6 +430,11 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     noun: "skill",
     suffix: (input) => quotedSuffix(input, ["name"]),
   },
+  fetchWebpage: {
+    verbs: ["Fetching", "Fetched"],
+    noun: "webpage",
+    suffix: (input) => quotedSuffix(input, ["url"]),
+  },
   webSearch: {
     verbs: ["Searching", "Searched"],
     noun: "web",

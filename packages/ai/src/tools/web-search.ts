@@ -1,10 +1,14 @@
-import type { ContextDevWebSearchInput } from "@notra/ai/types/context-dev";
-import { searchWeb } from "@notra/ai/utils/context-dev";
+import type {
+  ContextDevFetchWebpageInput,
+  ContextDevWebSearchInput,
+} from "@notra/ai/types/context-dev";
+import { fetchWebpage, searchWeb } from "@notra/ai/utils/context-dev";
 import { toolDescription } from "@notra/ai/utils/description";
 import { type Tool, tool } from "ai";
 import z from "zod";
 
 export const WEB_SEARCH_TOOL_NAME = "webSearch";
+export const FETCH_WEBPAGE_TOOL_NAME = "fetchWebpage";
 
 export function isWebSearchAvailable(): boolean {
   return true;
@@ -56,6 +60,47 @@ const webSearchInputSchema: z.ZodType<ContextDevWebSearchInput> = z.object({
     .describe("Optional scrape options when full page markdown is needed."),
 });
 
+const fetchWebpageInputSchema: z.ZodType<ContextDevFetchWebpageInput> =
+  z.object({
+    url: z
+      .string()
+      .url()
+      .describe("The full public HTTP or HTTPS URL to fetch."),
+    includeLinks: z
+      .boolean()
+      .default(true)
+      .describe("Preserve hyperlinks in the returned markdown."),
+    includeImages: z
+      .boolean()
+      .default(false)
+      .describe("Include image references in the returned markdown."),
+    onlyMainContent: z
+      .boolean()
+      .default(true)
+      .describe("Extract only the primary page content when possible."),
+    maxAgeMs: z
+      .number()
+      .int()
+      .min(0)
+      .max(2_592_000_000)
+      .optional()
+      .describe("Maximum cache age in milliseconds."),
+    waitForMs: z
+      .number()
+      .int()
+      .min(0)
+      .max(30_000)
+      .optional()
+      .describe("Optional browser wait time after page load in milliseconds."),
+    timeoutMS: z
+      .number()
+      .int()
+      .min(1000)
+      .max(300_000)
+      .default(60_000)
+      .describe("Fetch timeout in milliseconds."),
+  });
+
 export function createWebSearchTool(): Tool {
   return tool({
     description: toolDescription({
@@ -72,5 +117,24 @@ export function createWebSearchTool(): Tool {
   });
 }
 
+export function createFetchWebpageTool(): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: FETCH_WEBPAGE_TOOL_NAME,
+      intro:
+        "Fetch a specific public webpage URL with Context.dev and return LLM-ready markdown.",
+      whenToUse:
+        "Use when the user provides a URL and asks to read, fetch, browse, inspect, summarize, or extract content from that page.",
+      usageNotes:
+        "Pass the exact URL. Use onlyMainContent: true by default for article, docs, marketing, and company pages. The result includes markdown, source URL, and page metadata when available.",
+    }),
+    inputSchema: fetchWebpageInputSchema,
+    execute: async (input) => fetchWebpage(input),
+  });
+}
+
 export const WEB_SEARCH_TOOL_DESCRIPTION =
   "**Web Search**: Search the live web using webSearch for current facts, public docs, news, competitive context, and source-aware research. Prefer limit: 5 unless the user asks for broader coverage. Use result titles, URLs, descriptions, and scraped markdown for citations or follow-up research.";
+
+export const FETCH_WEBPAGE_TOOL_DESCRIPTION =
+  "**Fetch Webpage**: Fetch a specific public URL using fetchWebpage and return clean markdown plus metadata. Use this when the user provides a URL and asks to read, browse, summarize, inspect, or extract from that page.";
