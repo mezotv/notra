@@ -57,7 +57,7 @@ const DEFAULT_STANDALONE_TOOL_NAMES = [
 ] as const;
 
 const NOTRA_TOOLING_DESCRIPTION =
-  "Notra app tools are available through lazy discovery. Use searchNotraTools to find built-in content, brand, GitHub, Linear, and post tools by intent, then activateNotraTools before calling them. Basic skills, integration discovery, and web search tools are available by default.";
+  "Notra app tools are available through lazy discovery. Use searchNotraTools to find built-in content, brand, GitHub, Linear, and post tools by intent, then activateNotraTools before calling them. Basic skills, integration discovery, and web search tools are available by default when configured.";
 const WHITESPACE_REGEX = /\s+/;
 const LEGACY_NOTRA_TOOL_ALIASES: Record<string, string> = {
   getBrandReferences: "getAvailableBrandReferences",

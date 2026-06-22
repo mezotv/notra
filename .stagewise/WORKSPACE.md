@@ -66,7 +66,7 @@ auth: Better-Auth, session + OTP + organization plugin, server-side in `src/lib/
 state: TanStack Query (client), Nuqs (URL state), Autumn (billing), Databuddy (analytics)  
 api: Multiple handlers: `/api/auth/*`, `/api/organizations/*`, `/api/workflows/*`, `/api/webhooks/*`, `/api/upload/*`  
 db: Drizzle ORM (node-postgres), schema from `@notra/db/schema`  
-integrations: Upstash Redis, QStash, Firecrawl, GitHub OAuth, OpenRouter AI, Supermemory  
+integrations: Upstash Redis, QStash, Context.dev, GitHub OAuth, OpenRouter AI, Supermemory  
 build: Next.js 16, React Compiler, useCache experimental, transpiles all @notra packages  
 dirs: `src/lib/auth/` → auth config, `src/lib/ai/` → AI gateway, `src/lib/email/` → email actions, `src/app/` → routes, `src/components/` → UI  
 
@@ -148,7 +148,7 @@ ci: `.github/workflows/code-quality.yml` → bun install, ultracite check on pus
 
 envFiles: `.env`, `.env.example`  
 
-envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `FIRECRAWL_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`  
+envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `CONTEXT_DEV_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`  
 
 ---
 
