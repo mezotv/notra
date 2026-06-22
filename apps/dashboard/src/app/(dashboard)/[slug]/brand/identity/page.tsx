@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import PageClient from "./page-client";
 
 export const metadata: Metadata = {
-  title: "Identity & References",
+  title: "Brand Identity",
 };
 
 async function Page({

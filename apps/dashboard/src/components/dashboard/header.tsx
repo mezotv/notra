@@ -56,7 +56,7 @@ const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
   automation: { href: null },
   brand: { href: null },
   "api-keys": { label: "API Keys" },
-  identity: { label: "Identity & References" },
+  identity: { label: "Brand Identity" },
   schedules: { label: "Schedules" },
 };
 

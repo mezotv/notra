@@ -1,6 +1,7 @@
 import {
   AnalyticsUpIcon,
   Calendar03Icon,
+  Comment01Icon,
   CorporateIcon,
   CreditCardIcon,
   Home01Icon,
@@ -50,12 +51,20 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     path: (slug) => `/${slug}/content`,
   },
   {
-    id: "brand-identity",
-    label: "Identity & References",
-    keywords: ["brand", "voice", "tone", "references"],
+    id: "brand-company-info",
+    label: "Company Info",
+    keywords: ["brand", "identity", "voice", "tone", "company"],
     icon: CorporateIcon,
     section: "Workspace",
     path: (slug) => `/${slug}/brand/identity`,
+  },
+  {
+    id: "brand-references",
+    label: "References",
+    keywords: ["brand", "identity", "references", "examples", "posts"],
+    icon: Comment01Icon,
+    section: "Workspace",
+    path: (slug) => `/${slug}/brand/identity?view=references`,
   },
   {
     id: "automation-schedules",

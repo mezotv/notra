@@ -2,7 +2,6 @@
 import {
   AnalyticsUpIcon,
   Calendar03Icon,
-  CorporateIcon,
   Home01Icon,
   Key01Icon,
   MagicWand01Icon,
@@ -26,10 +25,11 @@ import {
 import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { memo } from "react";
+import { Fragment, memo } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
+import { NavBrandIdentity } from "./nav-brand-identity";
 
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
   workspace: "Workspace",
@@ -55,12 +55,6 @@ const navMainItems: NavMainItem[] = [
     link: "/content",
     icon: NoteIcon,
     label: "Content",
-    category: "workspace",
-  },
-  {
-    link: "/brand/identity",
-    icon: CorporateIcon,
-    label: "Identity & References",
     category: "workspace",
   },
   {
@@ -209,13 +203,15 @@ export function NavMain() {
       </SidebarGroup>
       <NavGroup items={rootItems} pathname={pathname} slug={slug} />
       {categories.map((category) => (
-        <NavGroup
-          items={itemsByCategory[category]}
-          key={category}
-          label={categoryLabels[category]}
-          pathname={pathname}
-          slug={slug}
-        />
+        <Fragment key={category}>
+          <NavGroup
+            items={itemsByCategory[category]}
+            label={categoryLabels[category]}
+            pathname={pathname}
+            slug={slug}
+          />
+          {category === "workspace" && <NavBrandIdentity slug={slug} />}
+        </Fragment>
       ))}
     </>
   );

@@ -106,6 +106,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     "view",
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
   );
+  const [newIdentityParam, setNewIdentityParam] = useQueryState("new");
+
+  useEffect(() => {
+    if (newIdentityParam) {
+      setAddIdentityOpen(true);
+      setNewIdentityParam(null);
+    }
+  }, [newIdentityParam, setNewIdentityParam]);
 
   useHotkey(
     "C",
@@ -377,7 +385,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">
-              {activeTab === "identity" ? "Brand Identity" : "References"}
+              {activeTab === "identity" ? "Company Info" : "References"}
             </h1>
             <p className="text-muted-foreground">
               {activeTab === "identity"
@@ -463,7 +471,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         >
           <div className="flex items-center justify-between">
             <TabsList variant="line">
-              <TabsTrigger value="identity">Identity</TabsTrigger>
+              <TabsTrigger value="identity">Company Info</TabsTrigger>
               <TabsTrigger value="references">
                 References
                 {referenceCount > 0 && (
