@@ -348,14 +348,18 @@ export default function ApiKeysPage() {
     newKeyConfig.permission !== null &&
     newKeyConfig.expiration !== null;
 
-  useHotkey("C", () => dispatchUi({ type: "createDialogChanged", open: true }), {
-    enabled: !(
-      dialogOpen ||
-      editDialogOpen ||
-      !!deletingKey ||
-      hasNewKeyConfig
-    ),
-  });
+  useHotkey(
+    "C",
+    () => dispatchUi({ type: "createDialogChanged", open: true }),
+    {
+      enabled: !(
+        dialogOpen ||
+        editDialogOpen ||
+        !!deletingKey ||
+        hasNewKeyConfig
+      ),
+    }
+  );
 
   const { data: keys = [], isPending } = useQuery<ApiKeyListItem[]>({
     ...dashboardOrpc.apiKeys.list.queryOptions({
@@ -649,8 +653,7 @@ export default function ApiKeysPage() {
                     onClick={() =>
                       dispatchUi({
                         type: "createdSortOrderChanged",
-                        sortOrder:
-                          createdSortOrder === "asc" ? "desc" : "asc",
+                        sortOrder: createdSortOrder === "asc" ? "desc" : "asc",
                       })
                     }
                     variant="ghost"

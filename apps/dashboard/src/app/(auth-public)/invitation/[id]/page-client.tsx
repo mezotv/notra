@@ -266,8 +266,8 @@ function InviteAuthCard({
           </TabsList>
           <TabsContent className="mt-6" value="login">
             <div className="mb-6 text-center text-sm">
-              <strong>{invitation.inviterEmail}</strong> has invited you to
-              join their organization. Please sign in to proceed.
+              <strong>{invitation.inviterEmail}</strong> has invited you to join
+              their organization. Please sign in to proceed.
             </div>
             <LoginForm
               description=""
@@ -279,8 +279,8 @@ function InviteAuthCard({
           </TabsContent>
           <TabsContent className="mt-6" value="signup">
             <div className="mb-6 text-center text-sm">
-              <strong>{invitation.inviterEmail}</strong> has invited you to
-              join their organization. Please sign up to proceed.
+              <strong>{invitation.inviterEmail}</strong> has invited you to join
+              their organization. Please sign up to proceed.
             </div>
             <SignupForm
               description=""
@@ -446,10 +446,18 @@ function InviteActions({
 }) {
   return (
     <CardFooter className="mt-4 grid grid-cols-2 gap-6">
-      <Button disabled={rejecting || accepting} onClick={onReject} variant="outline">
+      <Button
+        disabled={rejecting || accepting}
+        onClick={onReject}
+        variant="outline"
+      >
         {rejecting ? <Loader2Icon className="size-4 animate-spin" /> : "Reject"}
       </Button>
-      <Button disabled={accepting || rejecting} onClick={onAccept} variant="default">
+      <Button
+        disabled={accepting || rejecting}
+        onClick={onAccept}
+        variant="default"
+      >
         {accepting ? <Loader2Icon className="size-4 animate-spin" /> : "Accept"}
       </Button>
     </CardFooter>
