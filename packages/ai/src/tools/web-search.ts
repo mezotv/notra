@@ -7,7 +7,7 @@ import z from "zod";
 export const WEB_SEARCH_TOOL_NAME = "webSearch";
 
 export function isWebSearchAvailable(): boolean {
-  return Boolean(process.env.CONTEXT_DEV_API_KEY?.trim());
+  return true;
 }
 
 const webSearchInputSchema: z.ZodType<ContextDevWebSearchInput> = z.object({
