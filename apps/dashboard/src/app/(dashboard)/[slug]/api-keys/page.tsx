@@ -86,6 +86,7 @@ import { API_KEY_CARD_ITEMS, API_KEY_PRESETS } from "@/lib/api-keys/presets";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { createApiKeySchema, updateApiKeySchema } from "@/schemas/api-keys";
 import type { ApiKeyExpiration, ApiKeyPermission } from "@/types/api-keys";
+import { copyToClipboard } from "@/utils/copy-to-clipboard";
 
 const NEW_KEY_CONFIG_PARSERS = {
   name: parseAsString,
@@ -586,11 +587,6 @@ export default function ApiKeysPage() {
     });
     editForm.setFieldValue("name", key.name);
     dispatchUi({ type: "editDialogChanged", open: true });
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
   };
 
   return (
