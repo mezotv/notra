@@ -13,29 +13,11 @@ import { useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
+import {
+  readStoredBrandIdentityId,
+  writeStoredBrandIdentityId,
+} from "@/utils/brand-identity-selection";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
-
-const STORAGE_VERSION = "v1";
-
-function storageKey(organizationId: string) {
-  return `notra:brand-identity:${STORAGE_VERSION}:${organizationId}`;
-}
-
-function readStoredVoiceId(organizationId: string) {
-  try {
-    return localStorage.getItem(storageKey(organizationId));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredVoiceId(organizationId: string, voiceId: string) {
-  try {
-    localStorage.setItem(storageKey(organizationId), voiceId);
-  } catch {
-    // Ignore storage failures (private mode, quota, disabled).
-  }
-}
 
 export function NavBrandIdentity({ slug }: { slug: string }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -55,12 +37,10 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
   useEffect(() => {
     if (organizationId) {
-      setStoredVoiceId(readStoredVoiceId(organizationId));
+      setStoredVoiceId(readStoredBrandIdentityId(organizationId));
     }
   }, [organizationId]);
 
-  // The active identity is selected on the page; the sidebar only mirrors it so
-  // the Company Info / References links and reference count stay scoped to it.
   const activeVoice =
     (voiceParam ? voices.find((v) => v.id === voiceParam) : undefined) ??
     (storedVoiceId ? voices.find((v) => v.id === storedVoiceId) : undefined) ??
@@ -75,7 +55,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
       voiceParam &&
       voices.some((v) => v.id === voiceParam)
     ) {
-      writeStoredVoiceId(organizationId, voiceParam);
+      writeStoredBrandIdentityId(organizationId, voiceParam);
       setStoredVoiceId(voiceParam);
     }
   }, [organizationId, isOnBrandPage, voiceParam, voices]);

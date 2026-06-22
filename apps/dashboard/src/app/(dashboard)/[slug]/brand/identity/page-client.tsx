@@ -107,9 +107,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     parseAsStringLiteral(TAB_VALUES).withDefault("identity")
   );
   const [newIdentityParam, setNewIdentityParam] = useQueryState("new");
-  // Opening the create dialog from the sidebar/breadcrumb arrives as ?new=1.
-  // Derive the open state from the URL rather than syncing it into state via an
-  // effect, and clear the param when the dialog closes.
   const isAddIdentityOpen = addIdentityOpen || Boolean(newIdentityParam);
 
   const handleAddIdentityOpenChange = (open: boolean) => {

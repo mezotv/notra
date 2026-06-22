@@ -16,11 +16,6 @@ import {
 import type * as React from "react";
 import { useState } from "react";
 
-/**
- * A sidebar group whose label acts as a collapse/expand toggle. When the
- * sidebar itself is collapsed to icons, the group is forced open so the item
- * icons stay reachable.
- */
 export function CollapsibleSidebarGroup({
   label,
   defaultOpen = true,

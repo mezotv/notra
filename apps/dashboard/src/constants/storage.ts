@@ -9,6 +9,8 @@ export const localStorageKeys = {
     organizationId
       ? `onboarding-collapsed:${organizationId}`
       : "onboarding-collapsed",
+  brandIdentity: (organizationId: string) =>
+    `notra:brand-identity:v1:${organizationId}`,
 } as const;
 
 export const sessionStorageKeys = {
