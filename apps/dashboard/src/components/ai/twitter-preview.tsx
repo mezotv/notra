@@ -26,33 +26,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { TwitterPost } from "@/components/twitter-post";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import type {
+  PreviewEffectiveState,
+  PreviewIncomingState,
+  SocialPreviewAction,
+  SocialPreviewState,
+} from "@/types/content/ai-preview";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 import { createTwitterPostUrl } from "@/utils/twitter";
 
-type IncomingState = "draft" | "finished";
-type EffectiveState = "draft" | "loading" | "finished";
-type UserAction = "none" | "saving" | "generating" | "save-failed";
-
-interface TwitterPreviewState {
-  userAction: UserAction;
-  draftMarkdown: string;
-  regenerateOpen: boolean;
-  regenerateInstructions: string;
-  isOpen: boolean;
-}
-
-type TwitterPreviewAction =
-  | { type: "userActionChanged"; userAction: UserAction }
-  | { type: "draftMarkdownChanged"; draftMarkdown: string }
-  | { type: "regenerateOpenChanged"; open: boolean }
-  | { type: "regenerateOpenToggled" }
-  | { type: "regenerateInstructionsChanged"; instructions: string }
-  | { type: "openChanged"; open: boolean };
-
 function twitterPreviewReducer(
-  state: TwitterPreviewState,
-  action: TwitterPreviewAction
-): TwitterPreviewState {
+  state: SocialPreviewState,
+  action: SocialPreviewAction
+): SocialPreviewState {
   switch (action.type) {
     case "userActionChanged":
       return { ...state, userAction: action.userAction };
@@ -72,7 +58,7 @@ function twitterPreviewReducer(
 }
 
 interface TwitterPreviewProps {
-  state: IncomingState;
+  state: PreviewIncomingState;
   title: string;
   markdown: string;
   organization?: {
@@ -124,7 +110,7 @@ export function TwitterPreview({
     dispatch({ type: "draftMarkdownChanged", draftMarkdown: markdown });
   }, [markdown]);
 
-  const effectiveState: EffectiveState = (() => {
+  const effectiveState: PreviewEffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
     }

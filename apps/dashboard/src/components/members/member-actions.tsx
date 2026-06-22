@@ -49,30 +49,16 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import type {
+  MemberActionsAction,
+  MemberActionsState,
+  MemberRole,
+} from "@/types/members/member-actions";
 import type { Member } from "./columns";
 
 interface MemberActionsProps {
   member: Member;
 }
-
-type MemberRole = "member" | "admin";
-
-interface MemberActionsState {
-  isRemoving: boolean;
-  isChangingRole: boolean;
-  showRemoveDialog: boolean;
-  showChangeRoleDialog: boolean;
-  newRole: MemberRole;
-}
-
-type MemberActionsAction =
-  | { type: "removeStarted" }
-  | { type: "removeFinished" }
-  | { type: "roleChangeStarted" }
-  | { type: "roleChangeFinished" }
-  | { type: "removeDialogChanged"; open: boolean }
-  | { type: "roleDialogChanged"; open: boolean }
-  | { type: "roleSelected"; role: MemberRole };
 
 function memberActionsReducer(
   state: MemberActionsState,

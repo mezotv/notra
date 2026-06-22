@@ -26,36 +26,22 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { LinkedInPost } from "@/components/linkedin-post";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
+import type {
+  PreviewEffectiveState,
+  PreviewIncomingState,
+  SocialPreviewAction,
+  SocialPreviewState,
+} from "@/types/content/ai-preview";
 import {
   copyLinkedInPostForPublishing,
   createLinkedInPostUrl,
 } from "@/utils/linkedin";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
-type IncomingState = "draft" | "finished";
-type EffectiveState = "draft" | "loading" | "finished";
-type UserAction = "none" | "saving" | "generating" | "save-failed";
-
-interface LinkedInPreviewState {
-  userAction: UserAction;
-  draftMarkdown: string;
-  regenerateOpen: boolean;
-  regenerateInstructions: string;
-  isOpen: boolean;
-}
-
-type LinkedInPreviewAction =
-  | { type: "userActionChanged"; userAction: UserAction }
-  | { type: "draftMarkdownChanged"; draftMarkdown: string }
-  | { type: "regenerateOpenChanged"; open: boolean }
-  | { type: "regenerateOpenToggled" }
-  | { type: "regenerateInstructionsChanged"; instructions: string }
-  | { type: "openChanged"; open: boolean };
-
 function linkedInPreviewReducer(
-  state: LinkedInPreviewState,
-  action: LinkedInPreviewAction
-): LinkedInPreviewState {
+  state: SocialPreviewState,
+  action: SocialPreviewAction
+): SocialPreviewState {
   switch (action.type) {
     case "userActionChanged":
       return { ...state, userAction: action.userAction };
@@ -75,7 +61,7 @@ function linkedInPreviewReducer(
 }
 
 interface LinkedInPreviewProps {
-  state: IncomingState;
+  state: PreviewIncomingState;
   title: string;
   markdown: string;
   organization?: {
@@ -127,7 +113,7 @@ export function LinkedInPreview({
     dispatch({ type: "draftMarkdownChanged", draftMarkdown: markdown });
   }, [markdown]);
 
-  const effectiveState: EffectiveState = (() => {
+  const effectiveState: PreviewEffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
     }

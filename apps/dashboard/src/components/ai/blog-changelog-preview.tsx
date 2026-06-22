@@ -31,34 +31,13 @@ import { useCallback, useEffect, useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
+import type {
+  BlogChangelogPreviewAction,
+  BlogChangelogPreviewState,
+  PreviewEffectiveState,
+  PreviewIncomingState,
+} from "@/types/content/ai-preview";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
-
-type IncomingState = "draft" | "finished";
-type EffectiveState = "draft" | "loading" | "finished";
-type UserAction =
-  | "none"
-  | "saving"
-  | "publishing"
-  | "generating"
-  | "save-failed";
-
-interface BlogChangelogPreviewState {
-  userAction: UserAction;
-  draftTitle: string;
-  draftMarkdown: string;
-  regenerateOpen: boolean;
-  regenerateInstructions: string;
-  isOpen: boolean;
-}
-
-type BlogChangelogPreviewAction =
-  | { type: "userActionChanged"; userAction: UserAction }
-  | { type: "draftTitleChanged"; draftTitle: string }
-  | { type: "draftMarkdownChanged"; draftMarkdown: string }
-  | { type: "regenerateOpenChanged"; open: boolean }
-  | { type: "regenerateOpenToggled" }
-  | { type: "regenerateInstructionsChanged"; instructions: string }
-  | { type: "openChanged"; open: boolean };
 
 function blogChangelogPreviewReducer(
   state: BlogChangelogPreviewState,
@@ -85,7 +64,7 @@ function blogChangelogPreviewReducer(
 }
 
 interface BlogChangelogPreviewProps {
-  state: IncomingState;
+  state: PreviewIncomingState;
   title: string;
   markdown: string;
   contentType: Extract<
@@ -143,7 +122,7 @@ export function BlogChangelogPreview({
     dispatch({ type: "draftMarkdownChanged", draftMarkdown: markdown });
   }, [markdown]);
 
-  const effectiveState: EffectiveState = (() => {
+  const effectiveState: PreviewEffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
     }

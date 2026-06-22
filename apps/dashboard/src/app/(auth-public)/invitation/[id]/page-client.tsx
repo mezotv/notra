@@ -38,55 +38,11 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
-
-interface InvitationData {
-  id: string;
-  organizationId: string;
-  organizationName: string;
-  organizationSlug: string;
-  inviterEmail: string;
-  inviterName: string;
-  inviterId: string;
-  email: string;
-  role: string | null;
-  status: "pending" | "accepted" | "rejected" | "canceled";
-  expiresAt: Date;
-  expired: boolean;
-}
-
-interface PageClientProps {
-  invitationId: string;
-  invitation: InvitationData;
-  user: {
-    id: string;
-    email: string;
-    emailVerified: boolean;
-    name: string;
-    createdAt: Date;
-    updatedAt: Date;
-    image?: string | null | undefined;
-  } | null;
-  initialError?: string | null;
-}
-
-type InviteStatus = "pending" | "accepted" | "rejected";
-
-interface InvitationState {
-  user: PageClientProps["user"];
-  inviteStatus: InviteStatus;
-  error: string | null;
-  accepting: boolean;
-  rejecting: boolean;
-}
-
-type InvitationAction =
-  | { type: "userSynced"; user: PageClientProps["user"] }
-  | { type: "errorChanged"; error: string | null }
-  | { type: "acceptStarted" }
-  | { type: "acceptFinished" }
-  | { type: "rejectStarted" }
-  | { type: "rejectFinished" }
-  | { type: "inviteStatusChanged"; inviteStatus: InviteStatus };
+import type {
+  InvitationAction,
+  InvitationPageClientProps,
+  InvitationState,
+} from "@/types/auth/invitation";
 
 function invitationReducer(
   state: InvitationState,
@@ -117,7 +73,7 @@ function PageClient({
   invitation,
   user: initialUser,
   initialError,
-}: PageClientProps) {
+}: InvitationPageClientProps) {
   const { data: session } = authClient.useSession();
   const sessionUser = session?.user;
   const [{ user, inviteStatus, error, accepting, rejecting }, dispatch] =
