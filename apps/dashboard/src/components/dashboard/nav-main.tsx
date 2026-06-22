@@ -17,7 +17,6 @@ import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -29,6 +28,7 @@ import { Fragment, memo } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
+import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { NavBrandIdentity } from "./nav-brand-identity";
 
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
@@ -120,42 +120,49 @@ const NavGroup = memo(function NavGroup({
     return null;
   }
 
+  const menu = (
+    <SidebarMenu>
+      {items.map((item) => {
+        const href = `/${slug}${item.link}`;
+        const isActive =
+          item.link === ""
+            ? pathname === `/${slug}` || pathname === `/${slug}/`
+            : pathname.startsWith(href);
+        return (
+          <SidebarMenuItem key={item.link}>
+            <SidebarMenuButton
+              isActive={isActive}
+              render={
+                <Link href={href}>
+                  <HugeiconsIcon icon={item.icon} />
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <Badge
+                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground"
+                      variant="secondary"
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Link>
+              }
+              tooltip={item.label}
+            />
+          </SidebarMenuItem>
+        );
+      })}
+    </SidebarMenu>
+  );
+
+  if (label) {
+    return (
+      <CollapsibleSidebarGroup label={label}>{menu}</CollapsibleSidebarGroup>
+    );
+  }
+
   return (
     <SidebarGroup>
-      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {items.map((item) => {
-            const href = `/${slug}${item.link}`;
-            const isActive =
-              item.link === ""
-                ? pathname === `/${slug}` || pathname === `/${slug}/`
-                : pathname.startsWith(href);
-            return (
-              <SidebarMenuItem key={item.link}>
-                <SidebarMenuButton
-                  isActive={isActive}
-                  render={
-                    <Link href={href}>
-                      <HugeiconsIcon icon={item.icon} />
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <Badge
-                          className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground"
-                          variant="secondary"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Link>
-                  }
-                  tooltip={item.label}
-                />
-              </SidebarMenuItem>
-            );
-          })}
-        </SidebarMenu>
-      </SidebarGroupContent>
+      <SidebarGroupContent>{menu}</SidebarGroupContent>
     </SidebarGroup>
   );
 });

@@ -1,0 +1,57 @@
+"use client";
+
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@notra/ui/components/ui/collapsible";
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  useSidebar,
+} from "@notra/ui/components/ui/sidebar";
+import type * as React from "react";
+import { useState } from "react";
+
+/**
+ * A sidebar group whose label acts as a collapse/expand toggle. When the
+ * sidebar itself is collapsed to icons, the group is forced open so the item
+ * icons stay reachable.
+ */
+export function CollapsibleSidebarGroup({
+  label,
+  defaultOpen = true,
+  children,
+}: {
+  label: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const { state, isMobile } = useSidebar();
+  const isIconMode = state === "collapsed" && !isMobile;
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <Collapsible onOpenChange={setOpen} open={isIconMode ? true : open}>
+      <SidebarGroup>
+        <SidebarGroupLabel
+          render={
+            <CollapsibleTrigger className="w-full cursor-pointer hover:text-sidebar-foreground [&[data-panel-open]>svg]:rotate-0">
+              {label}
+              <HugeiconsIcon
+                className="-rotate-90 ml-auto text-sidebar-foreground/50 transition-transform"
+                icon={ArrowDown01Icon}
+              />
+            </CollapsibleTrigger>
+          }
+        />
+        <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0">
+          <SidebarGroupContent>{children}</SidebarGroupContent>
+        </CollapsibleContent>
+      </SidebarGroup>
+    </Collapsible>
+  );
+}
