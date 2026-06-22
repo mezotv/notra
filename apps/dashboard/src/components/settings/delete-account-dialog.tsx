@@ -121,9 +121,8 @@ export function DeleteAccountDialog({
     } catch (error) {
       console.error("Delete account error:", error);
       toast.error("Failed to delete account");
-    } finally {
-      setIsDeleting(false);
     }
+    setIsDeleting(false);
   }
 
   function handleOpenChange(nextOpen: boolean) {

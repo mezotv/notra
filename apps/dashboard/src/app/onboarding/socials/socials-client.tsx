@@ -89,9 +89,8 @@ export function SocialsClient({
       toast.error(
         error instanceof Error ? error.message : "Failed to remove tweet"
       );
-    } finally {
-      setDeletingReferenceId(null);
     }
+    setDeletingReferenceId(null);
   }
 
   function handleContinue() {

@@ -115,6 +115,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
       const firstOrg = freshOrgs[0];
       if (!firstOrg) {
         toast.error("You must keep at least one organization");
+        setIsRemovingOrganization(false);
         return;
       }
 
@@ -135,9 +136,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
-      setIsRemovingOrganization(false);
     }
+    setIsRemovingOrganization(false);
   }
 
   async function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -159,6 +159,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         toast.error(
           result.error.message ?? "Failed to update organization logo"
         );
+        setIsUploadingLogo(false);
         return;
       }
 
@@ -188,9 +189,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           ? error.message
           : "Failed to upload organization logo"
       );
-    } finally {
-      setIsUploadingLogo(false);
     }
+    setIsUploadingLogo(false);
   }
 
   const form = useForm({
@@ -215,6 +215,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
 
         if (result.error) {
           toast.error(result.error.message ?? "Failed to update organization");
+          setIsUpdating(false);
           return;
         }
 
@@ -249,9 +250,8 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         toast.success("Organization updated successfully");
       } catch {
         toast.error("Failed to update organization");
-      } finally {
-        setIsUpdating(false);
       }
+      setIsUpdating(false);
     },
   });
 

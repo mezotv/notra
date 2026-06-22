@@ -288,9 +288,8 @@ export default function PageClient({
       } else {
         toast.error("Failed to save content");
       }
-    } finally {
-      setIsSaving(false);
     }
+    setIsSaving(false);
   }, [
     hasChanges,
     hasTitleChanges,
@@ -346,9 +345,8 @@ export default function PageClient({
       ]);
     } catch {
       toast.error("Failed to update post status");
-    } finally {
-      setIsTogglingStatus(false);
     }
+    setIsTogglingStatus(false);
   }, [data?.content?.status, organizationId, contentId, queryClient]);
 
   useEffect(() => {

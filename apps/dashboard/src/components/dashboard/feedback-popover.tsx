@@ -61,9 +61,8 @@ export function FeedbackForm({
       const errMessage =
         error instanceof Error ? error.message : "Failed to send feedback";
       toast.error(errMessage);
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   }
 
   async function handleKeyDown(

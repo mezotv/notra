@@ -64,9 +64,8 @@ export function ReferencesList({
       toast.error(
         error instanceof Error ? error.message : "Failed to delete reference"
       );
-    } finally {
-      setDeletingId(null);
     }
+    setDeletingId(null);
   };
 
   const handleUpdateNote = async (id: string, note: string | null) => {

@@ -45,6 +45,7 @@ export function ProfileSection({
 
       if (result.error) {
         toast.error(result.error.message ?? "Failed to update profile picture");
+        setIsUploadingAvatar(false);
         return;
       }
 
@@ -57,9 +58,8 @@ export function ProfileSection({
           ? error.message
           : "Failed to upload profile picture"
       );
-    } finally {
-      setIsUploadingAvatar(false);
     }
+    setIsUploadingAvatar(false);
   }
 
   const form = useForm({
@@ -87,6 +87,7 @@ export function ProfileSection({
 
         if (result.error) {
           toast.error(result.error.message ?? "Failed to update profile");
+          setIsUpdating(false);
           return;
         }
 
@@ -94,9 +95,8 @@ export function ProfileSection({
         await onSessionRefetch?.();
       } catch {
         toast.error("Failed to update profile");
-      } finally {
-        setIsUpdating(false);
       }
+      setIsUpdating(false);
     },
   });
 

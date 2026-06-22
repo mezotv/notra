@@ -32,9 +32,8 @@ export function ConnectedAccountsSection({
       });
     } catch {
       toast.error(`Failed to link ${provider} account`);
-    } finally {
-      setLoadingProvider(null);
     }
+    setLoadingProvider(null);
   }
 
   async function handleUnlinkAccount(provider: "google" | "github") {
@@ -59,9 +58,8 @@ export function ConnectedAccountsSection({
       onAccountsChange();
     } catch {
       toast.error(`Failed to unlink ${provider}`);
-    } finally {
-      setLoadingProvider(null);
     }
+    setLoadingProvider(null);
   }
 
   if (isError) {

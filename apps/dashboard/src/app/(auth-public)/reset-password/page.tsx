@@ -107,6 +107,7 @@ function ResetPasswordForm() {
             result.error.message ?? "Something went wrong. Please try again."
           );
         }
+        setIsLoading(false);
         return;
       }
 
@@ -114,9 +115,8 @@ function ResetPasswordForm() {
       router.push("/login");
     } catch {
       toast.error("Network error. Please check your connection and try again.");
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   }
 
   return (

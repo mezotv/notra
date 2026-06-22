@@ -90,10 +90,12 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
                 router.push(`/${activeOrganization.slug}/settings/billing`),
             },
           });
+          setIsResending(false);
           return;
         }
 
         toast.error(message);
+        setIsResending(false);
         return;
       }
 
@@ -107,9 +109,8 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
     } catch (error) {
       console.error("Error resending invitation:", error);
       toast.error("Failed to resend invitation");
-    } finally {
-      setIsResending(false);
     }
+    setIsResending(false);
   }
 
   async function handleCancelInvitation() {
@@ -125,6 +126,7 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
 
       if (error) {
         toast.error(error.message || "Failed to cancel invitation");
+        setIsCanceling(false);
         return;
       }
 
@@ -138,9 +140,8 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
     } catch (error) {
       console.error("Error canceling invitation:", error);
       toast.error("Failed to cancel invitation");
-    } finally {
-      setIsCanceling(false);
     }
+    setIsCanceling(false);
   }
 
   return (

@@ -89,9 +89,8 @@ export function SidebarUpgrade() {
           ? err.message
           : "Could not update billing. Please try again."
       );
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (

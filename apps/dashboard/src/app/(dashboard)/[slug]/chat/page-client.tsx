@@ -571,32 +571,6 @@ function StandaloneChatPageClient({
     setIsHydrated(true);
   }, []);
 
-  useEffect(() => {
-    const idle =
-      typeof window !== "undefined" &&
-      "requestIdleCallback" in window &&
-      typeof window.requestIdleCallback === "function"
-        ? window.requestIdleCallback
-        : (cb: () => void) => window.setTimeout(cb, 1);
-    const handle = idle(() => {
-      import("@/components/ai/blog-changelog-preview");
-      import("@/components/ai/twitter-preview");
-      import("@/components/ai/linkedin-preview");
-    });
-    return () => {
-      if (
-        typeof window !== "undefined" &&
-        "cancelIdleCallback" in window &&
-        typeof window.cancelIdleCallback === "function" &&
-        typeof handle === "number"
-      ) {
-        window.cancelIdleCallback(handle);
-      } else if (typeof handle === "number") {
-        window.clearTimeout(handle);
-      }
-    };
-  }, []);
-
   const handleModelChange = useCallback((model: string) => {
     const nextModel = parseStoredChatModel(model);
     if (!nextModel) {
@@ -677,9 +651,8 @@ function StandaloneChatPageClient({
       }
     } catch (stopError) {
       console.error("[Chat] Failed to notify server to stop:", stopError);
-    } finally {
-      stop();
     }
+    stop();
   }, [organizationId, stableChatId, stop]);
 
   const handleStop = useCallback(async () => {

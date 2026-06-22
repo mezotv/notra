@@ -69,6 +69,7 @@ export function OrganizationsSection() {
 
       if (error) {
         toast.error(error.message || "Failed to switch organization");
+        setIsSwitching(null);
         return;
       }
 
@@ -82,9 +83,8 @@ export function OrganizationsSection() {
     } catch (error) {
       toast.error("Failed to switch organization");
       console.error(error);
-    } finally {
-      setIsSwitching(null);
     }
+    setIsSwitching(null);
   }
 
   async function removeOrganization(
@@ -136,9 +136,8 @@ export function OrganizationsSection() {
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
-      setIsProcessingOrgAction(null);
     }
+    setIsProcessingOrgAction(null);
   }
 
   if (isLoading) {

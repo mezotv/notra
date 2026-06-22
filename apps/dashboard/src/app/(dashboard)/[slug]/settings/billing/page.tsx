@@ -243,9 +243,8 @@ export default function BillingPage() {
           ? err.message
           : "Could not update billing. Please try again."
       );
-    } finally {
-      setLoading(null);
     }
+    setLoading(null);
   }
 
   async function handleManageSubscription() {
@@ -260,9 +259,8 @@ export default function BillingPage() {
           ? err.message
           : "Could not open billing portal. Please try again."
       );
-    } finally {
-      setPortalLoading(false);
     }
+    setPortalLoading(false);
   }
 
   const isBillingLoading = plansLoading || customerLoading;

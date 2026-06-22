@@ -40,7 +40,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -55,6 +55,53 @@ interface MemberActionsProps {
   member: Member;
 }
 
+type MemberRole = "member" | "admin";
+
+interface MemberActionsState {
+  isRemoving: boolean;
+  isChangingRole: boolean;
+  showRemoveDialog: boolean;
+  showChangeRoleDialog: boolean;
+  newRole: MemberRole;
+}
+
+type MemberActionsAction =
+  | { type: "removeStarted" }
+  | { type: "removeFinished" }
+  | { type: "roleChangeStarted" }
+  | { type: "roleChangeFinished" }
+  | { type: "removeDialogChanged"; open: boolean }
+  | { type: "roleDialogChanged"; open: boolean }
+  | { type: "roleSelected"; role: MemberRole };
+
+function memberActionsReducer(
+  state: MemberActionsState,
+  action: MemberActionsAction
+): MemberActionsState {
+  switch (action.type) {
+    case "removeStarted":
+      return { ...state, isRemoving: true };
+    case "removeFinished":
+      return { ...state, isRemoving: false };
+    case "roleChangeStarted":
+      return { ...state, isChangingRole: true };
+    case "roleChangeFinished":
+      return { ...state, isChangingRole: false };
+    case "removeDialogChanged":
+      return { ...state, showRemoveDialog: action.open };
+    case "roleDialogChanged":
+      return { ...state, showChangeRoleDialog: action.open };
+    case "roleSelected":
+      return { ...state, newRole: action.role };
+    default:
+      return state;
+  }
+}
+
+function normalizeMemberRole(role: string): MemberRole {
+  return role === "admin" ? "admin" : "member";
+}
+
 export function MemberActions({ member }: MemberActionsProps) {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
@@ -62,13 +109,22 @@ export function MemberActions({ member }: MemberActionsProps) {
   const { data: session } = authClient.useSession();
   const currentUser = session?.user;
 
-  const [isRemoving, setIsRemoving] = useState(false);
-  const [isChangingRole, setIsChangingRole] = useState(false);
-  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
-  const [showChangeRoleDialog, setShowChangeRoleDialog] = useState(false);
-  const [newRole, setNewRole] = useState<"member" | "admin">(
-    (member.role === "admin" ? "admin" : "member") as "member" | "admin"
-  );
+  const [
+    {
+      isRemoving,
+      isChangingRole,
+      showRemoveDialog,
+      showChangeRoleDialog,
+      newRole,
+    },
+    dispatch,
+  ] = useReducer(memberActionsReducer, {
+    isRemoving: false,
+    isChangingRole: false,
+    showRemoveDialog: false,
+    showChangeRoleDialog: false,
+    newRole: normalizeMemberRole(member.role),
+  });
 
   // Don't show actions for the current user or if no organization
   if (!activeOrganization || member.userId === currentUser?.id) {
@@ -87,11 +143,11 @@ export function MemberActions({ member }: MemberActionsProps) {
 
     // Don't update if role hasn't changed
     if (newRole === member.role) {
-      setShowChangeRoleDialog(false);
+      dispatch({ type: "roleDialogChanged", open: false });
       return;
     }
 
-    setIsChangingRole(true);
+    dispatch({ type: "roleChangeStarted" });
     try {
       const { error } = await authClient.organization.updateMemberRole({
         memberId: member.id,
@@ -113,10 +169,12 @@ export function MemberActions({ member }: MemberActionsProps) {
                 router.push(`/${activeOrganization.slug}/settings/billing`),
             },
           });
+          dispatch({ type: "roleChangeFinished" });
           return;
         }
 
         toast.error(message);
+        dispatch({ type: "roleChangeFinished" });
         return;
       }
 
@@ -128,13 +186,12 @@ export function MemberActions({ member }: MemberActionsProps) {
         queryKey: ["members", activeOrganization.id],
       });
 
-      setShowChangeRoleDialog(false);
+      dispatch({ type: "roleDialogChanged", open: false });
     } catch (error) {
       console.error("Error changing member role:", error);
       toast.error("Failed to update member role");
-    } finally {
-      setIsChangingRole(false);
     }
+    dispatch({ type: "roleChangeFinished" });
   }
 
   async function handleRemoveMember() {
@@ -142,7 +199,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       return;
     }
 
-    setIsRemoving(true);
+    dispatch({ type: "removeStarted" });
     try {
       const { error } = await authClient.organization.removeMember({
         memberIdOrEmail: member.id,
@@ -151,6 +208,7 @@ export function MemberActions({ member }: MemberActionsProps) {
 
       if (error) {
         toast.error(error.message || "Failed to remove member");
+        dispatch({ type: "removeFinished" });
         return;
       }
 
@@ -162,13 +220,12 @@ export function MemberActions({ member }: MemberActionsProps) {
         queryKey: ["members", activeOrganization.id],
       });
 
-      setShowRemoveDialog(false);
+      dispatch({ type: "removeDialogChanged", open: false });
     } catch (error) {
       console.error("Error removing member:", error);
       toast.error("Failed to remove member");
-    } finally {
-      setIsRemoving(false);
     }
+    dispatch({ type: "removeFinished" });
   }
 
   return (
@@ -186,12 +243,11 @@ export function MemberActions({ member }: MemberActionsProps) {
           <DropdownMenuItem
             disabled={isChangingRole || isRemoving}
             onClick={() => {
-              setNewRole(
-                (member.role === "admin" ? "admin" : "member") as
-                  | "member"
-                  | "admin"
-              );
-              setShowChangeRoleDialog(true);
+              dispatch({
+                type: "roleSelected",
+                role: normalizeMemberRole(member.role),
+              });
+              dispatch({ type: "roleDialogChanged", open: true });
             }}
           >
             <HugeiconsIcon className="mr-2 size-4" icon={UserEdit01Icon} />
@@ -199,7 +255,9 @@ export function MemberActions({ member }: MemberActionsProps) {
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={isChangingRole || isRemoving}
-            onClick={() => setShowRemoveDialog(true)}
+            onClick={() =>
+              dispatch({ type: "removeDialogChanged", open: true })
+            }
             variant="destructive"
           >
             <HugeiconsIcon className="mr-2 size-4" icon={Delete02Icon} />
@@ -211,7 +269,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       <Dialog
         onOpenChange={(open) => {
           if (!isChangingRole) {
-            setShowChangeRoleDialog(open);
+            dispatch({ type: "roleDialogChanged", open });
           }
         }}
         open={showChangeRoleDialog}
@@ -229,7 +287,11 @@ export function MemberActions({ member }: MemberActionsProps) {
               <Select
                 disabled={isChangingRole}
                 onValueChange={(val) =>
-                  val && setNewRole(val as "member" | "admin")
+                  val &&
+                  dispatch({
+                    type: "roleSelected",
+                    role: normalizeMemberRole(val),
+                  })
                 }
                 value={newRole}
               >
@@ -246,7 +308,9 @@ export function MemberActions({ member }: MemberActionsProps) {
           <DialogFooter>
             <Button
               disabled={isChangingRole}
-              onClick={() => setShowChangeRoleDialog(false)}
+              onClick={() =>
+                dispatch({ type: "roleDialogChanged", open: false })
+              }
               type="button"
               variant="outline"
             >
@@ -266,7 +330,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       <ResponsiveAlertDialog
         onOpenChange={(open) => {
           if (!isRemoving) {
-            setShowRemoveDialog(open);
+            dispatch({ type: "removeDialogChanged", open });
           }
         }}
         open={showRemoveDialog}

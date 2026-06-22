@@ -67,6 +67,7 @@ export function LoginDetailsSection({
 
         if (result.error) {
           toast.error(result.error.message ?? "Failed to change password");
+          setIsChangingPassword(false);
           return;
         }
 
@@ -74,9 +75,8 @@ export function LoginDetailsSection({
         form.reset();
       } catch {
         toast.error("Failed to change password");
-      } finally {
-        setIsChangingPassword(false);
       }
+      setIsChangingPassword(false);
     },
   });
 

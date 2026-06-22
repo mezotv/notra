@@ -29,7 +29,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import { LoginForm } from "@/components/auth/login-form";
 import { SignupForm } from "@/components/auth/signup-form";
 import { Button, buttonVariants } from "@/components/button";
@@ -71,6 +71,47 @@ interface PageClientProps {
 
 type InviteStatus = "pending" | "accepted" | "rejected";
 
+interface InvitationState {
+  user: PageClientProps["user"];
+  inviteStatus: InviteStatus;
+  error: string | null;
+  accepting: boolean;
+  rejecting: boolean;
+}
+
+type InvitationAction =
+  | { type: "userSynced"; user: PageClientProps["user"] }
+  | { type: "errorChanged"; error: string | null }
+  | { type: "acceptStarted" }
+  | { type: "acceptFinished" }
+  | { type: "rejectStarted" }
+  | { type: "rejectFinished" }
+  | { type: "inviteStatusChanged"; inviteStatus: InviteStatus };
+
+function invitationReducer(
+  state: InvitationState,
+  action: InvitationAction
+): InvitationState {
+  switch (action.type) {
+    case "userSynced":
+      return { ...state, user: action.user };
+    case "errorChanged":
+      return { ...state, error: action.error };
+    case "acceptStarted":
+      return { ...state, accepting: true, error: null };
+    case "acceptFinished":
+      return { ...state, accepting: false };
+    case "rejectStarted":
+      return { ...state, rejecting: true, error: null };
+    case "rejectFinished":
+      return { ...state, rejecting: false };
+    case "inviteStatusChanged":
+      return { ...state, inviteStatus: action.inviteStatus };
+    default:
+      return state;
+  }
+}
+
 function PageClient({
   invitationId,
   invitation,
@@ -79,76 +120,85 @@ function PageClient({
 }: PageClientProps) {
   const { data: session } = authClient.useSession();
   const sessionUser = session?.user;
-  const [user, setUser] = useState(initialUser);
-  const [inviteStatus, setInviteStatus] = useState<InviteStatus>("pending");
-  const [error, setError] = useState<string | null>(initialError ?? null);
-  const [accepting, setAccepting] = useState(false);
-  const [rejecting, setRejecting] = useState(false);
+  const [{ user, inviteStatus, error, accepting, rejecting }, dispatch] =
+    useReducer(invitationReducer, {
+      user: initialUser,
+      inviteStatus: "pending",
+      error: initialError ?? null,
+      accepting: false,
+      rejecting: false,
+    });
   const router = useRouter();
 
   // Sync session user with local state
   useEffect(() => {
     if (sessionUser) {
-      setUser(sessionUser);
+      dispatch({ type: "userSynced", user: sessionUser });
     }
   }, [sessionUser]);
 
   const handleAccept = async () => {
-    setAccepting(true);
-    setError(null);
+    dispatch({ type: "acceptStarted" });
     try {
       const res = await authClient.organization.acceptInvitation({
         invitationId,
       });
 
       if (res.error) {
-        setError(
-          mapBillingLimitErrorMessage(
+        dispatch({
+          type: "errorChanged",
+          error: mapBillingLimitErrorMessage(
             res.error.message,
             "Failed to accept invitation"
-          )
-        );
+          ),
+        });
+        dispatch({ type: "acceptFinished" });
         return;
       }
 
-      setInviteStatus("accepted");
+      dispatch({ type: "inviteStatusChanged", inviteStatus: "accepted" });
       router.push(`/${invitation.organizationSlug}`);
     } catch (error) {
       console.error("Error accepting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
-      setAccepting(false);
+      dispatch({
+        type: "errorChanged",
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      });
     }
+    dispatch({ type: "acceptFinished" });
   };
 
   const handleReject = async () => {
-    setRejecting(true);
-    setError(null);
+    dispatch({ type: "rejectStarted" });
     try {
       const res = await authClient.organization.rejectInvitation({
         invitationId,
       });
 
       if (res.error) {
-        setError(res.error.message || "Failed to reject invitation");
+        dispatch({
+          type: "errorChanged",
+          error: res.error.message || "Failed to reject invitation",
+        });
+        dispatch({ type: "rejectFinished" });
         return;
       }
 
-      setInviteStatus("rejected");
+      dispatch({ type: "inviteStatusChanged", inviteStatus: "rejected" });
     } catch (error) {
       console.error("Error rejecting invitation:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "An unexpected error occurred. Please try again."
-      );
-    } finally {
-      setRejecting(false);
+      dispatch({
+        type: "errorChanged",
+        error:
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred. Please try again.",
+      });
     }
+    dispatch({ type: "rejectFinished" });
   };
 
   // Show error state if invitation is invalid/expired

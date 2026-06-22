@@ -87,7 +87,10 @@ export function useChatSessionMutations() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to rename chat");
+        queryClient.setQueryData(queryKey, previousSessions);
+        toast.error("Failed to rename chat");
+        renameInFlightRef.current.delete(chatId);
+        return false;
       }
 
       const parsed = chatSessionResponseSchema.safeParse(await response.json());
@@ -95,13 +98,13 @@ export function useChatSessionMutations() {
         const updated = parsed.data.session;
         replaceSessionInCache(chatId, () => updated);
       }
+      renameInFlightRef.current.delete(chatId);
       return true;
     } catch {
       queryClient.setQueryData(queryKey, previousSessions);
       toast.error("Failed to rename chat");
-      return false;
-    } finally {
       renameInFlightRef.current.delete(chatId);
+      return false;
     }
   }
 
@@ -131,7 +134,9 @@ export function useChatSessionMutations() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to update pin state");
+        queryClient.setQueryData(queryKey, previousSessions);
+        toast.error("Failed to update chat pin");
+        return false;
       }
 
       const parsed = chatSessionResponseSchema.safeParse(await response.json());
@@ -158,7 +163,8 @@ export function useChatSessionMutations() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete chat");
+        toast.error("Failed to delete chat");
+        return false;
       }
 
       queryClient.setQueryData<ChatSessionSummary[]>(queryKey, (current = []) =>

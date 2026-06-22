@@ -97,9 +97,8 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
           ? err.message
           : "Could not process top-up. Please try again."
       );
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   }
 
   return (

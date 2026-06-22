@@ -31,15 +31,15 @@ export default function ForgotPassword() {
 
       if (result.error) {
         toast.error("Something went wrong. Please try again.");
+        setIsLoading(false);
         return;
       }
 
       setIsSubmitted(true);
     } catch {
       toast.error("Network error. Please check your connection and try again.");
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   }
 
   if (isSubmitted) {

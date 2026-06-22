@@ -499,6 +499,11 @@ export function ChatInputAdvanced({
 
             if (!isMountedRef.current) {
               await cleanupChatUpload(result.key);
+              updatePendingUploads(
+                pendingUploadsRef.current.filter(
+                  (pending) => pending.id !== placeholder.id
+                )
+              );
               return false;
             }
 
@@ -507,6 +512,11 @@ export function ChatInputAdvanced({
               attachmentsRef.current = next;
               return next;
             });
+            updatePendingUploads(
+              pendingUploadsRef.current.filter(
+                (pending) => pending.id !== placeholder.id
+              )
+            );
             return true;
           } catch (err) {
             const message =
@@ -516,13 +526,12 @@ export function ChatInputAdvanced({
             // isUploading reaching 0) surfaces a user-facing "Some attachments
             // failed to upload" error when it detects missing completions.
             // Nulling here would silently drop the queued message.
-            return false;
-          } finally {
             updatePendingUploads(
               pendingUploadsRef.current.filter(
                 (pending) => pending.id !== placeholder.id
               )
             );
+            return false;
           }
         })
       );

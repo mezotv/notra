@@ -27,7 +27,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { Loader2Icon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
@@ -41,6 +41,48 @@ type UserAction =
   | "publishing"
   | "generating"
   | "save-failed";
+
+interface BlogChangelogPreviewState {
+  userAction: UserAction;
+  draftTitle: string;
+  draftMarkdown: string;
+  regenerateOpen: boolean;
+  regenerateInstructions: string;
+  isOpen: boolean;
+}
+
+type BlogChangelogPreviewAction =
+  | { type: "userActionChanged"; userAction: UserAction }
+  | { type: "draftTitleChanged"; draftTitle: string }
+  | { type: "draftMarkdownChanged"; draftMarkdown: string }
+  | { type: "regenerateOpenChanged"; open: boolean }
+  | { type: "regenerateOpenToggled" }
+  | { type: "regenerateInstructionsChanged"; instructions: string }
+  | { type: "openChanged"; open: boolean };
+
+function blogChangelogPreviewReducer(
+  state: BlogChangelogPreviewState,
+  action: BlogChangelogPreviewAction
+): BlogChangelogPreviewState {
+  switch (action.type) {
+    case "userActionChanged":
+      return { ...state, userAction: action.userAction };
+    case "draftTitleChanged":
+      return { ...state, draftTitle: action.draftTitle };
+    case "draftMarkdownChanged":
+      return { ...state, draftMarkdown: action.draftMarkdown };
+    case "regenerateOpenChanged":
+      return { ...state, regenerateOpen: action.open };
+    case "regenerateOpenToggled":
+      return { ...state, regenerateOpen: !state.regenerateOpen };
+    case "regenerateInstructionsChanged":
+      return { ...state, regenerateInstructions: action.instructions };
+    case "openChanged":
+      return { ...state, isOpen: action.open };
+    default:
+      return state;
+  }
+}
 
 interface BlogChangelogPreviewProps {
   state: IncomingState;
@@ -74,19 +116,31 @@ export function BlogChangelogPreview({
   onPersist,
   onRegenerate,
 }: BlogChangelogPreviewProps) {
-  const [userAction, setUserAction] = useState<UserAction>("none");
-  const [draftTitle, setDraftTitle] = useState(title);
-  const [draftMarkdown, setDraftMarkdown] = useState(markdown);
-  const [regenerateOpen, setRegenerateOpen] = useState(false);
-  const [regenerateInstructions, setRegenerateInstructions] = useState("");
-  const [isOpen, setIsOpen] = useState(incomingState !== "finished");
+  const [
+    {
+      userAction,
+      draftTitle,
+      draftMarkdown,
+      regenerateOpen,
+      regenerateInstructions,
+      isOpen,
+    },
+    dispatch,
+  ] = useReducer(blogChangelogPreviewReducer, {
+    userAction: "none",
+    draftTitle: title,
+    draftMarkdown: markdown,
+    regenerateOpen: false,
+    regenerateInstructions: "",
+    isOpen: incomingState !== "finished",
+  });
 
   useEffect(() => {
-    setDraftTitle(title);
+    dispatch({ type: "draftTitleChanged", draftTitle: title });
   }, [title]);
 
   useEffect(() => {
-    setDraftMarkdown(markdown);
+    dispatch({ type: "draftMarkdownChanged", draftMarkdown: markdown });
   }, [markdown]);
 
   const effectiveState: EffectiveState = (() => {
@@ -115,14 +169,14 @@ export function BlogChangelogPreview({
       return;
     }
     const timer = window.setTimeout(() => {
-      setUserAction("save-failed");
+      dispatch({ type: "userActionChanged", userAction: "save-failed" });
     }, CHAT_PREVIEW_SAVE_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [userAction]);
 
   const handleApprove = useCallback(async () => {
-    setUserAction("saving");
-    setIsOpen(false);
+    dispatch({ type: "userActionChanged", userAction: "saving" });
+    dispatch({ type: "openChanged", open: false });
     const toastId = toast.loading("Saving draft...");
     try {
       if (onPersist) {
@@ -133,21 +187,21 @@ export function BlogChangelogPreview({
       } else {
         onApprove?.();
       }
-      setUserAction("none");
+      dispatch({ type: "userActionChanged", userAction: "none" });
       toast.success("Saved as draft", { id: toastId });
     } catch {
-      setUserAction("save-failed");
+      dispatch({ type: "userActionChanged", userAction: "save-failed" });
       toast.error("Failed to save draft", { id: toastId });
     }
   }, [draftMarkdown, draftTitle, onApprove, onPersist]);
 
   const handlePublish = useCallback(async () => {
-    setUserAction("publishing");
-    setIsOpen(false);
+    dispatch({ type: "userActionChanged", userAction: "publishing" });
+    dispatch({ type: "openChanged", open: false });
     const toastId = toast.loading("Publishing post...");
     try {
       if (!onPersist) {
-        setUserAction("save-failed");
+        dispatch({ type: "userActionChanged", userAction: "save-failed" });
         toast.error("Publish is not available", { id: toastId });
         return;
       }
@@ -155,10 +209,10 @@ export function BlogChangelogPreview({
         title: draftTitle,
         markdown: draftMarkdown,
       });
-      setUserAction("none");
+      dispatch({ type: "userActionChanged", userAction: "none" });
       toast.success("Post published", { id: toastId });
     } catch {
-      setUserAction("save-failed");
+      dispatch({ type: "userActionChanged", userAction: "save-failed" });
       toast.error("Failed to publish post", { id: toastId });
     }
   }, [draftMarkdown, draftTitle, onPersist]);
@@ -171,10 +225,10 @@ export function BlogChangelogPreview({
   const handleRegenerate = useCallback(() => {
     const instructions = regenerateInstructions.trim();
     if (!instructions) {
-      setRegenerateOpen(true);
+      dispatch({ type: "regenerateOpenChanged", open: true });
       return;
     }
-    setUserAction("generating");
+    dispatch({ type: "userActionChanged", userAction: "generating" });
     toast("Generating post...");
     onRegenerate?.(instructions, {
       title: draftTitle,
@@ -186,7 +240,10 @@ export function BlogChangelogPreview({
   const showStatusBadge = isFinished && userAction !== "save-failed";
 
   return (
-    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+    <Collapsible
+      onOpenChange={(open) => dispatch({ type: "openChanged", open })}
+      open={isOpen}
+    >
       <div className="ml-px max-w-xl">
         <div className="rounded-lg border border-border bg-muted/80">
           <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 [&[data-panel-open]>svg]:rotate-90">
@@ -218,7 +275,12 @@ export function BlogChangelogPreview({
               {!isFinished && (
                 <input
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  onChange={(event) => setDraftTitle(event.target.value)}
+                  onChange={(event) =>
+                    dispatch({
+                      type: "draftTitleChanged",
+                      draftTitle: event.target.value,
+                    })
+                  }
                   value={draftTitle}
                 />
               )}
@@ -230,7 +292,12 @@ export function BlogChangelogPreview({
                 <TabsContent className="mt-2" value="markdown">
                   <textarea
                     className="min-h-72 w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    onChange={(event) => setDraftMarkdown(event.target.value)}
+                    onChange={(event) =>
+                      dispatch({
+                        type: "draftMarkdownChanged",
+                        draftMarkdown: event.target.value,
+                      })
+                    }
                     readOnly={isFinished}
                     value={draftMarkdown}
                   />
@@ -240,7 +307,12 @@ export function BlogChangelogPreview({
                     <LexicalEditor
                       editable={!isFinished}
                       initialMarkdown={draftMarkdown}
-                      onChange={setDraftMarkdown}
+                      onChange={(value) =>
+                        dispatch({
+                          type: "draftMarkdownChanged",
+                          draftMarkdown: value,
+                        })
+                      }
                       onSelectionChange={() => null}
                     />
                   </div>
@@ -251,7 +323,10 @@ export function BlogChangelogPreview({
                   autoFocus
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onChange={(event) =>
-                    setRegenerateInstructions(event.target.value)
+                    dispatch({
+                      type: "regenerateInstructionsChanged",
+                      instructions: event.target.value,
+                    })
                   }
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
@@ -280,7 +355,9 @@ export function BlogChangelogPreview({
                       render={
                         <Button
                           aria-label="Regenerate"
-                          onClick={() => setRegenerateOpen((open) => !open)}
+                          onClick={() =>
+                            dispatch({ type: "regenerateOpenToggled" })
+                          }
                           size="icon-sm"
                           variant="ghost"
                         />
