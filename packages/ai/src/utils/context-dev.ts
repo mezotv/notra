@@ -2,6 +2,7 @@ import type {
   ContextDevErrorResponse,
   ContextDevScrapingResult,
   ContextDevSearchResponse,
+  ContextDevSearchResult,
   ContextDevWebSearchInput,
   ContextDevWebSearchResponse,
 } from "@notra/ai/types/context-dev";
@@ -148,6 +149,18 @@ function toMaxAgeMs(maxAge?: number) {
   return typeof maxAge === "number" ? maxAge : undefined;
 }
 
+function normalizeSearchResult(
+  result: ContextDevSearchResult
+): ContextDevSearchResult {
+  return {
+    ...result,
+    markdown: result.markdown ?? {
+      code: "NOT_REQUESTED",
+      markdown: null,
+    },
+  };
+}
+
 export async function searchWeb(
   input: ContextDevWebSearchInput
 ): Promise<ContextDevWebSearchResponse> {
@@ -175,7 +188,9 @@ export async function searchWeb(
     }
   );
 
-  const results = response.results.slice(0, input.limit ?? 5);
+  const results = response.results
+    .slice(0, input.limit ?? 5)
+    .map(normalizeSearchResult);
   return {
     success: true,
     data: { web: results },

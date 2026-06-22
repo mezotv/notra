@@ -42,7 +42,7 @@ export interface ContextDevSearchResult {
   title: string;
   description: string;
   relevance: "high" | "medium" | "low";
-  markdown: {
+  markdown?: {
     markdown: string | null;
     code:
       | "SUCCESS"
@@ -50,7 +50,7 @@ export interface ContextDevSearchResult {
       | "TIMEOUT"
       | "WEBSITE_ACCESS_ERROR"
       | "ERROR";
-  };
+  } | null;
 }
 
 export interface ContextDevSearchResponse {
