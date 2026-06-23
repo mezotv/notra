@@ -25,7 +25,7 @@ export function GET() {
 
   return new Response(rows.map((row) => JSON.stringify(row)).join("\n"), {
     headers: {
-      "content-type": "application/ld+jsonl; charset=utf-8",
+      "content-type": "application/x-ndjson; charset=utf-8",
       "cache-control": "public, max-age=3600",
     },
   });

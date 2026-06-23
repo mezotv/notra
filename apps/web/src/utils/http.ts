@@ -8,9 +8,11 @@ export function jsonResponse(
     "content-type",
     contentType ?? "application/json; charset=utf-8"
   );
-  headers.set("cache-control", "public, max-age=3600");
+  if (!headers.has("cache-control")) {
+    headers.set("cache-control", "no-store");
+  }
 
-  return new Response(JSON.stringify(body, null, 2), {
+  return new Response(JSON.stringify(body), {
     ...responseInit,
     headers,
   });

@@ -2,7 +2,10 @@ import type { createDb } from "@notra/db/drizzle-http";
 import { Unkey } from "@unkey/api";
 import type { V2KeysVerifyKeyResponseData } from "@unkey/api/models/components";
 import type { Context, Next } from "hono";
-import { AUTH_GUIDE_URL, RESOURCE_METADATA_URL } from "../utils/agent-discovery";
+import {
+  AUTH_GUIDE_URL,
+  RESOURCE_METADATA_URL,
+} from "../utils/agent-discovery";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -38,7 +41,7 @@ function getRecovery(status: 401 | 403 | 503) {
   }
 
   if (status === 403) {
-    return "Request a key with the required scope for this endpoint, then retry with the same Idempotency-Key if this was a mutation.";
+    return "Request a key with the required scope for this endpoint, then retry after verifying whether the previous mutation completed.";
   }
 
   return "The authentication service is temporarily unavailable. Retry with exponential backoff.";
@@ -97,13 +100,9 @@ export function authMiddleware(options: AuthOptions = {}) {
 
       return c.json(
         {
-          error: {
-            code: authResult.error
-              .toUpperCase()
-              .replace(/[^A-Z0-9]+/g, "_"),
-            message: authResult.error,
-            recovery: getRecovery(authResult.status),
-          },
+          error: authResult.error,
+          code: authResult.error.toUpperCase().replace(/[^A-Z0-9]+/g, "_"),
+          recovery: getRecovery(authResult.status),
         },
         authResult.status
       );

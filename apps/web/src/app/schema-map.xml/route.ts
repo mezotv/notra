@@ -4,7 +4,7 @@ const SCHEMA_MAP = `<?xml version="1.0" encoding="UTF-8"?>
 <schemamap xmlns="https://schema.org/">
   <url>
     <loc>${SITE_URL}/schema/notra.jsonl</loc>
-    <type>application/ld+jsonl</type>
+    <type>application/x-ndjson</type>
     <name>Notra structured data feed</name>
   </url>
   <url>

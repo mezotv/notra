@@ -14,7 +14,7 @@ Notra's public API is served from ${API_URL}. Use it when an agent needs to read
 
 ## Authentication
 
-Send \`Authorization: Bearer <NOTRA_API_KEY>\`. Unauthenticated API requests return \`WWW-Authenticate\` with protected-resource metadata. Include \`Idempotency-Key\` on mutating requests.
+Send \`Authorization: Bearer <NOTRA_API_KEY>\`. Unauthenticated API requests return \`WWW-Authenticate\` with protected-resource metadata.
 
 ## Core Endpoints
 

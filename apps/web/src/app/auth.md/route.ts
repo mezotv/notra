@@ -10,23 +10,23 @@ Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.
 
 ## Pick a method
 
-The \`agent_auth\` block supports \`anonymous\` API-key registration for test or sandbox probes and \`identity_assertion\` for agents that can prove a user or workspace identity. For identity assertions, Notra accepts verified email claims and \`urn:ietf:params:oauth:token-type:id-jag\` assertions when configured for the organization.
+The \`agent_auth\` block documents \`anonymous\` and \`identity_assertion\` request shapes for agents. Notra currently issues API keys through the dashboard rather than an automatic OAuth token exchange. For identity assertions, Notra accepts verified email claims and \`urn:ietf:params:oauth:token-type:id-jag\` assertions when configured for the organization.
 
 ## Register
 
-Call \`POST /agent/auth/register\` to discover the shape of a registration request. Human-managed production API keys can also be created in the Notra dashboard. Agents should request the least privileged scopes: \`api.read\` for reads, \`posts.write\` for content updates, and \`skills.write\` only when modifying reusable writing skills.
+Call \`POST /agent/auth/register\` to confirm the supported registration metadata. Production API keys are created in the Notra dashboard. Agents should request the least privileged scopes: \`api.read\` for reads, \`posts.write\` for content updates, and \`skills.write\` only when modifying reusable writing skills.
 
 ## Claim
 
-Call \`POST /agent/auth/claim\` with either an anonymous registration token or an \`identity_assertion\` payload. A successful claim returns credential metadata. Browser-only challenges and CAPTCHAs are not required for API-key use.
+Call \`POST /agent/auth/claim\` to check the claim endpoint shape. It returns manual-approval guidance until automatic credential issuance is enabled. Browser-only challenges and CAPTCHAs are not required for API-key use.
 
 ## Use the credential
 
-Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. Mutating requests should include \`Idempotency-Key\` so retries do not create duplicate content. For MCP, use the same bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
+Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. For MCP, use the same bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
 
 ## Errors
 
-401 responses include \`WWW-Authenticate: Bearer resource_metadata="https://api.usenotra.com/.well-known/oauth-protected-resource"\`. Error bodies include \`error.code\`, \`error.message\`, and \`error.recovery\` fields. If a request is rate limited, respect \`Retry-After\`.
+401 responses include \`WWW-Authenticate: Bearer resource_metadata="https://api.usenotra.com/.well-known/oauth-protected-resource"\`. Error bodies keep the backward-compatible \`error\` string and may include sibling \`code\` and \`recovery\` fields. If a request is rate limited, respect \`Retry-After\`.
 
 ## Revocation
 

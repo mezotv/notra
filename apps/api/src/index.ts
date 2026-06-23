@@ -15,10 +15,10 @@ import { skillsRoutes } from "./routes/skills";
 import {
   API_URL,
   AUTH_GUIDE_URL,
-  RESOURCE_METADATA_URL,
-  SITE_URL,
   buildAuthorizationServerMetadata,
   buildProtectedResourceMetadata,
+  RESOURCE_METADATA_URL,
+  SITE_URL,
 } from "./utils/agent-discovery";
 import { assertRequiredEnv } from "./utils/env";
 
@@ -124,10 +124,7 @@ app.use("/v1/*", async (c, next) => {
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
-    c.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Idempotency-Key"
-    );
+    c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   }
 
   if (c.req.method === "OPTIONS") {
@@ -163,20 +160,6 @@ app.use("/v1/*", (c, next) => {
     ? "api.write"
     : "api.read";
   return authMiddleware({ permissions })(c, next);
-});
-
-app.use("/v1/*", async (c, next) => {
-  const idempotencyKey = c.req.header("Idempotency-Key");
-
-  if (
-    idempotencyKey &&
-    ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method)
-  ) {
-    c.header("Idempotency-Key", idempotencyKey);
-    c.header("Idempotency-Status", "accepted");
-  }
-
-  await next();
 });
 
 app.use("/v1/*", subscriptionMiddleware());
@@ -251,7 +234,7 @@ app.doc31("/openapi.json", (_c) => ({
     title: "Notra API",
     version: "1.0.0",
     description:
-      "OpenAPI schema for Notra content endpoints. Use GET /v1/status for public reachability. Authenticated mutations accept Idempotency-Key and return structured recovery guidance on errors.",
+      "OpenAPI schema for Notra content endpoints. Use GET /v1/status for public reachability. Error responses include recovery guidance.",
   },
   servers: [
     {

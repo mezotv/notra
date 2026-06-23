@@ -4,7 +4,7 @@ export const SITE_URL = "https://www.usenotra.com";
 export const RESOURCE_METADATA_URL = `${API_URL}/.well-known/oauth-protected-resource`;
 export const AUTH_GUIDE_URL = `${SITE_URL}/auth.md`;
 
-export const PUBLIC_API_SCOPES = [
+const PUBLIC_API_SCOPES = [
   "api.read",
   "api.write",
   "posts.read",
@@ -13,7 +13,7 @@ export const PUBLIC_API_SCOPES = [
   "skills.write",
 ] as const;
 
-export const AGENT_AUTH_METADATA = {
+const AGENT_AUTH_METADATA = {
   register_uri: `${SITE_URL}/agent/auth/register`,
   claim_uri: `${SITE_URL}/agent/auth/claim`,
   revocation_uri: `${SITE_URL}/agent/auth/revoke`,
@@ -34,9 +34,7 @@ export const AGENT_AUTH_METADATA = {
 export function buildProtectedResourceMetadata() {
   return {
     resource: API_URL,
-    authorization_servers: [
-      `${SITE_URL}/.well-known/oauth-authorization-server`,
-    ],
+    authorization_servers: [SITE_URL],
     scopes_supported: PUBLIC_API_SCOPES,
     bearer_methods_supported: ["header"],
     resource_documentation: AUTH_GUIDE_URL,
@@ -46,17 +44,8 @@ export function buildProtectedResourceMetadata() {
 export function buildAuthorizationServerMetadata() {
   return {
     issuer: SITE_URL,
-    authorization_endpoint: `${SITE_URL}/agent/auth/authorize`,
-    token_endpoint: `${SITE_URL}/agent/auth/token`,
     registration_endpoint: `${SITE_URL}/agent/auth/register`,
     revocation_endpoint: `${SITE_URL}/agent/auth/revoke`,
-    response_types_supported: ["code"],
-    grant_types_supported: [
-      "authorization_code",
-      "client_credentials",
-      "urn:ietf:params:oauth:grant-type:token-exchange",
-    ],
-    token_endpoint_auth_methods_supported: ["client_secret_basic", "none"],
     scopes_supported: PUBLIC_API_SCOPES,
     agent_auth: AGENT_AUTH_METADATA,
   };

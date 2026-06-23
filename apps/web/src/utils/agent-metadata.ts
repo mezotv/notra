@@ -2,7 +2,7 @@ import { SITE_DESCRIPTION } from "@/utils/metadata";
 import { SOCIAL_LINKS } from "@/utils/social-links";
 import { API_URL, DOCS_URL, MCP_URL, SITE_URL } from "@/utils/urls";
 
-export const AGENT_DISCOVERY_PATHS = {
+const AGENT_DISCOVERY_PATHS = {
   agentJson: "/.well-known/agent.json",
   agentCard: "/.well-known/agent-card.json",
   apiCatalog: "/.well-known/api-catalog",
@@ -25,7 +25,7 @@ export const NOTRA_SAME_AS = [
   SOCIAL_LINKS.reddit,
 ] as const;
 
-export const PUBLIC_API_SCOPES = [
+const PUBLIC_API_SCOPES = [
   "api.read",
   "api.write",
   "posts.read",
@@ -66,6 +66,26 @@ export function buildAgentAuthMetadata() {
       ],
       credential_types_supported: ["api_key", "bearer"],
     },
+  };
+}
+
+export function buildProtectedResourceMetadata() {
+  return {
+    resource: apiUrl(),
+    authorization_servers: [siteUrl()],
+    scopes_supported: PUBLIC_API_SCOPES,
+    bearer_methods_supported: ["header"],
+    resource_documentation: siteUrl(AGENT_DISCOVERY_PATHS.authMarkdown),
+  };
+}
+
+export function buildAuthorizationServerMetadata() {
+  return {
+    issuer: siteUrl(),
+    registration_endpoint: siteUrl("/agent/auth/register"),
+    revocation_endpoint: siteUrl("/agent/auth/revoke"),
+    scopes_supported: PUBLIC_API_SCOPES,
+    agent_auth: buildAgentAuthMetadata(),
   };
 }
 
