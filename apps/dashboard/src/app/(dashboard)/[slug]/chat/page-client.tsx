@@ -131,29 +131,35 @@ function ChatReasoningBlock({
   isStreaming: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(isStreaming);
-  const [statusLabel, setStatusLabel] = useState(
-    isStreaming ? THINKING_LABEL : formatReasoningDurationLabel(null)
-  );
   const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
+  const [wasStreaming, setWasStreaming] = useState(isStreaming);
   const startTimeRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  // Adjust state when the `isStreaming` prop transitions by comparing it to the
+  // previous value during render — React's recommended alternative to syncing a
+  // prop into state from inside an effect.
+  if (wasStreaming !== isStreaming) {
+    setWasStreaming(isStreaming);
     if (isStreaming) {
       startTimeRef.current = Date.now();
       setDurationSeconds(null);
-      setStatusLabel(THINKING_LABEL);
       setIsOpen(true);
+    } else {
+      const startedAt = startTimeRef.current;
+      setDurationSeconds(
+        startedAt
+          ? Math.max(1, Math.ceil((Date.now() - startedAt) / 1000))
+          : null
+      );
+    }
+  }
 
+  // Auto-close shortly after reasoning finishes. A timer is a genuine side
+  // effect, so it stays in an effect.
+  useEffect(() => {
+    if (isStreaming) {
       return;
     }
-
-    const startedAt = startTimeRef.current;
-    const nextDurationSeconds = startedAt
-      ? Math.max(1, Math.ceil((Date.now() - startedAt) / 1000))
-      : null;
-
-    setDurationSeconds(nextDurationSeconds);
-    setStatusLabel(formatReasoningDurationLabel(nextDurationSeconds));
 
     const closeTimer = window.setTimeout(() => {
       setIsOpen(false);
@@ -164,13 +170,9 @@ function ChatReasoningBlock({
     };
   }, [isStreaming]);
 
-  useEffect(() => {
-    if (isStreaming || durationSeconds !== null) {
-      return;
-    }
-
-    setStatusLabel(formatReasoningDurationLabel(null));
-  }, [durationSeconds, isStreaming]);
+  const statusLabel = isStreaming
+    ? THINKING_LABEL
+    : formatReasoningDurationLabel(durationSeconds);
 
   return (
     <Collapsible onOpenChange={setIsOpen} open={isOpen}>
