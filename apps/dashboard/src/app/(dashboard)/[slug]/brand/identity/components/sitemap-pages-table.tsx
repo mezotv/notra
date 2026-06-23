@@ -213,24 +213,25 @@ export function SitemapPagesTable({
                 }}
               />
             </PaginationItem>
-            {getPageNumbers(currentPage, totalPages).map((pageNumber, index) =>
-              pageNumber === "ellipsis" ? (
-                <PaginationItem key={`ellipsis-${index}`}>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              ) : (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={pageNumber === currentPage}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      setPage(pageNumber);
-                    }}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              )
+            {getPageNumbers(currentPage, totalPages).map(
+              (pageNumber, index, pages) =>
+                pageNumber === "ellipsis" ? (
+                  <PaginationItem key={`ellipsis-${pages[index - 1]}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                ) : (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      isActive={pageNumber === currentPage}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setPage(pageNumber);
+                      }}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
             )}
             <PaginationItem>
               <PaginationNext
