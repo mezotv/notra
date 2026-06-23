@@ -3,10 +3,12 @@ import {
   BookOpen01Icon,
   CommandLineIcon,
   FavouriteIcon,
+  FigmaIcon,
   Megaphone01Icon,
   PaintBoardIcon,
   QuillWrite01Icon,
   SparklesIcon,
+  StickyNote02Icon,
   TwitterIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
@@ -67,6 +69,18 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
         label: "X Thread Builder",
         description: "Free tool to draft threads in your voice",
         icon: TwitterIcon,
+      },
+      {
+        href: "/html-to-figma",
+        label: "HTML to Figma",
+        description: "Free tool to paste HTML into Figma",
+        icon: FigmaIcon,
+      },
+      {
+        href: "/html-to-paper",
+        label: "HTML to Paper",
+        description: "Free tool to paste HTML into Paper",
+        icon: StickyNote02Icon,
       },
     ],
     railHeading: "Developers",
@@ -159,6 +173,14 @@ export const FOOTER_FREE_TOOL_LINKS = [
   {
     href: "/twitter-thread-creator",
     label: "X Thread Builder",
+  },
+  {
+    href: "/html-to-figma",
+    label: "HTML to Figma",
+  },
+  {
+    href: "/html-to-paper",
+    label: "HTML to Paper",
   },
 ] as const;
 

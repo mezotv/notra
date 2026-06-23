@@ -1,5 +1,9 @@
 import type { Font } from "opentype.js";
-import { SceneBuilder, solidFill } from "../builders/scene-builder";
+import {
+  SceneBuilder,
+  solidFill,
+  transformAt,
+} from "../builders/scene-builder";
 import {
   HEX_RE,
   IGNORED_TAGS,
@@ -21,7 +25,7 @@ import type {
   SvgInfo,
   SvgShape,
 } from "../types/dom-to-scene";
-import type { Guid } from "../types/scene";
+import type { Guid, Transform } from "../types/scene";
 import type { PathSubpath } from "../types/svg-path";
 import { parseSvgPath } from "../utils/svg-path";
 import { TextLayoutCache } from "../utils/text-layout";
@@ -429,6 +433,94 @@ function parseLineHeight(s: string, fontSize: number): number {
   return v < 10 ? v * fontSize : v;
 }
 
+function parseOriginComponent(value: string, size: number): number {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === "center") {
+    return size / 2;
+  }
+  if (normalized === "left" || normalized === "top") {
+    return 0;
+  }
+  if (normalized === "right" || normalized === "bottom") {
+    return size;
+  }
+  if (normalized.endsWith("%")) {
+    const percent = Number.parseFloat(normalized.slice(0, -1));
+    return Number.isFinite(percent) ? (percent / 100) * size : size / 2;
+  }
+  const px = normalized.endsWith("px")
+    ? Number.parseFloat(normalized.slice(0, -2))
+    : Number.parseFloat(normalized);
+  return Number.isFinite(px) ? px : size / 2;
+}
+
+function splitTransformOrigin(value: string): [string, string] {
+  const parts = value.trim().split(WHITESPACE_RE).filter(Boolean);
+  const first = parts[0];
+  const second = parts[1];
+  if (!first) {
+    return ["center", "center"];
+  }
+  if (!second) {
+    return first === "top" || first === "bottom"
+      ? ["center", first]
+      : [first, "center"];
+  }
+  return [first, second];
+}
+
+function authoredTransformOrigin(el: Element): string {
+  if (!("style" in el)) {
+    return "";
+  }
+  const style = (el as HTMLElement | SVGElement).style;
+  return style.transformOrigin;
+}
+
+function elementTransform(
+  el: Element,
+  style: CSSStyleDeclaration,
+  rect: DOMRect
+): Transform {
+  if (!style.transform || style.transform === "none") {
+    return transformAt(rect.left, rect.top);
+  }
+
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  if (!matrix.is2D) {
+    return transformAt(rect.left, rect.top);
+  }
+
+  const [originXValue, originYValue] = splitTransformOrigin(
+    authoredTransformOrigin(el) || "center"
+  );
+  const originX = parseOriginComponent(originXValue, rect.width);
+  const originY = parseOriginComponent(originYValue, rect.height);
+
+  return {
+    m00: matrix.a,
+    m01: matrix.c,
+    m02:
+      rect.left + originX + matrix.e - matrix.a * originX - matrix.c * originY,
+    m10: matrix.b,
+    m11: matrix.d,
+    m12:
+      rect.top + originY + matrix.f - matrix.b * originX - matrix.d * originY,
+  };
+}
+
+function relativeTransform(
+  transform: Transform,
+  parentX: number,
+  parentY: number
+): Transform {
+  return {
+    ...transform,
+    m02: transform.m02 - parentX,
+    m12: transform.m12 - parentY,
+  };
+}
+
 function parseCornerRadius(s: string): number {
   if (!s) {
     return 0;
@@ -507,6 +599,7 @@ function extractLayout(node: Node): LayoutNode | null {
       parentX: parentRect.left,
       parentY: parentRect.top,
       parentWidth: parentRect.width,
+      parentHeight: parentRect.height,
     };
   }
 
@@ -605,6 +698,8 @@ function extractLayout(node: Node): LayoutNode | null {
       y: rect.top,
       width: rect.width,
       height: rect.height,
+      transform: transformAt(rect.left, rect.top),
+      background: style.backgroundColor,
       color: fallbackColor,
       shapes,
     };
@@ -662,6 +757,7 @@ function extractLayout(node: Node): LayoutNode | null {
     y: rect.top,
     width: rect.width,
     height: rect.height,
+    transform: elementTransform(el, style, rect),
     background: style.backgroundColor,
     cornerRadii,
     borders,
@@ -676,6 +772,8 @@ function emitSvg(
   parentX: number,
   parentY: number
 ): void {
+  const bg = parseColor(svgNode.background);
+  const fill = bg && bg[3] > 0 ? solidFill(bg[0], bg[1], bg[2], bg[3]) : null;
   const frameGuid = sb.addFrame({
     parent,
     name: svgNode.name,
@@ -683,7 +781,7 @@ function emitSvg(
     y: svgNode.y - parentY,
     width: svgNode.width,
     height: svgNode.height,
-    fill: null,
+    fill,
   });
 
   for (let index = 0; index < svgNode.shapes.length; index += 1) {
@@ -934,6 +1032,7 @@ function emitElement(
     name: node.name,
     x: relX,
     y: relY,
+    transform: relativeTransform(node.transform, parentX, parentY),
     width: node.width,
     height: node.height,
     fill,
@@ -953,16 +1052,28 @@ function emitElement(
       const letterSpacing = parsePx(child.letterSpacing);
       const align = TEXT_ALIGN_MAP[child.textAlign] ?? "LEFT";
 
-      const textX = child.wrapped ? child.parentX - node.x : child.x - node.x;
+      const effectiveLineHeight =
+        lineHeight > 0 ? lineHeight : child.fontSize * 1.2;
+      const singleLineBoxHeight = Math.max(
+        child.height,
+        effectiveLineHeight,
+        child.fontSize
+      );
+      let textX = child.wrapped ? child.parentX - node.x : child.x - node.x;
       const rawTextY = child.wrapped
         ? child.parentY - node.y
         : child.y - node.y;
       const parentYLocal = child.parentY - node.y;
-      const textY = Math.max(rawTextY, parentYLocal);
-      const textWidth = child.wrapped ? child.parentWidth : child.width;
-      const textHeight = child.height;
-      const autoResize = child.wrapped ? "HEIGHT" : "WIDTH_AND_HEIGHT";
-      const derivedTextData =
+      const centeredTextY =
+        parentYLocal +
+        Math.max(0, child.parentHeight - singleLineBoxHeight) / 2;
+      const textY = child.wrapped
+        ? parentYLocal
+        : Math.min(Math.max(rawTextY, parentYLocal), centeredTextY);
+      let textWidth = child.wrapped ? child.parentWidth : child.width;
+      const textHeight = child.wrapped ? child.height : singleLineBoxHeight;
+      const autoResize = child.wrapped ? "HEIGHT" : "NONE";
+      const layoutDerivedText = (maxWidth: number) =>
         textLayout && textFont
           ? textLayout.layout({
               text: child.text,
@@ -972,11 +1083,25 @@ function emitElement(
               fontSize: child.fontSize,
               lineHeight,
               letterSpacing,
-              maxWidth: textWidth,
+              maxWidth,
               wrap: child.wrapped,
+              alignHorizontal: align,
               font: textFont,
             })
           : null;
+      let derivedTextData = layoutDerivedText(textWidth);
+      const derivedWidth = derivedTextData?.layoutSize.x ?? 0;
+      const shouldAnchorTextBox =
+        !child.wrapped &&
+        derivedWidth > textWidth &&
+        (align === "CENTER" || align === "RIGHT");
+
+      if (shouldAnchorTextBox) {
+        const delta = derivedWidth - textWidth;
+        textX -= align === "CENTER" ? delta / 2 : delta;
+        textWidth = derivedWidth;
+        derivedTextData = layoutDerivedText(textWidth);
+      }
 
       sb.addText({
         parent: frameGuid,

@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: false,
     viewTransition: true,
   },
-  transpilePackages: ["@notra/ui", "@notra/email"],
+  transpilePackages: ["@notra/ui", "@notra/email", "@notra/kiwi"],
   rewrites: async () => {
     return [
       {

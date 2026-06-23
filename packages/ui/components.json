@@ -21,6 +21,7 @@
     "hooks": "@notra/ui/hooks"
   },
   "registries": {
+    "@dominik-ui": "https://dominikkoch.dev/r/{name}.json",
     "@svgl": "https://svgl.app/r/{name}.json",
     "@diceui": "https://diceui.com/r/{name}.json",
     "@react-bits": "https://reactbits.dev/r/{name}.json",

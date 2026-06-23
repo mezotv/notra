@@ -1,3 +1,4 @@
+import type { Transform } from "./scene";
 import type { PathSubpath } from "./svg-path";
 
 export interface BuildSceneFromElementOptions {
@@ -24,6 +25,7 @@ export interface ElementInfo {
   y: number;
   width: number;
   height: number;
+  transform: Transform;
   background: string;
   cornerRadii: [number, number, number, number];
   borders: BoxBorders;
@@ -49,6 +51,7 @@ export interface TextInfo {
   parentX: number;
   parentY: number;
   parentWidth: number;
+  parentHeight: number;
 }
 
 export interface SvgShape {
@@ -68,6 +71,8 @@ export interface SvgInfo {
   y: number;
   width: number;
   height: number;
+  transform: Transform;
+  background: string;
   color: string;
   shapes: SvgShape[];
 }

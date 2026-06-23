@@ -114,6 +114,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
+      url: `${SITE_URL}/html-to-figma`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
+      url: `${SITE_URL}/html-to-paper`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
       url: `${SITE_URL}/privacy`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },

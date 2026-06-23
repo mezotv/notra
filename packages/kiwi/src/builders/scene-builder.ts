@@ -33,10 +33,11 @@ export function positionFor(index: number): string {
 }
 
 export function solidFill(r: number, g: number, b: number, a = 1): SolidFill {
+  const opacity = Math.max(0, Math.min(1, a));
   return {
     type: "SOLID",
-    color: { r, g, b, a },
-    opacity: 1,
+    color: { r, g, b, a: 1 },
+    opacity,
     visible: true,
     blendMode: "NORMAL",
   };
@@ -48,6 +49,16 @@ export function transformAt(x: number, y: number): Transform {
 
 function cloneTransform(t: Transform): Transform {
   return { ...t };
+}
+
+function optionTransform(options: {
+  transform?: Transform;
+  x?: number;
+  y?: number;
+}): Transform {
+  return options.transform
+    ? cloneTransform(options.transform)
+    : transformAt(options.x ?? 0, options.y ?? 0);
 }
 
 export class SceneBuilder {
@@ -168,7 +179,7 @@ export class SceneBuilder {
       visible: true,
       opacity: 1,
       size: { x: options.width, y: options.height },
-      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      transform: optionTransform(options),
       strokeWeight: hasStroke ? (options.strokeWeight ?? 1) : 1,
       strokeAlign: "INSIDE",
       strokeJoin: "MITER",
@@ -234,7 +245,7 @@ export class SceneBuilder {
       visible: true,
       opacity: 1,
       size: { x: options.width ?? 0, y: options.height ?? 0 },
-      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      transform: optionTransform(options),
       strokeWeight: 1,
       strokeAlign: "OUTSIDE",
       strokeJoin: "MITER",
@@ -307,7 +318,7 @@ export class SceneBuilder {
       visible: true,
       opacity: 1,
       size: { x: options.width, y: options.height },
-      transform: transformAt(options.x ?? 0, options.y ?? 0),
+      transform: optionTransform(options),
       strokeWeight: hasStroke ? (options.strokeWeight ?? 1) : 0,
       strokeAlign: "CENTER",
       strokeCap: options.strokeCap ?? "NONE",

@@ -41,10 +41,10 @@ export class TextLayoutCache {
     lines.forEach((line, lineIndex) => {
       const lineY = lineIndex * lineHeight;
       const baselineY = lineY + baselineOffset;
-      let x = 0;
+      let x = lineOffset(options.alignHorizontal, options.maxWidth, line.width);
 
       baselines.push({
-        position: { x: 0, y: baselineY },
+        position: { x, y: baselineY },
         width: line.width,
         lineY,
         lineHeight,
@@ -74,7 +74,7 @@ export class TextLayoutCache {
 
     return {
       layoutSize: {
-        x: Math.max(...lines.map((line) => line.width)),
+        x: layoutWidth(options.alignHorizontal, options.maxWidth, lines),
         y: lines.length * lineHeight,
       },
       baselines,
@@ -114,6 +114,34 @@ export class TextLayoutCache {
     this.glyphBlobs.set(key, blobIndex);
     return blobIndex;
   }
+}
+
+function lineOffset(
+  alignHorizontal: string | undefined,
+  maxWidth: number,
+  lineWidth: number
+): number {
+  if (maxWidth <= lineWidth) {
+    return 0;
+  }
+  if (alignHorizontal === "CENTER") {
+    return (maxWidth - lineWidth) / 2;
+  }
+  if (alignHorizontal === "RIGHT") {
+    return maxWidth - lineWidth;
+  }
+  return 0;
+}
+
+function layoutWidth(
+  alignHorizontal: string | undefined,
+  maxWidth: number,
+  lines: LineLayout[]
+): number {
+  const contentWidth = Math.max(...lines.map((line) => line.width));
+  return alignHorizontal === "CENTER" || alignHorizontal === "RIGHT"
+    ? Math.max(maxWidth, contentWidth)
+    : contentWidth;
 }
 
 function shapeCharacters(options: LayoutOptions): CharacterGlyph[] {

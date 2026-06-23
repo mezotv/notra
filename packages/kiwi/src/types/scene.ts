@@ -75,6 +75,7 @@ export interface AddFrameOptions {
   name?: string;
   x?: number;
   y?: number;
+  transform?: Transform;
   width: number;
   height: number;
   fill?: SolidFill | null;
@@ -92,6 +93,7 @@ export interface AddTextOptions {
   text: string;
   x?: number;
   y?: number;
+  transform?: Transform;
   width?: number;
   height?: number;
   fontFamily?: string;
@@ -111,6 +113,7 @@ export interface AddVectorOptions {
   name?: string;
   x?: number;
   y?: number;
+  transform?: Transform;
   width: number;
   height: number;
   fill?: SolidFill | null;

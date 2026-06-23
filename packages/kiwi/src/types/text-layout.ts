@@ -11,6 +11,7 @@ export interface LayoutOptions {
   letterSpacing: number;
   maxWidth: number;
   wrap: boolean;
+  alignHorizontal?: string;
 }
 
 export interface CharacterGlyph {
