@@ -494,18 +494,21 @@ function StandaloneChatPageClient({
     try {
       const parsed = chatErrorPayloadSchema.safeParse(JSON.parse(errorMessage));
 
-      if (parsed.success && parsed.data.error) {
-        setChatError(parsed.data.error);
-      }
-
       if (parsed.success && parsed.data.code === "USAGE_LIMIT_REACHED") {
         setChatError(
           "You've used all your chat messages this month. Upgrade for more."
         );
+        setPendingMessageId(null);
+        return;
+      }
+
+      if (parsed.success && parsed.data.error) {
+        setChatError(parsed.data.error);
+        setPendingMessageId(null);
         return;
       }
     } catch {
-      // Ignore non-JSON error payloads.
+      // Non-JSON payloads fall through to the plain-text handling below.
     }
 
     if (
@@ -515,9 +518,19 @@ function StandaloneChatPageClient({
       setChatError(
         "You've used all your chat messages this month. Upgrade for more."
       );
+      setPendingMessageId(null);
       return;
     }
+
+    // Surface the failure to the user instead of silently stopping the stream.
+    // The server maps tool failures (bad/unknown tool calls, etc.) to readable
+    // messages, so the chat explains what went wrong and stays usable.
     console.error("Standalone chat error:", err);
+    setChatError(
+      errorMessage.trim()
+        ? errorMessage
+        : "Something went wrong while generating a response. Please try again."
+    );
     setPendingMessageId(null);
   }, []);
 
@@ -1891,22 +1904,42 @@ function StandaloneChatPageClient({
   }
 
   const lastMessage = messages.at(-1);
+  // The assistant turn exists but has nothing visible yet (the brief moment
+  // before any text/tool/reasoning streams in).
+  const lastAssistantHasNoVisibleContent =
+    lastMessage?.role === "assistant" &&
+    !lastMessage.parts.some(
+      (p) =>
+        (p.type === "text" && p.text.trim()) ||
+        p.type === "file" ||
+        p.type === "reasoning" ||
+        isToolUIPart(p)
+    );
+  // The assistant turn is paused on a settled tool result while the model
+  // generates its next step. This is the common case right after the user
+  // approves/denies a tool, or between tool calls mid-run — previously nothing
+  // rendered here, so the chat looked frozen.
+  const lastPart = lastMessage?.parts.at(-1);
+  const isAwaitingAssistantContinuation =
+    lastMessage?.role === "assistant" &&
+    lastPart != null &&
+    (lastPart.type === "step-start" ||
+      (isToolUIPart(lastPart) &&
+        (isTerminalToolState(lastPart.state) ||
+          lastPart.state === "approval-responded")));
   const showThinkingIndicator =
     isLoading &&
     lastMessage != null &&
     (lastMessage.role === "user" ||
-      (lastMessage.role === "assistant" &&
-        !lastMessage.parts.some(
-          (p) =>
-            (p.type === "text" && p.text.trim()) ||
-            p.type === "file" ||
-            p.type === "reasoning" ||
-            isToolUIPart(p)
-        )));
+      lastAssistantHasNoVisibleContent ||
+      isAwaitingAssistantContinuation);
   const thinkingIndicatorLabel =
-    lastMessage?.role === "user" ? "Getting Started" : "Thinking";
+    lastMessage?.role === "user" ? "Getting Started" : "Working";
+  // Only hide the trailing assistant message when it has nothing to show.
+  // When we're awaiting continuation after a tool, keep it visible and append
+  // the indicator after it.
   const visibleMessages =
-    showThinkingIndicator && lastMessage?.role === "assistant"
+    showThinkingIndicator && lastAssistantHasNoVisibleContent
       ? messages.slice(0, -1)
       : messages;
 

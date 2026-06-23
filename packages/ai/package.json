@@ -34,8 +34,8 @@
     "./crypto/*": "./src/crypto/*.ts"
   },
   "dependencies": {
-    "@ai-sdk/gateway": "3.0.121",
-    "@ai-sdk/mcp": "1.0.45",
+    "@ai-sdk/gateway": "3.0.132",
+    "@ai-sdk/mcp": "1.0.51",
     "@aws-sdk/client-s3": "^3.990.0",
     "@linear/sdk": "^80.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -49,7 +49,7 @@
     "@upstash/realtime": "^1.0.3",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
-    "ai": "6.0.193",
+    "ai": "6.0.206",
     "autumn-js": "^1.2.7",
     "dedent": "^1.7.1",
     "drizzle-orm": "^0.45.2",

@@ -28,7 +28,7 @@ import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
-import type { UIMessage } from "ai";
+import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
@@ -486,6 +486,12 @@ async function createDirectStandaloneChatResponse({
           (error instanceof Error && error.name === "AbortError")
         ) {
           return "Generation stopped.";
+        }
+        if (NoSuchToolError.isInstance(error)) {
+          return "The assistant tried to use a tool that isn't available right now. Please try sending your message again.";
+        }
+        if (InvalidToolInputError.isInstance(error)) {
+          return "The assistant called a tool with invalid inputs and couldn't recover. Please try sending your message again.";
         }
         if (error instanceof Error) {
           return error.message;

@@ -21,7 +21,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
-    "ai": "6.0.193",
+    "ai": "6.0.206",
     "autumn-js": "^1.2.5",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.0",

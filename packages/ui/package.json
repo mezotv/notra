@@ -23,7 +23,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@toolwind/corner-shape": "^0.0.8-3",
     "@xyflow/react": "^12.10.0",
-    "ai": "6.0.193",
+    "ai": "6.0.206",
     "class-variance-authority": "^0.7.1",
     "cmdk": "^1.1.1",
     "cnfast": "^0.0.6",

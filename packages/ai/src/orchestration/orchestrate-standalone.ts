@@ -22,7 +22,10 @@ import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attach
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
+  generateText,
   isToolUIPart,
+  NoSuchToolError,
+  Output,
   smoothStream,
   stepCountIs,
   streamText,
@@ -256,6 +259,54 @@ export async function orchestrateStandaloneChat(
     }),
     stopWhen: stepCountIs(maxSteps),
     experimental_transform: smoothStream(),
+    // Without this, a tool call whose inputs fail schema validation throws an
+    // `InvalidToolInputError` that surfaces as a fatal stream error and bricks
+    // the chat. Instead, re-derive valid inputs from the schema so the agent
+    // can carry on. Unknown tool names can't be repaired this way, so we let
+    // them fall through to `onError` where they become a readable message.
+    experimental_repairToolCall: async ({
+      toolCall,
+      tools: availableTools,
+      inputSchema,
+      error,
+    }) => {
+      if (NoSuchToolError.isInstance(error)) {
+        return null;
+      }
+
+      const brokenTool = availableTools[toolCall.toolName];
+      if (!brokenTool) {
+        return null;
+      }
+
+      try {
+        const { output: repairedInput } = await generateText({
+          model: modelWithMemory,
+          output: Output.object({ schema: brokenTool.inputSchema }),
+          prompt: [
+            `The assistant called the tool "${toolCall.toolName}" with inputs that failed validation:`,
+            JSON.stringify(toolCall.input),
+            "The tool expects inputs matching this JSON schema:",
+            JSON.stringify(await inputSchema({ toolName: toolCall.toolName })),
+            `Validation error: ${error.message}`,
+            "Return corrected inputs that satisfy the schema.",
+          ].join("\n"),
+          experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+        });
+
+        return { ...toolCall, input: JSON.stringify(repairedInput) };
+      } catch (repairError) {
+        console.error("[Standalone Chat] Tool call repair failed", {
+          organizationId,
+          toolName: toolCall.toolName,
+          error:
+            repairError instanceof Error
+              ? repairError.message
+              : String(repairError),
+        });
+        return null;
+      }
+    },
     providerOptions,
     abortSignal,
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
