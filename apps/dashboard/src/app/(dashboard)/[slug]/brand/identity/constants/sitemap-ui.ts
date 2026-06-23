@@ -35,3 +35,5 @@ export const SITEMAP_PAGE_SKELETON_KEYS = [
   "page-row-3",
   "page-row-4",
 ];
+
+export const SITEMAP_PAGES_PER_PAGE = 25;

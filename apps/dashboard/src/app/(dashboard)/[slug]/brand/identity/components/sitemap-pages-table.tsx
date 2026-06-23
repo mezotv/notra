@@ -8,6 +8,15 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@notra/ui/components/ui/input-group";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@notra/ui/components/ui/pagination";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
@@ -17,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
 import { useSitemapPages } from "@/lib/hooks/use-brand-sitemaps";
 import {
@@ -34,9 +44,11 @@ import type {
   SitemapPageCategory,
   SitemapPagesTableProps,
 } from "@/types/hooks/brand-sitemaps";
+import { getPageNumbers } from "@/utils/content-preview";
 import {
   PAGE_FILTER_TABS,
   SITEMAP_PAGE_SKELETON_KEYS,
+  SITEMAP_PAGES_PER_PAGE,
 } from "../constants/sitemap-ui";
 
 export function SitemapPagesTable({
@@ -52,6 +64,20 @@ export function SitemapPagesTable({
   const [activeFilter, setActiveFilter] =
     useState<SitemapPageCategory>("crawled");
   const [search, setSearch] = useState("");
+  const [rawPage, setPage] = useQueryState(
+    "page",
+    parseAsInteger.withDefault(1).withOptions({ clearOnDefault: true })
+  );
+
+  const handleFilterChange = (filter: SitemapPageCategory) => {
+    setActiveFilter(filter);
+    setPage(1);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const pages = data?.pages ?? [];
 
@@ -84,6 +110,16 @@ export function SitemapPagesTable({
     });
   })();
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(visiblePages.length / SITEMAP_PAGES_PER_PAGE)
+  );
+  const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+  const paginatedPages = visiblePages.slice(
+    (currentPage - 1) * SITEMAP_PAGES_PER_PAGE,
+    currentPage * SITEMAP_PAGES_PER_PAGE
+  );
+
   if (isPending) {
     return (
       <div className="space-y-3">
@@ -106,7 +142,7 @@ export function SitemapPagesTable({
           </InputGroupAddon>
           <InputGroupInput
             aria-label="Search sitemap URLs"
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Search URLs..."
             value={search}
           />
@@ -124,7 +160,7 @@ export function SitemapPagesTable({
                     : "border-transparent text-muted-foreground hover:bg-muted/40"
                 )}
                 key={tab.value}
-                onClick={() => setActiveFilter(tab.value)}
+                onClick={() => handleFilterChange(tab.value)}
                 type="button"
               >
                 {tab.label} ({countsByCategory[tab.value]})
@@ -155,12 +191,60 @@ export function SitemapPagesTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visiblePages.map((page) => (
+              {paginatedPages.map((page) => (
                 <PageRow key={page.id} page={page} />
               ))}
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                className={cn(
+                  currentPage === 1 && "pointer-events-none opacity-50"
+                )}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage(Math.max(1, currentPage - 1));
+                }}
+              />
+            </PaginationItem>
+            {getPageNumbers(currentPage, totalPages).map((pageNumber, index) =>
+              pageNumber === "ellipsis" ? (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    isActive={pageNumber === currentPage}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setPage(pageNumber);
+                    }}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            )}
+            <PaginationItem>
+              <PaginationNext
+                className={cn(
+                  currentPage === totalPages && "pointer-events-none opacity-50"
+                )}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPage(Math.min(totalPages, currentPage + 1));
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
     </div>
   );

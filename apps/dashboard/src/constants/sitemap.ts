@@ -1,3 +1,4 @@
 export const CONTEXT_DEV_SITEMAP_ID_PREFIX = "context-dev";
 export const CONTEXT_DEV_SITEMAP_MAX_LINKS = 250;
 export const CONTEXT_DEV_SITEMAP_TIMEOUT_MS = 30_000;
+export const SITEMAP_PAGES_FETCH_LIMIT = 100;

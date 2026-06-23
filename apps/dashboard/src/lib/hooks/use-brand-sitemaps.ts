@@ -6,7 +6,7 @@ import type {
   SitemapListResponse,
   SitemapPagesResponse,
 } from "@/types/hooks/brand-sitemaps";
-import { fetchSitemapJson } from "../sitemap/api-client";
+import { fetchAllSitemapPages, fetchSitemapJson } from "../sitemap/api-client";
 import { sitemapPagesKey, sitemapsKey } from "../sitemap/query-keys";
 
 export function useSitemaps(organizationId: string, voiceId: string) {
@@ -27,10 +27,7 @@ export function useSitemapPages(
 ) {
   return useQuery<SitemapPagesResponse>({
     queryKey: sitemapPagesKey(organizationId, voiceId, sitemapId),
-    queryFn: () =>
-      fetchSitemapJson<SitemapPagesResponse>(
-        `/api/organizations/${organizationId}/brand-identities/${voiceId}/sitemaps/${sitemapId}/pages`
-      ),
+    queryFn: () => fetchAllSitemapPages(organizationId, voiceId, sitemapId),
     enabled: !!organizationId && !!voiceId && !!sitemapId,
   });
 }
