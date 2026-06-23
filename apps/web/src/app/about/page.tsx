@@ -13,12 +13,12 @@ export default function AboutPage() {
       <div className="flex flex-col gap-4">
         <h1 className="font-semibold text-4xl tracking-tight">About Notra</h1>
         <p className="text-muted-foreground leading-7">
-          Notra is an AI content-generation platform for product and
-          engineering teams. It turns shipped work into changelogs, launch
-          posts, blog drafts, marketing assets, and social updates that match a
-          team's own voice. The product is built for teams that already ship
-          quickly but lose time collecting context, asking engineers what
-          changed, and rewriting rough notes into publishable updates.
+          Notra is an AI content-generation platform for product and engineering
+          teams. It turns shipped work into changelogs, launch posts, blog
+          drafts, marketing assets, and social updates that match a team's own
+          voice. The product is built for teams that already ship quickly but
+          lose time collecting context, asking engineers what changed, and
+          rewriting rough notes into publishable updates.
         </p>
         <p className="text-muted-foreground leading-7">
           Notra connects to the systems where product work happens, including

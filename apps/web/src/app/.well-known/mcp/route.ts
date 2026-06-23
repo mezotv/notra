@@ -13,7 +13,8 @@ export function GET() {
         "Use Notra MCP after authenticating with a Notra API key. The server exposes tools for reading organization content, generating drafts, and applying saved brand voice guidance.",
       authentication: {
         type: "bearer",
-        resource_metadata: "https://api.usenotra.com/.well-known/oauth-protected-resource",
+        resource_metadata:
+          "https://api.usenotra.com/.well-known/oauth-protected-resource",
       },
     },
     {

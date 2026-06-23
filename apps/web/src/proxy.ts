@@ -1,7 +1,6 @@
 import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
-import { after, type NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
 
 const tracker = new Tracker({

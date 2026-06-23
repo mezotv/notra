@@ -39,8 +39,8 @@ export default function ContactPage() {
           <Link className="underline" href="/developers/llms.txt">
             developer llms.txt
           </Link>
-          . These resources describe API authentication, OpenAPI discovery,
-          MCP usage, sandbox reachability, and retry guidance.
+          . These resources describe API authentication, OpenAPI discovery, MCP
+          usage, sandbox reachability, and retry guidance.
         </p>
       </div>
     </main>

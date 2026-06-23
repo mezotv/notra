@@ -28,7 +28,9 @@ export async function POST(request: Request) {
         { type: "complete" },
       ]) {
         controller.enqueue(
-          encoder.encode(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`)
+          encoder.encode(
+            `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`
+          )
         );
       }
       controller.close();

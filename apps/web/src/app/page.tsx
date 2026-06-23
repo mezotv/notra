@@ -9,13 +9,13 @@ import { HatchPattern } from "../components/hatch-pattern";
 import ReferencesPreview from "../components/references-preview";
 import TestimonialsSection from "../components/testimonials-section";
 import { TrackedSignupLink } from "../components/tracked-signup-link";
-import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
 import {
   NOTRA_CONTACT_EMAIL,
   NOTRA_SAME_AS,
   NOTRA_SUPPORT_EMAIL,
   siteUrl,
 } from "../utils/agent-metadata";
+import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
 import { serializeJsonLd } from "../utils/jsonld";
 import { SITE_DESCRIPTION, SITE_TAGLINE, SITE_TITLE } from "../utils/metadata";
 import { SITE_URL } from "../utils/urls";
@@ -142,24 +142,26 @@ export default function LandingPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(softwareJsonLd) }}
+        type="application/ld+json"
       />
       <script
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(organizationJsonLd),
+        }}
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
       />
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
+        type="application/ld+json"
       />
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
+        type="application/ld+json"
       />
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(speakableJsonLd) }}
+        type="application/ld+json"
       />
       <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-36">
         <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">

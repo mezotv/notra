@@ -4,10 +4,7 @@ export function jsonResponse(
 ) {
   const { contentType, ...responseInit } = init;
   const headers = new Headers(init.headers);
-  headers.set(
-    "content-type",
-    contentType ?? "application/json; charset=utf-8"
-  );
+  headers.set("content-type", contentType ?? "application/json; charset=utf-8");
   if (!headers.has("cache-control")) {
     headers.set("cache-control", "no-store");
   }
