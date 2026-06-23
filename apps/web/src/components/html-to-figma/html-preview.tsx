@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toSafeHtml } from "@/lib/html-to-figma/sanitize";
 import type { HtmlPreviewProps } from "@/types/html-to-figma";
 
@@ -11,7 +11,7 @@ export default function HtmlPreview({ html }: HtmlPreviewProps) {
   const observerRef = useRef<ResizeObserver | null>(null);
   const [scale, setScale] = useState(0);
 
-  const measureRef = useCallback((element: HTMLDivElement | null) => {
+  const measureRef = (element: HTMLDivElement | null) => {
     observerRef.current?.disconnect();
 
     if (!element) {
@@ -25,7 +25,7 @@ export default function HtmlPreview({ html }: HtmlPreviewProps) {
 
     observer.observe(element);
     observerRef.current = observer;
-  }, []);
+  };
 
   const trimmed = html.trim();
   const srcDoc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><style>html,body{margin:0;padding:0}body{width:${CANVAS_WIDTH}px;height:${CANVAS_HEIGHT}px;display:flex;overflow:hidden;background:#ffffff}</style></head><body>${toSafeHtml(trimmed)}</body></html>`;
