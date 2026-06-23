@@ -82,8 +82,14 @@ export function buildProtectedResourceMetadata() {
 export function buildAuthorizationServerMetadata() {
   return {
     issuer: siteUrl(),
+    authorization_endpoint: siteUrl("/agent/auth/authorize"),
+    token_endpoint: siteUrl("/agent/auth/token"),
     registration_endpoint: siteUrl("/agent/auth/register"),
     revocation_endpoint: siteUrl("/agent/auth/revoke"),
+    response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code"],
+    token_endpoint_auth_methods_supported: ["none"],
+    code_challenge_methods_supported: ["S256"],
     scopes_supported: PUBLIC_API_SCOPES,
     agent_auth: buildAgentAuthMetadata(),
   };

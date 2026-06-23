@@ -48,7 +48,13 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname === "/" &&
     request.nextUrl.searchParams.get("mode") === "agent"
   ) {
-    return NextResponse.rewrite(new URL("/agent", request.url));
+    const response = NextResponse.rewrite(new URL("/agent", request.url));
+
+    after(async () => {
+      await tracker.track(request);
+    });
+
+    return response;
   }
 
   const response = await dualmarkProxy(request);
