@@ -10,6 +10,15 @@ import ReferencesPreview from "../components/references-preview";
 import TestimonialsSection from "../components/testimonials-section";
 import { TrackedSignupLink } from "../components/tracked-signup-link";
 import { SOCIAL_PROOF_LOGOS } from "../utils/constants";
+import {
+  NOTRA_CONTACT_EMAIL,
+  NOTRA_SAME_AS,
+  NOTRA_SUPPORT_EMAIL,
+  apiUrl,
+  buildAgentJson,
+  siteUrl,
+} from "../utils/agent-metadata";
+import { serializeJsonLd } from "../utils/jsonld";
 import { SITE_DESCRIPTION, SITE_TAGLINE, SITE_TITLE } from "../utils/metadata";
 import { SITE_URL } from "../utils/urls";
 
@@ -38,7 +47,7 @@ export const metadata: Metadata = {
   },
 };
 
-const jsonLd = {
+const softwareJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "Notra",
@@ -58,10 +67,155 @@ const jsonLd = {
   },
 };
 
-export default function LandingPage() {
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Notra",
+  url: SITE_URL,
+  logo: siteUrl("/notra-mark.svg"),
+  description: SITE_DESCRIPTION,
+  sameAs: NOTRA_SAME_AS,
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      email: NOTRA_CONTACT_EMAIL,
+      contactType: "sales",
+      availableLanguage: ["en"],
+    },
+    {
+      "@type": "ContactPoint",
+      email: NOTRA_SUPPORT_EMAIL,
+      contactType: "customer support",
+      availableLanguage: ["en"],
+    },
+  ],
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "US",
+    addressRegion: "Delaware",
+  },
+};
+
+const serviceJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "Notra AI content generation",
+  provider: organizationJsonLd,
+  serviceType: "AI content-generation platform",
+  areaServed: "Worldwide",
+  description: SITE_DESCRIPTION,
+};
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is Notra?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Notra is an AI content-generation platform that turns shipped work into changelogs, launch posts, marketing assets, and social updates in a team's brand voice.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How do AI agents integrate with Notra?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Agents can discover Notra through llms.txt, agent.json, the OpenAPI schema, auth.md, and the Notra MCP server.",
+      },
+    },
+  ],
+};
+
+const speakableJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: SITE_TITLE,
+  url: SITE_URL,
+  speakable: {
+    "@type": "SpeakableSpecification",
+    cssSelector: ["h1", "#agent-readable-summary"],
+  },
+};
+
+function AgentModeView() {
+  const agent = buildAgentJson();
+
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 px-6 py-28">
+      <div className="flex flex-col gap-3">
+        <h1 className="font-semibold text-4xl tracking-tight">
+          Notra Agent Interface
+        </h1>
+        <p className="text-muted-foreground leading-7">
+          Notra turns shipped product work into changelogs, launch posts, blog
+          drafts, marketing assets, and social updates in a saved brand voice.
+          Agents should use this view for discovery instead of parsing the
+          marketing homepage.
+        </p>
+      </div>
+      <section className="grid gap-4 text-sm md:grid-cols-2">
+        <div>
+          <h2 className="font-semibold text-lg">Discovery</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>Agent JSON: {siteUrl("/.well-known/agent.json")}</li>
+            <li>Agent Card: {siteUrl("/.well-known/agent-card.json")}</li>
+            <li>API Catalog: {siteUrl("/.well-known/api-catalog")}</li>
+            <li>Auth guide: {siteUrl("/auth.md")}</li>
+          </ul>
+        </div>
+        <div>
+          <h2 className="font-semibold text-lg">Endpoints</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>API: {apiUrl()}</li>
+            <li>OpenAPI: {apiUrl("/openapi.json")}</li>
+            <li>MCP: {agent.mcp.streamable_http}</li>
+            <li>NLWeb ask: {siteUrl("/ask")}</li>
+          </ul>
+        </div>
+      </section>
+      <pre className="overflow-auto rounded-md border bg-muted p-4 text-xs">
+        {JSON.stringify(agent, null, 2)}
+      </pre>
+    </main>
+  );
+}
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ mode?: string }>;
+}) {
+  const params = await searchParams;
+
+  if (params?.mode === "agent") {
+    return <AgentModeView />;
+  }
+
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
-      <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(softwareJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(speakableJsonLd) }}
+      />
       <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-36">
         <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
           <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
@@ -71,6 +225,12 @@ export default function LandingPage() {
             <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
               {SITE_DESCRIPTION}
             </div>
+            <p className="sr-only" id="agent-readable-summary">
+              Notra is an AI content-generation platform for product and
+              engineering teams. It turns shipped work from tools like GitHub
+              into changelogs, launch posts, blog drafts, marketing assets, and
+              social updates in the team's saved brand voice.
+            </p>
           </div>
         </div>
 

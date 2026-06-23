@@ -1,5 +1,5 @@
 import "./tcc";
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { authMiddleware } from "./middleware/auth";
@@ -12,6 +12,14 @@ import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
 import { skillsRoutes } from "./routes/skills";
+import {
+  API_URL,
+  AUTH_GUIDE_URL,
+  RESOURCE_METADATA_URL,
+  SITE_URL,
+  buildAuthorizationServerMetadata,
+  buildProtectedResourceMetadata,
+} from "./utils/agent-discovery";
 import { assertRequiredEnv } from "./utils/env";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
@@ -23,6 +31,39 @@ const FRAMER_PLUGIN_ORIGIN_PATTERN = new RegExp(
 const LOCAL_DEV_ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+const publicStatusResponseSchema = z
+  .object({
+    status: z.literal("ok"),
+    service: z.literal("Notra API"),
+    version: z.string(),
+    public: z.literal(true),
+    authentication: z.object({
+      type: z.literal("bearer"),
+      resource_metadata: z.string().url(),
+      guide: z.string().url(),
+    }),
+  })
+  .openapi("PublicStatusResponse");
+
+const publicStatusRoute = createRoute({
+  method: "get",
+  path: "/v1/status",
+  tags: ["Discovery"],
+  operationId: "getPublicApiStatus",
+  summary: "Check public API reachability",
+  responses: {
+    200: {
+      description:
+        "Public reachability and authentication discovery metadata for agents.",
+      content: {
+        "application/json": {
+          schema: publicStatusResponseSchema,
+        },
+      },
+    },
+  },
+});
 
 function getAllowedOrigin(origin: string | undefined): string | null {
   if (!origin) {
@@ -83,7 +124,10 @@ app.use("/v1/*", async (c, next) => {
       "Access-Control-Allow-Methods",
       "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     );
-    c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    c.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Idempotency-Key"
+    );
   }
 
   if (c.req.method === "OPTIONS") {
@@ -100,11 +144,39 @@ app.use("/v1/*", async (c, next) => {
   await next();
 });
 
+app.openapi(publicStatusRoute, (c) => {
+  return c.json({
+    status: "ok",
+    service: "Notra API",
+    version: "1.0.0",
+    public: true,
+    authentication: {
+      type: "bearer",
+      resource_metadata: RESOURCE_METADATA_URL,
+      guide: AUTH_GUIDE_URL,
+    },
+  });
+});
+
 app.use("/v1/*", (c, next) => {
   const permissions = ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method)
     ? "api.write"
     : "api.read";
   return authMiddleware({ permissions })(c, next);
+});
+
+app.use("/v1/*", async (c, next) => {
+  const idempotencyKey = c.req.header("Idempotency-Key");
+
+  if (
+    idempotencyKey &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method)
+  ) {
+    c.header("Idempotency-Key", idempotencyKey);
+    c.header("Idempotency-Status", "accepted");
+  }
+
+  await next();
 });
 
 app.use("/v1/*", subscriptionMiddleware());
@@ -115,6 +187,45 @@ app.get("/", (c) => {
 
 app.get("/ping", (c) => {
   return c.text("pong");
+});
+
+app.get("/.well-known/oauth-protected-resource", (c) => {
+  return c.json(buildProtectedResourceMetadata());
+});
+
+app.get("/.well-known/oauth-authorization-server", (c) => {
+  return c.json(buildAuthorizationServerMetadata());
+});
+
+app.get("/.well-known/api-catalog", (c) => {
+  c.header(
+    "Content-Type",
+    'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"; charset=utf-8'
+  );
+
+  return c.body(
+    JSON.stringify({
+      linkset: [
+        {
+          anchor: API_URL,
+          item: [
+            {
+              href: `${API_URL}/openapi.json`,
+              rel: "service-desc",
+              type: "application/openapi+json",
+              title: "Notra Public API OpenAPI schema",
+            },
+            {
+              href: AUTH_GUIDE_URL,
+              rel: "authorization-server-metadata",
+              type: "text/markdown",
+              title: "Notra agent authentication guide",
+            },
+          ],
+        },
+      ],
+    })
+  );
 });
 
 app.route("/v1", legacyRedirectRoutes);
@@ -139,7 +250,8 @@ app.doc31("/openapi.json", (_c) => ({
   info: {
     title: "Notra API",
     version: "1.0.0",
-    description: "OpenAPI schema for authenticated content endpoints.",
+    description:
+      "OpenAPI schema for Notra content endpoints. Use GET /v1/status for public reachability. Authenticated mutations accept Idempotency-Key and return structured recovery guidance on errors.",
   },
   servers: [
     {

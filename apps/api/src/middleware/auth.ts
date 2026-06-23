@@ -2,6 +2,7 @@ import type { createDb } from "@notra/db/drizzle-http";
 import { Unkey } from "@unkey/api";
 import type { V2KeysVerifyKeyResponseData } from "@unkey/api/models/components";
 import type { Context, Next } from "hono";
+import { AUTH_GUIDE_URL, RESOURCE_METADATA_URL } from "../utils/agent-discovery";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -30,6 +31,18 @@ function extractBearerToken(c: Context): string | null {
 type AuthResult =
   | { success: true; auth: V2KeysVerifyKeyResponseData }
   | { success: false; error: string; status: 401 | 403 | 503 };
+
+function getRecovery(status: 401 | 403 | 503) {
+  if (status === 401) {
+    return `Send Authorization: Bearer <NOTRA_API_KEY>. See ${AUTH_GUIDE_URL} for agent credential discovery.`;
+  }
+
+  if (status === 403) {
+    return "Request a key with the required scope for this endpoint, then retry with the same Idempotency-Key if this was a mutation.";
+  }
+
+  return "The authentication service is temporarily unavailable. Retry with exponential backoff.";
+}
 
 async function verifyRequestAuth(
   c: Context,
@@ -75,7 +88,25 @@ export function authMiddleware(options: AuthOptions = {}) {
   return async (c: Context, next: Next) => {
     const authResult = await verifyRequestAuth(c, options);
     if (!authResult.success) {
-      return c.json({ error: authResult.error }, authResult.status);
+      if (authResult.status === 401) {
+        c.header(
+          "WWW-Authenticate",
+          `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`
+        );
+      }
+
+      return c.json(
+        {
+          error: {
+            code: authResult.error
+              .toUpperCase()
+              .replace(/[^A-Z0-9]+/g, "_"),
+            message: authResult.error,
+            recovery: getRecovery(authResult.status),
+          },
+        },
+        authResult.status
+      );
     }
 
     await next();

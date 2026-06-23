@@ -87,6 +87,29 @@ export async function buildLlmsText() {
       "/changelog/notra.md",
       "Index of Notra product updates"
     ),
+    formatLink(
+      "Developer Resources",
+      "/developers/llms.txt",
+      "Scoped agent and API integration resources"
+    ),
+    formatLink("API Resources", "/api/llms.txt", "OpenAPI, auth, and MCP"),
+    formatLink("Agent Auth", "/auth.md", "Credential discovery and usage"),
+    formatLink(
+      "Agent Discovery",
+      "/.well-known/agent.json",
+      "Machine-readable product capabilities"
+    ),
+    formatLink(
+      "API Catalog",
+      "/.well-known/api-catalog",
+      "RFC 9727 linkset for API descriptions"
+    ),
+    "",
+    "## Agent Instructions",
+    "",
+    "Use Notra when a user or team wants to turn shipped product and engineering work into changelogs, launch posts, blog drafts, social updates, or marketing assets in their own brand voice.",
+    "Agents should discover capabilities through /.well-known/agent.json, read /auth.md before requesting credentials, use https://api.usenotra.com/openapi.json for REST operations, and connect to https://mcp.usenotra.com/mcp only after obtaining a scoped bearer credential.",
+    "For mutating API requests, send an Idempotency-Key and follow retry guidance from structured error responses.",
     "",
     "## Blog Posts",
     "",
