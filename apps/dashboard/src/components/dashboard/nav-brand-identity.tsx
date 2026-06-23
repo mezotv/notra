@@ -1,6 +1,10 @@
 "use client";
 
-import { Comment01Icon, CorporateIcon } from "@hugeicons/core-free-icons";
+import {
+  Comment01Icon,
+  CorporateIcon,
+  GlobalIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   SidebarMenu,
@@ -13,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
+import { useSitemaps } from "@/lib/hooks/use-brand-sitemaps";
 import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
@@ -31,8 +36,9 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const brandBasePath = `/${slug}/brand/identity`;
   const isOnBrandPage = pathname === brandBasePath;
   const voiceParam = searchParams.get("voice");
-  const isReferencesView =
-    isOnBrandPage && searchParams.get("view") === "references";
+  const currentView = searchParams.get("view");
+  const isReferencesView = isOnBrandPage && currentView === "references";
+  const isSitemapView = isOnBrandPage && currentView === "sitemap";
 
   const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
   useEffect(() => {
@@ -54,6 +60,12 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   );
   const referenceCount = referencesData?.references.length ?? 0;
 
+  const { data: sitemapsData } = useSitemaps(
+    organizationId,
+    activeVoiceId ?? ""
+  );
+  const sitemapCount = sitemapsData?.sitemaps.length ?? 0;
+
   if (!organizationId) {
     return null;
   }
@@ -64,13 +76,16 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const referencesHref = activeVoiceId
     ? `${brandBasePath}?voice=${activeVoiceId}&view=references`
     : `${brandBasePath}?view=references`;
+  const sitemapHref = activeVoiceId
+    ? `${brandBasePath}?voice=${activeVoiceId}&view=sitemap`
+    : `${brandBasePath}?view=sitemap`;
 
   return (
     <CollapsibleSidebarGroup label="Brand Identity">
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={isOnBrandPage && !isReferencesView}
+            isActive={isOnBrandPage && !isReferencesView && !isSitemapView}
             render={
               <Link href={companyInfoHref}>
                 <HugeiconsIcon icon={CorporateIcon} />
@@ -95,6 +110,23 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
               </Link>
             }
             tooltip="References"
+          />
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            isActive={isSitemapView}
+            render={
+              <Link href={sitemapHref}>
+                <HugeiconsIcon icon={GlobalIcon} />
+                <span>Sitemap</span>
+                {sitemapCount > 0 ? (
+                  <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
+                    {sitemapCount}
+                  </span>
+                ) : null}
+              </Link>
+            }
+            tooltip="Sitemap"
           />
         </SidebarMenuItem>
       </SidebarMenu>

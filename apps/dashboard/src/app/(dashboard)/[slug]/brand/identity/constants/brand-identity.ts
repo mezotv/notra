@@ -55,3 +55,21 @@ export const LANGUAGE_FLAGS: Record<
 export const FULL_URL_REGEX = /^https?:\/\//i;
 
 export const IDENTITY_NAME_MAX_LENGTH = 13;
+
+export const BRAND_TAB_HEADERS: Record<
+  "identity" | "references" | "sitemap",
+  { title: string; description: string }
+> = {
+  identity: {
+    title: "Company Info",
+    description: "Configure your brand identity and tone",
+  },
+  references: {
+    title: "References",
+    description: "Real posts that help the AI learn your writing style",
+  },
+  sitemap: {
+    title: "Sitemap",
+    description: "Track indexed pages and monitor site health for AI discovery",
+  },
+};

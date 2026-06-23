@@ -59,6 +59,25 @@ export interface ContextDevFetchWebpageResponse {
   };
 }
 
+export interface ContextDevCrawlSitemapInput {
+  domain: string;
+  maxLinks?: number;
+  timeoutMS?: number;
+  urlRegex?: string;
+}
+
+export interface ContextDevCrawlSitemapResponse {
+  success: true;
+  domain: string;
+  urls: string[];
+  meta: {
+    sitemapsDiscovered: number;
+    sitemapsFetched: number;
+    sitemapsSkipped: number;
+    errors: number;
+  };
+}
+
 export interface ContextDevSearchResult {
   url: string;
   title: string;

@@ -138,99 +138,120 @@ const speakableJsonLd = {
   },
 };
 
-export default function LandingPage() {
+function LandingPageJsonLd() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+    <>
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(softwareJsonLd) }}
         type="application/ld+json"
       />
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
         dangerouslySetInnerHTML={{
           __html: serializeJsonLd(organizationJsonLd),
         }}
         type="application/ld+json"
       />
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(serviceJsonLd) }}
         type="application/ld+json"
       />
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
         type="application/ld+json"
       />
       <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SSR'd JSON-LD payload, escaped via serializeJsonLd
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(speakableJsonLd) }}
         type="application/ld+json"
       />
-      <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-36">
-        <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
-          <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
-            <h1 className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24">
-              {SITE_TAGLINE}
-            </h1>
-            <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
-              {SITE_DESCRIPTION}
-            </div>
-            <p className="sr-only" id="agent-readable-summary">
-              Notra is an AI content-generation platform for product and
-              engineering teams. It turns shipped work from tools like GitHub
-              into changelogs, launch posts, blog drafts, marketing assets, and
-              social updates in the team's saved brand voice.
-            </p>
-          </div>
-        </div>
+    </>
+  );
+}
 
-        <div className="relative z-10 mt-6 mb-16 flex w-full max-w-124.25 flex-col items-center justify-center gap-6 sm:mt-8 sm:mb-0 sm:gap-8 md:mt-10 md:gap-10 lg:mt-12 lg:gap-12">
-          <div className="flex items-center justify-start gap-3 backdrop-blur-[0.515625rem] sm:gap-4">
-            <TrackedSignupLink source="landing_page_hero_cta">
-              <Button className="corner-squircle h-10 overflow-hidden rounded-[1rem] border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
-                <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
-                  Start for free
-                </span>
-              </Button>
-            </TrackedSignupLink>
-            <Button
-              className="corner-squircle h-10 overflow-hidden rounded-[1rem] px-6 py-2 supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
-              nativeButton={false}
-              render={<Link href="#how-it-works" />}
-              variant="outline"
-            >
-              <span className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
-                How it works
+function LandingHero() {
+  return (
+    <>
+      <div className="flex w-full max-w-234.25 flex-col items-center justify-center gap-3 sm:gap-4 md:gap-5 lg:gap-6">
+        <div className="flex flex-col items-center justify-center gap-4 self-stretch rounded-[3px] sm:gap-5 md:gap-6 lg:gap-8">
+          <h1 className="flex w-full max-w-[46.8rem] flex-col justify-center text-pretty px-2 text-center font-normal font-serif text-[2rem] text-foreground leading-[1.1] sm:px-4 sm:text-[2.625rem] sm:leading-[1.15] md:px-0 md:text-[3.25rem] md:leading-[1.2] lg:text-[5rem] lg:leading-24">
+            {SITE_TAGLINE}
+          </h1>
+          <div className="flex w-full max-w-[31.63rem] flex-col justify-center text-pretty px-2 text-center font-medium font-sans text-foreground/80 text-sm leading-[1.4] sm:px-4 sm:text-lg sm:leading-[1.45] md:px-0 md:text-xl md:leading-normal lg:text-lg lg:leading-7">
+            {SITE_DESCRIPTION}
+          </div>
+          <p className="sr-only" id="agent-readable-summary">
+            Notra is an AI content-generation platform for product and
+            engineering teams. It turns shipped work from tools like GitHub into
+            changelogs, launch posts, blog drafts, marketing assets, and social
+            updates in the team's saved brand voice.
+          </p>
+        </div>
+      </div>
+
+      <div className="relative z-10 mt-6 mb-16 flex w-full max-w-124.25 flex-col items-center justify-center gap-6 sm:mt-8 sm:mb-0 sm:gap-8 md:mt-10 md:gap-10 lg:mt-12 lg:gap-12">
+        <div className="flex items-center justify-start gap-3 backdrop-blur-[0.515625rem] sm:gap-4">
+          <TrackedSignupLink source="landing_page_hero_cta">
+            <Button className="corner-squircle h-10 overflow-hidden rounded-[1rem] border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12">
+              <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
+                Start for free
               </span>
             </Button>
+          </TrackedSignupLink>
+          <Button
+            className="corner-squircle h-10 overflow-hidden rounded-[1rem] px-6 py-2 supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
+            nativeButton={false}
+            render={<Link href="#how-it-works" />}
+            variant="outline"
+          >
+            <span className="flex flex-col justify-center font-medium font-sans text-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
+              How it works
+            </span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-8 hidden items-stretch justify-center self-stretch border-border border-y sm:mt-10 md:mt-12 md:flex lg:mt-14">
+        <HatchPattern className="w-4 sm:w-6 md:w-8 lg:w-12" />
+
+        <div className="relative z-5 flex flex-1 flex-col">
+          <div className="flex aspect-video w-full flex-col items-start justify-start overflow-hidden rounded-md bg-card shadow-[0px_0px_0px_1px_rgba(0,0,0,0.08)] sm:rounded-lg lg:rounded-[0.566rem]">
+            <Image
+              alt="Notra product demo"
+              className="h-full w-full object-cover dark:hidden"
+              height={1080}
+              priority
+              sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 768px) calc(100vw - 3rem), (max-width: 1024px) calc(100vw - 4rem), calc(100vw - 6rem)"
+              src="/demo.webp"
+              width={1920}
+            />
+            <Image
+              alt="Notra product demo"
+              className="hidden h-full w-full object-cover dark:block"
+              height={1080}
+              priority
+              sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 768px) calc(100vw - 3rem), (max-width: 1024px) calc(100vw - 4rem), calc(100vw - 6rem)"
+              src="/demo-dark.webp"
+              width={1920}
+            />
           </div>
         </div>
 
-        <div className="mt-8 hidden items-stretch justify-center self-stretch border-border border-y sm:mt-10 md:mt-12 md:flex lg:mt-14">
-          <HatchPattern className="w-4 sm:w-6 md:w-8 lg:w-12" />
+        <HatchPattern className="w-4 sm:w-6 md:w-8 lg:w-12" />
+      </div>
+    </>
+  );
+}
 
-          <div className="relative z-5 flex flex-1 flex-col">
-            <div className="flex aspect-video w-full flex-col items-start justify-start overflow-hidden rounded-md bg-card shadow-[0px_0px_0px_1px_rgba(0,0,0,0.08)] sm:rounded-lg lg:rounded-[0.566rem]">
-              <Image
-                alt="Notra product demo"
-                className="h-full w-full object-cover dark:hidden"
-                height={1080}
-                priority
-                sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 768px) calc(100vw - 3rem), (max-width: 1024px) calc(100vw - 4rem), calc(100vw - 6rem)"
-                src="/demo.webp"
-                width={1920}
-              />
-              <Image
-                alt="Notra product demo"
-                className="hidden h-full w-full object-cover dark:block"
-                height={1080}
-                priority
-                sizes="(max-width: 640px) calc(100vw - 2rem), (max-width: 768px) calc(100vw - 3rem), (max-width: 1024px) calc(100vw - 4rem), calc(100vw - 6rem)"
-                src="/demo-dark.webp"
-                width={1920}
-              />
-            </div>
-          </div>
-
-          <HatchPattern className="w-4 sm:w-6 md:w-8 lg:w-12" />
-        </div>
+export default function LandingPage() {
+  return (
+    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+      <LandingPageJsonLd />
+      <main className="flex w-full flex-col items-center justify-start pt-28 sm:pt-20 md:pt-24 lg:pt-36">
+        <LandingHero />
 
         <section
           className="flex w-full flex-col items-center justify-center border-border border-b content-defer"

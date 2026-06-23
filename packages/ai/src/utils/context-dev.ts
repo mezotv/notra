@@ -1,4 +1,6 @@
 import type {
+  ContextDevCrawlSitemapInput,
+  ContextDevCrawlSitemapResponse,
   ContextDevErrorResponse,
   ContextDevFetchWebpageInput,
   ContextDevFetchWebpageResponse,
@@ -8,9 +10,18 @@ import type {
   ContextDevWebSearchInput,
   ContextDevWebSearchResponse,
 } from "@notra/ai/types/context-dev";
+import {
+  BRAND_ANALYSIS_EXCLUDED_PATH_PARTS,
+  BRAND_ANALYSIS_MAX_CONTENT_LENGTH,
+  BRAND_ANALYSIS_MAX_PAGES,
+  BRAND_ANALYSIS_PAGE_SEPARATOR,
+  BRAND_ANALYSIS_PAGE_WEIGHTS,
+  BRAND_ANALYSIS_SITEMAP_MAX_LINKS,
+  BRAND_ANALYSIS_SITEMAP_TIMEOUT_MS,
+  BRAND_ANALYSIS_WWW_PREFIX,
+} from "../constants/context-dev";
 
 const CONTEXT_DEV_API_BASE_URL = "https://api.context.dev/v1";
-const BRAND_ANALYSIS_MAX_CONTENT_LENGTH = 80_000;
 
 class ContextDevApiError extends Error {
   readonly code?: string;
@@ -120,22 +131,196 @@ function mapContextDevError(error: unknown): ContextDevScrapingResult {
   };
 }
 
+function getDomainFromUrl(url: string): string {
+  return new URL(url).hostname;
+}
+
+function normalizeBrandHostname(hostname: string): string {
+  return hostname.startsWith(BRAND_ANALYSIS_WWW_PREFIX)
+    ? hostname.slice(BRAND_ANALYSIS_WWW_PREFIX.length)
+    : hostname;
+}
+
+function normalizeUrl(url: string): string {
+  const parsed = new URL(url);
+  parsed.hash = "";
+  return parsed.toString();
+}
+
+function getCanonicalUrlKey(url: string): string {
+  const parsed = new URL(url);
+  parsed.hash = "";
+  parsed.hostname = normalizeBrandHostname(parsed.hostname);
+  return parsed.toString();
+}
+
+function dedupeUrls(urls: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const url of urls) {
+    try {
+      const normalized = normalizeUrl(url);
+      const key = getCanonicalUrlKey(normalized);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      result.push(normalized);
+    } catch {
+      // Ignore malformed sitemap entries returned by external crawlers.
+    }
+  }
+
+  return result;
+}
+
+function shouldSkipBrandAnalysisUrl(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    const lowerPath = pathname.toLowerCase();
+    const segments = lowerPath.split("/").filter(Boolean);
+    return BRAND_ANALYSIS_EXCLUDED_PATH_PARTS.some((part) => {
+      const blockedSegment = part.replace(/^\/|\/$/g, "");
+      return segments.includes(blockedSegment);
+    });
+  } catch {
+    return true;
+  }
+}
+
+function scoreBrandAnalysisUrl(url: string, sourceUrl: string): number {
+  try {
+    const parsed = new URL(url);
+    const source = new URL(sourceUrl);
+
+    if (
+      normalizeBrandHostname(parsed.hostname) !==
+      normalizeBrandHostname(source.hostname)
+    ) {
+      return -1;
+    }
+
+    if (shouldSkipBrandAnalysisUrl(url)) {
+      return -1;
+    }
+
+    const path = parsed.pathname.endsWith("/")
+      ? parsed.pathname
+      : `${parsed.pathname}/`;
+    const pathDepth = path.split("/").filter(Boolean).length;
+    const weightedScore =
+      BRAND_ANALYSIS_PAGE_WEIGHTS.find(({ pattern }) => pattern.test(path))
+        ?.weight ?? Math.max(10, 45 - pathDepth * 10);
+
+    return weightedScore - parsed.search.length * 0.1;
+  } catch {
+    return -1;
+  }
+}
+
+function pickBrandAnalysisUrls(sourceUrl: string, sitemapUrls: string[]) {
+  const [source, ...candidates] = dedupeUrls([sourceUrl, ...sitemapUrls]);
+  if (!source) {
+    return [];
+  }
+
+  const rankedCandidates = candidates
+    .map((url) => ({ score: scoreBrandAnalysisUrl(url, source), url }))
+    .filter(({ score }) => score >= 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ url }) => url);
+
+  return dedupeUrls([source, ...rankedCandidates]).slice(
+    0,
+    BRAND_ANALYSIS_MAX_PAGES
+  );
+}
+
+function formatScrapedPagesForBrandAnalysis(
+  pages: ContextDevFetchWebpageResponse[]
+) {
+  return pages
+    .map((page) => {
+      const title = page.metadata?.title
+        ? `\nTitle: ${page.metadata.title}`
+        : "";
+      return `Source URL: ${page.url}${title}\n\n${page.markdown}`;
+    })
+    .join(BRAND_ANALYSIS_PAGE_SEPARATOR);
+}
+
 export async function scrapeWebsiteForBrandAnalysis(
   url: string
 ): Promise<ContextDevScrapingResult> {
   try {
-    const response = await fetchWebpage({
-      includeImages: false,
-      includeLinks: true,
-      onlyMainContent: true,
-      url,
-    });
+    const sitemapResult = await crawlSitemapForBrandAnalysis(url).catch(
+      (error) => {
+        console.warn("[Context.dev] Sitemap crawl failed for brand analysis", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          url,
+        });
+        return null;
+      }
+    );
 
-    return { success: true, content: truncateContent(response.markdown) };
+    const urls = pickBrandAnalysisUrls(url, sitemapResult?.urls ?? []);
+    const scrapeResult = await scrapeBrandAnalysisPages(
+      urls.length > 0 ? urls : [url]
+    );
+    const { pages } = scrapeResult;
+
+    if (pages.length === 0) {
+      return scrapeResult.firstError
+        ? mapContextDevError(scrapeResult.firstError)
+        : {
+            success: false,
+            error: "Failed to scrape website",
+            fatal: false,
+          };
+    }
+
+    return {
+      success: true,
+      content: truncateContent(formatScrapedPagesForBrandAnalysis(pages)),
+    };
   } catch (error) {
     console.error("Error scraping website:", error);
     return mapContextDevError(error);
   }
+}
+
+async function scrapeBrandAnalysisPages(urls: string[]) {
+  const settledPages = await Promise.allSettled(
+    urls.map((pageUrl) =>
+      fetchWebpage({
+        includeImages: false,
+        includeLinks: true,
+        onlyMainContent: true,
+        timeoutMS: 20_000,
+        url: pageUrl,
+      })
+    )
+  );
+
+  const firstError = settledPages.find(
+    (result) => result.status === "rejected"
+  )?.reason;
+
+  return {
+    firstError,
+    pages: settledPages.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : []
+    ),
+  };
+}
+
+async function crawlSitemapForBrandAnalysis(url: string) {
+  return crawlSitemap({
+    domain: getDomainFromUrl(url),
+    maxLinks: BRAND_ANALYSIS_SITEMAP_MAX_LINKS,
+    timeoutMS: BRAND_ANALYSIS_SITEMAP_TIMEOUT_MS,
+  });
 }
 
 export async function fetchWebpage(
@@ -171,6 +356,29 @@ export async function fetchWebpage(
     metadata: response.metadata,
     url: response.url,
   };
+}
+
+export async function crawlSitemap(
+  input: ContextDevCrawlSitemapInput
+): Promise<ContextDevCrawlSitemapResponse> {
+  const params = new URLSearchParams({
+    domain: input.domain,
+  });
+
+  if (input.maxLinks !== undefined) {
+    params.set("maxLinks", String(input.maxLinks));
+  }
+  if (input.timeoutMS !== undefined) {
+    params.set("timeoutMS", String(input.timeoutMS));
+  }
+  if (input.urlRegex !== undefined) {
+    params.set("urlRegex", input.urlRegex);
+  }
+
+  return requestContextDev<ContextDevCrawlSitemapResponse>(
+    `/web/scrape/sitemap?${params.toString()}`,
+    { method: "GET" }
+  );
 }
 
 function shouldScrapeMarkdown(input: ContextDevWebSearchInput): boolean {

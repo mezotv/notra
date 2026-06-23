@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -612,6 +613,18 @@ export const applicablePlatformEnum = pgEnum("applicable_platform", [
   "blog",
 ]);
 
+export const brandSitemapStatusEnum = pgEnum("brand_sitemap_status", [
+  "queued",
+  "crawling",
+  "ready",
+  "failed",
+]);
+
+export const brandSitemapPageCategoryEnum = pgEnum(
+  "brand_sitemap_page_category",
+  ["crawled", "redirect", "queued", "failed"]
+);
+
 export const brandReferences = pgTable(
   "brand_references",
   {
@@ -639,6 +652,76 @@ export const brandReferences = pgTable(
   },
   (table) => [
     index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+  ]
+);
+
+export const brandSitemaps = pgTable(
+  "brand_sitemaps",
+  {
+    id: text("id").primaryKey(),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    url: text("url").notNull(),
+    hostname: text("hostname").notNull(),
+    status: brandSitemapStatusEnum("status").default("queued").notNull(),
+    totalPages: integer("total_pages").default(0).notNull(),
+    indexedPages: integer("indexed_pages").default(0).notNull(),
+    failedPages: integer("failed_pages").default(0).notNull(),
+    contextDevMeta: jsonb("context_dev_meta"),
+    lastCrawlStartedAt: timestamp("last_crawl_started_at"),
+    lastCrawledAt: timestamp("last_crawled_at"),
+    lastCrawlError: text("last_crawl_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandSitemaps_brandSettingsId_idx").on(table.brandSettingsId),
+    uniqueIndex("brandSitemaps_brandSettings_url_uidx").on(
+      table.brandSettingsId,
+      table.url
+    ),
+  ]
+);
+
+export const brandSitemapPages = pgTable(
+  "brand_sitemap_pages",
+  {
+    id: text("id").primaryKey(),
+    sitemapId: text("sitemap_id")
+      .notNull()
+      .references(() => brandSitemaps.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    path: text("path").notNull(),
+    title: text("title"),
+    category: brandSitemapPageCategoryEnum("category").notNull(),
+    statusCode: integer("status_code"),
+    redirectTarget: text("redirect_target"),
+    wordCount: integer("word_count"),
+    textRatio: real("text_ratio"),
+    internalLinks: integer("internal_links"),
+    externalLinks: integer("external_links"),
+    crawledAt: timestamp("crawled_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandSitemapPages_sitemapId_idx").on(table.sitemapId),
+    index("brandSitemapPages_sitemap_category_idx").on(
+      table.sitemapId,
+      table.category
+    ),
+    uniqueIndex("brandSitemapPages_sitemap_url_uidx").on(
+      table.sitemapId,
+      table.url
+    ),
   ]
 );
 
@@ -1062,6 +1145,7 @@ export const brandSettingsRelations = relations(
       references: [organizations.id],
     }),
     references: many(brandReferences),
+    sitemaps: many(brandSitemaps),
   })
 );
 
@@ -1071,6 +1155,27 @@ export const brandReferencesRelations = relations(
     brandSettings: one(brandSettings, {
       fields: [brandReferences.brandSettingsId],
       references: [brandSettings.id],
+    }),
+  })
+);
+
+export const brandSitemapsRelations = relations(
+  brandSitemaps,
+  ({ one, many }) => ({
+    brandSettings: one(brandSettings, {
+      fields: [brandSitemaps.brandSettingsId],
+      references: [brandSettings.id],
+    }),
+    pages: many(brandSitemapPages),
+  })
+);
+
+export const brandSitemapPagesRelations = relations(
+  brandSitemapPages,
+  ({ one }) => ({
+    sitemap: one(brandSitemaps, {
+      fields: [brandSitemapPages.sitemapId],
+      references: [brandSitemaps.id],
     }),
   })
 );
