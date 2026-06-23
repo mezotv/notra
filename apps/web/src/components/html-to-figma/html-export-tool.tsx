@@ -49,21 +49,19 @@ export default function HtmlExportTool({ target }: HtmlExportToolProps) {
 
     setPending(true);
 
-    try {
-      const result =
-        target === "figma"
-          ? await copyHtmlAsFigma(html, HTML_EXPORT_LABEL)
-          : await copyHtmlAsPaper(html, HTML_EXPORT_LABEL);
+    const result =
+      target === "figma"
+        ? await copyHtmlAsFigma(html, HTML_EXPORT_LABEL)
+        : await copyHtmlAsPaper(html, HTML_EXPORT_LABEL);
 
-      if (result.copied) {
-        toast.success(copy.successMessage);
-        return;
-      }
+    setPending(false);
 
-      toast.error(result.error ?? copy.errorMessage);
-    } finally {
-      setPending(false);
+    if (result.copied) {
+      toast.success(copy.successMessage);
+      return;
     }
+
+    toast.error(result.error ?? copy.errorMessage);
   }
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toSafeHtml } from "@/lib/html-to-figma/sanitize";
 import type { HtmlPreviewProps } from "@/types/html-to-figma";
 
@@ -8,25 +8,23 @@ const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 630;
 
 export default function HtmlPreview({ html }: HtmlPreviewProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
   const [scale, setScale] = useState(0);
 
-  useEffect(() => {
-    const element = containerRef.current;
+  const measureRef = useCallback((element: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+
     if (!element) {
       return;
     }
 
-    const update = () => {
+    const observer = new ResizeObserver(() => {
       const { width, height } = element.getBoundingClientRect();
       setScale(Math.min(width / CANVAS_WIDTH, height / CANVAS_HEIGHT));
-    };
+    });
 
-    update();
-    const observer = new ResizeObserver(update);
     observer.observe(element);
-
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
 
   const trimmed = html.trim();
@@ -35,7 +33,7 @@ export default function HtmlPreview({ html }: HtmlPreviewProps) {
   return (
     <div
       className="flex h-full w-full items-center justify-center p-4 sm:p-6"
-      ref={containerRef}
+      ref={measureRef}
     >
       {trimmed ? (
         <div
