@@ -130,52 +130,62 @@ function ChatReasoningBlock({
   children: string;
   isStreaming: boolean;
 }) {
-  const [isOpen, setIsOpen] = useState(isStreaming);
-  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
-  const [wasStreaming, setWasStreaming] = useState(isStreaming);
+  const [reasoningState, setReasoningState] = useState<{
+    durationSeconds: number | null;
+    isOpen: boolean;
+    wasStreaming: boolean | null;
+  }>({
+    durationSeconds: null,
+    isOpen: false,
+    wasStreaming: null,
+  });
   const startTimeRef = useRef<number | null>(null);
 
-  // Adjust state when the `isStreaming` prop transitions by comparing it to the
-  // previous value during render — React's recommended alternative to syncing a
-  // prop into state from inside an effect.
-  if (wasStreaming !== isStreaming) {
-    setWasStreaming(isStreaming);
-    if (isStreaming) {
-      startTimeRef.current = Date.now();
-      setDurationSeconds(null);
-      setIsOpen(true);
-    } else {
-      const startedAt = startTimeRef.current;
-      setDurationSeconds(
-        startedAt
-          ? Math.max(1, Math.ceil((Date.now() - startedAt) / 1000))
-          : null
-      );
-    }
+  if (reasoningState.wasStreaming !== isStreaming) {
+    setReasoningState({
+      durationSeconds: isStreaming ? null : reasoningState.durationSeconds,
+      isOpen: isStreaming ? true : reasoningState.isOpen,
+      wasStreaming: isStreaming,
+    });
   }
 
-  // Auto-close shortly after reasoning finishes. A timer is a genuine side
-  // effect, so it stays in an effect.
   useEffect(() => {
     if (isStreaming) {
+      startTimeRef.current = Date.now();
       return;
     }
 
+    const durationTimer = window.setTimeout(() => {
+      const startedAt = startTimeRef.current;
+
+      setReasoningState((current) => ({
+        ...current,
+        durationSeconds: startedAt
+          ? Math.max(1, Math.ceil((Date.now() - startedAt) / 1000))
+          : null,
+      }));
+    }, 0);
+
     const closeTimer = window.setTimeout(() => {
-      setIsOpen(false);
+      setReasoningState((current) => ({ ...current, isOpen: false }));
     }, REASONING_AUTO_CLOSE_DELAY_MS);
 
     return () => {
+      window.clearTimeout(durationTimer);
       window.clearTimeout(closeTimer);
     };
   }, [isStreaming]);
 
   const statusLabel = isStreaming
     ? THINKING_LABEL
-    : formatReasoningDurationLabel(durationSeconds);
+    : formatReasoningDurationLabel(reasoningState.durationSeconds);
+
+  function handleOpenChange(isOpen: boolean) {
+    setReasoningState((current) => ({ ...current, isOpen }));
+  }
 
   return (
-    <Collapsible onOpenChange={setIsOpen} open={isOpen}>
+    <Collapsible onOpenChange={handleOpenChange} open={reasoningState.isOpen}>
       <CollapsibleTrigger className="flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
         {isStreaming ? (
           <Loader2Icon className="size-4 animate-spin" />
@@ -184,7 +194,7 @@ function ChatReasoningBlock({
         )}
         <span>{statusLabel}</span>
         <HugeiconsIcon
-          className={`size-4 transition-transform ${isOpen ? "rotate-180" : "rotate-0"}`}
+          className={`size-4 transition-transform ${reasoningState.isOpen ? "rotate-180" : "rotate-0"}`}
           icon={ArrowDown01Icon}
         />
       </CollapsibleTrigger>
@@ -493,24 +503,26 @@ function StandaloneChatPageClient({
   const handleChatError = useCallback((err: Error) => {
     const errorMessage = err.message || String(err);
 
-    try {
-      const parsed = chatErrorPayloadSchema.safeParse(JSON.parse(errorMessage));
-
-      if (parsed.success && parsed.data.code === "USAGE_LIMIT_REACHED") {
-        setChatError(
-          "You've used all your chat messages this month. Upgrade for more."
-        );
-        setPendingMessageId(null);
-        return;
+    const parsed = (() => {
+      try {
+        return chatErrorPayloadSchema.safeParse(JSON.parse(errorMessage));
+      } catch {
+        return null;
       }
+    })();
 
-      if (parsed.success && parsed.data.error) {
-        setChatError(parsed.data.error);
-        setPendingMessageId(null);
-        return;
-      }
-    } catch {
-      // Non-JSON payloads fall through to the plain-text handling below.
+    if (parsed?.success && parsed.data.code === "USAGE_LIMIT_REACHED") {
+      setChatError(
+        "You've used all your chat messages this month. Upgrade for more."
+      );
+      setPendingMessageId(null);
+      return;
+    }
+
+    if (parsed?.success && parsed.data.error) {
+      setChatError(parsed.data.error);
+      setPendingMessageId(null);
+      return;
     }
 
     if (
@@ -524,9 +536,6 @@ function StandaloneChatPageClient({
       return;
     }
 
-    // Surface the failure to the user instead of silently stopping the stream.
-    // The server maps tool failures (bad/unknown tool calls, etc.) to readable
-    // messages, so the chat explains what went wrong and stays usable.
     console.error("Standalone chat error:", err);
     setChatError(
       errorMessage.trim()
@@ -1906,8 +1915,6 @@ function StandaloneChatPageClient({
   }
 
   const lastMessage = messages.at(-1);
-  // The assistant turn exists but has nothing visible yet (the brief moment
-  // before any text/tool/reasoning streams in).
   const lastAssistantHasNoVisibleContent =
     lastMessage?.role === "assistant" &&
     !lastMessage.parts.some(
@@ -1917,10 +1924,6 @@ function StandaloneChatPageClient({
         p.type === "reasoning" ||
         isToolUIPart(p)
     );
-  // The assistant turn is paused on a settled tool result while the model
-  // generates its next step. This is the common case right after the user
-  // approves/denies a tool, or between tool calls mid-run — previously nothing
-  // rendered here, so the chat looked frozen.
   const lastPart = lastMessage?.parts.at(-1);
   const isAwaitingAssistantContinuation =
     lastMessage?.role === "assistant" &&
@@ -1937,9 +1940,6 @@ function StandaloneChatPageClient({
       isAwaitingAssistantContinuation);
   const thinkingIndicatorLabel =
     lastMessage?.role === "user" ? "Getting Started" : "Working";
-  // Only hide the trailing assistant message when it has nothing to show.
-  // When we're awaiting continuation after a tool, keep it visible and append
-  // the indicator after it.
   const visibleMessages =
     showThinkingIndicator && lastAssistantHasNoVisibleContent
       ? messages.slice(0, -1)
