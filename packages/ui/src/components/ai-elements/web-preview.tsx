@@ -16,8 +16,12 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import type { ComponentProps, ReactNode } from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, use, useState } from "react";
 import { cn } from "@notra/ui/lib/utils";
+
+const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
+const URL_SCHEME_REGEX = /^[a-z][a-z\d+.-]*:/i;
+const EMPTY_LOGS: WebPreviewConsoleProps["logs"] = [];
 
 export interface WebPreviewContextValue {
   url: string;
@@ -29,12 +33,31 @@ export interface WebPreviewContextValue {
 const WebPreviewContext = createContext<WebPreviewContextValue | null>(null);
 
 const useWebPreview = () => {
-  const context = useContext(WebPreviewContext);
+  const context = use(WebPreviewContext);
   if (!context) {
     throw new Error("WebPreview components must be used within a WebPreview");
   }
   return context;
 };
+
+function toWebPreviewUrl(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  const candidate = URL_SCHEME_REGEX.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const parsed = new URL(candidate);
+    return HTTP_PROTOCOLS.has(parsed.protocol) ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
 
 export type WebPreviewProps = ComponentProps<"div"> & {
   defaultUrl?: string;
@@ -48,12 +71,13 @@ export const WebPreview = ({
   onUrlChange,
   ...props
 }: WebPreviewProps) => {
-  const [url, setUrl] = useState(defaultUrl);
+  const [url, setUrl] = useState(() => toWebPreviewUrl(defaultUrl));
   const [consoleOpen, setConsoleOpen] = useState(false);
 
   const handleUrlChange = (newUrl: string) => {
-    setUrl(newUrl);
-    onUrlChange?.(newUrl);
+    const safeUrl = toWebPreviewUrl(newUrl);
+    setUrl(safeUrl);
+    onUrlChange?.(safeUrl);
   };
 
   const contextValue: WebPreviewContextValue = {
@@ -129,19 +153,19 @@ export const WebPreviewNavigationButton = ({
 
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
-export const WebPreviewUrl = ({
+type WebPreviewUrlInputProps = WebPreviewUrlProps & {
+  initialValue: string;
+};
+
+const WebPreviewUrlInput = ({
+  initialValue,
   value,
   onChange,
   onKeyDown,
   ...props
-}: WebPreviewUrlProps) => {
-  const { url, setUrl } = useWebPreview();
-  const [inputValue, setInputValue] = useState(url);
-
-  // Sync input value with context URL when it changes externally
-  useEffect(() => {
-    setInputValue(url);
-  }, [url]);
+}: WebPreviewUrlInputProps) => {
+  const { setUrl } = useWebPreview();
+  const [inputValue, setInputValue] = useState(initialValue);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value);
@@ -168,6 +192,26 @@ export const WebPreviewUrl = ({
   );
 };
 
+export const WebPreviewUrl = ({
+  value,
+  onChange,
+  onKeyDown,
+  ...props
+}: WebPreviewUrlProps) => {
+  const { url } = useWebPreview();
+
+  return (
+    <WebPreviewUrlInput
+      initialValue={url}
+      key={url}
+      onChange={onChange}
+      onKeyDown={onKeyDown}
+      value={value}
+      {...props}
+    />
+  );
+};
+
 export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
   loading?: ReactNode;
 };
@@ -175,17 +219,19 @@ export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
 export const WebPreviewBody = ({
   className,
   loading,
+  sandbox: _sandbox,
   src,
   ...props
 }: WebPreviewBodyProps) => {
   const { url } = useWebPreview();
+  const previewSrc = typeof src === "string" ? toWebPreviewUrl(src) : url;
 
   return (
     <div className="flex-1">
       <iframe
         className={cn("size-full", className)}
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-        src={(src ?? url) || undefined}
+        sandbox="allow-scripts allow-forms allow-popups allow-presentation"
+        src={previewSrc || undefined}
         title="Preview"
         {...props}
       />
@@ -204,7 +250,7 @@ export type WebPreviewConsoleProps = ComponentProps<"div"> & {
 
 export const WebPreviewConsole = ({
   className,
-  logs = [],
+  logs = EMPTY_LOGS,
   children,
   ...props
 }: WebPreviewConsoleProps) => {
@@ -244,7 +290,7 @@ export const WebPreviewConsole = ({
           {logs.length === 0 ? (
             <p className="text-muted-foreground">No console output</p>
           ) : (
-            logs.map((log, index) => (
+            logs.map((log) => (
               <div
                 className={cn(
                   "text-xs",
@@ -252,7 +298,7 @@ export const WebPreviewConsole = ({
                   log.level === "warn" && "text-yellow-600",
                   log.level === "log" && "text-foreground"
                 )}
-                key={`${log.timestamp.getTime()}-${index}`}
+                key={`${log.timestamp.getTime()}-${log.level}-${log.message}`}
               >
                 <span className="text-muted-foreground">
                   {log.timestamp.toLocaleTimeString()}

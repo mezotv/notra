@@ -1,6 +1,13 @@
 import { GITHUB_URL_PATTERNS } from "@/constants/github";
 import type { GitHubRepoInfo } from "@/types/integrations";
 
+const GITHUB_OWNER_REGEX = /^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i;
+const GITHUB_REPO_REGEX = /^[a-z\d._-]{1,100}$/i;
+
+function isValidGitHubPath(owner: string, repo: string) {
+  return GITHUB_OWNER_REGEX.test(owner) && GITHUB_REPO_REGEX.test(repo);
+}
+
 export function parseGitHubUrl(url: string): GitHubRepoInfo | null {
   const trimmed = url.trim();
 
@@ -12,10 +19,15 @@ export function parseGitHubUrl(url: string): GitHubRepoInfo | null {
       if (!(owner && repo)) {
         continue;
       }
+      if (!isValidGitHubPath(owner, repo)) {
+        continue;
+      }
       return {
         owner,
         repo,
-        fullUrl: `https://github.com/${owner}/${repo}`,
+        fullUrl: `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(
+          repo
+        )}`,
       };
     }
   }
