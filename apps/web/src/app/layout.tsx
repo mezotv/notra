@@ -2,7 +2,6 @@ import { C15tPrefetch } from "@c15t/nextjs";
 import { Databuddy, FlagsProvider } from "@databuddy/sdk/react";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
-import Script from "next/script";
 import { Toaster } from "sonner";
 import { ConsentManager } from "../components/consent-manager";
 import { SiteShell } from "../components/site-shell";
@@ -112,11 +111,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${instrumentSerif.variable} antialiased`}
       >
-        <Script
-          data-project-id="0e32ab76-99c3-4a3f-b36a-af4b2f6b7c92"
-          src="https://ingest.promptwatch.com/js/client.min.js"
-          strategy="afterInteractive"
-        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
