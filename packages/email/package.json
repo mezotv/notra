@@ -4,6 +4,7 @@
   "exports": {
     "./emails/feedback": "./src/emails/feedback.tsx",
     "./emails/ai-credits-depleted": "./src/emails/ai-credits-depleted.tsx",
+    "./emails/contact": "./src/emails/contact.tsx",
     "./emails/invite": "./src/emails/invite.tsx",
     "./emails/oss-application": "./src/emails/oss-application.tsx",
     "./emails/reset": "./src/emails/reset.tsx",
@@ -13,6 +14,7 @@
     "./emails/verify": "./src/emails/verify.tsx",
     "./emails/welcome": "./src/emails/welcome.tsx",
     "./types/ai-credits-depleted": "./src/types/ai-credits-depleted.ts",
+    "./types/contact": "./src/types/contact.ts",
     "./types/feedback": "./src/types/feedback.ts",
     "./types/oss-application": "./src/types/oss-application.ts",
     "./utils/config": "./src/utils/config.ts",
