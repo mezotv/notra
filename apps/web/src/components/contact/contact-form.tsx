@@ -42,26 +42,23 @@ export function ContactForm() {
 
       setStatus("submitting");
 
-      try {
-        const response = await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data),
-        });
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      }).catch(() => null);
 
-        if (response.status === 429) {
-          setStatus("rate-limited");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Request failed");
-        }
-
-        setStatus("success");
-      } catch {
+      if (!response) {
         setStatus("error");
+        return;
       }
+
+      if (response.status === 429) {
+        setStatus("rate-limited");
+        return;
+      }
+
+      setStatus(response.ok ? "success" : "error");
     },
   });
 
