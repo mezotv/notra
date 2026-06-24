@@ -17,12 +17,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { FONT_ROLE_OPTIONS } from "@/constants/brand-guideline-ui";
 import { useUpdateGuidelineFont } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesFontEditDialogProps } from "@/types/brand-identity";
+import type { BrandGuidelineFontRole } from "@/types/hooks/brand-guidelines";
+
+interface FontDialogState {
+  family: string;
+  lineHeight: string;
+  role: BrandGuidelineFontRole;
+  size: string;
+  weight: string;
+}
+
+function updateFontDialogState(
+  state: FontDialogState,
+  next: Partial<FontDialogState>
+) {
+  return { ...state, ...next };
+}
 
 export function GuidelinesFontEditDialog({
   font,
@@ -32,11 +48,14 @@ export function GuidelinesFontEditDialog({
   onOpenChange,
 }: GuidelinesFontEditDialogProps) {
   const update = useUpdateGuidelineFont(organizationId, voiceId);
-  const [family, setFamily] = useState(font.family);
-  const [role, setRole] = useState(font.role);
-  const [weight, setWeight] = useState(font.weight ?? "");
-  const [size, setSize] = useState(font.size ?? "");
-  const [lineHeight, setLineHeight] = useState(font.lineHeight ?? "");
+  const [state, setState] = useReducer(updateFontDialogState, {
+    family: font.family,
+    lineHeight: font.lineHeight ?? "",
+    role: font.role,
+    size: font.size ?? "",
+    weight: font.weight ?? "",
+  });
+  const { family, lineHeight, role, size, weight } = state;
 
   const handleSave = async () => {
     try {
@@ -72,7 +91,7 @@ export function GuidelinesFontEditDialog({
             <Label htmlFor="font-family">Family</Label>
             <Input
               id="font-family"
-              onChange={(event) => setFamily(event.target.value)}
+              onChange={(event) => setState({ family: event.target.value })}
               placeholder="e.g. Inter"
               value={family}
             />
@@ -84,7 +103,7 @@ export function GuidelinesFontEditDialog({
               onValueChange={(next) => {
                 const option = FONT_ROLE_OPTIONS.find((o) => o.value === next);
                 if (option) {
-                  setRole(option.value);
+                  setState({ role: option.value });
                 }
               }}
               value={role}
@@ -107,7 +126,7 @@ export function GuidelinesFontEditDialog({
               <Label htmlFor="font-weight">Weight</Label>
               <Input
                 id="font-weight"
-                onChange={(event) => setWeight(event.target.value)}
+                onChange={(event) => setState({ weight: event.target.value })}
                 placeholder="400"
                 value={weight}
               />
@@ -116,7 +135,7 @@ export function GuidelinesFontEditDialog({
               <Label htmlFor="font-size">Size</Label>
               <Input
                 id="font-size"
-                onChange={(event) => setSize(event.target.value)}
+                onChange={(event) => setState({ size: event.target.value })}
                 placeholder="16px"
                 value={size}
               />
@@ -125,7 +144,9 @@ export function GuidelinesFontEditDialog({
               <Label htmlFor="font-line-height">Line height</Label>
               <Input
                 id="font-line-height"
-                onChange={(event) => setLineHeight(event.target.value)}
+                onChange={(event) =>
+                  setState({ lineHeight: event.target.value })
+                }
                 placeholder="1.5"
                 value={lineHeight}
               />

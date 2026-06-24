@@ -17,12 +17,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { TOKEN_TYPE_OPTIONS } from "@/constants/brand-guideline-ui";
 import { useUpdateGuidelineToken } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesTokenEditDialogProps } from "@/types/brand-identity";
+import type { BrandGuidelineTokenType } from "@/types/hooks/brand-guidelines";
+
+interface TokenDialogState {
+  name: string;
+  type: BrandGuidelineTokenType;
+  value: string;
+}
+
+function updateTokenDialogState(
+  state: TokenDialogState,
+  next: Partial<TokenDialogState>
+) {
+  return { ...state, ...next };
+}
 
 export function GuidelinesTokenEditDialog({
   token,
@@ -32,9 +46,12 @@ export function GuidelinesTokenEditDialog({
   onOpenChange,
 }: GuidelinesTokenEditDialogProps) {
   const update = useUpdateGuidelineToken(organizationId, voiceId);
-  const [name, setName] = useState(token.name);
-  const [value, setValue] = useState(token.value);
-  const [type, setType] = useState(token.type);
+  const [state, setState] = useReducer(updateTokenDialogState, {
+    name: token.name,
+    type: token.type,
+    value: token.value,
+  });
+  const { name, type, value } = state;
 
   const handleSave = async () => {
     try {
@@ -68,7 +85,7 @@ export function GuidelinesTokenEditDialog({
             <Label htmlFor="token-name">Name</Label>
             <Input
               id="token-name"
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => setState({ name: event.target.value })}
               placeholder="e.g. spacing-md"
               value={name}
             />
@@ -78,7 +95,7 @@ export function GuidelinesTokenEditDialog({
             <Label htmlFor="token-value">Value</Label>
             <Input
               id="token-value"
-              onChange={(event) => setValue(event.target.value)}
+              onChange={(event) => setState({ value: event.target.value })}
               placeholder="e.g. 16px"
               value={value}
             />
@@ -90,7 +107,7 @@ export function GuidelinesTokenEditDialog({
               onValueChange={(next) => {
                 const option = TOKEN_TYPE_OPTIONS.find((o) => o.value === next);
                 if (option) {
-                  setType(option.value);
+                  setState({ type: option.value });
                 }
               }}
               value={type}

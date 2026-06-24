@@ -17,12 +17,25 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { Switch } from "@notra/ui/components/ui/switch";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { SCREENSHOT_KIND_OPTIONS } from "@/constants/brand-guideline-ui";
 import { useUpdateGuidelineScreenshot } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesScreenshotEditDialogProps } from "@/types/brand-identity";
+import type { BrandGuidelineScreenshotKind } from "@/types/hooks/brand-guidelines";
+
+interface ScreenshotDialogState {
+  fullPage: boolean;
+  kind: BrandGuidelineScreenshotKind;
+}
+
+function updateScreenshotDialogState(
+  state: ScreenshotDialogState,
+  next: Partial<ScreenshotDialogState>
+) {
+  return { ...state, ...next };
+}
 
 export function GuidelinesScreenshotEditDialog({
   screenshot,
@@ -32,8 +45,11 @@ export function GuidelinesScreenshotEditDialog({
   onOpenChange,
 }: GuidelinesScreenshotEditDialogProps) {
   const update = useUpdateGuidelineScreenshot(organizationId, voiceId);
-  const [kind, setKind] = useState(screenshot.kind);
-  const [fullPage, setFullPage] = useState(screenshot.fullPage);
+  const [state, setState] = useReducer(updateScreenshotDialogState, {
+    fullPage: screenshot.fullPage,
+    kind: screenshot.kind,
+  });
+  const { fullPage, kind } = state;
 
   const handleSave = async () => {
     try {
@@ -70,7 +86,7 @@ export function GuidelinesScreenshotEditDialog({
                   (o) => o.value === next
                 );
                 if (option) {
-                  setKind(option.value);
+                  setState({ kind: option.value });
                 }
               }}
               value={kind}
@@ -98,7 +114,7 @@ export function GuidelinesScreenshotEditDialog({
             <Switch
               checked={fullPage}
               id="screenshot-full-page"
-              onCheckedChange={(checked) => setFullPage(checked)}
+              onCheckedChange={(checked) => setState({ fullPage: checked })}
             />
           </div>
         </div>

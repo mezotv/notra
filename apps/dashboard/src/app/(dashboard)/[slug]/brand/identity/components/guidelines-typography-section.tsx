@@ -2,7 +2,7 @@
 
 import { Edit02Icon, TextFontIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import { FONT_ROLE_LABELS } from "@/constants/brand-guideline-ui";
 import type { GuidelinesTypographySectionProps } from "@/types/brand-identity";
@@ -20,12 +20,12 @@ export function GuidelinesTypographySection({
   voiceId,
 }: GuidelinesTypographySectionProps) {
   const [editing, setEditing] = useState<BrandGuidelineFont | null>(null);
-  const families = useMemo(
-    () => [...new Set(fonts.map((font) => font.family).filter(Boolean))],
-    [fonts]
-  );
 
   useEffect(() => {
+    const families = [
+      ...new Set(fonts.flatMap((font) => (font.family ? [font.family] : []))),
+    ];
+
     if (families.length === 0) {
       return;
     }
@@ -43,7 +43,7 @@ export function GuidelinesTypographySection({
         link.remove();
       }
     };
-  }, [families]);
+  }, [fonts]);
 
   if (fonts.length === 0) {
     return null;

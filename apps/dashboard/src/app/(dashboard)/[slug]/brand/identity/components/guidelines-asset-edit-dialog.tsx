@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import type { ChangeEvent, DragEvent } from "react";
-import { useRef, useState } from "react";
+import { useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -38,12 +38,32 @@ import {
 import { uploadFile } from "@/lib/upload/client";
 import { cn } from "@/lib/utils";
 import type { GuidelinesAssetEditDialogProps } from "@/types/brand-identity";
+import type {
+  BrandGuidelineAssetKind,
+  BrandGuidelineAssetVariant,
+} from "@/types/hooks/brand-guidelines";
 import {
   formatBrandGuidelineAssetFileSize,
   getBrandGuidelineAssetFormat,
   getBrandGuidelineAssetName,
   getBrandGuidelineImageDimensions,
 } from "@/utils/brand-guideline-assets";
+
+interface AssetDialogState {
+  dragging: boolean;
+  file: File | null;
+  fileError: string | null;
+  kind: BrandGuidelineAssetKind;
+  saving: boolean;
+  variant: BrandGuidelineAssetVariant;
+}
+
+function updateAssetDialogState(
+  state: AssetDialogState,
+  next: Partial<AssetDialogState>
+) {
+  return { ...state, ...next };
+}
 
 export function GuidelinesAssetEditDialog({
   asset,
@@ -58,14 +78,15 @@ export function GuidelinesAssetEditDialog({
   const create = useCreateGuidelineAsset(organizationId, voiceId);
   const isCreate = asset === null;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [kind, setKind] = useState(asset?.kind ?? presetKind ?? "logo");
-  const [variant, setVariant] = useState(
-    asset?.variant ?? presetVariant ?? "light"
-  );
-  const [file, setFile] = useState<File | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const [fileError, setFileError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [state, setState] = useReducer(updateAssetDialogState, {
+    dragging: false,
+    file: null,
+    fileError: null,
+    kind: asset?.kind ?? presetKind ?? "logo",
+    saving: false,
+    variant: asset?.variant ?? presetVariant ?? "light",
+  });
+  const { dragging, file, fileError, kind, saving, variant } = state;
 
   const extension =
     (file ? getBrandGuidelineAssetFormat(file) : null) ??
@@ -78,26 +99,28 @@ export function GuidelinesAssetEditDialog({
   });
 
   const handleFile = (nextFile: File | null) => {
-    setFileError(null);
-
     if (!nextFile) {
-      setFile(null);
+      setState({ file: null, fileError: null });
       return;
     }
 
     if (!ALLOWED_MIME_TYPES.some((mimeType) => mimeType === nextFile.type)) {
-      setFile(null);
-      setFileError(`Use ${ACCEPTED_BRAND_ASSET_TYPES_LABEL}.`);
+      setState({
+        file: null,
+        fileError: `Use ${ACCEPTED_BRAND_ASSET_TYPES_LABEL}.`,
+      });
       return;
     }
 
     if (nextFile.size > MAX_BRAND_ASSET_FILE_SIZE) {
-      setFile(null);
-      setFileError("Brand assets must be 5MB or smaller.");
+      setState({
+        file: null,
+        fileError: "Brand assets must be 5MB or smaller.",
+      });
       return;
     }
 
-    setFile(nextFile);
+    setState({ file: nextFile, fileError: null });
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -107,18 +130,19 @@ export function GuidelinesAssetEditDialog({
 
   const handleDrop = (event: DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    setDragging(false);
+    setState({ dragging: false });
     handleFile(event.dataTransfer.files[0] ?? null);
   };
 
   const handleSave = async () => {
     if (isCreate && !file) {
-      setFileError("Upload a file to add this asset.");
+      setState({ fileError: "Upload a file to add this asset." });
       return;
     }
 
+    setState({ saving: true });
+
     try {
-      setSaving(true);
       let upload:
         | {
             aspectRatio: number | null;
@@ -173,13 +197,13 @@ export function GuidelinesAssetEditDialog({
         });
       }
       toast.success(isCreate ? "Asset added" : "Asset updated");
+      setState({ saving: false });
       onOpenChange(false);
     } catch (error) {
+      setState({ saving: false });
       toast.error(
         error instanceof Error ? error.message : "Failed to save asset"
       );
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -208,10 +232,10 @@ export function GuidelinesAssetEditDialog({
                   : "border-border hover:bg-muted/40"
               )}
               onClick={() => fileInputRef.current?.click()}
-              onDragLeave={() => setDragging(false)}
+              onDragLeave={() => setState({ dragging: false })}
               onDragOver={(event) => {
                 event.preventDefault();
-                setDragging(true);
+                setState({ dragging: true });
               }}
               onDrop={handleDrop}
               type="button"
@@ -231,6 +255,7 @@ export function GuidelinesAssetEditDialog({
             </button>
             <input
               accept={ALLOWED_MIME_TYPES.join(",")}
+              aria-label="Upload asset file"
               className="sr-only"
               onChange={handleInputChange}
               ref={fileInputRef}
@@ -260,7 +285,7 @@ export function GuidelinesAssetEditDialog({
                     (o) => o.value === next
                   );
                   if (option) {
-                    setKind(option.value);
+                    setState({ kind: option.value });
                   }
                 }}
                 value={kind}
@@ -291,7 +316,7 @@ export function GuidelinesAssetEditDialog({
                     (o) => o.value === next
                   );
                   if (option) {
-                    setVariant(option.value);
+                    setState({ variant: option.value });
                   }
                 }}
                 value={variant}

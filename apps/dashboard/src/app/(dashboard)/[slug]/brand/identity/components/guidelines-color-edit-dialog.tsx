@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { useState } from "react";
+import { useReducer } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { COLOR_ROLE_OPTIONS } from "@/constants/brand-guideline-ui";
@@ -26,7 +26,23 @@ import {
   useUpdateGuidelineColor,
 } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesColorEditDialogProps } from "@/types/brand-identity";
+import type { BrandGuidelineColorRole } from "@/types/hooks/brand-guidelines";
 import { toColorInputValue } from "@/utils/brand-guideline-display";
+
+interface ColorDialogState {
+  darkValue: string;
+  lightValue: string;
+  name: string;
+  role: BrandGuidelineColorRole;
+  usage: string;
+}
+
+function updateColorDialogState(
+  state: ColorDialogState,
+  next: Partial<ColorDialogState>
+) {
+  return { ...state, ...next };
+}
 
 export function GuidelinesColorEditDialog({
   color,
@@ -39,11 +55,14 @@ export function GuidelinesColorEditDialog({
   const update = useUpdateGuidelineColor(organizationId, voiceId);
   const create = useCreateGuidelineColor(organizationId, voiceId);
   const isCreate = color === null;
-  const [lightValue, setLightValue] = useState(color?.lightValue ?? "#000000");
-  const [darkValue, setDarkValue] = useState(color?.darkValue ?? "");
-  const [name, setName] = useState(color?.name ?? "");
-  const [role, setRole] = useState(color?.role ?? presetRole ?? "custom");
-  const [usage, setUsage] = useState(color?.usage ?? "");
+  const [state, setState] = useReducer(updateColorDialogState, {
+    darkValue: color?.darkValue ?? "",
+    lightValue: color?.lightValue ?? "#000000",
+    name: color?.name ?? "",
+    role: color?.role ?? presetRole ?? "custom",
+    usage: color?.usage ?? "",
+  });
+  const { darkValue, lightValue, name, role, usage } = state;
   const isPending = isCreate ? create.isPending : update.isPending;
 
   const handleSave = async () => {
@@ -91,13 +110,17 @@ export function GuidelinesColorEditDialog({
               <input
                 aria-label="Light color picker"
                 className="size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent"
-                onChange={(event) => setLightValue(event.target.value)}
+                onChange={(event) =>
+                  setState({ lightValue: event.target.value })
+                }
                 type="color"
                 value={toColorInputValue(lightValue)}
               />
               <Input
                 id="color-light-value"
-                onChange={(event) => setLightValue(event.target.value)}
+                onChange={(event) =>
+                  setState({ lightValue: event.target.value })
+                }
                 placeholder="#000000"
                 value={lightValue}
               />
@@ -110,13 +133,17 @@ export function GuidelinesColorEditDialog({
               <input
                 aria-label="Dark color picker"
                 className="size-9 shrink-0 cursor-pointer rounded-lg border bg-transparent"
-                onChange={(event) => setDarkValue(event.target.value)}
+                onChange={(event) =>
+                  setState({ darkValue: event.target.value })
+                }
                 type="color"
                 value={toColorInputValue(darkValue || lightValue)}
               />
               <Input
                 id="color-dark-value"
-                onChange={(event) => setDarkValue(event.target.value)}
+                onChange={(event) =>
+                  setState({ darkValue: event.target.value })
+                }
                 placeholder="Optional dark value"
                 value={darkValue}
               />
@@ -127,7 +154,7 @@ export function GuidelinesColorEditDialog({
             <Label htmlFor="color-name">Name</Label>
             <Input
               id="color-name"
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => setState({ name: event.target.value })}
               placeholder="Optional name"
               value={name}
             />
@@ -139,7 +166,7 @@ export function GuidelinesColorEditDialog({
               onValueChange={(next) => {
                 const option = COLOR_ROLE_OPTIONS.find((o) => o.value === next);
                 if (option) {
-                  setRole(option.value);
+                  setState({ role: option.value });
                 }
               }}
               value={role}
@@ -161,7 +188,7 @@ export function GuidelinesColorEditDialog({
             <Label htmlFor="color-usage">Usage</Label>
             <Input
               id="color-usage"
-              onChange={(event) => setUsage(event.target.value)}
+              onChange={(event) => setState({ usage: event.target.value })}
               placeholder="e.g. Primary buttons"
               value={usage}
             />
