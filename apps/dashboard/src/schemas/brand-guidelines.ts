@@ -36,24 +36,25 @@ export const guidelineScreenshotKindSchema = z.enum([
   "mobile_hero",
 ]);
 
-const optionalText = (max: number) => z.string().trim().max(max).nullable();
+const nullableText = (max: number) => z.string().trim().max(max).nullable();
+const optionalNullableText = (max: number) => nullableText(max).optional();
 
 export const updateGuidelineColorSchema = z.object({
   colorId: z.string().min(1, "Color ID is required"),
   role: guidelineColorRoleSchema,
-  name: optionalText(120),
+  name: nullableText(120),
   lightValue: z.string().trim().min(1, "A light color is required").max(64),
   darkValue: z.string().trim().max(64).nullable(),
-  usage: optionalText(240),
+  usage: nullableText(240),
 });
 
 export const updateGuidelineFontSchema = z.object({
   fontId: z.string().min(1, "Font ID is required"),
   role: guidelineFontRoleSchema,
   family: z.string().trim().min(1, "A font family is required").max(120),
-  weight: optionalText(40),
-  size: optionalText(40),
-  lineHeight: optionalText(40),
+  weight: nullableText(40),
+  size: nullableText(40),
+  lineHeight: nullableText(40),
 });
 
 export const updateGuidelineTokenSchema = z.object({
@@ -84,10 +85,10 @@ export const updateGuidelineScreenshotSchema = z.object({
 
 export const createGuidelineColorSchema = z.object({
   role: guidelineColorRoleSchema,
-  name: optionalText(120),
+  name: optionalNullableText(120),
   lightValue: z.string().trim().min(1, "A light color is required").max(64),
-  darkValue: z.string().trim().max(64).nullable(),
-  usage: optionalText(240),
+  darkValue: z.string().trim().max(64).nullable().optional(),
+  usage: optionalNullableText(240),
 });
 
 export const createGuidelineAssetSchema = z.object({

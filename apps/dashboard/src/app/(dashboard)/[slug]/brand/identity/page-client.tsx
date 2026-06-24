@@ -39,7 +39,7 @@ import {
   useDeleteBrandVoice,
   useSetDefaultBrandVoice,
 } from "../../../../../lib/hooks/use-brand-analysis";
-import { useRefreshBrandGuidelines } from "../../../../../lib/hooks/use-brand-guidelines";
+import { useRefreshBrandGuidelinesAction } from "../../../../../lib/hooks/use-brand-guidelines";
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
 import { AddIdentityDialog } from "./components/add-identity-dialog";
@@ -172,21 +172,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const sitemapCount = sitemapsData?.sitemaps.length ?? 0;
 
-  const guidelinesRefresh = useRefreshBrandGuidelines(
+  const guidelinesRefresh = useRefreshBrandGuidelinesAction(
     organizationId,
     selectedVoice?.id ?? ""
   );
-
-  const handleRefreshGuidelines = async () => {
-    try {
-      await guidelinesRefresh.mutateAsync();
-      toast.success("Brand guidelines refreshed");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to refresh guidelines"
-      );
-    }
-  };
 
   const selectedVoiceId = selectedVoice?.id;
   const selectedVoiceUpdatedAt = selectedVoice?.updatedAt;
@@ -387,7 +376,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           onAddSitemap={() =>
             dispatchUi({ type: "set-add-sitemap-open", open: true })
           }
-          onRefreshGuidelines={handleRefreshGuidelines}
+          onRefreshGuidelines={guidelinesRefresh.refreshGuidelines}
         />
 
         <VoiceSelector

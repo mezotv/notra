@@ -86,11 +86,13 @@ export function GuidelinesAssetEditDialog({
     }
 
     if (!ALLOWED_MIME_TYPES.some((mimeType) => mimeType === nextFile.type)) {
+      setFile(null);
       setFileError(`Use ${ACCEPTED_BRAND_ASSET_TYPES_LABEL}.`);
       return;
     }
 
     if (nextFile.size > MAX_BRAND_ASSET_FILE_SIZE) {
+      setFile(null);
       setFileError("Brand assets must be 5MB or smaller.");
       return;
     }

@@ -60,6 +60,8 @@ export const STATUS_BADGE_META: Record<
 export const TOKEN_TYPE_ORDER: BrandGuidelineTokenType[] = [
   "spacing",
   "radius",
+  "shadow",
+  "component",
   "unknown",
 ];
 

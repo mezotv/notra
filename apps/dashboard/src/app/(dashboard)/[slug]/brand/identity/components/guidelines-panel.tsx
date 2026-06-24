@@ -9,13 +9,12 @@ import {
 } from "@notra/ui/components/ui/alert";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Loader2Icon } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { GUIDELINES_SKELETON_KEYS } from "@/constants/brand-guideline-ui";
 import {
   useBrandGuidelines,
-  useRefreshBrandGuidelines,
+  useRefreshBrandGuidelinesAction,
 } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesPanelProps } from "@/types/brand-identity";
 import { formatRelativeTime } from "@/utils/format";
@@ -33,18 +32,7 @@ export function GuidelinesPanel({
     organizationId,
     voiceId
   );
-  const refresh = useRefreshBrandGuidelines(organizationId, voiceId);
-
-  const handleRefresh = async () => {
-    try {
-      await refresh.mutateAsync();
-      toast.success("Brand guidelines refreshed");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to refresh guidelines"
-      );
-    }
-  };
+  const refresh = useRefreshBrandGuidelinesAction(organizationId, voiceId);
 
   if (isPending) {
     return (
@@ -79,10 +67,23 @@ export function GuidelinesPanel({
   if (!guideline) {
     return (
       <EmptyState
-        actionIcon={<HugeiconsIcon className="size-4" icon={SparklesIcon} />}
-        actionLabel={refresh.isPending ? "Generating…" : "Generate Guidelines"}
+        action={
+          <Button
+            disabled={refresh.isPending}
+            onClick={refresh.refreshGuidelines}
+            size="sm"
+          >
+            {refresh.isPending ? (
+              <Loader2Icon className="mr-2 size-4 animate-spin" />
+            ) : (
+              <span className="mr-2">
+                <HugeiconsIcon className="size-4" icon={SparklesIcon} />
+              </span>
+            )}
+            {refresh.isPending ? "Generating…" : "Generate Guidelines"}
+          </Button>
+        }
         description="Brand guidelines have not been generated yet. Generate them to pull logos, colors, typography, and landing page screenshots from your website."
-        onActionClick={handleRefresh}
         title="No guidelines yet"
       />
     );
@@ -114,7 +115,7 @@ export function GuidelinesPanel({
             </p>
             <Button
               disabled={refresh.isPending}
-              onClick={handleRefresh}
+              onClick={refresh.refreshGuidelines}
               size="sm"
               variant="outline"
             >
@@ -161,10 +162,23 @@ export function GuidelinesPanel({
 
       {hasData || isFailed ? null : (
         <EmptyState
-          actionIcon={<HugeiconsIcon className="size-4" icon={RefreshIcon} />}
-          actionLabel={refresh.isPending ? "Refreshing…" : "Refresh Guidelines"}
+          action={
+            <Button
+              disabled={refresh.isPending}
+              onClick={refresh.refreshGuidelines}
+              size="sm"
+            >
+              {refresh.isPending ? (
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
+              ) : (
+                <span className="mr-2">
+                  <HugeiconsIcon className="size-4" icon={RefreshIcon} />
+                </span>
+              )}
+              {refresh.isPending ? "Refreshing…" : "Refresh Guidelines"}
+            </Button>
+          }
           description="No brand assets were detected for this identity yet. Refresh to pull the latest logos, colors, and screenshots."
-          onActionClick={handleRefresh}
           title="Guidelines are empty"
         />
       )}

@@ -5,7 +5,6 @@ import {
   ALLOWED_MIME_TYPES,
   ALLOWED_RASTER_MIME_TYPES,
   type AllowedChatMimeType,
-  type AllowedMimeType,
   type AllowedRasterMimeType,
   MAX_AVATAR_FILE_SIZE,
   MAX_BRAND_ASSET_FILE_SIZE,
@@ -141,6 +140,20 @@ const maxSizeByType = {
   chat: MAX_CHAT_FILE_SIZE,
 };
 
+function assertAllowedGeneralUploadType(fileType: string, label: string) {
+  if (fileType === SVG_MIME_TYPE) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: "SVG uploads must use the dedicated SVG upload endpoint",
+    });
+  }
+
+  if (!ALLOWED_MIME_TYPES.some((mimeType) => mimeType === fileType)) {
+    throw new ORPCError("BAD_REQUEST", {
+      message: `File type ${fileType} is not allowed for ${label}. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`,
+    });
+  }
+}
+
 export const DeleteSchema = z.object({
   mediaIds: z.array(z.string()).min(1).max(100),
 });
@@ -173,28 +186,10 @@ export function validateUpload({
       }
       break;
     case "brand_asset":
-      if (fileType === SVG_MIME_TYPE) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "SVG uploads must use the dedicated SVG upload endpoint",
-        });
-      }
-      if (!ALLOWED_MIME_TYPES.includes(fileType as AllowedMimeType)) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: `File type ${fileType} is not allowed for brand assets. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`,
-        });
-      }
+      assertAllowedGeneralUploadType(fileType, "brand assets");
       break;
     case "content":
-      if (fileType === SVG_MIME_TYPE) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "SVG uploads must use the dedicated SVG upload endpoint",
-        });
-      }
-      if (!ALLOWED_MIME_TYPES.includes(fileType as AllowedMimeType)) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: `File type ${fileType} is not allowed. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`,
-        });
-      }
+      assertAllowedGeneralUploadType(fileType, "content");
       break;
     case "chat":
       if (!ALLOWED_CHAT_MIME_TYPES.includes(fileType as AllowedChatMimeType)) {

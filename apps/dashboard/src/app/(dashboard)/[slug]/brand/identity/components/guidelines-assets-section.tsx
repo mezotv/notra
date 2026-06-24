@@ -32,10 +32,6 @@ export function GuidelinesAssetsSection({
     variant: BrandGuidelineAssetVariant;
   } | null>(null);
 
-  if (assets.length === 0) {
-    return null;
-  }
-
   const missingSlots = ASSET_SLOTS.filter(
     (slot) =>
       !assets.some(

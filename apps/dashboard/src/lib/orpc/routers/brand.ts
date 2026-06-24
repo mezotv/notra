@@ -889,10 +889,10 @@ export const brandRouter = {
           id: randomUUID(),
           guidelineId,
           role: input.role,
-          name: input.name,
+          name: input.name ?? null,
           lightValue: input.lightValue,
-          darkValue: input.darkValue,
-          usage: input.usage,
+          darkValue: input.darkValue ?? null,
+          usage: input.usage ?? null,
           sortOrder: (sortOrderRows[0]?.value ?? -1) + 1,
         });
 

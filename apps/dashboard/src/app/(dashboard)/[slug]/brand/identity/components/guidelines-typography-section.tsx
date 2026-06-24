@@ -110,6 +110,7 @@ export function GuidelinesTypographySection({
       {editing ? (
         <GuidelinesFontEditDialog
           font={editing}
+          key={editing.id}
           onOpenChange={(open) => {
             if (!open) {
               setEditing(null);
