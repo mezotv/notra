@@ -40,7 +40,10 @@ async function assertUploadAccess({
   const organizationId = session.activeOrganizationId;
 
   const requiresOrganization =
-    type === "logo" || type === "content" || type === "chat";
+    type === "logo" ||
+    type === "brand_asset" ||
+    type === "content" ||
+    type === "chat";
 
   if (requiresOrganization && !organizationId) {
     throw new ORPCError("UNAUTHORIZED", {
@@ -103,6 +106,9 @@ async function resolveUploadTarget({
       break;
     case "logo":
       key = `organization/${organizationId}/logo/${id}.${extension}`;
+      break;
+    case "brand_asset":
+      key = `organization/${organizationId}/brand-assets/${id}.${extension}`;
       break;
     case "content":
       key = `organization/${organizationId}/content/${id}.${extension}`;

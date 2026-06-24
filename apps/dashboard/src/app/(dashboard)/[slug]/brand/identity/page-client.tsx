@@ -14,7 +14,17 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { BRAND_IDENTITY_TAB_VALUES } from "@/constants/brand-identity";
 import { getValidLanguage } from "@/schemas/brand";
+import type {
+  BrandFormInitialData,
+  PageClientProps,
+} from "@/types/brand-identity";
+import {
+  brandIdentityUiReducer,
+  getInitialBrandIdentityUiState,
+  sanitizeBrandUrlInput,
+} from "@/utils/brand-identity";
 import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
@@ -29,6 +39,7 @@ import {
   useDeleteBrandVoice,
   useSetDefaultBrandVoice,
 } from "../../../../../lib/hooks/use-brand-analysis";
+import { useRefreshBrandGuidelines } from "../../../../../lib/hooks/use-brand-guidelines";
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
 import { AddIdentityDialog } from "./components/add-identity-dialog";
@@ -38,76 +49,6 @@ import { BrandIdentityTabs } from "./components/brand-identity-tabs";
 import { EmptyBrandIdentityState } from "./components/empty-brand-identity-state";
 import { VoiceSelector } from "./components/voice-selector";
 import { BrandIdentityPageSkeleton } from "./skeleton";
-import type {
-  BrandFormInitialData,
-  PageClientProps,
-} from "./types/brand-identity";
-import { sanitizeBrandUrlInput } from "./utils/brand-identity";
-
-const TAB_VALUES = ["identity", "references", "sitemap"] as const;
-
-interface BrandIdentityUiState {
-  addIdentityOpen: boolean;
-  addReferenceOpen: boolean;
-  addSitemapOpen: boolean;
-  deleteTargetVoiceId: string | null;
-  isSaving: boolean;
-  lastSavedAtMs: number | null;
-  relativeTimeNow: number;
-  storedVoiceId: string | null;
-  url: string;
-}
-
-type BrandIdentityUiAction =
-  | { type: "set-add-identity-open"; open: boolean }
-  | { type: "set-add-reference-open"; open: boolean }
-  | { type: "set-add-sitemap-open"; open: boolean }
-  | { type: "set-delete-target-voice-id"; voiceId: string | null }
-  | { type: "set-is-saving"; isSaving: boolean }
-  | { type: "set-last-saved-at-ms"; savedAtMs: number | null }
-  | { type: "set-relative-time-now"; now: number }
-  | { type: "set-stored-voice-id"; voiceId: string | null }
-  | { type: "set-url"; url: string };
-
-const initialUiState: BrandIdentityUiState = {
-  addIdentityOpen: false,
-  addReferenceOpen: false,
-  addSitemapOpen: false,
-  deleteTargetVoiceId: null,
-  isSaving: false,
-  lastSavedAtMs: null,
-  relativeTimeNow: Date.now(),
-  storedVoiceId: null,
-  url: "",
-};
-
-function brandIdentityUiReducer(
-  state: BrandIdentityUiState,
-  action: BrandIdentityUiAction
-): BrandIdentityUiState {
-  switch (action.type) {
-    case "set-add-identity-open":
-      return { ...state, addIdentityOpen: action.open };
-    case "set-add-reference-open":
-      return { ...state, addReferenceOpen: action.open };
-    case "set-add-sitemap-open":
-      return { ...state, addSitemapOpen: action.open };
-    case "set-delete-target-voice-id":
-      return { ...state, deleteTargetVoiceId: action.voiceId };
-    case "set-is-saving":
-      return { ...state, isSaving: action.isSaving };
-    case "set-last-saved-at-ms":
-      return { ...state, lastSavedAtMs: action.savedAtMs };
-    case "set-relative-time-now":
-      return { ...state, relativeTimeNow: action.now };
-    case "set-stored-voice-id":
-      return { ...state, storedVoiceId: action.voiceId };
-    case "set-url":
-      return { ...state, url: action.url };
-    default:
-      return state;
-  }
-}
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
@@ -143,7 +84,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const voices = data?.voices ?? [];
   const [uiState, dispatchUi] = useReducer(
     brandIdentityUiReducer,
-    initialUiState
+    undefined,
+    getInitialBrandIdentityUiState
   );
   const [activeVoiceId, setActiveVoiceId] = useQueryState(
     "voice",
@@ -151,7 +93,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const [activeTab, setActiveTab] = useQueryState(
     "view",
-    parseAsStringLiteral(TAB_VALUES).withDefault("identity")
+    parseAsStringLiteral(BRAND_IDENTITY_TAB_VALUES).withDefault("identity")
   );
   const [newIdentityParam, setNewIdentityParam] = useQueryState("new");
   const isAddIdentityOpen =
@@ -180,7 +122,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         dispatchUi({ type: "set-add-identity-open", open: true });
       } else if (activeTab === "references") {
         dispatchUi({ type: "set-add-reference-open", open: true });
-      } else {
+      } else if (activeTab === "sitemap") {
         dispatchUi({ type: "set-add-sitemap-open", open: true });
       }
     },
@@ -229,6 +171,23 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     selectedVoice?.id ?? ""
   );
   const sitemapCount = sitemapsData?.sitemaps.length ?? 0;
+
+  const guidelinesRefresh = useRefreshBrandGuidelines(
+    organizationId,
+    selectedVoice?.id ?? ""
+  );
+
+  const handleRefreshGuidelines = async () => {
+    try {
+      await guidelinesRefresh.mutateAsync();
+      toast.success("Brand guidelines refreshed");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to refresh guidelines"
+      );
+    }
+  };
+
   const selectedVoiceId = selectedVoice?.id;
   const selectedVoiceUpdatedAt = selectedVoice?.updatedAt;
   const effectiveUrl = uiState.url.trim();
@@ -418,6 +377,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <BrandIdentityHeader
           activeTab={activeTab}
+          isRefreshingGuidelines={guidelinesRefresh.isPending}
           onAddIdentity={() =>
             dispatchUi({ type: "set-add-identity-open", open: true })
           }
@@ -427,6 +387,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           onAddSitemap={() =>
             dispatchUi({ type: "set-add-sitemap-open", open: true })
           }
+          onRefreshGuidelines={handleRefreshGuidelines}
         />
 
         <VoiceSelector

@@ -1,6 +1,6 @@
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/button";
-import type { ModalContentProps } from "../types/brand-identity";
+import type { ModalContentProps } from "@/types/brand-identity";
 import { AnalysisStepper } from "./analysis-stepper";
 
 export function ModalContent({

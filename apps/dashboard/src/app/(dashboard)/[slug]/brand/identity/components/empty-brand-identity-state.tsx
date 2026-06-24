@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@notra/ui/components/ui/card";
 import { PageContainer } from "@/components/layout/container";
-import { getModalDescription, getModalTitle } from "../utils/brand-identity";
+import { getModalDescription, getModalTitle } from "@/utils/brand-identity";
 import { ModalContent } from "./modal-content";
 
 interface EmptyBrandIdentityStateProps {

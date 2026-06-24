@@ -14,12 +14,12 @@ import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { Button } from "@/components/button";
+import type { AddIdentityDialogProps } from "@/types/brand-identity";
+import { sanitizeBrandUrlInput } from "@/utils/brand-identity";
 import {
   useAnalyzeBrand,
   useCreateBrandVoice,
 } from "../../../../../../lib/hooks/use-brand-analysis";
-import type { AddIdentityDialogProps } from "../types/brand-identity";
-import { sanitizeBrandUrlInput } from "../utils/brand-identity";
 
 export function AddIdentityDialog({
   open,

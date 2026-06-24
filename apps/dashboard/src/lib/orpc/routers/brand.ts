@@ -6,6 +6,12 @@ import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {
+  brandGuidelineAssets,
+  brandGuidelineColors,
+  brandGuidelineFonts,
+  brandGuidelineScreenshots,
+  brandGuidelines,
+  brandGuidelineTokens,
   brandReferences,
   brandSettings,
   connectedSocialAccounts,
@@ -13,11 +19,17 @@ import {
 } from "@notra/db/schema";
 import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import {
+  generateBrandGuidelines,
+  getBrandGuidelines,
+  markBrandGuidelinesFailed,
+} from "@/lib/brand-guidelines";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
   analyzeBrandSchema,
@@ -27,6 +39,15 @@ import {
   updateBrandSettingsSchema,
   updateReferenceSchema,
 } from "@/schemas/brand";
+import {
+  createGuidelineAssetSchema,
+  createGuidelineColorSchema,
+  updateGuidelineAssetSchema,
+  updateGuidelineColorSchema,
+  updateGuidelineFontSchema,
+  updateGuidelineScreenshotSchema,
+  updateGuidelineTokenSchema,
+} from "@/schemas/brand-guidelines";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
 import type {
   BrandSettings as BrandVoiceOutput,
@@ -92,6 +113,8 @@ const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({
   voiceId: z.string().min(1, "Voice ID is required"),
 });
 
+const guidelineInputSchema = voiceInputSchema;
+
 const typeDefaults: Record<string, ApplicablePlatform[]> = {
   twitter_post: ["twitter"],
   linkedin_post: ["linkedin"],
@@ -111,6 +134,19 @@ async function verifyVoiceOwnership(organizationId: string, voiceId: string) {
   }
 
   return voice;
+}
+
+async function getGuidelineIdForVoice(voiceId: string) {
+  const guideline = await db.query.brandGuidelines.findFirst({
+    where: eq(brandGuidelines.brandSettingsId, voiceId),
+    columns: { id: true },
+  });
+
+  if (!guideline) {
+    throw notFound("Brand guidelines not found");
+  }
+
+  return guideline.id;
 }
 
 async function getTriggersForBrandVoice(
@@ -590,6 +626,313 @@ export const brandRouter = {
           success: true,
           message: "Brand analysis started",
         };
+      }),
+  },
+  guidelines: {
+    get: baseProcedure
+      .input(guidelineInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    refresh: baseProcedure
+      .input(guidelineInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const voice = await verifyVoiceOwnership(
+          input.organizationId,
+          input.voiceId
+        );
+
+        if (!voice.websiteUrl) {
+          throw badRequest("Set a website URL before generating guidelines");
+        }
+
+        return Effect.runPromise(
+          generateBrandGuidelines({
+            brandSettingsId: input.voiceId,
+            sourceUrl: voice.websiteUrl,
+          }).pipe(
+            Effect.match({
+              onFailure: async (error) => {
+                await markBrandGuidelinesFailed({
+                  brandSettingsId: input.voiceId,
+                  error: error.message,
+                });
+
+                throw internalServerError(
+                  "Failed to generate brand guidelines",
+                  error.cause
+                );
+              },
+              onSuccess: (guidelines) => guidelines,
+            })
+          )
+        );
+      }),
+    updateColor: baseProcedure
+      .input(voiceInputSchema.and(updateGuidelineColorSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const updated = await db
+          .update(brandGuidelineColors)
+          .set({
+            role: input.role,
+            name: input.name,
+            lightValue: input.lightValue,
+            darkValue: input.darkValue,
+            usage: input.usage,
+          })
+          .where(
+            and(
+              eq(brandGuidelineColors.id, input.colorId),
+              eq(brandGuidelineColors.guidelineId, guidelineId)
+            )
+          )
+          .returning({ id: brandGuidelineColors.id });
+
+        if (updated.length === 0) {
+          throw notFound("Color not found");
+        }
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    updateFont: baseProcedure
+      .input(voiceInputSchema.and(updateGuidelineFontSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const updated = await db
+          .update(brandGuidelineFonts)
+          .set({
+            role: input.role,
+            family: input.family,
+            weight: input.weight,
+            size: input.size,
+            lineHeight: input.lineHeight,
+          })
+          .where(
+            and(
+              eq(brandGuidelineFonts.id, input.fontId),
+              eq(brandGuidelineFonts.guidelineId, guidelineId)
+            )
+          )
+          .returning({ id: brandGuidelineFonts.id });
+
+        if (updated.length === 0) {
+          throw notFound("Font not found");
+        }
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    updateToken: baseProcedure
+      .input(voiceInputSchema.and(updateGuidelineTokenSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const updated = await db
+          .update(brandGuidelineTokens)
+          .set({
+            type: input.type,
+            name: input.name,
+            value: input.value,
+          })
+          .where(
+            and(
+              eq(brandGuidelineTokens.id, input.tokenId),
+              eq(brandGuidelineTokens.guidelineId, guidelineId)
+            )
+          )
+          .returning({ id: brandGuidelineTokens.id });
+
+        if (updated.length === 0) {
+          throw notFound("Token not found");
+        }
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    updateAsset: baseProcedure
+      .input(voiceInputSchema.and(updateGuidelineAssetSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const updated = await db
+          .update(brandGuidelineAssets)
+          .set({
+            kind: input.kind,
+            variant: input.variant,
+            ...(input.url
+              ? {
+                  aspectRatio: input.aspectRatio ?? null,
+                  format: input.format ?? null,
+                  height: input.height ?? null,
+                  mimeType: input.mimeType ?? null,
+                  storageKey: input.storageKey ?? null,
+                  url: input.url,
+                  width: input.width ?? null,
+                }
+              : {}),
+          })
+          .where(
+            and(
+              eq(brandGuidelineAssets.id, input.assetId),
+              eq(brandGuidelineAssets.guidelineId, guidelineId)
+            )
+          )
+          .returning({ id: brandGuidelineAssets.id });
+
+        if (updated.length === 0) {
+          throw notFound("Asset not found");
+        }
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    updateScreenshot: baseProcedure
+      .input(voiceInputSchema.and(updateGuidelineScreenshotSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        try {
+          const updated = await db
+            .update(brandGuidelineScreenshots)
+            .set({
+              kind: input.kind,
+              fullPage: input.fullPage,
+            })
+            .where(
+              and(
+                eq(brandGuidelineScreenshots.id, input.screenshotId),
+                eq(brandGuidelineScreenshots.guidelineId, guidelineId)
+              )
+            )
+            .returning({ id: brandGuidelineScreenshots.id });
+
+          if (updated.length === 0) {
+            throw notFound("Screenshot not found");
+          }
+
+          return await getBrandGuidelines(input.voiceId);
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            throw conflict("A screenshot with this type already exists");
+          }
+          throw error;
+        }
+      }),
+    createColor: baseProcedure
+      .input(voiceInputSchema.and(createGuidelineColorSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const sortOrderRows = await db
+          .select({
+            value: sql<number>`coalesce(max(${brandGuidelineColors.sortOrder}), -1)`,
+          })
+          .from(brandGuidelineColors)
+          .where(eq(brandGuidelineColors.guidelineId, guidelineId));
+
+        await db.insert(brandGuidelineColors).values({
+          id: randomUUID(),
+          guidelineId,
+          role: input.role,
+          name: input.name,
+          lightValue: input.lightValue,
+          darkValue: input.darkValue,
+          usage: input.usage,
+          sortOrder: (sortOrderRows[0]?.value ?? -1) + 1,
+        });
+
+        return getBrandGuidelines(input.voiceId);
+      }),
+    createAsset: baseProcedure
+      .input(voiceInputSchema.and(createGuidelineAssetSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        await verifyVoiceOwnership(input.organizationId, input.voiceId);
+        const guidelineId = await getGuidelineIdForVoice(input.voiceId);
+
+        const sortOrderRows = await db
+          .select({
+            value: sql<number>`coalesce(max(${brandGuidelineAssets.sortOrder}), -1)`,
+          })
+          .from(brandGuidelineAssets)
+          .where(eq(brandGuidelineAssets.guidelineId, guidelineId));
+
+        await db.insert(brandGuidelineAssets).values({
+          id: randomUUID(),
+          guidelineId,
+          kind: input.kind,
+          variant: input.variant,
+          url: input.url,
+          storageKey: input.storageKey ?? null,
+          format: input.format ?? null,
+          mimeType: input.mimeType ?? null,
+          width: input.width ?? null,
+          height: input.height ?? null,
+          aspectRatio: input.aspectRatio ?? null,
+          sortOrder: (sortOrderRows[0]?.value ?? -1) + 1,
+        });
+
+        return getBrandGuidelines(input.voiceId);
       }),
   },
   references: {

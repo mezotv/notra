@@ -35,10 +35,13 @@ async function uploadToR2(presignedUrl: string, file: File) {
   }
 }
 
-async function uploadSvgThroughServer(file: File): Promise<UploadFileResponse> {
+async function uploadSvgThroughServer(
+  file: File,
+  type: "brand_asset" | "content"
+): Promise<UploadFileResponse> {
   const svg = await file.text();
   const { key, publicUrl } = await dashboardOrpc.upload.uploadSvg.call({
-    type: "content",
+    type,
     svg,
   });
   return { url: publicUrl, key };
@@ -48,8 +51,11 @@ export async function uploadFile({
   file,
   type,
 }: UploadFileProps): Promise<UploadFileResponse> {
-  if (type === "content" && file.type === SVG_MIME_TYPE) {
-    return uploadSvgThroughServer(file);
+  if (
+    (type === "content" || type === "brand_asset") &&
+    file.type === SVG_MIME_TYPE
+  ) {
+    return uploadSvgThroughServer(file, type);
   }
 
   const { url, key, publicUrl } = await getPresignedUrl(file, type);

@@ -1,0 +1,125 @@
+"use client";
+
+import { Edit02Icon, TextFontIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/button";
+import { FONT_ROLE_LABELS } from "@/constants/brand-guideline-ui";
+import type { GuidelinesTypographySectionProps } from "@/types/brand-identity";
+import type { BrandGuidelineFont } from "@/types/hooks/brand-guidelines";
+import {
+  cssFontFamily,
+  googleFontHref,
+  joinMeta,
+} from "@/utils/brand-guideline-display";
+import { GuidelinesFontEditDialog } from "./guidelines-font-edit-dialog";
+
+export function GuidelinesTypographySection({
+  fonts,
+  organizationId,
+  voiceId,
+}: GuidelinesTypographySectionProps) {
+  const [editing, setEditing] = useState<BrandGuidelineFont | null>(null);
+  const families = useMemo(
+    () => [...new Set(fonts.map((font) => font.family).filter(Boolean))],
+    [fonts]
+  );
+
+  useEffect(() => {
+    if (families.length === 0) {
+      return;
+    }
+
+    const links = families.map((family) => {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = googleFontHref(family);
+      document.head.appendChild(link);
+      return link;
+    });
+
+    return () => {
+      for (const link of links) {
+        link.remove();
+      }
+    };
+  }, [families]);
+
+  if (fonts.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <HugeiconsIcon
+          className="size-4 text-muted-foreground"
+          icon={TextFontIcon}
+        />
+        <h2 className="font-semibold text-sm">Typography</h2>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {fonts.length}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {fonts.map((font) => {
+          const meta = joinMeta([
+            font.role !== "unknown" ? FONT_ROLE_LABELS[font.role] : null,
+            font.weight ? `Weight ${font.weight}` : null,
+            font.size ? `Size ${font.size}` : null,
+            font.lineHeight ? `Line height ${font.lineHeight}` : null,
+          ]);
+
+          return (
+            <div
+              className="flex items-start justify-between gap-3 rounded-xl border p-4"
+              key={font.id}
+            >
+              <div className="min-w-0">
+                <p
+                  className="truncate text-3xl leading-tight"
+                  style={{
+                    fontFamily: cssFontFamily(font.family),
+                    fontWeight: font.weight ?? undefined,
+                  }}
+                >
+                  {font.family}
+                </p>
+                {meta ? (
+                  <p className="mt-2 truncate text-muted-foreground text-xs">
+                    {meta}
+                  </p>
+                ) : null}
+              </div>
+
+              <Button
+                aria-label={`Edit ${font.family}`}
+                className="shrink-0"
+                onClick={() => setEditing(font)}
+                size="icon-sm"
+                variant="ghost"
+              >
+                <HugeiconsIcon className="size-3.5" icon={Edit02Icon} />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {editing ? (
+        <GuidelinesFontEditDialog
+          font={editing}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditing(null);
+            }
+          }}
+          open
+          organizationId={organizationId}
+          voiceId={voiceId}
+        />
+      ) : null}
+    </section>
+  );
+}

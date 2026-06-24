@@ -38,12 +38,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
 import { Button } from "@/components/button";
+import { IDENTITY_NAME_MAX_LENGTH } from "@/constants/brand-identity";
+import type { VoiceSelectorProps } from "@/types/brand-identity";
 import { getBrandFaviconUrl } from "@/utils/brand";
+import { getWebsiteDisplayText } from "@/utils/brand-identity";
 import { truncateText } from "@/utils/format";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
-import { IDENTITY_NAME_MAX_LENGTH } from "../constants/brand-identity";
-import type { VoiceSelectorProps } from "../types/brand-identity";
-import { getWebsiteDisplayText } from "../utils/brand-identity";
 
 export function VoiceSelector({
   voices,

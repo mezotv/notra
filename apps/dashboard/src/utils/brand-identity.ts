@@ -2,8 +2,12 @@ import {
   ANALYSIS_STEPS,
   FULL_URL_REGEX,
   LANGUAGE_FLAGS,
-} from "../constants/brand-identity";
-import type { StepIconState } from "../types/brand-identity";
+} from "@/constants/brand-identity";
+import type {
+  BrandIdentityUiAction,
+  BrandIdentityUiState,
+  StepIconState,
+} from "@/types/brand-identity";
 
 const BRITISH_ENGLISH_LOCALE_REGEX = /^en[-_]GB\b/i;
 
@@ -109,4 +113,46 @@ export function getStepIconState(
     return "completed";
   }
   return "active";
+}
+
+export function getInitialBrandIdentityUiState(): BrandIdentityUiState {
+  return {
+    addIdentityOpen: false,
+    addReferenceOpen: false,
+    addSitemapOpen: false,
+    deleteTargetVoiceId: null,
+    isSaving: false,
+    lastSavedAtMs: null,
+    relativeTimeNow: Date.now(),
+    storedVoiceId: null,
+    url: "",
+  };
+}
+
+export function brandIdentityUiReducer(
+  state: BrandIdentityUiState,
+  action: BrandIdentityUiAction
+): BrandIdentityUiState {
+  switch (action.type) {
+    case "set-add-identity-open":
+      return { ...state, addIdentityOpen: action.open };
+    case "set-add-reference-open":
+      return { ...state, addReferenceOpen: action.open };
+    case "set-add-sitemap-open":
+      return { ...state, addSitemapOpen: action.open };
+    case "set-delete-target-voice-id":
+      return { ...state, deleteTargetVoiceId: action.voiceId };
+    case "set-is-saving":
+      return { ...state, isSaving: action.isSaving };
+    case "set-last-saved-at-ms":
+      return { ...state, lastSavedAtMs: action.savedAtMs };
+    case "set-relative-time-now":
+      return { ...state, relativeTimeNow: action.now };
+    case "set-stored-voice-id":
+      return { ...state, storedVoiceId: action.voiceId };
+    case "set-url":
+      return { ...state, url: action.url };
+    default:
+      return state;
+  }
 }

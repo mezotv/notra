@@ -625,6 +625,53 @@ export const brandSitemapPageCategoryEnum = pgEnum(
   ["crawled", "redirect", "queued", "failed"]
 );
 
+export const brandGuidelineStatusEnum = pgEnum("brand_guideline_status", [
+  "queued",
+  "generating",
+  "ready",
+  "failed",
+]);
+
+export const brandGuidelineColorRoleEnum = pgEnum(
+  "brand_guideline_color_role",
+  [
+    "primary",
+    "secondary",
+    "accent",
+    "background",
+    "foreground",
+    "neutral",
+    "custom",
+  ]
+);
+
+export const brandGuidelineFontRoleEnum = pgEnum("brand_guideline_font_role", [
+  "heading",
+  "body",
+  "button",
+  "unknown",
+]);
+
+export const brandGuidelineTokenTypeEnum = pgEnum(
+  "brand_guideline_token_type",
+  ["spacing", "radius", "shadow", "component", "unknown"]
+);
+
+export const brandGuidelineAssetKindEnum = pgEnum(
+  "brand_guideline_asset_kind",
+  ["logo", "wordmark"]
+);
+
+export const brandGuidelineAssetVariantEnum = pgEnum(
+  "brand_guideline_asset_variant",
+  ["light", "dark"]
+);
+
+export const brandGuidelineScreenshotKindEnum = pgEnum(
+  "brand_guideline_screenshot_kind",
+  ["desktop_hero", "desktop_full_page", "mobile_hero"]
+);
+
 export const brandReferences = pgTable(
   "brand_references",
   {
@@ -652,6 +699,187 @@ export const brandReferences = pgTable(
   },
   (table) => [
     index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+  ]
+);
+
+export const brandGuidelines = pgTable(
+  "brand_guidelines",
+  {
+    id: text("id").primaryKey(),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "cascade" }),
+    status: brandGuidelineStatusEnum("status").default("queued").notNull(),
+    contextDevMeta: jsonb("context_dev_meta"),
+    lastGeneratedAt: timestamp("last_generated_at"),
+    lastGenerationError: text("last_generation_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("brandGuidelines_brandSettingsId_uidx").on(
+      table.brandSettingsId
+    ),
+    index("brandGuidelines_status_idx").on(table.status),
+  ]
+);
+
+export const brandGuidelineColors = pgTable(
+  "brand_guideline_colors",
+  {
+    id: text("id").primaryKey(),
+    guidelineId: text("guideline_id")
+      .notNull()
+      .references(() => brandGuidelines.id, { onDelete: "cascade" }),
+    role: brandGuidelineColorRoleEnum("role").default("custom").notNull(),
+    name: text("name"),
+    lightValue: text("light_value").notNull(),
+    darkValue: text("dark_value"),
+    usage: text("usage"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandGuidelineColors_guidelineId_idx").on(table.guidelineId),
+    index("brandGuidelineColors_guideline_role_idx").on(
+      table.guidelineId,
+      table.role
+    ),
+  ]
+);
+
+export const brandGuidelineFonts = pgTable(
+  "brand_guideline_fonts",
+  {
+    id: text("id").primaryKey(),
+    guidelineId: text("guideline_id")
+      .notNull()
+      .references(() => brandGuidelines.id, { onDelete: "cascade" }),
+    role: brandGuidelineFontRoleEnum("role").default("unknown").notNull(),
+    family: text("family").notNull(),
+    weight: text("weight"),
+    size: text("size"),
+    lineHeight: text("line_height"),
+    source: text("source"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandGuidelineFonts_guidelineId_idx").on(table.guidelineId),
+    index("brandGuidelineFonts_guideline_role_idx").on(
+      table.guidelineId,
+      table.role
+    ),
+  ]
+);
+
+export const brandGuidelineTokens = pgTable(
+  "brand_guideline_tokens",
+  {
+    id: text("id").primaryKey(),
+    guidelineId: text("guideline_id")
+      .notNull()
+      .references(() => brandGuidelines.id, { onDelete: "cascade" }),
+    type: brandGuidelineTokenTypeEnum("type").default("unknown").notNull(),
+    name: text("name").notNull(),
+    value: text("value").notNull(),
+    source: text("source"),
+    metadata: jsonb("metadata"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandGuidelineTokens_guidelineId_idx").on(table.guidelineId),
+    index("brandGuidelineTokens_guideline_type_idx").on(
+      table.guidelineId,
+      table.type
+    ),
+  ]
+);
+
+export const brandGuidelineAssets = pgTable(
+  "brand_guideline_assets",
+  {
+    id: text("id").primaryKey(),
+    guidelineId: text("guideline_id")
+      .notNull()
+      .references(() => brandGuidelines.id, { onDelete: "cascade" }),
+    kind: brandGuidelineAssetKindEnum("kind").notNull(),
+    url: text("url").notNull(),
+    storageKey: text("storage_key"),
+    format: text("format"),
+    mimeType: text("mime_type"),
+    width: integer("width"),
+    height: integer("height"),
+    aspectRatio: real("aspect_ratio"),
+    variant: brandGuidelineAssetVariantEnum("variant").notNull(),
+    capturedAt: timestamp("captured_at"),
+    metadata: jsonb("metadata"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandGuidelineAssets_guidelineId_idx").on(table.guidelineId),
+    index("brandGuidelineAssets_guideline_kind_idx").on(
+      table.guidelineId,
+      table.kind
+    ),
+    uniqueIndex("brandGuidelineAssets_guideline_kind_variant_uidx").on(
+      table.guidelineId,
+      table.kind,
+      table.variant
+    ),
+  ]
+);
+
+export const brandGuidelineScreenshots = pgTable(
+  "brand_guideline_screenshots",
+  {
+    id: text("id").primaryKey(),
+    guidelineId: text("guideline_id")
+      .notNull()
+      .references(() => brandGuidelines.id, { onDelete: "cascade" }),
+    kind: brandGuidelineScreenshotKindEnum("kind").notNull(),
+    url: text("url").notNull(),
+    storageKey: text("storage_key"),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    format: text("format").notNull(),
+    fullPage: boolean("full_page").default(false).notNull(),
+    capturedAt: timestamp("captured_at"),
+    metadata: jsonb("metadata"),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("brandGuidelineScreenshots_guidelineId_idx").on(table.guidelineId),
+    uniqueIndex("brandGuidelineScreenshots_guideline_kind_uidx").on(
+      table.guidelineId,
+      table.kind
+    ),
   ]
 );
 
@@ -1145,6 +1373,7 @@ export const brandSettingsRelations = relations(
       references: [organizations.id],
     }),
     references: many(brandReferences),
+    guidelines: many(brandGuidelines),
     sitemaps: many(brandSitemaps),
   })
 );
@@ -1155,6 +1384,71 @@ export const brandReferencesRelations = relations(
     brandSettings: one(brandSettings, {
       fields: [brandReferences.brandSettingsId],
       references: [brandSettings.id],
+    }),
+  })
+);
+
+export const brandGuidelinesRelations = relations(
+  brandGuidelines,
+  ({ one, many }) => ({
+    brandSettings: one(brandSettings, {
+      fields: [brandGuidelines.brandSettingsId],
+      references: [brandSettings.id],
+    }),
+    assets: many(brandGuidelineAssets),
+    colors: many(brandGuidelineColors),
+    fonts: many(brandGuidelineFonts),
+    screenshots: many(brandGuidelineScreenshots),
+    tokens: many(brandGuidelineTokens),
+  })
+);
+
+export const brandGuidelineColorsRelations = relations(
+  brandGuidelineColors,
+  ({ one }) => ({
+    guideline: one(brandGuidelines, {
+      fields: [brandGuidelineColors.guidelineId],
+      references: [brandGuidelines.id],
+    }),
+  })
+);
+
+export const brandGuidelineFontsRelations = relations(
+  brandGuidelineFonts,
+  ({ one }) => ({
+    guideline: one(brandGuidelines, {
+      fields: [brandGuidelineFonts.guidelineId],
+      references: [brandGuidelines.id],
+    }),
+  })
+);
+
+export const brandGuidelineTokensRelations = relations(
+  brandGuidelineTokens,
+  ({ one }) => ({
+    guideline: one(brandGuidelines, {
+      fields: [brandGuidelineTokens.guidelineId],
+      references: [brandGuidelines.id],
+    }),
+  })
+);
+
+export const brandGuidelineAssetsRelations = relations(
+  brandGuidelineAssets,
+  ({ one }) => ({
+    guideline: one(brandGuidelines, {
+      fields: [brandGuidelineAssets.guidelineId],
+      references: [brandGuidelines.id],
+    }),
+  })
+);
+
+export const brandGuidelineScreenshotsRelations = relations(
+  brandGuidelineScreenshots,
+  ({ one }) => ({
+    guideline: one(brandGuidelines, {
+      fields: [brandGuidelineScreenshots.guidelineId],
+      references: [brandGuidelines.id],
     }),
   })
 );

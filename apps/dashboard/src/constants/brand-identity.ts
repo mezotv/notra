@@ -1,5 +1,6 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import type { ToneProfile } from "@notra/ai/schemas/tone";
+import type { BrandTab } from "@/types/brand-identity";
 
 export const AUTO_SAVE_DELAY = 2500;
 
@@ -56,8 +57,15 @@ export const FULL_URL_REGEX = /^https?:\/\//i;
 
 export const IDENTITY_NAME_MAX_LENGTH = 13;
 
+export const BRAND_IDENTITY_TAB_VALUES = [
+  "identity",
+  "references",
+  "sitemap",
+  "guidelines",
+] as const satisfies readonly BrandTab[];
+
 export const BRAND_TAB_HEADERS: Record<
-  "identity" | "references" | "sitemap",
+  BrandTab,
   { title: string; description: string }
 > = {
   identity: {
@@ -71,5 +79,10 @@ export const BRAND_TAB_HEADERS: Record<
   sitemap: {
     title: "Sitemap",
     description: "Track indexed pages and monitor site health for AI discovery",
+  },
+  guidelines: {
+    title: "Brand Guidelines",
+    description:
+      "Logos, colors, typography, and landing page screenshots pulled from your site",
   },
 };

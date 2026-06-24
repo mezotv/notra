@@ -84,7 +84,10 @@ export const uploadRouter = {
       }
 
       const id = nanoid();
-      const key = `organization/${orgId}/content/${id}.svg`;
+      const key =
+        input.type === "brand_asset"
+          ? `organization/${orgId}/brand-assets/${id}.svg`
+          : `organization/${orgId}/content/${id}.svg`;
 
       const { client: r2Client, bucketName, publicUrl } = getR2Config();
 

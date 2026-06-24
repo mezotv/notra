@@ -1,12 +1,16 @@
 import type {
+  ContextDevBrandRetrieveResponse,
   ContextDevCrawlSitemapInput,
   ContextDevCrawlSitemapResponse,
   ContextDevErrorResponse,
   ContextDevFetchWebpageInput,
   ContextDevFetchWebpageResponse,
   ContextDevScrapingResult,
+  ContextDevScreenshotInput,
+  ContextDevScreenshotResponse,
   ContextDevSearchResponse,
   ContextDevSearchResult,
+  ContextDevStyleguideResponse,
   ContextDevWebSearchInput,
   ContextDevWebSearchResponse,
 } from "@notra/ai/types/context-dev";
@@ -377,6 +381,60 @@ export async function crawlSitemap(
 
   return requestContextDev<ContextDevCrawlSitemapResponse>(
     `/web/scrape/sitemap?${params.toString()}`,
+    { method: "GET" }
+  );
+}
+
+export async function retrieveBrand(
+  domain: string
+): Promise<ContextDevBrandRetrieveResponse> {
+  const params = new URLSearchParams({ domain });
+
+  return requestContextDev<ContextDevBrandRetrieveResponse>(
+    `/brand/retrieve?${params.toString()}`,
+    { method: "GET" }
+  );
+}
+
+export async function retrieveStyleguide(
+  domain: string
+): Promise<ContextDevStyleguideResponse> {
+  const params = new URLSearchParams({
+    domain,
+    timeoutMS: "30000",
+  });
+
+  return requestContextDev<ContextDevStyleguideResponse>(
+    `/web/styleguide?${params.toString()}`,
+    { method: "GET" }
+  );
+}
+
+export async function captureScreenshot(
+  input: ContextDevScreenshotInput
+): Promise<ContextDevScreenshotResponse> {
+  const params = new URLSearchParams({
+    domain: input.domain,
+  });
+
+  if (input.width !== undefined) {
+    params.set("width", String(input.width));
+  }
+  if (input.height !== undefined) {
+    params.set("height", String(input.height));
+  }
+  if (input.format !== undefined) {
+    params.set("format", input.format);
+  }
+  if (input.screenshotType !== undefined) {
+    params.set("screenshotType", input.screenshotType);
+  }
+  if (input.timeoutMS !== undefined) {
+    params.set("timeoutMS", String(input.timeoutMS));
+  }
+
+  return requestContextDev<ContextDevScreenshotResponse>(
+    `/web/screenshot?${params.toString()}`,
     { method: "GET" }
   );
 }

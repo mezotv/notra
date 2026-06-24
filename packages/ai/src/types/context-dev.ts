@@ -78,6 +78,69 @@ export interface ContextDevCrawlSitemapResponse {
   };
 }
 
+export interface ContextDevBrandColor {
+  hex?: string;
+  name?: string;
+}
+
+export interface ContextDevBrandLogo {
+  url?: string;
+  mode?: string;
+  group?: number;
+  type?: string;
+  colors?: ContextDevBrandColor[];
+  resolution?: {
+    width?: number;
+    height?: number;
+    aspect_ratio?: number;
+  };
+}
+
+export interface ContextDevBrandRetrieveResponse {
+  status: "ok";
+  brand: {
+    domain?: string;
+    logos?: ContextDevBrandLogo[];
+  };
+  code?: number;
+}
+
+export interface ContextDevStyleguideResponse {
+  status: "ok";
+  domain?: string;
+  styleguide: Record<string, unknown>;
+  code?: number;
+}
+
+export interface ContextDevScreenshotInput {
+  domain: string;
+  width?: number;
+  height?: number;
+  format?: "png" | "jpeg";
+  screenshotType?: "viewport" | "fullPage";
+  timeoutMS?: number;
+}
+
+export interface ContextDevScreenshotResponse {
+  status?: "ok";
+  code?: number;
+  domain?: string;
+  height?: number;
+  width?: number;
+  url?: string;
+  screenshotUrl?: string;
+  imageUrl?: string;
+  screenshot?:
+    | string
+    | {
+        url?: string;
+        width?: number;
+        height?: number;
+        format?: string;
+      };
+  screenshotType?: "viewport" | "fullPage";
+}
+
 export interface ContextDevSearchResult {
   url: string;
   title: string;

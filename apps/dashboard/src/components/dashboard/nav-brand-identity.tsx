@@ -4,6 +4,7 @@ import {
   Comment01Icon,
   CorporateIcon,
   GlobalIcon,
+  PaintBoardIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -39,6 +40,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const currentView = searchParams.get("view");
   const isReferencesView = isOnBrandPage && currentView === "references";
   const isSitemapView = isOnBrandPage && currentView === "sitemap";
+  const isGuidelinesView = isOnBrandPage && currentView === "guidelines";
 
   const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
   useEffect(() => {
@@ -79,13 +81,21 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const sitemapHref = activeVoiceId
     ? `${brandBasePath}?voice=${activeVoiceId}&view=sitemap`
     : `${brandBasePath}?view=sitemap`;
+  const guidelinesHref = activeVoiceId
+    ? `${brandBasePath}?voice=${activeVoiceId}&view=guidelines`
+    : `${brandBasePath}?view=guidelines`;
 
   return (
     <CollapsibleSidebarGroup label="Brand Identity">
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={isOnBrandPage && !isReferencesView && !isSitemapView}
+            isActive={
+              isOnBrandPage &&
+              !isReferencesView &&
+              !isSitemapView &&
+              !isGuidelinesView
+            }
             render={
               <Link href={companyInfoHref}>
                 <HugeiconsIcon icon={CorporateIcon} />
@@ -93,6 +103,18 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
               </Link>
             }
             tooltip="Company Info"
+          />
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            isActive={isGuidelinesView}
+            render={
+              <Link href={guidelinesHref}>
+                <HugeiconsIcon icon={PaintBoardIcon} />
+                <span>Brand Guidelines</span>
+              </Link>
+            }
+            tooltip="Brand Guidelines"
           />
         </SidebarMenuItem>
         <SidebarMenuItem>

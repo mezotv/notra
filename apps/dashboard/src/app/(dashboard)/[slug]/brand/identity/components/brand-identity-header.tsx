@@ -1,27 +1,27 @@
 "use client";
 
-import { Add01Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
+import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/button";
-import { BRAND_TAB_HEADERS } from "../constants/brand-identity";
-
-type BrandTab = "identity" | "references" | "sitemap";
-
-interface BrandIdentityHeaderProps {
-  activeTab: BrandTab;
-  onAddIdentity: () => void;
-  onAddReference: () => void;
-  onAddSitemap: () => void;
-}
+import { BRAND_TAB_HEADERS } from "@/constants/brand-identity";
+import type {
+  BrandIdentityHeaderProps,
+  BrandTab,
+} from "@/types/brand-identity";
 
 export function BrandIdentityHeader({
   activeTab,
   onAddIdentity,
   onAddReference,
   onAddSitemap,
+  onRefreshGuidelines,
+  isRefreshingGuidelines,
 }: BrandIdentityHeaderProps) {
-  const actionByTab = {
+  const actionByTab: Partial<
+    Record<BrandTab, { label: string; onClick: () => void }>
+  > = {
     identity: {
       label: "Create Identity",
       onClick: onAddIdentity,
@@ -34,7 +34,7 @@ export function BrandIdentityHeader({
       label: "Add Sitemap",
       onClick: onAddSitemap,
     },
-  } satisfies Record<BrandTab, { label: string; onClick: () => void }>;
+  };
   const action = actionByTab[activeTab];
 
   return (
@@ -47,11 +47,27 @@ export function BrandIdentityHeader({
           {BRAND_TAB_HEADERS[activeTab].description}
         </p>
       </div>
-      <Button className="gap-1.5" onClick={action.onClick}>
-        <HugeiconsIcon className="size-4" icon={Add01Icon} />
-        {action.label}
-        <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-      </Button>
+      {activeTab === "guidelines" ? (
+        <Button
+          className="gap-1.5"
+          disabled={isRefreshingGuidelines}
+          onClick={onRefreshGuidelines}
+        >
+          {isRefreshingGuidelines ? (
+            <Loader2Icon className="size-4 animate-spin" />
+          ) : (
+            <HugeiconsIcon className="size-4" icon={RefreshIcon} />
+          )}
+          Refresh Guidelines
+        </Button>
+      ) : null}
+      {action ? (
+        <Button className="gap-1.5" onClick={action.onClick}>
+          <HugeiconsIcon className="size-4" icon={Add01Icon} />
+          {action.label}
+          <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+        </Button>
+      ) : null}
     </div>
   );
 }

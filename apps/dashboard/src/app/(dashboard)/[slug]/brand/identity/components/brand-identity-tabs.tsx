@@ -6,30 +6,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
-import type { BrandFormInitialData } from "../types/brand-identity";
+import type { BrandIdentityTabsProps, BrandTab } from "@/types/brand-identity";
 import { BrandForm } from "./brand-form";
+import { GuidelinesPanel } from "./guidelines-panel";
 import { ReferencesList } from "./references-list";
 import { SitemapList } from "./sitemap-list";
-
-type BrandTab = "identity" | "references" | "sitemap";
-
-interface BrandIdentityTabsProps {
-  activeTab: BrandTab;
-  addReferenceOpen: boolean;
-  addSitemapOpen: boolean;
-  initialData: BrandFormInitialData;
-  onActiveTabChange: (tab: BrandTab) => void;
-  onAddReferenceOpenChange: (open: boolean) => void;
-  onAddSitemapOpenChange: (open: boolean) => void;
-  onSavedAtChange: (savedAt: Date) => void;
-  onSavingChange: (isSaving: boolean) => void;
-  organizationId: string;
-  referenceCount: number;
-  saveStatusText: string;
-  sitemapCount: number;
-  voiceId: string;
-  voiceWebsiteUrl: string | null;
-}
 
 export function BrandIdentityTabs({
   activeTab,
@@ -56,6 +37,7 @@ export function BrandIdentityTabs({
       <div className="flex items-center justify-between">
         <TabsList variant="line">
           <TabsTrigger value="identity">Company Info</TabsTrigger>
+          <TabsTrigger value="guidelines">Guidelines</TabsTrigger>
           <TabsTrigger value="references">
             References
             {referenceCount > 0 && (
@@ -82,6 +64,14 @@ export function BrandIdentityTabs({
           key={voiceId}
           onSavedAtChange={onSavedAtChange}
           onSavingChange={onSavingChange}
+          organizationId={organizationId}
+          voiceId={voiceId}
+        />
+      </TabsContent>
+
+      <TabsContent className="mt-6" value="guidelines">
+        <GuidelinesPanel
+          key={`guidelines-${voiceId}`}
           organizationId={organizationId}
           voiceId={voiceId}
         />

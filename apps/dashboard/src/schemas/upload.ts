@@ -8,6 +8,7 @@ import {
   type AllowedMimeType,
   type AllowedRasterMimeType,
   MAX_AVATAR_FILE_SIZE,
+  MAX_BRAND_ASSET_FILE_SIZE,
   MAX_CHAT_FILE_SIZE,
   MAX_CONTENT_FILE_SIZE,
   MAX_LOGO_FILE_SIZE,
@@ -40,6 +41,18 @@ export const uploadLogoSchema = z.object({
     }),
 });
 
+export const uploadBrandAssetSchema = z.object({
+  type: z.literal("brand_asset"),
+  fileType: z.coerce.string().nonempty(),
+  fileSize: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(MAX_BRAND_ASSET_FILE_SIZE, {
+      message: `Brand asset must be less than ${MAX_BRAND_ASSET_FILE_SIZE / 1024 / 1024}MB`,
+    }),
+});
+
 export const uploadMediaSchema = z.object({
   type: z.literal("content"),
   fileType: z.coerce.string().nonempty(),
@@ -67,6 +80,7 @@ export const uploadChatSchema = z.object({
 export const uploadSchema = z.union([
   uploadAvatarSchema,
   uploadLogoSchema,
+  uploadBrandAssetSchema,
   uploadMediaSchema,
   uploadChatSchema,
 ]);
@@ -94,23 +108,34 @@ export const recordChatAttachmentSchema = z.object({
   size: z.coerce.number().int().positive().max(MAX_CHAT_FILE_SIZE),
 });
 
-export const uploadSvgSchema = z.object({
-  type: z.literal("content"),
-  svg: z
-    .string()
-    .min(1)
-    .refine(
+const svgStringSchema = z.string().min(1);
+
+export const uploadSvgSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("content"),
+    svg: svgStringSchema.refine(
       (value) => Buffer.byteLength(value, "utf8") <= MAX_SVG_CONTENT_SIZE,
       {
         message: `SVG content must be less than ${MAX_SVG_CONTENT_SIZE / 1024 / 1024}MB`,
       }
     ),
-});
+  }),
+  z.object({
+    type: z.literal("brand_asset"),
+    svg: svgStringSchema.refine(
+      (value) => Buffer.byteLength(value, "utf8") <= MAX_BRAND_ASSET_FILE_SIZE,
+      {
+        message: `Brand asset SVG must be less than ${MAX_BRAND_ASSET_FILE_SIZE / 1024 / 1024}MB`,
+      }
+    ),
+  }),
+]);
 
 export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
 
 const maxSizeByType = {
   avatar: MAX_AVATAR_FILE_SIZE,
+  brand_asset: MAX_BRAND_ASSET_FILE_SIZE,
   logo: MAX_LOGO_FILE_SIZE,
   content: MAX_CONTENT_FILE_SIZE,
   chat: MAX_CHAT_FILE_SIZE,
@@ -144,6 +169,18 @@ export function validateUpload({
       ) {
         throw new ORPCError("BAD_REQUEST", {
           message: `File type ${fileType} is not allowed for ${type}. Allowed raster types: ${ALLOWED_RASTER_MIME_TYPES.join(", ")}`,
+        });
+      }
+      break;
+    case "brand_asset":
+      if (fileType === SVG_MIME_TYPE) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: "SVG uploads must use the dedicated SVG upload endpoint",
+        });
+      }
+      if (!ALLOWED_MIME_TYPES.includes(fileType as AllowedMimeType)) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: `File type ${fileType} is not allowed for brand assets. Allowed types: ${ALLOWED_MIME_TYPES.join(", ")}`,
         });
       }
       break;

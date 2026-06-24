@@ -11,9 +11,9 @@ import {
 } from "@notra/ui/components/ui/stepper";
 import { Loader2Icon } from "lucide-react";
 import type { ReactNode } from "react";
-import { ANALYSIS_STEPS } from "../constants/brand-identity";
-import type { StepIconState } from "../types/brand-identity";
-import { getStepIconState, getStepperValue } from "../utils/brand-identity";
+import { ANALYSIS_STEPS } from "@/constants/brand-identity";
+import type { StepIconState } from "@/types/brand-identity";
+import { getStepIconState, getStepperValue } from "@/utils/brand-identity";
 
 const STEP_ICONS: Record<StepIconState, () => ReactNode> = {
   completed: () => <HugeiconsIcon className="size-4" icon={Tick02Icon} />,
