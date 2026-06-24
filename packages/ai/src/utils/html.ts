@@ -10,7 +10,7 @@ export function escapeHtml(value: string) {
 }
 
 export function escapeMarkdownAlt(value: string) {
-  return value.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
+  return value.replace(/[\\[\]]/g, "\\$&");
 }
 
 export function buildGeneratedImageMarkdown(params: {
