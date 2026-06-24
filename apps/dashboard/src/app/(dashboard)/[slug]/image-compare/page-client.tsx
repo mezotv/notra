@@ -8,9 +8,9 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
+import Image from "next/image";
 import {
   type PointerEvent as ReactPointerEvent,
-  useCallback,
   useEffect,
   useRef,
   useState,
@@ -23,6 +23,11 @@ import { computeImageSimilarity } from "./similarity";
 interface SelectedImage {
   url: string;
   name: string;
+}
+
+interface SimilarityResult {
+  key: string;
+  value: number | null;
 }
 
 type Side = "before" | "after";
@@ -63,6 +68,7 @@ function ImageSlot({
       </div>
       <input
         accept="image/png,image/jpeg,image/webp"
+        aria-label={`Upload ${label} image`}
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -75,6 +81,7 @@ function ImageSlot({
         type="file"
       />
       <button
+        aria-label={image ? `Change ${label} image` : `Upload ${label} image`}
         className={cn(
           "flex h-40 w-full flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border border-dashed bg-card transition-colors hover:border-foreground/30 hover:bg-accent/40",
           image && "border-solid"
@@ -83,12 +90,16 @@ function ImageSlot({
         type="button"
       >
         {image ? (
-          <span
-            aria-label={image.name}
-            className="size-full bg-center bg-contain bg-no-repeat"
-            role="img"
-            style={{ backgroundImage: `url("${image.url}")` }}
-          />
+          <span className="relative size-full">
+            <Image
+              alt={image.name}
+              className="object-contain"
+              fill
+              sizes="(min-width: 640px) 50vw, 100vw"
+              src={image.url}
+              unoptimized
+            />
+          </span>
         ) : (
           <>
             <HugeiconsIcon
@@ -134,65 +145,50 @@ function describeSimilarity(value: number): string {
 export default function PageClient() {
   const [before, setBefore] = useState<SelectedImage | null>(null);
   const [after, setAfter] = useState<SelectedImage | null>(null);
-  const [similarity, setSimilarity] = useState<number | null>(null);
-  const [isComputing, setIsComputing] = useState(false);
+  const [similarityResult, setSimilarityResult] =
+    useState<SimilarityResult | null>(null);
   const [position, setPosition] = useState(DEFAULT_POSITION);
-  const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const comparisonKey =
+    before && after ? JSON.stringify([before.url, after.url]) : null;
+  const similarity =
+    comparisonKey && similarityResult?.key === comparisonKey
+      ? similarityResult.value
+      : null;
+  const isComputing =
+    comparisonKey !== null && similarityResult?.key !== comparisonKey;
 
-  // Mirror the latest selections so the unmount cleanup can revoke whatever is
-  // currently active without re-running (and prematurely revoking) on change.
-  const beforeRef = useRef<SelectedImage | null>(null);
-  const afterRef = useRef<SelectedImage | null>(null);
-  beforeRef.current = before;
-  afterRef.current = after;
-
-  const handleSelect = useCallback((side: Side, file: File) => {
+  function handleSelect(side: Side, file: File) {
     const url = URL.createObjectURL(file);
     const next = { url, name: file.name };
     const setter = side === "before" ? setBefore : setAfter;
-    setter((previous) => {
-      if (previous) {
-        URL.revokeObjectURL(previous.url);
-      }
-      return next;
-    });
-  }, []);
+    setter(next);
+  }
 
-  const handleClear = useCallback((side: Side) => {
+  function handleClear(side: Side) {
     const setter = side === "before" ? setBefore : setAfter;
-    setter((previous) => {
-      if (previous) {
-        URL.revokeObjectURL(previous.url);
-      }
-      return null;
-    });
-    setSimilarity(null);
-  }, []);
+    setter(null);
+    setSimilarityResult(null);
+  }
 
   useEffect(() => {
     if (!(before && after)) {
-      setSimilarity(null);
       return;
     }
 
+    const key = JSON.stringify([before.url, after.url]);
     let cancelled = false;
-    setIsComputing(true);
     computeImageSimilarity(before.url, after.url)
       .then((value) => {
         if (!cancelled) {
-          setSimilarity(value);
+          setSimilarityResult({ key, value });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setSimilarity(null);
+          setSimilarityResult({ key, value: null });
           toast.error("Couldn't compare those images");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsComputing(false);
         }
       });
 
@@ -201,19 +197,25 @@ export default function PageClient() {
     };
   }, [before, after]);
 
-  useEffect(
-    () => () => {
-      if (beforeRef.current) {
-        URL.revokeObjectURL(beforeRef.current.url);
-      }
-      if (afterRef.current) {
-        URL.revokeObjectURL(afterRef.current.url);
-      }
-    },
-    []
-  );
+  useEffect(() => {
+    if (!before) {
+      return;
+    }
+    return () => {
+      URL.revokeObjectURL(before.url);
+    };
+  }, [before]);
 
-  const updatePosition = useCallback((clientX: number) => {
+  useEffect(() => {
+    if (!after) {
+      return;
+    }
+    return () => {
+      URL.revokeObjectURL(after.url);
+    };
+  }, [after]);
+
+  function updatePosition(clientX: number) {
     const element = containerRef.current;
     if (!element) {
       return;
@@ -221,21 +223,23 @@ export default function PageClient() {
     const rect = element.getBoundingClientRect();
     const percent = ((clientX - rect.left) / rect.width) * FULL;
     setPosition(Math.max(0, Math.min(FULL, percent)));
-  }, []);
+  }
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    setIsDragging(true);
+    isDraggingRef.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);
     updatePosition(event.clientX);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (isDragging) {
+    if (isDraggingRef.current) {
       updatePosition(event.clientX);
     }
   };
 
-  const stopDragging = () => setIsDragging(false);
+  const stopDragging = () => {
+    isDraggingRef.current = false;
+  };
   const bothSelected = Boolean(before && after);
 
   return (

@@ -21,13 +21,7 @@ import { Card } from "@notra/ui/components/ui/card";
 import { cn } from "@notra/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import {
-  type ChangeEvent,
-  type DragEvent,
-  useCallback,
-  useRef,
-  useState,
-} from "react";
+import { type ChangeEvent, type DragEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
@@ -146,33 +140,34 @@ export default function PageClient() {
   const { data, isLoading } = useQuery(listQueryOptions);
   const documents: HtmlDocument[] = data?.documents ?? [];
 
-  const invalidate = useCallback(
-    () =>
-      queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.html.list.key(),
-      }),
-    [queryClient]
-  );
-
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
-      let uploaded = 0;
-      for (const file of files) {
-        const content = await file.text();
-        if (content.trim().length === 0) {
-          continue;
-        }
-        await dashboardOrpc.html.create.call({ name: file.name, content });
-        uploaded += 1;
-      }
-      return uploaded;
+      const parsedFiles = await Promise.all(
+        files.map(async (file) => {
+          const content = await file.text();
+          return { content, name: file.name };
+        })
+      );
+      const uploads = parsedFiles.filter(
+        ({ content }) => content.trim().length > 0
+      );
+
+      await Promise.all(
+        uploads.map(({ content, name }) =>
+          dashboardOrpc.html.create.call({ name, content })
+        )
+      );
+
+      return uploads.length;
     },
     onSuccess: async (uploaded) => {
       if (uploaded > 0) {
         toast.success(
           uploaded === 1 ? "HTML file added" : `${uploaded} HTML files added`
         );
-        await invalidate();
+        await queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.html.list.key(),
+        });
       }
     },
     onError: () => {
@@ -186,7 +181,9 @@ export default function PageClient() {
     },
     onSuccess: async () => {
       toast.success("HTML file deleted");
-      await invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.html.list.key(),
+      });
     },
     onError: () => {
       toast.error("Failed to delete HTML file");
@@ -196,20 +193,17 @@ export default function PageClient() {
     },
   });
 
-  const handleFiles = useCallback(
-    (fileList: FileList | null) => {
-      if (!fileList || fileList.length === 0) {
-        return;
-      }
-      const htmlFiles = Array.from(fileList).filter(isHtmlFile);
-      if (htmlFiles.length === 0) {
-        toast.error("Please choose .html files");
-        return;
-      }
-      uploadMutation.mutate(htmlFiles);
-    },
-    [uploadMutation]
-  );
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+    const htmlFiles = Array.from(fileList).filter(isHtmlFile);
+    if (htmlFiles.length === 0) {
+      toast.error("Please choose .html files");
+      return;
+    }
+    uploadMutation.mutate(htmlFiles);
+  }
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     handleFiles(event.target.files);
@@ -222,29 +216,32 @@ export default function PageClient() {
     handleFiles(event.dataTransfer.files);
   };
 
-  const handleCopyOne = useCallback(async (document: HtmlDocument) => {
+  async function handleCopyOne(document: HtmlDocument) {
     setCopyingId(document.id);
-    try {
-      await copyHtmlToFigma(document.content);
-      toast.success("Copied — paste into Figma");
-    } catch {
-      toast.error("Couldn't access the clipboard");
-    } finally {
-      setCopyingId(null);
-    }
-  }, []);
+    await copyHtmlToFigma(document.content)
+      .then(() => {
+        toast.success("Copied — paste into Figma");
+      })
+      .catch(() => {
+        toast.error("Couldn't access the clipboard");
+      })
+      .finally(() => {
+        setCopyingId(null);
+      });
+  }
 
-  const handleCopyAll = useCallback(async () => {
+  async function handleCopyAll() {
     if (documents.length === 0) {
       return;
     }
-    try {
-      await copyHtmlToFigma(combineDocumentsForFigma(documents));
-      toast.success(`Copied ${documents.length} files — paste into Figma`);
-    } catch {
-      toast.error("Couldn't access the clipboard");
-    }
-  }, [documents]);
+    await copyHtmlToFigma(combineDocumentsForFigma(documents))
+      .then(() => {
+        toast.success(`Copied ${documents.length} files — paste into Figma`);
+      })
+      .catch(() => {
+        toast.error("Couldn't access the clipboard");
+      });
+  }
 
   if (isLoading) {
     return <GalleryPageSkeleton />;
@@ -273,6 +270,7 @@ export default function PageClient() {
 
         <input
           accept={HTML_ACCEPT}
+          aria-label="Upload HTML files"
           className="hidden"
           multiple
           onChange={handleInputChange}
