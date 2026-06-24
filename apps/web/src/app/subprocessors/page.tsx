@@ -70,10 +70,10 @@ const subprocessors = [
     website: "https://databuddy.cc",
   },
   {
-    name: "Promptwatch",
-    purpose: "AI search visibility analytics and agent traffic monitoring",
+    name: "inth / c15t",
+    purpose: "Consent management and privacy preference infrastructure",
     location: "European Union",
-    website: "https://promptwatch.com",
+    website: "https://c15t.com",
   },
   {
     name: "GitHub",
