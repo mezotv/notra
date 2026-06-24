@@ -18,7 +18,7 @@ import { EMAIL_CONFIG } from "../utils/config";
 export const ContactMessageEmail = ({
   name = "Jane Doe",
   email = "jane@example.com",
-  company = "Acme Inc.",
+  company,
   message = "We're evaluating Notra for our team and would love to chat about volume pricing.",
 }: ContactMessageEmailProps) => {
   const logoUrl = EMAIL_CONFIG.getLogoUrl();

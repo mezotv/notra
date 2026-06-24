@@ -8,6 +8,8 @@ import { Data, Effect } from "effect";
 import { CONTACT_RECIPIENT } from "@/constants/contact";
 import type { ContactMessageInput } from "@/types/contact";
 
+const HEADER_NEWLINE_REGEX = /[\r\n]+/g;
+
 class ContactMessageEmailError extends Data.TaggedError(
   "ContactMessageEmailError"
 )<{
@@ -17,6 +19,10 @@ class ContactMessageEmailError extends Data.TaggedError(
 
 function getRecipient(): string {
   return process.env.CONTACT_EMAIL_TO || CONTACT_RECIPIENT;
+}
+
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(HEADER_NEWLINE_REGEX, " ").trim();
 }
 
 function buildPlainText(message: ContactMessageEmailProps): string {
@@ -59,7 +65,7 @@ export const sendContactMessageEmail = Effect.fn("sendContactMessageEmail")(
       company: input.company,
       message: input.message,
     };
-    const subject = `New contact message from ${message.name}`;
+    const subject = `New contact message from ${sanitizeHeaderValue(message.name)}`;
     const idempotencyKey = buildIdempotencyKey(message, to);
     const text = buildPlainText(message);
 
