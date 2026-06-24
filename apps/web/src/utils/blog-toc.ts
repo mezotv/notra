@@ -2,13 +2,14 @@ import type { TOCItemType } from "fumadocs-core/toc";
 import { HTML_ENTITY_MAP, HTML_ENTITY_REGEX } from "@/utils/constants";
 
 const HEADING_WITH_TAG_REGEX = /<h([2-4])([^>]*)>([\s\S]*?)<\/h\1>/gi;
-const HTML_TAG_REGEX = /<[^>]+>/g;
 const WHITESPACE_REGEX = /\s+/g;
 const ID_ATTRIBUTE_REGEX = /\sid\s*=\s*["']([^"']+)["']/i;
 const DIACRITICS_REGEX = /[̀-ͯ]/g;
 const NON_ALPHANUM_REGEX = /[^a-z0-9]+/g;
 const TRIM_DASHES_REGEX = /^-+|-+$/g;
 const SLUG_FALLBACK = "section";
+const LESS_THAN = "<";
+const GREATER_THAN = ">";
 
 function decodeHtmlEntities(value: string) {
   return value.replace(
@@ -17,8 +18,31 @@ function decodeHtmlEntities(value: string) {
   );
 }
 
+function htmlTextContent(value: string) {
+  let text = "";
+  let insideTag = false;
+
+  for (const character of value) {
+    if (character === LESS_THAN) {
+      insideTag = true;
+      continue;
+    }
+
+    if (character === GREATER_THAN && insideTag) {
+      insideTag = false;
+      continue;
+    }
+
+    if (!insideTag) {
+      text += character;
+    }
+  }
+
+  return text;
+}
+
 function stripHtml(value: string) {
-  return decodeHtmlEntities(value.replace(HTML_TAG_REGEX, ""))
+  return decodeHtmlEntities(htmlTextContent(value))
     .replace(WHITESPACE_REGEX, " ")
     .trim();
 }
