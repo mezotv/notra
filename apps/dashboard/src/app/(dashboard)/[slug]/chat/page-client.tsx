@@ -3,10 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { AiBrain01Icon, ArrowDown01Icon, X } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  chatErrorPayloadSchema,
-  chatTransportRequestInputSchema,
-} from "@notra/ai/schemas/chat";
+import { chatTransportRequestInputSchema } from "@notra/ai/schemas/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type {
   ChatAttachment,
@@ -77,6 +74,7 @@ import type {
   CreateToolContentType,
   StandaloneChatPageClientProps,
 } from "@/types/components/chat-page";
+import { handleStandaloneChatError } from "@/utils/chat-error";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,
@@ -500,51 +498,6 @@ function StandaloneChatPageClient({
     [organizationId]
   );
 
-  const handleChatError = useCallback((err: Error) => {
-    const errorMessage = err.message || String(err);
-
-    const parsed = (() => {
-      try {
-        return chatErrorPayloadSchema.safeParse(JSON.parse(errorMessage));
-      } catch {
-        return null;
-      }
-    })();
-
-    if (parsed?.success && parsed.data.code === "USAGE_LIMIT_REACHED") {
-      setChatError(
-        "You've used all your chat messages this month. Upgrade for more."
-      );
-      setPendingMessageId(null);
-      return;
-    }
-
-    if (parsed?.success && parsed.data.error) {
-      setChatError(parsed.data.error);
-      setPendingMessageId(null);
-      return;
-    }
-
-    if (
-      errorMessage.includes("USAGE_LIMIT_REACHED") ||
-      errorMessage.includes("Usage limit reached")
-    ) {
-      setChatError(
-        "You've used all your chat messages this month. Upgrade for more."
-      );
-      setPendingMessageId(null);
-      return;
-    }
-
-    console.error("Standalone chat error:", err);
-    setChatError(
-      errorMessage.trim()
-        ? errorMessage
-        : "Something went wrong while generating a response. Please try again."
-    );
-    setPendingMessageId(null);
-  }, []);
-
   const [wasStoppedByUser, setWasStoppedByUser] = useState(false);
   const wasStoppedByUserRef = useRef(wasStoppedByUser);
   wasStoppedByUserRef.current = wasStoppedByUser;
@@ -586,7 +539,8 @@ function StandaloneChatPageClient({
     transport,
     sendAutomaticallyWhen: shouldContinueAfterApprovalResponse,
     onFinish: handleFinish,
-    onError: handleChatError,
+    onError: (err) =>
+      handleStandaloneChatError(err, { setChatError, setPendingMessageId }),
   });
 
   const [isStopping, setIsStopping] = useState(false);
