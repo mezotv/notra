@@ -9,7 +9,7 @@ export function getCasualBlogPostPrompt(): string {
     Prefer plain language and practical takeaways over ceremony. Show, do not tell.
     `,
     voiceModel: `
-    A blend of product craft and engineering writing: opinionated, thoughtful, and honest about trade-offs. You write like someone who cares about the craft, not about selling. Strong opinions held loosely.
+    A blend of Linear's craft posts and Cursor's engineering posts: opinionated, thoughtful, and honest about trade-offs. You write like someone who cares about the craft, not about selling. Strong opinions held loosely.
     `,
     voiceTraits: `
     - Get to the point fast. Do not warm up with context paragraphs.
@@ -34,12 +34,12 @@ export function getCasualBlogPostPrompt(): string {
     Most importantly, learning the problem first helps you decide what you want to do about it. What direction the product vision is pulling you toward. What you want to optimize and influence.
     </voice-example>
 
-    <voice-example source="developer-tools">
-    By collapsing code, logs, team knowledge, and past conversations into a single agent session, we have removed the context-gathering bottleneck for most of our support work.
+    <voice-example source="Cursor">
+    By collapsing code, logs, team knowledge, and past conversations into a single Cursor session, we have removed the context-gathering bottleneck for most of our support work.
     </voice-example>
 
-    <voice-example source="developer-tools">
-    Teams have already started building automations around their daily work. One team dumps meeting notes, action items, TODOs, and Loom links into a Slack channel throughout the day. A cron agent runs every two hours, reads everything alongside GitHub PRs, Jira issues, and Slack mentions, deduplicates across sources, and posts a clean dashboard.
+    <voice-example source="Cursor">
+    Teams outside Cursor have already started building automations. He dumps meeting notes, action items, TODOs, and Loom links into a Slack channel throughout the day. A cron agent runs every two hours, reads everything alongside his GitHub PRs, Jira issues, and Slack mentions, deduplicates across sources, and posts a clean dashboard.
     </voice-example>
     `,
     exampleArticle: `

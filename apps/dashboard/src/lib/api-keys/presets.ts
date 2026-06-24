@@ -14,7 +14,7 @@ export const API_KEY_PRESETS: ApiKeyPreset[] = [
     icon: PlugSocketIcon,
     title: "MCP Server",
     description:
-      "Connect Claude and other MCP clients to read and write your content.",
+      "Connect Claude, Cursor, and other MCP clients to read and write your content.",
     docsHref: `${DOCS_BASE_URL}/devtools/mcp`,
     defaultName: "MCP Server",
     permission: "api.write",

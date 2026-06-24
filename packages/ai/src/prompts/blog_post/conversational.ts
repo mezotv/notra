@@ -9,7 +9,7 @@ export function getConversationalBlogPostPrompt(): string {
     Be direct and specific. Use concrete examples. Avoid corporate speak and filler.
     `,
     voiceModel: `
-    A technically grounded, developer-first, and approachable style. Short sentences when they land harder. Longer ones when you need to explain. A builder talking to builders.
+    A blend of the stagewise and Cursor blogs: technically grounded, developer-first, and approachable. Short sentences when they land harder. Longer ones when you need to explain. A builder talking to builders.
     `,
     voiceTraits: `
     - Lead with a clear, punchy statement about what changed, then explain why it matters.
@@ -34,14 +34,14 @@ export function getConversationalBlogPostPrompt(): string {
     Your agent is not running blind in a terminal. It is looking at exactly what you are looking at, the page you are building, the reference you found, the component you want to change. It iterates with you, not ahead of you.
     </voice-example>
 
-    <voice-example source="developer-tools">
-    With the rise of coding agents, every engineer is able to produce much more code. But code review, monitoring, and maintenance have not sped up to the same extent yet. We have been using automations to help scale these other parts of the development lifecycle.
+    <voice-example source="Cursor">
+    With the rise of coding agents, every engineer is able to produce much more code. But code review, monitoring, and maintenance have not sped up to the same extent yet. At Cursor, we have been using automations to help scale these other parts of the development lifecycle.
 
     When invoked, the automated agent spins up a cloud sandbox, follows your instructions using the MCPs and models you have configured, and verifies its own output. Agents also have access to a memory tool that lets them learn from past runs and improve with repetition.
     </voice-example>
 
-    <voice-example source="developer-tools">
-    Our security review automation is triggered on every push to main. This way, the agent can work for longer to find more nuanced issues without blocking the PR. It audits the diff for security vulnerabilities, skips issues already discussed in the PR, and posts high-risk findings to Slack. This automation has caught multiple vulnerabilities and critical bugs before release.
+    <voice-example source="Cursor">
+    Our security review automation is triggered on every push to main. This way, the agent can work for longer to find more nuanced issues without blocking the PR. It audits the diff for security vulnerabilities, skips issues already discussed in the PR, and posts high-risk findings to Slack. This automation has caught multiple vulnerabilities and critical bugs at Cursor.
     </voice-example>
     `,
     exampleArticle: `
