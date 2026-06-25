@@ -12,7 +12,6 @@ import { redis } from "@notra/ai/utils/redis";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
-import { assertPublicHttpUrl } from "@notra/utils/url";
 import type { WorkflowContext } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
@@ -21,6 +20,7 @@ import { createRequestLogger } from "evlog";
 import { createAILogger } from "evlog/ai";
 import { flattenError, object, string } from "zod";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
+import { publicWebsiteUrlSchema } from "@/schemas/url";
 import type {
   BrandAnalysisPayload,
   ExtractionResult,
@@ -36,18 +36,7 @@ const PROGRESS_TTL = 300;
 
 const brandAnalysisPayloadSchema = object({
   organizationId: string().min(1),
-  url: string()
-    .url()
-    .superRefine((value, ctx) => {
-      try {
-        assertPublicHttpUrl(value);
-      } catch (error) {
-        ctx.addIssue({
-          code: "custom",
-          message: error instanceof Error ? error.message : "Invalid URL",
-        });
-      }
-    }),
+  url: publicWebsiteUrlSchema,
   voiceId: string().optional(),
   jobId: string().optional(),
 });

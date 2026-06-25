@@ -26,6 +26,7 @@ import {
 } from "../constants/context-dev";
 
 const CONTEXT_DEV_API_BASE_URL = "https://api.context.dev/v1";
+const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
 
 class ContextDevApiError extends Error {
   readonly code?: string;
@@ -151,6 +152,11 @@ function normalizeUrl(url: string): string {
   return parsed.toString();
 }
 
+function normalizeContextDevWebsiteUrl(url: string): string {
+  const trimmed = url.trim();
+  return HTTP_PROTOCOL_REGEX.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 function getCanonicalUrlKey(url: string): string {
   const parsed = new URL(url);
   parsed.hash = "";
@@ -257,20 +263,22 @@ function formatScrapedPagesForBrandAnalysis(
 export async function scrapeWebsiteForBrandAnalysis(
   url: string
 ): Promise<ContextDevScrapingResult> {
+  const websiteUrl = normalizeContextDevWebsiteUrl(url);
+
   try {
-    const sitemapResult = await crawlSitemapForBrandAnalysis(url).catch(
+    const sitemapResult = await crawlSitemapForBrandAnalysis(websiteUrl).catch(
       (error) => {
         console.warn("[Context.dev] Sitemap crawl failed for brand analysis", {
           error: error instanceof Error ? error.message : "Unknown error",
-          url,
+          url: websiteUrl,
         });
         return null;
       }
     );
 
-    const urls = pickBrandAnalysisUrls(url, sitemapResult?.urls ?? []);
+    const urls = pickBrandAnalysisUrls(websiteUrl, sitemapResult?.urls ?? []);
     const scrapeResult = await scrapeBrandAnalysisPages(
-      urls.length > 0 ? urls : [url]
+      urls.length > 0 ? urls : [websiteUrl]
     );
     const { pages } = scrapeResult;
 
@@ -330,12 +338,13 @@ async function crawlSitemapForBrandAnalysis(url: string) {
 export async function fetchWebpage(
   input: ContextDevFetchWebpageInput
 ): Promise<ContextDevFetchWebpageResponse> {
+  const url = normalizeContextDevWebsiteUrl(input.url);
   const params = new URLSearchParams({
     includeImages: String(input.includeImages ?? false),
     includeLinks: String(input.includeLinks ?? true),
     shortenBase64Images: "true",
     useMainContentOnly: String(input.onlyMainContent ?? true),
-    url: input.url,
+    url,
   });
 
   if (input.maxAgeMs !== undefined) {

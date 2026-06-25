@@ -32,7 +32,6 @@ import {
 } from "@/lib/brand-guidelines";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
-  analyzeBrandSchema,
   createReferenceSchema,
   fetchTweetSchema,
   importTweetsSchema,
@@ -106,7 +105,7 @@ const referenceInputSchema = voiceInputSchema.extend({
 
 const analyzeInputSchema = organizationIdInputSchema.extend({
   voiceId: z.string().optional(),
-  url: analyzeBrandSchema.shape.url,
+  url: publicWebsiteUrlSchema,
 });
 
 const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({

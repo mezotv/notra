@@ -28,9 +28,19 @@ import {
   TONE_OPTIONS,
 } from "@/constants/brand-identity";
 import type { BrandFormProps } from "@/types/brand-identity";
-import { getLanguageFlag } from "@/utils/brand-identity";
+import { getLanguageFlag, sanitizeBrandUrlInput } from "@/utils/brand-identity";
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
 import { normalizePublicWebsiteUrl } from "../../../../../../schemas/url";
+
+function getBrowserLocales(): readonly string[] {
+  if (typeof navigator === "undefined") {
+    return [];
+  }
+
+  return navigator.languages?.length
+    ? navigator.languages
+    : [navigator.language];
+}
 
 export function BrandForm({
   organizationId,
@@ -41,7 +51,7 @@ export function BrandForm({
 }: BrandFormProps) {
   const updateMutation = useUpdateBrandSettings(organizationId);
   const lastSavedData = useRef<string>(JSON.stringify(initialData));
-  const [userLocales, setUserLocales] = useState<readonly string[]>([]);
+  const [userLocales] = useState<readonly string[]>(getBrowserLocales);
 
   const debouncer = useAsyncDebouncer(
     async (values: typeof initialData) => {
@@ -104,12 +114,6 @@ export function BrandForm({
     };
   }, [onSavingChange]);
 
-  useEffect(() => {
-    setUserLocales(
-      navigator.languages?.length ? navigator.languages : [navigator.language]
-    );
-  }, []);
-
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <TitleCard heading="Company Profile">
@@ -143,7 +147,12 @@ export function BrandForm({
                   <input
                     className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none"
                     id={field.name}
-                    onBlur={field.handleBlur}
+                    onBlur={() => {
+                      field.handleChange(
+                        sanitizeBrandUrlInput(field.state.value)
+                      );
+                      field.handleBlur();
+                    }}
                     onChange={(e) => field.handleChange(e.target.value)}
                     placeholder="example.com"
                     type="text"
