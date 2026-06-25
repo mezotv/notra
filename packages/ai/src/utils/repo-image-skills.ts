@@ -28,96 +28,137 @@ import {
 } from "@notra/db/schema";
 import type { Box } from "@upstash/box";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { Data, Effect } from "effect";
 import { withBoxRetry } from "./repo-image-box";
 
 type RepoImageBox = Awaited<ReturnType<typeof Box.create>>;
+
+class RepoImageSkillInjectionError extends Data.TaggedError(
+  "RepoImageSkillInjectionError"
+)<{
+  readonly operation: string;
+  readonly cause: unknown;
+}> {}
+
+function toSkillInjectionError(operation: string) {
+  return (cause: unknown) =>
+    new RepoImageSkillInjectionError({ operation, cause });
+}
 
 export async function injectBrandIdentitySkill(params: {
   box: RepoImageBox;
   organizationId: string;
   brandIdentityId?: string;
 }) {
-  const skill = await buildBrandIdentitySkillContent({
-    organizationId: params.organizationId,
-    brandIdentityId: params.brandIdentityId,
-  });
-
-  if (!skill) {
-    return null;
-  }
-
-  await writeSandboxSkill({
-    box: params.box,
-    dir: BRAND_IDENTITY_SKILL_DIR,
-    path: BRAND_IDENTITY_SKILL_PATH,
-    content: skill.content,
-  });
-  await writeSandboxTextFile({
-    box: params.box,
-    dir: BRAND_IDENTITY_SKILL_DIR,
-    path: BRAND_IDENTITY_GUIDELINES_PATH,
-    content: skill.guidelines,
-  });
-  await downloadSandboxAssets({
-    box: params.box,
-    assets: skill.assets,
-  });
-
-  return skill.brandIdentityId;
+  return Effect.runPromise(injectBrandIdentitySkillEffect(params));
 }
 
 export async function injectHumanizerSkill(params: {
   box: RepoImageBox;
   organizationId: string;
 }) {
-  const skill = await db.query.skills.findFirst({
-    where: and(
-      eq(skills.organizationId, params.organizationId),
-      eq(skills.name, "humanizer")
-    ),
-  });
-
-  if (!skill) {
-    return;
-  }
-
-  await writeSandboxSkill({
-    box: params.box,
-    dir: HUMANIZER_SKILL_DIR,
-    path: HUMANIZER_SKILL_PATH,
-    content: renderSandboxSkillContent(skill),
-  });
+  await Effect.runPromise(injectHumanizerSkillEffect(params));
 }
 
-async function writeSandboxSkill(params: {
+const injectBrandIdentitySkillEffect = Effect.fn("injectBrandIdentitySkill")(
+  function* (params: {
+    box: RepoImageBox;
+    organizationId: string;
+    brandIdentityId?: string;
+  }) {
+    const skill = yield* Effect.tryPromise({
+      try: () =>
+        buildBrandIdentitySkillContent({
+          organizationId: params.organizationId,
+          brandIdentityId: params.brandIdentityId,
+        }),
+      catch: toSkillInjectionError("load brand identity skill"),
+    });
+
+    if (!skill) {
+      return null;
+    }
+
+    yield* writeSandboxSkillEffect({
+      box: params.box,
+      dir: BRAND_IDENTITY_SKILL_DIR,
+      path: BRAND_IDENTITY_SKILL_PATH,
+      content: skill.content,
+    });
+    yield* writeSandboxTextFileEffect({
+      box: params.box,
+      dir: BRAND_IDENTITY_SKILL_DIR,
+      path: BRAND_IDENTITY_GUIDELINES_PATH,
+      content: skill.guidelines,
+    });
+    yield* downloadSandboxAssetsEffect({
+      box: params.box,
+      assets: skill.assets,
+    });
+
+    return skill.brandIdentityId;
+  }
+);
+
+const injectHumanizerSkillEffect = Effect.fn("injectHumanizerSkill")(
+  function* (params: { box: RepoImageBox; organizationId: string }) {
+    const skill = yield* Effect.tryPromise({
+      try: () =>
+        db.query.skills.findFirst({
+          where: and(
+            eq(skills.organizationId, params.organizationId),
+            eq(skills.name, "humanizer")
+          ),
+        }),
+      catch: toSkillInjectionError("load humanizer skill"),
+    });
+
+    if (!skill) {
+      return;
+    }
+
+    yield* writeSandboxSkillEffect({
+      box: params.box,
+      dir: HUMANIZER_SKILL_DIR,
+      path: HUMANIZER_SKILL_PATH,
+      content: renderSandboxSkillContent(skill),
+    });
+  }
+);
+
+function writeSandboxSkillEffect(params: {
   box: RepoImageBox;
   dir: string;
   path: string;
   content: string;
 }) {
-  await writeSandboxTextFile(params);
+  return writeSandboxTextFileEffect(params);
 }
 
-async function writeSandboxTextFile(params: {
+function writeSandboxTextFileEffect(params: {
   box: RepoImageBox;
   dir: string;
   path: string;
   content: string;
 }) {
   const encoded = Buffer.from(params.content, "utf8").toString("base64");
-  await withBoxRetry(() =>
-    params.box.exec.command(
-      `mkdir -p ${params.dir} && printf '%s' '${encoded}' | base64 -d > ${params.path}`
-    )
-  );
+  return Effect.tryPromise({
+    try: () =>
+      withBoxRetry(() =>
+        params.box.exec.command(
+          `mkdir -p ${params.dir} && printf '%s' '${encoded}' | base64 -d > ${params.path}`
+        )
+      ),
+    catch: toSkillInjectionError(`write sandbox skill file ${params.path}`),
+  });
 }
 
-async function downloadSandboxAssets(params: {
+function downloadSandboxAssetsEffect(params: {
   box: RepoImageBox;
   assets: { path: string; url: string }[];
 }) {
   if (params.assets.length === 0) {
-    return;
+    return Effect.void;
   }
 
   const commands = params.assets
@@ -129,9 +170,15 @@ async function downloadSandboxAssets(params: {
     )
     .join("\n");
 
-  await withBoxRetry(() =>
-    params.box.exec.command(`mkdir -p ${BRAND_IDENTITY_ASSET_DIR}\n${commands}`)
-  );
+  return Effect.tryPromise({
+    try: () =>
+      withBoxRetry(() =>
+        params.box.exec.command(
+          `mkdir -p ${BRAND_IDENTITY_ASSET_DIR}\n${commands}`
+        )
+      ),
+    catch: toSkillInjectionError("download brand identity assets"),
+  });
 }
 
 function renderSandboxSkillContent(skill: typeof skills.$inferSelect) {
