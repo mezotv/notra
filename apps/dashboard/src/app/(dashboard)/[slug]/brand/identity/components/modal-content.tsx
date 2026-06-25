@@ -1,7 +1,6 @@
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/button";
 import type { ModalContentProps } from "@/types/brand-identity";
-import { sanitizeBrandUrlInput } from "@/utils/brand-identity";
 import { AnalysisStepper } from "./analysis-stepper";
 
 export function ModalContent({
@@ -40,7 +39,6 @@ export function ModalContent({
             className="h-10 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-muted-foreground"
             disabled={isPending}
             id="brand-url-input"
-            onBlur={() => setUrl(sanitizeBrandUrlInput(url))}
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !isPending) {

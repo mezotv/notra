@@ -42,7 +42,6 @@ import {
 import { useRefreshBrandGuidelinesAction } from "../../../../../lib/hooks/use-brand-guidelines";
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
-import { normalizePublicWebsiteUrl } from "../../../../../schemas/url";
 import { AddIdentityDialog } from "./components/add-identity-dialog";
 import { AnalysisStepper } from "./components/analysis-stepper";
 import { BrandIdentityHeader } from "./components/brand-identity-header";
@@ -220,7 +219,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       return;
     }
 
-    urlToAnalyze = normalizePublicWebsiteUrl(urlToAnalyze);
+    if (!urlToAnalyze.startsWith("https://")) {
+      urlToAnalyze = `https://${urlToAnalyze}`;
+    }
 
     const parseRes = z.url().safeParse(urlToAnalyze);
     if (!parseRes.success) {
