@@ -14,4 +14,5 @@ export const SCREENSHOT_FILENAME_PREFIX = "screenshot";
 export const LINE_SPLIT_REGEX = /\r?\n/;
 export const FRONTMATTER_START_REGEX = /^---\r?\n/;
 export const LEADING_DOT_REGEX = /^\./;
-export const URL_EXTENSION_REGEX = /\.([a-zA-Z0-9]{2,5})(?:[?#].*)?$/;
+export const PATH_EXTENSION_REGEX = /\.([a-zA-Z0-9]{2,5})$/;
+export const URL_QUERY_OR_HASH_REGEX = /[?#].*$/;

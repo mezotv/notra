@@ -11,8 +11,9 @@ import {
   HUMANIZER_SKILL_PATH,
   LEADING_DOT_REGEX,
   LINE_SPLIT_REGEX,
+  PATH_EXTENSION_REGEX,
   SCREENSHOT_FILENAME_PREFIX,
-  URL_EXTENSION_REGEX,
+  URL_QUERY_OR_HASH_REGEX,
 } from "@notra/ai/constants/repo-image-skills";
 import { db } from "@notra/db/drizzle";
 import {
@@ -443,7 +444,20 @@ function extensionForAsset(asset: {
       return subtype === "jpeg" ? "jpg" : subtype.toLowerCase();
     }
   }
-  return asset.url.match(URL_EXTENSION_REGEX)?.[1]?.toLowerCase() ?? "png";
+  return extensionFromAssetUrl(asset.url) ?? "png";
+}
+
+function extensionFromAssetUrl(url: string) {
+  try {
+    return new URL(url).pathname
+      .match(PATH_EXTENSION_REGEX)?.[1]
+      ?.toLowerCase();
+  } catch {
+    return url
+      .replace(URL_QUERY_OR_HASH_REGEX, "")
+      .match(PATH_EXTENSION_REGEX)?.[1]
+      ?.toLowerCase();
+  }
 }
 
 function shellQuote(value: string) {
