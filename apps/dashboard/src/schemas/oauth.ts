@@ -52,6 +52,16 @@ export const oauthConsentFormSchema = z.object({
   decision: z.enum(["approve", "deny"]),
 });
 
-export const oauthConsentResponseSchema = z.object({
-  redirect_uri: z.string().url(),
-});
+export const oauthConsentResponseSchema = z
+  .object({
+    redirect_uri: z.string().url().optional(),
+    url: z.string().url().optional(),
+  })
+  .transform((value) => ({
+    redirect_uri: value.redirect_uri ?? value.url,
+  }))
+  .pipe(
+    z.object({
+      redirect_uri: z.string().url(),
+    })
+  );

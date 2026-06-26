@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/button";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { auth } from "@/lib/auth/server";
 import { oauthSignedAuthorizeQuerySchema } from "@/schemas/oauth";
 import {
   buildOAuthAuthorizePath,
+  buildOAuthConsentPath,
   buildOAuthQueryString,
   hasSignedOAuthQuery,
 } from "@/utils/oauth";
@@ -37,7 +38,7 @@ export default async function OAuthAuthorizePage({
   const session = await getSession();
   if (!session?.user) {
     redirect(
-      `/login?returnTo=${encodeURIComponent(buildOAuthAuthorizePath(resolvedSearchParams))}`
+      `/login?returnTo=${encodeURIComponent(buildOAuthConsentPath(resolvedSearchParams))}`
     );
   }
 
@@ -61,14 +62,15 @@ export default async function OAuthAuthorizePage({
     })
     .catch(() => null);
 
-  if (!client || client.disabled) {
-    notFound();
+  if (client?.disabled) {
+    redirect(buildOAuthAuthorizePath(resolvedSearchParams));
   }
 
   const clientName =
-    getDisplayValue(client.client_name) ??
-    getDisplayValue(client.client_uri) ??
-    getDisplayValue(client.client_id);
+    getDisplayValue(client?.client_name) ??
+    getDisplayValue(client?.client_uri) ??
+    getDisplayValue(client?.client_id) ??
+    getDisplayValue(parsedQuery.data.client_id);
   const scope = getDisplayValue(resolvedSearchParams.scope);
 
   return (

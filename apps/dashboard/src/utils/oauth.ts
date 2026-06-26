@@ -35,3 +35,8 @@ export function buildOAuthAuthorizePath(searchParams: OAuthSearchParams) {
     ? `/api/auth/oauth2/authorize?${query}`
     : "/api/auth/oauth2/authorize";
 }
+
+export function buildOAuthConsentPath(searchParams: OAuthSearchParams) {
+  const query = buildOAuthQueryString(searchParams);
+  return query ? `/agent/auth/authorize?${query}` : "/agent/auth/authorize";
+}
