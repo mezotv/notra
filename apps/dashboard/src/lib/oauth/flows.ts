@@ -3,7 +3,11 @@ import {
   buildOAuthTokenResponse,
   verifyPkceChallenge,
 } from "@/lib/oauth/crypto";
-import { OAuthInvalidGrantError, OAuthStorageError } from "@/lib/oauth/errors";
+import {
+  OAuthCryptoError,
+  OAuthInvalidGrantError,
+  OAuthStorageError,
+} from "@/lib/oauth/errors";
 import {
   consumeOAuthAuthorizationCode,
   createOAuthAuthorizationCode,
@@ -84,7 +88,14 @@ export const exchangeAuthorizationCode = Effect.fn("exchangeAuthorizationCode")(
         }),
     });
 
-    return buildOAuthTokenResponse(tokenPayload, refreshToken);
+    return yield* Effect.tryPromise({
+      try: () => buildOAuthTokenResponse(tokenPayload, refreshToken),
+      catch: (cause) =>
+        new OAuthCryptoError({
+          operation: "sign_access_token",
+          cause,
+        }),
+    });
   }
 );
 
@@ -113,6 +124,13 @@ export const exchangeRefreshToken = Effect.fn("exchangeRefreshToken")(
       );
     }
 
-    return buildOAuthTokenResponse(rotated.payload, rotated.refreshToken);
+    return yield* Effect.tryPromise({
+      try: () => buildOAuthTokenResponse(rotated.payload, rotated.refreshToken),
+      catch: (cause) =>
+        new OAuthCryptoError({
+          operation: "sign_access_token",
+          cause,
+        }),
+    });
   }
 );

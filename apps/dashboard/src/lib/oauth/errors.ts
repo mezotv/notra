@@ -10,3 +10,8 @@ export class OAuthStorageError extends Data.TaggedError("OAuthStorageError")<{
   readonly operation: string;
   readonly cause: unknown;
 }> {}
+
+export class OAuthCryptoError extends Data.TaggedError("OAuthCryptoError")<{
+  readonly operation: string;
+  readonly cause: unknown;
+}> {}

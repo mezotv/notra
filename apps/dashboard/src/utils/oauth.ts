@@ -28,11 +28,16 @@ export function getOAuthClientDisplayName(clientId: string) {
 }
 
 export function getOAuthResourceDisplayName(resource: string) {
-  if (resource.includes("mcp.usenotra.com")) {
-    return "Notra MCP";
-  }
-  if (resource.includes("api.usenotra.com")) {
-    return "Notra API";
+  try {
+    const { hostname } = new URL(resource);
+    if (hostname === "mcp.usenotra.com") {
+      return "Notra MCP";
+    }
+    if (hostname === "api.usenotra.com") {
+      return "Notra API";
+    }
+  } catch {
+    return resource;
   }
   return resource;
 }

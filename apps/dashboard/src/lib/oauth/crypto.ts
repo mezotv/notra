@@ -1,8 +1,9 @@
 import {
   createHash,
-  createHmac,
   randomBytes,
+  scryptSync,
   timingSafeEqual,
+  webcrypto,
 } from "node:crypto";
 import { OAUTH_ACCESS_TOKEN_TTL_SECONDS } from "@/constants/oauth";
 import { getOAuthIssuer } from "@/lib/oauth/metadata";
@@ -32,8 +33,8 @@ export function createOpaqueOAuthToken() {
   return base64Url(randomBytes(32));
 }
 
-export function hashOAuthToken(token: string) {
-  return createHash("sha256").update(token).digest("hex");
+export function hashOAuthToken(credential: string) {
+  return scryptSync(credential, getSigningSecret(), 32).toString("hex");
 }
 
 function createPkceChallenge(verifier: string) {
@@ -46,7 +47,7 @@ export function verifyPkceChallenge(verifier: string, challenge: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-function signOAuthAccessToken(payload: OAuthRefreshTokenPayload): string {
+async function signOAuthAccessToken(payload: OAuthRefreshTokenPayload) {
   const now = Math.floor(Date.now() / 1000);
   const tokenPayload: OAuthAccessTokenPayload = {
     ...payload,
@@ -61,19 +62,28 @@ function signOAuthAccessToken(payload: OAuthRefreshTokenPayload): string {
   const encodedHeader = base64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const encodedPayload = base64Url(JSON.stringify(tokenPayload));
   const signingInput = `${encodedHeader}.${encodedPayload}`;
+  const key = await webcrypto.subtle.importKey(
+    "raw",
+    Buffer.from(getSigningSecret()),
+    { hash: "SHA-256", name: "HMAC" },
+    false,
+    ["sign"]
+  );
   const signature = base64Url(
-    createHmac("sha256", getSigningSecret()).update(signingInput).digest()
+    Buffer.from(
+      await webcrypto.subtle.sign("HMAC", key, Buffer.from(signingInput))
+    )
   );
 
   return `${signingInput}.${signature}`;
 }
 
-export function buildOAuthTokenResponse(
+export async function buildOAuthTokenResponse(
   payload: OAuthRefreshTokenPayload,
   refreshToken: string
-): OAuthTokenResponse {
+): Promise<OAuthTokenResponse> {
   return {
-    access_token: signOAuthAccessToken(payload),
+    access_token: await signOAuthAccessToken(payload),
     token_type: "Bearer",
     expires_in: OAUTH_ACCESS_TOKEN_TTL_SECONDS,
     scope: payload.scope,
