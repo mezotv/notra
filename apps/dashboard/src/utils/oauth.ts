@@ -1,47 +1,37 @@
-import type { OAuthAuthorizeRequest } from "@/types/oauth";
+type OAuthSearchParams = Record<string, string | string[] | undefined>;
 
-function truncateOAuthDisplayValue(value: string) {
-  return value.length > 80 ? `${value.slice(0, 77)}...` : value;
-}
+const OAUTH_SIGNATURE_PARAM = "sig";
+const OAUTH_CLIENT_ID_PARAM = "client_id";
 
-export function buildOAuthAuthorizePath(params: OAuthAuthorizeRequest) {
-  const searchParams = new URLSearchParams({
-    response_type: params.responseType,
-    client_id: params.clientId,
-    redirect_uri: params.redirectUri,
-    scope: params.scope,
-    code_challenge: params.codeChallenge,
-    code_challenge_method: params.codeChallengeMethod,
-    resource: params.resource,
-  });
+export function buildOAuthQueryString(searchParams: OAuthSearchParams) {
+  const params = new URLSearchParams();
 
-  if (params.state) {
-    searchParams.set("state", params.state);
-  }
-
-  return `/agent/auth/authorize?${searchParams.toString()}`;
-}
-
-export function getOAuthClientDisplayName(clientId: string) {
-  try {
-    const url = new URL(clientId);
-    return url.hostname || truncateOAuthDisplayValue(clientId);
-  } catch {
-    return truncateOAuthDisplayValue(clientId);
-  }
-}
-
-export function getOAuthResourceDisplayName(resource: string) {
-  try {
-    const { hostname } = new URL(resource);
-    if (hostname === "mcp.usenotra.com") {
-      return "Notra MCP";
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === "string") {
+      params.set(key, value);
+      continue;
     }
-    if (hostname === "api.usenotra.com") {
-      return "Notra API";
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, item);
+      }
     }
-  } catch {
-    return resource;
   }
-  return resource;
+
+  return params.toString();
+}
+
+export function hasSignedOAuthQuery(searchParams: OAuthSearchParams) {
+  return (
+    typeof searchParams[OAUTH_SIGNATURE_PARAM] === "string" &&
+    typeof searchParams[OAUTH_CLIENT_ID_PARAM] === "string"
+  );
+}
+
+export function buildOAuthAuthorizePath(searchParams: OAuthSearchParams) {
+  const query = buildOAuthQueryString(searchParams);
+  return query
+    ? `/api/auth/oauth2/authorize?${query}`
+    : "/api/auth/oauth2/authorize";
 }

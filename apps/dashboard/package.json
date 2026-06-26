@@ -17,6 +17,7 @@
     "@ai-sdk/react": "3.0.208",
     "@aws-sdk/client-s3": "^3.990.0",
     "@aws-sdk/s3-request-presigner": "^3.990.0",
+    "@better-auth/oauth-provider": "1.6.11",
     "@c15t/nextjs": "^2.0.4",
     "@calcom/embed-react": "^1.5.3",
     "@contextcompany/otel": "^1.0.16",

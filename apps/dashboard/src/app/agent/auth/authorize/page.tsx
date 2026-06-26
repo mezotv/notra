@@ -1,109 +1,48 @@
-import { db } from "@notra/db/drizzle";
-import { members, organizations } from "@notra/db/schema";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@notra/ui/components/ui/avatar";
-import { asc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/button";
-import { getSession } from "@/lib/auth/actions";
-import { isRegisteredOAuthRedirect } from "@/lib/oauth/storage";
-import { oauthAuthorizeSearchParamsSchema } from "@/schemas/oauth";
+import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import {
   buildOAuthAuthorizePath,
-  getOAuthClientDisplayName,
-  getOAuthResourceDisplayName,
+  buildOAuthQueryString,
+  hasSignedOAuthQuery,
 } from "@/utils/oauth";
 
 export const metadata: Metadata = {
   title: "Authorize OAuth Client",
 };
 
+function getDisplayValue(value: string | string[] | undefined) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+}
+
 export default async function OAuthAuthorizePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const rawSearchParams = await searchParams;
-  const parsed = oauthAuthorizeSearchParamsSchema.safeParse({
-    response_type: rawSearchParams.response_type,
-    client_id: rawSearchParams.client_id,
-    redirect_uri: rawSearchParams.redirect_uri,
-    scope: rawSearchParams.scope,
-    state: rawSearchParams.state,
-    code_challenge: rawSearchParams.code_challenge,
-    code_challenge_method: rawSearchParams.code_challenge_method,
-    resource: rawSearchParams.resource,
-  });
+  const resolvedSearchParams = await searchParams;
 
-  if (!parsed.success) {
-    return (
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Invalid OAuth request
-        </h1>
-        <p className="mt-2 text-muted-foreground text-sm">
-          The client sent an invalid authorization request. Start the login flow
-          again from your CLI or MCP client.
-        </p>
-      </div>
-    );
-  }
-
-  const isRegisteredRedirect = await isRegisteredOAuthRedirect(
-    parsed.data.client_id,
-    parsed.data.redirect_uri
-  );
-
-  if (!isRegisteredRedirect) {
-    return (
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Invalid OAuth client
-        </h1>
-        <p className="mt-2 text-muted-foreground text-sm">
-          The client is not registered for this callback URL. Register the
-          client again from your CLI or MCP client.
-        </p>
-      </div>
-    );
+  if (!hasSignedOAuthQuery(resolvedSearchParams)) {
+    redirect(buildOAuthAuthorizePath(resolvedSearchParams));
   }
 
   const session = await getSession();
   if (!session?.user) {
     redirect(
-      `/login?returnTo=${encodeURIComponent(
-        buildOAuthAuthorizePath({
-          responseType: parsed.data.response_type,
-          clientId: parsed.data.client_id,
-          redirectUri: parsed.data.redirect_uri,
-          scope: parsed.data.scope,
-          state: parsed.data.state,
-          codeChallenge: parsed.data.code_challenge,
-          codeChallengeMethod: parsed.data.code_challenge_method,
-          resource: parsed.data.resource,
-        })
-      )}`
+      `/login?returnTo=${encodeURIComponent(buildOAuthAuthorizePath(resolvedSearchParams))}`
     );
   }
 
-  const orgRows = await db
-    .select({
-      id: organizations.id,
-      name: organizations.name,
-      slug: organizations.slug,
-      logo: organizations.logo,
-    })
-    .from(members)
-    .innerJoin(organizations, eq(members.organizationId, organizations.id))
-    .where(eq(members.userId, session.user.id))
-    .orderBy(asc(organizations.name), asc(organizations.id));
-
-  const clientName = getOAuthClientDisplayName(parsed.data.client_id);
-  const resourceName = getOAuthResourceDisplayName(parsed.data.resource);
+  const organization = await getLastActiveOrganization();
+  const oauthQuery = buildOAuthQueryString(resolvedSearchParams);
+  const clientName =
+    getDisplayValue(resolvedSearchParams.client_id) ?? "this client";
+  const scope = getDisplayValue(resolvedSearchParams.scope);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
@@ -117,93 +56,25 @@ export default async function OAuthAuthorizePage({
             Authorize {clientName}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Pick the organization this client can access through {resourceName}.
+            This client is requesting access to your Notra account
+            {organization ? ` for ${organization.slug}` : ""}.
           </p>
         </div>
 
-        <input name="response_type" type="hidden" value="code" />
-        <input name="client_id" type="hidden" value={parsed.data.client_id} />
-        <input
-          name="redirect_uri"
-          type="hidden"
-          value={parsed.data.redirect_uri}
-        />
-        <input name="scope" type="hidden" value={parsed.data.scope} />
-        <input
-          name="code_challenge"
-          type="hidden"
-          value={parsed.data.code_challenge}
-        />
-        <input name="code_challenge_method" type="hidden" value="S256" />
-        <input name="resource" type="hidden" value={parsed.data.resource} />
-        {parsed.data.state ? (
-          <input name="state" type="hidden" value={parsed.data.state} />
+        <input name="oauth_query" type="hidden" value={oauthQuery} />
+
+        {scope ? (
+          <p className="text-muted-foreground text-xs">Scopes: {scope}</p>
         ) : null}
 
-        {orgRows.length > 0 ? (
-          <fieldset className="grid gap-2">
-            <legend className="font-medium text-sm leading-none">
-              Organization
-            </legend>
-            <div className="grid gap-2">
-              {orgRows.map((org) => (
-                <label
-                  className="flex cursor-pointer items-center gap-3 rounded-md border p-3 text-sm has-checked:border-primary"
-                  key={org.id}
-                >
-                  <input
-                    className="size-4"
-                    defaultChecked={org.id === orgRows[0]?.id}
-                    name="organization_id"
-                    required
-                    type="radio"
-                    value={org.id}
-                  />
-                  <Avatar className="size-7">
-                    <AvatarImage src={org.logo || undefined} />
-                    <AvatarFallback className="text-xs">
-                      {org.name.slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">
-                      {org.name}
-                    </span>
-                    <span className="block text-muted-foreground text-xs">
-                      {org.slug}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              Scopes: {parsed.data.scope}
-            </p>
-          </fieldset>
-        ) : (
-          <p className="text-muted-foreground text-sm">
-            You are not a member of any organization yet.
-          </p>
-        )}
-
         <div className="grid grid-cols-2 gap-3">
-          <Button
-            disabled={orgRows.length === 0}
-            name="decision"
-            type="submit"
-            value="approve"
-          >
+          <Button name="decision" type="submit" value="approve">
             Authorize
           </Button>
           <Button name="decision" type="submit" value="deny" variant="outline">
             Deny
           </Button>
         </div>
-
-        <p className="text-center text-muted-foreground text-xs">
-          Access tokens are short-lived. You can revoke refresh access from the
-          connected client.
-        </p>
       </form>
     </div>
   );

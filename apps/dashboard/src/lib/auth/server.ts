@@ -1,3 +1,4 @@
+import { oauthProvider } from "@better-auth/oauth-provider";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { redis } from "@notra/ai/utils/redis";
@@ -12,6 +13,7 @@ import {
   admin,
   emailOTP,
   haveIBeenPwned,
+  jwt,
   lastLoginMethod,
   organization,
 } from "better-auth/plugins";
@@ -19,6 +21,14 @@ import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import {
+  OAUTH_ACCESS_TOKEN_TTL_SECONDS,
+  OAUTH_AUTH_CODE_TTL_MS,
+  OAUTH_DEFAULT_SCOPES,
+  OAUTH_REFRESH_TOKEN_TTL_MS,
+  OAUTH_SUPPORTED_RESOURCES,
+  OAUTH_SUPPORTED_SCOPES,
+} from "@/constants/oauth";
 import {
   TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
   TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
@@ -121,6 +131,11 @@ if (!authSecret) {
   throw new Error("BETTER_AUTH_SECRET must be defined");
 }
 
+function getOAuthConsentReferenceId(session: Record<string, unknown>) {
+  const organizationId = session.activeOrganizationId;
+  return typeof organizationId === "string" ? organizationId : undefined;
+}
+
 function getTrustedOrigins() {
   return Array.from(
     new Set(
@@ -218,6 +233,7 @@ export const auth = betterAuth({
   },
   plugins: [
     admin(),
+    jwt(),
     emailOTP({
       otpLength: 6,
       expiresIn: 300,
@@ -272,6 +288,31 @@ export const auth = betterAuth({
 
           return validateAndNormalizeOrganizationSlug(organization);
         },
+      },
+    }),
+    oauthProvider({
+      loginPage: "/login",
+      consentPage: "/agent/auth/authorize",
+      scopes: [...OAUTH_SUPPORTED_SCOPES],
+      validAudiences: [...OAUTH_SUPPORTED_RESOURCES],
+      grantTypes: ["authorization_code", "refresh_token"],
+      accessTokenExpiresIn: OAUTH_ACCESS_TOKEN_TTL_SECONDS,
+      codeExpiresIn: OAUTH_AUTH_CODE_TTL_MS / 1000,
+      refreshTokenExpiresIn: OAUTH_REFRESH_TOKEN_TTL_MS / 1000,
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+      clientRegistrationDefaultScopes: [...OAUTH_DEFAULT_SCOPES],
+      clientRegistrationAllowedScopes: [...OAUTH_SUPPORTED_SCOPES],
+      customAccessTokenClaims: ({ referenceId }) =>
+        referenceId ? { organizationId: referenceId } : {},
+      silenceWarnings: {
+        oauthAuthServerConfig: true,
+      },
+      postLogin: {
+        page: "/callback",
+        consentReferenceId: ({ session }) =>
+          getOAuthConsentReferenceId(session),
+        shouldRedirect: () => false,
       },
     }),
     lastLoginMethod(),
