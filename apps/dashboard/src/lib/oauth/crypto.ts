@@ -1,7 +1,8 @@
 import {
   createHash,
+  createHmac,
   randomBytes,
-  scrypt,
+  randomUUID,
   timingSafeEqual,
   webcrypto,
 } from "node:crypto";
@@ -34,15 +35,10 @@ export function createOpaqueOAuthToken() {
 }
 
 export function hashOAuthToken(credential: string) {
-  return new Promise<string>((resolve, reject) => {
-    scrypt(credential, getSigningSecret(), 32, (error, derivedKey) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      resolve(derivedKey.toString("hex"));
-    });
-  });
+  // codeql[js/insufficient-password-hash]: OAuth codes and refresh tokens are 256-bit random lookup credentials, not user passwords. A keyed HMAC avoids offline lookup if the table leaks without making token endpoints CPU-expensive.
+  return createHmac("sha256", getSigningSecret())
+    .update(credential)
+    .digest("hex");
 }
 
 function createPkceChallenge(verifier: string) {
@@ -59,6 +55,7 @@ async function signOAuthAccessToken(payload: OAuthRefreshTokenPayload) {
   const now = Math.floor(Date.now() / 1000);
   const tokenPayload: OAuthAccessTokenPayload = {
     ...payload,
+    jti: randomUUID(),
     iss: getOAuthIssuer(),
     sub: payload.userId,
     aud: payload.resource,

@@ -6,6 +6,7 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { createOAuthCode } from "@/lib/oauth/flows";
+import { isRegisteredOAuthRedirect } from "@/lib/oauth/storage";
 import { oauthConsentFormSchema } from "@/schemas/oauth";
 
 function redirectWithParams(
@@ -18,11 +19,14 @@ function redirectWithParams(
       url.searchParams.set(key, value);
     }
   }
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(url, 303);
 }
 
 export async function POST(request: Request) {
-  const body = Object.fromEntries((await request.formData()).entries());
+  const body = await request
+    .formData()
+    .then((formData) => Object.fromEntries(formData.entries()))
+    .catch(() => ({}));
   const parsed = oauthConsentFormSchema.safeParse(body);
 
   if (!parsed.success) {
@@ -32,17 +36,26 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestHeaders = await headers();
+  const session = await getServerSession({ headers: requestHeaders });
+  if (!session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const isRegisteredRedirect = await isRegisteredOAuthRedirect(
+    parsed.data.client_id,
+    parsed.data.redirect_uri
+  );
+
+  if (!isRegisteredRedirect) {
+    return NextResponse.json({ error: "invalid_client" }, { status: 400 });
+  }
+
   if (parsed.data.decision === "deny") {
     return redirectWithParams(parsed.data.redirect_uri, {
       error: "access_denied",
       state: parsed.data.state,
     });
-  }
-
-  const requestHeaders = await headers();
-  const session = await getServerSession({ headers: requestHeaders });
-  if (!session.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

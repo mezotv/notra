@@ -9,10 +9,13 @@ export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const body = contentType.includes("application/json")
     ? await request.json().catch(() => ({}))
-    : Object.fromEntries((await request.formData()).entries());
+    : await request
+        .formData()
+        .then((formData) => Object.fromEntries(formData.entries()))
+        .catch(() => ({}));
 
   const parsed = oauthRevokeTokenSchema.safeParse(body);
-  if (parsed.success && parsed.data.token_type_hint !== "access_token") {
+  if (parsed.success) {
     await revokeOAuthRefreshToken(parsed.data.token);
   }
 

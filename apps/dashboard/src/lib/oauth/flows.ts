@@ -102,7 +102,7 @@ export const exchangeAuthorizationCode = Effect.fn("exchangeAuthorizationCode")(
 export const exchangeRefreshToken = Effect.fn("exchangeRefreshToken")(
   function* (input: { refreshToken: string; clientId?: string }) {
     const rotated = yield* Effect.tryPromise({
-      try: () => rotateOAuthRefreshToken(input.refreshToken),
+      try: () => rotateOAuthRefreshToken(input.refreshToken, input.clientId),
       catch: (cause) =>
         new OAuthStorageError({
           operation: "rotate_refresh_token",
@@ -113,14 +113,6 @@ export const exchangeRefreshToken = Effect.fn("exchangeRefreshToken")(
     if (!rotated) {
       return yield* Effect.fail(
         new OAuthInvalidGrantError({ message: "Invalid refresh token" })
-      );
-    }
-
-    if (input.clientId && input.clientId !== rotated.payload.clientId) {
-      return yield* Effect.fail(
-        new OAuthInvalidGrantError({
-          message: "Refresh token client mismatch",
-        })
       );
     }
 

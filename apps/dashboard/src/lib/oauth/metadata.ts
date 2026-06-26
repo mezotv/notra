@@ -8,11 +8,13 @@ import {
 const TRAILING_SLASH_REGEX = /\/$/;
 
 export function getOAuthIssuer() {
-  return (
-    process.env.BETTER_AUTH_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "https://app.usenotra.com"
-  ).replace(TRAILING_SLASH_REGEX, "");
+  const issuer = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!issuer) {
+    throw new Error("BETTER_AUTH_URL or NEXT_PUBLIC_APP_URL must be defined");
+  }
+
+  return issuer.replace(TRAILING_SLASH_REGEX, "");
 }
 
 export function buildOAuthAuthorizationServerMetadata() {

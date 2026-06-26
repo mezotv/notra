@@ -19,12 +19,21 @@ function oauthError(
   );
 }
 
+function tokenResponse(body: unknown) {
+  return Response.json(body, {
+    headers: { "Cache-Control": "no-store", Pragma: "no-cache" },
+  });
+}
+
 async function parseTokenRequest(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     return request.json().catch(() => ({}));
   }
-  return Object.fromEntries((await request.formData()).entries());
+  return request
+    .formData()
+    .then((formData) => Object.fromEntries(formData.entries()))
+    .catch(() => ({}));
 }
 
 export function OPTIONS() {
@@ -59,9 +68,7 @@ export async function POST(request: Request) {
       return oauthError("server_error", "Failed to rotate refresh token", 500);
     }
 
-    return Response.json(result, {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return tokenResponse(result);
   }
 
   const result = await Effect.runPromise(
@@ -89,7 +96,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return Response.json(result, {
-    headers: { "Cache-Control": "no-store" },
-  });
+  return tokenResponse(result);
 }

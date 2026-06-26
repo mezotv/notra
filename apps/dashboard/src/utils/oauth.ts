@@ -1,5 +1,9 @@
 import type { OAuthAuthorizeRequest } from "@/types/oauth";
 
+function truncateOAuthDisplayValue(value: string) {
+  return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+}
+
 export function buildOAuthAuthorizePath(params: OAuthAuthorizeRequest) {
   const searchParams = new URLSearchParams({
     response_type: params.responseType,
@@ -21,9 +25,9 @@ export function buildOAuthAuthorizePath(params: OAuthAuthorizeRequest) {
 export function getOAuthClientDisplayName(clientId: string) {
   try {
     const url = new URL(clientId);
-    return url.hostname;
+    return url.hostname || truncateOAuthDisplayValue(clientId);
   } catch {
-    return clientId.length > 80 ? `${clientId.slice(0, 77)}...` : clientId;
+    return truncateOAuthDisplayValue(clientId);
   }
 }
 

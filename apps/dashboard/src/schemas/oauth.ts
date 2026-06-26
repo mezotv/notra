@@ -3,6 +3,8 @@ import * as z from "zod";
 import {
   OAUTH_AUTHORIZATION_CODE_GRANT,
   OAUTH_CODE_CHALLENGE_METHOD,
+  OAUTH_DEFAULT_RESOURCE,
+  OAUTH_DEFAULT_SCOPE,
   OAUTH_REFRESH_TOKEN_GRANT,
   OAUTH_SUPPORTED_RESOURCE_SET,
   OAUTH_SUPPORTED_SCOPE_SET,
@@ -14,7 +16,7 @@ const scopeSchema = z
   .string()
   .trim()
   .optional()
-  .transform((value) => value || "api.read")
+  .transform((value) => value || OAUTH_DEFAULT_SCOPE)
   .refine(
     (value) =>
       value
@@ -37,7 +39,7 @@ export const oauthAuthorizeSearchParamsSchema = z.object({
     .trim()
     .url()
     .optional()
-    .transform((value) => value || "https://mcp.usenotra.com")
+    .transform((value) => value || OAUTH_DEFAULT_RESOURCE)
     .refine(
       (value) => OAUTH_SUPPORTED_RESOURCE_SET.has(value),
       "Unsupported OAuth resource"
@@ -71,6 +73,24 @@ export const oauthTokenRequestSchema = z.discriminatedUnion("grant_type", [
 export const oauthRevokeTokenSchema = z.object({
   token: z.string().trim().min(1),
   token_type_hint: z.enum(["access_token", "refresh_token"]).optional(),
+});
+
+export const oauthClientRegistrationSchema = z.object({
+  redirect_uris: z.array(z.string().trim().url()).min(1).max(20),
+  client_name: z.string().trim().min(1).max(200).optional(),
+  token_endpoint_auth_method: z.literal("none").optional(),
+  grant_types: z
+    .array(z.enum([OAUTH_AUTHORIZATION_CODE_GRANT, OAUTH_REFRESH_TOKEN_GRANT]))
+    .optional(),
+  response_types: z.array(z.literal("code")).optional(),
+  scope: scopeSchema,
+});
+
+export const oauthRegisteredClientPayloadSchema = z.object({
+  clientId: z.string().min(1),
+  redirectUris: z.array(z.string().url()).min(1),
+  clientName: z.string().min(1).optional(),
+  createdAt: z.string().datetime(),
 });
 
 export const oauthAuthorizationCodePayloadSchema = z.object({

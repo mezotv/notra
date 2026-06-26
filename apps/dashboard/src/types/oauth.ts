@@ -31,7 +31,15 @@ export interface OAuthRefreshTokenPayload {
   organizationId: string;
 }
 
+export interface OAuthRegisteredClient {
+  clientId: string;
+  redirectUris: string[];
+  clientName?: string;
+  createdAt: string;
+}
+
 export interface OAuthAccessTokenPayload extends OAuthRefreshTokenPayload {
+  jti: string;
   iss: string;
   sub: string;
   aud: string;

@@ -3,19 +3,23 @@ import { verifications } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import {
   OAUTH_AUTH_CODE_TTL_MS,
+  OAUTH_CLIENT_TTL_MS,
   OAUTH_REFRESH_TOKEN_TTL_MS,
 } from "@/constants/oauth";
 import { createOpaqueOAuthToken, hashOAuthToken } from "@/lib/oauth/crypto";
 import {
   oauthAuthorizationCodePayloadSchema,
   oauthRefreshTokenPayloadSchema,
+  oauthRegisteredClientPayloadSchema,
 } from "@/schemas/oauth";
 import type {
   OAuthAuthorizationCodePayload,
   OAuthRefreshTokenPayload,
+  OAuthRegisteredClient,
 } from "@/types/oauth";
 
 const CODE_IDENTIFIER_PREFIX = "oauth-code:";
+const CLIENT_IDENTIFIER_PREFIX = "oauth-client:";
 const REFRESH_IDENTIFIER_PREFIX = "oauth-refresh:";
 
 async function storeVerification(
@@ -54,7 +58,7 @@ export async function createOAuthAuthorizationCode(
   payload: OAuthAuthorizationCodePayload
 ) {
   const code = createOpaqueOAuthToken();
-  const codeHash = await hashOAuthToken(code);
+  const codeHash = hashOAuthToken(code);
   await storeVerification(
     `${CODE_IDENTIFIER_PREFIX}${codeHash}`,
     payload,
@@ -64,7 +68,7 @@ export async function createOAuthAuthorizationCode(
 }
 
 export async function consumeOAuthAuthorizationCode(code: string) {
-  const codeHash = await hashOAuthToken(code);
+  const codeHash = hashOAuthToken(code);
   const [row] = await db
     .delete(verifications)
     .where(eq(verifications.identifier, `${CODE_IDENTIFIER_PREFIX}${codeHash}`))
@@ -81,7 +85,7 @@ export async function createOAuthRefreshToken(
   payload: OAuthRefreshTokenPayload
 ) {
   const refreshToken = createOpaqueOAuthToken();
-  const refreshTokenHash = await hashOAuthToken(refreshToken);
+  const refreshTokenHash = hashOAuthToken(refreshToken);
   await storeVerification(
     `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`,
     payload,
@@ -90,9 +94,82 @@ export async function createOAuthRefreshToken(
   return refreshToken;
 }
 
-export async function rotateOAuthRefreshToken(refreshToken: string) {
-  const refreshTokenHash = await hashOAuthToken(refreshToken);
-  const [row] = await db
+export async function registerOAuthClient(input: {
+  redirectUris: string[];
+  clientName?: string;
+}) {
+  const clientId = createOpaqueOAuthToken();
+  const client: OAuthRegisteredClient = {
+    clientId,
+    redirectUris: input.redirectUris,
+    createdAt: new Date().toISOString(),
+  };
+  if (input.clientName) {
+    client.clientName = input.clientName;
+  }
+
+  await storeVerification(
+    `${CLIENT_IDENTIFIER_PREFIX}${clientId}`,
+    client,
+    new Date(Date.now() + OAUTH_CLIENT_TTL_MS)
+  );
+
+  return client;
+}
+
+async function getOAuthClient(clientId: string) {
+  const row = await db.query.verifications.findFirst({
+    where: eq(
+      verifications.identifier,
+      `${CLIENT_IDENTIFIER_PREFIX}${clientId}`
+    ),
+  });
+
+  if (!row || row.expiresAt.getTime() < Date.now()) {
+    return null;
+  }
+
+  return parseVerificationValue(row.value, oauthRegisteredClientPayloadSchema);
+}
+
+export async function isRegisteredOAuthRedirect(
+  clientId: string,
+  redirectUri: string
+) {
+  const client = await getOAuthClient(clientId);
+  return client?.redirectUris.includes(redirectUri) ?? false;
+}
+
+export async function rotateOAuthRefreshToken(
+  refreshToken: string,
+  expectedClientId?: string
+) {
+  const refreshTokenHash = hashOAuthToken(refreshToken);
+  const row = await db.query.verifications.findFirst({
+    where: eq(
+      verifications.identifier,
+      `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`
+    ),
+  });
+
+  if (!row || row.expiresAt.getTime() < Date.now()) {
+    if (row) {
+      await db
+        .delete(verifications)
+        .where(eq(verifications.identifier, row.identifier));
+    }
+    return null;
+  }
+
+  const payload = parseVerificationValue(
+    row.value,
+    oauthRefreshTokenPayloadSchema
+  );
+  if (!payload || (expectedClientId && expectedClientId !== payload.clientId)) {
+    return null;
+  }
+
+  const [deletedRow] = await db
     .delete(verifications)
     .where(
       eq(
@@ -102,15 +179,7 @@ export async function rotateOAuthRefreshToken(refreshToken: string) {
     )
     .returning();
 
-  if (!row || row.expiresAt.getTime() < Date.now()) {
-    return null;
-  }
-
-  const payload = parseVerificationValue(
-    row.value,
-    oauthRefreshTokenPayloadSchema
-  );
-  if (!payload) {
+  if (!deletedRow) {
     return null;
   }
 
@@ -119,7 +188,7 @@ export async function rotateOAuthRefreshToken(refreshToken: string) {
 }
 
 export async function revokeOAuthRefreshToken(refreshToken: string) {
-  const refreshTokenHash = await hashOAuthToken(refreshToken);
+  const refreshTokenHash = hashOAuthToken(refreshToken);
   await db
     .delete(verifications)
     .where(

@@ -1,15 +1,16 @@
 import { db } from "@notra/db/drizzle";
-import { organizations } from "@notra/db/schema";
+import { members, organizations } from "@notra/db/schema";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
-import { inArray } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/button";
-import { getAllUserOrganizations, getSession } from "@/lib/auth/actions";
+import { getSession } from "@/lib/auth/actions";
+import { isRegisteredOAuthRedirect } from "@/lib/oauth/storage";
 import { oauthAuthorizeSearchParamsSchema } from "@/schemas/oauth";
 import {
   buildOAuthAuthorizePath,
@@ -52,6 +53,25 @@ export default async function OAuthAuthorizePage({
     );
   }
 
+  const isRegisteredRedirect = await isRegisteredOAuthRedirect(
+    parsed.data.client_id,
+    parsed.data.redirect_uri
+  );
+
+  if (!isRegisteredRedirect) {
+    return (
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
+        <h1 className="font-semibold text-2xl tracking-tight">
+          Invalid OAuth client
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm">
+          The client is not registered for this callback URL. Register the
+          client again from your CLI or MCP client.
+        </p>
+      </div>
+    );
+  }
+
   const session = await getSession();
   if (!session?.user) {
     redirect(
@@ -70,17 +90,17 @@ export default async function OAuthAuthorizePage({
     );
   }
 
-  const memberships = await getAllUserOrganizations();
-  const orgRows =
-    memberships.length > 0
-      ? await db.query.organizations.findMany({
-          where: inArray(
-            organizations.id,
-            memberships.map((membership) => membership.id)
-          ),
-          columns: { id: true, name: true, slug: true, logo: true },
-        })
-      : [];
+  const orgRows = await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      slug: organizations.slug,
+      logo: organizations.logo,
+    })
+    .from(members)
+    .innerJoin(organizations, eq(members.organizationId, organizations.id))
+    .where(eq(members.userId, session.user.id))
+    .orderBy(asc(organizations.name), asc(organizations.id));
 
   const clientName = getOAuthClientDisplayName(parsed.data.client_id);
   const resourceName = getOAuthResourceDisplayName(parsed.data.resource);
