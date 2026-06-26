@@ -97,7 +97,10 @@ export function BrandForm({
   });
 
   const onSavingChangeRef = useRef(onSavingChange);
-  onSavingChangeRef.current = onSavingChange;
+
+  useEffect(() => {
+    onSavingChangeRef.current = onSavingChange;
+  });
 
   useEffect(() => {
     return () => {
