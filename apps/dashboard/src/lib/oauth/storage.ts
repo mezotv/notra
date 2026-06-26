@@ -58,7 +58,7 @@ export async function createOAuthAuthorizationCode(
   payload: OAuthAuthorizationCodePayload
 ) {
   const code = createOpaqueOAuthToken();
-  const codeHash = hashOAuthToken(code);
+  const codeHash = await hashOAuthToken(code);
   await storeVerification(
     `${CODE_IDENTIFIER_PREFIX}${codeHash}`,
     payload,
@@ -68,7 +68,7 @@ export async function createOAuthAuthorizationCode(
 }
 
 export async function consumeOAuthAuthorizationCode(code: string) {
-  const codeHash = hashOAuthToken(code);
+  const codeHash = await hashOAuthToken(code);
   const [row] = await db
     .delete(verifications)
     .where(eq(verifications.identifier, `${CODE_IDENTIFIER_PREFIX}${codeHash}`))
@@ -85,7 +85,7 @@ export async function createOAuthRefreshToken(
   payload: OAuthRefreshTokenPayload
 ) {
   const refreshToken = createOpaqueOAuthToken();
-  const refreshTokenHash = hashOAuthToken(refreshToken);
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   await storeVerification(
     `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`,
     payload,
@@ -144,7 +144,7 @@ export async function rotateOAuthRefreshToken(
   refreshToken: string,
   expectedClientId?: string
 ) {
-  const refreshTokenHash = hashOAuthToken(refreshToken);
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   const row = await db.query.verifications.findFirst({
     where: eq(
       verifications.identifier,
@@ -188,7 +188,7 @@ export async function rotateOAuthRefreshToken(
 }
 
 export async function revokeOAuthRefreshToken(refreshToken: string) {
-  const refreshTokenHash = hashOAuthToken(refreshToken);
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   await db
     .delete(verifications)
     .where(

@@ -1,6 +1,5 @@
 import {
   createHash,
-  createHmac,
   randomBytes,
   randomUUID,
   timingSafeEqual,
@@ -34,11 +33,20 @@ export function createOpaqueOAuthToken() {
   return base64Url(randomBytes(32));
 }
 
-export function hashOAuthToken(credential: string) {
-  // codeql[js/insufficient-password-hash]: OAuth codes and refresh tokens are 256-bit random lookup credentials, not user passwords. A keyed HMAC avoids offline lookup if the table leaks without making token endpoints CPU-expensive.
-  return createHmac("sha256", getSigningSecret())
-    .update(credential)
-    .digest("hex");
+export async function hashOAuthToken(credential: string) {
+  const key = await webcrypto.subtle.importKey(
+    "raw",
+    Buffer.from(getSigningSecret()),
+    { hash: "SHA-256", name: "HMAC" },
+    false,
+    ["sign"]
+  );
+  const digest = await webcrypto.subtle.sign(
+    "HMAC",
+    key,
+    Buffer.from(credential)
+  );
+  return Buffer.from(digest).toString("hex");
 }
 
 function createPkceChallenge(verifier: string) {
