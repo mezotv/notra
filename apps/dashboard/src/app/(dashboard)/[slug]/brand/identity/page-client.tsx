@@ -8,7 +8,7 @@ import {
 } from "@notra/ui/components/ui/alert";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
@@ -147,6 +147,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     dispatchUi({ type: "set-stored-voice-id", voiceId });
     setActiveVoiceId(voiceId);
   };
+
+  const handleSavingChange = useCallback((isSaving: boolean) => {
+    dispatchUi({ type: "set-is-saving", isSaving });
+  }, []);
+
+  const handleSavedAtChange = useCallback((savedAt: Date) => {
+    dispatchUi({ type: "set-last-saved-at-ms", savedAtMs: savedAt.getTime() });
+  }, []);
 
   const deleteTargetVoice = uiState.deleteTargetVoiceId
     ? voices.find((v) => v.id === uiState.deleteTargetVoiceId)
@@ -444,15 +452,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           onAddSitemapOpenChange={(open) =>
             dispatchUi({ type: "set-add-sitemap-open", open })
           }
-          onSavedAtChange={(savedAt) =>
-            dispatchUi({
-              type: "set-last-saved-at-ms",
-              savedAtMs: savedAt.getTime(),
-            })
-          }
-          onSavingChange={(isSaving) =>
-            dispatchUi({ type: "set-is-saving", isSaving })
-          }
+          onSavedAtChange={handleSavedAtChange}
+          onSavingChange={handleSavingChange}
           organizationId={organizationId}
           referenceCount={referenceCount}
           saveStatusText={saveStatusText}

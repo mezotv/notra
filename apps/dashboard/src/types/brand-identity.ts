@@ -1,5 +1,6 @@
 import type { SupportedLanguage } from "@notra/ai/constants/languages";
 import type { ToneProfile } from "@notra/ai/schemas/tone";
+import type { useBrandForm } from "@/lib/hooks/use-brand-form";
 import type { AffectedTrigger } from "@/schemas/integrations";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type {
@@ -196,6 +197,21 @@ export interface BrandFormProps {
   initialData: BrandFormInitialData;
   onSavingChange?: (isSaving: boolean) => void;
   onSavedAtChange?: (savedAt: Date) => void;
+}
+
+export type BrandFormApi = ReturnType<typeof useBrandForm>;
+
+export interface CompanyProfileFieldsProps {
+  form: BrandFormApi;
+}
+
+export interface ToneLanguageFieldsProps {
+  form: BrandFormApi;
+  userLocales: readonly string[];
+}
+
+export interface AudienceFieldProps {
+  form: BrandFormApi;
 }
 
 export type StepIconState = "pending" | "active" | "completed";
