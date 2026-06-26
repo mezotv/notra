@@ -74,7 +74,14 @@ export async function consumeOAuthAuthorizationCode(code: string) {
     .where(eq(verifications.identifier, `${CODE_IDENTIFIER_PREFIX}${codeHash}`))
     .returning();
 
-  if (!row || row.expiresAt.getTime() < Date.now()) {
+  if (!row) {
+    return null;
+  }
+
+  if (row.expiresAt.getTime() < Date.now()) {
+    await db
+      .delete(verifications)
+      .where(eq(verifications.identifier, row.identifier));
     return null;
   }
 
