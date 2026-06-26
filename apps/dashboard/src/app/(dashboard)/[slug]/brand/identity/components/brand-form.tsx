@@ -96,13 +96,14 @@ export function BrandForm({
     },
   });
 
-  useEffect(() => {
-    const handleSavingChange = onSavingChange;
+  const onSavingChangeRef = useRef(onSavingChange);
+  onSavingChangeRef.current = onSavingChange;
 
+  useEffect(() => {
     return () => {
-      handleSavingChange?.(false);
+      onSavingChangeRef.current?.(false);
     };
-  }, [onSavingChange]);
+  }, []);
 
   useEffect(() => {
     setUserLocales(
