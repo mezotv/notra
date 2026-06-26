@@ -56,7 +56,7 @@ export async function proxyOAuthRequest(request: Request, pathname: string) {
 
   const headers = new Headers(response.headers);
 
-  if (pathname === TOKEN_PATH && response.ok) {
+  if (pathname === TOKEN_PATH) {
     headers.set("Cache-Control", "no-store");
     headers.set("Pragma", "no-cache");
   }

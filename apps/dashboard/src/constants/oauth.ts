@@ -27,7 +27,5 @@ export const OAUTH_SUPPORTED_RESOURCE_SET: ReadonlySet<string> = new Set(
   OAUTH_SUPPORTED_RESOURCES
 );
 
-export const OAUTH_DEFAULT_RESOURCE = "https://mcp.usenotra.com";
-
 export const OAUTH_AUTHORIZATION_CODE_GRANT = "authorization_code";
 export const OAUTH_REFRESH_TOKEN_GRANT = "refresh_token";
