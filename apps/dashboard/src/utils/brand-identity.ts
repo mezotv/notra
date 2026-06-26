@@ -143,7 +143,9 @@ export function brandIdentityUiReducer(
     case "set-delete-target-voice-id":
       return { ...state, deleteTargetVoiceId: action.voiceId };
     case "set-is-saving":
-      return { ...state, isSaving: action.isSaving };
+      return state.isSaving === action.isSaving
+        ? state
+        : { ...state, isSaving: action.isSaving };
     case "set-last-saved-at-ms":
       return { ...state, lastSavedAtMs: action.savedAtMs };
     case "set-relative-time-now":
