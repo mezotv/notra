@@ -1,4 +1,6 @@
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth/server";
 import {
   oauthConsentFormSchema,
   oauthConsentResponseSchema,
@@ -23,30 +25,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const cookie = request.headers.get("cookie");
-  const response = await fetch(
-    new URL("/api/auth/oauth2/consent", request.url),
-    {
-      body: JSON.stringify({
+  const result = await auth.api
+    .oauth2Consent({
+      body: {
         accept: parsed.data.decision === "approve",
         oauth_query: parsed.data.oauth_query,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        ...(cookie ? { Cookie: cookie } : {}),
       },
-      method: "POST",
-    }
-  );
-
-  if (!response.ok) {
-    return new Response(response.body, {
-      headers: response.headers,
-      status: response.status,
+      headers: await headers(),
+    })
+    .catch(() => {
+      return null;
     });
-  }
 
-  const body = oauthConsentResponseSchema.safeParse(await response.json());
+  const body = oauthConsentResponseSchema.safeParse(result);
   if (!body.success) {
     return NextResponse.json(
       { error: "server_error", error_description: "Missing redirect URI" },
