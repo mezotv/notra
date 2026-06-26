@@ -54,8 +54,9 @@ export async function createOAuthAuthorizationCode(
   payload: OAuthAuthorizationCodePayload
 ) {
   const code = createOpaqueOAuthToken();
+  const codeHash = await hashOAuthToken(code);
   await storeVerification(
-    `${CODE_IDENTIFIER_PREFIX}${hashOAuthToken(code)}`,
+    `${CODE_IDENTIFIER_PREFIX}${codeHash}`,
     payload,
     new Date(Date.now() + OAUTH_AUTH_CODE_TTL_MS)
   );
@@ -63,14 +64,10 @@ export async function createOAuthAuthorizationCode(
 }
 
 export async function consumeOAuthAuthorizationCode(code: string) {
+  const codeHash = await hashOAuthToken(code);
   const [row] = await db
     .delete(verifications)
-    .where(
-      eq(
-        verifications.identifier,
-        `${CODE_IDENTIFIER_PREFIX}${hashOAuthToken(code)}`
-      )
-    )
+    .where(eq(verifications.identifier, `${CODE_IDENTIFIER_PREFIX}${codeHash}`))
     .returning();
 
   if (!row || row.expiresAt.getTime() < Date.now()) {
@@ -84,8 +81,9 @@ export async function createOAuthRefreshToken(
   payload: OAuthRefreshTokenPayload
 ) {
   const refreshToken = createOpaqueOAuthToken();
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   await storeVerification(
-    `${REFRESH_IDENTIFIER_PREFIX}${hashOAuthToken(refreshToken)}`,
+    `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`,
     payload,
     new Date(Date.now() + OAUTH_REFRESH_TOKEN_TTL_MS)
   );
@@ -93,12 +91,13 @@ export async function createOAuthRefreshToken(
 }
 
 export async function rotateOAuthRefreshToken(refreshToken: string) {
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   const [row] = await db
     .delete(verifications)
     .where(
       eq(
         verifications.identifier,
-        `${REFRESH_IDENTIFIER_PREFIX}${hashOAuthToken(refreshToken)}`
+        `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`
       )
     )
     .returning();
@@ -120,12 +119,13 @@ export async function rotateOAuthRefreshToken(refreshToken: string) {
 }
 
 export async function revokeOAuthRefreshToken(refreshToken: string) {
+  const refreshTokenHash = await hashOAuthToken(refreshToken);
   await db
     .delete(verifications)
     .where(
       eq(
         verifications.identifier,
-        `${REFRESH_IDENTIFIER_PREFIX}${hashOAuthToken(refreshToken)}`
+        `${REFRESH_IDENTIFIER_PREFIX}${refreshTokenHash}`
       )
     );
 }

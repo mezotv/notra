@@ -1,7 +1,7 @@
 import {
   createHash,
   randomBytes,
-  scryptSync,
+  scrypt,
   timingSafeEqual,
   webcrypto,
 } from "node:crypto";
@@ -34,7 +34,15 @@ export function createOpaqueOAuthToken() {
 }
 
 export function hashOAuthToken(credential: string) {
-  return scryptSync(credential, getSigningSecret(), 32).toString("hex");
+  return new Promise<string>((resolve, reject) => {
+    scrypt(credential, getSigningSecret(), 32, (error, derivedKey) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(derivedKey.toString("hex"));
+    });
+  });
 }
 
 function createPkceChallenge(verifier: string) {
