@@ -233,7 +233,13 @@ export const auth = betterAuth({
   },
   plugins: [
     admin(),
-    jwt(),
+    jwt({
+      schema: {
+        jwks: {
+          modelName: "jwk",
+        },
+      },
+    }),
     emailOTP({
       otpLength: 6,
       expiresIn: 300,
