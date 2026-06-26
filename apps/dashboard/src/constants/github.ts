@@ -7,8 +7,6 @@ export const GITHUB_URL_PATTERNS = [
 export const GITHUB_INSTALL_MESSAGE = "notra:github-installed";
 export const GITHUB_INSTALL_CHANNEL = "notra:github-install";
 
-export const GITHUB_INSTALL_POPUP_WIDTH = 1020;
-export const GITHUB_INSTALL_POPUP_HEIGHT = 700;
 export const GITHUB_INSTALL_STATE_TTL_SECONDS = 600;
 
 export const GITHUB_APP_PERMISSIONS = [

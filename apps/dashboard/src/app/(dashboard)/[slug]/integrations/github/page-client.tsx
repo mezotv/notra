@@ -200,7 +200,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
-  const openInstallPopup = async () => {
+  const openInstallTab = async () => {
     if (!organizationId) {
       return;
     }
@@ -215,9 +215,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const handleOpenConnect = () => setConnectOpen(true);
 
-  const handleConnect = openInstallPopup;
+  const handleConnect = openInstallTab;
 
-  const handleAddAccount = openInstallPopup;
+  const handleAddAccount = openInstallTab;
 
   const handleDisconnect = () => {
     disconnectMutation.mutate();

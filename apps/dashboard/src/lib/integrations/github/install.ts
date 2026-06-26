@@ -2,7 +2,7 @@
 
 import { Data, Effect } from "effect";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import { openGitHubInstallPopup } from "./popup";
+import { openGitHubInstallTab } from "./tab";
 
 class GitHubInstallStartError extends Data.TaggedError(
   "GitHubInstallStartError"
@@ -20,7 +20,8 @@ export function startGitHubInstall(params: {
       catch: (cause) => new GitHubInstallStartError({ cause }),
     }).pipe(
       Effect.map(({ url }) => {
-        return openGitHubInstallPopup(url);
+        openGitHubInstallTab(url);
+        return true;
       }),
       Effect.match({
         onFailure: () => false,
