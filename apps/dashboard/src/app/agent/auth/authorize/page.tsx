@@ -6,7 +6,8 @@ import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { auth } from "@/lib/auth/server";
 import { oauthSignedAuthorizeQuerySchema } from "@/schemas/oauth";
 import {
-  buildOAuthAuthorizePath,
+  buildOAuthConsentPath,
+  buildOAuthInternalAuthorizePath,
   buildOAuthQueryString,
   hasSignedOAuthQuery,
 } from "@/utils/oauth";
@@ -31,13 +32,13 @@ export default async function OAuthAuthorizePage({
   const resolvedSearchParams = await searchParams;
 
   if (!hasSignedOAuthQuery(resolvedSearchParams)) {
-    redirect(buildOAuthAuthorizePath(resolvedSearchParams));
+    redirect(buildOAuthInternalAuthorizePath(resolvedSearchParams));
   }
 
   const session = await getSession();
   if (!session?.user) {
     redirect(
-      `/login?returnTo=${encodeURIComponent(buildOAuthAuthorizePath(resolvedSearchParams))}`
+      `/login?returnTo=${encodeURIComponent(buildOAuthConsentPath(resolvedSearchParams))}`
     );
   }
 
@@ -48,7 +49,7 @@ export default async function OAuthAuthorizePage({
   );
 
   if (!parsedQuery.success) {
-    redirect(buildOAuthAuthorizePath(resolvedSearchParams));
+    redirect(buildOAuthInternalAuthorizePath(resolvedSearchParams));
   }
 
   const client = await auth.api

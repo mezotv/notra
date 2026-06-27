@@ -29,9 +29,17 @@ export function hasSignedOAuthQuery(searchParams: OAuthSearchParams) {
   );
 }
 
-export function buildOAuthAuthorizePath(searchParams: OAuthSearchParams) {
+function buildOAuthPath(pathname: string, searchParams: OAuthSearchParams) {
   const query = buildOAuthQueryString(searchParams);
-  return query
-    ? `/api/auth/oauth2/authorize?${query}`
-    : "/api/auth/oauth2/authorize";
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+export function buildOAuthConsentPath(searchParams: OAuthSearchParams) {
+  return buildOAuthPath("/agent/auth/authorize", searchParams);
+}
+
+export function buildOAuthInternalAuthorizePath(
+  searchParams: OAuthSearchParams
+) {
+  return buildOAuthPath("/api/auth/oauth2/authorize", searchParams);
 }

@@ -1,5 +1,5 @@
 import { LoginForm } from "@/components/auth/login-form";
-import { buildOAuthAuthorizePath, hasSignedOAuthQuery } from "@/utils/oauth";
+import { buildOAuthConsentPath, hasSignedOAuthQuery } from "@/utils/oauth";
 
 export default async function Login({
   searchParams,
@@ -10,7 +10,7 @@ export default async function Login({
   let returnTo: string | undefined;
 
   if (hasSignedOAuthQuery(resolvedSearchParams)) {
-    returnTo = buildOAuthAuthorizePath(resolvedSearchParams);
+    returnTo = buildOAuthConsentPath(resolvedSearchParams);
   } else if (typeof resolvedSearchParams.returnTo === "string") {
     returnTo = resolvedSearchParams.returnTo;
   }
