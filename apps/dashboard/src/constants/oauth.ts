@@ -21,6 +21,7 @@ export const OAUTH_DEFAULT_SCOPES = ["api.read"] as const;
 export const OAUTH_SUPPORTED_RESOURCES = [
   "https://api.usenotra.com",
   "https://mcp.usenotra.com",
+  "https://mcp.usenotra.com/mcp",
 ] as const;
 
 export const OAUTH_SUPPORTED_RESOURCE_SET: ReadonlySet<string> = new Set(
