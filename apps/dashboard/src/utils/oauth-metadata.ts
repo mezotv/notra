@@ -1,7 +1,13 @@
 import { oauthProviderAuthServerMetadata } from "@better-auth/oauth-provider";
+import {
+  OAUTH_METADATA_CACHE_CONTROL,
+  OAUTH_METADATA_ERROR_CACHE_CONTROL,
+  OAUTH_PUBLIC_AUTHORIZATION_ENDPOINT,
+  OAUTH_PUBLIC_REGISTRATION_ENDPOINT,
+  OAUTH_PUBLIC_REVOCATION_ENDPOINT,
+  OAUTH_PUBLIC_TOKEN_ENDPOINT,
+} from "@/constants/oauth";
 import type { auth } from "@/lib/auth/server";
-
-const METADATA_CACHE_CONTROL = "public, max-age=3600";
 
 function buildPublicOAuthEndpoint(request: Request, pathname: string) {
   return new URL(pathname, request.url).toString();
@@ -12,7 +18,7 @@ export function publicOAuthAuthorizationServerMetadata(
 ) {
   const getMetadata = oauthProviderAuthServerMetadata(authInstance, {
     headers: {
-      "Cache-Control": METADATA_CACHE_CONTROL,
+      "Cache-Control": OAUTH_METADATA_CACHE_CONTROL,
     },
   });
 
@@ -20,27 +26,40 @@ export function publicOAuthAuthorizationServerMetadata(
     const response = await getMetadata(request);
     const metadata = await response.json();
 
+    if (!response.ok) {
+      return Response.json(metadata, {
+        headers: {
+          "Cache-Control": OAUTH_METADATA_ERROR_CACHE_CONTROL,
+        },
+        status: response.status,
+      });
+    }
+
     return Response.json(
       {
         ...metadata,
         authorization_endpoint: buildPublicOAuthEndpoint(
           request,
-          "/agent/auth/authorize"
+          OAUTH_PUBLIC_AUTHORIZATION_ENDPOINT
         ),
-        token_endpoint: buildPublicOAuthEndpoint(request, "/agent/auth/token"),
+        token_endpoint: buildPublicOAuthEndpoint(
+          request,
+          OAUTH_PUBLIC_TOKEN_ENDPOINT
+        ),
         registration_endpoint: buildPublicOAuthEndpoint(
           request,
-          "/agent/auth/register"
+          OAUTH_PUBLIC_REGISTRATION_ENDPOINT
         ),
         revocation_endpoint: buildPublicOAuthEndpoint(
           request,
-          "/agent/auth/revoke"
+          OAUTH_PUBLIC_REVOCATION_ENDPOINT
         ),
       },
       {
         headers: {
-          "Cache-Control": METADATA_CACHE_CONTROL,
+          "Cache-Control": OAUTH_METADATA_CACHE_CONTROL,
         },
+        status: response.status,
       }
     );
   };

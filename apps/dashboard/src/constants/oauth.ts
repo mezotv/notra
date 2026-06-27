@@ -29,3 +29,11 @@ export const OAUTH_SUPPORTED_RESOURCE_SET: ReadonlySet<string> = new Set(
 
 export const OAUTH_AUTHORIZATION_CODE_GRANT = "authorization_code";
 export const OAUTH_REFRESH_TOKEN_GRANT = "refresh_token";
+
+export const OAUTH_METADATA_CACHE_CONTROL = "public, max-age=3600";
+export const OAUTH_METADATA_ERROR_CACHE_CONTROL = "no-store";
+
+export const OAUTH_PUBLIC_AUTHORIZATION_ENDPOINT = "/agent/auth/authorize";
+export const OAUTH_PUBLIC_TOKEN_ENDPOINT = "/agent/auth/token";
+export const OAUTH_PUBLIC_REGISTRATION_ENDPOINT = "/agent/auth/register";
+export const OAUTH_PUBLIC_REVOCATION_ENDPOINT = "/agent/auth/revoke";
