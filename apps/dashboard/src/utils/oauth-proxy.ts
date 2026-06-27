@@ -13,15 +13,26 @@ const FORWARDED_HEADER_NAMES = [
   "authorization",
   "content-type",
   "cookie",
+  "origin",
+  "referer",
   "user-agent",
 ] as const;
 
-function buildForwardedHeaders(request: Request) {
+export function buildOAuthForwardedHeaders(
+  source: Headers,
+  overrides?: HeadersInit
+) {
   const headers = new Headers();
 
   for (const name of FORWARDED_HEADER_NAMES) {
-    const value = request.headers.get(name);
+    const value = source.get(name);
     if (value) {
+      headers.set(name, value);
+    }
+  }
+
+  if (overrides) {
+    for (const [name, value] of new Headers(overrides)) {
       headers.set(name, value);
     }
   }
@@ -48,7 +59,7 @@ export async function proxyOAuthRequest(request: Request, pathname: string) {
   const response = await auth.handler(
     new Request(targetUrl, {
       body,
-      headers: buildForwardedHeaders(request),
+      headers: buildOAuthForwardedHeaders(request.headers),
       method: request.method,
       redirect: "manual",
     })

@@ -1,5 +1,8 @@
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
+import type {
+  KeyResponseData,
+  V2ApisListKeysResponseBody,
+} from "@unkey/api/models/components";
+import { z } from "zod";
 import { API_KEY_EXPIRATION_MS } from "@/constants/api-keys";
 import {
   getPermissionLevel,
@@ -77,18 +80,45 @@ function requireUnkeyConfig() {
   };
 }
 
+type ListKeysResult =
+  | V2ApisListKeysResponseBody
+  | AsyncIterable<{ result: V2ApisListKeysResponseBody }>;
+
+function isListKeysResponseBody(
+  result: ListKeysResult
+): result is V2ApisListKeysResponseBody {
+  return "data" in result && Array.isArray(result.data);
+}
+
+async function listOrganizationKeys(
+  client: NonNullable<typeof unkey>,
+  apiId: string,
+  organizationId: string
+) {
+  const result = (await client.apis.listKeys({
+    apiId,
+    externalId: organizationId,
+  })) as ListKeysResult;
+
+  if (isListKeysResponseBody(result)) {
+    return result.data;
+  }
+
+  const keys: KeyResponseData[] = [];
+  for await (const page of result) {
+    keys.push(...page.result.data);
+  }
+
+  return keys;
+}
+
 async function findOrganizationKey(
   client: NonNullable<typeof unkey>,
   apiId: string,
   organizationId: string,
   keyId: string
 ) {
-  const keysResult = await client.apis.listKeys({
-    apiId,
-    externalId: organizationId,
-  });
-
-  const keys = keysResult?.data ?? [];
+  const keys = await listOrganizationKeys(client, apiId, organizationId);
   return keys.find((key) => key.keyId === keyId) ?? null;
 }
 
@@ -103,12 +133,11 @@ export const apiKeysRouter = {
       });
 
       const { apiId, client } = requireUnkeyConfig();
-      const result = await client.apis.listKeys({
+      const keysData = await listOrganizationKeys(
+        client,
         apiId,
-        externalId: input.organizationId,
-      });
-
-      const keysData = result.data ?? [];
+        input.organizationId
+      );
 
       return keysData.map((key) => {
         const meta = key.meta ?? {};
