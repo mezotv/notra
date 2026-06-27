@@ -12,6 +12,7 @@ import {
   buildOAuthQueryString,
   hasSignedOAuthQuery,
 } from "@/utils/oauth";
+import { OAuthQueryInput } from "./oauth-query-input";
 
 export const metadata: Metadata = {
   title: "Authorize OAuth Client",
@@ -23,6 +24,10 @@ function getDisplayValue(value: string | string[] | undefined) {
   }
 
   return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+}
+
+function isExpiredOAuthQuery(exp: number) {
+  return exp * 1000 < Date.now();
 }
 
 function OAuthAuthorizeError({
@@ -95,25 +100,24 @@ export default async function OAuthAuthorizePage({
     );
   }
 
-  const client = await auth.api
-    .getOAuthClientPublicPrelogin({
-      body: {
-        client_id: parsedQuery.data.client_id,
-        oauth_query: oauthQuery,
-      },
-      headers: await headers(),
-    })
-    .catch(() => undefined);
-
-  if (typeof client === "undefined") {
+  if (isExpiredOAuthQuery(parsedQuery.data.exp)) {
     return (
       <OAuthAuthorizeError
         clientId={getDisplayValue(parsedQuery.data.client_id)}
-        description="Notra could not verify this authorization request. The link may be expired or the signed OAuth request may be invalid."
+        description="This authorization link has expired. Restart the OAuth flow from the client to generate a fresh authorization request."
         title="Authorization request expired"
       />
     );
   }
+
+  const client = await auth.api
+    .getOAuthClientPublicPrelogin({
+      body: {
+        client_id: parsedQuery.data.client_id,
+      },
+      headers: await headers(),
+    })
+    .catch(() => null);
 
   if (!client) {
     return (
@@ -158,7 +162,7 @@ export default async function OAuthAuthorizePage({
           </p>
         </div>
 
-        <input name="oauth_query" type="hidden" value={oauthQuery} />
+        <OAuthQueryInput />
 
         {scope ? (
           <p className="text-muted-foreground text-xs">Scopes: {scope}</p>
