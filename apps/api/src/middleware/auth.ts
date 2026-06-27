@@ -27,8 +27,10 @@ interface AuthOptions {
 }
 
 const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
-const DEFAULT_OAUTH_ISSUER = "https://app.usenotra.com";
-const OAUTH_JWKS_PATH = "/api/auth/jwks";
+const DEFAULT_OAUTH_BASE_URL = "https://app.usenotra.com";
+const OAUTH_BASE_PATH = "/api/auth";
+const OAUTH_JWKS_PATH = `${OAUTH_BASE_PATH}/jwks`;
+const TRAILING_SLASH_REGEX = /\/$/;
 const OAUTH_AUDIENCES = [
   API_URL,
   "https://mcp.usenotra.com",
@@ -55,7 +57,13 @@ type AuthResult =
   | { success: false; error: string; status: 401 | 403 | 503 };
 
 function getOAuthIssuer(c: Context) {
-  return c.env.BETTER_AUTH_URL ?? DEFAULT_OAUTH_ISSUER;
+  const baseUrl = (c.env.BETTER_AUTH_URL ?? DEFAULT_OAUTH_BASE_URL).replace(
+    TRAILING_SLASH_REGEX,
+    ""
+  );
+  return baseUrl.endsWith(OAUTH_BASE_PATH)
+    ? baseUrl
+    : `${baseUrl}${OAUTH_BASE_PATH}`;
 }
 
 function getOAuthJwksUrl(c: Context) {
