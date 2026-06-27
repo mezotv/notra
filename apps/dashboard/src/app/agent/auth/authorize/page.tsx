@@ -30,6 +30,35 @@ function isExpiredOAuthQuery(exp: number) {
   return exp * 1000 < Date.now();
 }
 
+function getOAuthClientLookupError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return "unknown";
+  }
+
+  const status =
+    "status" in error && typeof error.status === "number"
+      ? error.status
+      : undefined;
+  const body =
+    "body" in error && error.body && typeof error.body === "object"
+      ? error.body
+      : undefined;
+  const errorCode =
+    body && "error" in body && typeof body.error === "string"
+      ? body.error
+      : undefined;
+
+  if (status === 404 || error.message === "client not found") {
+    return "not-found";
+  }
+
+  if (status === 400 || status === 401 || errorCode === "invalid_signature") {
+    return "invalid-request";
+  }
+
+  return "unknown";
+}
+
 function OAuthAuthorizeError({
   clientId,
   description,
@@ -110,16 +139,31 @@ export default async function OAuthAuthorizePage({
     );
   }
 
-  const client = await auth.api
+  const clientResult = await auth.api
     .getOAuthClientPublicPrelogin({
       body: {
         client_id: parsedQuery.data.client_id,
+        oauth_query: oauthQuery,
       },
       headers: await headers(),
     })
-    .catch(() => null);
+    .then((client) => ({ client, error: null }))
+    .catch((error) => ({
+      client: null,
+      error: getOAuthClientLookupError(error),
+    }));
 
-  if (!client) {
+  if (!clientResult.client) {
+    if (clientResult.error === "invalid-request") {
+      return (
+        <OAuthAuthorizeError
+          clientId={getDisplayValue(parsedQuery.data.client_id)}
+          description="Notra could not verify this authorization request. Restart the OAuth flow from the client to generate a fresh signed request."
+          title="Invalid authorization request"
+        />
+      );
+    }
+
     return (
       <OAuthAuthorizeError
         clientId={getDisplayValue(parsedQuery.data.client_id)}
@@ -128,6 +172,8 @@ export default async function OAuthAuthorizePage({
       />
     );
   }
+
+  const client = clientResult.client;
 
   if (client.disabled) {
     return (
