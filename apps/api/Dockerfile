@@ -17,12 +17,13 @@ COPY packages/ai/package.json ./packages/ai/package.json
 COPY packages/content-generation/package.json ./packages/content-generation/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/email/package.json ./packages/email/package.json
+COPY packages/kiwi/package.json ./packages/kiwi/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/utils/package.json ./packages/utils/package.json
 
-# Install all workspace deps
-RUN bun install
+# Install all workspace deps. Root prepare scripts are local-dev only.
+RUN bun install --ignore-scripts
 
 # ─── Stage 2: build ──────────────────────────────────────────────────────────
 FROM deps AS builder
