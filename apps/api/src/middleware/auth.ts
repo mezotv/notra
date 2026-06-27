@@ -30,7 +30,7 @@ const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
 const DEFAULT_OAUTH_BASE_URL = "https://app.usenotra.com";
 const OAUTH_BASE_PATH = "/api/auth";
 const OAUTH_JWKS_PATH = `${OAUTH_BASE_PATH}/jwks`;
-const TRAILING_SLASH_REGEX = /\/$/;
+const TRAILING_SLASH_REGEX = /\/+$/;
 const OAUTH_AUDIENCES = [
   API_URL,
   "https://mcp.usenotra.com",
