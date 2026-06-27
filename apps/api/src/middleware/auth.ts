@@ -1,15 +1,22 @@
 import type { createDb } from "@notra/db/drizzle-http";
 import { Unkey } from "@unkey/api";
-import type { V2KeysVerifyKeyResponseData } from "@unkey/api/models/components";
 import type { Context, Next } from "hono";
 import {
+  createRemoteJWKSet,
+  type JWTPayload,
+  errors as joseErrors,
+  jwtVerify,
+} from "jose";
+import type { AuthData } from "../types/auth";
+import {
+  API_URL,
   AUTH_GUIDE_URL,
   RESOURCE_METADATA_URL,
 } from "../utils/agent-discovery";
 
 declare module "hono" {
   interface ContextVariableMap {
-    auth: V2KeysVerifyKeyResponseData;
+    auth: AuthData;
     db: ReturnType<typeof createDb>;
   }
 }
@@ -20,6 +27,18 @@ interface AuthOptions {
 }
 
 const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
+const DEFAULT_OAUTH_ISSUER = "https://app.usenotra.com";
+const OAUTH_JWKS_PATH = "/api/auth/jwks";
+const OAUTH_AUDIENCES = [
+  API_URL,
+  "https://mcp.usenotra.com",
+  "https://mcp.usenotra.com/mcp",
+] as const;
+const SCOPE_SEPARATOR_REGEX = /\s+/;
+const remoteJwksByUrl = new Map<
+  string,
+  ReturnType<typeof createRemoteJWKSet>
+>();
 
 function extractBearerToken(c: Context): string | null {
   const header = c.req.header("Authorization");
@@ -32,8 +51,132 @@ function extractBearerToken(c: Context): string | null {
 }
 
 type AuthResult =
-  | { success: true; auth: V2KeysVerifyKeyResponseData }
+  | { success: true; auth: AuthData }
   | { success: false; error: string; status: 401 | 403 | 503 };
+
+function getOAuthIssuer(c: Context) {
+  return c.env.BETTER_AUTH_URL ?? DEFAULT_OAUTH_ISSUER;
+}
+
+function getOAuthJwksUrl(c: Context) {
+  return new URL(OAUTH_JWKS_PATH, getOAuthIssuer(c)).toString();
+}
+
+function getRemoteJwks(jwksUrl: string): ReturnType<typeof createRemoteJWKSet> {
+  const cached = remoteJwksByUrl.get(jwksUrl);
+  if (cached) {
+    return cached;
+  }
+
+  const jwks = createRemoteJWKSet(new URL(jwksUrl), {
+    cacheMaxAge: 10 * 60 * 1000,
+    cooldownDuration: 30_000,
+  });
+  remoteJwksByUrl.set(jwksUrl, jwks);
+  return jwks;
+}
+
+function decodeJsonSegment(segment: string): unknown {
+  try {
+    const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(
+      normalized.length + ((4 - (normalized.length % 4)) % 4),
+      "="
+    );
+    return JSON.parse(Buffer.from(padded, "base64").toString("utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+function looksLikeJwt(token: string) {
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  const [headerSegment, payloadSegment] = parts as [string, string, string];
+  const header = decodeJsonSegment(headerSegment);
+  const payload = decodeJsonSegment(payloadSegment);
+  return (
+    typeof header === "object" &&
+    header !== null &&
+    typeof payload === "object" &&
+    payload !== null
+  );
+}
+
+function extractScopes(payload: JWTPayload): string[] {
+  const rawScopes = payload.scope ?? payload.scp ?? payload.scopes;
+  if (typeof rawScopes === "string") {
+    return rawScopes.split(SCOPE_SEPARATOR_REGEX).filter(Boolean);
+  }
+  if (Array.isArray(rawScopes)) {
+    return rawScopes.filter(
+      (scope): scope is string => typeof scope === "string" && scope.length > 0
+    );
+  }
+  return [];
+}
+
+function hasRequiredScope(scopes: string[], requiredScope?: string) {
+  if (!requiredScope) {
+    return true;
+  }
+
+  return scopes.includes(requiredScope) || scopes.includes("*");
+}
+
+async function verifyOAuthToken(
+  c: Context,
+  token: string,
+  requiredScope?: string
+): Promise<AuthResult> {
+  try {
+    const { payload } = await jwtVerify(
+      token,
+      getRemoteJwks(getOAuthJwksUrl(c)),
+      {
+        audience: [...OAUTH_AUDIENCES],
+        issuer: getOAuthIssuer(c),
+      }
+    );
+    const scopes = extractScopes(payload);
+    const organizationId = payload.organizationId;
+
+    if (!payload.sub) {
+      return { success: false, error: "Missing OAuth subject", status: 401 };
+    }
+
+    if (!(typeof organizationId === "string" && organizationId.length > 0)) {
+      return {
+        success: false,
+        error: "Missing OAuth organization",
+        status: 401,
+      };
+    }
+
+    if (!hasRequiredScope(scopes, requiredScope)) {
+      return { success: false, error: "Forbidden", status: 403 };
+    }
+
+    return {
+      success: true,
+      auth: {
+        type: "oauth",
+        userId: payload.sub,
+        scopes,
+        identity: { externalId: organizationId },
+      },
+    };
+  } catch (error) {
+    if (error instanceof joseErrors.JOSEError) {
+      return { success: false, error: error.code, status: 401 };
+    }
+
+    return { success: false, error: "Invalid OAuth token", status: 401 };
+  }
+}
 
 function getRecovery(status: 401 | 403 | 503) {
   if (status === 401) {
@@ -56,6 +199,14 @@ async function verifyRequestAuth(
 
   if (!apiKey) {
     return { success: false, error: "Missing API key", status: 401 };
+  }
+
+  if (looksLikeJwt(apiKey)) {
+    const oauthResult = await verifyOAuthToken(c, apiKey, options.permissions);
+    if (oauthResult.success) {
+      c.set("auth", oauthResult.auth);
+    }
+    return oauthResult;
   }
 
   try {
