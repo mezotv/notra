@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button, buttonVariants } from "@/components/button";
-import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { getConsentOrganizations, getSession } from "@/lib/auth/actions";
 import { auth } from "@/lib/auth/server";
 import { oauthSignedAuthorizeQuerySchema } from "@/schemas/oauth";
 import {
@@ -13,6 +13,7 @@ import {
   hasSignedOAuthQuery,
 } from "@/utils/oauth";
 import { OAuthQueryInput } from "./oauth-query-input";
+import { OAuthOrgSelector } from "./org-selector";
 
 export const metadata: Metadata = {
   title: "Authorize OAuth Client",
@@ -114,7 +115,8 @@ export default async function OAuthAuthorizePage({
     );
   }
 
-  const organization = await getLastActiveOrganization();
+  const { organizations, activeOrganizationId } =
+    await getConsentOrganizations();
   const oauthQuery = buildOAuthQueryString(resolvedSearchParams);
   const parsedQuery = oauthSignedAuthorizeQuerySchema.safeParse(
     Object.fromEntries(new URLSearchParams(oauthQuery).entries())
@@ -189,7 +191,6 @@ export default async function OAuthAuthorizePage({
     getDisplayValue(client.client_name) ??
     getDisplayValue(client.client_uri) ??
     getDisplayValue(client.client_id);
-  const scope = getDisplayValue(resolvedSearchParams.scope);
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
@@ -203,16 +204,16 @@ export default async function OAuthAuthorizePage({
             Authorize {clientName}
           </h1>
           <p className="text-muted-foreground text-sm">
-            This client is requesting access to your Notra account
-            {organization ? ` for ${organization.slug}` : ""}.
+            This client is requesting access to your Notra account.
           </p>
         </div>
 
         <OAuthQueryInput />
 
-        {scope ? (
-          <p className="text-muted-foreground text-xs">Scopes: {scope}</p>
-        ) : null}
+        <OAuthOrgSelector
+          initialOrganizationId={activeOrganizationId}
+          organizations={organizations}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <Button name="decision" type="submit" value="approve">

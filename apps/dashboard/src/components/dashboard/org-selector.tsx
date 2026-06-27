@@ -36,6 +36,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
+import type { OrganizationOptionsListProps } from "@/types/dashboard";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import {
@@ -197,6 +198,53 @@ function OrgSelectorSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
   );
 }
 
+export function OrganizationOptionsList({
+  organizations,
+  selectedOrganizationId,
+  onSelect,
+  disabled = false,
+}: OrganizationOptionsListProps) {
+  if (!organizations.length) {
+    return (
+      <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+        No organizations found
+      </div>
+    );
+  }
+
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+      {organizations.map((org) => (
+        <DropdownMenuItem
+          className="cursor-pointer gap-2 pr-8"
+          disabled={disabled}
+          key={org.id}
+          onClick={() => onSelect(org.id)}
+        >
+          <Avatar className="size-6 rounded-lg after:rounded-lg">
+            <AvatarImage src={org.logo || undefined} />
+            <AvatarFallback className="rounded-lg">
+              {org.name.slice(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+          <OverflowAwareText
+            className="text-sm"
+            text={org.name}
+            thresholdMultiplier={1.75}
+          />
+          {selectedOrganizationId === org.id ? (
+            <HugeiconsIcon
+              className="absolute right-2 size-4 text-muted-foreground"
+              icon={Tick02Icon}
+            />
+          ) : null}
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuGroup>
+  );
+}
+
 export function OrgSelector() {
   const router = useRouter();
   const pathname = usePathname();
@@ -270,6 +318,13 @@ export function OrgSelector() {
     }
   }
 
+  function handleSelectOrganization(organizationId: string) {
+    const organization = organizations.find((org) => org.id === organizationId);
+    if (organization) {
+      switchOrganization(organization);
+    }
+  }
+
   const showSkeleton = !activeOrganization && isLoading;
   const shouldShowTrigger = Boolean(activeOrganization) && !showSkeleton;
 
@@ -294,41 +349,12 @@ export function OrgSelector() {
             side={dropdownSide}
             sideOffset={4}
           >
-            {organizations?.length ? (
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-                {organizations.map((org) => (
-                  <DropdownMenuItem
-                    className="cursor-pointer gap-2 pr-8"
-                    disabled={isNavigating}
-                    key={org.id}
-                    onClick={() => switchOrganization(org)}
-                  >
-                    <Avatar className="size-6 rounded-lg after:rounded-lg">
-                      <AvatarImage src={org.logo || undefined} />
-                      <AvatarFallback className="rounded-lg">
-                        {org.name.slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <OverflowAwareText
-                      className="text-sm"
-                      text={org.name}
-                      thresholdMultiplier={1.75}
-                    />
-                    {activeOrganization?.id === org.id ? (
-                      <HugeiconsIcon
-                        className="absolute right-2 size-4 text-muted-foreground"
-                        icon={Tick02Icon}
-                      />
-                    ) : null}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuGroup>
-            ) : (
-              <div className="px-2 py-4 text-center text-muted-foreground text-sm">
-                No organizations found
-              </div>
-            )}
+            <OrganizationOptionsList
+              disabled={isNavigating}
+              onSelect={handleSelectOrganization}
+              organizations={organizations}
+              selectedOrganizationId={activeOrganization?.id}
+            />
 
             <DropdownMenuSeparator />
 

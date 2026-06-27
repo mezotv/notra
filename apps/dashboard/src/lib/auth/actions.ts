@@ -9,6 +9,7 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { auth } from "@/lib/auth/server";
 import { retryTransientDbError } from "@/lib/db/retry";
 import type { InvitationResponse } from "@/types/auth/actions";
+import type { OAuthConsentOrganizations } from "@/types/oauth";
 
 export async function validateOrganizationAccess(slug: string) {
   const session = await auth.api.getSession({
@@ -165,6 +166,43 @@ export async function getAllUserOrganizations() {
   }
 
   return getAllOrganizationsForUser(session.user.id);
+}
+
+export async function getConsentOrganizations(): Promise<OAuthConsentOrganizations> {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    return { organizations: [], activeOrganizationId: null };
+  }
+
+  const memberships = await retryTransientDbError(() =>
+    db.query.members.findMany({
+      where: eq(members.userId, session.user.id),
+      columns: { organizationId: true },
+      with: {
+        organizations: {
+          columns: { id: true, name: true, slug: true, logo: true },
+        },
+      },
+      orderBy: (m, { desc }) => [desc(m.createdAt)],
+    })
+  );
+
+  const userOrganizations = memberships
+    .map((membership) => membership.organizations)
+    .filter((organization) => organization !== null);
+
+  const lastActiveOrganization = await getLastActiveOrganizationForUser(
+    session.user.id
+  );
+
+  return {
+    organizations: userOrganizations,
+    activeOrganizationId:
+      lastActiveOrganization?.id ?? userOrganizations[0]?.id ?? null,
+  };
 }
 
 export async function getInvitationById(

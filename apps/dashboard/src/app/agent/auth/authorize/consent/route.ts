@@ -28,6 +28,23 @@ export async function POST(request: Request) {
     );
   }
 
+  if (parsed.data.decision === "approve" && parsed.data.organization_id) {
+    try {
+      await auth.api.setActiveOrganization({
+        body: { organizationId: parsed.data.organization_id },
+        headers: request.headers,
+      });
+    } catch {
+      return NextResponse.json(
+        {
+          error: "invalid_request",
+          error_description: "Invalid organization selection",
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const response = await auth.handler(
     new Request(new URL(OAUTH_CONSENT_PATH, INTERNAL_AUTH_ORIGIN), {
       body: JSON.stringify({

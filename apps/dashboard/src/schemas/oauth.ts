@@ -50,6 +50,7 @@ export const oauthConsentFormSchema = z.object({
       return parsed.success;
     }, "Invalid OAuth authorization query"),
   decision: z.enum(["approve", "deny"]),
+  organization_id: z.string().trim().min(1).optional(),
 });
 
 export const oauthConsentResponseSchema = z
