@@ -1,6 +1,6 @@
 import { createAxiomDrain } from "evlog/axiom";
 import { createEvlog } from "evlog/next";
-import { createInstrumentation } from "evlog/next/instrumentation/create";
+import { createInstrumentation } from "evlog/next/instrumentation";
 
 const service = process.env.NODE_ENV === "development" ? "notra-dev" : "notra";
 
