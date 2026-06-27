@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { notFound, redirect } from "next/navigation";
-import { Button } from "@/components/button";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Button, buttonVariants } from "@/components/button";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { auth } from "@/lib/auth/server";
 import { oauthSignedAuthorizeQuerySchema } from "@/schemas/oauth";
@@ -22,6 +23,43 @@ function getDisplayValue(value: string | string[] | undefined) {
   }
 
   return value.length > 80 ? `${value.slice(0, 77)}...` : value;
+}
+
+function OAuthAuthorizeError({
+  clientId,
+  description,
+  title,
+}: {
+  clientId?: string;
+  description: string;
+  title: string;
+}) {
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h1 className="font-semibold text-2xl tracking-tight">{title}</h1>
+          <p className="text-muted-foreground text-sm">{description}</p>
+        </div>
+
+        {clientId ? (
+          <p className="rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-muted-foreground text-xs">
+            client_id: {clientId}
+          </p>
+        ) : null}
+
+        <Link
+          className={buttonVariants({
+            className: "w-full",
+            variant: "outline",
+          })}
+          href="/dashboard"
+        >
+          Back to Notra
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 export default async function OAuthAuthorizePage({
@@ -49,7 +87,12 @@ export default async function OAuthAuthorizePage({
   );
 
   if (!parsedQuery.success) {
-    redirect(buildOAuthInternalAuthorizePath(resolvedSearchParams));
+    return (
+      <OAuthAuthorizeError
+        description="The authorization request is missing required OAuth parameters or includes unsupported scopes."
+        title="Invalid authorization request"
+      />
+    );
   }
 
   const client = await auth.api
@@ -60,10 +103,36 @@ export default async function OAuthAuthorizePage({
       },
       headers: await headers(),
     })
-    .catch(() => null);
+    .catch(() => undefined);
 
-  if (!client || client.disabled) {
-    notFound();
+  if (typeof client === "undefined") {
+    return (
+      <OAuthAuthorizeError
+        clientId={getDisplayValue(parsedQuery.data.client_id)}
+        description="Notra could not verify this authorization request. The link may be expired or the signed OAuth request may be invalid."
+        title="Authorization request expired"
+      />
+    );
+  }
+
+  if (!client) {
+    return (
+      <OAuthAuthorizeError
+        clientId={getDisplayValue(parsedQuery.data.client_id)}
+        description="Notra could not find an OAuth client for this request. Register the client again, then restart the authorization flow."
+        title="OAuth client not found"
+      />
+    );
+  }
+
+  if (client.disabled) {
+    return (
+      <OAuthAuthorizeError
+        clientId={getDisplayValue(client.client_id)}
+        description="This OAuth client is disabled and cannot request access to your Notra account."
+        title="OAuth client disabled"
+      />
+    );
   }
 
   const clientName =
