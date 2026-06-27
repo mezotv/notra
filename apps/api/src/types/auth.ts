@@ -4,6 +4,7 @@ type ApiKeyAuthData = V2KeysVerifyKeyResponseData;
 
 interface OAuthAuthData {
   type: "oauth";
+  keyId: string;
   userId: string;
   scopes: string[];
   identity: {

@@ -164,6 +164,7 @@ async function verifyOAuthToken(
       success: true,
       auth: {
         type: "oauth",
+        keyId: `oauth:${payload.sub}:${organizationId}`,
         userId: payload.sub,
         scopes,
         identity: { externalId: organizationId },
@@ -174,7 +175,11 @@ async function verifyOAuthToken(
       return { success: false, error: error.code, status: 401 };
     }
 
-    return { success: false, error: "Invalid OAuth token", status: 401 };
+    return {
+      success: false,
+      error: "OAuth verification unavailable",
+      status: 503,
+    };
   }
 }
 
