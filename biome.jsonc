@@ -67,5 +67,24 @@
         "useAriaPropsSupportedByRole": "warn"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      /* Vendored Remotion launch-video components rendered inside an aria-hidden artboard */
+      "includes": ["apps/web/src/components/animated-hero/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off"
+          },
+          "performance": {
+            "noImgElement": "off"
+          },
+          "correctness": {
+            "useImageSize": "off"
+          }
+        }
+      }
+    }
+  ]
 }
