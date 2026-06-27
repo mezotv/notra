@@ -14,12 +14,3 @@ export interface CursorVariantKeyframe {
   frame: number;
   variant: CursorVariant;
 }
-
-export interface ConfettiBurstProps {
-  originX: number;
-  originY: number;
-  startFrame: number;
-  count?: number;
-  spreadX?: number;
-  spreadY?: number;
-}
