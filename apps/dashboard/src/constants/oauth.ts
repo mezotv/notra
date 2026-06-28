@@ -18,6 +18,38 @@ export const OAUTH_SUPPORTED_SCOPE_SET: ReadonlySet<string> = new Set(
 
 export const OAUTH_DEFAULT_SCOPES = ["api.read"] as const;
 
+export const OAUTH_GRANT_QUERY_PARAM = "grant";
+
+export const OAUTH_SCOPE_LEVEL = {
+  none: "none",
+  read: "read",
+  write: "write",
+} as const;
+
+export const OAUTH_SCOPE_RESOURCES = [
+  {
+    id: "posts",
+    label: "Posts",
+    description: "Read and manage your posts and drafts",
+    readScope: "posts.read",
+    writeScope: "posts.write",
+  },
+  {
+    id: "skills",
+    label: "Skills",
+    description: "Read and manage your skills",
+    readScope: "skills.read",
+    writeScope: "skills.write",
+  },
+  {
+    id: "api",
+    label: "API",
+    description: "Programmatic access to the Notra API",
+    readScope: "api.read",
+    writeScope: "api.write",
+  },
+] as const;
+
 export const OAUTH_SUPPORTED_RESOURCES = [
   "https://api.usenotra.com",
   "https://mcp.usenotra.com",

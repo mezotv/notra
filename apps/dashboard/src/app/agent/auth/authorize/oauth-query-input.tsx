@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { OAUTH_GRANT_QUERY_PARAM } from "@/constants/oauth";
 
 const noop = () => undefined;
 
@@ -13,9 +14,10 @@ function getOAuthQuerySnapshot() {
     return "";
   }
 
-  return window.location.search.startsWith("?")
-    ? window.location.search.slice(1)
-    : window.location.search;
+  const params = new URLSearchParams(window.location.search);
+  params.delete(OAUTH_GRANT_QUERY_PARAM);
+
+  return params.toString();
 }
 
 function getServerOAuthQuerySnapshot() {

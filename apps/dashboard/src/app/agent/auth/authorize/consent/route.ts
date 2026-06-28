@@ -45,11 +45,16 @@ export async function POST(request: Request) {
     }
   }
 
+  const isApproved = parsed.data.decision === "approve";
+
   const response = await auth.handler(
     new Request(new URL(OAUTH_CONSENT_PATH, INTERNAL_AUTH_ORIGIN), {
       body: JSON.stringify({
-        accept: parsed.data.decision === "approve",
+        accept: isApproved,
         oauth_query: parsed.data.oauth_query,
+        ...(isApproved && parsed.data.scope !== undefined
+          ? { scope: parsed.data.scope }
+          : {}),
       }),
       headers: buildOAuthForwardedHeaders(request.headers, {
         accept: "application/json",

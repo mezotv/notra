@@ -15,6 +15,15 @@ const scopeSchema = z
   .pipe(z.array(z.enum(OAUTH_SUPPORTED_SCOPES)).min(1))
   .transform((value) => value.join(" "));
 
+const consentScopeSchema = z
+  .string()
+  .trim()
+  .transform((value) =>
+    value ? value.split(SCOPE_SEPARATOR_REGEX) : ([] as string[])
+  )
+  .pipe(z.array(z.enum(OAUTH_SUPPORTED_SCOPES)))
+  .transform((value) => value.join(" "));
+
 const resourceSchema = z
   .string()
   .trim()
@@ -51,6 +60,7 @@ export const oauthConsentFormSchema = z.object({
     }, "Invalid OAuth authorization query"),
   decision: z.enum(["approve", "deny"]),
   organization_id: z.string().trim().min(1).optional(),
+  scope: consentScopeSchema.optional(),
 });
 
 export const oauthConsentResponseSchema = z
