@@ -33,6 +33,10 @@
     {
       "source": "/sdk/getting-started",
       "destination": "/api/getting-started"
+    },
+    {
+      "source": "/integrations/mcp",
+      "destination": "/devtools/mcp"
     }
   ],
   "api": {

@@ -6,7 +6,7 @@ Notra exposes an authenticated API and MCP server for agents that generate, read
 
 ## Discover
 
-Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.well-known/api-catalog\`. The API resource server is \`https://api.usenotra.com\`, and its protected resource metadata is published at \`https://api.usenotra.com/.well-known/oauth-protected-resource\`. Unauthenticated API requests return a \`WWW-Authenticate\` header with a \`resource_metadata\` URL.
+Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.well-known/api-catalog\`. The API resource server is \`https://api.usenotra.com\`, and its protected resource metadata is published at \`https://api.usenotra.com/.well-known/oauth-protected-resource\`. The MCP resource server is \`https://mcp.usenotra.com\`, and its protected resource metadata is published at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`. Unauthenticated API and MCP requests return a \`WWW-Authenticate\` header with a \`resource_metadata\` URL.
 
 ## Pick a method
 
@@ -22,7 +22,7 @@ Call \`POST /agent/auth/claim\` to check the claim endpoint shape. It returns ma
 
 ## Use the credential
 
-Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. For MCP, use the same bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
+Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. For MCP clients that support OAuth discovery, start at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`; for manual clients, use the same bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
 
 ## Errors
 

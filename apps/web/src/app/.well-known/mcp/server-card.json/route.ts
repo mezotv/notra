@@ -1,4 +1,14 @@
-import { DOCS_URL, MCP_URL } from "@/utils/urls";
+import {
+  DOCS_URL,
+  MCP_PROTECTED_RESOURCE_METADATA_URL,
+  MCP_URL,
+} from "@/utils/urls";
+
+const AUTHENTICATION_DESCRIPTION = [
+  "OAuth 2.1 bearer access token.",
+  `Discover protected resource metadata at ${MCP_PROTECTED_RESOURCE_METADATA_URL}.`,
+  "Dashboard API keys are also supported for MCP clients that use manual bearer credentials.",
+].join(" ");
 
 export function GET() {
   const body = {
@@ -13,9 +23,9 @@ export function GET() {
     capabilities: ["tools"],
     authentication: {
       type: "bearer",
-      description: "Notra API key, created at https://app.usenotra.com",
+      description: AUTHENTICATION_DESCRIPTION,
     },
-    documentation: `${DOCS_URL}/integrations/mcp`,
+    documentation: `${DOCS_URL}/devtools/mcp`,
   };
 
   return new Response(JSON.stringify(body), {

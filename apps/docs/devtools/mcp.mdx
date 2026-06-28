@@ -1,6 +1,6 @@
 ---
 title: "MCP Server"
-description: "Connect the Notra MCP server to AI tools using bearer token authentication, with tools for posts, brand identities, integrations, and schedules."
+description: "Connect the Notra MCP server to AI tools using OAuth or API-key bearer authentication, with tools for posts, brand identities, integrations, and schedules."
 ---
 
 Notra provides a hosted MCP server at `https://mcp.usenotra.com/mcp` so AI agents can work with your Notra workspace directly.
@@ -9,7 +9,18 @@ With the MCP server connected, an AI agent can manage your brand identity, creat
 
 ## Authentication
 
-The MCP server requires a bearer API key in the `Authorization` header:
+The MCP server accepts bearer credentials in the `Authorization` header.
+OAuth clients, including ChatGPT Apps, can start with the protected resource
+metadata endpoint:
+
+```text
+https://mcp.usenotra.com/.well-known/oauth-protected-resource
+```
+
+That metadata advertises the OAuth authorization server, supported scopes, and
+supported bearer-token method.
+
+Clients that do not support OAuth discovery can use a Notra API key:
 
 ```text
 Authorization: Bearer YOUR_API_KEY
@@ -29,8 +40,9 @@ Create and manage API keys in [Authentication](/api/authentication).
 />
 
 <Tip>
-  For the best experience, use an API key with both read and write permissions so
-  the MCP server can complete the full set of actions your client requests.
+  For manual API-key connections, use an API key with both read and write
+  permissions so the MCP server can complete the full set of actions your client
+  requests.
 </Tip>
 
 ## Install
