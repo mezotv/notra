@@ -27,6 +27,7 @@ export function OAuthOrgSelector({
   const selectedOrganization =
     organizations.find((organization) => organization.id === selectedId) ??
     organizations[0];
+  const submittedOrganizationId = selectedOrganization?.id ?? "";
 
   if (!selectedOrganization) {
     return null;
@@ -39,7 +40,11 @@ export function OAuthOrgSelector({
       <span className="font-medium text-muted-foreground text-xs">
         Authorize for
       </span>
-      <input name="organization_id" type="hidden" value={selectedId} />
+      <input
+        name="organization_id"
+        type="hidden"
+        value={submittedOrganizationId}
+      />
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={!hasMultipleOrganizations}
@@ -69,10 +74,7 @@ export function OAuthOrgSelector({
             </button>
           }
         />
-        <DropdownMenuContent
-          align="start"
-          className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-        >
+        <DropdownMenuContent align="start" className="min-w-56 rounded-lg">
           <OrganizationOptionsList
             onSelect={setSelectedId}
             organizations={organizations}
