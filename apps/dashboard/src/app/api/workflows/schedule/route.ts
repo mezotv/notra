@@ -41,6 +41,10 @@ import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
+import {
+  clearAutomatedWorkflowPauseStateStep,
+  recordAutomatedWorkflowPauseStep,
+} from "@/lib/workflows/shared/auto-pause";
 import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import {
   parseLookbackWindow,
@@ -168,6 +172,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           `[Schedule] AI credits depleted for paid org ${trigger.organizationId}, canceling trigger ${triggerId}`,
           { balanceRemaining: aiCreditReservation.balanceRemaining }
         );
+
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-ai-credit-depleted-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || trigger.outputType,
+          reason: "ai_credits_depleted",
+          logPrefix: "Schedule",
+        });
       }
 
       await context.cancel();
@@ -587,6 +601,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           `[Schedule] Output type ${contentResult.outputType} is not implemented for trigger ${triggerId}. Canceling without retry.`
         );
 
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-unsupported-output-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || trigger.outputType,
+          reason: "workflow_errors",
+          logPrefix: "Schedule",
+        });
+
         await context.run(
           "cleanup-post-collection-unsupported-output-type",
           async () => {
@@ -753,6 +777,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             });
           });
         }
+
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-generation-failure-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || trigger.outputType,
+          reason: "workflow_errors",
+          logPrefix: "Schedule",
+        });
 
         await context.run(
           "cleanup-post-collection-generation-failure",
@@ -928,6 +962,13 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           }
         );
 
+        await clearAutomatedWorkflowPauseStateStep(context, {
+          manual,
+          stepName: "clear-skipped-workflow-pause-state",
+          triggerId,
+          logPrefix: "Schedule",
+        });
+
         await context.cancel();
         return;
       }
@@ -938,6 +979,15 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         console.warn("[Schedule] Content generation returned no posts", {
           triggerId,
           organizationId: trigger.organizationId,
+        });
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-empty-result-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || trigger.outputType,
+          reason: "workflow_errors",
+          logPrefix: "Schedule",
         });
         await context.run("cleanup-post-collection-empty-result", async () => {
           await deleteEmptyPostCollection({
@@ -955,6 +1005,15 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         console.warn("[Schedule] Missing primary post after generation", {
           triggerId,
           organizationId: trigger.organizationId,
+        });
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-missing-primary-post-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || trigger.outputType,
+          reason: "workflow_errors",
+          logPrefix: "Schedule",
         });
         await context.run(
           "cleanup-post-collection-missing-primary-post",
@@ -1170,6 +1229,13 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
         );
       }
 
+      await clearAutomatedWorkflowPauseStateStep(context, {
+        manual,
+        stepName: "clear-successful-workflow-pause-state",
+        triggerId,
+        logPrefix: "Schedule",
+      });
+
       return { success: true, triggerId, postId };
     } catch (error) {
       if (error instanceof WorkflowAbort) {
@@ -1223,6 +1289,16 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           collectionId,
           organizationId: trigger.organizationId,
         });
+      });
+
+      await recordAutomatedWorkflowPauseStep(context, {
+        manual,
+        stepName: "record-unexpected-error-pause",
+        triggerId,
+        organizationId: trigger.organizationId,
+        automationName: trigger.name.trim() || trigger.outputType,
+        reason: "workflow_errors",
+        logPrefix: "Schedule",
       });
 
       throw error;

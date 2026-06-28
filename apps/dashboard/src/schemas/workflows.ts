@@ -58,6 +58,16 @@ export type ContentEmailDigestPayload = z.infer<
   typeof contentEmailDigestPayloadSchema
 >;
 
+export const automatedWorkflowFailureStateSchema = z.object({
+  count: z.number().int().nonnegative(),
+  firstFailedAt: z.iso.datetime(),
+  lastFailedAt: z.iso.datetime(),
+});
+
+export type AutomatedWorkflowFailureState = z.infer<
+  typeof automatedWorkflowFailureStateSchema
+>;
+
 export const workflowLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
 
 export const nullableTriggerOutputConfigSchema = z.union([

@@ -8,6 +8,7 @@ import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-conten
 import { ScheduledContentSkippedEmail } from "@notra/email/emails/schedule-content-skipped";
 import { VerifyUserEmail } from "@notra/email/emails/verify";
 import { WelcomeEmail } from "@notra/email/emails/welcome";
+import { WorkflowPausedEmail } from "@notra/email/emails/workflow-paused";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { FEEDBACK_SENTIMENT_META } from "@notra/email/utils/feedback";
 import type { Resend } from "resend";
@@ -19,6 +20,7 @@ import type {
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
   SendScheduledContentSkippedEmailProps,
+  SendWorkflowPausedEmailProps,
 } from "@/types/email/send";
 
 // --- Retry & Idempotency ---
@@ -333,6 +335,47 @@ export async function sendAiCreditsDepletedEmail(
         creditsLink,
       }),
       tags: [{ name: "category", value: "ai-credits-depleted" }],
+    },
+    idempotencyKey
+  );
+}
+
+export async function sendWorkflowPausedEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    automationName,
+    organizationSlug,
+    reason,
+    pauseEventId,
+    subject,
+  }: SendWorkflowPausedEmailProps
+) {
+  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const settingsLink = `${appUrl}/${organizationSlug}/automation/schedules`;
+  const idempotencyKey = createHash("sha256")
+    .update(
+      `${recipientEmail}:${organizationSlug}:${automationName}:${reason}:${pauseEventId ?? Date.now()}`
+    )
+    .digest("hex")
+    .slice(0, 32);
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject: subject ?? "Your Notra workflow was paused",
+      react: WorkflowPausedEmail({
+        organizationName,
+        organizationSlug,
+        automationName,
+        reason,
+        settingsLink,
+      }),
+      tags: [{ name: "category", value: "workflow-paused" }],
     },
     idempotencyKey
   );

@@ -1,4 +1,5 @@
 import type { FeedbackSentiment } from "@notra/email/types/feedback";
+import type { WorkflowPausedReason } from "@notra/email/types/workflow-paused";
 
 export interface EmailResult {
   data: { id: string } | null;
@@ -49,6 +50,16 @@ export interface SendAiCreditsDepletedEmailProps {
   organizationName: string;
   organizationSlug: string;
   automationName: string;
+  subject?: string;
+}
+
+export interface SendWorkflowPausedEmailProps {
+  recipientEmail: string;
+  organizationName: string;
+  organizationSlug: string;
+  automationName: string;
+  reason: WorkflowPausedReason;
+  pauseEventId?: string;
   subject?: string;
 }
 

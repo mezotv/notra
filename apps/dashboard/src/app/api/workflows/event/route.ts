@@ -36,6 +36,10 @@ import {
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
+import {
+  clearAutomatedWorkflowPauseStateStep,
+  recordAutomatedWorkflowPauseStep,
+} from "@/lib/workflows/shared/auto-pause";
 import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import {
   parseLookbackWindow,
@@ -67,6 +71,7 @@ export const { POST } = serve<EventWorkflowPayload>(
 
     const { triggerId, eventType, eventAction, eventData, repositoryId } =
       parseResult.data;
+    const manual = eventData.manualRun === true;
 
     const trigger = await context.run<WorkflowTriggerData | null>(
       "fetch-trigger",
@@ -128,6 +133,16 @@ export const { POST } = serve<EventWorkflowPayload>(
           `[Event] AI credits depleted for paid org ${trigger.organizationId}, canceling trigger ${triggerId}`,
           { balanceRemaining: aiCreditReservation.balanceRemaining }
         );
+
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-ai-credit-depleted-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || `${eventType} event`,
+          reason: "ai_credits_depleted",
+          logPrefix: "Event",
+        });
       }
 
       await context.cancel();
@@ -363,6 +378,15 @@ export const { POST } = serve<EventWorkflowPayload>(
         console.warn(
           `[Event] Output type ${contentResult.outputType} not supported for trigger ${triggerId}`
         );
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-unsupported-output-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || `${eventType} event`,
+          reason: "workflow_errors",
+          logPrefix: "Event",
+        });
         await context.cancel();
         return;
       }
@@ -441,6 +465,15 @@ export const { POST } = serve<EventWorkflowPayload>(
         console.log(
           `[Event] Content generation failed for trigger ${triggerId}: ${contentResult.reason}`
         );
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-generation-failure-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || `${eventType} event`,
+          reason: "workflow_errors",
+          logPrefix: "Event",
+        });
         await context.cancel();
         return;
       }
@@ -519,6 +552,12 @@ export const { POST } = serve<EventWorkflowPayload>(
         console.log(
           `[Event] Content generation skipped for trigger ${triggerId}: ${contentResult.reason}`
         );
+        await clearAutomatedWorkflowPauseStateStep(context, {
+          manual,
+          stepName: "clear-skipped-workflow-pause-state",
+          triggerId,
+          logPrefix: "Event",
+        });
         await context.cancel();
         return;
       }
@@ -530,6 +569,15 @@ export const { POST } = serve<EventWorkflowPayload>(
           triggerId,
           organizationId: trigger.organizationId,
         });
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-empty-result-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || `${eventType} event`,
+          reason: "workflow_errors",
+          logPrefix: "Event",
+        });
         await context.cancel();
         return;
       }
@@ -540,6 +588,15 @@ export const { POST } = serve<EventWorkflowPayload>(
         console.warn("[Event] Missing primary post after generation", {
           triggerId,
           organizationId: trigger.organizationId,
+        });
+        await recordAutomatedWorkflowPauseStep(context, {
+          manual,
+          stepName: "record-missing-primary-post-pause",
+          triggerId,
+          organizationId: trigger.organizationId,
+          automationName: trigger.name.trim() || `${eventType} event`,
+          reason: "workflow_errors",
+          logPrefix: "Event",
         });
         await context.cancel();
         return;
@@ -736,6 +793,13 @@ export const { POST } = serve<EventWorkflowPayload>(
         });
       }
 
+      await clearAutomatedWorkflowPauseStateStep(context, {
+        manual,
+        stepName: "clear-successful-workflow-pause-state",
+        triggerId,
+        logPrefix: "Event",
+      });
+
       return { success: true, triggerId, postId, eventType };
     } catch (error) {
       if (error instanceof WorkflowAbort) {
@@ -777,6 +841,16 @@ export const { POST } = serve<EventWorkflowPayload>(
           }
         });
       }
+
+      await recordAutomatedWorkflowPauseStep(context, {
+        manual,
+        stepName: "record-unexpected-error-pause",
+        triggerId,
+        organizationId: trigger.organizationId,
+        automationName: trigger.name.trim() || `${eventType} event`,
+        reason: "workflow_errors",
+        logPrefix: "Event",
+      });
 
       throw error;
     }
