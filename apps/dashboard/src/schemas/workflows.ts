@@ -42,6 +42,22 @@ export const eventWorkflowPayloadSchema = z.object({
 
 export type EventWorkflowPayload = z.infer<typeof eventWorkflowPayloadSchema>;
 
+export const contentEmailDigestPayloadSchema = z.object({
+  digestKey: z.string().min(1),
+  recipientEmail: z.email(),
+  organizationId: z.string().min(1),
+  kind: z.enum([
+    "ai_credits_depleted",
+    "scheduled_content_created",
+    "scheduled_content_failed",
+    "scheduled_content_skipped",
+  ]),
+});
+
+export type ContentEmailDigestPayload = z.infer<
+  typeof contentEmailDigestPayloadSchema
+>;
+
 export const workflowLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
 
 export const nullableTriggerOutputConfigSchema = z.union([

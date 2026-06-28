@@ -19,7 +19,6 @@ import {
   postCollections,
 } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
-import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
@@ -33,11 +32,6 @@ import {
   trackScheduledContentSkipped,
 } from "@/lib/databuddy";
 import {
-  sendScheduledContentCreatedEmail,
-  sendScheduledContentFailedEmail,
-  sendScheduledContentSkippedEmail,
-} from "@/lib/email/send";
-import {
   addActiveGeneration,
   completeActiveGeneration,
   generateRunId,
@@ -47,6 +41,7 @@ import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
+import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import {
   parseLookbackWindow,
   parseTriggerOutputConfig,
@@ -742,31 +737,20 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           failureNotificationData.ownerEmails.length > 0
         ) {
           await context.run("send-failure-notification-emails", async () => {
-            const resend = getResend();
-            if (!resend) {
-              return;
-            }
-
             const scheduleName = trigger.name.trim() || trigger.outputType;
 
-            await Promise.allSettled(
-              failureNotificationData.ownerEmails.map((email) =>
-                sendScheduledContentFailedEmail(resend, {
-                  recipientEmail: email,
-                  organizationName: failureNotificationData.organizationName,
-                  organizationSlug: failureNotificationData.organizationSlug,
-                  scheduleName,
-                  reason: contentResult.reason,
-                }).then((result) => {
-                  if (result.error) {
-                    console.warn(
-                      `[Schedule] Failed to send failure notification to ${email}:`,
-                      result.error
-                    );
-                  }
-                })
-              )
-            );
+            await enqueueContentEmailDigest({
+              organizationId: trigger.organizationId,
+              recipientEmails: failureNotificationData.ownerEmails,
+              kind: "scheduled_content_failed",
+              event: {
+                organizationName: failureNotificationData.organizationName,
+                organizationSlug: failureNotificationData.organizationSlug,
+                scheduleName,
+                reason: contentResult.reason,
+              },
+              logPrefix: "Schedule",
+            });
           });
         }
 
@@ -917,31 +901,20 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
           skippedNotificationData.ownerEmails.length > 0
         ) {
           await context.run("send-skipped-notification-emails", async () => {
-            const resend = getResend();
-            if (!resend) {
-              return;
-            }
-
             const scheduleName = trigger.name.trim() || trigger.outputType;
 
-            await Promise.allSettled(
-              skippedNotificationData.ownerEmails.map((email) =>
-                sendScheduledContentSkippedEmail(resend, {
-                  recipientEmail: email,
-                  organizationName: skippedNotificationData.organizationName,
-                  organizationSlug: skippedNotificationData.organizationSlug,
-                  scheduleName,
-                  reason: contentResult.reason,
-                }).then((result) => {
-                  if (result.error) {
-                    console.warn(
-                      `[Schedule] Failed to send skipped notification to ${email}:`,
-                      result.error
-                    );
-                  }
-                })
-              )
-            );
+            await enqueueContentEmailDigest({
+              organizationId: trigger.organizationId,
+              recipientEmails: skippedNotificationData.ownerEmails,
+              kind: "scheduled_content_skipped",
+              event: {
+                organizationName: skippedNotificationData.organizationName,
+                organizationSlug: skippedNotificationData.organizationSlug,
+                scheduleName,
+                reason: contentResult.reason,
+              },
+              logPrefix: "Schedule",
+            });
           });
         }
 
@@ -1111,13 +1084,6 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
         await context.run("send-notification-emails", async () => {
-          const resend = getResend();
-          if (!resend) {
-            console.warn(
-              "[Schedule] Resend API key not configured, skipping notification emails"
-            );
-            return;
-          }
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
           const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
@@ -1130,27 +1096,21 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             ? `New content created from ${scheduleName}`
             : `Your ${scheduleName} schedule created new content`;
 
-          await Promise.allSettled(
-            notificationData.ownerEmails.map((email) =>
-              sendScheduledContentCreatedEmail(resend, {
-                recipientEmail: email,
-                organizationName: notificationData.organizationName,
-                scheduleName,
-                createdContent,
-                contentType: trigger.outputType,
-                contentOverviewLink,
-                organizationSlug: notificationData.organizationSlug,
-                subject,
-              }).then((result) => {
-                if (result.error) {
-                  console.warn(
-                    `[Schedule] Failed to send notification to ${email}:`,
-                    result.error
-                  );
-                }
-              })
-            )
-          );
+          await enqueueContentEmailDigest({
+            organizationId: trigger.organizationId,
+            recipientEmails: notificationData.ownerEmails,
+            kind: "scheduled_content_created",
+            event: {
+              organizationName: notificationData.organizationName,
+              organizationSlug: notificationData.organizationSlug,
+              scheduleName,
+              createdContent,
+              contentType: trigger.outputType,
+              contentOverviewLink,
+              subject,
+            },
+            logPrefix: "Schedule",
+          });
         });
       }
 

@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { withWorkflow } from "workflow/next";
 
 const C15T_BACKEND_URL = "https://notra-prod-notra.inth.app";
 
@@ -129,4 +130,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withWorkflow(nextConfig);

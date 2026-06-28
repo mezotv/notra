@@ -17,7 +17,6 @@ import {
   postCollections,
 } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
-import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
@@ -29,7 +28,6 @@ import {
   trackScheduledContentFailed,
   trackScheduledContentSkipped,
 } from "@/lib/databuddy";
-import { sendScheduledContentCreatedEmail } from "@/lib/email/send";
 import {
   addActiveGeneration,
   completeActiveGeneration,
@@ -38,6 +36,7 @@ import {
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
+import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import {
   parseLookbackWindow,
   parseTriggerOutputConfig,
@@ -710,11 +709,6 @@ export const { POST } = serve<EventWorkflowPayload>(
 
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
         await context.run("send-notification-emails", async () => {
-          const resend = getResend();
-          if (!resend) {
-            return;
-          }
-
           const baseUrl =
             process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
           const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
@@ -724,27 +718,21 @@ export const { POST } = serve<EventWorkflowPayload>(
           }));
           const triggerName = trigger.name.trim() || `${eventType} event`;
 
-          await Promise.allSettled(
-            notificationData.ownerEmails.map((email) =>
-              sendScheduledContentCreatedEmail(resend, {
-                recipientEmail: email,
-                organizationName: notificationData.organizationName,
-                scheduleName: triggerName,
-                createdContent,
-                contentType: trigger.outputType,
-                contentOverviewLink,
-                organizationSlug: notificationData.organizationSlug,
-                subject: `New content created from ${eventType} event`,
-              }).then((result) => {
-                if (result.error) {
-                  console.warn(
-                    `[Event] Failed to send notification to ${email}:`,
-                    result.error
-                  );
-                }
-              })
-            )
-          );
+          await enqueueContentEmailDigest({
+            organizationId: trigger.organizationId,
+            recipientEmails: notificationData.ownerEmails,
+            kind: "scheduled_content_created",
+            event: {
+              organizationName: notificationData.organizationName,
+              organizationSlug: notificationData.organizationSlug,
+              scheduleName: triggerName,
+              createdContent,
+              contentType: trigger.outputType,
+              contentOverviewLink,
+              subject: `New content created from ${eventType} event`,
+            },
+            logPrefix: "Event",
+          });
         });
       }
 

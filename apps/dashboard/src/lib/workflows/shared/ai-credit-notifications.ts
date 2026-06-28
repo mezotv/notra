@@ -1,8 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
-import { getResend } from "@notra/email/utils/resend";
 import { and, eq } from "drizzle-orm";
-import { sendAiCreditsDepletedEmail } from "@/lib/email/send";
+import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import type { SendAiCreditsDepletedEmailsParams } from "@/types/workflows/ai-credit-notifications";
 
 export async function sendAiCreditsDepletedEmails({
@@ -10,14 +9,6 @@ export async function sendAiCreditsDepletedEmails({
   automationName,
   logPrefix,
 }: SendAiCreditsDepletedEmailsParams) {
-  const resend = getResend();
-  if (!resend) {
-    console.warn(
-      `[${logPrefix}] Resend API key not configured, skipping AI credits depleted emails`
-    );
-    return;
-  }
-
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
     columns: { name: true, slug: true },
@@ -39,21 +30,15 @@ export async function sendAiCreditsDepletedEmails({
   const organizationName = org?.name ?? "Your organization";
   const organizationSlug = org?.slug ?? "";
 
-  await Promise.allSettled(
-    ownerEmails.map((email) =>
-      sendAiCreditsDepletedEmail(resend, {
-        recipientEmail: email,
-        organizationName,
-        organizationSlug,
-        automationName,
-      }).then((result) => {
-        if (result.error) {
-          console.warn(
-            `[${logPrefix}] Failed to send AI credits depleted notification to ${email}:`,
-            result.error
-          );
-        }
-      })
-    )
-  );
+  await enqueueContentEmailDigest({
+    organizationId,
+    recipientEmails: ownerEmails,
+    kind: "ai_credits_depleted",
+    event: {
+      organizationName,
+      organizationSlug,
+      automationName,
+    },
+    logPrefix,
+  });
 }
