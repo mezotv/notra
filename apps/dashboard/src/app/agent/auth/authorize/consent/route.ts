@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       Object.fromEntries(new URLSearchParams(parsed.data.oauth_query).entries())
     );
     const requestedScopes = parseScopeSet(oauthQuery.scope);
-    const selectedScopes = parseScopeSet(parsed.data.scope ?? oauthQuery.scope);
+    const selectedScopes = parseScopeSet(parsed.data.scope);
 
     if (requestedScopes.size > 0 && selectedScopes.size === 0) {
       return NextResponse.json(

@@ -121,14 +121,12 @@ function OrgSelectorTrigger({
   isCollapsed,
   isSwitching,
   activeOrganization,
-  isPro,
-  isBasic,
+  planBadge,
 }: {
   isCollapsed: boolean;
   isSwitching: boolean;
   activeOrganization: Organization | null;
-  isPro: boolean;
-  isBasic: boolean;
+  planBadge: "pro" | "basic" | null;
 }) {
   return (
     <DropdownMenuTrigger
@@ -163,11 +161,12 @@ function OrgSelectorTrigger({
                   className="font-medium text-sm"
                   text={activeOrganization?.name}
                 />
-                {isPro ? (
+                {planBadge === "pro" ? (
                   <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
                     PRO
                   </Badge>
-                ) : isBasic ? (
+                ) : null}
+                {planBadge === "basic" ? (
                   <Badge className="shrink-0 bg-blue-500/15 px-1.5 py-0 font-semibold text-[10px] text-blue-600 hover:bg-blue-500/15 dark:text-blue-400">
                     BASIC
                   </Badge>
@@ -271,6 +270,13 @@ export function OrgSelector() {
   const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
   const isBasic = activePlanId === "basic" || activePlanId === "basic_yearly";
   const hasActivePaidPlan = isPro || isBasic;
+  let planBadge: "pro" | "basic" | null = null;
+
+  if (isPro) {
+    planBadge = "pro";
+  } else if (isBasic) {
+    planBadge = "basic";
+  }
 
   async function switchOrganization(org: Organization) {
     if (org.slug === activeOrganization?.slug) {
@@ -335,10 +341,9 @@ export function OrgSelector() {
           {shouldShowTrigger ? (
             <OrgSelectorTrigger
               activeOrganization={activeOrganization}
-              isBasic={isBasic}
               isCollapsed={isCollapsed}
-              isPro={isPro}
               isSwitching={isNavigating}
+              planBadge={planBadge}
             />
           ) : (
             <OrgSelectorSkeleton isCollapsed={isCollapsed} />
