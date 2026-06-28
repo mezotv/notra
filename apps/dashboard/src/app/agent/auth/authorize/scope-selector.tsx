@@ -6,7 +6,6 @@ import {
   PermissionSelector,
 } from "@notra/ui/components/ui/permission-selector";
 import { useQueryState } from "nuqs";
-import { useMemo } from "react";
 import { OAUTH_GRANT_QUERY_PARAM } from "@/constants/oauth";
 import {
   applyScopeLevel,
@@ -23,10 +22,7 @@ export function OAuthScopeSelector({
     defaultValue: defaultGrant,
   });
 
-  const selected = useMemo(
-    () => new Set(grant.split(" ").filter(Boolean)),
-    [grant]
-  );
+  const selected = new Set(grant.split(" ").filter(Boolean));
 
   const handleLevelChange = (group: OAuthScopeGroup, levelValue: string) => {
     setGrant(serializeScopes(applyScopeLevel(selected, group, levelValue)));

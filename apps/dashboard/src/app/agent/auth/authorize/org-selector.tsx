@@ -74,7 +74,10 @@ export function OAuthOrgSelector({
             </button>
           }
         />
-        <DropdownMenuContent align="start" className="min-w-56 rounded-lg">
+        <DropdownMenuContent
+          align="start"
+          className="max-w-(--anchor-width) rounded-lg"
+        >
           <OrganizationOptionsList
             onSelect={setSelectedId}
             organizations={organizations}
