@@ -195,7 +195,7 @@ export const githubRouter = {
                 listGitHubAppRepositories(input.organizationId),
                 getSelectedGitHubAppRepositoryIds(
                   input.organizationId,
-                  installation.installationId
+                  installation.id
                 ),
               ]);
 

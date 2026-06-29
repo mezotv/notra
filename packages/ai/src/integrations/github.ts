@@ -108,6 +108,21 @@ async function createGitHubAppInstallationToken(installationId: string) {
   return data.token;
 }
 
+async function createGitHubAppInstallationTokenForRecord(recordId: string) {
+  const installation = await db.query.githubAppInstallations.findFirst({
+    where: eq(githubAppInstallations.id, recordId),
+    columns: {
+      installationId: true,
+    },
+  });
+
+  if (!installation) {
+    throw new Error("GitHub App installation not found");
+  }
+
+  return createGitHubAppInstallationToken(installation.installationId);
+}
+
 async function getGitHubAppInstallation(installationId: string) {
   const octokit = createOctokit(createGitHubAppJwt());
   const { data } = await octokit.request(
@@ -555,12 +570,12 @@ export async function listGitHubAppRepositories(organizationId: string) {
 
 export async function getSelectedGitHubAppRepositoryIds(
   organizationId: string,
-  installationId: string
+  githubAppInstallationId: string
 ) {
   const selected = await db.query.githubIntegrations.findMany({
     where: and(
       eq(githubIntegrations.organizationId, organizationId),
-      eq(githubIntegrations.githubAppInstallationId, installationId),
+      eq(githubIntegrations.githubAppInstallationId, githubAppInstallationId),
       eq(githubIntegrations.enabled, true)
     ),
     columns: {
@@ -601,10 +616,7 @@ export async function setSelectedGitHubAppRepositories(params: {
   const existing = await db.query.githubIntegrations.findMany({
     where: and(
       eq(githubIntegrations.organizationId, params.organizationId),
-      eq(
-        githubIntegrations.githubAppInstallationId,
-        installation.installationId
-      )
+      eq(githubIntegrations.githubAppInstallationId, installation.id)
     ),
     columns: {
       id: true,
@@ -663,7 +675,7 @@ export async function setSelectedGitHubAppRepositories(params: {
         createdByUserId: params.userId,
         displayName: repository.fullName,
         encryptedToken: null,
-        githubAppInstallationId: installation.installationId,
+        githubAppInstallationId: installation.id,
         githubRepositoryId: repository.id,
         githubRepositoryPrivate: repository.private,
         owner: repository.owner,
@@ -708,10 +720,7 @@ export async function deleteGitHubAppInstallationForOrganization(
     .where(
       and(
         eq(githubIntegrations.organizationId, organizationId),
-        eq(
-          githubIntegrations.githubAppInstallationId,
-          installation.installationId
-        )
+        eq(githubIntegrations.githubAppInstallationId, installation.id)
       )
     );
 
@@ -1120,7 +1129,7 @@ export async function getTokenForRepository(
   }
 
   if (integration.githubAppInstallationId) {
-    return createGitHubAppInstallationToken(
+    return createGitHubAppInstallationTokenForRecord(
       integration.githubAppInstallationId
     );
   }
@@ -1138,7 +1147,7 @@ export async function getTokenForIntegrationId(integrationId: string) {
   });
 
   if (integration?.githubAppInstallationId) {
-    return createGitHubAppInstallationToken(
+    return createGitHubAppInstallationTokenForRecord(
       integration.githubAppInstallationId
     );
   }
@@ -1200,7 +1209,7 @@ export async function getGitHubToolRepositoryContextByIntegrationId(
   let token: string | undefined;
 
   if (integration.githubAppInstallationId) {
-    token = await createGitHubAppInstallationToken(
+    token = await createGitHubAppInstallationTokenForRecord(
       integration.githubAppInstallationId
     );
   } else if (integration.encryptedToken) {
