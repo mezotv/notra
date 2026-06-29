@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import type { ChangeEvent, DragEvent } from "react";
-import { useReducer, useRef } from "react";
+import type { ChangeEvent, DragEvent, RefObject } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -45,7 +45,7 @@ import type {
 import {
   formatBrandGuidelineAssetFileSize,
   getBrandGuidelineAssetFormat,
-  getBrandGuidelineAssetName,
+  getBrandGuidelineAssetTypeLabel,
   getBrandGuidelineImageDimensions,
 } from "@/utils/brand-guideline-assets";
 
@@ -54,6 +54,7 @@ interface AssetDialogState {
   file: File | null;
   fileError: string | null;
   kind: BrandGuidelineAssetKind;
+  previewUrl: string | null;
   saving: boolean;
   variant: BrandGuidelineAssetVariant;
 }
@@ -63,6 +64,84 @@ function updateAssetDialogState(
   next: Partial<AssetDialogState>
 ) {
   return { ...state, ...next };
+}
+
+interface AssetFileFieldProps {
+  dragging: boolean;
+  file: File | null;
+  fileError: string | null;
+  fileInputRef: RefObject<HTMLInputElement | null>;
+  onDraggingChange: (dragging: boolean) => void;
+  onDrop: (event: DragEvent<HTMLButtonElement>) => void;
+  onInputChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  previewUrl: string | null;
+}
+
+function AssetFileField({
+  dragging,
+  file,
+  fileError,
+  fileInputRef,
+  onDraggingChange,
+  onDrop,
+  onInputChange,
+  previewUrl,
+}: AssetFileFieldProps) {
+  return (
+    <div className="space-y-2">
+      <Label>Asset file</Label>
+      <button
+        className={cn(
+          "flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
+          dragging
+            ? "border-primary bg-primary/5"
+            : "border-border hover:bg-muted/40"
+        )}
+        onClick={() => fileInputRef.current?.click()}
+        onDragLeave={() => onDraggingChange(false)}
+        onDragOver={(event) => {
+          event.preventDefault();
+          onDraggingChange(true);
+        }}
+        onDrop={onDrop}
+        type="button"
+      >
+        {previewUrl ? (
+          <span
+            aria-hidden="true"
+            className="h-14 w-full max-w-48 bg-center bg-contain bg-no-repeat"
+            style={{ backgroundImage: `url("${previewUrl}")` }}
+          />
+        ) : (
+          <HugeiconsIcon
+            className="size-5 text-muted-foreground"
+            icon={Image01Icon}
+          />
+        )}
+        <span className="font-medium text-sm">
+          {file
+            ? `Selected ${getBrandGuidelineAssetTypeLabel(file)}`
+            : "Drag and drop or click to upload"}
+        </span>
+        <span className="text-muted-foreground text-xs">
+          {file
+            ? `${getBrandGuidelineAssetTypeLabel(file)} · ${formatBrandGuidelineAssetFileSize(file.size)}`
+            : `${ACCEPTED_BRAND_ASSET_TYPES_LABEL}, max 5MB`}
+        </span>
+      </button>
+      <input
+        accept={ALLOWED_MIME_TYPES.join(",")}
+        aria-label="Upload asset file"
+        className="sr-only"
+        onChange={onInputChange}
+        ref={fileInputRef}
+        type="file"
+      />
+      {fileError ? (
+        <p className="text-destructive text-xs">{fileError}</p>
+      ) : null}
+    </div>
+  );
 }
 
 export function GuidelinesAssetEditDialog({
@@ -83,24 +162,33 @@ export function GuidelinesAssetEditDialog({
     file: null,
     fileError: null,
     kind: asset?.kind ?? presetKind ?? "logo",
+    previewUrl: null,
     saving: false,
     variant: asset?.variant ?? presetVariant ?? "light",
   });
-  const { dragging, file, fileError, kind, saving, variant } = state;
+  const { dragging, file, fileError, kind, previewUrl, saving, variant } =
+    state;
 
   const extension =
     (file ? getBrandGuidelineAssetFormat(file) : null) ??
     asset?.format ??
     "svg";
-  const fileName = getBrandGuidelineAssetName({
-    format: extension,
-    kind,
-    variant,
-  });
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleFile = (nextFile: File | null) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
     if (!nextFile) {
-      setState({ file: null, fileError: null });
+      setState({ file: null, fileError: null, previewUrl: null });
       return;
     }
 
@@ -108,6 +196,7 @@ export function GuidelinesAssetEditDialog({
       setState({
         file: null,
         fileError: `Use ${ACCEPTED_BRAND_ASSET_TYPES_LABEL}.`,
+        previewUrl: null,
       });
       return;
     }
@@ -116,11 +205,16 @@ export function GuidelinesAssetEditDialog({
       setState({
         file: null,
         fileError: "Brand assets must be 5MB or smaller.",
+        previewUrl: null,
       });
       return;
     }
 
-    setState({ file: nextFile, fileError: null });
+    setState({
+      file: nextFile,
+      fileError: null,
+      previewUrl: URL.createObjectURL(nextFile),
+    });
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -222,59 +316,18 @@ export function GuidelinesAssetEditDialog({
         </ResponsiveDialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Asset file</Label>
-            <button
-              className={cn(
-                "flex w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-6 text-center transition-colors",
-                dragging
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:bg-muted/40"
-              )}
-              onClick={() => fileInputRef.current?.click()}
-              onDragLeave={() => setState({ dragging: false })}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setState({ dragging: true });
-              }}
-              onDrop={handleDrop}
-              type="button"
-            >
-              <HugeiconsIcon
-                className="size-5 text-muted-foreground"
-                icon={Image01Icon}
-              />
-              <span className="font-medium text-sm">
-                {file ? file.name : "Drag and drop or click to upload"}
-              </span>
-              <span className="text-muted-foreground text-xs">
-                {file
-                  ? `${file.type || "image"} · ${formatBrandGuidelineAssetFileSize(file.size)}`
-                  : `${ACCEPTED_BRAND_ASSET_TYPES_LABEL}, max 5MB`}
-              </span>
-            </button>
-            <input
-              accept={ALLOWED_MIME_TYPES.join(",")}
-              aria-label="Upload asset file"
-              className="sr-only"
-              onChange={handleInputChange}
-              ref={fileInputRef}
-              type="file"
-            />
-            {fileError ? (
-              <p className="text-destructive text-xs">{fileError}</p>
-            ) : null}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Filename</Label>
-            <div className="rounded-lg border bg-muted/30 px-3 py-2">
-              <p className="truncate font-medium text-sm">{fileName}</p>
-              <p className="text-muted-foreground text-xs">
-                Generated from the asset kind, variant, and file type.
-              </p>
-            </div>
-          </div>
+          <AssetFileField
+            dragging={dragging}
+            file={file}
+            fileError={fileError}
+            fileInputRef={fileInputRef}
+            onDraggingChange={(nextDragging) =>
+              setState({ dragging: nextDragging })
+            }
+            onDrop={handleDrop}
+            onInputChange={handleInputChange}
+            previewUrl={previewUrl}
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

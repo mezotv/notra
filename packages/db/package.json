@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "seed:brand-identity": "bun run src/scripts/seed-brand-identity.ts"
   },
   "exports": {
     "./drizzle": "./src/drizzle.ts",

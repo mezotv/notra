@@ -97,7 +97,8 @@ export const uploadRouter = {
           Key: key,
           Body: sanitized,
           ContentType: SVG_MIME_TYPE,
-          ContentDisposition: "attachment",
+          ContentDisposition:
+            input.type === "brand_asset" ? "inline" : "attachment",
           CacheControl: "no-store",
         })
       );

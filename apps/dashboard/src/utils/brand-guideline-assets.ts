@@ -40,7 +40,29 @@ export function getBrandGuidelineAssetFormat(file: File) {
 }
 
 export function formatBrandGuidelineAssetFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes}B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)}KB`;
+  }
+
   return `${(bytes / 1024 / 1024).toFixed(2)}MB`;
+}
+
+export function getBrandGuidelineAssetTypeLabel(file: File) {
+  const format = getBrandGuidelineAssetFormat(file);
+
+  if (format === "svg") {
+    return "SVG";
+  }
+
+  if (format) {
+    return format.toUpperCase();
+  }
+
+  return "image";
 }
 
 export function getBrandGuidelineImageDimensions(file: File) {
