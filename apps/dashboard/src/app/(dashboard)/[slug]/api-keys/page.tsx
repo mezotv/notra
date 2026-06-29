@@ -78,7 +78,12 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from "nuqs";
-import { useEffect, useMemo, useReducer } from "react";
+import {
+  type ComponentType,
+  type ReactNode,
+  useEffect,
+  useReducer,
+} from "react";
 import { toast } from "sonner";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
@@ -120,6 +125,26 @@ const EDIT_FORM_DEFAULTS: ApiKeyFormValues = {
   scopes: [...API_KEY_DEFAULT_SCOPES],
   expiration: "never",
 };
+
+interface ApiKeyEditForm {
+  // TanStack Form's Field component carries deep generics that are local to the
+  // useForm call site. The dialog only renders fields from that instance.
+  Field: ComponentType<{
+    name: string;
+    validators?: unknown;
+    children: (field: {
+      handleBlur: () => void;
+      handleChange: (value: string | string[]) => void;
+      state: {
+        value: unknown;
+        meta: {
+          isTouched: boolean;
+          errors: unknown[];
+        };
+      };
+    }) => ReactNode;
+  }>;
+}
 
 type ApiKeyListItem = Omit<
   Pick<
@@ -242,6 +267,33 @@ function getDefaultEditExpiration(
   return "90d";
 }
 
+function getSortIcon(isSorted: false | "asc" | "desc") {
+  if (isSorted === "asc") {
+    return ArrowUp01Icon;
+  }
+  if (isSorted === "desc") {
+    return ArrowDown01Icon;
+  }
+  return ArrowUpDownIcon;
+}
+
+function sortApiKeys(
+  keys: ApiKeyListItem[],
+  createdSortOrder: false | "asc" | "desc"
+) {
+  if (createdSortOrder === false) {
+    return keys;
+  }
+
+  return keys
+    .slice()
+    .sort((a, b) =>
+      createdSortOrder === "desc"
+        ? b.createdAt - a.createdAt
+        : a.createdAt - b.createdAt
+    );
+}
+
 function ApiKeysTableContent({
   isPending,
   keys,
@@ -329,6 +381,403 @@ function ApiKeysTableContent({
   ));
 }
 
+function ApiKeysHeader({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="space-y-1">
+        <h1 className="font-bold text-3xl tracking-tight">API Keys</h1>
+        <p className="text-muted-foreground">
+          Manage API keys for programmatic access to your organization
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button className="gap-1.5" onClick={onCreate}>
+          <HugeiconsIcon className="size-4" icon={Add01Icon} />
+          Create API Key
+          <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  onClick={() =>
+                    window.open(
+                      "https://docs.usenotra.com/api/getting-started",
+                      "_blank",
+                      "noopener,noreferrer"
+                    )
+                  }
+                  size="icon"
+                  variant="outline"
+                />
+              }
+            >
+              <HugeiconsIcon className="size-4" icon={Book01Icon} />
+            </TooltipTrigger>
+            <TooltipContent>View API documentation</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
+}
+
+function ApiKeysTable({
+  actionsDisabled,
+  createdSortOrder,
+  isPending,
+  keys,
+  onDelete,
+  onEdit,
+  onSort,
+}: {
+  actionsDisabled: boolean;
+  createdSortOrder: false | "asc" | "desc";
+  isPending: boolean;
+  keys: ApiKeyListItem[];
+  onDelete: (key: ApiKeyListItem) => void;
+  onEdit: (key: ApiKeyListItem) => void;
+  onSort: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Key</TableHead>
+            <TableHead>Permission</TableHead>
+            <TableHead className="w-35">Expires</TableHead>
+            <TableHead className="w-35">
+              <Button className="-ml-4" onClick={onSort} variant="ghost">
+                Created At
+                <HugeiconsIcon
+                  className="ml-2 size-4"
+                  icon={getSortIcon(createdSortOrder)}
+                />
+              </Button>
+            </TableHead>
+            <TableHead className="w-12" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <ApiKeysTableContent
+            actionsDisabled={actionsDisabled}
+            isPending={isPending}
+            keys={keys}
+            onDelete={onDelete}
+            onEdit={onEdit}
+          />
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ApiKeyQuickStart({ onSelect }: { onSelect: (id: string) => void }) {
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <h2 className="font-semibold text-lg tracking-tight">Quick start</h2>
+        <p className="text-muted-foreground text-sm">
+          Spin up a key preconfigured for how you plan to use the API.
+        </p>
+      </div>
+      <ConnectedCards items={API_KEY_CARD_ITEMS} onSelect={onSelect} />
+    </div>
+  );
+}
+
+function CreateApiKeyDialog({
+  createError,
+  createdKey,
+  input,
+  isPending,
+  onExpirationChange,
+  onNameChange,
+  onOpenChange,
+  onScopesChange,
+  onSubmit,
+  open,
+}: {
+  createError: string | null;
+  createdKey: string | null;
+  input: ApiKeyCreateConfig;
+  isPending: boolean;
+  onExpirationChange: (expiration: ApiKeyExpiration) => void;
+  onNameChange: (name: string | null) => void;
+  onOpenChange: (open: boolean) => void;
+  onScopesChange: (scopes: string[]) => void;
+  onSubmit: () => void;
+  open: boolean;
+}) {
+  return (
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent
+        className={createdKey ? "sm:max-w-md" : "sm:max-w-2xl"}
+      >
+        {createdKey ? (
+          <>
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
+            </ResponsiveDialogHeader>
+            <div className="space-y-4">
+              <Alert className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                <HugeiconsIcon icon={InformationCircleIcon} />
+                <AlertDescription className="text-blue-700 dark:text-blue-300">
+                  You can only see this key once.{" "}
+                  <span className="font-medium text-foreground">
+                    Store it safely.
+                  </span>
+                </AlertDescription>
+              </Alert>
+              <Field>
+                <FieldLabel>API Key</FieldLabel>
+                <ApiKeyRevealField value={createdKey} />
+              </Field>
+            </div>
+            <ResponsiveDialogFooter>
+              <ResponsiveDialogClose render={<Button>Done</Button>} />
+            </ResponsiveDialogFooter>
+          </>
+        ) : (
+          <>
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle className="text-2xl">
+                Create API Key
+              </ResponsiveDialogTitle>
+              <ResponsiveDialogDescription>
+                Create a new API key for your organization.
+              </ResponsiveDialogDescription>
+            </ResponsiveDialogHeader>
+            <form action={onSubmit}>
+              <div className="space-y-4 py-4">
+                <Field>
+                  <FieldLabel>
+                    Name<span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
+                  <Input
+                    disabled={isPending}
+                    onChange={(event) =>
+                      onNameChange(event.target.value || null)
+                    }
+                    placeholder="e.g. CI/CD Pipeline"
+                    value={input.name}
+                  />
+                  {createError ? (
+                    <p className="text-destructive text-sm">{createError}</p>
+                  ) : null}
+                </Field>
+
+                <Field>
+                  <FieldLabel>
+                    Permission
+                    <span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
+                  <ApiKeyPermissionSelector
+                    disabled={isPending}
+                    onValueChange={onScopesChange}
+                    value={input.scopes}
+                  />
+                </Field>
+
+                <Field>
+                  <FieldLabel>
+                    Expiration
+                    <span className="-ml-1 text-muted-foreground text-xs">
+                      (Optional)
+                    </span>
+                  </FieldLabel>
+                  <Select
+                    disabled={isPending}
+                    onValueChange={(value) =>
+                      onExpirationChange(value as ApiKeyExpiration)
+                    }
+                    value={input.expiration}
+                  >
+                    <SelectTrigger>
+                      <SelectValue className="capitalize" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {API_KEY_EXPIRATION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              <ResponsiveDialogFooter>
+                <ResponsiveDialogClose
+                  disabled={isPending}
+                  render={<Button variant="outline">Cancel</Button>}
+                />
+                <Button disabled={isPending} type="submit">
+                  {isPending ? "Creating…" : "Create Key"}
+                </Button>
+              </ResponsiveDialogFooter>
+            </form>
+          </>
+        )}
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
+function EditApiKeyDialog({
+  editForm,
+  isPending,
+  onOpenChange,
+  onSubmit,
+  open,
+}: {
+  editForm: ApiKeyEditForm;
+  isPending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: () => void;
+  open: boolean;
+}) {
+  return (
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent className="sm:max-w-2xl">
+        <form action={onSubmit}>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="text-2xl">
+              Edit API Key
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
+          <div className="space-y-4 py-4">
+            <editForm.Field
+              name="name"
+              validators={{ onChange: updateApiKeySchema.shape.name }}
+            >
+              {(field) => (
+                <Field>
+                  <FieldLabel>
+                    Name<span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
+                  <Input
+                    autoFocus
+                    disabled={isPending}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onFocus={(e) => e.currentTarget.select()}
+                    placeholder="e.g. CI/CD Pipeline"
+                    value={field.state.value as string}
+                  />
+                  {field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0 ? (
+                    <p className="text-destructive text-sm">
+                      {typeof field.state.meta.errors[0] === "string"
+                        ? field.state.meta.errors[0]
+                        : ((field.state.meta.errors[0] as { message?: string })
+                            ?.message ?? "Invalid value")}
+                    </p>
+                  ) : null}
+                </Field>
+              )}
+            </editForm.Field>
+
+            <editForm.Field name="scopes">
+              {(field) => (
+                <Field>
+                  <FieldLabel>
+                    Permission
+                    <span className="-ml-1 text-destructive">*</span>
+                  </FieldLabel>
+                  <ApiKeyPermissionSelector
+                    disabled={isPending}
+                    onValueChange={(scopes) => field.handleChange(scopes)}
+                    value={field.state.value as string[]}
+                  />
+                </Field>
+              )}
+            </editForm.Field>
+
+            <editForm.Field name="expiration">
+              {(field) => (
+                <Field>
+                  <FieldLabel>Expiration</FieldLabel>
+                  <Select
+                    disabled={isPending}
+                    onValueChange={(value) =>
+                      field.handleChange(value as ApiKeyExpiration)
+                    }
+                    value={field.state.value as ApiKeyExpiration}
+                  >
+                    <SelectTrigger>
+                      <SelectValue className="capitalize" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {API_KEY_EXPIRATION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            </editForm.Field>
+          </div>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose
+              disabled={isPending}
+              render={<Button variant="outline">Cancel</Button>}
+            />
+            <Button disabled={isPending} type="submit">
+              {isPending ? "Saving…" : "Save Changes"}
+            </Button>
+          </ResponsiveDialogFooter>
+        </form>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
+  );
+}
+
+function DeleteApiKeyDialog({
+  apiKey,
+  isPending,
+  onConfirm,
+  onOpenChange,
+}: {
+  apiKey: ApiKeyListItem | null;
+  isPending: boolean;
+  onConfirm: () => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <ResponsiveAlertDialog onOpenChange={onOpenChange} open={!!apiKey}>
+      <ResponsiveAlertDialogContent>
+        <ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogTitle>
+            Delete API Key?
+          </ResponsiveAlertDialogTitle>
+          <ResponsiveAlertDialogDescription>
+            This will permanently delete
+            {apiKey ? ` ${apiKey.name}` : " this API key"}. This action cannot
+            be undone.
+          </ResponsiveAlertDialogDescription>
+        </ResponsiveAlertDialogHeader>
+        <ResponsiveAlertDialogFooter>
+          <ResponsiveAlertDialogCancel disabled={isPending}>
+            Cancel
+          </ResponsiveAlertDialogCancel>
+          <ResponsiveAlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={!apiKey || isPending}
+            onClick={onConfirm}
+          >
+            {isPending ? "Deleting…" : "Delete API Key"}
+          </ResponsiveAlertDialogAction>
+        </ResponsiveAlertDialogFooter>
+      </ResponsiveAlertDialogContent>
+    </ResponsiveAlertDialog>
+  );
+}
+
 export default function ApiKeysPage() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
@@ -372,27 +821,7 @@ export default function ApiKeysPage() {
     enabled: !!organizationId,
   });
 
-  const sortedKeys = useMemo(() => {
-    if (createdSortOrder === false) {
-      return keys;
-    }
-    return [...keys].sort((a, b) => {
-      return createdSortOrder === "desc"
-        ? b.createdAt - a.createdAt
-        : a.createdAt - b.createdAt;
-    });
-  }, [keys, createdSortOrder]);
-
-  function getSortIcon(isSorted: false | "asc" | "desc") {
-    if (isSorted === "asc") {
-      return ArrowUp01Icon;
-    }
-    if (isSorted === "desc") {
-      return ArrowDown01Icon;
-    }
-    return ArrowUpDownIcon;
-  }
-  const createdSortIcon = getSortIcon(createdSortOrder);
+  const sortedKeys = sortApiKeys(keys, createdSortOrder);
 
   const newKeyName = newKeyConfig.name;
   const newKeyScopes = newKeyConfig.scopes ?? DEFAULT_NEW_KEY_CONFIG.scopes;
@@ -576,379 +1005,70 @@ export default function ApiKeysPage() {
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">API Keys</h1>
-            <p className="text-muted-foreground">
-              Manage API keys for programmatic access to your organization
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              className="gap-1.5"
-              onClick={() =>
-                dispatchUi({ type: "createDialogChanged", open: true })
-              }
-            >
-              <HugeiconsIcon className="size-4" icon={Add01Icon} />
-              Create API Key
-              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      onClick={() =>
-                        window.open(
-                          "https://docs.usenotra.com/api/getting-started",
-                          "_blank",
-                          "noopener,noreferrer"
-                        )
-                      }
-                      size="icon"
-                      variant="outline"
-                    />
-                  }
-                >
-                  <HugeiconsIcon className="size-4" icon={Book01Icon} />
-                </TooltipTrigger>
-                <TooltipContent>View API documentation</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
+        <ApiKeysHeader
+          onCreate={() =>
+            dispatchUi({ type: "createDialogChanged", open: true })
+          }
+        />
 
-        <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Key</TableHead>
-                <TableHead>Permission</TableHead>
-                <TableHead className="w-35">Expires</TableHead>
-                <TableHead className="w-35">
-                  <Button
-                    className="-ml-4"
-                    onClick={() =>
-                      dispatchUi({
-                        type: "createdSortOrderChanged",
-                        sortOrder: createdSortOrder === "asc" ? "desc" : "asc",
-                      })
-                    }
-                    variant="ghost"
-                  >
-                    Created At
-                    <HugeiconsIcon
-                      className="ml-2 size-4"
-                      icon={createdSortIcon}
-                    />
-                  </Button>
-                </TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <ApiKeysTableContent
-                actionsDisabled={
-                  editMutation.isPending || deleteMutation.isPending
-                }
-                isPending={isPending}
-                keys={sortedKeys}
-                onDelete={(key) =>
-                  dispatchUi({
-                    type: "deletingKeyChanged",
-                    deletingKey: key,
-                  })
-                }
-                onEdit={openEditDialog}
-              />
-            </TableBody>
-          </Table>
-        </div>
+        <ApiKeysTable
+          actionsDisabled={editMutation.isPending || deleteMutation.isPending}
+          createdSortOrder={createdSortOrder}
+          isPending={isPending}
+          keys={sortedKeys}
+          onDelete={(key) =>
+            dispatchUi({
+              type: "deletingKeyChanged",
+              deletingKey: key,
+            })
+          }
+          onEdit={openEditDialog}
+          onSort={() =>
+            dispatchUi({
+              type: "createdSortOrderChanged",
+              sortOrder: createdSortOrder === "asc" ? "desc" : "asc",
+            })
+          }
+        />
 
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <h2 className="font-semibold text-lg tracking-tight">
-              Quick start
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Spin up a key preconfigured for how you plan to use the API.
-            </p>
-          </div>
-          <ConnectedCards
-            items={API_KEY_CARD_ITEMS}
-            onSelect={handlePresetSelect}
-          />
-        </div>
+        <ApiKeyQuickStart onSelect={handlePresetSelect} />
       </div>
 
-      <ResponsiveDialog onOpenChange={handleDialogClose} open={dialogOpen}>
-        <ResponsiveDialogContent
-          className={createdKey ? "sm:max-w-md" : "sm:max-w-2xl"}
-        >
-          {createdKey ? (
-            <>
-              <ResponsiveDialogHeader>
-                <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
-              </ResponsiveDialogHeader>
-              <div className="space-y-4">
-                <Alert className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300">
-                  <HugeiconsIcon icon={InformationCircleIcon} />
-                  <AlertDescription className="text-blue-700 dark:text-blue-300">
-                    You can only see this key once.{" "}
-                    <span className="font-medium text-foreground">
-                      Store it safely.
-                    </span>
-                  </AlertDescription>
-                </Alert>
-                <Field>
-                  <FieldLabel>API Key</FieldLabel>
-                  <ApiKeyRevealField value={createdKey} />
-                </Field>
-              </div>
-              <ResponsiveDialogFooter>
-                <ResponsiveDialogClose render={<Button>Done</Button>} />
-              </ResponsiveDialogFooter>
-            </>
-          ) : (
-            <>
-              <ResponsiveDialogHeader>
-                <ResponsiveDialogTitle className="text-2xl">
-                  Create API Key
-                </ResponsiveDialogTitle>
-                <ResponsiveDialogDescription>
-                  Create a new API key for your organization.
-                </ResponsiveDialogDescription>
-              </ResponsiveDialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleCreateSubmit();
-                }}
-              >
-                <div className="space-y-4 py-4">
-                  <Field>
-                    <FieldLabel>
-                      Name<span className="-ml-1 text-destructive">*</span>
-                    </FieldLabel>
-                    <Input
-                      disabled={mutation.isPending}
-                      onChange={(event) => {
-                        dispatchUi({
-                          type: "createErrorChanged",
-                          createError: null,
-                        });
-                        setNewKeyConfig({
-                          name: event.target.value || null,
-                        });
-                      }}
-                      placeholder="e.g. CI/CD Pipeline"
-                      value={createInput.name}
-                    />
-                    {createError ? (
-                      <p className="text-destructive text-sm">{createError}</p>
-                    ) : null}
-                  </Field>
+      <CreateApiKeyDialog
+        createdKey={createdKey}
+        createError={createError}
+        input={createInput}
+        isPending={mutation.isPending}
+        onExpirationChange={(expiration) => setNewKeyConfig({ expiration })}
+        onNameChange={(name) => {
+          dispatchUi({ type: "createErrorChanged", createError: null });
+          setNewKeyConfig({ name });
+        }}
+        onOpenChange={handleDialogClose}
+        onScopesChange={(scopes) => setNewKeyConfig({ scopes })}
+        onSubmit={handleCreateSubmit}
+        open={dialogOpen}
+      />
 
-                  <Field>
-                    <FieldLabel>
-                      Permission
-                      <span className="-ml-1 text-destructive">*</span>
-                    </FieldLabel>
-                    <ApiKeyPermissionSelector
-                      disabled={mutation.isPending}
-                      onValueChange={(scopes) => setNewKeyConfig({ scopes })}
-                      value={createInput.scopes}
-                    />
-                  </Field>
-
-                  <Field>
-                    <FieldLabel>
-                      Expiration
-                      <span className="-ml-1 text-muted-foreground text-xs">
-                        (Optional)
-                      </span>
-                    </FieldLabel>
-                    <Select
-                      disabled={mutation.isPending}
-                      onValueChange={(value) =>
-                        setNewKeyConfig({
-                          expiration: value as ApiKeyExpiration,
-                        })
-                      }
-                      value={createInput.expiration}
-                    >
-                      <SelectTrigger>
-                        <SelectValue className="capitalize" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {API_KEY_EXPIRATION_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-                <ResponsiveDialogFooter>
-                  <ResponsiveDialogClose
-                    disabled={mutation.isPending}
-                    render={<Button variant="outline">Cancel</Button>}
-                  />
-                  <Button disabled={mutation.isPending} type="submit">
-                    {mutation.isPending ? "Creating…" : "Create Key"}
-                  </Button>
-                </ResponsiveDialogFooter>
-              </form>
-            </>
-          )}
-        </ResponsiveDialogContent>
-      </ResponsiveDialog>
-
-      <ResponsiveDialog
+      <EditApiKeyDialog
+        editForm={editForm as unknown as ApiKeyEditForm}
+        isPending={editMutation.isPending}
         onOpenChange={handleEditDialogClose}
+        onSubmit={editForm.handleSubmit}
         open={editDialogOpen}
-      >
-        <ResponsiveDialogContent className="sm:max-w-2xl">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              editForm.handleSubmit();
-            }}
-          >
-            <ResponsiveDialogHeader>
-              <ResponsiveDialogTitle className="text-2xl">
-                Edit API Key
-              </ResponsiveDialogTitle>
-            </ResponsiveDialogHeader>
-            <div className="space-y-4 py-4">
-              <editForm.Field
-                name="name"
-                validators={{
-                  onChange: updateApiKeySchema.shape.name,
-                }}
-              >
-                {(field) => (
-                  <Field>
-                    <FieldLabel>
-                      Name<span className="-ml-1 text-destructive">*</span>
-                    </FieldLabel>
-                    <Input
-                      autoFocus
-                      disabled={editMutation.isPending}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onFocus={(e) => e.currentTarget.select()}
-                      placeholder="e.g. CI/CD Pipeline"
-                      value={field.state.value}
-                    />
-                    {field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0 ? (
-                      <p className="text-destructive text-sm">
-                        {typeof field.state.meta.errors[0] === "string"
-                          ? field.state.meta.errors[0]
-                          : ((
-                              field.state.meta.errors[0] as { message?: string }
-                            )?.message ?? "Invalid value")}
-                      </p>
-                    ) : null}
-                  </Field>
-                )}
-              </editForm.Field>
+      />
 
-              <editForm.Field name="scopes">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>
-                      Permission
-                      <span className="-ml-1 text-destructive">*</span>
-                    </FieldLabel>
-                    <ApiKeyPermissionSelector
-                      disabled={editMutation.isPending}
-                      onValueChange={(scopes) => field.handleChange(scopes)}
-                      value={field.state.value}
-                    />
-                  </Field>
-                )}
-              </editForm.Field>
-
-              <editForm.Field name="expiration">
-                {(field) => (
-                  <Field>
-                    <FieldLabel>Expiration</FieldLabel>
-                    <Select
-                      disabled={editMutation.isPending}
-                      onValueChange={(value) =>
-                        field.handleChange(value as ApiKeyExpiration)
-                      }
-                      value={field.state.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue className="capitalize" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {API_KEY_EXPIRATION_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              </editForm.Field>
-            </div>
-            <ResponsiveDialogFooter>
-              <ResponsiveDialogClose
-                disabled={editMutation.isPending}
-                render={<Button variant="outline">Cancel</Button>}
-              />
-              <Button disabled={editMutation.isPending} type="submit">
-                {editMutation.isPending ? "Saving…" : "Save Changes"}
-              </Button>
-            </ResponsiveDialogFooter>
-          </form>
-        </ResponsiveDialogContent>
-      </ResponsiveDialog>
-
-      <ResponsiveAlertDialog
+      <DeleteApiKeyDialog
+        apiKey={deletingKey}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!deletingKey) {
+            return;
+          }
+          deleteMutation.mutate(deletingKey.keyId);
+        }}
         onOpenChange={handleDeleteDialogClose}
-        open={!!deletingKey}
-      >
-        <ResponsiveAlertDialogContent>
-          <ResponsiveAlertDialogHeader>
-            <ResponsiveAlertDialogTitle>
-              Delete API Key?
-            </ResponsiveAlertDialogTitle>
-            <ResponsiveAlertDialogDescription>
-              This will permanently delete
-              {deletingKey ? ` ${deletingKey.name}` : " this API key"}. This
-              action cannot be undone.
-            </ResponsiveAlertDialogDescription>
-          </ResponsiveAlertDialogHeader>
-          <ResponsiveAlertDialogFooter>
-            <ResponsiveAlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancel
-            </ResponsiveAlertDialogCancel>
-            <ResponsiveAlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={!deletingKey || deleteMutation.isPending}
-              onClick={() => {
-                if (!deletingKey) {
-                  return;
-                }
-                deleteMutation.mutate(deletingKey.keyId);
-              }}
-            >
-              {deleteMutation.isPending ? "Deleting…" : "Delete API Key"}
-            </ResponsiveAlertDialogAction>
-          </ResponsiveAlertDialogFooter>
-        </ResponsiveAlertDialogContent>
-      </ResponsiveAlertDialog>
+      />
     </PageContainer>
   );
 }
