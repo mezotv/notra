@@ -1,5 +1,9 @@
 import { jsonResponse } from "@/utils/http";
-import { DOCS_URL, MCP_URL } from "@/utils/urls";
+import {
+  DOCS_URL,
+  MCP_PROTECTED_RESOURCE_METADATA_URL,
+  MCP_URL,
+} from "@/utils/urls";
 
 export function GET() {
   return jsonResponse(
@@ -10,11 +14,10 @@ export function GET() {
       endpoint: MCP_URL,
       documentation: `${DOCS_URL}/devtools/mcp`,
       instructions:
-        "Use Notra MCP after authenticating with a Notra API key. The server exposes tools for reading organization content, generating drafts, and applying saved brand voice guidance.",
+        "Use Notra MCP after authenticating with OAuth or a Notra API key. The server exposes tools for reading organization content, generating drafts, and applying saved brand voice guidance.",
       authentication: {
         type: "bearer",
-        resource_metadata:
-          "https://api.usenotra.com/.well-known/oauth-protected-resource",
+        resource_metadata: MCP_PROTECTED_RESOURCE_METADATA_URL,
       },
     },
     {

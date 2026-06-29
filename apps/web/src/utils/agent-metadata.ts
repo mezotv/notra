@@ -1,6 +1,6 @@
 import { SITE_DESCRIPTION } from "@/utils/metadata";
 import { SOCIAL_LINKS } from "@/utils/social-links";
-import { API_URL, DOCS_URL, MCP_URL, SITE_URL } from "@/utils/urls";
+import { API_URL, APP_URL, DOCS_URL, MCP_URL, SITE_URL } from "@/utils/urls";
 
 const AGENT_DISCOVERY_PATHS = {
   agentJson: "/.well-known/agent.json",
@@ -9,7 +9,6 @@ const AGENT_DISCOVERY_PATHS = {
   authMarkdown: "/auth.md",
   botAuthDirectory: "/.well-known/http-message-signatures-directory",
   mcp: "/.well-known/mcp",
-  oauthAuthorizationServer: "/.well-known/oauth-authorization-server",
   oauthProtectedResource: "/.well-known/oauth-protected-resource",
   schemaMap: "/schema-map.xml",
 } as const;
@@ -55,11 +54,19 @@ export function apiUrl(path = "") {
   return `${API_URL}${path}`;
 }
 
+function appUrl(path = "") {
+  return `${APP_URL}${path}`;
+}
+
+function authIssuerUrl() {
+  return appUrl("/api/auth");
+}
+
 export function buildAgentAuthMetadata() {
   return {
-    register_uri: siteUrl("/agent/auth/register"),
+    register_uri: appUrl("/agent/auth/register"),
     claim_uri: siteUrl("/agent/auth/claim"),
-    revocation_uri: siteUrl("/agent/auth/revoke"),
+    revocation_uri: appUrl("/agent/auth/revoke"),
     skill: siteUrl(AGENT_DISCOVERY_PATHS.authMarkdown),
     identity_types_supported: ["anonymous", "identity_assertion"],
     anonymous: {
@@ -78,26 +85,10 @@ export function buildAgentAuthMetadata() {
 export function buildProtectedResourceMetadata() {
   return {
     resource: apiUrl(),
-    authorization_servers: [siteUrl()],
+    authorization_servers: [authIssuerUrl()],
     scopes_supported: PUBLIC_API_SCOPES,
     bearer_methods_supported: ["header"],
     resource_documentation: siteUrl(AGENT_DISCOVERY_PATHS.authMarkdown),
-  };
-}
-
-export function buildAuthorizationServerMetadata() {
-  return {
-    issuer: siteUrl(),
-    authorization_endpoint: siteUrl("/agent/auth/authorize"),
-    token_endpoint: siteUrl("/agent/auth/token"),
-    registration_endpoint: siteUrl("/agent/auth/register"),
-    revocation_endpoint: siteUrl("/agent/auth/revoke"),
-    response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code"],
-    token_endpoint_auth_methods_supported: ["none"],
-    code_challenge_methods_supported: ["S256"],
-    scopes_supported: PUBLIC_API_SCOPES,
-    agent_auth: buildAgentAuthMetadata(),
   };
 }
 

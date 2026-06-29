@@ -2,7 +2,7 @@ import { markdownResponse } from "@/utils/http";
 
 const AUTH_MD = `# Notra Agent Authentication
 
-Notra exposes an authenticated API and MCP server for agents that generate, read, and manage product content. Use this guide to discover the supported auth metadata, request an API credential, and recover from common errors.
+Notra exposes an authenticated API and MCP server for agents that generate, read, and manage product content. Use this guide to discover the supported auth metadata, request an OAuth or API-key credential, and recover from common errors.
 
 ## Discover
 
@@ -10,11 +10,11 @@ Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.
 
 ## Pick a method
 
-The \`agent_auth\` block documents \`anonymous\` and \`identity_assertion\` request shapes for agents. Notra currently issues API keys through the dashboard rather than an automatic OAuth token exchange. For identity assertions, Notra accepts verified email claims and \`urn:ietf:params:oauth:token-type:id-jag\` assertions when configured for the organization.
+OAuth-capable clients should follow the authorization server advertised by the protected resource metadata. The production authorization server is \`https://app.usenotra.com\`, with authorization, token, registration, and revocation endpoints under \`/agent/auth/*\`. Manual clients can use API keys created in the Notra dashboard.
 
 ## Register
 
-Call \`POST /agent/auth/register\` to confirm the supported registration metadata. Production API keys are created in the Notra dashboard. Agents should request the least privileged resource scopes, such as \`posts.read\`, \`posts.write\`, \`skills.read\`, \`skills.write\`, \`integrations.read\`, and \`integrations.write\`.
+Call \`POST https://app.usenotra.com/agent/auth/register\` for dynamic OAuth client registration. Agents should request the least privileged resource scopes, such as \`posts.read\`, \`posts.write\`, \`skills.read\`, \`skills.write\`, \`integrations.read\`, and \`integrations.write\`.
 
 ## Claim
 
@@ -22,7 +22,7 @@ Call \`POST /agent/auth/claim\` to check the claim endpoint shape. It returns ma
 
 ## Use the credential
 
-Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. For MCP clients that support OAuth discovery, start at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`; for manual clients, use the same bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
+Send the credential as \`Authorization: Bearer <TOKEN>\`. For MCP clients that support OAuth discovery, start at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`; for manual clients, use a Notra API key as the bearer credential when connecting to \`https://mcp.usenotra.com/mcp\`.
 
 ## Errors
 
@@ -30,7 +30,7 @@ Send the credential as \`Authorization: Bearer <NOTRA_API_KEY>\`. For MCP client
 
 ## Revocation
 
-Call \`POST /agent/auth/revoke\` or revoke the API key in the Notra dashboard. Agents should discard revoked credentials immediately and repeat discovery before requesting a replacement.
+Call \`POST https://app.usenotra.com/agent/auth/revoke\` for OAuth tokens, or revoke API keys in the Notra dashboard. Agents should discard revoked credentials immediately and repeat discovery before requesting a replacement.
 `;
 
 export function GET() {

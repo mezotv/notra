@@ -38,6 +38,21 @@ export const OAUTH_DEFAULT_SCOPES = [
   "skills.read",
 ] as const;
 
+export const OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES = [
+  "posts.read",
+  "posts.write",
+  "brand-identities.read",
+  "brand-identities.write",
+  "integrations.read",
+  "integrations.write",
+  "schedules.read",
+  "schedules.write",
+  "chats.read",
+  "chats.write",
+  "skills.read",
+  "skills.write",
+] as const;
+
 export const OAUTH_GRANT_QUERY_PARAM = "grant";
 
 export const OAUTH_SCOPE_LEVEL = {

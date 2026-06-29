@@ -188,7 +188,7 @@ app.get("/ping", (c) => {
 });
 
 app.get("/.well-known/oauth-protected-resource", (c) => {
-  return c.json(buildProtectedResourceMetadata());
+  return c.json(buildProtectedResourceMetadata(new URL(c.req.url).origin));
 });
 
 app.get("/.well-known/oauth-authorization-server", (c) => {

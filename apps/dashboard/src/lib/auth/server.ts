@@ -25,7 +25,7 @@ import {
   OAUTH_ACCEPTED_SCOPES,
   OAUTH_ACCESS_TOKEN_TTL_SECONDS,
   OAUTH_AUTH_CODE_TTL_MS,
-  OAUTH_DEFAULT_SCOPES,
+  OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
   OAUTH_REFRESH_TOKEN_TTL_MS,
   OAUTH_SUPPORTED_RESOURCES,
   OAUTH_SUPPORTED_SCOPES,
@@ -309,7 +309,9 @@ export const auth = betterAuth({
       allowPublicClientPrelogin: true,
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
-      clientRegistrationDefaultScopes: [...OAUTH_DEFAULT_SCOPES],
+      clientRegistrationDefaultScopes: [
+        ...OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
+      ],
       clientRegistrationAllowedScopes: [...OAUTH_SUPPORTED_SCOPES],
       customAccessTokenClaims: ({ referenceId }) =>
         referenceId ? { organizationId: referenceId } : {},
