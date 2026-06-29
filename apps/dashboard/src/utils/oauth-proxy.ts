@@ -1,11 +1,13 @@
+import { OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES } from "@/constants/oauth";
 import { auth } from "@/lib/auth/server";
 
 const AUTH_ROUTE_PREFIX = "/api/auth";
 const INTERNAL_AUTH_ORIGIN = "http://notra.internal";
 const TOKEN_PATH = "/oauth2/token";
+const REGISTER_PATH = "/oauth2/register";
 const ALLOWED_OAUTH_PROXY_PATHS = new Set([
   TOKEN_PATH,
-  "/oauth2/register",
+  REGISTER_PATH,
   "/oauth2/revoke",
 ]);
 const FORWARDED_HEADER_NAMES = [
@@ -40,6 +42,29 @@ export function buildOAuthForwardedHeaders(
   return headers;
 }
 
+function withDefaultRegistrationScopes(body: ArrayBuffer) {
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(body));
+
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return body;
+    }
+
+    if ("scope" in payload && typeof payload.scope === "string") {
+      return body;
+    }
+
+    return new TextEncoder().encode(
+      JSON.stringify({
+        ...payload,
+        scope: OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(" "),
+      })
+    ).buffer;
+  } catch {
+    return body;
+  }
+}
+
 export async function proxyOAuthRequest(request: Request, pathname: string) {
   if (!ALLOWED_OAUTH_PROXY_PATHS.has(pathname)) {
     return Response.json({ error: "not_found" }, { status: 404 });
@@ -51,10 +76,14 @@ export async function proxyOAuthRequest(request: Request, pathname: string) {
   );
   targetUrl.search = new URL(request.url).search;
 
-  const body =
+  const rawBody =
     request.method === "GET" || request.method === "HEAD"
       ? undefined
       : await request.arrayBuffer();
+  const body =
+    rawBody && pathname === REGISTER_PATH
+      ? withDefaultRegistrationScopes(rawBody)
+      : rawBody;
 
   const response = await auth.handler(
     new Request(targetUrl, {
