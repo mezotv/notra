@@ -960,6 +960,10 @@ export default function ApiKeysPage() {
   });
 
   const handleDialogClose = (open: boolean) => {
+    if (!open && mutation.isPending) {
+      return;
+    }
+
     if (!open) {
       dispatchUi({ type: "createErrorChanged", createError: null });
       mutation.reset();
@@ -995,7 +999,7 @@ export default function ApiKeysPage() {
     editForm.reset({
       keyId: key.keyId,
       name: key.name,
-      scopes: scopes.length > 0 ? scopes : [...API_KEY_DEFAULT_SCOPES],
+      scopes,
       expiration: getDefaultEditExpiration(key.createdAt, key.expires),
     });
     editForm.setFieldValue("name", key.name);

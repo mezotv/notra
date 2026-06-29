@@ -1,6 +1,7 @@
 import {
   API_KEY_GRANULAR_PERMISSIONS,
   API_KEY_GRANULAR_READ_PERMISSIONS,
+  API_KEY_LEGACY_PERMISSIONS,
   API_KEY_SCOPE_LEVEL,
   API_KEY_SCOPE_LEVEL_LABELS,
   API_KEY_SCOPE_RESOURCES,
@@ -9,6 +10,9 @@ import type { ApiKeyGranularScope, ApiKeyScopeGroup } from "@/types/api-keys";
 
 const GRANULAR_SCOPE_SET: ReadonlySet<string> = new Set(
   API_KEY_GRANULAR_PERMISSIONS
+);
+const LEGACY_SCOPE_SET: ReadonlySet<string> = new Set(
+  API_KEY_LEGACY_PERMISSIONS
 );
 
 const SCOPE_ORDER = new Map(
@@ -86,13 +90,13 @@ export function expandLegacyApiKeyScopes(
       next.add(scope);
       continue;
     }
-    if (scope === "api.write" || scope.endsWith(".write")) {
+    if (scope === "api.write") {
       for (const granular of API_KEY_GRANULAR_PERMISSIONS) {
         next.add(granular);
       }
       continue;
     }
-    if (scope === "api.read" || scope.endsWith(".read")) {
+    if (scope === "api.read") {
       for (const granular of API_KEY_GRANULAR_READ_PERMISSIONS) {
         next.add(granular);
       }
@@ -108,6 +112,12 @@ export function sortApiKeyScopes(scopes: string[]): ApiKeyGranularScope[] {
       GRANULAR_SCOPE_SET.has(scope)
     )
     .sort((a, b) => (SCOPE_ORDER.get(a) ?? 0) - (SCOPE_ORDER.get(b) ?? 0));
+}
+
+export function getUnknownApiKeyPermissions(scopes: readonly string[]) {
+  return scopes.filter(
+    (scope) => !(GRANULAR_SCOPE_SET.has(scope) || LEGACY_SCOPE_SET.has(scope))
+  );
 }
 
 export function summarizeApiKeyScopes(scopes: readonly string[]) {

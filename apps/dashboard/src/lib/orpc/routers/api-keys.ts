@@ -6,6 +6,7 @@ import { z } from "zod";
 import { API_KEY_EXPIRATION_MS } from "@/constants/api-keys";
 import {
   expandLegacyApiKeyScopes,
+  getUnknownApiKeyPermissions,
   summarizeApiKeyScopes,
 } from "@/lib/api-keys/scopes";
 import { unkey } from "@/lib/api-keys/unkey";
@@ -158,7 +159,7 @@ export const apiKeysRouter = {
           keyId: key.keyId,
           name: key.name ?? "Unnamed",
           permission: summarizeApiKeyScopes(scopes),
-          permissions: scopes,
+          permissions,
           start: key.start,
         };
       });
@@ -249,12 +250,20 @@ export const apiKeysRouter = {
           Date.now() + (API_KEY_EXPIRATION_MS[input.payload.expiration] ?? 0);
       }
 
+      const currentPermissions = Array.isArray(key.permissions)
+        ? key.permissions.filter(
+            (permission): permission is string => typeof permission === "string"
+          )
+        : [];
+      const unknownPermissions =
+        getUnknownApiKeyPermissions(currentPermissions);
+
       await client.keys.updateKey({
         expires,
         keyId: input.payload.keyId,
         meta,
         name: input.payload.name,
-        permissions: input.payload.scopes,
+        permissions: [...input.payload.scopes, ...unknownPermissions],
       });
 
       return { success: true };

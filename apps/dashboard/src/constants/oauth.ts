@@ -31,17 +31,11 @@ export const OAUTH_SUPPORTED_SCOPE_SET: ReadonlySet<string> = new Set(
 
 export const OAUTH_DEFAULT_SCOPES = [
   "posts.read",
-  "posts.write",
   "brand-identities.read",
-  "brand-identities.write",
   "integrations.read",
-  "integrations.write",
   "schedules.read",
-  "schedules.write",
   "chats.read",
-  "chats.write",
   "skills.read",
-  "skills.write",
 ] as const;
 
 export const OAUTH_GRANT_QUERY_PARAM = "grant";

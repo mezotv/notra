@@ -46,5 +46,5 @@ export function getRequiredOAuthScope(pathname: string, method: string) {
     return scopeForResource("skills", method);
   }
 
-  return scopeForResource("posts", method);
+  return undefined;
 }

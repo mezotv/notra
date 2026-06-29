@@ -7,6 +7,10 @@ import {
   errors as joseErrors,
   jwtVerify,
 } from "jose";
+import {
+  LEGACY_API_READ_SCOPE,
+  LEGACY_API_WRITE_SCOPE,
+} from "../constants/oauth-scopes";
 import type { AuthData } from "../types/auth";
 import {
   API_URL,
@@ -133,7 +137,17 @@ function hasRequiredScope(scopes: string[], requiredScope?: string) {
     return true;
   }
 
-  return scopes.includes(requiredScope) || scopes.includes("*");
+  if (scopes.includes(requiredScope) || scopes.includes("*")) {
+    return true;
+  }
+
+  if (scopes.includes(LEGACY_API_WRITE_SCOPE)) {
+    return true;
+  }
+
+  return (
+    requiredScope.endsWith(".read") && scopes.includes(LEGACY_API_READ_SCOPE)
+  );
 }
 
 async function verifyOAuthToken(
