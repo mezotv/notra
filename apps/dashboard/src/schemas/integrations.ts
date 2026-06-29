@@ -288,6 +288,18 @@ export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = [
 export type ScheduleOutputType =
   (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
 
+export const configureEventTriggerBodySchema =
+  configureTriggerBodySchema.extend({
+    sourceType: z.literal("github_webhook"),
+    sourceConfig: z.object({
+      eventTypes: z.array(z.enum(WEBHOOK_EVENT_TYPES)).min(1),
+    }),
+    outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
+  });
+export type ConfigureEventTriggerBody = z.infer<
+  typeof configureEventTriggerBodySchema
+>;
+
 export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
   name: z.string().trim().min(1).max(MAX_SCHEDULE_NAME_LENGTH),
   sourceType: z.literal("cron"),

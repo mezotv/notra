@@ -40,6 +40,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
+import { getDefaultEventTriggerValues } from "@/utils/event-trigger-form";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 function formatEventList(events?: string[]) {
@@ -71,6 +72,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTrigger, setEditTrigger] = useState<Trigger | null>(null);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
@@ -105,14 +107,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
+      const values = getDefaultEventTriggerValues(trigger);
 
       return dashboardOrpc.automation.events.update.call({
         organizationId,
         triggerId: trigger.id,
-        sourceType: trigger.sourceType,
-        sourceConfig: trigger.sourceConfig,
+        sourceType: "github_webhook",
+        sourceConfig: {
+          eventTypes: trigger.sourceConfig.eventTypes ?? [values.eventType],
+        },
         targets: trigger.targets,
-        outputType: trigger.outputType,
+        outputType: values.outputType,
         outputConfig: trigger.outputConfig ?? {},
         enabled: !trigger.enabled,
         autoPublish: trigger.autoPublish,
@@ -187,6 +192,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const handleDelete = useCallback(
     (id: string) => deleteMutation.mutate(id),
     [deleteMutation]
+  );
+
+  const handleEdit = useCallback(
+    (trigger: Trigger) => {
+      setEditTrigger(trigger);
+    },
+    [setEditTrigger]
   );
 
   return (
@@ -270,6 +282,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 createdSortOrder={createdSortOrder}
                 defaultBrandVoice={defaultBrandVoice}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 triggers={filteredTriggers}
@@ -282,6 +295,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 createdSortOrder={createdSortOrder}
                 defaultBrandVoice={defaultBrandVoice}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
                 onSortCreatedChange={setCreatedSortOrder}
                 onToggle={handleToggle}
                 triggers={filteredTriggers}
@@ -290,6 +304,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </Tabs>
         )}
       </div>
+      {editTrigger && (
+        <CreateEventTriggerDialog
+          editTrigger={editTrigger}
+          onOpenChange={(open) => !open && setEditTrigger(null)}
+          onSuccess={() => {
+            setEditTrigger(null);
+            queryClient.invalidateQueries({
+              queryKey: dashboardOrpc.automation.events.list.queryKey({
+                input: { organizationId: organizationId ?? "" },
+              }),
+            });
+          }}
+          open={!!editTrigger}
+          organizationId={organizationId ?? ""}
+        />
+      )}
     </PageContainer>
   );
 }
@@ -302,6 +332,7 @@ function EventTable({
   onSortCreatedChange,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   triggers: Trigger[];
   brandVoiceMap: Record<string, BrandSettings>;
@@ -310,6 +341,7 @@ function EventTable({
   onSortCreatedChange: (next: false | "asc" | "desc") => void;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
+  onEdit: (trigger: Trigger) => void;
 }) {
   const sortedTriggers = useMemo(() => {
     if (createdSortOrder === false) {
@@ -419,6 +451,7 @@ function EventTable({
                 <TableCell>
                   <TriggerRowActions
                     onDelete={onDelete}
+                    onEdit={onEdit}
                     onToggle={onToggle}
                     trigger={trigger}
                   />

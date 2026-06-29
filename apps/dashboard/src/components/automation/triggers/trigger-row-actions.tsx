@@ -1,5 +1,6 @@
 import {
   Delete02Icon,
+  Edit02Icon,
   MoreVerticalIcon,
   PauseIcon,
   PlayIcon,
@@ -19,12 +20,14 @@ interface TriggerRowActionsProps {
   trigger: Trigger;
   onToggle: (trigger: Trigger) => void;
   onDelete: (triggerId: string) => void;
+  onEdit?: (trigger: Trigger) => void;
 }
 
 export function TriggerRowActions({
   trigger,
   onToggle,
   onDelete,
+  onEdit,
 }: TriggerRowActionsProps) {
   return (
     <DropdownMenu>
@@ -35,6 +38,12 @@ export function TriggerRowActions({
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {onEdit && (
+          <DropdownMenuItem onClick={() => onEdit(trigger)}>
+            <HugeiconsIcon className="size-4" icon={Edit02Icon} />
+            Edit
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => onToggle(trigger)}>
           <HugeiconsIcon
             className="size-4"

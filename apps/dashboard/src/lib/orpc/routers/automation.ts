@@ -24,8 +24,8 @@ import {
   triggerManualAutomationRun,
 } from "@/lib/triggers/manual-run";
 import {
+  configureEventTriggerBodySchema,
   configureScheduleBodySchema,
-  configureTriggerBodySchema,
   getSchedulesQuerySchema,
   type LookbackWindow,
   triggerTargetsSchema,
@@ -257,7 +257,7 @@ export const automationRouter = {
         };
       }),
     create: baseProcedure
-      .input(organizationIdInputSchema.and(configureTriggerBodySchema))
+      .input(organizationIdInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -314,7 +314,7 @@ export const automationRouter = {
         return { trigger: serializeTrigger(trigger) };
       }),
     update: baseProcedure
-      .input(triggerInputSchema.and(configureTriggerBodySchema))
+      .input(triggerInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,

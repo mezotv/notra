@@ -54,23 +54,18 @@ import {
 } from "@/schemas/automation/event-trigger-form";
 import type { CreateEventTriggerDialogProps } from "@/types/automation/event-trigger";
 import type { Trigger } from "@/types/triggers/triggers";
+import { getDefaultEventTriggerValues } from "@/utils/event-trigger-form";
 import { EventTypeCard } from "./event-type-card";
-
-const DEFAULT_VALUES: EventTriggerFormValues = {
-  eventType: "release",
-  outputType: "changelog",
-  repositoryIds: [],
-  brandVoiceId: "",
-  autoPublish: false,
-};
 
 export function CreateEventTriggerDialog({
   organizationId,
   onSuccess,
   trigger,
+  editTrigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: CreateEventTriggerDialogProps) {
+  const isEditMode = !!editTrigger;
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -109,6 +104,13 @@ export function CreateEventTriggerDialog({
       };
 
       try {
+        if (isEditMode) {
+          return await dashboardOrpc.automation.events.update.call({
+            triggerId: editTrigger.id,
+            ...payload,
+            enabled: editTrigger.enabled,
+          });
+        }
         return await dashboardOrpc.automation.events.create.call(payload);
       } catch (error) {
         if (error instanceof Error && error.message === "Duplicate trigger") {
@@ -117,11 +119,13 @@ export function CreateEventTriggerDialog({
         if (error instanceof Error && error.message) {
           throw error;
         }
-        throw new Error("Failed to create trigger");
+        throw new Error(
+          isEditMode ? "Failed to update trigger" : "Failed to create trigger"
+        );
       }
     },
     onSuccess: (data) => {
-      toast.success("Trigger added");
+      toast.success(isEditMode ? "Trigger updated" : "Trigger added");
       onSuccess?.(data.trigger);
       setOpen(false);
     },
@@ -131,7 +135,7 @@ export function CreateEventTriggerDialog({
   });
 
   const form = useForm({
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: getDefaultEventTriggerValues(editTrigger),
     validators: {
       onSubmit: eventTriggerFormSchema,
     },
@@ -142,9 +146,9 @@ export function CreateEventTriggerDialog({
 
   useEffect(() => {
     if (open) {
-      form.reset();
+      form.reset(getDefaultEventTriggerValues(editTrigger));
     }
-  }, [open, form]);
+  }, [open, editTrigger, form]);
 
   const outputType = useStore(form.store, (s) => s.values.outputType);
   const repositoryCount = useStore(
@@ -231,7 +235,7 @@ export function CreateEventTriggerDialog({
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <ResponsiveDialogTitle className="text-base">
-              New event trigger
+              {isEditMode ? "Edit event trigger" : "New event trigger"}
             </ResponsiveDialogTitle>
             <p className="text-muted-foreground text-sm">
               React to GitHub activity and generate content automatically.
@@ -467,12 +471,12 @@ export function CreateEventTriggerDialog({
                           className="size-4 animate-spin"
                           icon={Loading03Icon}
                         />
-                        Adding...
+                        {isEditMode ? "Saving..." : "Adding..."}
                       </>
                     ) : (
                       <>
                         <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                        Add trigger
+                        {isEditMode ? "Save changes" : "Add trigger"}
                       </>
                     )}
                   </Button>
