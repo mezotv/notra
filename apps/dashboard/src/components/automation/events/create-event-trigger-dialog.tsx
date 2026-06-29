@@ -36,7 +36,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { Button } from "@/components/button";
@@ -67,12 +67,10 @@ export function CreateEventTriggerDialog({
 }: CreateEventTriggerDialogProps) {
   const isEditMode = !!editTrigger;
   const [internalOpen, setInternalOpen] = useState(false);
+  const lastResetKeyRef = useRef<string | null>(null);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = (next: boolean) => {
-    if (next) {
-      form.reset(getDefaultEventTriggerValues(editTrigger));
-    }
     if (isControlled) {
       controlledOnOpenChange?.(next);
     } else {
@@ -143,6 +141,21 @@ export function CreateEventTriggerDialog({
       await mutation.mutateAsync(value);
     },
   });
+
+  useEffect(() => {
+    if (!open) {
+      lastResetKeyRef.current = null;
+      return;
+    }
+
+    const resetKey = editTrigger?.id ?? "create";
+    if (lastResetKeyRef.current === resetKey) {
+      return;
+    }
+
+    form.reset(getDefaultEventTriggerValues(editTrigger));
+    lastResetKeyRef.current = resetKey;
+  }, [editTrigger, form, open]);
 
   const outputType = useStore(form.store, (s) => s.values.outputType);
   const repositoryCount = useStore(
