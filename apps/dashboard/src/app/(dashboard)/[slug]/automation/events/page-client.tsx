@@ -25,7 +25,7 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
@@ -46,6 +46,12 @@ import {
 } from "@/utils/event-trigger-form";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
+const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 function formatEventList(events?: string[]) {
   if (!events || events.length === 0) {
     return "All events";
@@ -54,11 +60,17 @@ function formatEventList(events?: string[]) {
 }
 
 function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(dateString));
+  return DATE_FORMATTER.format(new Date(dateString));
+}
+
+function getSortIcon(isSorted: false | "asc" | "desc") {
+  if (isSorted === "asc") {
+    return ArrowUp01Icon;
+  }
+  if (isSorted === "desc") {
+    return ArrowDown01Icon;
+  }
+  return ArrowUpDownIcon;
 }
 
 interface PageClientProps {
@@ -93,17 +105,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     })
   );
 
-  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
-    const map: Record<string, BrandSettings> = {};
-    let defaultVoice: BrandSettings | undefined;
-    for (const voice of brandResponse?.voices ?? []) {
-      map[voice.id] = voice;
-      if (voice.isDefault) {
-        defaultVoice = voice;
-      }
+  const brandVoiceMap: Record<string, BrandSettings> = {};
+  let defaultBrandVoice: BrandSettings | undefined;
+  for (const voice of brandResponse?.voices ?? []) {
+    brandVoiceMap[voice.id] = voice;
+    if (voice.isDefault) {
+      defaultBrandVoice = voice;
     }
-    return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
-  }, [brandResponse]);
+  }
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
@@ -165,40 +174,31 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
-  const triggers = data?.triggers ?? [];
-  const eventTriggers = useMemo(
-    () => triggers.filter((trigger) => trigger.sourceType === "github_webhook"),
-    [triggers]
+  const eventTriggers =
+    data?.triggers.filter(
+      (trigger) => trigger.sourceType === "github_webhook"
+    ) ?? [];
+  const filteredTriggers = eventTriggers.filter((trigger) =>
+    activeTab === "active" ? trigger.enabled : !trigger.enabled
   );
 
-  const filteredTriggers = useMemo(() => {
-    return eventTriggers.filter((t) =>
-      activeTab === "active" ? t.enabled : !t.enabled
-    );
-  }, [eventTriggers, activeTab]);
-
-  const activeCounts = useMemo(() => {
-    let active = 0;
-    let paused = 0;
-    for (const t of eventTriggers) {
-      if (t.enabled) {
-        active++;
-      } else {
-        paused++;
-      }
+  let active = 0;
+  let paused = 0;
+  for (const trigger of eventTriggers) {
+    if (trigger.enabled) {
+      active++;
+    } else {
+      paused++;
     }
-    return { active, paused };
-  }, [eventTriggers]);
+  }
 
-  const handleToggle = useCallback(
-    (trigger: Trigger) => updateMutation.mutate(trigger),
-    [updateMutation]
-  );
+  const handleToggle = (trigger: Trigger) => {
+    updateMutation.mutate(trigger);
+  };
 
-  const handleDelete = useCallback(
-    (id: string) => deleteMutation.mutate(id),
-    [deleteMutation]
-  );
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
 
   const handleEdit = (trigger: Trigger) => {
     setEditTrigger(trigger);
@@ -271,12 +271,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
           >
             <TabsList variant="line">
-              <TabsTrigger value="active">
-                Active ({activeCounts.active})
-              </TabsTrigger>
-              <TabsTrigger value="paused">
-                Paused ({activeCounts.paused})
-              </TabsTrigger>
+              <TabsTrigger value="active">Active ({active})</TabsTrigger>
+              <TabsTrigger value="paused">Paused ({paused})</TabsTrigger>
             </TabsList>
 
             <TabsContent className="mt-4" value="active">
@@ -346,28 +342,17 @@ function EventTable({
   onDelete: (triggerId: string) => void;
   onEdit: (trigger: Trigger) => void;
 }) {
-  const sortedTriggers = useMemo(() => {
-    if (createdSortOrder === false) {
-      return triggers;
-    }
-    return [...triggers].sort((a, b) => {
-      const createdAtA = new Date(a.createdAt).getTime();
-      const createdAtB = new Date(b.createdAt).getTime();
-      return createdSortOrder === "desc"
-        ? createdAtB - createdAtA
-        : createdAtA - createdAtB;
-    });
-  }, [triggers, createdSortOrder]);
+  const sortedTriggers =
+    createdSortOrder === false
+      ? triggers
+      : Array.from(triggers).sort((a, b) => {
+          const createdAtA = new Date(a.createdAt).getTime();
+          const createdAtB = new Date(b.createdAt).getTime();
+          return createdSortOrder === "desc"
+            ? createdAtB - createdAtA
+            : createdAtA - createdAtB;
+        });
 
-  function getSortIcon(isSorted: false | "asc" | "desc") {
-    if (isSorted === "asc") {
-      return ArrowUp01Icon;
-    }
-    if (isSorted === "desc") {
-      return ArrowDown01Icon;
-    }
-    return ArrowUpDownIcon;
-  }
   const sortIcon = getSortIcon(createdSortOrder);
 
   if (triggers.length === 0) {

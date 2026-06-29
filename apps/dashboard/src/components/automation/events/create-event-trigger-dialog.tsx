@@ -36,7 +36,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { Button } from "@/components/button";
@@ -69,16 +69,16 @@ export function CreateEventTriggerDialog({
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
-  const setOpen = useCallback(
-    (next: boolean) => {
-      if (isControlled) {
-        controlledOnOpenChange?.(next);
-      } else {
-        setInternalOpen(next);
-      }
-    },
-    [controlledOnOpenChange, isControlled]
-  );
+  const setOpen = (next: boolean) => {
+    if (next) {
+      form.reset(getDefaultEventTriggerValues(editTrigger));
+    }
+    if (isControlled) {
+      controlledOnOpenChange?.(next);
+    } else {
+      setInternalOpen(next);
+    }
+  };
   const [addRepoOpen, setAddRepoOpen] = useState(false);
   const comboboxAnchor = useComboboxAnchor();
 
@@ -144,12 +144,6 @@ export function CreateEventTriggerDialog({
     },
   });
 
-  useEffect(() => {
-    if (open) {
-      form.reset(getDefaultEventTriggerValues(editTrigger));
-    }
-  }, [open, editTrigger, form]);
-
   const outputType = useStore(form.store, (s) => s.values.outputType);
   const repositoryCount = useStore(
     form.store,
@@ -179,27 +173,20 @@ export function CreateEventTriggerDialog({
     ? `${defaultBrandVoiceName} (Default)`
     : "Default brand voice";
 
-  const { integrationOptions, githubIntegrationId } = useMemo(() => {
-    const githubIntegrations =
-      integrationsResponse?.integrations.filter(
-        (i) => i.type === "github" && i.enabled
-      ) ?? [];
-    const repos = githubIntegrations.flatMap((i) =>
-      i.repositories.filter((r) => r.enabled)
-    );
-
-    const options = repos.map((r) => ({
-      value: r.id,
-      label: r.defaultBranch
-        ? `${r.owner}/${r.repo} · ${r.defaultBranch}`
-        : `${r.owner}/${r.repo}`,
-    }));
-
-    return {
-      integrationOptions: options,
-      githubIntegrationId: githubIntegrations[0]?.id,
-    };
-  }, [integrationsResponse]);
+  const githubIntegrations =
+    integrationsResponse?.integrations.filter(
+      (integration) => integration.type === "github" && integration.enabled
+    ) ?? [];
+  const repos = githubIntegrations.flatMap((integration) =>
+    integration.repositories.filter((repository) => repository.enabled)
+  );
+  const integrationOptions = repos.map((repository) => ({
+    value: repository.id,
+    label: repository.defaultBranch
+      ? `${repository.owner}/${repository.repo} · ${repository.defaultBranch}`
+      : `${repository.owner}/${repository.repo}`,
+  }));
+  const githubIntegrationId = githubIntegrations[0]?.id;
 
   const formError = useStore(form.store, (state) => {
     if (state.submissionAttempts === 0) {
@@ -223,12 +210,12 @@ export function CreateEventTriggerDialog({
     return null;
   });
 
-  const handleOpenAddRepoFlow = useCallback(() => {
+  const handleOpenAddRepoFlow = () => {
     setAddRepoOpen(true);
     if (!isEditMode) {
       setOpen(false);
     }
-  }, [isEditMode, setOpen]);
+  };
 
   return (
     <>
@@ -450,69 +437,117 @@ export function CreateEventTriggerDialog({
               </div>
             </div>
 
-            <div className="shrink-0 border-t bg-muted/30 px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <FooterStatus
-                  errorMessage={formError}
-                  repositoryCount={repositoryCount}
-                />
-                <div className="flex items-center gap-2">
-                  <Button
-                    disabled={mutation.isPending}
-                    onClick={() => setOpen(false)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    Cancel
-                  </Button>
-                  <Button disabled={mutation.isPending} type="submit">
-                    {mutation.isPending ? (
-                      <>
-                        <HugeiconsIcon
-                          className="size-4 animate-spin"
-                          icon={Loading03Icon}
-                        />
-                        {isEditMode ? "Saving..." : "Adding..."}
-                      </>
-                    ) : (
-                      <>
-                        <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                        {isEditMode ? "Save changes" : "Add trigger"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <DialogFooter
+              errorMessage={formError}
+              isEditMode={isEditMode}
+              isPending={mutation.isPending}
+              onCancel={() => setOpen(false)}
+              repositoryCount={repositoryCount}
+            />
           </form>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
-      {githubIntegrationId ? (
-        <AddRepositoryDialog
-          integrationId={githubIntegrationId}
-          onOpenChange={(isOpen) => {
-            setAddRepoOpen(isOpen);
-            if (!(isOpen || isEditMode)) {
-              setOpen(true);
-            }
-          }}
-          open={addRepoOpen}
-          organizationId={organizationId}
-        />
-      ) : (
-        <AddIntegrationDialog
-          onOpenChange={(isOpen) => {
-            setAddRepoOpen(isOpen);
-            if (!(isOpen || isEditMode)) {
-              setOpen(true);
-            }
-          }}
-          open={addRepoOpen}
-          organizationId={organizationId}
-        />
-      )}
+      <RepositoryConnectionDialogs
+        githubIntegrationId={githubIntegrationId}
+        isEditMode={isEditMode}
+        onOpenChange={(isOpen) => {
+          setAddRepoOpen(isOpen);
+          if (!(isOpen || isEditMode)) {
+            setOpen(true);
+          }
+        }}
+        open={addRepoOpen}
+        organizationId={organizationId}
+      />
     </>
+  );
+}
+
+interface DialogFooterProps {
+  errorMessage: string | null;
+  isEditMode: boolean;
+  isPending: boolean;
+  onCancel: () => void;
+  repositoryCount: number;
+}
+
+function DialogFooter({
+  errorMessage,
+  isEditMode,
+  isPending,
+  onCancel,
+  repositoryCount,
+}: DialogFooterProps) {
+  return (
+    <div className="shrink-0 border-t bg-muted/30 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <FooterStatus
+          errorMessage={errorMessage}
+          repositoryCount={repositoryCount}
+        />
+        <div className="flex items-center gap-2">
+          <Button
+            disabled={isPending}
+            onClick={onCancel}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            Cancel
+          </Button>
+          <Button disabled={isPending} type="submit">
+            {isPending ? (
+              <>
+                <HugeiconsIcon
+                  className="size-4 animate-spin"
+                  icon={Loading03Icon}
+                />
+                {isEditMode ? "Saving..." : "Adding..."}
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                {isEditMode ? "Save changes" : "Add trigger"}
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface RepositoryConnectionDialogsProps {
+  githubIntegrationId?: string;
+  isEditMode: boolean;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  organizationId: string;
+}
+
+function RepositoryConnectionDialogs({
+  githubIntegrationId,
+  onOpenChange,
+  open,
+  organizationId,
+}: RepositoryConnectionDialogsProps) {
+  if (githubIntegrationId) {
+    return (
+      <AddRepositoryDialog
+        integrationId={githubIntegrationId}
+        onOpenChange={onOpenChange}
+        open={open}
+        organizationId={organizationId}
+      />
+    );
+  }
+
+  return (
+    <AddIntegrationDialog
+      onOpenChange={onOpenChange}
+      open={open}
+      organizationId={organizationId}
+    />
   );
 }
 
