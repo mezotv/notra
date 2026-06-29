@@ -10,6 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Input } from "@notra/ui/components/ui/input";
 import { cn } from "@notra/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/button";
 import type { ApiKeyRevealFieldProps } from "@/types/api-keys";
 
@@ -33,10 +34,16 @@ export function ApiKeyRevealField({
   );
 
   const handleCopy = async () => {
+    if (!navigator.clipboard) {
+      toast.error("Clipboard not supported");
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(value);
     } catch {
       setCopied(false);
+      toast.error("Failed to copy to clipboard");
       return;
     }
 
