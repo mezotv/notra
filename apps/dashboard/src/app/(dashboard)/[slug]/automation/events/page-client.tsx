@@ -40,7 +40,10 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
-import { getDefaultEventTriggerValues } from "@/utils/event-trigger-form";
+import {
+  getDefaultEventTriggerValues,
+  isAutomationOutputType,
+} from "@/utils/event-trigger-form";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 
 function formatEventList(events?: string[]) {
@@ -108,6 +111,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Organization ID is required");
       }
       const values = getDefaultEventTriggerValues(trigger);
+      const outputType = isAutomationOutputType(trigger.outputType)
+        ? trigger.outputType
+        : values.outputType;
 
       return dashboardOrpc.automation.events.update.call({
         organizationId,
@@ -117,7 +123,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           eventTypes: trigger.sourceConfig.eventTypes ?? [values.eventType],
         },
         targets: trigger.targets,
-        outputType: values.outputType,
+        outputType,
         outputConfig: trigger.outputConfig ?? {},
         enabled: !trigger.enabled,
         autoPublish: trigger.autoPublish,
@@ -194,12 +200,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     [deleteMutation]
   );
 
-  const handleEdit = useCallback(
-    (trigger: Trigger) => {
-      setEditTrigger(trigger);
-    },
-    [setEditTrigger]
-  );
+  const handleEdit = (trigger: Trigger) => {
+    setEditTrigger(trigger);
+  };
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">

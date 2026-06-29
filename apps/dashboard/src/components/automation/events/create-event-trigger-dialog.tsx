@@ -224,9 +224,11 @@ export function CreateEventTriggerDialog({
   });
 
   const handleOpenAddRepoFlow = useCallback(() => {
-    setOpen(false);
     setAddRepoOpen(true);
-  }, [setOpen]);
+    if (!isEditMode) {
+      setOpen(false);
+    }
+  }, [isEditMode, setOpen]);
 
   return (
     <>
@@ -491,7 +493,7 @@ export function CreateEventTriggerDialog({
           integrationId={githubIntegrationId}
           onOpenChange={(isOpen) => {
             setAddRepoOpen(isOpen);
-            if (!isOpen) {
+            if (!(isOpen || isEditMode)) {
               setOpen(true);
             }
           }}
@@ -502,7 +504,7 @@ export function CreateEventTriggerDialog({
         <AddIntegrationDialog
           onOpenChange={(isOpen) => {
             setAddRepoOpen(isOpen);
-            if (!isOpen) {
+            if (!(isOpen || isEditMode)) {
               setOpen(true);
             }
           }}

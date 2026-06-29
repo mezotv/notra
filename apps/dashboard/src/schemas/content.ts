@@ -10,7 +10,7 @@ import { createContentGenerationRequestSchema } from "@notra/content-generation/
 import * as z from "zod";
 import {
   LOOKBACK_WINDOWS,
-  SUPPORTED_SCHEDULE_OUTPUT_TYPES,
+  SUPPORTED_AUTOMATION_OUTPUT_TYPES,
 } from "./integrations";
 
 export const postStatusSchema = z.enum(["draft", "published"]);
@@ -292,7 +292,7 @@ export const updateContentSchema = z
 export type UpdateContentInput = z.infer<typeof updateContentSchema>;
 
 export const onDemandContentTypeSchema = z.enum([
-  ...SUPPORTED_SCHEDULE_OUTPUT_TYPES,
+  ...SUPPORTED_AUTOMATION_OUTPUT_TYPES,
   "image",
 ] as const);
 export type OnDemandContentType = z.infer<typeof onDemandContentTypeSchema>;

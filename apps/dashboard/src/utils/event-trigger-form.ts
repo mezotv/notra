@@ -1,5 +1,6 @@
 import {
-  SUPPORTED_SCHEDULE_OUTPUT_TYPES,
+  type AutomationOutputType,
+  SUPPORTED_AUTOMATION_OUTPUT_TYPES,
   WEBHOOK_EVENT_TYPES,
 } from "@/schemas/integrations";
 import type { EventTriggerFormValues } from "@/types/automation/event-trigger";
@@ -13,6 +14,16 @@ export const DEFAULT_EVENT_TRIGGER_VALUES: EventTriggerFormValues = {
   autoPublish: false,
 };
 
+export function isAutomationOutputType(
+  outputType: string
+): outputType is AutomationOutputType {
+  return SUPPORTED_AUTOMATION_OUTPUT_TYPES.some((type) => type === outputType);
+}
+
+function normalizeBrandVoiceId(brandVoiceId?: string): string {
+  return brandVoiceId && brandVoiceId !== "__default__" ? brandVoiceId : "";
+}
+
 export function getDefaultEventTriggerValues(
   trigger?: Trigger
 ): EventTriggerFormValues {
@@ -24,7 +35,7 @@ export function getDefaultEventTriggerValues(
     WEBHOOK_EVENT_TYPES.includes(type)
   );
 
-  const outputType = SUPPORTED_SCHEDULE_OUTPUT_TYPES.find(
+  const outputType = SUPPORTED_AUTOMATION_OUTPUT_TYPES.find(
     (type) => type === trigger.outputType
   );
 
@@ -32,7 +43,7 @@ export function getDefaultEventTriggerValues(
     eventType: eventType ?? DEFAULT_EVENT_TRIGGER_VALUES.eventType,
     outputType: outputType ?? DEFAULT_EVENT_TRIGGER_VALUES.outputType,
     repositoryIds: trigger.targets.repositoryIds,
-    brandVoiceId: trigger.outputConfig?.brandVoiceId ?? "",
+    brandVoiceId: normalizeBrandVoiceId(trigger.outputConfig?.brandVoiceId),
     autoPublish: trigger.autoPublish,
   };
 }

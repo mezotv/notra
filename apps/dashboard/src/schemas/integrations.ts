@@ -278,15 +278,18 @@ export const configureTriggerBodySchema = z.object({
 });
 export type ConfigureTriggerBody = z.infer<typeof configureTriggerBodySchema>;
 
-export const SUPPORTED_SCHEDULE_OUTPUT_TYPES = [
+export const SUPPORTED_AUTOMATION_OUTPUT_TYPES = [
   "changelog",
   "blog_post",
   "linkedin_post",
   "twitter_post",
   "image",
 ] as const;
+export type AutomationOutputType =
+  (typeof SUPPORTED_AUTOMATION_OUTPUT_TYPES)[number];
+
 export type ScheduleOutputType =
-  (typeof SUPPORTED_SCHEDULE_OUTPUT_TYPES)[number];
+  (typeof SUPPORTED_AUTOMATION_OUTPUT_TYPES)[number];
 
 export const configureEventTriggerBodySchema =
   configureTriggerBodySchema.extend({
@@ -294,7 +297,7 @@ export const configureEventTriggerBodySchema =
     sourceConfig: z.object({
       eventTypes: z.array(z.enum(WEBHOOK_EVENT_TYPES)).min(1),
     }),
-    outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
+    outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),
   });
 export type ConfigureEventTriggerBody = z.infer<
   typeof configureEventTriggerBodySchema
@@ -312,7 +315,7 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
       dayOfMonth: z.number().min(1).max(31).optional(),
     }),
   }),
-  outputType: z.enum(SUPPORTED_SCHEDULE_OUTPUT_TYPES),
+  outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),
   lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
 });
 export type ConfigureScheduleBody = z.infer<typeof configureScheduleBodySchema>;
