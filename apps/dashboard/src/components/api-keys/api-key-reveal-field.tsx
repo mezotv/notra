@@ -33,7 +33,13 @@ export function ApiKeyRevealField({
   );
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      setCopied(false);
+      return;
+    }
+
     setCopied(true);
     if (copyTimer.current) {
       clearTimeout(copyTimer.current);

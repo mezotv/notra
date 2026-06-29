@@ -1,3 +1,5 @@
+import { PUBLIC_API_SCOPE_RESOURCES } from "../constants/oauth-scopes";
+
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const VERSION_PREFIX_REGEX = /^\/v1(?=\/|$)/;
 const LEGACY_ORGANIZATION_POSTS_REGEX = /^\/[^/]+\/posts(?:\/|$)/;
@@ -14,36 +16,24 @@ export function getRequiredOAuthScope(pathname: string, method: string) {
     return undefined;
   }
 
-  if (path.startsWith("/posts/") || path === "/posts") {
-    return scopeForResource("posts", method);
-  }
-
   if (LEGACY_ORGANIZATION_POSTS_REGEX.test(path)) {
     return scopeForResource("posts", method);
-  }
-
-  if (path.startsWith("/brand-identities/") || path === "/brand-identities") {
-    return scopeForResource("brand-identities", method);
-  }
-
-  if (path.startsWith("/integrations/") || path === "/integrations") {
-    return scopeForResource("integrations", method);
-  }
-
-  if (path.startsWith("/schedules/") || path === "/schedules") {
-    return scopeForResource("schedules", method);
   }
 
   if (LEGACY_ORGANIZATION_SCHEDULES_REGEX.test(path)) {
     return scopeForResource("schedules", method);
   }
 
-  if (path.startsWith("/chats/") || path === "/chats") {
-    return scopeForResource("chats", method);
-  }
-
-  if (path.startsWith("/skills/") || path === "/skills") {
-    return scopeForResource("skills", method);
+  const resource = PUBLIC_API_SCOPE_RESOURCES.find((item) =>
+    item.paths.some(
+      (resourcePath) =>
+        path === resourcePath || path.startsWith(`${resourcePath}/`)
+    )
+  );
+  if (resource) {
+    return MUTATION_METHODS.has(method)
+      ? resource.writeScope
+      : resource.readScope;
   }
 
   return undefined;
