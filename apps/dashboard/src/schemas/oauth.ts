@@ -1,9 +1,11 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
+  OAUTH_ACCEPTED_SCOPES,
   OAUTH_SUPPORTED_RESOURCES,
   OAUTH_SUPPORTED_SCOPES,
 } from "@/constants/oauth";
+import { expandLegacyOAuthScopes } from "@/utils/oauth-scopes";
 
 const SCOPE_SEPARATOR_REGEX = /\s+/;
 
@@ -12,7 +14,8 @@ const scopeSchema = z
   .trim()
   .min(1)
   .transform((value) => value.split(SCOPE_SEPARATOR_REGEX))
-  .pipe(z.array(z.enum(OAUTH_SUPPORTED_SCOPES)).min(1))
+  .pipe(z.array(z.enum(OAUTH_ACCEPTED_SCOPES)).min(1))
+  .transform(expandLegacyOAuthScopes)
   .transform((value) => value.join(" "));
 
 const consentScopeSchema = z

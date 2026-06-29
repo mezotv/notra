@@ -23,6 +23,7 @@ declare module "hono" {
 
 interface AuthOptions {
   getKey?: (c: Context) => string | null;
+  legacyPermissions?: string[];
   permissions?: string;
 }
 
@@ -224,10 +225,33 @@ async function verifyRequestAuth(
 
   try {
     const unkey = new Unkey({ rootKey: c.env.UNKEY_ROOT_KEY });
-    const result = await unkey.keys.verifyKey({
+    const permissionsToTry = [
+      options.permissions,
+      ...(options.legacyPermissions ?? []),
+    ].filter(
+      (permission, index, permissions): permission is string =>
+        typeof permission === "string" &&
+        permission.length > 0 &&
+        permissions.indexOf(permission) === index
+    );
+    let result = await unkey.keys.verifyKey({
       key: apiKey,
-      permissions: options.permissions,
+      ...(permissionsToTry[0] ? { permissions: permissionsToTry[0] } : {}),
     });
+
+    for (const permission of permissionsToTry.slice(1)) {
+      if (
+        result.data.valid ||
+        result.data.code !== "INSUFFICIENT_PERMISSIONS"
+      ) {
+        break;
+      }
+
+      result = await unkey.keys.verifyKey({
+        key: apiKey,
+        permissions: permission,
+      });
+    }
 
     if (!result.data.valid) {
       if (result.data.code === "INSUFFICIENT_PERMISSIONS") {

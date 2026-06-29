@@ -1,17 +1,10 @@
+import { PUBLIC_API_SCOPES } from "../constants/oauth-scopes";
+
 export const API_URL = "https://api.usenotra.com";
 export const SITE_URL = "https://www.usenotra.com";
 
 export const RESOURCE_METADATA_URL = `${API_URL}/.well-known/oauth-protected-resource`;
 export const AUTH_GUIDE_URL = `${SITE_URL}/auth.md`;
-
-const PUBLIC_API_SCOPES = [
-  "api.read",
-  "api.write",
-  "posts.read",
-  "posts.write",
-  "skills.read",
-  "skills.write",
-] as const;
 
 const AGENT_AUTH_METADATA = {
   register_uri: `${SITE_URL}/agent/auth/register`,

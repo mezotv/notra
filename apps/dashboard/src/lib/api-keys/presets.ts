@@ -4,6 +4,10 @@ import {
   SourceCodeIcon,
 } from "@hugeicons/core-free-icons";
 import type { ConnectedCardItem } from "@notra/ui/components/shared/connected-cards";
+import {
+  API_KEY_GRANULAR_PERMISSIONS,
+  API_KEY_GRANULAR_READ_PERMISSIONS,
+} from "@/constants/api-keys";
 import type { ApiKeyPreset } from "@/types/api-keys";
 
 const DOCS_BASE_URL = "https://docs.usenotra.com";
@@ -17,7 +21,7 @@ export const API_KEY_PRESETS: ApiKeyPreset[] = [
       "Connect Claude, Cursor, and other MCP clients to read and write your content.",
     docsHref: `${DOCS_BASE_URL}/devtools/mcp`,
     defaultName: "MCP Server",
-    permission: "api.write",
+    scopes: [...API_KEY_GRANULAR_PERMISSIONS],
     expiration: "never",
   },
   {
@@ -28,7 +32,7 @@ export const API_KEY_PRESETS: ApiKeyPreset[] = [
       "Pull your data programmatically with the TypeScript and Python SDKs.",
     docsHref: `${DOCS_BASE_URL}/api/getting-started`,
     defaultName: "SDK",
-    permission: "api.read",
+    scopes: [...API_KEY_GRANULAR_READ_PERMISSIONS],
     expiration: "never",
   },
   {
@@ -39,7 +43,7 @@ export const API_KEY_PRESETS: ApiKeyPreset[] = [
       "Script and automate your workflow from the terminal with full access.",
     docsHref: `${DOCS_BASE_URL}/devtools/cli`,
     defaultName: "CLI",
-    permission: "api.write",
+    scopes: [...API_KEY_GRANULAR_PERMISSIONS],
     expiration: "never",
   },
 ];

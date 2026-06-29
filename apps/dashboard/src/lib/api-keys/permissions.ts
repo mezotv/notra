@@ -1,20 +1,11 @@
+import {
+  API_KEY_GRANULAR_PERMISSIONS,
+  API_KEY_GRANULAR_READ_PERMISSIONS,
+} from "@/constants/api-keys";
 import type { ApiKeyPermission } from "@/types/api-keys";
 
 export function getPermissionsForLevel(permission: ApiKeyPermission) {
-  return permission === "api.write" ? ["api.read", "api.write"] : ["api.read"];
-}
-
-export function getPermissionLevel(
-  permissions: string[],
-  fallbackPermission: unknown = "api.read"
-): ApiKeyPermission {
-  if (permissions.includes("api.write")) {
-    return "api.write";
-  }
-
-  if (permissions.includes("api.read")) {
-    return "api.read";
-  }
-
-  return fallbackPermission === "api.write" ? "api.write" : "api.read";
+  return permission === "api.write"
+    ? [...API_KEY_GRANULAR_PERMISSIONS]
+    : [...API_KEY_GRANULAR_READ_PERMISSIONS];
 }

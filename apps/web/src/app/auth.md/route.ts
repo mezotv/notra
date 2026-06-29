@@ -14,7 +14,7 @@ The \`agent_auth\` block documents \`anonymous\` and \`identity_assertion\` requ
 
 ## Register
 
-Call \`POST /agent/auth/register\` to confirm the supported registration metadata. Production API keys are created in the Notra dashboard. Agents should request the least privileged scopes: \`api.read\` for reads, \`posts.write\` for content updates, and \`skills.write\` only when modifying reusable writing skills.
+Call \`POST /agent/auth/register\` to confirm the supported registration metadata. Production API keys are created in the Notra dashboard. Agents should request the least privileged resource scopes, such as \`posts.read\`, \`posts.write\`, \`skills.read\`, \`skills.write\`, \`integrations.read\`, and \`integrations.write\`.
 
 ## Claim
 

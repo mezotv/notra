@@ -2,6 +2,10 @@ import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle-http";
 import { trimTrailingSlash } from "hono/trailing-slash";
+import {
+  LEGACY_API_READ_SCOPE,
+  LEGACY_API_WRITE_SCOPE,
+} from "./constants/oauth-scopes";
 import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
@@ -21,6 +25,7 @@ import {
   SITE_URL,
 } from "./utils/agent-discovery";
 import { assertRequiredEnv } from "./utils/env";
+import { getRequiredOAuthScope } from "./utils/oauth-scopes";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
 
@@ -156,10 +161,20 @@ app.openapi(publicStatusRoute, (c) => {
 });
 
 app.use("/v1/*", (c, next) => {
-  const permissions = ["POST", "PUT", "PATCH", "DELETE"].includes(c.req.method)
-    ? "api.write"
-    : "api.read";
-  return authMiddleware({ permissions })(c, next);
+  const requiredScope = getRequiredOAuthScope(
+    new URL(c.req.url).pathname,
+    c.req.method
+  );
+  const legacyPermission = ["POST", "PUT", "PATCH", "DELETE"].includes(
+    c.req.method
+  )
+    ? LEGACY_API_WRITE_SCOPE
+    : LEGACY_API_READ_SCOPE;
+
+  return authMiddleware({
+    legacyPermissions: [legacyPermission],
+    permissions: requiredScope,
+  })(c, next);
 });
 
 app.use("/v1/*", subscriptionMiddleware());

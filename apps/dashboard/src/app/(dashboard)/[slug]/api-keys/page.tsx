@@ -6,10 +6,10 @@ import {
   ArrowUp01Icon,
   ArrowUpDownIcon,
   Book01Icon,
-  Copy01Icon,
   Delete02Icon,
   Dots,
   Edit02Icon,
+  InformationCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ConnectedCards } from "@notra/ui/components/shared/connected-cards";
@@ -27,10 +27,12 @@ import {
   ResponsiveDialog,
   ResponsiveDialogClose,
   ResponsiveDialogContent,
+  ResponsiveDialogDescription,
   ResponsiveDialogFooter,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { Alert, AlertDescription } from "@notra/ui/components/ui/alert";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,34 +72,53 @@ import type {
   KeyResponseData,
   V2KeysCreateKeyResponseData,
 } from "@unkey/api/models/components";
-import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from "nuqs";
 import { useEffect, useMemo, useReducer } from "react";
 import { toast } from "sonner";
+import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
+import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
+  API_KEY_DEFAULT_SCOPES,
   API_KEY_EXPIRATION_OPTIONS,
   API_KEY_EXPIRATION_VALUES,
-  API_KEY_PERMISSION_LABELS,
-  API_KEY_PERMISSIONS,
+  API_KEY_PERMISSION_SUMMARY,
 } from "@/constants/api-keys";
 import { API_KEY_CARD_ITEMS, API_KEY_PRESETS } from "@/lib/api-keys/presets";
+import { expandLegacyApiKeyScopes } from "@/lib/api-keys/scopes";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import type { CreateApiKeyInput, UpdateApiKeyInput } from "@/schemas/api-keys";
 import { createApiKeySchema, updateApiKeySchema } from "@/schemas/api-keys";
-import type { ApiKeyExpiration, ApiKeyPermission } from "@/types/api-keys";
-import { copyToClipboard } from "@/utils/copy-to-clipboard";
+import type {
+  ApiKeyCreateConfig,
+  ApiKeyExpiration,
+  ApiKeyFormValues,
+} from "@/types/api-keys";
 
 const NEW_KEY_CONFIG_PARSERS = {
   name: parseAsString,
-  permission: parseAsStringLiteral(API_KEY_PERMISSIONS),
+  scopes: parseAsArrayOf(parseAsString),
   expiration: parseAsStringLiteral(API_KEY_EXPIRATION_VALUES),
 };
 
-const DEFAULT_NEW_KEY_CONFIG = {
+const DEFAULT_NEW_KEY_CONFIG: ApiKeyCreateConfig = {
   name: "",
-  permission: "api.read" as ApiKeyPermission,
-  expiration: "never" as ApiKeyExpiration,
+  scopes: [...API_KEY_DEFAULT_SCOPES],
+  expiration: "never",
+};
+
+const EDIT_FORM_DEFAULTS: ApiKeyFormValues = {
+  keyId: "",
+  name: "",
+  scopes: [...API_KEY_DEFAULT_SCOPES],
+  expiration: "never",
 };
 
 type ApiKeyListItem = Omit<
@@ -109,7 +130,7 @@ type ApiKeyListItem = Omit<
 > & {
   name: string;
   expires: number | null;
-  permission: string;
+  permission: keyof typeof API_KEY_PERMISSION_SUMMARY;
   permissions: string[];
   createdBy: string | null;
 };
@@ -192,25 +213,7 @@ function formatExpiry(expires: number | null) {
 }
 
 function formatPermissionLabel(apiKey: ApiKeyListItem) {
-  const hasRead = apiKey.permissions.includes("api.read");
-  const hasWrite = apiKey.permissions.includes("api.write");
-
-  if (hasRead && hasWrite) {
-    return "Read & write";
-  }
-
-  if (hasWrite) {
-    return "Read & write";
-  }
-
-  if (hasRead) {
-    return "Read only";
-  }
-
-  return (
-    API_KEY_PERMISSION_LABELS[apiKey.permission as ApiKeyPermission] ??
-    apiKey.permission
-  );
+  return API_KEY_PERMISSION_SUMMARY[apiKey.permission];
 }
 
 function getDefaultEditExpiration(
@@ -346,7 +349,7 @@ export default function ApiKeysPage() {
   );
   const hasNewKeyConfig =
     newKeyConfig.name !== null &&
-    newKeyConfig.permission !== null &&
+    newKeyConfig.scopes !== null &&
     newKeyConfig.expiration !== null;
 
   useHotkey(
@@ -392,13 +395,12 @@ export default function ApiKeysPage() {
   const createdSortIcon = getSortIcon(createdSortOrder);
 
   const newKeyName = newKeyConfig.name;
-  const newKeyPermission =
-    newKeyConfig.permission ?? DEFAULT_NEW_KEY_CONFIG.permission;
+  const newKeyScopes = newKeyConfig.scopes ?? DEFAULT_NEW_KEY_CONFIG.scopes;
   const newKeyExpiration =
     newKeyConfig.expiration ?? DEFAULT_NEW_KEY_CONFIG.expiration;
   const createInput = {
     name: newKeyName ?? DEFAULT_NEW_KEY_CONFIG.name,
-    permission: newKeyPermission,
+    scopes: newKeyScopes,
     expiration: newKeyExpiration,
   };
 
@@ -415,7 +417,7 @@ export default function ApiKeysPage() {
     }
     const config = {
       name: preset.defaultName,
-      permission: preset.permission,
+      scopes: preset.scopes,
       expiration: preset.expiration,
     };
     dispatchUi({ type: "createErrorChanged", createError: null });
@@ -438,12 +440,7 @@ export default function ApiKeysPage() {
   };
 
   const editForm = useForm({
-    defaultValues: {
-      keyId: "",
-      name: "",
-      permission: "api.read" as ApiKeyPermission,
-      expiration: "never" as ApiKeyExpiration,
-    },
+    defaultValues: EDIT_FORM_DEFAULTS,
     onSubmit: ({ value }) => {
       const result = updateApiKeySchema.safeParse(value);
       if (!result.success) {
@@ -454,11 +451,7 @@ export default function ApiKeysPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (values: {
-      name: string;
-      permission: ApiKeyPermission;
-      expiration: ApiKeyExpiration;
-    }) => {
+    mutationFn: async (values: CreateApiKeyInput) => {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
@@ -485,12 +478,7 @@ export default function ApiKeysPage() {
   });
 
   const editMutation = useMutation({
-    mutationFn: async (values: {
-      keyId: string;
-      name: string;
-      permission: ApiKeyPermission;
-      expiration: ApiKeyExpiration;
-    }) => {
+    mutationFn: async (values: UpdateApiKeyInput) => {
       if (!organizationId) {
         throw new Error("Organization ID is required");
       }
@@ -573,16 +561,12 @@ export default function ApiKeysPage() {
   };
 
   const openEditDialog = (key: ApiKeyListItem) => {
-    const permission = API_KEY_PERMISSIONS.includes(
-      key.permission as ApiKeyPermission
-    )
-      ? (key.permission as ApiKeyPermission)
-      : "api.read";
+    const scopes = expandLegacyApiKeyScopes(key.permissions);
 
     editForm.reset({
       keyId: key.keyId,
       name: key.name,
-      permission,
+      scopes: scopes.length > 0 ? scopes : [...API_KEY_DEFAULT_SCOPES],
       expiration: getDefaultEditExpiration(key.createdAt, key.expires),
     });
     editForm.setFieldValue("name", key.name);
@@ -699,46 +683,44 @@ export default function ApiKeysPage() {
         </div>
       </div>
 
-      <ResponsiveAlertDialog onOpenChange={handleDialogClose} open={dialogOpen}>
-        <ResponsiveAlertDialogContent className="sm:max-w-120">
+      <ResponsiveDialog onOpenChange={handleDialogClose} open={dialogOpen}>
+        <ResponsiveDialogContent
+          className={createdKey ? "sm:max-w-md" : "sm:max-w-2xl"}
+        >
           {createdKey ? (
             <>
-              <ResponsiveAlertDialogHeader>
-                <ResponsiveAlertDialogTitle>
-                  API Key Created
-                </ResponsiveAlertDialogTitle>
-                <ResponsiveAlertDialogDescription>
-                  Copy this key now. You won't be able to see it again.
-                </ResponsiveAlertDialogDescription>
-              </ResponsiveAlertDialogHeader>
-              <div className="flex items-center gap-2">
-                <Input readOnly value={createdKey} />
-                <Button
-                  onClick={() => copyToClipboard(createdKey)}
-                  size="icon"
-                  variant="outline"
-                >
-                  <HugeiconsIcon className="size-4" icon={Copy01Icon} />
-                </Button>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
+              </ResponsiveDialogHeader>
+              <div className="space-y-4">
+                <Alert className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300">
+                  <HugeiconsIcon icon={InformationCircleIcon} />
+                  <AlertDescription className="text-blue-700 dark:text-blue-300">
+                    You can only see this key once.{" "}
+                    <span className="font-medium text-foreground">
+                      Store it safely.
+                    </span>
+                  </AlertDescription>
+                </Alert>
+                <Field>
+                  <FieldLabel>API Key</FieldLabel>
+                  <ApiKeyRevealField value={createdKey} />
+                </Field>
               </div>
-              <ResponsiveAlertDialogFooter>
-                <ResponsiveAlertDialogAction
-                  onClick={() => handleDialogClose(false)}
-                >
-                  Done
-                </ResponsiveAlertDialogAction>
-              </ResponsiveAlertDialogFooter>
+              <ResponsiveDialogFooter>
+                <ResponsiveDialogClose render={<Button>Done</Button>} />
+              </ResponsiveDialogFooter>
             </>
           ) : (
             <>
-              <ResponsiveAlertDialogHeader>
-                <ResponsiveAlertDialogTitle className="text-2xl">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle className="text-2xl">
                   Create API Key
-                </ResponsiveAlertDialogTitle>
-                <ResponsiveAlertDialogDescription>
+                </ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
                   Create a new API key for your organization.
-                </ResponsiveAlertDialogDescription>
-              </ResponsiveAlertDialogHeader>
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -775,25 +757,11 @@ export default function ApiKeysPage() {
                       Permission
                       <span className="-ml-1 text-destructive">*</span>
                     </FieldLabel>
-                    <Select
+                    <ApiKeyPermissionSelector
                       disabled={mutation.isPending}
-                      onValueChange={(value) =>
-                        setNewKeyConfig({
-                          permission: value as ApiKeyPermission,
-                        })
-                      }
-                      value={createInput.permission}
-                    >
-                      <SelectTrigger>
-                        <SelectValue>
-                          {API_KEY_PERMISSION_LABELS[createInput.permission]}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="api.read">Read only</SelectItem>
-                        <SelectItem value="api.write">Read & write</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onValueChange={(scopes) => setNewKeyConfig({ scopes })}
+                      value={createInput.scopes}
+                    />
                   </Field>
 
                   <Field>
@@ -825,25 +793,26 @@ export default function ApiKeysPage() {
                     </Select>
                   </Field>
                 </div>
-                <ResponsiveAlertDialogFooter>
-                  <ResponsiveAlertDialogCancel disabled={mutation.isPending}>
-                    Cancel
-                  </ResponsiveAlertDialogCancel>
+                <ResponsiveDialogFooter>
+                  <ResponsiveDialogClose
+                    disabled={mutation.isPending}
+                    render={<Button variant="outline">Cancel</Button>}
+                  />
                   <Button disabled={mutation.isPending} type="submit">
                     {mutation.isPending ? "Creating…" : "Create Key"}
                   </Button>
-                </ResponsiveAlertDialogFooter>
+                </ResponsiveDialogFooter>
               </form>
             </>
           )}
-        </ResponsiveAlertDialogContent>
-      </ResponsiveAlertDialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       <ResponsiveDialog
         onOpenChange={handleEditDialogClose}
         open={editDialogOpen}
       >
-        <ResponsiveDialogContent className="sm:max-w-120">
+        <ResponsiveDialogContent className="sm:max-w-2xl">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -891,30 +860,18 @@ export default function ApiKeysPage() {
                 )}
               </editForm.Field>
 
-              <editForm.Field name="permission">
+              <editForm.Field name="scopes">
                 {(field) => (
                   <Field>
                     <FieldLabel>
                       Permission
                       <span className="-ml-1 text-destructive">*</span>
                     </FieldLabel>
-                    <Select
+                    <ApiKeyPermissionSelector
                       disabled={editMutation.isPending}
-                      onValueChange={(value) =>
-                        field.handleChange(value as ApiKeyPermission)
-                      }
+                      onValueChange={(scopes) => field.handleChange(scopes)}
                       value={field.state.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue>
-                          {API_KEY_PERMISSION_LABELS[field.state.value]}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="api.read">Read only</SelectItem>
-                        <SelectItem value="api.write">Read & write</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    />
                   </Field>
                 )}
               </editForm.Field>

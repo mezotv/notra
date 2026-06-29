@@ -22,6 +22,7 @@ import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import {
+  OAUTH_ACCEPTED_SCOPES,
   OAUTH_ACCESS_TOKEN_TTL_SECONDS,
   OAUTH_AUTH_CODE_TTL_MS,
   OAUTH_DEFAULT_SCOPES,
@@ -299,7 +300,7 @@ export const auth = betterAuth({
     oauthProvider({
       loginPage: "/login",
       consentPage: "/agent/auth/authorize",
-      scopes: [...OAUTH_SUPPORTED_SCOPES],
+      scopes: [...OAUTH_ACCEPTED_SCOPES],
       validAudiences: [...OAUTH_SUPPORTED_RESOURCES],
       grantTypes: ["authorization_code", "refresh_token"],
       accessTokenExpiresIn: OAUTH_ACCESS_TOKEN_TTL_SECONDS,

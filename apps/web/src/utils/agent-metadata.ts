@@ -26,10 +26,16 @@ export const NOTRA_SAME_AS = [
 ] as const;
 
 const PUBLIC_API_SCOPES = [
-  "api.read",
-  "api.write",
   "posts.read",
   "posts.write",
+  "brand-identities.read",
+  "brand-identities.write",
+  "integrations.read",
+  "integrations.write",
+  "schedules.read",
+  "schedules.write",
+  "chats.read",
+  "chats.write",
   "skills.read",
   "skills.write",
 ] as const;

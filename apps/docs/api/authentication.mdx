@@ -45,7 +45,7 @@ console.log(result);
 1. Open your workspace dashboard.
 2. Go to **API Keys** under **Developer**.
 3. Click **Create API Key**.
-4. Choose a name, permission, and optional expiration.
+4. Choose a name, resource permissions, and optional expiration.
 5. Copy the key and store it securely.
 
 <img
@@ -60,6 +60,24 @@ console.log(result);
 />
 
 API keys are powered by [Unkey](https://unkey.dev).
+
+## Permissions
+
+API keys can be scoped per resource. Grant **Read** when a key only needs to
+fetch data, **Write** when it needs to create, update, or delete that resource,
+and **None** when the key should not access the resource.
+
+Available resources:
+
+- Posts
+- Brand identities
+- Integrations
+- Schedules
+- Chats
+- Skills
+
+Legacy keys with the older `api.read` and `api.write` permissions continue to
+work. New keys use the resource-specific scopes.
 
 ## Error Handling
 

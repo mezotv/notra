@@ -3,20 +3,46 @@ export const OAUTH_ACCESS_TOKEN_TTL_SECONDS = 60 * 60;
 export const OAUTH_REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 export const OAUTH_SUPPORTED_SCOPES = [
-  "api.read",
-  "api.write",
   "offline_access",
   "posts.read",
   "posts.write",
+  "brand-identities.read",
+  "brand-identities.write",
+  "integrations.read",
+  "integrations.write",
+  "schedules.read",
+  "schedules.write",
+  "chats.read",
+  "chats.write",
   "skills.read",
   "skills.write",
+] as const;
+
+export const OAUTH_LEGACY_SCOPES = ["api.read", "api.write"] as const;
+
+export const OAUTH_ACCEPTED_SCOPES = [
+  ...OAUTH_SUPPORTED_SCOPES,
+  ...OAUTH_LEGACY_SCOPES,
 ] as const;
 
 export const OAUTH_SUPPORTED_SCOPE_SET: ReadonlySet<string> = new Set(
   OAUTH_SUPPORTED_SCOPES
 );
 
-export const OAUTH_DEFAULT_SCOPES = ["api.read"] as const;
+export const OAUTH_DEFAULT_SCOPES = [
+  "posts.read",
+  "posts.write",
+  "brand-identities.read",
+  "brand-identities.write",
+  "integrations.read",
+  "integrations.write",
+  "schedules.read",
+  "schedules.write",
+  "chats.read",
+  "chats.write",
+  "skills.read",
+  "skills.write",
+] as const;
 
 export const OAUTH_GRANT_QUERY_PARAM = "grant";
 
@@ -35,18 +61,39 @@ export const OAUTH_SCOPE_RESOURCES = [
     writeScope: "posts.write",
   },
   {
+    id: "brand-identities",
+    label: "Brand identities",
+    description: "Read and manage saved brand voices",
+    readScope: "brand-identities.read",
+    writeScope: "brand-identities.write",
+  },
+  {
+    id: "integrations",
+    label: "Integrations",
+    description: "Read and manage connected content sources",
+    readScope: "integrations.read",
+    writeScope: "integrations.write",
+  },
+  {
+    id: "schedules",
+    label: "Schedules",
+    description: "Read and manage scheduled content generation",
+    readScope: "schedules.read",
+    writeScope: "schedules.write",
+  },
+  {
+    id: "chats",
+    label: "Chats",
+    description: "Read and manage chat sessions",
+    readScope: "chats.read",
+    writeScope: "chats.write",
+  },
+  {
     id: "skills",
     label: "Skills",
     description: "Read and manage your skills",
     readScope: "skills.read",
     writeScope: "skills.write",
-  },
-  {
-    id: "api",
-    label: "API",
-    description: "Programmatic access to the Notra API",
-    readScope: "api.read",
-    writeScope: "api.write",
   },
 ] as const;
 
