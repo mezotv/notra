@@ -1,5 +1,5 @@
 export const OAUTH_CLIENT_BRANDS = [
-  { id: "codex", label: "Codex", keywords: ["codex"] },
+  { id: "codex", label: "Codex", keywords: ["codex", "chatgpt"] },
   { id: "claude", label: "Claude", keywords: ["claude"] },
   { id: "hermes", label: "Hermes", keywords: ["hermes"] },
   { id: "openclaw", label: "OpenClaw", keywords: ["openclaw", "open claw"] },
