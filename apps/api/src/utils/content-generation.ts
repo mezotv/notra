@@ -1,5 +1,5 @@
 import type { ContentGenerationWorkflowPayload } from "@notra/content-generation/schemas";
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import {
   brandSettings,
   githubIntegrations,

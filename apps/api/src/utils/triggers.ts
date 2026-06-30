@@ -1,4 +1,4 @@
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { logError } from "./logging";

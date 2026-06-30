@@ -1,4 +1,4 @@
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import { Unkey } from "@unkey/api";
 import type { Context, Next } from "hono";
 import {

@@ -15,7 +15,7 @@ import {
   buildExperimentalTelemetry,
   type TccMetadata,
 } from "@notra/ai/utils/tcc";
-import { generateText, Output } from "ai";
+import { generateObject, generateText } from "ai";
 
 const MODELS = {
   router: "openai/gpt-oss-120b",
@@ -119,20 +119,81 @@ export async function routeMessage(
 
   const routerModel = wrapModelWithObservability(gateway(MODELS.router), log);
 
-  const { output } = await generateText({
-    model: routerModel,
-    output: Output.object({ schema: routingDecisionSchema }),
-    system: ROUTING_PROMPT,
-    prompt: `Classify this user message:
+  try {
+    const { object } = await generateObject({
+      model: routerModel,
+      schema: routingDecisionSchema,
+      system: ROUTING_PROMPT,
+      prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
-    providerOptions: withGatewayAutomaticCaching(undefined, {
-      modelId: MODELS.router,
-    }),
-    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
-  });
+      providerOptions: withGatewayAutomaticCaching(undefined, {
+        modelId: MODELS.router,
+      }),
+      experimental_repairText: async ({ text, error }) => {
+        try {
+          const { text: repairedText } = await generateText({
+            model: routerModel,
+            system:
+              "Repair the router output so it is valid JSON matching the required schema. Return only JSON.",
+            prompt: [
+              "Schema:",
+              JSON.stringify({
+                type: "object",
+                properties: {
+                  complexity: { enum: ["simple", "complex"] },
+                  requiresTools: { type: "boolean" },
+                  reasoningHeavy: { type: "boolean" },
+                  reasoning: { type: "string" },
+                },
+                required: [
+                  "complexity",
+                  "requiresTools",
+                  "reasoningHeavy",
+                  "reasoning",
+                ],
+                additionalProperties: false,
+              }),
+              "Invalid output:",
+              text,
+              "Validation error:",
+              error.message,
+            ].join("\n"),
+            maxOutputTokens: 200,
+            providerOptions: withGatewayAutomaticCaching(undefined, {
+              modelId: MODELS.router,
+            }),
+            experimental_telemetry:
+              buildExperimentalTelemetry(telemetryMetadata),
+          });
 
-  return output;
+          return repairedText;
+        } catch (repairError) {
+          console.error("[Chat Router] Repair failed", {
+            error:
+              repairError instanceof Error
+                ? repairError.message
+                : String(repairError),
+          });
+          return null;
+        }
+      },
+      experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+    });
+
+    return object;
+  } catch (error) {
+    console.error("[Chat Router] Routing failed; using fallback", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      complexity: "complex",
+      requiresTools: false,
+      reasoningHeavy: false,
+      reasoning:
+        "Router structured output failed; falling back to Sonnet without tool routing.",
+    };
+  }
 }
 
 export function selectModel(decision: RoutingDecision): string {

@@ -1,6 +1,6 @@
 import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { createDb } from "@notra/db/drizzle-http";
+import { createDb } from "@notra/db/drizzle";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import {
   LEGACY_API_READ_SCOPE,

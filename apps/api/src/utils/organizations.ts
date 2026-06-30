@@ -1,4 +1,4 @@
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 

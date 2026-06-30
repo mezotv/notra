@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { createOctokit } from "@notra/ai/utils/octokit";
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import { githubIntegrations, members } from "@notra/db/schema";
 import {
   decodeIntegrationEncryptionKey,

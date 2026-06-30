@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import type { createDb } from "@notra/db/drizzle-http";
+import type { createDb } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
   contentTriggers,
