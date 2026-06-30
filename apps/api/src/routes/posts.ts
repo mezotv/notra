@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import {
   appendContentGenerationJobEvent,
@@ -45,13 +45,14 @@ import {
   extractTitleFromMarkdown,
   renderMarkdownToHtml,
 } from "../utils/markdown";
+import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
 import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
 import { getRedis } from "../utils/redis";
 
-export const postsRoutes = new OpenAPIHono();
+export const postsRoutes = createOpenApiApp();
 
 function shouldApplyFilter(
   selectedValues: readonly string[],
@@ -189,7 +190,6 @@ const deletePostRoute = createRoute({
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Post not found"),
-    409: errorResponse("Post slug already exists"),
     503: errorResponse("Authentication service unavailable"),
   },
 });
@@ -295,6 +295,7 @@ const getPostGenerationRoute = createRoute({
         },
       },
     },
+    400: errorResponse("Invalid path params"),
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Generation job not found"),
@@ -358,6 +359,7 @@ postsRoutes.openapi(getPostsRoute, async (c) => {
       title: true,
       slug: true,
       content: true,
+      htmlUrl: true,
       markdown: true,
       recommendations: true,
       contentType: true,
@@ -409,6 +411,7 @@ postsRoutes.openapi(getPostRoute, async (c) => {
       title: true,
       slug: true,
       content: true,
+      htmlUrl: true,
       markdown: true,
       recommendations: true,
       contentType: true,
@@ -561,6 +564,7 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
         title: posts.title,
         slug: posts.slug,
         content: posts.content,
+        htmlUrl: posts.htmlUrl,
         markdown: posts.markdown,
         recommendations: posts.recommendations,
         contentType: posts.contentType,

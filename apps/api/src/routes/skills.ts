@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import { skills } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -18,6 +18,7 @@ import {
   skillParamsSchema,
   skillResponseSchema,
 } from "../schemas/skills";
+import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 import { isPgUniqueViolation } from "../utils/pg-errors";
 import {
@@ -26,7 +27,7 @@ import {
   serializeSkillSummary,
 } from "../utils/skills";
 
-export const skillsRoutes = new OpenAPIHono();
+export const skillsRoutes = createOpenApiApp();
 
 const listSkillsRoute = createRoute({
   method: "get",
@@ -73,6 +74,7 @@ const createSkillRoute = createRoute({
   summary: "Create a skill",
   request: {
     body: {
+      required: true,
       content: { "application/json": { schema: createSkillRequestSchema } },
     },
   },
@@ -98,6 +100,7 @@ const patchSkillRoute = createRoute({
   request: {
     params: skillParamsSchema,
     body: {
+      required: true,
       content: { "application/json": { schema: patchSkillRequestSchema } },
     },
   },

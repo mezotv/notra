@@ -118,14 +118,6 @@ function createBaseEnumFilterSchema<T extends string>(
     });
 }
 
-function createQueryEnumFilterSchema<T extends string>(
-  valueSchema: z.ZodType<T>,
-  defaultValues: readonly T[],
-  maxItems: number
-) {
-  return createBaseEnumFilterSchema(valueSchema, defaultValues, maxItems);
-}
-
 function createOpenApiEnumFilterSchema<T extends string>(
   valueSchema: z.ZodType<T>,
   defaultValues: readonly T[],
@@ -153,39 +145,12 @@ function createBaseStringFilterSchema(maxItems: number) {
     });
 }
 
-function createQueryStringFilterSchema(maxItems: number) {
-  return createBaseStringFilterSchema(maxItems);
-}
-
 function createOpenApiStringFilterSchema(
   maxItems: number,
   description: string
 ) {
   return createBaseStringFilterSchema(maxItems).openapi({ description });
 }
-
-const statusFilterSchema = createQueryEnumFilterSchema(
-  postStatusSchema,
-  ["published"],
-  ALL_POST_STATUSES.length
-);
-
-const contentTypeFilterSchema = createQueryEnumFilterSchema(
-  postContentTypeSchema,
-  ALL_POST_CONTENT_TYPES,
-  ALL_POST_CONTENT_TYPES.length
-);
-
-const brandIdentityIdFilterSchema = createQueryStringFilterSchema(100);
-
-const getPostsQuerySchema = z.object({
-  sort: z.enum(["asc", "desc"]).default("desc"),
-  limit: z.coerce.number().int().min(1).max(100).default(10),
-  page: z.coerce.number().int().min(1).default(1),
-  status: statusFilterSchema,
-  contentType: contentTypeFilterSchema,
-  brandIdentityId: brandIdentityIdFilterSchema,
-});
 
 const openApiStatusFilterSchema = createOpenApiEnumFilterSchema(
   postStatusSchema,
@@ -257,6 +222,8 @@ export const getIntegrationParamsSchema = z.object({
 export const errorResponseSchema = z
   .object({
     error: z.string(),
+    code: z.string().optional(),
+    recovery: z.string().optional(),
   })
   .openapi("ErrorResponse");
 

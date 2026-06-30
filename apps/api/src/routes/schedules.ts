@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import type { createDb } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
@@ -23,6 +23,7 @@ import {
 } from "../schemas/schedules";
 import { getOrganizationId } from "../utils/auth";
 import { logError } from "../utils/logging";
+import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import {
@@ -35,7 +36,7 @@ import {
   ORGANIZATION_SCHEDULES_PATH_REGEX,
 } from "../utils/regex";
 
-export const schedulesRoutes = new OpenAPIHono();
+export const schedulesRoutes = createOpenApiApp();
 
 type DbClient = ReturnType<typeof createDb>;
 type CreateScheduleBody = z.infer<typeof createScheduleRequestSchema>;
@@ -316,6 +317,7 @@ const getSchedulesRoute = createRoute({
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -350,6 +352,7 @@ const createScheduleRoute = createRoute({
     404: errorResponse("Organization not found"),
     409: errorResponse("Duplicate schedule"),
     500: errorResponse("Failed to create schedule"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -385,6 +388,7 @@ const patchScheduleRoute = createRoute({
     404: errorResponse("Schedule or organization not found"),
     409: errorResponse("Duplicate schedule"),
     500: errorResponse("Failed to update schedule"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 
@@ -406,9 +410,11 @@ const deleteScheduleRoute = createRoute({
         },
       },
     },
+    400: errorResponse("Invalid path params"),
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Schedule or organization not found"),
+    503: errorResponse("Authentication service unavailable"),
   },
 });
 

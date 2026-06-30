@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import {
   createBrandAnalysisJob,
   createBrandAnalysisJobId,
@@ -27,6 +27,7 @@ import {
   triggerBrandAnalysisWorkflow,
 } from "../utils/brand-analysis";
 import { selectBrandIdentityColumns } from "../utils/brand-identities";
+import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
@@ -37,7 +38,7 @@ import {
   getTriggersForBrandIdentity,
 } from "../utils/triggers";
 
-export const brandIdentitiesRoutes = new OpenAPIHono();
+export const brandIdentitiesRoutes = createOpenApiApp();
 
 const getBrandIdentitiesRoute = createRoute({
   method: "get",

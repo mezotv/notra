@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import {
   githubIntegrations,
   linearIntegrations,
@@ -25,6 +25,7 @@ import {
   validateGitHubRepositoryAccess,
 } from "../utils/github-integrations";
 import { logError } from "../utils/logging";
+import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
@@ -35,7 +36,7 @@ import {
   getTriggersForIntegration,
 } from "../utils/triggers";
 
-export const integrationsRoutes = new OpenAPIHono();
+export const integrationsRoutes = createOpenApiApp();
 
 const getIntegrationsRoute = createRoute({
   method: "get",
@@ -119,6 +120,7 @@ const deleteIntegrationRoute = createRoute({
         },
       },
     },
+    400: errorResponse("Invalid path params"),
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Integration not found"),

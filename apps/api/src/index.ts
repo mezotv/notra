@@ -57,6 +57,7 @@ const publicStatusRoute = createRoute({
   tags: ["Discovery"],
   operationId: "getPublicApiStatus",
   summary: "Check public API reachability",
+  security: [],
   responses: {
     200: {
       description:

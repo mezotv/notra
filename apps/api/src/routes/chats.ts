@@ -1,4 +1,4 @@
-import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 import {
   getChatSession,
   getChatSessionByExternalChannel,
@@ -19,9 +19,10 @@ import {
   sendChatParamsSchema,
 } from "../schemas/chats";
 import { getOrganizationId } from "../utils/auth";
+import { createOpenApiApp, formatValidationError } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 
-export const chatsRoutes = new OpenAPIHono();
+export const chatsRoutes = createOpenApiApp();
 
 const listChatsRoute = createRoute({
   method: "get",
@@ -158,10 +159,7 @@ async function handleSend(
     const parseResult = sendChatMessageRequestSchema.safeParse(body);
 
     if (!parseResult.success) {
-      return c.json(
-        { error: "Invalid request body", details: parseResult.error.issues },
-        400
-      );
+      return c.json({ error: formatValidationError(parseResult.error) }, 400);
     }
 
     return await runChatMessage({
