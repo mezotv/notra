@@ -314,6 +314,7 @@ const getSchedulesRoute = createRoute({
         },
       },
     },
+    400: errorResponse("Invalid query params"),
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
     404: errorResponse("Organization not found"),
