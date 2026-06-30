@@ -31,6 +31,11 @@
       "destination": "/api/getting-started"
     },
     {
+      "source": "/api-reference/openapi.json",
+      "destination": "https://api.usenotra.com/openapi.json",
+      "permanent": false
+    },
+    {
       "source": "/sdk/getting-started",
       "destination": "/api/getting-started"
     },

@@ -25,21 +25,10 @@ npx mint dev
 
 ## OpenAPI auto-generated API pages
 
-`docs.json` is configured to auto-populate API pages from `openapi/openapi.json`.
+`docs.json` is configured to auto-populate API pages from
+`https://api.usenotra.com/openapi.json`.
 
-Refresh the local OpenAPI snapshot from the API app:
-
-```bash
-bun run openapi:pull:local
-```
-
-Or refresh from production:
-
-```bash
-bun run openapi:pull:prod
-```
-
-Validate the OpenAPI file before pushing docs changes:
+Validate the live OpenAPI spec before pushing docs changes:
 
 ```bash
 bun run openapi:check

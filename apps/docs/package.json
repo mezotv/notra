@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "mint dev --port 3005 --no-open",
     "open": "mint dev --port 3005",
-    "openapi:check": "mint openapi-check openapi/openapi.json"
+    "openapi:check": "mint openapi-check https://api.usenotra.com/openapi.json"
   },
   "devDependencies": {
     "mint": "^4.2.536"
