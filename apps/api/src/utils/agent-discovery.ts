@@ -59,7 +59,7 @@ export function buildAuthorizationServerMetadata() {
     registration_endpoint: `${AUTH_SERVER_URL}/agent/auth/register`,
     revocation_endpoint: `${AUTH_SERVER_URL}/agent/auth/revoke`,
     response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
     scopes_supported: PUBLIC_API_SCOPES,

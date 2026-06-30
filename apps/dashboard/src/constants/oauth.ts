@@ -2,6 +2,8 @@ export const OAUTH_AUTH_CODE_TTL_MS = 5 * 60 * 1000;
 export const OAUTH_ACCESS_TOKEN_TTL_SECONDS = 60 * 60;
 export const OAUTH_REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
+export const OAUTH_OFFLINE_ACCESS_SCOPE = "offline_access";
+
 export const OAUTH_SUPPORTED_SCOPES = [
   "offline_access",
   "posts.read",
@@ -39,6 +41,7 @@ export const OAUTH_DEFAULT_SCOPES = [
 ] as const;
 
 export const OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES = [
+  "offline_access",
   "posts.read",
   "posts.write",
   "brand-identities.read",

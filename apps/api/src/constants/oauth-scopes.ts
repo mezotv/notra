@@ -37,9 +37,13 @@ export const PUBLIC_API_SCOPE_RESOURCES = [
   },
 ] as const;
 
-export const PUBLIC_API_SCOPES = PUBLIC_API_SCOPE_RESOURCES.flatMap(
-  (resource) => [resource.readScope, resource.writeScope]
-);
+export const PUBLIC_API_SCOPES = [
+  "offline_access",
+  ...PUBLIC_API_SCOPE_RESOURCES.flatMap((resource) => [
+    resource.readScope,
+    resource.writeScope,
+  ]),
+];
 
 export const LEGACY_API_READ_SCOPE = "api.read";
 export const LEGACY_API_WRITE_SCOPE = "api.write";

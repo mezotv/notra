@@ -25,6 +25,7 @@ export const NOTRA_SAME_AS = [
 ] as const;
 
 const PUBLIC_API_SCOPES = [
+  "offline_access",
   "posts.read",
   "posts.write",
   "brand-identities.read",

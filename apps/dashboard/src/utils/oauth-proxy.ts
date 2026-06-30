@@ -1,4 +1,7 @@
-import { OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES } from "@/constants/oauth";
+import {
+  OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
+  OAUTH_OFFLINE_ACCESS_SCOPE,
+} from "@/constants/oauth";
 import { auth } from "@/lib/auth/server";
 
 const AUTH_ROUTE_PREFIX = "/api/auth";
@@ -42,6 +45,19 @@ export function buildOAuthForwardedHeaders(
   return headers;
 }
 
+const REGISTRATION_SCOPE_SEPARATOR = " ";
+const REGISTRATION_SCOPE_SPLIT_REGEX = /\s+/;
+
+function ensureOfflineAccessScope(scope: string) {
+  const scopes = scope.split(REGISTRATION_SCOPE_SPLIT_REGEX).filter(Boolean);
+
+  if (!scopes.includes(OAUTH_OFFLINE_ACCESS_SCOPE)) {
+    scopes.push(OAUTH_OFFLINE_ACCESS_SCOPE);
+  }
+
+  return scopes.join(REGISTRATION_SCOPE_SEPARATOR);
+}
+
 function withDefaultRegistrationScopes(body: ArrayBuffer) {
   try {
     const payload = JSON.parse(new TextDecoder().decode(body));
@@ -50,14 +66,17 @@ function withDefaultRegistrationScopes(body: ArrayBuffer) {
       return body;
     }
 
-    if ("scope" in payload && typeof payload.scope === "string") {
-      return body;
-    }
+    const requestedScope =
+      "scope" in payload && typeof payload.scope === "string"
+        ? payload.scope
+        : OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(
+            REGISTRATION_SCOPE_SEPARATOR
+          );
 
     return new TextEncoder().encode(
       JSON.stringify({
         ...payload,
-        scope: OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(" "),
+        scope: ensureOfflineAccessScope(requestedScope),
       })
     ).buffer;
   } catch {
