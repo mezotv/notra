@@ -4,6 +4,7 @@ export function logError(prefix: string, error: unknown) {
       name: error.name,
       message: error.message,
       stack: error.stack,
+      ...(error.cause === undefined ? {} : { cause: error.cause }),
     });
     return;
   }
