@@ -1,6 +1,7 @@
 import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
+import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import {
   LEGACY_API_READ_SCOPE,
@@ -25,6 +26,7 @@ import {
   SITE_URL,
 } from "./utils/agent-discovery";
 import { assertRequiredEnv } from "./utils/env";
+import { logError } from "./utils/logging";
 import { getRequiredOAuthScope } from "./utils/oauth-scopes";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
@@ -282,6 +284,16 @@ app.doc31("/openapi.json", (_c) => ({
     },
   ],
 }));
+
+app.onError((error, c) => {
+  if (error instanceof HTTPException) {
+    return error.getResponse();
+  }
+
+  const { pathname } = new URL(c.req.url);
+  logError(`Unhandled error: ${c.req.method} ${pathname}`, error);
+  return c.json({ error: "Internal server error" }, 500);
+});
 
 export default {
   port: process.env.PORT ?? 3000,

@@ -167,6 +167,17 @@ function serializeSchedule(trigger: {
   };
 }
 
+function safeSerializeSchedule(
+  trigger: Parameters<typeof serializeSchedule>[0]
+) {
+  try {
+    return serializeSchedule(trigger);
+  } catch (error) {
+    logError(`Skipping malformed schedule ${trigger.id}`, error);
+    return null;
+  }
+}
+
 function mapQstashError(error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
 
@@ -429,70 +440,80 @@ schedulesRoutes.openapi(getSchedulesRoute, async (c) => {
   }
 
   const db = c.get("db") as DbClient;
-  const organization = await getOrganizationResponse(db, orgId);
 
-  if (!organization) {
-    return c.json({ error: "Organization not found" }, 404);
-  }
+  try {
+    const organization = await getOrganizationResponse(db, orgId);
 
-  const { repositoryIds } = c.req.valid("query");
-  const triggers = await db.query.contentTriggers.findMany({
-    where: and(
-      eq(contentTriggers.organizationId, orgId),
-      eq(contentTriggers.sourceType, "cron")
-    ),
-    orderBy: [desc(contentTriggers.createdAt)],
-  });
+    if (!organization) {
+      return c.json({ error: "Organization not found" }, 404);
+    }
 
-  const triggerIds = triggers.map((trigger) => trigger.id);
-  const lookbackWindows =
-    triggerIds.length > 0
-      ? await db.query.contentTriggerLookbackWindows.findMany({
-          where: inArray(contentTriggerLookbackWindows.triggerId, triggerIds),
-        })
-      : [];
+    const { repositoryIds } = c.req.valid("query");
+    const triggers = await db.query.contentTriggers.findMany({
+      where: and(
+        eq(contentTriggers.organizationId, orgId),
+        eq(contentTriggers.sourceType, "cron")
+      ),
+      orderBy: [desc(contentTriggers.createdAt)],
+    });
 
-  const lookbackWindowByTriggerId = new Map(
-    lookbackWindows.map((item) => [item.triggerId, item.window])
-  );
-  const filteredTriggers = filterByRepositoryIds(triggers, repositoryIds);
-
-  const schedules = filteredTriggers.map((trigger) =>
-    serializeSchedule({
-      ...trigger,
-      lookbackWindow: (lookbackWindowByTriggerId.get(trigger.id) ??
-        "last_7_days") as ScheduleLookbackWindow,
-    })
-  );
-
-  const allRepositoryIds = [
-    ...new Set(schedules.flatMap((schedule) => schedule.targets.repositoryIds)),
-  ];
-  const repositories =
-    allRepositoryIds.length > 0
-      ? await db
-          .select({
-            id: githubIntegrations.id,
-            owner: githubIntegrations.owner,
-            repo: githubIntegrations.repo,
-            defaultBranch: githubIntegrations.defaultBranch,
+    const triggerIds = triggers.map((trigger) => trigger.id);
+    const lookbackWindows =
+      triggerIds.length > 0
+        ? await db.query.contentTriggerLookbackWindows.findMany({
+            where: inArray(contentTriggerLookbackWindows.triggerId, triggerIds),
           })
-          .from(githubIntegrations)
-          .where(inArray(githubIntegrations.id, allRepositoryIds))
-      : [];
+        : [];
 
-  const repositoryMap = Object.fromEntries(
-    repositories
-      .filter((repository) => repository.owner && repository.repo)
-      .map((repository) => [
-        repository.id,
-        repository.defaultBranch?.trim()
-          ? `${repository.owner}/${repository.repo} · ${repository.defaultBranch.trim()}`
-          : `${repository.owner}/${repository.repo}`,
-      ])
-  );
+    const lookbackWindowByTriggerId = new Map(
+      lookbackWindows.map((item) => [item.triggerId, item.window])
+    );
+    const filteredTriggers = filterByRepositoryIds(triggers, repositoryIds);
 
-  return c.json({ schedules, repositoryMap, organization }, 200);
+    const schedules = filteredTriggers.flatMap((trigger) => {
+      const schedule = safeSerializeSchedule({
+        ...trigger,
+        lookbackWindow: (lookbackWindowByTriggerId.get(trigger.id) ??
+          "last_7_days") as ScheduleLookbackWindow,
+      });
+
+      return schedule ? [schedule] : [];
+    });
+
+    const allRepositoryIds = [
+      ...new Set(
+        schedules.flatMap((schedule) => schedule.targets.repositoryIds)
+      ),
+    ];
+    const repositories =
+      allRepositoryIds.length > 0
+        ? await db
+            .select({
+              id: githubIntegrations.id,
+              owner: githubIntegrations.owner,
+              repo: githubIntegrations.repo,
+              defaultBranch: githubIntegrations.defaultBranch,
+            })
+            .from(githubIntegrations)
+            .where(inArray(githubIntegrations.id, allRepositoryIds))
+        : [];
+
+    const repositoryMap = Object.fromEntries(
+      repositories
+        .filter((repository) => repository.owner && repository.repo)
+        .map((repository) => [
+          repository.id,
+          repository.defaultBranch?.trim()
+            ? `${repository.owner}/${repository.repo} · ${repository.defaultBranch.trim()}`
+            : `${repository.owner}/${repository.repo}`,
+        ])
+    );
+
+    return c.json({ schedules, repositoryMap, organization }, 200);
+  } catch (error) {
+    logError("Failed to list schedules", error);
+    return c.json({ error: "Failed to list schedules" }, 503);
+  }
 });
 
 schedulesRoutes.openapi(createScheduleRoute, async (c) => {
