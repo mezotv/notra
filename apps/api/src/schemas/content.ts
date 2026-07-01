@@ -14,17 +14,15 @@ import {
 } from "@notra/ai/schemas/limits";
 import { POST_SLUG_MAX_LENGTH, POST_SLUG_REGEX } from "@notra/ai/schemas/post";
 import { toneProfileSchema } from "@notra/ai/schemas/tone";
-import {
-  LOOKBACK_WINDOWS,
-  SUPPORTED_CONTENT_GENERATION_TYPES,
-} from "@notra/content-generation/schemas";
+import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
+import { lookbackWindowEnum, postStatusEnum } from "@notra/db/schema";
 import { assertPublicHttpUrl } from "@notra/utils/url";
 import { resourceIdSchema } from "./ids";
 
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
 export const getPostsParamsSchema = z.object({});
 
-const postStatusSchema = z.enum(["draft", "published"]);
+const postStatusSchema = z.enum(postStatusEnum.enumValues);
 const postContentTypeSchema = z.enum([
   "changelog",
   "linkedin_post",
@@ -621,7 +619,9 @@ const contentGenerationStatusSchema = z.enum([
   "skipped",
 ]);
 
-const contentGenerationLookbackWindowSchema = z.enum(LOOKBACK_WINDOWS);
+const contentGenerationLookbackWindowSchema = z.enum(
+  lookbackWindowEnum.enumValues
+);
 
 const contentGenerationTypeSchema = z.enum(SUPPORTED_CONTENT_GENERATION_TYPES);
 

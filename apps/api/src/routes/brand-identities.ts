@@ -40,6 +40,30 @@ import {
 
 export const brandIdentitiesRoutes = createOpenApiApp();
 
+interface BrandIdentityRow {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  websiteUrl: string;
+  companyName: string | null;
+  companyDescription: string | null;
+  toneProfile: string | null;
+  customTone: string | null;
+  customInstructions: string | null;
+  audience: string | null;
+  language: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+function serializeBrandIdentity(brandIdentity: BrandIdentityRow) {
+  return {
+    ...brandIdentity,
+    createdAt: brandIdentity.createdAt.toISOString(),
+    updatedAt: brandIdentity.updatedAt.toISOString(),
+  };
+}
+
 const getBrandIdentitiesRoute = createRoute({
   method: "get",
   path: "/brand-identities",
@@ -280,7 +304,13 @@ brandIdentitiesRoutes.openapi(getBrandIdentitiesRoute, async (c) => {
     },
   });
 
-  return c.json({ brandIdentities, organization }, 200);
+  return c.json(
+    {
+      brandIdentities: brandIdentities.map(serializeBrandIdentity),
+      organization,
+    },
+    200
+  );
 });
 
 brandIdentitiesRoutes.openapi(createBrandIdentityRoute, async (c) => {
@@ -514,7 +544,15 @@ brandIdentitiesRoutes.openapi(getBrandIdentityRoute, async (c) => {
     },
   });
 
-  return c.json({ brandIdentity: brandIdentity ?? null, organization }, 200);
+  return c.json(
+    {
+      brandIdentity: brandIdentity
+        ? serializeBrandIdentity(brandIdentity)
+        : null,
+      organization,
+    },
+    200
+  );
 });
 
 brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
@@ -645,7 +683,10 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
       return c.json({ error: "Brand identity not found" }, 404);
     }
 
-    return c.json({ brandIdentity, organization }, 200);
+    return c.json(
+      { brandIdentity: serializeBrandIdentity(brandIdentity), organization },
+      200
+    );
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       return c.json(

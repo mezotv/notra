@@ -41,6 +41,23 @@ export const schedulesRoutes = createOpenApiApp();
 type DbClient = ReturnType<typeof createDb>;
 type CreateScheduleBody = z.infer<typeof createScheduleRequestSchema>;
 type ScheduleLookbackWindow = CreateScheduleBody["lookbackWindow"];
+interface ScheduleTriggerRow {
+  id: string;
+  organizationId: string;
+  name: string;
+  sourceType: string;
+  sourceConfig: unknown;
+  targets: unknown;
+  outputType: string;
+  outputConfig: unknown;
+  enabled: boolean;
+  autoPublish: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+type ScheduleTriggerWithLookbackWindow = ScheduleTriggerRow & {
+  lookbackWindow: ScheduleLookbackWindow;
+};
 
 const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
 
@@ -130,21 +147,7 @@ async function ensureScheduleTargetsExist(
   return null;
 }
 
-function serializeSchedule(trigger: {
-  id: string;
-  organizationId: string;
-  name: string;
-  sourceType: string;
-  sourceConfig: unknown;
-  targets: unknown;
-  outputType: string;
-  outputConfig: unknown;
-  enabled: boolean;
-  autoPublish: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lookbackWindow: ScheduleLookbackWindow;
-}) {
+function serializeSchedule(trigger: ScheduleTriggerWithLookbackWindow) {
   return {
     id: trigger.id,
     organizationId: trigger.organizationId,
@@ -181,7 +184,7 @@ function mapQstashError(error: unknown) {
   return { error: "Failed to configure schedule", status: 500 as const };
 }
 
-function filterByRepositoryIds<T extends { targets: unknown }>(
+function filterByRepositoryIds<T extends ScheduleTriggerRow>(
   triggers: T[],
   repositoryIds: string[]
 ) {

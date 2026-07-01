@@ -1,8 +1,6 @@
 import { z } from "@hono/zod-openapi";
-import {
-  LOOKBACK_WINDOWS,
-  SUPPORTED_CONTENT_GENERATION_TYPES,
-} from "@notra/content-generation/schemas";
+import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
+import { lookbackWindowEnum } from "@notra/db/schema";
 import { resourceIdSchema } from "./ids";
 
 const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
@@ -94,7 +92,7 @@ export const createScheduleRequestSchema = z.object({
   outputConfig: scheduleOutputConfigSchema,
   enabled: z.boolean(),
   autoPublish: z.boolean().default(false),
-  lookbackWindow: z.enum(LOOKBACK_WINDOWS).default("last_7_days"),
+  lookbackWindow: z.enum(lookbackWindowEnum.enumValues).default("last_7_days"),
 });
 
 export const patchScheduleRequestSchema = createScheduleRequestSchema.openapi(
@@ -114,7 +112,7 @@ const scheduleSchema = z.object({
   autoPublish: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  lookbackWindow: z.enum(LOOKBACK_WINDOWS),
+  lookbackWindow: z.enum(lookbackWindowEnum.enumValues),
 });
 
 const organizationSchema = z.object({
