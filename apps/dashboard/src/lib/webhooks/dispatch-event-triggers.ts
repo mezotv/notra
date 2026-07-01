@@ -86,7 +86,7 @@ export function dispatchEventTriggers({
             )
           )
         ),
-      { discard: true }
+      { concurrency: "unbounded", discard: true }
     )
   );
 }

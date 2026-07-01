@@ -3,7 +3,6 @@
 import {
   Add01Icon,
   AlertCircleIcon,
-  InformationCircleIcon,
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -25,15 +24,8 @@ import {
   ComboboxList,
   useComboboxAnchor,
 } from "@notra/ui/components/ui/combobox";
-import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Switch } from "@notra/ui/components/ui/switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -56,6 +48,7 @@ import type { CreateEventTriggerDialogProps } from "@/types/automation/event-tri
 import type { Trigger } from "@/types/triggers/triggers";
 import { getDefaultEventTriggerValues } from "@/utils/event-trigger-form";
 import { EventTypeCard } from "./event-type-card";
+import { TriggerSwitchRow } from "./trigger-switch-row";
 
 export function CreateEventTriggerDialog({
   organizationId,
@@ -306,35 +299,13 @@ export function CreateEventTriggerDialog({
                   {eventType === "release" && (
                     <form.Field name="includePreReleases">
                       {(field) => (
-                        <div className="flex items-center justify-between rounded-lg border p-3">
-                          <div className="flex items-center gap-1.5">
-                            <Label
-                              className="cursor-pointer font-medium text-sm"
-                              htmlFor={field.name}
-                            >
-                              Include pre-releases
-                            </Label>
-                            <Tooltip>
-                              <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
-                                <HugeiconsIcon
-                                  icon={InformationCircleIcon}
-                                  size={14}
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <p className="max-w-50 text-xs">
-                                  When off, releases marked as pre-release on
-                                  GitHub will not fire this trigger.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <Switch
-                            checked={field.state.value}
-                            id={field.name}
-                            onCheckedChange={field.handleChange}
-                          />
-                        </div>
+                        <TriggerSwitchRow
+                          checked={field.state.value}
+                          id={field.name}
+                          label="Include pre-releases"
+                          onCheckedChange={field.handleChange}
+                          tooltip="When off, releases marked as pre-release on GitHub will not fire this trigger."
+                        />
                       )}
                     </form.Field>
                   )}
@@ -453,35 +424,13 @@ export function CreateEventTriggerDialog({
                     {supportsAutoPublish(outputType) && (
                       <form.Field name="autoPublish">
                         {(field) => (
-                          <div className="flex items-center justify-between rounded-lg border p-3">
-                            <div className="flex items-center gap-1.5">
-                              <Label
-                                className="cursor-pointer font-medium text-sm"
-                                htmlFor={field.name}
-                              >
-                                Auto-publish
-                              </Label>
-                              <Tooltip>
-                                <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
-                                  <HugeiconsIcon
-                                    icon={InformationCircleIcon}
-                                    size={14}
-                                  />
-                                </TooltipTrigger>
-                                <TooltipContent side="top">
-                                  <p className="max-w-50 text-xs">
-                                    When on, posts are published immediately
-                                    instead of saved as drafts.
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <Switch
-                              checked={field.state.value}
-                              id={field.name}
-                              onCheckedChange={field.handleChange}
-                            />
-                          </div>
+                          <TriggerSwitchRow
+                            checked={field.state.value}
+                            id={field.name}
+                            label="Auto-publish"
+                            onCheckedChange={field.handleChange}
+                            tooltip="When on, posts are published immediately instead of saved as drafts."
+                          />
                         )}
                       </form.Field>
                     )}

@@ -17,3 +17,11 @@ export interface EventTypeCardProps {
   selected: boolean;
   onSelect: () => void;
 }
+
+export interface TriggerSwitchRowProps {
+  id: string;
+  label: string;
+  tooltip: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
