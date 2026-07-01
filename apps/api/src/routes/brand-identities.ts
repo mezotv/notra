@@ -26,7 +26,10 @@ import {
   isBrandAnalysisConfigured,
   triggerBrandAnalysisWorkflow,
 } from "../utils/brand-analysis";
-import { selectBrandIdentityColumns } from "../utils/brand-identities";
+import {
+  selectBrandIdentityColumns,
+  serializeBrandIdentity,
+} from "../utils/brand-identities";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
@@ -39,30 +42,6 @@ import {
 } from "../utils/triggers";
 
 export const brandIdentitiesRoutes = createOpenApiApp();
-
-interface BrandIdentityRow {
-  id: string;
-  name: string;
-  isDefault: boolean;
-  websiteUrl: string;
-  companyName: string | null;
-  companyDescription: string | null;
-  toneProfile: string | null;
-  customTone: string | null;
-  customInstructions: string | null;
-  audience: string | null;
-  language: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-function serializeBrandIdentity(brandIdentity: BrandIdentityRow) {
-  return {
-    ...brandIdentity,
-    createdAt: brandIdentity.createdAt.toISOString(),
-    updatedAt: brandIdentity.updatedAt.toISOString(),
-  };
-}
 
 const getBrandIdentitiesRoute = createRoute({
   method: "get",

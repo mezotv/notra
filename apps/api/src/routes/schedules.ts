@@ -21,6 +21,10 @@ import {
   scheduleSourceConfigSchema,
   scheduleTargetsSchema,
 } from "../schemas/schedules";
+import type {
+  ScheduleTriggerRow,
+  ScheduleTriggerWithLookbackWindow,
+} from "../types/schedules";
 import { getOrganizationId } from "../utils/auth";
 import { logError } from "../utils/logging";
 import { createOpenApiApp } from "../utils/openapi-app";
@@ -40,24 +44,6 @@ export const schedulesRoutes = createOpenApiApp();
 
 type DbClient = ReturnType<typeof createDb>;
 type CreateScheduleBody = z.infer<typeof createScheduleRequestSchema>;
-type ScheduleLookbackWindow = CreateScheduleBody["lookbackWindow"];
-interface ScheduleTriggerRow {
-  id: string;
-  organizationId: string;
-  name: string;
-  sourceType: string;
-  sourceConfig: unknown;
-  targets: unknown;
-  outputType: string;
-  outputConfig: unknown;
-  enabled: boolean;
-  autoPublish: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-type ScheduleTriggerWithLookbackWindow = ScheduleTriggerRow & {
-  lookbackWindow: ScheduleLookbackWindow;
-};
 
 const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
 
@@ -463,8 +449,8 @@ schedulesRoutes.openapi(getSchedulesRoute, async (c) => {
   const schedules = filteredTriggers.map((trigger) =>
     serializeSchedule({
       ...trigger,
-      lookbackWindow: (lookbackWindowByTriggerId.get(trigger.id) ??
-        "last_7_days") as ScheduleLookbackWindow,
+      lookbackWindow:
+        lookbackWindowByTriggerId.get(trigger.id) ?? "last_7_days",
     })
   );
 
