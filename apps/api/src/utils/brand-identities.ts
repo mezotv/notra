@@ -1,4 +1,5 @@
 import { brandSettings } from "@notra/db/schema";
+import type { BrandIdentityRow } from "../types/brand-identities";
 
 export function selectBrandIdentityColumns() {
   return {
@@ -15,5 +16,13 @@ export function selectBrandIdentityColumns() {
     language: brandSettings.language,
     createdAt: brandSettings.createdAt,
     updatedAt: brandSettings.updatedAt,
+  };
+}
+
+export function serializeBrandIdentity(brandIdentity: BrandIdentityRow) {
+  return {
+    ...brandIdentity,
+    createdAt: brandIdentity.createdAt.toISOString(),
+    updatedAt: brandIdentity.updatedAt.toISOString(),
   };
 }

@@ -26,7 +26,10 @@ import {
   isBrandAnalysisConfigured,
   triggerBrandAnalysisWorkflow,
 } from "../utils/brand-analysis";
-import { selectBrandIdentityColumns } from "../utils/brand-identities";
+import {
+  selectBrandIdentityColumns,
+  serializeBrandIdentity,
+} from "../utils/brand-identities";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
@@ -280,7 +283,13 @@ brandIdentitiesRoutes.openapi(getBrandIdentitiesRoute, async (c) => {
     },
   });
 
-  return c.json({ brandIdentities, organization }, 200);
+  return c.json(
+    {
+      brandIdentities: brandIdentities.map(serializeBrandIdentity),
+      organization,
+    },
+    200
+  );
 });
 
 brandIdentitiesRoutes.openapi(createBrandIdentityRoute, async (c) => {
@@ -514,7 +523,15 @@ brandIdentitiesRoutes.openapi(getBrandIdentityRoute, async (c) => {
     },
   });
 
-  return c.json({ brandIdentity: brandIdentity ?? null, organization }, 200);
+  return c.json(
+    {
+      brandIdentity: brandIdentity
+        ? serializeBrandIdentity(brandIdentity)
+        : null,
+      organization,
+    },
+    200
+  );
 });
 
 brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
@@ -645,7 +662,10 @@ brandIdentitiesRoutes.openapi(patchBrandIdentityRoute, async (c) => {
       return c.json({ error: "Brand identity not found" }, 404);
     }
 
-    return c.json({ brandIdentity, organization }, 200);
+    return c.json(
+      { brandIdentity: serializeBrandIdentity(brandIdentity), organization },
+      200
+    );
   } catch (error) {
     if (isPgUniqueViolation(error)) {
       return c.json(
