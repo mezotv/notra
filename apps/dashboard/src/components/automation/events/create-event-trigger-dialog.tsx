@@ -1,54 +1,24 @@
 "use client";
 
 import {
-  Add01Icon,
-  AlertCircleIcon,
-  Loading03Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
-import {
-  Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxItem,
-  ComboboxList,
-  useComboboxAnchor,
-} from "@notra/ui/components/ui/combobox";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { useForm, useStore } from "@tanstack/react-form";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
-import { Button } from "@/components/button";
-import { FormatCard } from "@/components/content/create/format-card";
-import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
-import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
-import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
-import { FORMAT_CARD_META, FORMAT_ORDER } from "@/constants/content-formats";
-import { EVENT_TYPE_ORDER } from "@/constants/event-triggers";
-import { supportsAutoPublish } from "@/constants/schedule-output-types";
+import { useStore } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useEventTriggerForm } from "@/lib/hooks/use-event-trigger-form";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import {
-  type EventTriggerFormValues,
-  eventTriggerFormSchema,
-} from "@/schemas/automation/event-trigger-form";
 import type { CreateEventTriggerDialogProps } from "@/types/automation/event-trigger";
-import type { Trigger } from "@/types/triggers/triggers";
-import { getDefaultEventTriggerValues } from "@/utils/event-trigger-form";
-import { EventTypeCard } from "./event-type-card";
-import { TriggerSwitchRow } from "./trigger-switch-row";
+import { EventTriggerDialogFooter } from "./event-trigger-dialog-footer";
+import { EventTriggerEventSection } from "./event-trigger-event-section";
+import { EventTriggerFormatSection } from "./event-trigger-format-section";
+import { EventTriggerRepositoriesSection } from "./event-trigger-repositories-section";
+import { EventTriggerRulesSection } from "./event-trigger-rules-section";
+import { RepositoryConnectionDialogs } from "./repository-connection-dialogs";
 
 export function CreateEventTriggerDialog({
   organizationId,
@@ -60,7 +30,6 @@ export function CreateEventTriggerDialog({
 }: CreateEventTriggerDialogProps) {
   const isEditMode = !!editTrigger;
   const [internalOpen, setInternalOpen] = useState(false);
-  const lastResetKeyRef = useRef<string | null>(null);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = (next: boolean) => {
@@ -71,91 +40,15 @@ export function CreateEventTriggerDialog({
     }
   };
   const [addRepoOpen, setAddRepoOpen] = useState(false);
-  const comboboxAnchor = useComboboxAnchor();
 
-  const mutation = useMutation<
-    { trigger: Trigger },
-    Error,
-    EventTriggerFormValues
-  >({
-    mutationFn: async (value) => {
-      const payload = {
-        organizationId,
-        sourceType: "github_webhook" as const,
-        sourceConfig: {
-          eventTypes: [value.eventType],
-          includePreReleases:
-            value.eventType === "release" ? value.includePreReleases : true,
-        },
-        targets: { repositoryIds: value.repositoryIds },
-        outputType: value.outputType,
-        outputConfig: {
-          ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
-        },
-        enabled: true,
-        autoPublish: supportsAutoPublish(value.outputType)
-          ? value.autoPublish
-          : false,
-      };
-
-      try {
-        if (isEditMode) {
-          return await dashboardOrpc.automation.events.update.call({
-            triggerId: editTrigger.id,
-            ...payload,
-            enabled: editTrigger.enabled,
-          });
-        }
-        return await dashboardOrpc.automation.events.create.call(payload);
-      } catch (error) {
-        if (error instanceof Error && error.message === "Duplicate trigger") {
-          throw new Error("Trigger already exists");
-        }
-        if (error instanceof Error && error.message) {
-          throw error;
-        }
-        throw new Error(
-          isEditMode ? "Failed to update trigger" : "Failed to create trigger"
-        );
-      }
-    },
-    onSuccess: (data) => {
-      toast.success(isEditMode ? "Trigger updated" : "Trigger added");
-      onSuccess?.(data.trigger);
-      setOpen(false);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+  const { form, isPending } = useEventTriggerForm({
+    organizationId,
+    editTrigger,
+    open,
+    onSuccess,
+    onClose: () => setOpen(false),
   });
 
-  const form = useForm({
-    defaultValues: getDefaultEventTriggerValues(editTrigger),
-    validators: {
-      onSubmit: eventTriggerFormSchema,
-    },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value);
-    },
-  });
-
-  useEffect(() => {
-    if (!open) {
-      lastResetKeyRef.current = null;
-      return;
-    }
-
-    const resetKey = editTrigger?.id ?? "create";
-    if (lastResetKeyRef.current === resetKey) {
-      return;
-    }
-
-    form.reset(getDefaultEventTriggerValues(editTrigger));
-    lastResetKeyRef.current = resetKey;
-  }, [editTrigger, form, open]);
-
-  const outputType = useStore(form.store, (s) => s.values.outputType);
-  const eventType = useStore(form.store, (s) => s.values.eventType);
   const repositoryCount = useStore(
     form.store,
     (s) => s.values.repositoryIds.length
@@ -176,13 +69,6 @@ export function CreateEventTriggerDialog({
   );
 
   const brandVoices = brandResponse?.voices ?? [];
-  const nonDefaultBrandVoices = brandVoices.filter((voice) => !voice.isDefault);
-  const defaultBrandVoiceName = brandVoices.find(
-    (voice) => voice.isDefault
-  )?.name;
-  const defaultBrandVoiceLabel = defaultBrandVoiceName
-    ? `${defaultBrandVoiceName} (Default)`
-    : "Default brand voice";
 
   const githubIntegrations =
     integrationsResponse?.integrations.filter(
@@ -252,197 +138,25 @@ export function CreateEventTriggerDialog({
           >
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-8 p-6">
-                <section className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-base">Content format</h3>
-                    <p className="text-muted-foreground text-sm">
-                      What should we generate?
-                    </p>
-                  </div>
-                  <form.Field name="outputType">
-                    {(field) => (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {FORMAT_ORDER.map((type) => (
-                          <FormatCard
-                            format={type}
-                            key={type}
-                            onToggle={() => field.handleChange(type)}
-                            selected={field.state.value === type}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </form.Field>
-                </section>
-
-                <section className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-base">Trigger event</h3>
-                    <p className="text-muted-foreground text-sm">
-                      When should this fire?
-                    </p>
-                  </div>
-                  <form.Field name="eventType">
-                    {(field) => (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {EVENT_TYPE_ORDER.map((type) => (
-                          <EventTypeCard
-                            eventType={type}
-                            key={type}
-                            onSelect={() => field.handleChange(type)}
-                            selected={field.state.value === type}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </form.Field>
-                  {eventType === "release" && (
-                    <form.Field name="includePreReleases">
-                      {(field) => (
-                        <TriggerSwitchRow
-                          checked={field.state.value}
-                          id={field.name}
-                          label="Include pre-releases"
-                          onCheckedChange={field.handleChange}
-                          tooltip="When off, releases marked as pre-release on GitHub will not fire this trigger."
-                        />
-                      )}
-                    </form.Field>
-                  )}
-                </section>
-
-                <section className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="flex items-center gap-1 font-semibold text-base">
-                      Repositories
-                      <span aria-hidden="true" className="text-destructive">
-                        *
-                      </span>
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Pick which repositories should fire this trigger.
-                    </p>
-                  </div>
-                  {isLoadingRepos && <Skeleton className="h-10 w-full" />}
-                  {!isLoadingRepos && integrationOptions.length === 0 && (
-                    <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
-                      <span className="flex-1 text-muted-foreground text-xs">
-                        No GitHub repositories connected yet.
-                      </span>
-                      <AddRepositoryButton onAdd={handleOpenAddRepoFlow} />
-                    </div>
-                  )}
-                  {!isLoadingRepos && integrationOptions.length > 0 && (
-                    <form.Field name="repositoryIds">
-                      {(field) => (
-                        <div ref={comboboxAnchor}>
-                          <Combobox
-                            items={integrationOptions.map((o) => o.value)}
-                            multiple
-                            onValueChange={(value) =>
-                              field.handleChange(
-                                Array.isArray(value) ? value : []
-                              )
-                            }
-                            value={field.state.value}
-                          >
-                            <ComboboxChips>
-                              {field.state.value.map((id) => {
-                                const opt = integrationOptions.find(
-                                  (o) => o.value === id
-                                );
-                                if (!opt) {
-                                  return null;
-                                }
-                                return (
-                                  <ComboboxChip key={opt.value}>
-                                    <span className="flex items-center gap-1.5">
-                                      <Github className="size-3 shrink-0" />
-                                      {opt.label}
-                                    </span>
-                                  </ComboboxChip>
-                                );
-                              })}
-                              <ComboboxChipsInput placeholder="Search repositories" />
-                            </ComboboxChips>
-                            <ComboboxContent anchor={comboboxAnchor.current}>
-                              <ComboboxEmpty>
-                                No repositories found.
-                              </ComboboxEmpty>
-                              <ComboboxList>
-                                {integrationOptions.map((opt) => (
-                                  <ComboboxItem
-                                    key={opt.value}
-                                    value={opt.value}
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      <Github className="size-3.5 shrink-0" />
-                                      {opt.label}
-                                    </span>
-                                  </ComboboxItem>
-                                ))}
-                              </ComboboxList>
-                            </ComboboxContent>
-                          </Combobox>
-                        </div>
-                      )}
-                    </form.Field>
-                  )}
-                </section>
-
-                {(brandVoices.length > 1 ||
-                  supportsAutoPublish(outputType)) && (
-                  <section className="space-y-3">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-base">
-                        {FORMAT_CARD_META[outputType].label} rules
-                      </h3>
-                      <p className="text-muted-foreground text-sm">
-                        Voice and publishing behaviour for this trigger.
-                      </p>
-                    </div>
-
-                    {brandVoices.length > 1 && (
-                      <form.Field name="brandVoiceId">
-                        {(field) => (
-                          <BrandIdentityRadioGroup
-                            description="Choose which brand voice to use for generated content."
-                            emptyOption={{
-                              label: defaultBrandVoiceLabel,
-                              description: "Use your default brand voice.",
-                            }}
-                            id={field.name}
-                            label="Brand voice"
-                            onChange={field.handleChange}
-                            value={field.state.value}
-                            voices={nonDefaultBrandVoices}
-                          />
-                        )}
-                      </form.Field>
-                    )}
-
-                    {supportsAutoPublish(outputType) && (
-                      <form.Field name="autoPublish">
-                        {(field) => (
-                          <TriggerSwitchRow
-                            checked={field.state.value}
-                            id={field.name}
-                            label="Auto-publish"
-                            onCheckedChange={field.handleChange}
-                            tooltip="When on, posts are published immediately instead of saved as drafts."
-                          />
-                        )}
-                      </form.Field>
-                    )}
-                  </section>
-                )}
+                <EventTriggerFormatSection form={form} />
+                <EventTriggerEventSection form={form} />
+                <EventTriggerRepositoriesSection
+                  form={form}
+                  isLoading={isLoadingRepos}
+                  onAddRepository={handleOpenAddRepoFlow}
+                  options={integrationOptions}
+                />
+                <EventTriggerRulesSection
+                  brandVoices={brandVoices}
+                  form={form}
+                />
               </div>
             </div>
 
-            <DialogFooter
+            <EventTriggerDialogFooter
               errorMessage={formError}
               isEditMode={isEditMode}
-              isPending={mutation.isPending}
+              isPending={isPending}
               onCancel={() => setOpen(false)}
               repositoryCount={repositoryCount}
             />
@@ -462,116 +176,5 @@ export function CreateEventTriggerDialog({
         organizationId={organizationId}
       />
     </>
-  );
-}
-
-interface DialogFooterProps {
-  errorMessage: string | null;
-  isEditMode: boolean;
-  isPending: boolean;
-  onCancel: () => void;
-  repositoryCount: number;
-}
-
-function DialogFooter({
-  errorMessage,
-  isEditMode,
-  isPending,
-  onCancel,
-  repositoryCount,
-}: DialogFooterProps) {
-  return (
-    <div className="shrink-0 border-t bg-muted/30 px-4 py-3">
-      <div className="flex items-center justify-between gap-3">
-        <FooterStatus
-          errorMessage={errorMessage}
-          repositoryCount={repositoryCount}
-        />
-        <div className="flex items-center gap-2">
-          <Button
-            disabled={isPending}
-            onClick={onCancel}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            Cancel
-          </Button>
-          <Button disabled={isPending} type="submit">
-            {isPending ? (
-              <>
-                <HugeiconsIcon
-                  className="size-4 animate-spin"
-                  icon={Loading03Icon}
-                />
-                {isEditMode ? "Saving..." : "Adding..."}
-              </>
-            ) : (
-              <>
-                <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                {isEditMode ? "Save changes" : "Add trigger"}
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface RepositoryConnectionDialogsProps {
-  githubIntegrationId?: string;
-  isEditMode: boolean;
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
-  organizationId: string;
-}
-
-function RepositoryConnectionDialogs({
-  githubIntegrationId,
-  onOpenChange,
-  open,
-  organizationId,
-}: RepositoryConnectionDialogsProps) {
-  if (githubIntegrationId) {
-    return (
-      <AddRepositoryDialog
-        integrationId={githubIntegrationId}
-        onOpenChange={onOpenChange}
-        open={open}
-        organizationId={organizationId}
-      />
-    );
-  }
-
-  return (
-    <AddIntegrationDialog
-      onOpenChange={onOpenChange}
-      open={open}
-      organizationId={organizationId}
-    />
-  );
-}
-
-interface FooterStatusProps {
-  errorMessage: string | null;
-  repositoryCount: number;
-}
-
-function FooterStatus({ errorMessage, repositoryCount }: FooterStatusProps) {
-  if (errorMessage) {
-    return (
-      <span className="flex items-center gap-1.5 font-medium text-destructive text-xs">
-        <HugeiconsIcon className="size-3.5" icon={AlertCircleIcon} />
-        {errorMessage}
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
-      {repositoryCount === 0
-        ? "No repositories selected yet"
-        : `${repositoryCount} ${repositoryCount === 1 ? "repository" : "repositories"} selected`}
-    </span>
   );
 }

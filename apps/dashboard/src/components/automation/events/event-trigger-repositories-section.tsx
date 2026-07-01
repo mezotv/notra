@@ -1,0 +1,96 @@
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  useComboboxAnchor,
+} from "@notra/ui/components/ui/combobox";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { Github } from "@notra/ui/components/ui/svgs/github";
+import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
+import type { EventTriggerRepositoriesSectionProps } from "@/types/automation/event-trigger";
+
+export function EventTriggerRepositoriesSection({
+  form,
+  isLoading,
+  options,
+  onAddRepository,
+}: EventTriggerRepositoriesSectionProps) {
+  const comboboxAnchor = useComboboxAnchor();
+
+  return (
+    <section className="space-y-3">
+      <div className="space-y-1">
+        <h3 className="flex items-center gap-1 font-semibold text-base">
+          Repositories
+          <span aria-hidden="true" className="text-destructive">
+            *
+          </span>
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Pick which repositories should fire this trigger.
+        </p>
+      </div>
+      {isLoading && <Skeleton className="h-10 w-full" />}
+      {!isLoading && options.length === 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
+          <span className="flex-1 text-muted-foreground text-xs">
+            No GitHub repositories connected yet.
+          </span>
+          <AddRepositoryButton onAdd={onAddRepository} />
+        </div>
+      )}
+      {!isLoading && options.length > 0 && (
+        <form.Field name="repositoryIds">
+          {(field) => (
+            <div ref={comboboxAnchor}>
+              <Combobox
+                items={options.map((o) => o.value)}
+                multiple
+                onValueChange={(value) =>
+                  field.handleChange(Array.isArray(value) ? value : [])
+                }
+                value={field.state.value}
+              >
+                <ComboboxChips>
+                  {field.state.value.map((id) => {
+                    const opt = options.find((o) => o.value === id);
+                    if (!opt) {
+                      return null;
+                    }
+                    return (
+                      <ComboboxChip key={opt.value}>
+                        <span className="flex items-center gap-1.5">
+                          <Github className="size-3 shrink-0" />
+                          {opt.label}
+                        </span>
+                      </ComboboxChip>
+                    );
+                  })}
+                  <ComboboxChipsInput placeholder="Search repositories" />
+                </ComboboxChips>
+                <ComboboxContent anchor={comboboxAnchor.current}>
+                  <ComboboxEmpty>No repositories found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {options.map((opt) => (
+                      <ComboboxItem key={opt.value} value={opt.value}>
+                        <span className="flex items-center gap-2">
+                          <Github className="size-3.5 shrink-0" />
+                          {opt.label}
+                        </span>
+                      </ComboboxItem>
+                    ))}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
+        </form.Field>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,32 @@
+import { FormatCard } from "@/components/content/create/format-card";
+import { FORMAT_ORDER } from "@/constants/content-formats";
+import type { EventTriggerFormSectionProps } from "@/types/automation/event-trigger";
+
+export function EventTriggerFormatSection({
+  form,
+}: EventTriggerFormSectionProps) {
+  return (
+    <section className="space-y-3">
+      <div className="space-y-1">
+        <h3 className="font-semibold text-base">Content format</h3>
+        <p className="text-muted-foreground text-sm">
+          What should we generate?
+        </p>
+      </div>
+      <form.Field name="outputType">
+        {(field) => (
+          <div className="grid gap-3 md:grid-cols-2">
+            {FORMAT_ORDER.map((type) => (
+              <FormatCard
+                format={type}
+                key={type}
+                onToggle={() => field.handleChange(type)}
+                selected={field.state.value === type}
+              />
+            ))}
+          </div>
+        )}
+      </form.Field>
+    </section>
+  );
+}
