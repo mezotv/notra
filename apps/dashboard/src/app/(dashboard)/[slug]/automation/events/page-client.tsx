@@ -130,6 +130,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         sourceType: "github_webhook",
         sourceConfig: {
           eventTypes: trigger.sourceConfig.eventTypes ?? [values.eventType],
+          includePreReleases: trigger.sourceConfig.includePreReleases ?? true,
         },
         targets: trigger.targets,
         outputType,

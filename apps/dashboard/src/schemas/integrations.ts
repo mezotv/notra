@@ -245,6 +245,7 @@ export const triggerSourceTypeSchema = z.enum([
 
 export const triggerSourceConfigSchema = z.object({
   eventTypes: z.array(z.enum(WEBHOOK_EVENT_TYPES)).optional(),
+  includePreReleases: z.boolean().optional(),
   cron: z
     .object({
       frequency: z.enum(CRON_FREQUENCIES),
@@ -296,6 +297,7 @@ export const configureEventTriggerBodySchema =
     sourceType: z.literal("github_webhook"),
     sourceConfig: z.object({
       eventTypes: z.array(z.enum(WEBHOOK_EVENT_TYPES)).min(1),
+      includePreReleases: z.boolean().default(true),
     }),
     outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),
   });

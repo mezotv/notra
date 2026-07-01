@@ -67,6 +67,25 @@ export interface GithubProcessedEvent {
   data: Record<string, unknown>;
 }
 
+export interface MatchingEventTrigger {
+  id: string;
+  sourceConfig: unknown;
+}
+
+export interface DispatchEventTriggerProps {
+  trigger: MatchingEventTrigger;
+  processedEvent: GithubProcessedEvent;
+  repositoryId: string;
+  deliveryId?: string;
+}
+
+export interface DispatchEventTriggersProps {
+  triggers: MatchingEventTrigger[];
+  processedEvent: GithubProcessedEvent;
+  repositoryId: string;
+  deliveryId?: string;
+}
+
 export type GithubMemoryEventType = Exclude<GitHubEventType, "ping">;
 
 export interface GithubCreateMemoryEntryProps {

@@ -1,11 +1,11 @@
 import crypto from "node:crypto";
 import { getWebhookSecretByRepositoryId } from "@notra/ai/integrations/github";
-import { triggerEventNow } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
+import { dispatchEventTriggers } from "@/lib/webhooks/dispatch-event-triggers";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
   type GitHubEventType,
@@ -460,28 +460,12 @@ export async function handleGitHubWebhook(
       )
     );
 
-  for (const trigger of matchingTriggers) {
-    const config = trigger.sourceConfig as { eventTypes?: string[] };
-    const eventTypes = config.eventTypes ?? [];
-
-    if (eventTypes.length === 0 || eventTypes.includes(processedEvent.type)) {
-      try {
-        await triggerEventNow({
-          triggerId: trigger.id,
-          eventType: processedEvent.type,
-          eventAction: processedEvent.action,
-          eventData: processedEvent.data as Record<string, unknown>,
-          repositoryId,
-          deliveryId: delivery ?? undefined,
-        });
-      } catch (error) {
-        console.error(
-          `Failed to trigger event workflow for trigger ${trigger.id}:`,
-          error
-        );
-      }
-    }
-  }
+  await dispatchEventTriggers({
+    triggers: matchingTriggers,
+    processedEvent,
+    repositoryId,
+    deliveryId: delivery ?? undefined,
+  });
 
   if (SHOULD_DEDUPE_DELIVERIES && delivery) {
     await markDeliveryProcessed(delivery);

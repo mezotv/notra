@@ -12,6 +12,7 @@ export const DEFAULT_EVENT_TRIGGER_VALUES: EventTriggerFormValues = {
   repositoryIds: [],
   brandVoiceId: "",
   autoPublish: false,
+  includePreReleases: true,
 };
 
 export function isAutomationOutputType(
@@ -45,5 +46,6 @@ export function getDefaultEventTriggerValues(
     repositoryIds: trigger.targets.repositoryIds,
     brandVoiceId: normalizeBrandVoiceId(trigger.outputConfig?.brandVoiceId),
     autoPublish: trigger.autoPublish,
+    includePreReleases: trigger.sourceConfig.includePreReleases ?? true,
   };
 }

@@ -89,7 +89,11 @@ export function CreateEventTriggerDialog({
       const payload = {
         organizationId,
         sourceType: "github_webhook" as const,
-        sourceConfig: { eventTypes: [value.eventType] },
+        sourceConfig: {
+          eventTypes: [value.eventType],
+          includePreReleases:
+            value.eventType === "release" ? value.includePreReleases : true,
+        },
         targets: { repositoryIds: value.repositoryIds },
         outputType: value.outputType,
         outputConfig: {
@@ -158,6 +162,7 @@ export function CreateEventTriggerDialog({
   }, [editTrigger, form, open]);
 
   const outputType = useStore(form.store, (s) => s.values.outputType);
+  const eventType = useStore(form.store, (s) => s.values.eventType);
   const repositoryCount = useStore(
     form.store,
     (s) => s.values.repositoryIds.length
@@ -298,6 +303,41 @@ export function CreateEventTriggerDialog({
                       </div>
                     )}
                   </form.Field>
+                  {eventType === "release" && (
+                    <form.Field name="includePreReleases">
+                      {(field) => (
+                        <div className="flex items-center justify-between rounded-lg border p-3">
+                          <div className="flex items-center gap-1.5">
+                            <Label
+                              className="cursor-pointer font-medium text-sm"
+                              htmlFor={field.name}
+                            >
+                              Include pre-releases
+                            </Label>
+                            <Tooltip>
+                              <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                                <HugeiconsIcon
+                                  icon={InformationCircleIcon}
+                                  size={14}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <p className="max-w-50 text-xs">
+                                  When off, releases marked as pre-release on
+                                  GitHub will not fire this trigger.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <Switch
+                            checked={field.state.value}
+                            id={field.name}
+                            onCheckedChange={field.handleChange}
+                          />
+                        </div>
+                      )}
+                    </form.Field>
+                  )}
                 </section>
 
                 <section className="space-y-3">

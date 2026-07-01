@@ -11,6 +11,7 @@ export const eventTriggerFormSchema = z.object({
   repositoryIds: z.array(z.string()).min(1, "Select at least one repository"),
   brandVoiceId: z.string(),
   autoPublish: z.boolean(),
+  includePreReleases: z.boolean(),
 });
 
 export type EventTriggerFormValues = z.infer<typeof eventTriggerFormSchema>;
