@@ -457,18 +457,6 @@ eventTriggersRoutes.openapi(patchEventTriggerRoute, async (c) => {
     outputType: input.outputType,
   });
 
-  const duplicate = await db.query.contentTriggers.findFirst({
-    where: and(
-      eq(contentTriggers.organizationId, orgId),
-      eq(contentTriggers.dedupeHash, dedupeHash),
-      ne(contentTriggers.id, triggerId)
-    ),
-  });
-
-  if (duplicate) {
-    return c.json({ error: "Duplicate event trigger" }, 409);
-  }
-
   const existing = await db.query.contentTriggers.findFirst({
     where: and(
       eq(contentTriggers.id, triggerId),
@@ -479,6 +467,18 @@ eventTriggersRoutes.openapi(patchEventTriggerRoute, async (c) => {
 
   if (!existing) {
     return c.json({ error: "Event trigger not found" }, 404);
+  }
+
+  const duplicate = await db.query.contentTriggers.findFirst({
+    where: and(
+      eq(contentTriggers.organizationId, orgId),
+      eq(contentTriggers.dedupeHash, dedupeHash),
+      ne(contentTriggers.id, triggerId)
+    ),
+  });
+
+  if (duplicate) {
+    return c.json({ error: "Duplicate event trigger" }, 409);
   }
 
   const missingTargets = await ensureEventTriggerTargetsExist(

@@ -1,25 +1,11 @@
 import { z } from "@hono/zod-openapi";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 import { lookbackWindowEnum } from "@notra/db/schema";
+import { splitCommaSeparatedValues } from "../utils/query-params";
 import { resourceIdSchema } from "./ids";
 
 const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
 const MAX_SCHEDULE_NAME_LENGTH = 120;
-
-function splitCommaSeparatedValues(value: string | undefined) {
-  if (!value) {
-    return [];
-  }
-
-  return Array.from(
-    new Set(
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0)
-    )
-  );
-}
 
 export const scheduleParamsSchema = z.object({
   scheduleId: resourceIdSchema("scheduleId").openapi({
