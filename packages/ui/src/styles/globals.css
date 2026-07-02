@@ -208,10 +208,6 @@
   scrollbar-gutter: stable;
 }
 
-@utility scrollbar-gutter-stable {
-  scrollbar-gutter: stable;
-}
-
 @utility scrollbar-thin {
   scrollbar-width: thin;
 }

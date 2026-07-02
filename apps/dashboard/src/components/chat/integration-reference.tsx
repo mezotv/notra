@@ -121,6 +121,40 @@ export function buildIntegrationReferenceElement(
   return span;
 }
 
+const REFERENCE_TOKEN_SPLIT_REGEX =
+  /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g;
+
+export function buildFragmentFromReferencedText(
+  text: string
+): DocumentFragment {
+  const fragment = document.createDocumentFragment();
+  const segments = text.split(REFERENCE_TOKEN_SPLIT_REGEX);
+
+  for (const segment of segments) {
+    if (!segment) {
+      continue;
+    }
+
+    const referenceItem = parseReferenceValue(segment);
+    if (referenceItem) {
+      fragment.append(buildIntegrationReferenceElement(referenceItem));
+      continue;
+    }
+
+    const lines = segment.split("\n");
+    lines.forEach((line, index) => {
+      if (line) {
+        fragment.append(document.createTextNode(line));
+      }
+      if (index < lines.length - 1) {
+        fragment.append(document.createElement("br"));
+      }
+    });
+  }
+
+  return fragment;
+}
+
 export function parseIntegrationReferenceElement(
   el: HTMLElement
 ): ContextItem | null {

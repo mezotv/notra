@@ -1,12 +1,18 @@
 import type { Tool } from "ai";
 
+const MAX_ERROR_MESSAGE_LENGTH = 600;
+
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
 function toErrorPayload(toolName: string, error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error("[Tool Error]", { toolName, error: message });
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const message =
+    rawMessage.length > MAX_ERROR_MESSAGE_LENGTH
+      ? `${rawMessage.slice(0, MAX_ERROR_MESSAGE_LENGTH)}…`
+      : rawMessage;
+  console.error("[Tool Error]", { toolName, error: rawMessage });
   return {
     isError: true,
     error: message,
@@ -30,7 +36,7 @@ export function withToolErrorPayloads(
         try {
           return await execute.call(originalTool, input, options);
         } catch (error) {
-          if (isAbortError(error) || options.abortSignal?.aborted) {
+          if (isAbortError(error) || options?.abortSignal?.aborted) {
             throw error;
           }
           return toErrorPayload(toolName, error);

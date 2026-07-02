@@ -101,11 +101,11 @@ import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import type { QueuedMessage } from "./chat-queue";
 import {
+  buildFragmentFromReferencedText,
   buildIntegrationReferenceElement,
   INTEGRATION_REFERENCE_SELECTOR,
   isIntegrationReferenceElement,
   parseIntegrationReferenceElement,
-  parseReferenceValue,
   serializeEditorWithReferences,
   serializeFragmentWithReferences,
 } from "./integration-reference";
@@ -931,12 +931,13 @@ export function ChatInputAdvanced({
       if (!draft) {
         return;
       }
-      editor.append(document.createTextNode(draft));
+      editor.append(buildFragmentFromReferencedText(draft));
       setIsEmpty(draft.trim().length === 0);
+      syncContextFromDOM();
     } catch {
       // noop
     }
-  }, [draftStorageKey, initialValue, readEditorText]);
+  }, [draftStorageKey, initialValue, readEditorText, syncContextFromDOM]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1094,33 +1095,7 @@ export function ChatInputAdvanced({
 
     range.deleteContents();
 
-    const fragment = document.createDocumentFragment();
-    const segments = text.split(
-      /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g
-    );
-
-    for (const segment of segments) {
-      if (!segment) {
-        continue;
-      }
-
-      const referenceItem = parseReferenceValue(segment);
-      if (referenceItem) {
-        fragment.append(buildIntegrationReferenceElement(referenceItem));
-        continue;
-      }
-
-      const lines = segment.split("\n");
-      lines.forEach((line, index) => {
-        if (line) {
-          fragment.append(document.createTextNode(line));
-        }
-        if (index < lines.length - 1) {
-          fragment.append(document.createElement("br"));
-        }
-      });
-    }
-
+    const fragment = buildFragmentFromReferencedText(text);
     const lastNode = fragment.lastChild;
     range.insertNode(fragment);
 

@@ -654,10 +654,7 @@ function isErrorOutputPayload(output: unknown): boolean {
   if (output === null || typeof output !== "object") {
     return false;
   }
-  if ("isError" in output && output.isError === true) {
-    return true;
-  }
-  return "error" in output && Boolean(output.error);
+  return "isError" in output && output.isError === true;
 }
 
 export function ChatToolBlock({
