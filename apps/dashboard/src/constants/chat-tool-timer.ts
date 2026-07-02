@@ -1,0 +1,1 @@
+export const TOOL_TIMER_THRESHOLD_SECONDS = 5;

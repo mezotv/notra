@@ -20,6 +20,7 @@ import type {
 } from "@notra/ai/types/standalone-chat";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { withToolErrorPayloads } from "@notra/ai/utils/tool-error-payload";
 import {
   convertToModelMessages,
   generateText,
@@ -164,7 +165,7 @@ export async function orchestrateStandaloneChat(
     }
   );
   const notraToolRuntime = createStandaloneToolProvisioningRuntime({
-    tools: baseToolSet.tools,
+    tools: withToolErrorPayloads(baseToolSet.tools),
     defaultActiveToolNames: getDefaultStandaloneActiveToolNames({
       tools: baseToolSet.tools,
       context,

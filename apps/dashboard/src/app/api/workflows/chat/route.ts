@@ -32,6 +32,8 @@ import { serve } from "@upstash/workflow/nextjs";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
 
+export const maxDuration = 300;
+
 export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const parseResult = chatWorkflowPayloadSchema.safeParse(
     context.requestPayload
@@ -355,9 +357,6 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     }
 
     await clearActiveChatStream(organizationId, chatId);
-    if (!isAbort) {
-      throw error;
-    }
   } finally {
     stopAbortPolling?.();
     await clearChatAbortFlag(organizationId, chatId, latestMessage.id).catch(

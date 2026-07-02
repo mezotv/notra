@@ -37,7 +37,7 @@ import { withOrganizationAuth } from "@/lib/auth/organization";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 import type { RouteContext } from "@/types/api/routes";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export const POST = withEvlog(async function POST(
   request: NextRequest,

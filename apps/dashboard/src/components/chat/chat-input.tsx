@@ -297,6 +297,7 @@ interface ChatInputAdvancedProps {
   queuedMessages?: QueuedMessage[];
   onUpdateQueued?: (id: string, text: string) => void;
   onEmptyChange?: (isEmpty: boolean) => void;
+  draftStorageKey?: string;
   ref?: Ref<ChatInputHandle>;
 }
 
@@ -337,6 +338,7 @@ export function ChatInputAdvanced({
   onThinkingLevelChange,
   connectedTop = false,
   onEmptyChange,
+  draftStorageKey,
   ref,
 }: ChatInputAdvancedProps) {
   const currentModel =
@@ -846,6 +848,19 @@ export function ChatInputAdvanced({
     }
     setIsEmpty(readEditorText().trim().length === 0);
 
+    if (draftStorageKey) {
+      try {
+        const draft = serializeEditorWithReferences(editor).trim();
+        if (draft) {
+          window.localStorage.setItem(draftStorageKey, draft);
+        } else {
+          window.localStorage.removeItem(draftStorageKey);
+        }
+      } catch {
+        // noop
+      }
+    }
+
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
       setMentionQuery(null);
@@ -898,7 +913,30 @@ export function ChatInputAdvanced({
     mentionAnchorRef.current = null;
     setMentionQuery(null);
     syncContextFromDOM();
-  }, [readEditorText, syncContextFromDOM]);
+  }, [draftStorageKey, readEditorText, syncContextFromDOM]);
+
+  const restoredDraftKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!draftStorageKey || restoredDraftKeyRef.current === draftStorageKey) {
+      return;
+    }
+    restoredDraftKeyRef.current = draftStorageKey;
+    const editor = editorRef.current;
+    if (!editor || initialValue || readEditorText().trim().length > 0) {
+      return;
+    }
+    try {
+      const draft = window.localStorage.getItem(draftStorageKey);
+      if (!draft) {
+        return;
+      }
+      editor.append(document.createTextNode(draft));
+      setIsEmpty(draft.trim().length === 0);
+    } catch {
+      // noop
+    }
+  }, [draftStorageKey, initialValue, readEditorText]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1103,6 +1141,13 @@ export function ChatInputAdvanced({
     if (editor) {
       editor.innerHTML = "";
     }
+    if (draftStorageKey) {
+      try {
+        window.localStorage.removeItem(draftStorageKey);
+      } catch {
+        // noop
+      }
+    }
     setIsEmpty(true);
     setAttachments([]);
     attachmentsRef.current = [];
@@ -1111,7 +1156,7 @@ export function ChatInputAdvanced({
     for (const item of contextRef.current) {
       onRemoveContext?.(item);
     }
-  }, [onRemoveContext]);
+  }, [draftStorageKey, onRemoveContext]);
 
   const sendSnapshot = useCallback(
     (value: string, snapshotAttachments: ChatAttachment[]) => {

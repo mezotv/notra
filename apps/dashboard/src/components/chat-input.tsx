@@ -37,6 +37,7 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
@@ -500,7 +501,7 @@ const ChatInput = ({
                 >
                   <div className="flex items-center gap-1 text-foreground text-sm">
                     {isLoading ? (
-                      <Loader2Icon className="size-4 animate-spin" />
+                      <BrailleLoader className="text-xs" />
                     ) : (
                       <>
                         <div className="px-0.5 text-sm leading-0 transition-transform">

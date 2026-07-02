@@ -23,6 +23,7 @@ import {
 import { Loader2Icon } from "lucide-react";
 import { useCallback, useEffect, useReducer } from "react";
 import { toast } from "sonner";
+import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { TwitterPost } from "@/components/twitter-post";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
@@ -235,8 +236,7 @@ export function TwitterPreview({
             <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
-                  <Loader2Icon className="size-4 animate-spin" />
-                  <span className="truncate">Generating post...</span>
+                  <BrailleLoader className="text-xs" label="Generating post" />
                 </div>
               )}
               {effectiveState === "draft" && (

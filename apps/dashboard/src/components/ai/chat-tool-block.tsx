@@ -17,6 +17,8 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { CheckIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
+import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
 import {
   commitsByTimeframeInputSchema,
   type MemoryToolInput,
@@ -32,6 +34,7 @@ import {
   webSearchInputSchema,
   webSearchOutputSchema,
 } from "@/schemas/ai/chat-tool-block";
+import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 import {
   getMcpToolIconUrl,
   getMcpToolLabel,
@@ -647,6 +650,16 @@ function ToolDataSection({ label, value }: { label: string; value: unknown }) {
   );
 }
 
+function isErrorOutputPayload(output: unknown): boolean {
+  if (output === null || typeof output !== "object") {
+    return false;
+  }
+  if ("isError" in output && output.isError === true) {
+    return true;
+  }
+  return "error" in output && Boolean(output.error);
+}
+
 export function ChatToolBlock({
   toolName,
   state,
@@ -661,9 +674,12 @@ export function ChatToolBlock({
   const isAwaitingApproval = state === "approval-requested";
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const isOpen = isAwaitingApproval || isDetailsOpen;
-  const isError = state === "output-error";
+  const isError = state === "output-error" || isErrorOutputPayload(output);
   const isStreaming =
     state === "input-streaming" || state === "input-available";
+  const elapsedSeconds = useElapsedSeconds(isStreaming);
+  const showElapsedTimer =
+    isStreaming && elapsedSeconds >= TOOL_TIMER_THRESHOLD_SECONDS;
 
   const subtitle = getSubtitle({
     toolName,
@@ -716,6 +732,11 @@ export function ChatToolBlock({
         ) : (
           <span className="inline-block min-w-0 truncate leading-5">
             {subtitle}
+          </span>
+        )}
+        {showElapsedTimer && (
+          <span className="shrink-0 text-muted-foreground/60 text-xs tabular-nums">
+            {formatElapsedSeconds(elapsedSeconds)}
           </span>
         )}
         <HugeiconsIcon
