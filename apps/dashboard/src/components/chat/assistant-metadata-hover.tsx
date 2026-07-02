@@ -21,6 +21,7 @@ import { useShowAgentStats } from "@/lib/hooks/use-privacy-preferences";
 const MODEL_LABELS = {
   auto: "Auto",
   "anthropic/claude-opus-4.8": "Claude Opus 4.8",
+  "anthropic/claude-sonnet-5": "Claude Sonnet 5",
   "anthropic/claude-sonnet-4.6": "Claude Sonnet 4.6",
   "anthropic/claude-haiku-4.5": "Claude Haiku 4.5",
   "openai/gpt-5.4": "GPT-5.4",
@@ -30,6 +31,7 @@ const MODEL_LABELS = {
 const MODEL_CONTEXT_WINDOWS = {
   auto: 1_000_000,
   "anthropic/claude-opus-4.8": 1_000_000,
+  "anthropic/claude-sonnet-5": 1_000_000,
   "anthropic/claude-sonnet-4.6": 1_000_000,
   "anthropic/claude-haiku-4.5": 200_000,
   "openai/gpt-5.4": 1_100_000,

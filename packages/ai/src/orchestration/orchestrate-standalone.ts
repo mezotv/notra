@@ -710,7 +710,10 @@ function getThinkingProviderOptions(
 }
 
 function usesAdaptiveThinking(modelId: string): boolean {
-  return modelId.startsWith("anthropic/claude-opus-");
+  return (
+    modelId.startsWith("anthropic/claude-opus-") ||
+    modelId.startsWith("anthropic/claude-sonnet-")
+  );
 }
 
 function getAnthropicThinkingBudget(

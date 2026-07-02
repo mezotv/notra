@@ -12,6 +12,7 @@ export const factualityRules = dedent`
   - Do not interpret unclear implementation details into stronger claims. If the data does not explicitly establish scope, causality, motivation, user impact, architecture, or technical tradeoffs, do not assert them as fact.
   - Do not turn code changes into product promises. Only describe what is factually supported by the provided data.
   - Treat the provided lookback window as the source of truth.
+  - Only mention changes that fall inside the provided lookback window and come from the selected sources. Never bring in other work, earlier releases, unrelated features, or future plans that are outside that scope, even if you know about them from repository context.
 `;
 
 export const prohibitedLanguage = dedent`

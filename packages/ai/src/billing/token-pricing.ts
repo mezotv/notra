@@ -9,6 +9,13 @@ const CLAUDE_SONNET_4_6_PRICING: ModelPricing = {
   cacheWritePerMillionTokens: 3.75,
 };
 
+const CLAUDE_SONNET_5_PRICING: ModelPricing = {
+  inputPerMillionTokens: 2.0,
+  outputPerMillionTokens: 10.0,
+  cacheReadPerMillionTokens: 0.2,
+  cacheWritePerMillionTokens: 2.5,
+};
+
 const CLAUDE_OPUS_4_8_PRICING: ModelPricing = {
   inputPerMillionTokens: 5.0,
   outputPerMillionTokens: 25.0,
@@ -22,6 +29,9 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   "vercel/anthropic/claude-opus-4.8": CLAUDE_OPUS_4_8_PRICING,
   "opencode/claude-sonnet-4-6": CLAUDE_SONNET_4_6_PRICING,
   "anthropic/claude-sonnet-4.6": CLAUDE_SONNET_4_6_PRICING,
+  "opencode/claude-sonnet-5": CLAUDE_SONNET_5_PRICING,
+  "anthropic/claude-sonnet-5": CLAUDE_SONNET_5_PRICING,
+  "vercel/anthropic/claude-sonnet-5": CLAUDE_SONNET_5_PRICING,
   "anthropic/claude-haiku-4.5": {
     inputPerMillionTokens: 0.8,
     outputPerMillionTokens: 4.0,

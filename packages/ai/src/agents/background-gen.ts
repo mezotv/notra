@@ -159,7 +159,7 @@ export async function runBackgroundGen(
     providerOptions: withGatewayDefaults(
       {
         anthropic: {
-          thinking: { type: "enabled", budgetTokens: 4096 },
+          thinking: { type: "adaptive" },
         },
       },
       { modelId: AGENT_DEFAULT_MODEL }
