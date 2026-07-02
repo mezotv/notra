@@ -456,11 +456,20 @@ function StandaloneChatPageClient({
   const organizationIdRef = useRef(organizationId);
   const selectedModelRef = useRef(selectedModel);
   const thinkingLevelRef = useRef(thinkingLevel);
-  contextRef.current = context;
-  hasCustomizedContextRef.current = hasCustomizedContext;
-  selectedModelRef.current = selectedModel;
-  thinkingLevelRef.current = thinkingLevel;
-  organizationIdRef.current = organizationId;
+
+  useEffect(() => {
+    contextRef.current = context;
+    hasCustomizedContextRef.current = hasCustomizedContext;
+    selectedModelRef.current = selectedModel;
+    thinkingLevelRef.current = thinkingLevel;
+    organizationIdRef.current = organizationId;
+  }, [
+    context,
+    hasCustomizedContext,
+    selectedModel,
+    thinkingLevel,
+    organizationId,
+  ]);
 
   const transport = useMemo(
     () =>
@@ -671,7 +680,11 @@ function StandaloneChatPageClient({
     await stopActiveResponse();
   }, [stopActiveResponse]);
 
-  const chatHistoryQuery = useQuery<{
+  const {
+    data: chatHistoryData,
+    isLoading: isChatHistoryLoading,
+    isPending: isChatHistoryPending,
+  } = useQuery<{
     messages: ChatUIMessage[] | null;
     lastResponseStopped: boolean;
     activeStreamId: string | null;
@@ -700,10 +713,10 @@ function StandaloneChatPageClient({
   });
 
   useLayoutEffect(() => {
-    if (!chatHistoryQuery.data) {
+    if (!chatHistoryData) {
       return;
     }
-    const historyMessages = chatHistoryQuery.data.messages;
+    const historyMessages = chatHistoryData.messages;
     if (historyMessages?.length) {
       setMessages(historyMessages);
 
@@ -754,16 +767,16 @@ function StandaloneChatPageClient({
       }
     }
     updateWasStoppedByUser(
-      Boolean(chatHistoryQuery.data.lastResponseStopped),
+      Boolean(chatHistoryData.lastResponseStopped),
       wasStoppedByUserRef,
       setWasStoppedByUser
     );
-    if (chatHistoryQuery.data.activeStreamId) {
-      setPendingMessageId(chatHistoryQuery.data.activeStreamId);
+    if (chatHistoryData.activeStreamId) {
+      setPendingMessageId(chatHistoryData.activeStreamId);
     } else {
       setPendingMessageId(null);
     }
-  }, [chatHistoryQuery.data, setMessages]);
+  }, [chatHistoryData, setMessages]);
 
   const hasUpdatedUrlRef = useRef(false);
   const hasRunInitialChatIdEffectRef = useRef(false);
@@ -843,12 +856,12 @@ function StandaloneChatPageClient({
     }
   }, [queueStorageKey, queuedMessages]);
 
-  const pendingHistoryMessages = chatHistoryQuery.data?.messages?.length ?? 0;
+  const pendingHistoryMessages = chatHistoryData?.messages?.length ?? 0;
   const isLoadingHistory =
     Boolean(initialChatId) &&
     messages.length === 0 &&
-    (chatHistoryQuery.isLoading ||
-      chatHistoryQuery.isPending ||
+    (isChatHistoryLoading ||
+      isChatHistoryPending ||
       pendingHistoryMessages > 0);
   const isLoading = status === "streaming" || status === "submitted";
   const isPendingAutoSubmit =
@@ -954,7 +967,10 @@ function StandaloneChatPageClient({
   }, []);
 
   const messagesRef = useRef(messages);
-  messagesRef.current = messages;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const extractUserMessageContent = useCallback((message: ChatUIMessage) => {
     let text = "";
@@ -1316,36 +1332,41 @@ function StandaloneChatPageClient({
   }, []);
 
   const queuedMessagesRef = useRef(queuedMessages);
-  queuedMessagesRef.current = queuedMessages;
+
+  useEffect(() => {
+    queuedMessagesRef.current = queuedMessages;
+  }, [queuedMessages]);
 
   const isDrainingRef = useRef(false);
   const seenToolOutputsRef = useRef<Set<string>>(new Set());
   const prevIsLoadingRef = useRef(false);
 
-  drainQueueRef.current = () => {
-    if (isDrainingRef.current) {
-      return;
-    }
-    if (wasStoppedByUserRef.current) {
-      return;
-    }
-    if (hasPendingApproval(messagesRef.current)) {
-      return;
-    }
-    const queue = queuedMessagesRef.current;
-    const next = queue[0];
-    if (!next) {
-      return;
-    }
+  useEffect(() => {
+    drainQueueRef.current = () => {
+      if (isDrainingRef.current) {
+        return;
+      }
+      if (wasStoppedByUserRef.current) {
+        return;
+      }
+      if (hasPendingApproval(messagesRef.current)) {
+        return;
+      }
+      const queue = queuedMessagesRef.current;
+      const next = queue[0];
+      if (!next) {
+        return;
+      }
 
-    isDrainingRef.current = true;
-    setQueuedMessages(queue.slice(1));
-    dispatchMessage(next.text).catch((error) => {
-      console.error("[Chat] Failed to drain queued message:", error);
-      isDrainingRef.current = false;
-      setQueuedMessages((prev) => [next, ...prev]);
-    });
-  };
+      isDrainingRef.current = true;
+      setQueuedMessages(queue.slice(1));
+      dispatchMessage(next.text).catch((error) => {
+        console.error("[Chat] Failed to drain queued message:", error);
+        isDrainingRef.current = false;
+        setQueuedMessages((prev) => [next, ...prev]);
+      });
+    };
+  }, [dispatchMessage]);
 
   useEffect(() => {
     if (isLoading && !prevIsLoadingRef.current) {

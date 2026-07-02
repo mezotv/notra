@@ -103,6 +103,7 @@ import type { QueuedMessage } from "./chat-queue";
 import {
   buildFragmentFromReferencedText,
   buildIntegrationReferenceElement,
+  hydrateLinearReferenceTeamNames,
   INTEGRATION_REFERENCE_SELECTOR,
   isIntegrationReferenceElement,
   parseIntegrationReferenceElement,
@@ -356,7 +357,10 @@ export function ChatInputAdvanced({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastInitialValueRef = useRef<string | undefined>(undefined);
   const contextRef = useRef(context);
-  contextRef.current = context;
+
+  useEffect(() => {
+    contextRef.current = context;
+  }, [context]);
 
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const [pendingUploads, setPendingUploads] = useState<PendingUploadItem[]>([]);
@@ -368,9 +372,12 @@ export function ChatInputAdvanced({
   const isUploading = pendingUploads.length > 0;
   const isQueued = pendingSend !== null;
   const attachmentsRef = useRef(attachments);
-  attachmentsRef.current = attachments;
   const pendingUploadsRef = useRef(pendingUploads);
-  pendingUploadsRef.current = pendingUploads;
+
+  useEffect(() => {
+    attachmentsRef.current = attachments;
+    pendingUploadsRef.current = pendingUploads;
+  }, [attachments, pendingUploads]);
   const completedUploadsRef = useRef(new Map<string, ChatAttachment>());
   const isMountedRef = useRef(true);
   const submittedKeysRef = useRef<Set<string>>(new Set());
@@ -570,7 +577,11 @@ export function ChatInputAdvanced({
   }, [cleanupChatUpload]);
 
   const onEmptyChangeRef = useRef(onEmptyChange);
-  onEmptyChangeRef.current = onEmptyChange;
+
+  useEffect(() => {
+    onEmptyChangeRef.current = onEmptyChange;
+  }, [onEmptyChange]);
+
   useEffect(() => {
     onEmptyChangeRef.current?.(isEmpty);
   }, [isEmpty]);
@@ -941,6 +952,16 @@ export function ChatInputAdvanced({
 
   useEffect(() => {
     const editor = editorRef.current;
+    if (!editor || enabledLinearIntegrations.length === 0) {
+      return;
+    }
+    if (hydrateLinearReferenceTeamNames(editor, enabledLinearIntegrations)) {
+      syncContextFromDOM();
+    }
+  }, [enabledLinearIntegrations, syncContextFromDOM]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
     if (!editor || initialValue === lastInitialValueRef.current) {
       return;
     }
@@ -1269,7 +1290,10 @@ export function ChatInputAdvanced({
     onSend,
     performSend,
   ]);
-  submitRef.current = handleSend;
+
+  useEffect(() => {
+    submitRef.current = handleSend;
+  }, [handleSend]);
 
   useEffect(() => {
     if (!(pendingSend && !isUploading)) {

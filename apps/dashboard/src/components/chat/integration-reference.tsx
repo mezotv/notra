@@ -121,6 +121,40 @@ export function buildIntegrationReferenceElement(
   return span;
 }
 
+export function hydrateLinearReferenceTeamNames(
+  root: HTMLElement,
+  teams: ReadonlyArray<{ integrationId: string; teamName?: string | null }>
+): boolean {
+  let changed = false;
+  const chips = root.querySelectorAll<HTMLElement>(
+    INTEGRATION_REFERENCE_SELECTOR
+  );
+
+  for (const chip of chips) {
+    if (chip.dataset.kind !== "linear" || chip.dataset.teamName) {
+      continue;
+    }
+    const team = teams.find(
+      (candidate) => candidate.integrationId === chip.dataset.integrationId
+    );
+    if (!team?.teamName) {
+      continue;
+    }
+    chip.dataset.teamName = team.teamName;
+    const label = chip.lastElementChild;
+    if (label instanceof HTMLElement) {
+      label.textContent = getReferenceDisplay({
+        type: "linear-team",
+        integrationId: team.integrationId,
+        teamName: team.teamName,
+      });
+    }
+    changed = true;
+  }
+
+  return changed;
+}
+
 const REFERENCE_TOKEN_SPLIT_REGEX =
   /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g;
 
