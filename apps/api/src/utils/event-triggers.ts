@@ -1,4 +1,3 @@
-import type { createDb } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
@@ -9,10 +8,9 @@ import {
   eventTriggerSourceConfigSchema,
   eventTriggerTargetsSchema,
 } from "../schemas/event-triggers";
+import type { DbClient } from "../types/db";
 import type { EventTriggerRow } from "../types/event-triggers";
 import { logError } from "./logging";
-
-type DbClient = ReturnType<typeof createDb>;
 
 export async function ensureEventTriggerTargetsExist(
   db: DbClient,

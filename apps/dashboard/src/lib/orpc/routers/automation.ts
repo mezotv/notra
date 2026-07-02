@@ -1,12 +1,12 @@
 import {
-  hashTrigger,
-  normalizeTriggerConfig,
-} from "@notra/ai/qstash/trigger-hash";
-import {
   buildCronExpression,
   createQstashSchedule,
   deleteQstashSchedule,
 } from "@notra/ai/qstash/triggers";
+import {
+  hashTrigger,
+  normalizeTriggerConfig,
+} from "@notra/ai/utils/trigger-hash";
 import { db } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,

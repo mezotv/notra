@@ -3,8 +3,7 @@ import { createRoute } from "@hono/zod-openapi";
 import {
   hashTrigger,
   normalizeTriggerConfig,
-} from "@notra/ai/qstash/trigger-hash";
-import type { createDb } from "@notra/db/drizzle";
+} from "@notra/ai/utils/trigger-hash";
 import { contentTriggers, githubIntegrations } from "@notra/db/schema";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import {
@@ -16,6 +15,7 @@ import {
   getEventTriggersResponseSchema,
   patchEventTriggerRequestSchema,
 } from "../schemas/event-triggers";
+import type { DbClient } from "../types/db";
 import { getOrganizationId } from "../utils/auth";
 import {
   ensureEventTriggerTargetsExist,
@@ -34,8 +34,6 @@ import {
 } from "../utils/regex";
 
 export const eventTriggersRoutes = createOpenApiApp();
-
-type DbClient = ReturnType<typeof createDb>;
 
 eventTriggersRoutes.on(
   ["GET", "POST"],
