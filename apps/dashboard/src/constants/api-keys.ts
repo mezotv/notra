@@ -5,6 +5,7 @@ export const API_KEY_GRANULAR_READ_PERMISSIONS = [
   "brand-identities.read",
   "integrations.read",
   "schedules.read",
+  "event-triggers.read",
   "chats.read",
   "skills.read",
 ] as const;
@@ -14,6 +15,7 @@ export const API_KEY_GRANULAR_WRITE_PERMISSIONS = [
   "brand-identities.write",
   "integrations.write",
   "schedules.write",
+  "event-triggers.write",
   "chats.write",
   "skills.write",
 ] as const;
@@ -68,6 +70,13 @@ export const API_KEY_SCOPE_RESOURCES = [
     description: "Read and manage scheduled content generation",
     readScope: "schedules.read",
     writeScope: "schedules.write",
+  },
+  {
+    id: "event-triggers",
+    label: "Event triggers",
+    description: "Read and manage event-based content generation",
+    readScope: "event-triggers.read",
+    writeScope: "event-triggers.write",
   },
   {
     id: "chats",

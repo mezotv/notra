@@ -12,6 +12,7 @@ import { subscriptionMiddleware } from "./middleware/subscription";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
 import { chatWorkflowRoutes } from "./routes/chat-workflow";
 import { chatsRoutes } from "./routes/chats";
+import { eventTriggersRoutes } from "./routes/event-triggers";
 import { integrationsRoutes } from "./routes/integrations";
 import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
@@ -234,6 +235,7 @@ app.route("/v1", postsRoutes);
 app.route("/v1", brandIdentitiesRoutes);
 app.route("/v1", integrationsRoutes);
 app.route("/v1", schedulesRoutes);
+app.route("/v1", eventTriggersRoutes);
 app.route("/v1", chatsRoutes);
 app.route("/v1", skillsRoutes);
 app.route("/", chatWorkflowRoutes);
@@ -271,6 +273,11 @@ app.doc31("/openapi.json", (_c) => ({
       name: "Schedules",
       description:
         "Manage scheduled content generation. Organization is inferred from the API key (identity.externalId).",
+    },
+    {
+      name: "Event Triggers",
+      description:
+        "Manage event-based content generation triggered by GitHub webhooks. Organization is inferred from the API key (identity.externalId).",
     },
     {
       name: "Chats",

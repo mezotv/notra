@@ -4,6 +4,8 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const VERSION_PREFIX_REGEX = /^\/v1(?=\/|$)/;
 const LEGACY_ORGANIZATION_POSTS_REGEX = /^\/[^/]+\/posts(?:\/|$)/;
 const LEGACY_ORGANIZATION_SCHEDULES_REGEX = /^\/[^/]+\/schedules(?:\/|$)/;
+const LEGACY_ORGANIZATION_EVENT_TRIGGERS_REGEX =
+  /^\/[^/]+\/event-triggers(?:\/|$)/;
 
 function scopeForResource(resource: string, method: string) {
   return `${resource}.${MUTATION_METHODS.has(method) ? "write" : "read"}`;
@@ -22,6 +24,10 @@ export function getRequiredOAuthScope(pathname: string, method: string) {
 
   if (LEGACY_ORGANIZATION_SCHEDULES_REGEX.test(path)) {
     return scopeForResource("schedules", method);
+  }
+
+  if (LEGACY_ORGANIZATION_EVENT_TRIGGERS_REGEX.test(path)) {
+    return scopeForResource("event-triggers", method);
   }
 
   const resource = PUBLIC_API_SCOPE_RESOURCES.find((item) =>

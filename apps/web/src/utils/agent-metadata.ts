@@ -34,6 +34,8 @@ const PUBLIC_API_SCOPES = [
   "integrations.write",
   "schedules.read",
   "schedules.write",
+  "event-triggers.read",
+  "event-triggers.write",
   "chats.read",
   "chats.write",
   "skills.read",

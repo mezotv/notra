@@ -24,6 +24,12 @@ export const PUBLIC_API_SCOPE_RESOURCES = [
     writeScope: "schedules.write",
   },
   {
+    id: "event-triggers",
+    paths: ["/event-triggers"],
+    readScope: "event-triggers.read",
+    writeScope: "event-triggers.write",
+  },
+  {
     id: "chats",
     paths: ["/chats"],
     readScope: "chats.read",
