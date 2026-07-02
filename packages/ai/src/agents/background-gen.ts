@@ -189,7 +189,7 @@ export async function runBackgroundGen(
       fail: createFailTool(postToolsResult),
     },
     instructions,
-    stopWhen: stepCountIs(35),
+    stopWhen: stepCountIs(50),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
   });
 
