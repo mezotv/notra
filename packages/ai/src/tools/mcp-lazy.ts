@@ -501,7 +501,7 @@ function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
   );
 }
 
-function withExecutionTimeout(options: ToolExecutionOptions) {
+function withExecutionTimeout(options: ToolExecutionOptions<unknown>) {
   const timeoutSignal = AbortSignal.timeout(MCP_EXECUTION_TIMEOUT_MS);
   return options.abortSignal
     ? AbortSignal.any([options.abortSignal, timeoutSignal])

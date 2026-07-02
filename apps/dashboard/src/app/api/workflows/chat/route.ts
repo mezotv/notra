@@ -274,7 +274,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
 
         return;
       },
-      onFinish: async ({ messages: responseMessages }) => {
+      onEnd: async ({ messages: responseMessages }) => {
         try {
           const saved = await replaceChatHistory(
             organizationId,

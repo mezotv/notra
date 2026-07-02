@@ -3,10 +3,14 @@ import {
   type AILogTarget,
   wrapModelWithObservability,
 } from "@notra/ai/observability";
-import type { GatewayArgs, GatewayResult } from "@notra/ai/types/gateway";
+import type { GatewayArgs } from "@notra/ai/types/gateway";
 import type { SupermemoryOptions } from "@notra/ai/types/model";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
-import { type LanguageModelMiddleware, wrapLanguageModel } from "ai";
+import {
+  type LanguageModel,
+  type LanguageModelMiddleware,
+  wrapLanguageModel,
+} from "ai";
 
 export interface CreateModelOptions {
   supermemory?: Omit<SupermemoryOptions, "mode" | "addMemory">;
@@ -16,12 +20,14 @@ export interface CreateModelOptions {
 type DevToolsMiddleware =
   typeof import("@ai-sdk/devtools")["devToolsMiddleware"];
 
+type SupermemoryModel = Parameters<typeof withSupermemory>[0];
+
 export function createModel(
   organizationId: string | undefined,
   modelId: GatewayArgs[0],
   options?: CreateModelOptions,
   log?: AILogTarget
-): GatewayResult {
+): LanguageModel {
   const base = gateway(modelId);
 
   if (!organizationId || options?.disableMemory) {
@@ -33,7 +39,7 @@ export function createModel(
     return wrapModelForDevTools(wrapModelWithObservability(base, log));
   }
 
-  const model = withSupermemory(base, organizationId, {
+  const model = withSupermemory(asSupermemoryModel(base), organizationId, {
     apiKey: supermemoryApiKey,
     mode: "full",
     addMemory: "always",
@@ -43,7 +49,13 @@ export function createModel(
   return wrapModelForDevTools(wrapModelWithObservability(model, log));
 }
 
-function wrapModelForDevTools(model: GatewayResult): GatewayResult {
+function asSupermemoryModel(model: LanguageModel): SupermemoryModel {
+  return model as unknown as SupermemoryModel;
+}
+
+function wrapModelForDevTools(
+  model: Exclude<LanguageModel, string>
+): LanguageModel {
   if (
     process.env.NODE_ENV !== "development" ||
     process.env.AI_SDK_DEVTOOLS !== "true"
@@ -54,7 +66,7 @@ function wrapModelForDevTools(model: GatewayResult): GatewayResult {
   return wrapLanguageModel({
     model,
     middleware: createLazyDevToolsMiddleware(),
-  }) as GatewayResult;
+  });
 }
 
 function createLazyDevToolsMiddleware(): LanguageModelMiddleware {
@@ -69,7 +81,7 @@ function createLazyDevToolsMiddleware(): LanguageModelMiddleware {
   };
 
   return {
-    specificationVersion: "v3",
+    specificationVersion: "v4",
     async transformParams(options) {
       const middleware = await getMiddleware();
       return middleware.transformParams

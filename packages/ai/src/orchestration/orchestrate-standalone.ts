@@ -19,16 +19,16 @@ import type {
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
-import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { buildTelemetryOptions } from "@notra/ai/utils/tcc";
 import { withToolErrorPayloads } from "@notra/ai/utils/tool-error-payload";
 import {
   convertToModelMessages,
   generateText,
+  isStepCount,
   isToolUIPart,
   NoSuchToolError,
   Output,
   smoothStream,
-  stepCountIs,
   streamText,
   type Tool,
   tool,
@@ -246,7 +246,7 @@ export async function orchestrateStandaloneChat(
   let firstChunkFired = false;
   const stream = streamText({
     model: modelWithMemory,
-    system: systemPrompt,
+    instructions: systemPrompt,
     messages: modelMessages,
     tools,
     activeTools: Array.from(
@@ -258,7 +258,7 @@ export async function orchestrateStandaloneChat(
     prepareStep: async (options) => ({
       activeTools: await getActiveToolNames(options),
     }),
-    stopWhen: stepCountIs(maxSteps),
+    stopWhen: isStepCount(maxSteps),
     experimental_transform: smoothStream(),
     // Without this, a tool call whose inputs fail schema validation throws an
     // `InvalidToolInputError` that surfaces as a fatal stream error and bricks
@@ -292,7 +292,7 @@ export async function orchestrateStandaloneChat(
             `Validation error: ${error.message}`,
             "Return corrected inputs that satisfy the schema.",
           ].join("\n"),
-          experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+          telemetry: buildTelemetryOptions(telemetryMetadata),
         });
 
         return { ...toolCall, input: JSON.stringify(repairedInput) };
@@ -310,7 +310,7 @@ export async function orchestrateStandaloneChat(
     },
     providerOptions,
     abortSignal,
-    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+    telemetry: buildTelemetryOptions(telemetryMetadata),
     onChunk({ chunk }) {
       if (firstChunkFired) {
         return;
@@ -328,8 +328,8 @@ export async function orchestrateStandaloneChat(
       });
       lazyMcpRuntime?.cleanup().catch(() => undefined);
     },
-    async onFinish({ totalUsage }) {
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
+    async onEnd({ usage }) {
+      await deps?.onUsage?.(usage, routingDecision.model);
       await lazyMcpRuntime?.cleanup();
     },
     onError({ error }) {
@@ -417,9 +417,11 @@ function createStandaloneToolProvisioningRuntime({
           }
           exposedTools[toolName] = tools[toolName] as Tool;
           activeToolNames.add(toolName);
+          const toolDescription = tools[toolName]?.description;
           activated.push({
             toolName,
-            description: tools[toolName]?.description,
+            description:
+              typeof toolDescription === "string" ? toolDescription : undefined,
           });
         }
         return {

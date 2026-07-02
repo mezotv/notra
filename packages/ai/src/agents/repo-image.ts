@@ -167,8 +167,8 @@ async function reviewRenderedRepoImageForLogoIssues(params: {
             text: buildMarketingAssetLogoReviewPrompt(params),
           },
           {
-            type: "image",
-            image: params.pngBase64,
+            type: "file",
+            data: params.pngBase64,
             mediaType: "image/png",
           },
         ],

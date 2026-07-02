@@ -1,10 +1,14 @@
+import { OpenTelemetry } from "@ai-sdk/otel";
 import type { TccMetadata, TccMetadataValue } from "@notra/ai/types/tcc";
+import type { TelemetryOptions } from "ai";
 
 export type { TccMetadata } from "@notra/ai/types/tcc";
 
-export function buildExperimentalTelemetry(metadata?: TccMetadata) {
+export function buildTelemetryOptions(
+  metadata?: TccMetadata
+): TelemetryOptions {
   if (!metadata) {
-    return { isEnabled: true } as const;
+    return {};
   }
 
   const entries = Object.entries(metadata).filter(
@@ -12,11 +16,12 @@ export function buildExperimentalTelemetry(metadata?: TccMetadata) {
   ) as [string, TccMetadataValue][];
 
   if (entries.length === 0) {
-    return { isEnabled: true } as const;
+    return {};
   }
 
+  const attributes = Object.fromEntries(entries);
+
   return {
-    isEnabled: true,
-    metadata: Object.fromEntries(entries),
-  } as const;
+    integrations: [new OpenTelemetry({ enrichSpan: () => attributes })],
+  };
 }

@@ -7,10 +7,10 @@ import type {
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
-import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { buildTelemetryOptions } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
-  stepCountIs,
+  isStepCount,
   streamText,
   type UIMessage,
 } from "ai";
@@ -118,18 +118,18 @@ export async function orchestrateChat(
 
   const stream = streamText({
     model: modelWithMemory,
-    system: systemPrompt,
+    instructions: systemPrompt,
     messages: await convertToModelMessages(messagesForModel, {
       ignoreIncompleteToolCalls: true,
     }),
     tools,
-    stopWhen: stepCountIs(maxSteps),
+    stopWhen: isStepCount(maxSteps),
     providerOptions: withGatewayDefaults(undefined, {
       modelId: routingDecision.model,
     }),
-    experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
-    async onFinish({ totalUsage }) {
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
+    telemetry: buildTelemetryOptions(telemetryMetadata),
+    async onEnd({ usage }) {
+      await deps?.onUsage?.(usage, routingDecision.model);
     },
     onError({ error }) {
       console.error("[Chat Stream Error]", {

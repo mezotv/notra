@@ -13,6 +13,10 @@ export async function register() {
   ) {
     const { registerOTelTCC } = await import("@contextcompany/otel/nextjs");
     registerOTelTCC();
+
+    const { registerTelemetry } = await import("ai");
+    const { OpenTelemetry } = await import("@ai-sdk/otel");
+    registerTelemetry(new OpenTelemetry());
   }
 }
 

@@ -18,13 +18,13 @@ import {
   WEB_SEARCH_TOOL_NAME,
 } from "@notra/ai/tools/web-search";
 import type { ChatAgentContext } from "@notra/ai/types/agents";
-import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
-import { stepCountIs, type Tool, ToolLoopAgent } from "ai";
+import { buildTelemetryOptions } from "@notra/ai/utils/tcc";
+import { isStepCount, type Tool, ToolLoopAgent } from "ai";
 
 export async function createChatAgent(
   context: ChatAgentContext,
   instruction: string
-) {
+): Promise<ToolLoopAgent<never, Record<string, Tool>>> {
   const { organizationId } = context;
   const isDev = process.env.NODE_ENV === "development";
   const hasContextDev = isWebSearchAvailable();
@@ -148,13 +148,11 @@ Triggers: the user wants the document changed (rewrite, shorten, tone change, cl
         : ""
     }
 ${selectionContext}`,
-    stopWhen: stepCountIs(15),
-    async onFinish() {
+    stopWhen: isStepCount(15),
+    async onEnd() {
       await cleanupMcpTools();
     },
-    experimental_telemetry: buildExperimentalTelemetry(
-      context.telemetryMetadata
-    ),
+    telemetry: buildTelemetryOptions(context.telemetryMetadata),
   });
 
   const generate = agent.generate.bind(agent);

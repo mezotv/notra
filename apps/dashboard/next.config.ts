@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     "@notra/kiwi",
     "@notra/utils",
   ],
-  serverExternalPackages: ["@resvg/resvg-js"],
+  serverExternalPackages: ["@resvg/resvg-js", "@vercel/oidc"],
   async rewrites() {
     return [
       {

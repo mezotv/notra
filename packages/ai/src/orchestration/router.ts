@@ -11,10 +11,7 @@ import type {
   RoutingDecision,
   RoutingResult,
 } from "@notra/ai/types/orchestration";
-import {
-  buildExperimentalTelemetry,
-  type TccMetadata,
-} from "@notra/ai/utils/tcc";
+import { buildTelemetryOptions, type TccMetadata } from "@notra/ai/utils/tcc";
 import { generateObject, generateText } from "ai";
 
 const MODELS = {
@@ -123,7 +120,7 @@ export async function routeMessage(
     const { object } = await generateObject({
       model: routerModel,
       schema: routingDecisionSchema,
-      system: ROUTING_PROMPT,
+      instructions: ROUTING_PROMPT,
       prompt: `Classify this user message:
 
 "${userMessage}"${contextHint}`,
@@ -134,7 +131,7 @@ export async function routeMessage(
         try {
           const { text: repairedText } = await generateText({
             model: routerModel,
-            system:
+            instructions:
               "Repair the router output so it is valid JSON matching the required schema. Return only JSON.",
             prompt: [
               "Schema:",
@@ -163,8 +160,7 @@ export async function routeMessage(
             providerOptions: withGatewayAutomaticCaching(undefined, {
               modelId: MODELS.router,
             }),
-            experimental_telemetry:
-              buildExperimentalTelemetry(telemetryMetadata),
+            telemetry: buildTelemetryOptions(telemetryMetadata),
           });
 
           return repairedText;
@@ -178,7 +174,7 @@ export async function routeMessage(
           return null;
         }
       },
-      experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
+      telemetry: buildTelemetryOptions(telemetryMetadata),
     });
 
     return object;

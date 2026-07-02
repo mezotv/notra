@@ -14,7 +14,7 @@ import type {
   ExternalChannelLookupSource,
 } from "../types/chat";
 import { normalizeChatTitle, sortChatSessions } from "../utils/chat";
-import { buildExperimentalTelemetry } from "../utils/tcc";
+import { buildTelemetryOptions } from "../utils/tcc";
 import { getChatRedis } from "./config";
 
 function activeStreamKey(organizationId: string, chatId: string) {
@@ -730,13 +730,13 @@ export async function generateAndSetChatTitle(
 
     const { text } = await generateText({
       model: gateway("openai/gpt-5.4-nano"),
-      system: `Generate a short, descriptive title (max 50 chars) for a chat conversation based on the user's first message. Return ONLY the title text, nothing else. No quotes, no prefix. Be specific and concise.`,
+      instructions: `Generate a short, descriptive title (max 50 chars) for a chat conversation based on the user's first message. Return ONLY the title text, nothing else. No quotes, no prefix. Be specific and concise.`,
       prompt: userMessage,
       maxOutputTokens: 30,
       providerOptions: withGatewayAutomaticCaching(undefined, {
         modelId: "openai/gpt-5.4-nano",
       }),
-      experimental_telemetry: buildExperimentalTelemetry({
+      telemetry: buildTelemetryOptions({
         chatId,
         feature: "chat_title",
         organizationId,

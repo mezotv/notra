@@ -7,4 +7,8 @@ if (process.env.NODE_ENV === "production") {
   });
 
   tcc.start();
+
+  const { registerTelemetry } = await import("ai");
+  const { OpenTelemetry } = await import("@ai-sdk/otel");
+  registerTelemetry(new OpenTelemetry());
 }

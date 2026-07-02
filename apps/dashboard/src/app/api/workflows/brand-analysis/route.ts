@@ -4,12 +4,13 @@ import {
   setBrandAnalysisJobStatus,
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
+import { wrapModelWithObservability } from "@notra/ai/observability";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import type { ContextDevScrapingResult } from "@notra/ai/types/context-dev";
 import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
 import { redis } from "@notra/ai/utils/redis";
-import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { buildTelemetryOptions } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import type { WorkflowContext } from "@upstash/workflow";
@@ -17,7 +18,6 @@ import { serve } from "@upstash/workflow/nextjs";
 import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
-import { createAILogger } from "evlog/ai";
 import { flattenError, object, string } from "zod";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
@@ -107,7 +107,6 @@ export const { POST } = serve<BrandAnalysisPayload>(
       return;
     }
     const { organizationId, url, voiceId, jobId } = parseResult.data;
-    const ai = createAILogger(log);
 
     log.set({
       feature: "brand_analysis",
@@ -165,7 +164,10 @@ export const { POST } = serve<BrandAnalysisPayload>(
         async () => {
           try {
             const { output } = await generateText({
-              model: ai.wrap(gateway("anthropic/claude-sonnet-4.6")),
+              model: wrapModelWithObservability(
+                gateway("anthropic/claude-sonnet-4.6"),
+                log
+              ),
               output: Output.object({ schema: brandSettingsSchema }),
               prompt: `Analyze this website content and extract brand identity information.
 
@@ -178,11 +180,11 @@ Extract the following information:
 3. toneProfile: The tone of their communication - choose one of: "Conversational", "Professional", "Casual", "Formal"
 4. audience: A description of their target audience (1-2 sentences)
 5. language: The primary language of the website content. Must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
-              system: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
+              instructions: `You are a brand analyst expert. Your job is to analyze website content and extract key brand identity information. Be thorough but concise. Focus on understanding the company's essence, values, and how they communicate.`,
               providerOptions: withGatewayAutomaticCaching(undefined, {
                 modelId: "anthropic/claude-sonnet-4.6",
               }),
-              experimental_telemetry: buildExperimentalTelemetry({
+              telemetry: buildTelemetryOptions({
                 feature: "brand_analysis",
                 jobId,
                 organizationId,

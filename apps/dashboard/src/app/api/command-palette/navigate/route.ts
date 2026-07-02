@@ -1,6 +1,6 @@
 import { gateway } from "@notra/ai/gateway";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
-import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { buildTelemetryOptions } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import {
   brandReferences,
@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
     const { object } = await generateObject({
       model: gateway("anthropic/claude-sonnet-4.6"),
       schema: resultSchema,
-      system: [
+      instructions: [
         "You are a navigation router for the Notra dashboard command palette.",
         "Given a natural language query, decide whether to navigate to an existing route or fall back to the AI chat.",
         "You receive two lists: static dashboard routes AND matching entities (posts, brand voices, references, integrations) from the user's workspace.",
@@ -298,7 +298,7 @@ export async function POST(request: NextRequest) {
         modelId: "anthropic/claude-sonnet-4.6",
       }),
       abortSignal: request.signal,
-      experimental_telemetry: buildExperimentalTelemetry({
+      telemetry: buildTelemetryOptions({
         feature: "command_palette",
         organizationId,
         routeName: "/api/command-palette/navigate",
