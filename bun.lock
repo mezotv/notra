@@ -43,7 +43,7 @@
         "nanoid": "^5.1.11",
         "sanitize-html": "^2.17.0",
         "tsup": "^8.5.1",
-        "zod": "^4.1.5",
+        "zod": "^4.3.4",
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",

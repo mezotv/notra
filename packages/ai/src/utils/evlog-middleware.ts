@@ -98,9 +98,10 @@ function flushState(log: AILogTarget, state: AiAccumulatorState) {
   }
   if (state.lastMsToFinish !== undefined) {
     data.msToFinish = state.lastMsToFinish;
-    if (state.usage.outputTokens > 0 && state.lastMsToFinish > 0) {
+    const lastStepOutputTokens = state.stepsUsage.at(-1)?.outputTokens ?? 0;
+    if (lastStepOutputTokens > 0 && state.lastMsToFinish > 0) {
       data.tokensPerSecond = Math.round(
-        (state.usage.outputTokens / state.lastMsToFinish) * 1000
+        (lastStepOutputTokens / state.lastMsToFinish) * 1000
       );
     }
   }
@@ -164,6 +165,7 @@ export function buildEvlogMiddleware(
           result.response?.modelId
         );
         state.lastFinishReason = result.finishReason.unified;
+        state.lastError = undefined;
         if (result.response?.id) {
           state.lastResponseId = result.response.id;
         }
@@ -247,6 +249,7 @@ export function buildEvlogMiddleware(
               chunk.error instanceof Error
                 ? chunk.error.message
                 : String(chunk.error);
+            streamFinishReason = "error";
           }
           controller.enqueue(chunk);
         },
@@ -270,9 +273,7 @@ export function buildEvlogMiddleware(
             state.lastMsToFirstChunk = firstChunkTime - streamStart;
           }
           state.lastMsToFinish = Date.now() - streamStart;
-          if (streamError) {
-            state.lastError = streamError;
-          }
+          state.lastError = streamError;
           const resolvedModel = resolveProviderAndModel(
             model.provider,
             streamModelId ?? model.modelId
