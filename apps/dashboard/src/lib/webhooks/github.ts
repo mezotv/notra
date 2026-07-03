@@ -7,6 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { dispatchEventTriggers } from "@/lib/webhooks/dispatch-event-triggers";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
+import { applyTitleFiltersToGithubEvent } from "@/lib/webhooks/title-filters";
 import {
   type GitHubEventType,
   type GitHubWebhookPayload,
@@ -390,6 +391,13 @@ export async function handleGitHubWebhook(
         action,
         ignored: true,
       });
+  }
+
+  if (processedEvent) {
+    processedEvent = await applyTitleFiltersToGithubEvent(
+      repositoryId,
+      processedEvent
+    );
   }
 
   if (!processedEvent) {

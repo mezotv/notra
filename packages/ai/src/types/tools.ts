@@ -15,6 +15,13 @@ export interface EditMarkdownContext {
   onUpdate: (markdown: string) => void;
 }
 
+export type TitleFilterMatchType = "contains" | "regex";
+
+export interface TitleFilterRule {
+  matchType: TitleFilterMatchType;
+  pattern: string;
+}
+
 export interface GitHubToolRepositoryContext {
   integrationId: string;
   organizationId: string;
@@ -22,6 +29,7 @@ export interface GitHubToolRepositoryContext {
   repo: string;
   defaultBranch: string | null;
   token: string | undefined;
+  titleFilters: TitleFilterRule[];
 }
 
 export interface GitHubToolsAccessConfig {
@@ -46,6 +54,7 @@ export interface LinearToolContext {
   organizationId: string;
   accessToken: string;
   linearTeamId?: string | null;
+  titleFilters: TitleFilterRule[];
 }
 
 export interface LinearToolsAccessConfig {

@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { TitleFiltersSection } from "@/components/integrations/title-filters-section";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
@@ -643,6 +644,14 @@ export default function PageClient({ integrationId }: PageClientProps) {
             repositoryIds={integration.repositories.map((repo) => repo.id)}
             slug={activeOrganization?.slug ?? ""}
           />
+
+          {primaryRepository ? (
+            <TitleFiltersSection
+              organizationId={organizationId}
+              source="github"
+              targetId={primaryRepository.id}
+            />
+          ) : null}
 
           {organizationId && integration.repositories.length > 0 ? (
             <div className="space-y-4">

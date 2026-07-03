@@ -10,6 +10,7 @@ import type {
   GitHubToolsAccessConfig,
 } from "@notra/ai/types/tools";
 import { createOctokit } from "@notra/ai/utils/octokit";
+import { getCommitTitle, isTitleExcluded } from "@notra/ai/utils/title-filters";
 import { type Tool, tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -291,6 +292,13 @@ export function createGetPullRequestsTool(
             },
           })
         );
+
+        if (isTitleExcluded(pullRequest.data.title, resolved.titleFilters)) {
+          throw new Error(
+            `Pull request #${String(pull_number)} is excluded by this repository's title filters.`
+          );
+        }
+
         return {
           id: pullRequest.data.id,
           number: pullRequest.data.number,
@@ -575,11 +583,18 @@ export function createGetCommitsByTimeframeTool(
           url: commit.html_url,
         }));
 
-        const commits = allowedCommitShas
+        const shaFilteredCommits = allowedCommitShas
           ? allCommits.filter((commit) =>
               allowedCommitShas.has(commit.sha.trim().toLowerCase())
             )
           : allCommits;
+        const commits = shaFilteredCommits.filter(
+          (commit) =>
+            !isTitleExcluded(
+              getCommitTitle(commit.message),
+              resolved.titleFilters
+            )
+        );
 
         const hasNextPage =
           nextPage !== undefined &&

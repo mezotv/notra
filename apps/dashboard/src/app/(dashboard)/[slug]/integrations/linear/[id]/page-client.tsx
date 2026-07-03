@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Button } from "@/components/button";
+import { TitleFiltersSection } from "@/components/integrations/title-filters-section";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinearIntegration } from "@/types/integrations";
@@ -186,6 +187,12 @@ export default function PageClient({ integrationId }: PageClientProps) {
               </div>
             </div>
           </div>
+
+          <TitleFiltersSection
+            organizationId={organizationId}
+            source="linear"
+            targetId={integration.id}
+          />
         </div>
       </div>
     </div>

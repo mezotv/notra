@@ -30,6 +30,7 @@ import type { GitHubToolRepositoryContext } from "../types/tools";
 import { createOctokit } from "../utils/octokit";
 import { redis } from "../utils/redis";
 import { getConfiguredAppUrl } from "../utils/url";
+import { getEnabledGithubTitleFilterRules } from "./title-filters";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -1216,6 +1217,8 @@ export async function getGitHubToolRepositoryContextByIntegrationId(
     token = decryptToken(integration.encryptedToken);
   }
 
+  const titleFilters = await getEnabledGithubTitleFilterRules(integration.id);
+
   return {
     integrationId: integration.id,
     organizationId: integration.organizationId,
@@ -1223,6 +1226,7 @@ export async function getGitHubToolRepositoryContextByIntegrationId(
     repo,
     defaultBranch: integration.defaultBranch,
     token,
+    titleFilters,
   };
 }
 

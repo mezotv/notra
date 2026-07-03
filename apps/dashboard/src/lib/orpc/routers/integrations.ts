@@ -36,6 +36,16 @@ import {
   updateMcpServerIntegration,
 } from "@notra/ai/integrations/mcp";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
+import {
+  createGithubTitleFilter,
+  createLinearTitleFilter,
+  deleteGithubTitleFilter,
+  deleteLinearTitleFilter,
+  getGithubTitleFilters,
+  getLinearTitleFilters,
+  setGithubTitleFilterEnabled,
+  setLinearTitleFilterEnabled,
+} from "@notra/ai/integrations/title-filters";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
@@ -65,11 +75,18 @@ import {
   updateRepositoryBodySchema,
 } from "@/schemas/integrations";
 import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
+import {
+  createTitleFilterBodySchema,
+  MAX_TITLE_FILTERS,
+  titleFilterIdSchema,
+  updateTitleFilterBodySchema,
+} from "@/schemas/title-filters";
 import type {
   GitHubIntegration,
   GitHubRepository,
   RepositoryOutput,
 } from "@/types/integrations";
+import type { TitleFilter } from "@/types/title-filters";
 import {
   badRequest,
   conflict,
@@ -209,6 +226,35 @@ function serializeListedIntegration(integration: {
     ...serializeIntegration(integration),
     type: integration.type as IntegrationType,
   };
+}
+
+function serializeTitleFilter(filter: {
+  id: string;
+  matchType: "contains" | "regex";
+  pattern: string;
+  enabled: boolean;
+  createdAt: Date;
+}): TitleFilter {
+  return {
+    id: filter.id,
+    matchType: filter.matchType,
+    pattern: filter.pattern,
+    enabled: filter.enabled,
+    createdAt: filter.createdAt.toISOString(),
+  };
+}
+
+async function requireLinearIntegrationInOrganization(
+  organizationId: string,
+  integrationId: string
+) {
+  const integration = await getLinearIntegrationById(integrationId);
+
+  if (!integration || integration.organizationId !== organizationId) {
+    throw notFound("Linear integration not found");
+  }
+
+  return integration;
 }
 
 async function requireIntegrationInOrganization(
@@ -691,6 +737,114 @@ export const integrationsRouter = {
           config: input.config,
         });
       }),
+    titleFilters: {
+      list: baseProcedure
+        .input(repositoryInputSchema)
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          const filters = await getGithubTitleFilters(input.repositoryId);
+
+          return { filters: filters.map(serializeTitleFilter) };
+        }),
+      create: baseProcedure
+        .input(repositoryInputSchema.and(createTitleFilterBodySchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+          await assertActiveSubscription(input.organizationId);
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          const existing = await getGithubTitleFilters(input.repositoryId);
+          if (existing.length >= MAX_TITLE_FILTERS) {
+            throw badRequest(
+              `You can add up to ${MAX_TITLE_FILTERS} title filters per repository`
+            );
+          }
+
+          try {
+            const created = await createGithubTitleFilter(input.repositoryId, {
+              matchType: input.matchType,
+              pattern: input.pattern,
+            });
+
+            if (!created) {
+              throw internalServerError("Failed to create title filter");
+            }
+
+            return serializeTitleFilter(created);
+          } catch (error) {
+            if (isUniqueConstraintError(error)) {
+              throw conflict("This title filter already exists");
+            }
+            throw error;
+          }
+        }),
+      update: baseProcedure
+        .input(repositoryInputSchema.and(updateTitleFilterBodySchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+          await assertActiveSubscription(input.organizationId);
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          const updated = await setGithubTitleFilterEnabled(
+            input.repositoryId,
+            input.filterId,
+            input.enabled
+          );
+
+          if (!updated) {
+            throw notFound("Title filter not found");
+          }
+
+          return serializeTitleFilter(updated);
+        }),
+      delete: baseProcedure
+        .input(repositoryInputSchema.and(titleFilterIdSchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          const deleted = await deleteGithubTitleFilter(
+            input.repositoryId,
+            input.filterId
+          );
+
+          if (!deleted) {
+            throw notFound("Title filter not found");
+          }
+
+          return { success: true };
+        }),
+    },
     webhook: {
       get: baseProcedure
         .input(repositoryInputSchema)
@@ -876,6 +1030,114 @@ export const integrationsRouter = {
 
         return { success: true };
       }),
+    titleFilters: {
+      list: baseProcedure
+        .input(integrationInputSchema)
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          await requireLinearIntegrationInOrganization(
+            input.organizationId,
+            input.integrationId
+          );
+
+          const filters = await getLinearTitleFilters(input.integrationId);
+
+          return { filters: filters.map(serializeTitleFilter) };
+        }),
+      create: baseProcedure
+        .input(integrationInputSchema.and(createTitleFilterBodySchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+          await assertActiveSubscription(input.organizationId);
+
+          await requireLinearIntegrationInOrganization(
+            input.organizationId,
+            input.integrationId
+          );
+
+          const existing = await getLinearTitleFilters(input.integrationId);
+          if (existing.length >= MAX_TITLE_FILTERS) {
+            throw badRequest(
+              `You can add up to ${MAX_TITLE_FILTERS} title filters per integration`
+            );
+          }
+
+          try {
+            const created = await createLinearTitleFilter(input.integrationId, {
+              matchType: input.matchType,
+              pattern: input.pattern,
+            });
+
+            if (!created) {
+              throw internalServerError("Failed to create title filter");
+            }
+
+            return serializeTitleFilter(created);
+          } catch (error) {
+            if (isUniqueConstraintError(error)) {
+              throw conflict("This title filter already exists");
+            }
+            throw error;
+          }
+        }),
+      update: baseProcedure
+        .input(integrationInputSchema.and(updateTitleFilterBodySchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+          await assertActiveSubscription(input.organizationId);
+
+          await requireLinearIntegrationInOrganization(
+            input.organizationId,
+            input.integrationId
+          );
+
+          const updated = await setLinearTitleFilterEnabled(
+            input.integrationId,
+            input.filterId,
+            input.enabled
+          );
+
+          if (!updated) {
+            throw notFound("Title filter not found");
+          }
+
+          return serializeTitleFilter(updated);
+        }),
+      delete: baseProcedure
+        .input(integrationInputSchema.and(titleFilterIdSchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          await requireLinearIntegrationInOrganization(
+            input.organizationId,
+            input.integrationId
+          );
+
+          const deleted = await deleteLinearTitleFilter(
+            input.integrationId,
+            input.filterId
+          );
+
+          if (!deleted) {
+            throw notFound("Title filter not found");
+          }
+
+          return { success: true };
+        }),
+    },
   },
   mcp: {
     list: baseProcedure

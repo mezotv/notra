@@ -482,6 +482,58 @@ export const linearIntegrations = pgTable(
   ]
 );
 
+export const githubTitleFilters = pgTable(
+  "github_title_filters",
+  {
+    id: text("id").primaryKey(),
+    repositoryId: text("repository_id")
+      .notNull()
+      .references(() => githubIntegrations.id, { onDelete: "cascade" }),
+    matchType: text("match_type").$type<"contains" | "regex">().notNull(),
+    pattern: text("pattern").notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("githubTitleFilters_repositoryId_idx").on(table.repositoryId),
+    uniqueIndex("githubTitleFilters_repository_matchType_pattern_uidx").on(
+      table.repositoryId,
+      table.matchType,
+      table.pattern
+    ),
+  ]
+);
+
+export const linearTitleFilters = pgTable(
+  "linear_title_filters",
+  {
+    id: text("id").primaryKey(),
+    integrationId: text("integration_id")
+      .notNull()
+      .references(() => linearIntegrations.id, { onDelete: "cascade" }),
+    matchType: text("match_type").$type<"contains" | "regex">().notNull(),
+    pattern: text("pattern").notNull(),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("linearTitleFilters_integrationId_idx").on(table.integrationId),
+    uniqueIndex("linearTitleFilters_integration_matchType_pattern_uidx").on(
+      table.integrationId,
+      table.matchType,
+      table.pattern
+    ),
+  ]
+);
+
 export const mcpServerIntegrations = pgTable(
   "mcp_server_integrations",
   {
@@ -1384,6 +1436,17 @@ export const githubIntegrationsRelations = relations(
       references: [users.id],
     }),
     outputs: many(repositoryOutputs),
+    titleFilters: many(githubTitleFilters),
+  })
+);
+
+export const githubTitleFiltersRelations = relations(
+  githubTitleFilters,
+  ({ one }) => ({
+    repository: one(githubIntegrations, {
+      fields: [githubTitleFilters.repositoryId],
+      references: [githubIntegrations.id],
+    }),
   })
 );
 
@@ -1403,7 +1466,7 @@ export const githubAppInstallationsRelations = relations(
 
 export const linearIntegrationsRelations = relations(
   linearIntegrations,
-  ({ one }) => ({
+  ({ one, many }) => ({
     organization: one(organizations, {
       fields: [linearIntegrations.organizationId],
       references: [organizations.id],
@@ -1411,6 +1474,17 @@ export const linearIntegrationsRelations = relations(
     createdByUser: one(users, {
       fields: [linearIntegrations.createdByUserId],
       references: [users.id],
+    }),
+    titleFilters: many(linearTitleFilters),
+  })
+);
+
+export const linearTitleFiltersRelations = relations(
+  linearTitleFilters,
+  ({ one }) => ({
+    integration: one(linearIntegrations, {
+      fields: [linearTitleFilters.integrationId],
+      references: [linearIntegrations.id],
     }),
   })
 );

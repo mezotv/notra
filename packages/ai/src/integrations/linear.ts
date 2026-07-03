@@ -5,6 +5,7 @@ import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type { CreateLinearIntegrationParams } from "../types/integrations";
 import type { LinearToolContext } from "../types/tools";
+import { getEnabledLinearTitleFilterRules } from "./title-filters";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -193,10 +194,13 @@ export async function getLinearToolContextByIntegrationId(
     );
   }
 
+  const titleFilters = await getEnabledLinearTitleFilterRules(integration.id);
+
   return {
     integrationId: integration.id,
     organizationId: integration.organizationId,
     accessToken: decryptToken(integration.encryptedAccessToken),
     linearTeamId: integration.linearTeamId,
+    titleFilters,
   };
 }

@@ -6,6 +6,7 @@ import type {
   LinearToolsAccessConfig,
 } from "@notra/ai/types/tools";
 import { createLinearClient } from "@notra/ai/utils/linear";
+import { isTitleExcluded } from "@notra/ai/utils/title-filters";
 import { type Tool, tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -101,8 +102,12 @@ export function createGetLinearIssuesTool(
           orderBy: "updatedAt" as never,
         });
 
+        const visibleIssues = issues.nodes.filter(
+          (issue) => !isTitleExcluded(issue.title, resolved.titleFilters)
+        );
+
         const results = await Promise.all(
-          issues.nodes.map(async (issue) => {
+          visibleIssues.map(async (issue) => {
             const [state, assignee, labels] = await Promise.all([
               issue.state,
               issue.assignee,
