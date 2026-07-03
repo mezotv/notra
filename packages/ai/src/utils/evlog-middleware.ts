@@ -136,6 +136,8 @@ function recordError(
   recordModel(state, model.provider, model.modelId);
   state.lastFinishReason = "error";
   state.lastError = error instanceof Error ? error.message : String(error);
+  state.lastMsToFirstChunk = undefined;
+  state.lastMsToFinish = undefined;
   const resolved = resolveProviderAndModel(model.provider, model.modelId);
   state.stepsUsage.push({
     model: resolved.model,
@@ -166,6 +168,8 @@ export function buildEvlogMiddleware(
         );
         state.lastFinishReason = result.finishReason.unified;
         state.lastError = undefined;
+        state.lastMsToFirstChunk = undefined;
+        state.lastMsToFinish = undefined;
         if (result.response?.id) {
           state.lastResponseId = result.response.id;
         }
