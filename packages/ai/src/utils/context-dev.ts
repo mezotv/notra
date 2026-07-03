@@ -461,20 +461,12 @@ export async function captureScreenshot(
     params.set("directUrl", directUrl);
   }
 
-  const viewport = input.viewport ?? {
-    height: input.height,
-    width: input.width,
-  };
-
-  if (viewport.width !== undefined && viewport.height !== undefined) {
-    params.set("viewport[width]", String(viewport.width));
-    params.set("viewport[height]", String(viewport.height));
+  if (input.viewport !== undefined) {
+    params.set("viewport[width]", String(input.viewport.width));
+    params.set("viewport[height]", String(input.viewport.height));
   }
   if (input.format !== undefined) {
     params.set("format", input.format);
-  }
-  if (input.screenshotType !== undefined) {
-    params.set("fullScreenshot", String(input.screenshotType === "fullPage"));
   }
   if (input.fullScreenshot !== undefined) {
     params.set("fullScreenshot", String(input.fullScreenshot));

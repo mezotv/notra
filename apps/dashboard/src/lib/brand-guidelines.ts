@@ -85,7 +85,12 @@ async function captureDesktopScreenshots(sourceUrl: string) {
       seenScreenshotUrls.add(screenshotUrl);
     }
 
-    const height = getScreenshotResponseHeight(response) ?? config.height;
+    const height = getScreenshotResponseHeight(response);
+
+    if (height === undefined) {
+      responses.push({ response, scrollOffset });
+      break;
+    }
 
     if (height <= 0) {
       break;

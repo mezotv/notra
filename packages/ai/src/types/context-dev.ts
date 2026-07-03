@@ -115,10 +115,7 @@ export interface ContextDevStyleguideResponse {
 export interface ContextDevScreenshotInput {
   domain?: string;
   directUrl?: string;
-  width?: number;
-  height?: number;
   format?: "png" | "jpeg";
-  screenshotType?: "viewport" | "fullPage";
   fullScreenshot?: boolean;
   handleCookiePopup?: boolean;
   maxAgeMs?: number;
