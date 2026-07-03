@@ -422,21 +422,40 @@ export async function retrieveStyleguide(
 export async function captureScreenshot(
   input: ContextDevScreenshotInput
 ): Promise<ContextDevScreenshotResponse> {
-  const params = new URLSearchParams({
-    domain: input.domain,
-  });
+  const params = new URLSearchParams();
 
-  if (input.width !== undefined) {
-    params.set("width", String(input.width));
+  if (input.domain !== undefined) {
+    params.set("domain", input.domain);
   }
-  if (input.height !== undefined) {
-    params.set("height", String(input.height));
+  if (input.directUrl !== undefined) {
+    params.set("directUrl", input.directUrl);
   }
-  if (input.format !== undefined) {
-    params.set("format", input.format);
+
+  const viewport = input.viewport ?? {
+    height: input.height,
+    width: input.width,
+  };
+
+  if (viewport.width !== undefined && viewport.height !== undefined) {
+    params.set("viewport", `width,${viewport.width},height,${viewport.height}`);
   }
   if (input.screenshotType !== undefined) {
-    params.set("screenshotType", input.screenshotType);
+    params.set("fullScreenshot", String(input.screenshotType === "fullPage"));
+  }
+  if (input.fullScreenshot !== undefined) {
+    params.set("fullScreenshot", String(input.fullScreenshot));
+  }
+  if (input.handleCookiePopup !== undefined) {
+    params.set("handleCookiePopup", String(input.handleCookiePopup));
+  }
+  if (input.maxAgeMs !== undefined) {
+    params.set("maxAgeMs", String(input.maxAgeMs));
+  }
+  if (input.scrollOffset !== undefined) {
+    params.set("scrollOffset", String(input.scrollOffset));
+  }
+  if (input.waitForMs !== undefined) {
+    params.set("waitForMs", String(input.waitForMs));
   }
   if (input.timeoutMS !== undefined) {
     params.set("timeoutMS", String(input.timeoutMS));

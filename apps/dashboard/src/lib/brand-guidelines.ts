@@ -3,6 +3,7 @@ import {
   retrieveBrand,
   retrieveStyleguide,
 } from "@notra/ai/utils/context-dev";
+import type { ContextDevScreenshotResponse } from "@notra/ai/types/context-dev";
 import { db } from "@notra/db/drizzle";
 import {
   brandGuidelineAssets,
@@ -14,7 +15,11 @@ import {
 } from "@notra/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
-import { BRAND_GUIDELINE_SCREENSHOT_CONFIGS } from "@/constants/brand-guidelines";
+import {
+  BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG,
+  BRAND_GUIDELINE_MAX_SCREENSHOT_SLICES,
+  BRAND_GUIDELINE_SCREENSHOT_WAIT_MS,
+} from "@/constants/brand-guidelines";
 import type { NormalizedScreenshot } from "@/types/brand-guidelines";
 import {
   dedupeColors,
@@ -35,6 +40,47 @@ class BrandGuidelineGenerationError extends Data.TaggedError(
   readonly message: string;
   readonly cause: unknown;
 }> {}
+
+async function captureDesktopScreenshots(sourceUrl: string) {
+  const config = BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG;
+  const responses: {
+    response: ContextDevScreenshotResponse;
+    scrollOffset: number;
+  }[] = [];
+
+  for (let index = 0; index < BRAND_GUIDELINE_MAX_SCREENSHOT_SLICES; index++) {
+    const scrollOffset = index * config.height;
+    const response = await captureScreenshot({
+      directUrl: sourceUrl,
+      handleCookiePopup: true,
+      maxAgeMs: 0,
+      scrollOffset,
+      timeoutMS: 60_000,
+      viewport: {
+        height: config.height,
+        width: config.width,
+      },
+      waitForMs: BRAND_GUIDELINE_SCREENSHOT_WAIT_MS,
+    });
+
+    const height =
+      (typeof response.screenshot === "object"
+        ? response.screenshot.height
+        : response.height) ?? config.height;
+
+    if (height <= 0) {
+      break;
+    }
+
+    responses.push({ response, scrollOffset });
+
+    if (height < config.height) {
+      break;
+    }
+  }
+
+  return responses;
+}
 
 async function getGuidelineByBrandSettingsId(brandSettingsId: string) {
   return db.query.brandGuidelines.findFirst({
@@ -86,19 +132,7 @@ export const generateBrandGuidelines = Effect.fn("generateBrandGuidelines")(
     });
 
     const screenshotResponses = yield* Effect.tryPromise({
-      try: () =>
-        Promise.all(
-          BRAND_GUIDELINE_SCREENSHOT_CONFIGS.map((config) =>
-            captureScreenshot({
-              domain,
-              format: "png",
-              height: config.height,
-              screenshotType: config.fullPage ? "fullPage" : "viewport",
-              timeoutMS: 30_000,
-              width: config.width,
-            })
-          )
-        ),
+      try: () => captureDesktopScreenshots(sourceUrl),
       catch: (cause) =>
         new BrandGuidelineGenerationError({
           message: "Failed to capture Context.dev screenshots",
@@ -108,47 +142,66 @@ export const generateBrandGuidelines = Effect.fn("generateBrandGuidelines")(
 
     const capturedAt = new Date();
     const screenshots = yield* Effect.try({
-      try: () =>
-        screenshotResponses.map((response, index) => {
-          const config = BRAND_GUIDELINE_SCREENSHOT_CONFIGS[index];
-          if (!config) {
-            throw new BrandGuidelineGenerationError({
-              message: "Missing screenshot configuration",
-              cause: { index, response },
-            });
+      try: () => {
+        const slices = screenshotResponses.map(
+          ({ response, scrollOffset }, index) => {
+            const config = BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG;
+            const url = getScreenshotUrl(response);
+
+            if (!url) {
+              throw new BrandGuidelineGenerationError({
+                message: `Context.dev screenshot response did not include a URL for ${config.kind}`,
+                cause: response,
+              });
+            }
+
+            return {
+              format:
+                (typeof response.screenshot === "object"
+                  ? response.screenshot.format
+                  : undefined) ?? "png",
+              height:
+                (typeof response.screenshot === "object"
+                  ? response.screenshot.height
+                  : response.height) ?? config.height,
+              index,
+              scrollOffset,
+              screenshotType: response.screenshotType,
+              url,
+              width:
+                (typeof response.screenshot === "object"
+                  ? response.screenshot.width
+                  : response.width) ?? config.width,
+            };
           }
+        );
+        const firstSlice = slices[0];
 
-          const url = getScreenshotUrl(response);
+        if (!firstSlice) {
+          return [];
+        }
 
-          if (!url) {
-            throw new BrandGuidelineGenerationError({
-              message: `Context.dev screenshot response did not include a URL for ${config.kind}`,
-              cause: response,
-            });
-          }
-
-          return {
-            kind: config.kind,
-            url,
-            storageKey: null,
-            width:
-              (typeof response.screenshot === "object"
-                ? response.screenshot.width
-                : response.width) ?? config.width,
-            height:
-              (typeof response.screenshot === "object"
-                ? response.screenshot.height
-                : response.height) ?? config.height,
-            format:
-              (typeof response.screenshot === "object"
-                ? response.screenshot.format
-                : undefined) ?? "png",
-            fullPage: config.fullPage,
+        return [
+          {
             capturedAt,
-            metadata: response,
-            sortOrder: config.sortOrder,
-          } satisfies NormalizedScreenshot;
-        }),
+            format: firstSlice.format,
+            fullPage: BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG.fullPage,
+            height: firstSlice.height,
+            kind: BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG.kind,
+            metadata: {
+              code: screenshotResponses[0]?.response.code,
+              domain: screenshotResponses[0]?.response.domain,
+              scrollOffset: firstSlice.scrollOffset,
+              slices,
+              status: screenshotResponses[0]?.response.status,
+            },
+            sortOrder: BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG.sortOrder,
+            storageKey: null,
+            url: firstSlice.url,
+            width: firstSlice.width,
+          } satisfies NormalizedScreenshot,
+        ];
+      },
       catch: (cause) =>
         cause instanceof BrandGuidelineGenerationError
           ? cause
