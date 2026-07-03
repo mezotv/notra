@@ -422,10 +422,14 @@ export async function retrieveStyleguide(
 export async function captureScreenshot(
   input: ContextDevScreenshotInput
 ): Promise<ContextDevScreenshotResponse> {
-  if (!(input.domain || input.directUrl)) {
+  const { directUrl, domain } = input;
+  const hasDomain = domain !== undefined;
+  const hasDirectUrl = directUrl !== undefined;
+
+  if (!(hasDomain || hasDirectUrl)) {
     throw new Error("Context.dev screenshot requires a domain or directUrl.");
   }
-  if (input.domain && input.directUrl) {
+  if (hasDomain && hasDirectUrl) {
     throw new Error(
       "Context.dev screenshot accepts either domain or directUrl."
     );
@@ -433,11 +437,11 @@ export async function captureScreenshot(
 
   const params = new URLSearchParams();
 
-  if (input.domain !== undefined) {
-    params.set("domain", input.domain);
+  if (hasDomain) {
+    params.set("domain", domain);
   }
-  if (input.directUrl !== undefined) {
-    params.set("directUrl", input.directUrl);
+  if (hasDirectUrl) {
+    params.set("directUrl", directUrl);
   }
 
   const viewport = input.viewport ?? {
