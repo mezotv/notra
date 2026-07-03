@@ -1,5 +1,5 @@
 export interface ContextDevErrorResponse {
-  message?: string;
+  message?: unknown;
   error_code?: string;
 }
 

@@ -126,9 +126,6 @@ export function GuidelinesScreenshotsSection({
           const meta = joinMeta([
             `${screenshot.width}×${screenshot.height}`,
             screenshot.format.toUpperCase(),
-            screenshot.scrollOffset === null
-              ? null
-              : `${screenshot.scrollOffset}px scroll`,
             screenshot.fullPage ? "Full page" : null,
           ]);
 

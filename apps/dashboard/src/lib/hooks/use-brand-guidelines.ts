@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { BRAND_GUIDELINE_POLL_INTERVAL_MS } from "@/constants/brand-guidelines";
 import type {
   CreateGuidelineAssetInput,
   CreateGuidelineColorInput,
@@ -48,12 +49,18 @@ function useGuidelineMutation<TInput = void>(input: {
 }
 
 export function useBrandGuidelines(organizationId: string, voiceId: string) {
-  return useQuery<BrandGuidelinesResponse>(
-    dashboardOrpc.brand.guidelines.get.queryOptions({
+  return useQuery<BrandGuidelinesResponse>({
+    ...dashboardOrpc.brand.guidelines.get.queryOptions({
       input: { organizationId, voiceId },
       enabled: !!organizationId && !!voiceId,
-    })
-  );
+    }),
+    refetchInterval: (query) => {
+      const status = query.state.data?.guideline?.status;
+      return status === "queued" || status === "generating"
+        ? BRAND_GUIDELINE_POLL_INTERVAL_MS
+        : false;
+    },
+  });
 }
 
 export function useRefreshBrandGuidelines(
@@ -86,7 +93,7 @@ export function useRefreshBrandGuidelinesAction(
 
     try {
       await refresh.mutateAsync();
-      toast.success("Brand guidelines refreshed");
+      toast.success("Guideline generation started");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to refresh guidelines"

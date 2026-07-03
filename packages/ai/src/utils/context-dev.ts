@@ -48,6 +48,25 @@ function getContextDevApiKey(): string {
   return apiKey;
 }
 
+function getContextDevErrorMessage(
+  payload: ContextDevErrorResponse | undefined,
+  status: number
+) {
+  if (typeof payload?.message === "string" && payload.message.length > 0) {
+    return payload.message;
+  }
+
+  if (payload?.message !== undefined) {
+    try {
+      return JSON.stringify(payload.message);
+    } catch {
+      // Fall through to the generic message below.
+    }
+  }
+
+  return `Website data request failed with status ${status}`;
+}
+
 async function parseContextDevError(response: Response) {
   let payload: ContextDevErrorResponse | undefined;
   try {
@@ -57,7 +76,7 @@ async function parseContextDevError(response: Response) {
   }
 
   throw new ContextDevApiError(
-    payload?.message || `Context.dev request failed with ${response.status}`,
+    getContextDevErrorMessage(payload, response.status),
     response.status,
     payload?.error_code
   );
@@ -427,12 +446,10 @@ export async function captureScreenshot(
   const hasDirectUrl = directUrl !== undefined;
 
   if (!(hasDomain || hasDirectUrl)) {
-    throw new Error("Context.dev screenshot requires a domain or directUrl.");
+    throw new Error("Screenshot capture requires a domain or directUrl.");
   }
   if (hasDomain && hasDirectUrl) {
-    throw new Error(
-      "Context.dev screenshot accepts either domain or directUrl."
-    );
+    throw new Error("Screenshot capture accepts either domain or directUrl.");
   }
 
   const params = new URLSearchParams();
@@ -450,7 +467,8 @@ export async function captureScreenshot(
   };
 
   if (viewport.width !== undefined && viewport.height !== undefined) {
-    params.set("viewport", `width,${viewport.width},height,${viewport.height}`);
+    params.set("viewport[width]", String(viewport.width));
+    params.set("viewport[height]", String(viewport.height));
   }
   if (input.format !== undefined) {
     params.set("format", input.format);

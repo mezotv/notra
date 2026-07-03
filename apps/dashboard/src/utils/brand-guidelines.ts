@@ -180,11 +180,19 @@ export function extractLogoColors(
   );
 }
 
+export function getColorDedupeKey(color: {
+  role: string;
+  lightValue: string;
+  darkValue: string | null;
+}) {
+  return `${color.role}:${color.lightValue.toLowerCase()}:${color.darkValue?.toLowerCase() ?? ""}`;
+}
+
 export function dedupeColors(colors: NormalizedColor[]) {
   const seen = new Set<string>();
 
   return colors.filter((color) => {
-    const key = `${color.role}:${color.lightValue.toLowerCase()}:${color.darkValue?.toLowerCase() ?? ""}`;
+    const key = getColorDedupeKey(color);
     if (seen.has(key)) {
       return false;
     }

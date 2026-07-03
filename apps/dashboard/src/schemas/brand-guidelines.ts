@@ -125,3 +125,9 @@ export type UpdateGuidelineAssetInput = z.infer<
 export type UpdateGuidelineScreenshotInput = z.infer<
   typeof updateGuidelineScreenshotSchema
 >;
+
+export const brandGuidelinesWorkflowPayloadSchema = z.object({
+  brandSettingsId: z.string().min(1),
+  organizationId: z.string().min(1),
+  sourceUrl: z.string().min(1),
+});

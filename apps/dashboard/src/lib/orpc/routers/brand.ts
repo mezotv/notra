@@ -2,7 +2,11 @@ import { randomUUID } from "node:crypto";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { getWorkflowClient } from "@notra/ai/qstash/client";
-import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
+import {
+  deleteQstashSchedule,
+  getAppUrl,
+  triggerBrandGuidelines,
+} from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {
@@ -19,16 +23,15 @@ import {
 } from "@notra/db/schema";
 import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
-  generateBrandGuidelines,
   getBrandGuidelines,
   markBrandGuidelinesFailed,
+  startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
@@ -658,27 +661,26 @@ export const brandRouter = {
           throw badRequest("Set a website URL before generating guidelines");
         }
 
-        return Effect.runPromise(
-          generateBrandGuidelines({
-            brandSettingsId: input.voiceId,
-            sourceUrl: voice.websiteUrl,
-          }).pipe(
-            Effect.match({
-              onFailure: async (error) => {
-                await markBrandGuidelinesFailed({
-                  brandSettingsId: input.voiceId,
-                  error: error.message,
-                });
+        await startBrandGuidelineGeneration(input.voiceId);
 
-                throw internalServerError(
-                  "Failed to generate brand guidelines",
-                  error.cause
-                );
-              },
-              onSuccess: (guidelines) => guidelines,
-            })
-          )
-        );
+        try {
+          await triggerBrandGuidelines({
+            brandSettingsId: input.voiceId,
+            organizationId: input.organizationId,
+            sourceUrl: voice.websiteUrl,
+          });
+        } catch (error) {
+          await markBrandGuidelinesFailed({
+            brandSettingsId: input.voiceId,
+            error: "Failed to start guideline generation",
+          });
+          throw internalServerError(
+            "Failed to start guideline generation",
+            error
+          );
+        }
+
+        return getBrandGuidelines(input.voiceId);
       }),
     updateColor: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineColorSchema))
