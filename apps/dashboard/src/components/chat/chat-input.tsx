@@ -129,6 +129,13 @@ export const AVAILABLE_MODELS = [
     provider: "anthropic",
   },
   {
+    id: "anthropic/claude-sonnet-5",
+    label: "Sonnet 5",
+    description: "Near-Opus quality at Sonnet speed",
+    pricing: "$2 input / $10 output per 1M",
+    provider: "anthropic",
+  },
+  {
     id: "anthropic/claude-sonnet-4.6",
     label: "Sonnet 4.6",
     description: "Best everyday default",

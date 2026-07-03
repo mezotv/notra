@@ -52,7 +52,7 @@ export function buildChangelogPrompt(options: ChangelogPromptOptions): string {
     - Do not number highlight items. Do not name the section "Top 5".
     - Each highlight item: title plus a short, concise description. One sentence is ideal, two maximum.
     - Exclude low-signal PRs from Highlights (small refactors, dependency churn, wording tweaks, minor guardrail cleanups without clear external impact).
-    - Every PR appears exactly once in either Highlights or More Updates.
+    - Every PR that passes audience filtering appears exactly once in either Highlights or More Updates. Filtered-out PRs appear nowhere.
     - More Updates contains bullet lists only under each category, with no paragraph prose.
     - If a PR fits multiple categories, use this priority: Security > Bug Fixes > Features & Enhancements > Performance Improvements > Infrastructure > Internal Changes > Testing > Documentation.
     - Avoid unnecessary product or vendor namedropping in highlight copy unless required for technical clarity.

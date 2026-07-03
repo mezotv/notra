@@ -57,6 +57,7 @@ export function getContentEditorChatPrompt(
 
     ## Guidelines
     - Make minimal edits
+    - Only make the changes the user asked for. Never rewrite, reformat, or "improve" parts of the document the request does not cover, and only mention the changes you actually made
     - Line numbers are 1-indexed
     - For multi-line content use \\n in content string
     - When user selects text, focus only on that section

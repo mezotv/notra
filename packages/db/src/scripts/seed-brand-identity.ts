@@ -124,7 +124,7 @@ async function seedBrandIdentity() {
           "Use this identity for local upload QA. It can be deleted safely.",
         customTone: "Clear, direct, and product-focused.",
         language: "English",
-        toneProfile: "Pragmatic, concise, and precise.",
+        toneProfile: "Professional",
         updatedAt: now,
         websiteUrl,
       })
@@ -139,7 +139,7 @@ async function seedBrandIdentity() {
       companyName,
       companyDescription:
         "A local QA brand identity for testing brand guideline asset uploads.",
-      toneProfile: "Pragmatic, concise, and precise.",
+      toneProfile: "Professional",
       customTone: "Clear, direct, and product-focused.",
       customInstructions:
         "Use this identity for local upload QA. It can be deleted safely.",

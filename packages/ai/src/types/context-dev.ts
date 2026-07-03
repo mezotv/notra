@@ -1,5 +1,5 @@
 export interface ContextDevErrorResponse {
-  message?: string;
+  message?: unknown;
   error_code?: string;
 }
 
@@ -113,12 +113,19 @@ export interface ContextDevStyleguideResponse {
 }
 
 export interface ContextDevScreenshotInput {
-  domain: string;
-  width?: number;
-  height?: number;
+  domain?: string;
+  directUrl?: string;
   format?: "png" | "jpeg";
-  screenshotType?: "viewport" | "fullPage";
+  fullScreenshot?: boolean;
+  handleCookiePopup?: boolean;
+  maxAgeMs?: number;
+  scrollOffset?: number;
   timeoutMS?: number;
+  viewport?: {
+    width: number;
+    height: number;
+  };
+  waitForMs?: number;
 }
 
 export interface ContextDevScreenshotResponse {

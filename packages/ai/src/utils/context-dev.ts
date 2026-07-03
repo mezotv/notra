@@ -48,6 +48,25 @@ function getContextDevApiKey(): string {
   return apiKey;
 }
 
+function getContextDevErrorMessage(
+  payload: ContextDevErrorResponse | undefined,
+  status: number
+) {
+  if (typeof payload?.message === "string" && payload.message.length > 0) {
+    return payload.message;
+  }
+
+  if (payload?.message !== undefined) {
+    try {
+      return JSON.stringify(payload.message);
+    } catch {
+      // Fall through to the generic message below.
+    }
+  }
+
+  return `Website data request failed with status ${status}`;
+}
+
 async function parseContextDevError(response: Response) {
   let payload: ContextDevErrorResponse | undefined;
   try {
@@ -57,7 +76,7 @@ async function parseContextDevError(response: Response) {
   }
 
   throw new ContextDevApiError(
-    payload?.message || `Context.dev request failed with ${response.status}`,
+    getContextDevErrorMessage(payload, response.status),
     response.status,
     payload?.error_code
   );
@@ -422,21 +441,47 @@ export async function retrieveStyleguide(
 export async function captureScreenshot(
   input: ContextDevScreenshotInput
 ): Promise<ContextDevScreenshotResponse> {
-  const params = new URLSearchParams({
-    domain: input.domain,
-  });
+  const { directUrl, domain } = input;
+  const hasDomain = domain !== undefined;
+  const hasDirectUrl = directUrl !== undefined;
 
-  if (input.width !== undefined) {
-    params.set("width", String(input.width));
+  if (!(hasDomain || hasDirectUrl)) {
+    throw new Error("Screenshot capture requires a domain or directUrl.");
   }
-  if (input.height !== undefined) {
-    params.set("height", String(input.height));
+  if (hasDomain && hasDirectUrl) {
+    throw new Error("Screenshot capture accepts either domain or directUrl.");
+  }
+
+  const params = new URLSearchParams();
+
+  if (hasDomain) {
+    params.set("domain", domain);
+  }
+  if (hasDirectUrl) {
+    params.set("directUrl", directUrl);
+  }
+
+  if (input.viewport !== undefined) {
+    params.set("viewport[width]", String(input.viewport.width));
+    params.set("viewport[height]", String(input.viewport.height));
   }
   if (input.format !== undefined) {
     params.set("format", input.format);
   }
-  if (input.screenshotType !== undefined) {
-    params.set("screenshotType", input.screenshotType);
+  if (input.fullScreenshot !== undefined) {
+    params.set("fullScreenshot", String(input.fullScreenshot));
+  }
+  if (input.handleCookiePopup !== undefined) {
+    params.set("handleCookiePopup", String(input.handleCookiePopup));
+  }
+  if (input.maxAgeMs !== undefined) {
+    params.set("maxAgeMs", String(input.maxAgeMs));
+  }
+  if (input.scrollOffset !== undefined) {
+    params.set("scrollOffset", String(input.scrollOffset));
+  }
+  if (input.waitForMs !== undefined) {
+    params.set("waitForMs", String(input.waitForMs));
   }
   if (input.timeoutMS !== undefined) {
     params.set("timeoutMS", String(input.timeoutMS));

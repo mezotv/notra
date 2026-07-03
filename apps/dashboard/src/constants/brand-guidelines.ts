@@ -14,26 +14,16 @@ export const BRAND_GUIDELINE_TOKEN_GROUPS = [
   "radius",
 ];
 
-export const BRAND_GUIDELINE_SCREENSHOT_CONFIGS = [
-  {
-    kind: "desktop_hero",
-    width: 1440,
-    height: 900,
-    fullPage: false,
-    sortOrder: 0,
-  },
-  {
-    kind: "desktop_full_page",
-    width: 1440,
-    height: 900,
-    fullPage: true,
-    sortOrder: 1,
-  },
-  {
-    kind: "mobile_hero",
-    width: 390,
-    height: 844,
-    fullPage: false,
-    sortOrder: 2,
-  },
-] satisfies BrandGuidelineScreenshotConfig[];
+export const BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG = {
+  kind: "desktop_hero",
+  width: 1920,
+  height: 1080,
+  fullPage: false,
+  sortOrder: 0,
+} satisfies BrandGuidelineScreenshotConfig;
+
+export const BRAND_GUIDELINE_MAX_SCREENSHOT_SLICES = 50;
+
+export const BRAND_GUIDELINE_SCREENSHOT_WAIT_MS = 10_000;
+
+export const BRAND_GUIDELINE_POLL_INTERVAL_MS = 3000;

@@ -62,6 +62,8 @@ Use the Write tool to create it. After the file exists, stop. No other output is
 
 <subject>
 ${describeSource(source)}
+
+The image is about this subject only. Use the wider repository for visual style, design tokens, and brand assets, but do not depict, mention, or hint at other changes, features, releases, or milestones that are not part of this subject.
 </subject>
 
 <research>

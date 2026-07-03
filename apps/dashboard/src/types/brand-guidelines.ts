@@ -173,3 +173,12 @@ export interface StoredBrandGuideline {
   screenshots: StoredBrandGuidelineScreenshot[];
   tokens: StoredBrandGuidelineToken[];
 }
+
+export interface BrandGuidelineGenerationStepInput {
+  brandSettingsId: string;
+  sourceUrl: string;
+}
+
+export type BrandGuidelineWorkflowStepResult =
+  | { success: true }
+  | { success: false; error: string };

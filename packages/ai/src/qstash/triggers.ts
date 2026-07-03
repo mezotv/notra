@@ -1,5 +1,6 @@
 import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
+import type { BrandGuidelinesWorkflowPayload } from "../types/brand-guidelines";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -178,6 +179,22 @@ export async function triggerEventNow(
     url: destination,
     body: payload,
     ...(options?.delay && { delay: options.delay }),
+  });
+
+  return result.workflowRunId;
+}
+
+export async function triggerBrandGuidelines(
+  payload: BrandGuidelinesWorkflowPayload
+) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/brand-guidelines`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: payload,
   });
 
   return result.workflowRunId;

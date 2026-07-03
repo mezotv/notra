@@ -12,14 +12,99 @@ import { joinMeta } from "@/utils/brand-guideline-display";
 import { GuidelinesResourceActions } from "./guidelines-resource-actions";
 import { GuidelinesScreenshotEditDialog } from "./guidelines-screenshot-edit-dialog";
 
+interface ScreenshotSlice {
+  format?: string;
+  height?: number;
+  index?: number;
+  scrollOffset?: number;
+  url?: string;
+  width?: number;
+}
+
+interface ScreenshotMetadata {
+  scrollOffset?: number;
+  slices?: ScreenshotSlice[];
+}
+
+interface DisplayScreenshot {
+  editTarget: BrandGuidelineScreenshot;
+  format: string;
+  fullPage: boolean;
+  height: number;
+  id: string;
+  kind: BrandGuidelineScreenshot["kind"];
+  label: string;
+  scrollOffset: number | null;
+  url: string;
+  width: number;
+}
+
+function getScreenshotMetadata(screenshot: BrandGuidelineScreenshot) {
+  if (typeof screenshot.metadata === "object" && screenshot.metadata !== null) {
+    return screenshot.metadata as ScreenshotMetadata;
+  }
+
+  return {};
+}
+
+function getScrollOffset(screenshot: BrandGuidelineScreenshot) {
+  const { scrollOffset } = getScreenshotMetadata(screenshot);
+  return typeof scrollOffset === "number" ? scrollOffset : null;
+}
+
+function getDisplayScreenshots(
+  screenshots: BrandGuidelineScreenshot[]
+): DisplayScreenshot[] {
+  return screenshots.flatMap((screenshot) => {
+    const slices = getScreenshotMetadata(screenshot).slices?.filter(
+      (
+        slice
+      ): slice is Required<Pick<ScreenshotSlice, "url">> & ScreenshotSlice =>
+        typeof slice.url === "string" && slice.url.length > 0
+    );
+
+    if (!slices || slices.length <= 1) {
+      return [
+        {
+          editTarget: screenshot,
+          format: screenshot.format,
+          fullPage: screenshot.fullPage,
+          height: screenshot.height,
+          id: screenshot.id,
+          kind: screenshot.kind,
+          label: SCREENSHOT_KIND_LABELS[screenshot.kind],
+          scrollOffset: getScrollOffset(screenshot),
+          url: screenshot.url,
+          width: screenshot.width,
+        },
+      ];
+    }
+
+    return slices.map((slice, index) => ({
+      editTarget: screenshot,
+      format: slice.format ?? screenshot.format,
+      fullPage: false,
+      height: slice.height ?? screenshot.height,
+      id: `${screenshot.id}:${slice.scrollOffset ?? index}`,
+      kind: screenshot.kind,
+      label: `Desktop ${index + 1}`,
+      scrollOffset:
+        typeof slice.scrollOffset === "number" ? slice.scrollOffset : null,
+      url: slice.url,
+      width: slice.width ?? screenshot.width,
+    }));
+  });
+}
+
 export function GuidelinesScreenshotsSection({
   screenshots,
   organizationId,
   voiceId,
 }: GuidelinesScreenshotsSectionProps) {
   const [editing, setEditing] = useState<BrandGuidelineScreenshot | null>(null);
+  const displayScreenshots = getDisplayScreenshots(screenshots);
 
-  if (screenshots.length === 0) {
+  if (displayScreenshots.length === 0) {
     return null;
   }
 
@@ -30,15 +115,14 @@ export function GuidelinesScreenshotsSection({
           className="size-4 text-muted-foreground"
           icon={ComputerIcon}
         />
-        <h2 className="font-semibold text-sm">Landing Page Screenshots</h2>
+        <h2 className="font-semibold text-sm">Desktop Screenshots</h2>
         <span className="text-muted-foreground text-xs tabular-nums">
-          {screenshots.length}
+          {displayScreenshots.length}
         </span>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {screenshots.map((screenshot) => {
-          const label = SCREENSHOT_KIND_LABELS[screenshot.kind];
+        {displayScreenshots.map((screenshot) => {
           const meta = joinMeta([
             `${screenshot.width}×${screenshot.height}`,
             screenshot.format.toUpperCase(),
@@ -53,7 +137,7 @@ export function GuidelinesScreenshotsSection({
               <div className="bg-muted/40 p-2 text-center">
                 <ImageZoom className="inline-block max-w-full" zoomMargin={24}>
                   <Image
-                    alt={label}
+                    alt={screenshot.label}
                     className="block h-auto max-h-48 w-auto max-w-full object-contain"
                     height={screenshot.height}
                     src={screenshot.url}
@@ -65,15 +149,17 @@ export function GuidelinesScreenshotsSection({
 
               <div className="flex items-center justify-between gap-2 border-t p-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-sm">{label}</p>
+                  <p className="truncate font-medium text-sm">
+                    {screenshot.label}
+                  </p>
                   <p className="truncate text-muted-foreground text-xs tabular-nums">
                     {meta}
                   </p>
                 </div>
 
                 <GuidelinesResourceActions
-                  label={label}
-                  onEdit={() => setEditing(screenshot)}
+                  label={screenshot.label}
+                  onEdit={() => setEditing(screenshot.editTarget)}
                   url={screenshot.url}
                 />
               </div>
