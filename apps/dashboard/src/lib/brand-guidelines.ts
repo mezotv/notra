@@ -1,9 +1,9 @@
+import type { ContextDevScreenshotResponse } from "@notra/ai/types/context-dev";
 import {
   captureScreenshot,
   retrieveBrand,
   retrieveStyleguide,
 } from "@notra/ai/utils/context-dev";
-import type { ContextDevScreenshotResponse } from "@notra/ai/types/context-dev";
 import { db } from "@notra/db/drizzle";
 import {
   brandGuidelineAssets,
@@ -43,6 +43,7 @@ class BrandGuidelineGenerationError extends Data.TaggedError(
 
 async function captureDesktopScreenshots(sourceUrl: string) {
   const config = BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG;
+  const seenScreenshotUrls = new Set<string>();
   const responses: {
     response: ContextDevScreenshotResponse;
     scrollOffset: number;
@@ -62,6 +63,14 @@ async function captureDesktopScreenshots(sourceUrl: string) {
       },
       waitForMs: BRAND_GUIDELINE_SCREENSHOT_WAIT_MS,
     });
+
+    const screenshotUrl = getScreenshotUrl(response);
+    if (screenshotUrl) {
+      if (seenScreenshotUrls.has(screenshotUrl)) {
+        break;
+      }
+      seenScreenshotUrls.add(screenshotUrl);
+    }
 
     const height =
       (typeof response.screenshot === "object"

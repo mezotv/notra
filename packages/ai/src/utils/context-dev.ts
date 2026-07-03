@@ -422,6 +422,15 @@ export async function retrieveStyleguide(
 export async function captureScreenshot(
   input: ContextDevScreenshotInput
 ): Promise<ContextDevScreenshotResponse> {
+  if (!(input.domain || input.directUrl)) {
+    throw new Error("Context.dev screenshot requires a domain or directUrl.");
+  }
+  if (input.domain && input.directUrl) {
+    throw new Error(
+      "Context.dev screenshot accepts either domain or directUrl."
+    );
+  }
+
   const params = new URLSearchParams();
 
   if (input.domain !== undefined) {
@@ -438,6 +447,9 @@ export async function captureScreenshot(
 
   if (viewport.width !== undefined && viewport.height !== undefined) {
     params.set("viewport", `width,${viewport.width},height,${viewport.height}`);
+  }
+  if (input.format !== undefined) {
+    params.set("format", input.format);
   }
   if (input.screenshotType !== undefined) {
     params.set("fullScreenshot", String(input.screenshotType === "fullPage"));
