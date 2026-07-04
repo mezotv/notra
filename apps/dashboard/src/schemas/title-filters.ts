@@ -5,7 +5,6 @@ export const TITLE_FILTER_MATCH_TYPES = ["contains", "regex"] as const;
 export type TitleFilterMatchType = (typeof TITLE_FILTER_MATCH_TYPES)[number];
 
 export const MAX_TITLE_FILTER_PATTERN_LENGTH = 256;
-export const MAX_TITLE_FILTERS = 50;
 
 export function isValidTitleFilterRegex(pattern: string) {
   try {

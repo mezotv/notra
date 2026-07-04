@@ -1,7 +1,8 @@
 import { db } from "@notra/db/drizzle";
 import { githubTitleFilters, linearTitleFilters } from "@notra/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import { MAX_TITLE_FILTERS } from "../constants/title-filters";
 import type { TitleFilterMatchType, TitleFilterRule } from "../types/tools";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -9,6 +10,13 @@ const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 interface CreateTitleFilterParams {
   matchType: TitleFilterMatchType;
   pattern: string;
+}
+
+export class TitleFilterLimitError extends Error {
+  constructor() {
+    super(`You can add up to ${MAX_TITLE_FILTERS} title filters`);
+    this.name = "TitleFilterLimitError";
+  }
 }
 
 export async function getGithubTitleFilters(repositoryId: string) {
@@ -41,18 +49,33 @@ export async function createGithubTitleFilter(
   repositoryId: string,
   params: CreateTitleFilterParams
 ) {
-  const [created] = await db
-    .insert(githubTitleFilters)
-    .values({
-      id: nanoid(),
-      repositoryId,
-      matchType: params.matchType,
-      pattern: params.pattern,
-      enabled: true,
-    })
-    .returning();
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`github_title_filters:${repositoryId}`}))`
+    );
 
-  return created;
+    const [existing] = await tx
+      .select({ value: count() })
+      .from(githubTitleFilters)
+      .where(eq(githubTitleFilters.repositoryId, repositoryId));
+
+    if ((existing?.value ?? 0) >= MAX_TITLE_FILTERS) {
+      throw new TitleFilterLimitError();
+    }
+
+    const [created] = await tx
+      .insert(githubTitleFilters)
+      .values({
+        id: nanoid(),
+        repositoryId,
+        matchType: params.matchType,
+        pattern: params.pattern,
+        enabled: true,
+      })
+      .returning();
+
+    return created;
+  });
 }
 
 export async function setGithubTitleFilterEnabled(
@@ -121,18 +144,33 @@ export async function createLinearTitleFilter(
   integrationId: string,
   params: CreateTitleFilterParams
 ) {
-  const [created] = await db
-    .insert(linearTitleFilters)
-    .values({
-      id: nanoid(),
-      integrationId,
-      matchType: params.matchType,
-      pattern: params.pattern,
-      enabled: true,
-    })
-    .returning();
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`linear_title_filters:${integrationId}`}))`
+    );
 
-  return created;
+    const [existing] = await tx
+      .select({ value: count() })
+      .from(linearTitleFilters)
+      .where(eq(linearTitleFilters.integrationId, integrationId));
+
+    if ((existing?.value ?? 0) >= MAX_TITLE_FILTERS) {
+      throw new TitleFilterLimitError();
+    }
+
+    const [created] = await tx
+      .insert(linearTitleFilters)
+      .values({
+        id: nanoid(),
+        integrationId,
+        matchType: params.matchType,
+        pattern: params.pattern,
+        enabled: true,
+      })
+      .returning();
+
+    return created;
+  });
 }
 
 export async function setLinearTitleFilterEnabled(

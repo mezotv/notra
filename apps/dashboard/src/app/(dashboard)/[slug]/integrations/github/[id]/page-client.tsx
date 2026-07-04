@@ -645,13 +645,19 @@ export default function PageClient({ integrationId }: PageClientProps) {
             slug={activeOrganization?.slug ?? ""}
           />
 
-          {primaryRepository ? (
+          {integration.repositories.map((repo) => (
             <TitleFiltersSection
+              key={repo.id}
               organizationId={organizationId}
               source="github"
-              targetId={primaryRepository.id}
+              targetId={repo.id}
+              targetLabel={
+                integration.repositories.length > 1
+                  ? `${repo.owner}/${repo.repo}`
+                  : undefined
+              }
             />
-          ) : null}
+          ))}
 
           {organizationId && integration.repositories.length > 0 ? (
             <div className="space-y-4">

@@ -45,6 +45,7 @@ import {
   getLinearTitleFilters,
   setGithubTitleFilterEnabled,
   setLinearTitleFilterEnabled,
+  TitleFilterLimitError,
 } from "@notra/ai/integrations/title-filters";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
@@ -77,7 +78,6 @@ import {
 import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
 import {
   createTitleFilterBodySchema,
-  MAX_TITLE_FILTERS,
   titleFilterIdSchema,
   updateTitleFilterBodySchema,
 } from "@/schemas/title-filters";
@@ -769,13 +769,6 @@ export const integrationsRouter = {
             input.repositoryId
           );
 
-          const existing = await getGithubTitleFilters(input.repositoryId);
-          if (existing.length >= MAX_TITLE_FILTERS) {
-            throw badRequest(
-              `You can add up to ${MAX_TITLE_FILTERS} title filters per repository`
-            );
-          }
-
           try {
             const created = await createGithubTitleFilter(input.repositoryId, {
               matchType: input.matchType,
@@ -788,6 +781,9 @@ export const integrationsRouter = {
 
             return serializeTitleFilter(created);
           } catch (error) {
+            if (error instanceof TitleFilterLimitError) {
+              throw badRequest(error.message);
+            }
             if (isUniqueConstraintError(error)) {
               throw conflict("This title filter already exists");
             }
@@ -1062,13 +1058,6 @@ export const integrationsRouter = {
             input.integrationId
           );
 
-          const existing = await getLinearTitleFilters(input.integrationId);
-          if (existing.length >= MAX_TITLE_FILTERS) {
-            throw badRequest(
-              `You can add up to ${MAX_TITLE_FILTERS} title filters per integration`
-            );
-          }
-
           try {
             const created = await createLinearTitleFilter(input.integrationId, {
               matchType: input.matchType,
@@ -1081,6 +1070,9 @@ export const integrationsRouter = {
 
             return serializeTitleFilter(created);
           } catch (error) {
+            if (error instanceof TitleFilterLimitError) {
+              throw badRequest(error.message);
+            }
             if (isUniqueConstraintError(error)) {
               throw conflict("This title filter already exists");
             }

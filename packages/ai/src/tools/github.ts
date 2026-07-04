@@ -598,7 +598,7 @@ export function createGetCommitsByTimeframeTool(
 
         const hasNextPage =
           nextPage !== undefined &&
-          !(allowedCommitShas && commits.length === 0);
+          !(allowedCommitShas && shaFilteredCommits.length === 0);
 
         return {
           commits,

@@ -1,3 +1,4 @@
+import type { FormEvent } from "react";
 import type { TitleFilterMatchType } from "@/schemas/title-filters";
 
 export interface TitleFilter {
@@ -26,4 +27,30 @@ export interface TitleFiltersSectionProps {
   source: TitleFilterSource;
   organizationId: string;
   targetId: string;
+  targetLabel?: string;
+}
+
+export interface TitleFilterAddFormProps {
+  matchType: TitleFilterMatchType;
+  pattern: string;
+  patternError: string | null;
+  isPending: boolean;
+  onMatchTypeChange: (value: TitleFilterMatchType | null) => void;
+  onPatternChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}
+
+export interface TitleFilterPresetListProps {
+  presets: TitleFilterPreset[];
+  disabled: boolean;
+  onAdd: (preset: TitleFilterPreset) => void;
+}
+
+export interface TitleFilterRowProps {
+  filter: TitleFilter;
+  presetLabel?: string;
+  togglePending: boolean;
+  deletePending: boolean;
+  onToggle: (enabled: boolean) => void;
+  onDelete: () => void;
 }

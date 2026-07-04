@@ -1,5 +1,5 @@
 {
-  "id": "43116d8d-8bf9-40f5-89d6-4e40236fa44d",
+  "id": "a3ba73c0-64ce-4799-a033-942012dfbce3",
   "prevId": "93029cde-e8db-4cc5-bac2-9b72d065991c",
   "version": "7",
   "dialect": "postgresql",
@@ -2656,7 +2656,8 @@
         },
         "match_type": {
           "name": "match_type",
-          "type": "text",
+          "type": "title_filter_match_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -2720,9 +2721,9 @@
               "nulls": "last"
             },
             {
-              "expression": "pattern",
-              "isExpression": false,
+              "expression": "lower(\"pattern\")",
               "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
@@ -3137,7 +3138,8 @@
         },
         "match_type": {
           "name": "match_type",
-          "type": "text",
+          "type": "title_filter_match_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -3201,9 +3203,9 @@
               "nulls": "last"
             },
             {
-              "expression": "pattern",
-              "isExpression": false,
+              "expression": "lower(\"pattern\")",
               "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],
@@ -5972,6 +5974,14 @@
         "linkedin_post",
         "blog_post",
         "custom"
+      ]
+    },
+    "public.title_filter_match_type": {
+      "name": "title_filter_match_type",
+      "schema": "public",
+      "values": [
+        "contains",
+        "regex"
       ]
     }
   },

@@ -31,6 +31,22 @@ function filterReleaseEvent(
   return isTitleExcluded(title, rules) ? null : processedEvent;
 }
 
+function toHeadCommit(commit: unknown) {
+  if (typeof commit !== "object" || commit === null) {
+    return null;
+  }
+
+  if (!("id" in commit) || typeof commit.id !== "string") {
+    return null;
+  }
+
+  if (!("message" in commit) || typeof commit.message !== "string") {
+    return null;
+  }
+
+  return { id: commit.id, message: commit.message };
+}
+
 function filterPushEvent(
   processedEvent: GithubProcessedEvent,
   rules: TitleFilterRule[]
@@ -48,7 +64,12 @@ function filterPushEvent(
     return null;
   }
 
-  if (remainingCommits.length === commits.length) {
+  const headCommitExcluded = isCommitExcluded(
+    processedEvent.data.headCommit,
+    rules
+  );
+
+  if (remainingCommits.length === commits.length && !headCommitExcluded) {
     return processedEvent;
   }
 
@@ -57,6 +78,9 @@ function filterPushEvent(
     data: {
       ...processedEvent.data,
       commits: remainingCommits,
+      headCommit: headCommitExcluded
+        ? toHeadCommit(remainingCommits.at(-1))
+        : processedEvent.data.headCommit,
     },
   };
 }

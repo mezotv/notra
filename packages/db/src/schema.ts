@@ -23,6 +23,11 @@ export const lookbackWindowEnum = pgEnum("lookback_window", [
 
 export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
 
+export const titleFilterMatchTypeEnum = pgEnum("title_filter_match_type", [
+  "contains",
+  "regex",
+]);
+
 export const postCollectionSourceEnum = pgEnum("post_collection_source", [
   "manual",
   "chat",
@@ -489,7 +494,7 @@ export const githubTitleFilters = pgTable(
     repositoryId: text("repository_id")
       .notNull()
       .references(() => githubIntegrations.id, { onDelete: "cascade" }),
-    matchType: text("match_type").$type<"contains" | "regex">().notNull(),
+    matchType: titleFilterMatchTypeEnum("match_type").notNull(),
     pattern: text("pattern").notNull(),
     enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -503,7 +508,7 @@ export const githubTitleFilters = pgTable(
     uniqueIndex("githubTitleFilters_repository_matchType_pattern_uidx").on(
       table.repositoryId,
       table.matchType,
-      table.pattern
+      sql`lower(${table.pattern})`
     ),
   ]
 );
@@ -515,7 +520,7 @@ export const linearTitleFilters = pgTable(
     integrationId: text("integration_id")
       .notNull()
       .references(() => linearIntegrations.id, { onDelete: "cascade" }),
-    matchType: text("match_type").$type<"contains" | "regex">().notNull(),
+    matchType: titleFilterMatchTypeEnum("match_type").notNull(),
     pattern: text("pattern").notNull(),
     enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -529,7 +534,7 @@ export const linearTitleFilters = pgTable(
     uniqueIndex("linearTitleFilters_integration_matchType_pattern_uidx").on(
       table.integrationId,
       table.matchType,
-      table.pattern
+      sql`lower(${table.pattern})`
     ),
   ]
 );
