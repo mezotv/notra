@@ -47,6 +47,20 @@ const TITLE_FILTER_PRESETS: TitleFilterPreset[] = [
     pattern: "^(chore|fix|build)\\(deps.*\\)!?:|^bump ",
   },
   {
+    id: "lockfiles",
+    label: "Lockfile updates",
+    description: 'Excludes lockfile bumps like "update bun.lock"',
+    matchType: "regex",
+    pattern: "update.*lock",
+  },
+  {
+    id: "typos",
+    label: "Typo fixes",
+    description: 'Excludes "fix typo" style titles',
+    matchType: "regex",
+    pattern: "^fix.*typo",
+  },
+  {
     id: "reverts",
     label: "Reverts",
     description: 'Excludes "revert ..." titles',

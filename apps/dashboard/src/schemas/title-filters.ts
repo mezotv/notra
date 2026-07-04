@@ -40,7 +40,39 @@ export const titleFilterIdSchema = z.object({
   filterId: z.string().min(1, "Filter ID is required"),
 });
 
-export const updateTitleFilterBodySchema = titleFilterIdSchema.extend({
-  enabled: z.boolean(),
-});
+export const updateTitleFilterBodySchema = titleFilterIdSchema
+  .extend({
+    enabled: z.boolean().optional(),
+    matchType: z.enum(TITLE_FILTER_MATCH_TYPES).optional(),
+    pattern: titleFilterPatternSchema.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.enabled === undefined && value.pattern === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "At least one field must be provided",
+        path: ["enabled"],
+      });
+    }
+
+    if (value.pattern !== undefined && value.matchType === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Match type is required when updating the pattern",
+        path: ["matchType"],
+      });
+    }
+
+    if (
+      value.matchType === "regex" &&
+      value.pattern !== undefined &&
+      !isValidTitleFilterRegex(value.pattern)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Enter a valid regular expression",
+        path: ["pattern"],
+      });
+    }
+  });
 export type UpdateTitleFilterBody = z.infer<typeof updateTitleFilterBodySchema>;

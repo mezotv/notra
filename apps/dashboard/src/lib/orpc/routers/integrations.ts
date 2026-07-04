@@ -43,9 +43,9 @@ import {
   deleteLinearTitleFilter,
   getGithubTitleFilters,
   getLinearTitleFilters,
-  setGithubTitleFilterEnabled,
-  setLinearTitleFilterEnabled,
   TitleFilterLimitError,
+  updateGithubTitleFilter,
+  updateLinearTitleFilter,
 } from "@notra/ai/integrations/title-filters";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
@@ -804,17 +804,28 @@ export const integrationsRouter = {
             input.repositoryId
           );
 
-          const updated = await setGithubTitleFilterEnabled(
-            input.repositoryId,
-            input.filterId,
-            input.enabled
-          );
+          try {
+            const updated = await updateGithubTitleFilter(
+              input.repositoryId,
+              input.filterId,
+              {
+                enabled: input.enabled,
+                matchType: input.matchType,
+                pattern: input.pattern,
+              }
+            );
 
-          if (!updated) {
-            throw notFound("Title filter not found");
+            if (!updated) {
+              throw notFound("Title filter not found");
+            }
+
+            return serializeTitleFilter(updated);
+          } catch (error) {
+            if (isUniqueConstraintError(error)) {
+              throw conflict("This title filter already exists");
+            }
+            throw error;
           }
-
-          return serializeTitleFilter(updated);
         }),
       delete: baseProcedure
         .input(repositoryInputSchema.and(titleFilterIdSchema))
@@ -1093,17 +1104,28 @@ export const integrationsRouter = {
             input.integrationId
           );
 
-          const updated = await setLinearTitleFilterEnabled(
-            input.integrationId,
-            input.filterId,
-            input.enabled
-          );
+          try {
+            const updated = await updateLinearTitleFilter(
+              input.integrationId,
+              input.filterId,
+              {
+                enabled: input.enabled,
+                matchType: input.matchType,
+                pattern: input.pattern,
+              }
+            );
 
-          if (!updated) {
-            throw notFound("Title filter not found");
+            if (!updated) {
+              throw notFound("Title filter not found");
+            }
+
+            return serializeTitleFilter(updated);
+          } catch (error) {
+            if (isUniqueConstraintError(error)) {
+              throw conflict("This title filter already exists");
+            }
+            throw error;
           }
-
-          return serializeTitleFilter(updated);
         }),
       delete: baseProcedure
         .input(integrationInputSchema.and(titleFilterIdSchema))

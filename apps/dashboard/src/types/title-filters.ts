@@ -49,8 +49,9 @@ export interface TitleFilterPresetListProps {
 export interface TitleFilterRowProps {
   filter: TitleFilter;
   presetLabel?: string;
-  togglePending: boolean;
+  updatePending: boolean;
   deletePending: boolean;
   onToggle: (enabled: boolean) => void;
+  onPatternSave: (pattern: string) => void;
   onDelete: () => void;
 }

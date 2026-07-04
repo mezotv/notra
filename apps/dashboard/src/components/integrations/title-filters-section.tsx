@@ -6,7 +6,6 @@ import {
   HelpCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   Select,
@@ -24,7 +23,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -65,11 +64,11 @@ function TitleFilterAddForm({
   onSubmit,
 }: TitleFilterAddFormProps) {
   return (
-    <>
+    <div className="space-y-1.5">
       <form className="flex flex-col gap-2 sm:flex-row" onSubmit={onSubmit}>
         <Select onValueChange={onMatchTypeChange} value={matchType}>
-          <SelectTrigger className="w-full sm:w-44">
-            <SelectValue />
+          <SelectTrigger className="w-full sm:w-40">
+            <SelectValue className="capitalize" />
           </SelectTrigger>
           <SelectContent>
             {TITLE_FILTER_MATCH_TYPE_OPTIONS.map((option) => (
@@ -100,7 +99,7 @@ function TitleFilterAddForm({
       {patternError && (
         <p className="text-destructive text-xs">{patternError}</p>
       )}
-    </>
+    </div>
   );
 }
 
@@ -114,33 +113,35 @@ function TitleFilterPresetList({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-muted-foreground text-xs">Quick add:</span>
-      {presets.map((preset) => (
-        <Tooltip key={preset.id}>
-          <TooltipTrigger
-            render={
-              <Button
-                className="h-6 rounded-full px-2.5 text-xs"
-                disabled={disabled}
-                onClick={() => onAdd(preset)}
-                size="sm"
-                type="button"
-                variant="outline"
-              />
-            }
-          >
-            <HugeiconsIcon className="size-3" icon={Add01Icon} />
-            {preset.label}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p>{preset.description}</p>
-            <p className="mt-1 font-mono text-xs opacity-80">
-              {preset.pattern}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      ))}
+    <div className="space-y-1.5">
+      <p className="font-medium text-muted-foreground text-xs">Suggestions</p>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {presets.map((preset) => (
+          <Tooltip key={preset.id}>
+            <TooltipTrigger
+              render={
+                <Button
+                  className="h-7 rounded-full px-3 text-xs"
+                  disabled={disabled}
+                  onClick={() => onAdd(preset)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                />
+              }
+            >
+              <HugeiconsIcon className="size-3" icon={Add01Icon} />
+              {preset.label}
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>{preset.description}</p>
+              <p className="mt-1 font-mono text-xs opacity-80">
+                {preset.pattern}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
     </div>
   );
 }
@@ -148,32 +149,79 @@ function TitleFilterPresetList({
 function TitleFilterRow({
   filter,
   presetLabel,
-  togglePending,
+  updatePending,
   deletePending,
   onToggle,
+  onPatternSave,
   onDelete,
 }: TitleFilterRowProps) {
+  const [value, setValue] = useState(filter.pattern);
+  const [invalid, setInvalid] = useState(false);
+
+  const inlineLabel =
+    presetLabel ?? (filter.matchType === "contains" ? "Text match" : "Regex");
+
+  const commit = () => {
+    const trimmed = value.trim();
+
+    if (!trimmed || trimmed === filter.pattern) {
+      setValue(filter.pattern);
+      setInvalid(false);
+      return;
+    }
+
+    if (filter.matchType === "regex" && !isValidTitleFilterRegex(trimmed)) {
+      setInvalid(true);
+      return;
+    }
+
+    setInvalid(false);
+    onPatternSave(trimmed);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.currentTarget.blur();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setValue(filter.pattern);
+      setInvalid(false);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <Badge className="shrink-0" variant="secondary">
-          {filter.matchType === "regex" ? "Regex" : "Text"}
-        </Badge>
-        <code className="truncate font-mono text-xs">{filter.pattern}</code>
-        {presetLabel && (
-          <span className="shrink-0 text-muted-foreground text-xs">
-            {presetLabel}
-          </span>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Input
+            aria-invalid={invalid ? true : undefined}
+            aria-label={`Filter pattern ${filter.pattern}`}
+            className={`w-full pr-24 font-mono text-xs ${filter.enabled ? "" : "opacity-60"}`}
+            disabled={updatePending}
+            maxLength={MAX_TITLE_FILTER_PATTERN_LENGTH}
+            onBlur={commit}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setInvalid(false);
+            }}
+            onKeyDown={handleKeyDown}
+            value={value}
+          />
+          {value === filter.pattern && (
+            <span className="pointer-events-none absolute inset-y-0 right-3 hidden items-center text-muted-foreground text-xs sm:flex">
+              {inlineLabel}
+            </span>
+          )}
+        </div>
         <Tooltip>
           <TooltipTrigger
             render={
               <Switch
                 aria-label={`Toggle filter ${filter.pattern}`}
                 checked={filter.enabled}
-                disabled={togglePending}
+                disabled={updatePending}
                 onCheckedChange={onToggle}
                 size="sm"
               />
@@ -185,7 +233,7 @@ function TitleFilterRow({
         </Tooltip>
         <Button
           aria-label={`Delete filter ${filter.pattern}`}
-          className="size-7 text-muted-foreground hover:text-destructive"
+          className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
           disabled={deletePending}
           onClick={onDelete}
           size="icon"
@@ -195,6 +243,11 @@ function TitleFilterRow({
           <HugeiconsIcon className="size-3.5" icon={Delete02Icon} />
         </Button>
       </div>
+      {invalid && (
+        <p className="text-destructive text-xs">
+          Enter a valid regular expression
+        </p>
+      )}
     </div>
   );
 }
@@ -260,30 +313,34 @@ export function TitleFiltersSection({
     }
   );
 
-  const toggleMutation = useMutation<
+  const updateMutation = useMutation<
     TitleFilter,
     Error,
-    { filterId: string; enabled: boolean }
+    {
+      filterId: string;
+      enabled?: boolean;
+      matchType?: TitleFilterMatchType;
+      pattern?: string;
+    }
   >({
-    mutationFn: ({ filterId, enabled }) =>
+    mutationFn: (body) =>
       isGithub
         ? dashboardOrpc.integrations.repositories.titleFilters.update.call({
             organizationId,
             repositoryId: targetId,
-            filterId,
-            enabled,
+            ...body,
           })
         : dashboardOrpc.integrations.linear.titleFilters.update.call({
             organizationId,
             integrationId: targetId,
-            filterId,
-            enabled,
+            ...body,
           }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: listQueryKey });
     },
     onError: (error) => {
       toast.error(error.message);
+      queryClient.invalidateQueries({ queryKey: listQueryKey });
     },
   });
 
@@ -353,15 +410,15 @@ export function TitleFiltersSection({
       )
   );
 
-  const itemsLabel = isGithub
-    ? "pull requests, commits, and releases"
-    : "issues";
+  const description = isGithub
+    ? "Pull requests, commits, and releases matching these patterns are skipped when generating content."
+    : "Issues matching these patterns are skipped when generating content.";
 
   return (
     <div className="space-y-4">
       <div className="space-y-1">
         <div className="flex items-center gap-1.5">
-          <h2 className="font-semibold text-lg">Title filters</h2>
+          <h2 className="font-semibold text-lg">Filters</h2>
           {targetLabel && (
             <span className="text-muted-foreground text-sm">{targetLabel}</span>
           )}
@@ -378,16 +435,12 @@ export function TitleFiltersSection({
               <HugeiconsIcon className="size-4" icon={HelpCircleIcon} />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              Items whose title matches an active filter are skipped when Notra
-              reads your {isGithub ? "GitHub activity" : "Linear issues"} for
-              content generation and automations. Text filters match anywhere in
-              the title; regex filters are case-insensitive.
+              Titles matching an active filter are skipped. Matching is
+              case-insensitive. Click a pattern to edit it.
             </TooltipContent>
           </Tooltip>
         </div>
-        <p className="text-muted-foreground text-sm">
-          Exclude {itemsLabel} from generated content by title.
-        </p>
+        <p className="text-muted-foreground text-sm">{description}</p>
       </div>
 
       {isLoading && <Skeleton className="h-24 w-full rounded-lg" />}
@@ -400,16 +453,39 @@ export function TitleFiltersSection({
 
       {!(isLoading || isError) && (
         <div className="rounded-lg border">
-          <div className="space-y-3 p-5">
-            <TitleFilterAddForm
-              isPending={createMutation.isPending}
-              matchType={matchType}
-              onMatchTypeChange={handleMatchTypeChange}
-              onPatternChange={handlePatternChange}
-              onSubmit={handleAdd}
-              pattern={pattern}
-              patternError={patternError}
-            />
+          {filters.length === 0 ? (
+            <p className="p-5 text-muted-foreground text-sm">
+              No title filters yet. Everything is included. Start with a
+              suggestion below or add your own.
+            </p>
+          ) : (
+            <div className="space-y-2.5 p-5">
+              {filters.map((filter) => (
+                <TitleFilterRow
+                  deletePending={deleteMutation.isPending}
+                  filter={filter}
+                  key={`${filter.id}:${filter.matchType}:${filter.pattern}`}
+                  onDelete={() =>
+                    deleteMutation.mutate({ filterId: filter.id })
+                  }
+                  onPatternSave={(nextPattern) =>
+                    updateMutation.mutate({
+                      filterId: filter.id,
+                      matchType: filter.matchType,
+                      pattern: nextPattern,
+                    })
+                  }
+                  onToggle={(enabled) =>
+                    updateMutation.mutate({ filterId: filter.id, enabled })
+                  }
+                  presetLabel={getPresetForFilter(filter, presets)?.label}
+                  updatePending={updateMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-3 border-t bg-muted/40 p-5">
             <TitleFilterPresetList
               disabled={createMutation.isPending}
               onAdd={(preset) =>
@@ -420,27 +496,15 @@ export function TitleFiltersSection({
               }
               presets={availablePresets}
             />
-          </div>
-
-          <div className="divide-y border-t">
-            {filters.length === 0 && (
-              <p className="px-5 py-4 text-muted-foreground text-sm">
-                No title filters yet. Everything is included.
-              </p>
-            )}
-            {filters.map((filter) => (
-              <TitleFilterRow
-                deletePending={deleteMutation.isPending}
-                filter={filter}
-                key={filter.id}
-                onDelete={() => deleteMutation.mutate({ filterId: filter.id })}
-                onToggle={(enabled) =>
-                  toggleMutation.mutate({ filterId: filter.id, enabled })
-                }
-                presetLabel={getPresetForFilter(filter, presets)?.label}
-                togglePending={toggleMutation.isPending}
-              />
-            ))}
+            <TitleFilterAddForm
+              isPending={createMutation.isPending}
+              matchType={matchType}
+              onMatchTypeChange={handleMatchTypeChange}
+              onPatternChange={handlePatternChange}
+              onSubmit={handleAdd}
+              pattern={pattern}
+              patternError={patternError}
+            />
           </div>
         </div>
       )}

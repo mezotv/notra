@@ -12,6 +12,20 @@ interface CreateTitleFilterParams {
   pattern: string;
 }
 
+interface UpdateTitleFilterParams {
+  enabled?: boolean;
+  matchType?: TitleFilterMatchType;
+  pattern?: string;
+}
+
+function toTitleFilterUpdateSet(params: UpdateTitleFilterParams) {
+  return {
+    ...(params.enabled !== undefined ? { enabled: params.enabled } : {}),
+    ...(params.matchType !== undefined ? { matchType: params.matchType } : {}),
+    ...(params.pattern !== undefined ? { pattern: params.pattern } : {}),
+  };
+}
+
 export class TitleFilterLimitError extends Error {
   constructor() {
     super(`You can add up to ${MAX_TITLE_FILTERS} title filters`);
@@ -78,14 +92,14 @@ export async function createGithubTitleFilter(
   });
 }
 
-export async function setGithubTitleFilterEnabled(
+export async function updateGithubTitleFilter(
   repositoryId: string,
   filterId: string,
-  enabled: boolean
+  params: UpdateTitleFilterParams
 ) {
   const [updated] = await db
     .update(githubTitleFilters)
-    .set({ enabled })
+    .set(toTitleFilterUpdateSet(params))
     .where(
       and(
         eq(githubTitleFilters.id, filterId),
@@ -173,14 +187,14 @@ export async function createLinearTitleFilter(
   });
 }
 
-export async function setLinearTitleFilterEnabled(
+export async function updateLinearTitleFilter(
   integrationId: string,
   filterId: string,
-  enabled: boolean
+  params: UpdateTitleFilterParams
 ) {
   const [updated] = await db
     .update(linearTitleFilters)
-    .set({ enabled })
+    .set(toTitleFilterUpdateSet(params))
     .where(
       and(
         eq(linearTitleFilters.id, filterId),
