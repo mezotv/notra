@@ -33,6 +33,10 @@ async function main() {
     `Organizations: ${seeded} seeded, ${skipped} already seeded, ${failed} failed`
   );
 
+  if (failed > 0) {
+    throw new Error(`Failed to seed ${failed} organizations`);
+  }
+
   const [after] = await db
     .select({ value: count() })
     .from(skills)
