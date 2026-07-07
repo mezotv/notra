@@ -13,7 +13,11 @@ export function getSupermemoryHeaders() {
 }
 
 export function getOrganizationContainerTag(organizationId: string) {
-  return organizationId;
+  const trimmed = organizationId.trim();
+  if (!trimmed) {
+    throw new Error("organizationId must be a non-empty string");
+  }
+  return trimmed;
 }
 
 export async function requestSupermemory(path: string, body: unknown) {

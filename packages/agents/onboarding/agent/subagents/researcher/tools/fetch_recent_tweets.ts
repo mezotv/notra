@@ -3,6 +3,7 @@ import { defineTool } from "eve/tools";
 import * as z from "zod";
 import {
   HANDLE_PREFIX_REGEX,
+  RECENT_TWEETS_API_MIN_COUNT,
   RECENT_TWEETS_DEFAULT_COUNT,
   RECENT_TWEETS_MAX_COUNT,
   TWITTER_API_BASE,
@@ -39,14 +40,18 @@ export default defineTool({
       );
     }
     const user = twitterUserLookupSchema.parse(await userResponse.json());
+    const account = user.data;
+    if (!account) {
+      throw new Error(`X account @${username} was not found or is suspended`);
+    }
 
     const timelineParams = new URLSearchParams({
-      max_results: String(count),
+      max_results: String(Math.max(count, RECENT_TWEETS_API_MIN_COUNT)),
       exclude: "replies,retweets",
       "tweet.fields": "text,public_metrics,created_at",
     });
     const timelineResponse = await fetch(
-      `${TWITTER_API_BASE}/users/${user.data.id}/tweets?${timelineParams.toString()}`,
+      `${TWITTER_API_BASE}/users/${account.id}/tweets?${timelineParams.toString()}`,
       { headers }
     );
     if (!timelineResponse.ok) {
@@ -57,18 +62,18 @@ export default defineTool({
     const timeline = twitterTimelineSchema.parse(await timelineResponse.json());
 
     return {
-      handle: user.data.username,
-      name: user.data.name,
-      bio: user.data.description ?? null,
-      followers: user.data.public_metrics?.followers_count ?? null,
-      tweets: (timeline.data ?? []).map((tweet) => ({
+      handle: account.username,
+      name: account.name,
+      bio: account.description ?? null,
+      followers: account.public_metrics?.followers_count ?? null,
+      tweets: (timeline.data ?? []).slice(0, count).map((tweet) => ({
         id: tweet.id,
         text: tweet.text,
         createdAt: tweet.created_at ?? null,
         likes: tweet.public_metrics?.like_count ?? 0,
         retweets: tweet.public_metrics?.retweet_count ?? 0,
         replies: tweet.public_metrics?.reply_count ?? 0,
-        url: `https://x.com/${user.data.username}/status/${tweet.id}`,
+        url: `https://x.com/${account.username}/status/${tweet.id}`,
       })),
     };
   },

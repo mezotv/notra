@@ -11,9 +11,13 @@ export interface SlackConnectInviteResult {
 }
 
 export interface CreateSlackConnectChannelInput {
-  name: string;
+  channelName: string;
   isPrivate?: boolean;
 }
+
+export type SlackInviteRecipient =
+  | { emails: string[]; user_ids?: never }
+  | { user_ids: string[]; emails?: never };
 
 export interface SlackConnectChannel {
   channelId: string;

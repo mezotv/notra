@@ -8,7 +8,7 @@ export const brandSocialsResponseSchema = z.looseObject({
       .array(
         z.looseObject({
           type: z.string(),
-          url: z.string(),
+          url: z.url(),
         })
       )
       .default([]),

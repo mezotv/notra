@@ -1,4 +1,7 @@
-import { SLACK_API_BASE_URL } from "../constants/slack";
+import {
+  SLACK_API_BASE_URL,
+  SLACK_REQUEST_TIMEOUT_MS,
+} from "../constants/slack";
 import {
   slackCreateChannelResponseSchema,
   slackInviteSharedResponseSchema,
@@ -10,6 +13,7 @@ import type {
   SlackConnectChannel,
   SlackConnectInviteInput,
   SlackConnectInviteResult,
+  SlackInviteRecipient,
 } from "../types/slack";
 
 function getSlackBotToken(): string {
@@ -20,6 +24,26 @@ function getSlackBotToken(): string {
   return token;
 }
 
+function resolveInviteRecipient(
+  email: string | undefined,
+  userId: string | undefined
+): SlackInviteRecipient {
+  const trimmedEmail = email?.trim();
+  const trimmedUserId = userId?.trim();
+  const hasEmail = Boolean(trimmedEmail);
+  const hasUserId = Boolean(trimmedUserId);
+
+  if (hasEmail === hasUserId) {
+    throw new Error(
+      "Slack Connect invites require exactly one non-empty email or userId"
+    );
+  }
+
+  return trimmedEmail
+    ? { emails: [trimmedEmail] }
+    : { user_ids: [trimmedUserId ?? ""] };
+}
+
 async function requestSlack(method: string, body: unknown): Promise<unknown> {
   const response = await fetch(`${SLACK_API_BASE_URL}/${method}`, {
     method: "POST",
@@ -28,6 +52,7 @@ async function requestSlack(method: string, body: unknown): Promise<unknown> {
       "Content-Type": "application/json; charset=utf-8",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(SLACK_REQUEST_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -47,19 +72,12 @@ export async function inviteToSlackConnect(
   input: SlackConnectInviteInput
 ): Promise<SlackConnectInviteResult> {
   const { channelId, email, userId, externalLimited } = input;
-  const hasEmail = email !== undefined;
-  const hasUserId = userId !== undefined;
-
-  if (hasEmail === hasUserId) {
-    throw new Error(
-      "Slack Connect invites require exactly one of email or userId"
-    );
-  }
+  const recipient = resolveInviteRecipient(email, userId);
 
   const payload = slackInviteSharedResponseSchema.parse(
     await requestSlack("conversations.inviteShared", {
       channel: channelId,
-      ...(hasEmail ? { emails: [email] } : { user_ids: [userId] }),
+      ...recipient,
       ...(externalLimited !== undefined
         ? { external_limited: externalLimited }
         : {}),
@@ -87,7 +105,7 @@ export async function createSlackConnectChannel(
 ): Promise<SlackConnectChannel> {
   const payload = slackCreateChannelResponseSchema.parse(
     await requestSlack("conversations.create", {
-      name: input.name,
+      name: input.channelName,
       is_private: input.isPrivate ?? true,
     })
   );
@@ -111,8 +129,10 @@ export async function createSlackConnectChannel(
 export async function createSlackConnectChannelWithInvite(
   input: CreateSlackConnectChannelInviteInput
 ): Promise<CreateSlackConnectChannelInviteResult> {
+  resolveInviteRecipient(input.email, input.userId);
+
   const channel = await createSlackConnectChannel({
-    name: input.channelName,
+    channelName: input.channelName,
     isPrivate: input.isPrivate,
   });
 

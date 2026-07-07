@@ -7,8 +7,8 @@ export const researchBriefSchema = z.object({
     z.object({
       topic: z.string().min(1),
       detail: z.string().min(1),
-      quotes: z.array(z.string()),
-      sources: z.array(z.string()),
+      quotes: z.array(z.string().min(1)),
+      sources: z.array(z.string().min(1)).min(1),
     })
   ),
   unavailableSources: z.array(z.string()),

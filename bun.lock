@@ -231,7 +231,7 @@
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
-        "@types/node": "^26.0.1",
+        "@types/node": "^24.0.0",
         "dotenv-cli": "^11.0.0",
         "microsandbox": "^0.6.1",
         "typescript": "5.9.2",
@@ -4573,7 +4573,7 @@
 
     "@notra/onboarding-agent/@ai-sdk/devtools": ["@ai-sdk/devtools@1.0.1", "", { "dependencies": { "@ai-sdk/provider": "4.0.1", "@hono/node-server": "^1.19.13", "hono": "^4.12.25" }, "bin": { "devtools": "bin/cli.js" } }, "sha512-Yak6fCfooo+4/DhPGlMlhte89swJtw4OKI7epX3tFs/0/CDDQ/fw2FyaoP2Xv1TQaAqy7lbaVfJbghAI5sJ3hA=="],
 
-    "@notra/onboarding-agent/@types/node": ["@types/node@26.0.1", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-fc3KiUoBt6kie0N9bIW3E47vZsuaMf0PM2AaUpLCLT0s/LvX1nxAim6Fc049cNxODPpGm6qRAuUOB86SkRuPQw=="],
+    "@notra/onboarding-agent/@types/node": ["@types/node@24.13.2", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-fRa09kZTgu8o71KFcDjUFuc7F+dEbZYZmkI0mg5YBTRs0yMKjYHsq/c0urDKeDb+D5qVgXOdFcuu+DZPKOITwA=="],
 
     "@notra/onboarding-agent/ai": ["ai@7.0.6", "", { "dependencies": { "@ai-sdk/gateway": "4.0.5", "@ai-sdk/provider": "4.0.0", "@ai-sdk/provider-utils": "5.0.1" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-RCina0WKhFgHQJHHOq+F11r9eaUo+Npcb84m7FDoYIVdG3IgeUb23fYfmqUTWIekI85c3GjkaTUxThiH3qHfkw=="],
 
@@ -5329,7 +5329,7 @@
 
     "@notra/onboarding-agent/@ai-sdk/devtools/@ai-sdk/provider": ["@ai-sdk/provider@4.0.1", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-6p3C/vGqVIjcptBu1DnVd/BZJ2wWmV9TUv9192vT6ZvT9KNED8EwRTqyqFpoQZKgSbMDSvBSq3dqR524Nt/Crw=="],
 
-    "@notra/onboarding-agent/@types/node/undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
+    "@notra/onboarding-agent/@types/node/undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "@notra/onboarding-agent/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.5", "", { "dependencies": { "@ai-sdk/provider": "4.0.0", "@ai-sdk/provider-utils": "5.0.1", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-Zh4hxzrelJE0DDhaH7bXeUsB7ecFusRs+F7XHf0Dael6ekKG1GZCZgPw/lALEqyn1Vk1hLB+jjQgIoMTjA5m3A=="],
 

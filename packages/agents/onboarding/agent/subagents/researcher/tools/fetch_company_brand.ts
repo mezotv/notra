@@ -13,6 +13,10 @@ export default defineTool({
   async execute({ domain }) {
     const response = brandResponseSchema.parse(await retrieveBrand(domain));
     const { logos, ...brand } = response.brand;
-    return { domain, brand, hasLogos: Boolean(logos) };
+    return {
+      domain,
+      brand,
+      hasLogos: Array.isArray(logos) && logos.length > 0,
+    };
   },
 });

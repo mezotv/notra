@@ -14,6 +14,6 @@ export default defineTool({
     if (!result.success) {
       throw new Error(result.error);
     }
-    return { url, content: result.content };
+    return { url, markdown: result.content };
   },
 });
