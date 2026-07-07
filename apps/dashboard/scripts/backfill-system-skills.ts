@@ -10,9 +10,28 @@ async function main() {
     .from(skills)
     .where(eq(skills.isSystem, true));
 
+  let seeded = 0;
+  let skipped = 0;
+  let failed = 0;
+
   for (const org of orgs) {
-    await seedSystemSkills(org.id);
+    try {
+      const insertedCount = await seedSystemSkills(org.id);
+      if (insertedCount > 0) {
+        seeded += 1;
+        console.log(`[${org.id}] seeded ${insertedCount} system skills`);
+      } else {
+        skipped += 1;
+      }
+    } catch (error) {
+      failed += 1;
+      console.error(`[${org.id}] failed to seed system skills:`, error);
+    }
   }
+
+  console.log(
+    `Organizations: ${seeded} seeded, ${skipped} already seeded, ${failed} failed`
+  );
 
   const [after] = await db
     .select({ value: count() })

@@ -289,13 +289,20 @@ export const auth = betterAuth({
             );
             return;
           }
-          await autumn.customers.getOrCreate({
-            customerId: organization.id,
-            name: organization.name,
-            metadata: {
-              orgId: organization.id,
-            },
-          });
+          try {
+            await autumn.customers.getOrCreate({
+              customerId: organization.id,
+              name: organization.name,
+              metadata: {
+                orgId: organization.id,
+              },
+            });
+          } catch (error) {
+            console.error("[Autumn] Failed to create customer for new org:", {
+              organizationId: organization.id,
+              error,
+            });
+          }
         },
         beforeCreateInvitation: async ({ invitation, organization }) => {
           if (!isNotDisposableEmail(invitation.email)) {
