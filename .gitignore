@@ -59,3 +59,8 @@ opencode.json
 
 .deepsec
 .repos/effect
+
+.eve
+.output
+packages/agents/onboarding/logs
+.workflow-data

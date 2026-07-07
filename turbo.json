@@ -55,6 +55,7 @@
     "FEEDBACK_EMAIL_TO",
     "OSS_PROGRAM_EMAIL_TO",
     "UPSTASH_BOX_API_KEY",
+    "SLACK_BOT_TOKEN",
     "TCC_API_KEY"
   ],
   "envMode": "strict",

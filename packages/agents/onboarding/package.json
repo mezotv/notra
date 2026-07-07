@@ -1,0 +1,33 @@
+{
+  "name": "@notra/onboarding-agent",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "agent:dev": "dotenv -e ../../../.env -- eve dev",
+    "agent:build": "eve build",
+    "agent:start": "eve start",
+    "check-types": "tsc --noEmit",
+    "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../../.env -- eve dev",
+    "devtools": "bun x @ai-sdk/devtools"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@ai-sdk/devtools": "1.0.1",
+    "@notra/ai": "workspace:*",
+    "@notra/db": "workspace:*",
+    "ai": "^7.0.0",
+    "drizzle-orm": "^0.45.2",
+    "eve": "^0.17.0",
+    "pg": "^8.20.0",
+    "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^26.0.1",
+    "dotenv-cli": "^11.0.0",
+    "microsandbox": "^0.6.1",
+    "typescript": "5.9.2"
+  }
+}

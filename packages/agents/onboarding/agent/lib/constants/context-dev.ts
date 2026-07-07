@@ -1,0 +1,2 @@
+export const SCRAPE_MARKDOWN_MAX_LENGTH = 40_000;
+export const SITEMAP_DEFAULT_MAX_LINKS = 100;
