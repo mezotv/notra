@@ -32,7 +32,8 @@ export default defineTool({
         content:
           result.memory ??
           result.chunks
-            ?.map((chunk) => chunk.content)
+            ?.filter((chunk) => chunk.isRelevant !== false)
+            .map((chunk) => chunk.content)
             .filter(Boolean)
             .join("\n") ??
           null,
