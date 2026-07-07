@@ -8,6 +8,11 @@ export const slackInviteSharedResponseSchema = z.looseObject({
   is_legacy_shared_channel: z.boolean().optional(),
 });
 
+export const slackOkResponseSchema = z.looseObject({
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+
 export const slackCreateChannelResponseSchema = z.looseObject({
   ok: z.boolean(),
   error: z.string().optional(),

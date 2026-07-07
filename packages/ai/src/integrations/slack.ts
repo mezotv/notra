@@ -5,6 +5,7 @@ import {
 import {
   slackCreateChannelResponseSchema,
   slackInviteSharedResponseSchema,
+  slackOkResponseSchema,
 } from "../schemas/slack";
 import type {
   CreateSlackConnectChannelInput,
@@ -126,6 +127,18 @@ export async function createSlackConnectChannel(
   };
 }
 
+export async function archiveSlackChannel(channelId: string): Promise<void> {
+  const payload = slackOkResponseSchema.parse(
+    await requestSlack("conversations.archive", { channel: channelId })
+  );
+
+  if (!payload.ok) {
+    throw new Error(
+      `Slack channel archive was rejected: ${payload.error ?? "unknown_error"}`
+    );
+  }
+}
+
 export async function createSlackConnectChannelWithInvite(
   input: CreateSlackConnectChannelInviteInput
 ): Promise<CreateSlackConnectChannelInviteResult> {
@@ -136,12 +149,23 @@ export async function createSlackConnectChannelWithInvite(
     isPrivate: input.isPrivate,
   });
 
-  const invite = await inviteToSlackConnect({
-    channelId: channel.channelId,
-    email: input.email,
-    userId: input.userId,
-    externalLimited: input.externalLimited,
-  });
+  try {
+    const invite = await inviteToSlackConnect({
+      channelId: channel.channelId,
+      email: input.email,
+      userId: input.userId,
+      externalLimited: input.externalLimited,
+    });
 
-  return { ...channel, ...invite };
+    return { ...channel, ...invite };
+  } catch (error) {
+    const archived = await archiveSlackChannel(channel.channelId)
+      .then(() => true)
+      .catch(() => false);
+
+    throw new Error(
+      `Slack Connect invite failed after creating #${channel.channelName}; the channel was ${archived ? "archived" : "left in place and could not be archived"}`,
+      { cause: error }
+    );
+  }
 }
