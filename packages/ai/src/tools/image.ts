@@ -7,6 +7,7 @@ import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { IMAGE_GEN_MODEL_ID } from "@notra/ai/constants/repo-image";
+import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import {
   imageRevisionToolInputSchema,
   imageToolInputSchema,
@@ -424,6 +425,11 @@ async function saveGeneratedImagePost(params: {
     contentType: "image",
     status: "draft",
     sourceMetadata: params.sourceMetadata,
+  });
+
+  await maybeGenerateCollectionTitle({
+    collectionId: collection.id,
+    organizationId: params.organizationId,
   });
 
   return postId;

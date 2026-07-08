@@ -1,4 +1,5 @@
 import { generateRepoImage } from "@notra/ai/agents/repo-image";
+import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { isGitHubRateLimitError } from "@notra/ai/tools/github";
 import {
   uploadGeneratedHtmlAsset,
@@ -82,6 +83,11 @@ export async function handleImage(
           updatedAt: new Date(),
         })
         .where(eq(postCollections.id, ctx.collectionId));
+    });
+
+    await maybeGenerateCollectionTitle({
+      collectionId: ctx.collectionId,
+      organizationId: ctx.organizationId,
     });
 
     return {

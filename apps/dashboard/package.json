@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "backfill:system-skills": "bun run scripts/backfill-system-skills.ts"
+    "backfill:system-skills": "bun run scripts/backfill-system-skills.ts",
+    "backfill:collection-titles": "bun run scripts/backfill-collection-titles.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "3.0.208",

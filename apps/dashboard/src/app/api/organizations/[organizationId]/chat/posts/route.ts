@@ -1,12 +1,16 @@
+import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
-import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import {
+  buildPostCollectionName,
+  isLegacyPostCollectionName,
+} from "@notra/db/utils/post-collections";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { createChatPostSchema } from "@/schemas/content";
 import type { RouteContext } from "@/types/api/routes";
@@ -79,6 +83,7 @@ export async function POST(
         id: postCollections.id,
         contentTypes: postCollections.contentTypes,
         createdAt: postCollections.createdAt,
+        name: postCollections.name,
         nameSource: postCollections.nameSource,
       });
 
@@ -86,7 +91,10 @@ export async function POST(
       return null;
     }
 
-    if (collection.nameSource === "generated") {
+    if (
+      collection.nameSource === "generated" &&
+      isLegacyPostCollectionName(collection.name)
+    ) {
       await tx
         .update(postCollections)
         .set({
@@ -114,7 +122,7 @@ export async function POST(
       sourceMetadata: null,
     });
 
-    return { postId: id };
+    return { postId: id, collectionId: collection.id };
   });
 
   if (!result) {
@@ -123,6 +131,13 @@ export async function POST(
       { status: 500 }
     );
   }
+
+  after(async () => {
+    await maybeGenerateCollectionTitle({
+      collectionId: result.collectionId,
+      organizationId,
+    });
+  });
 
   return NextResponse.json({ postId: result.postId, status });
 }
