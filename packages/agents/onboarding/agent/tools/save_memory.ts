@@ -3,6 +3,7 @@ import { defineTool } from "eve/tools";
 import * as z from "zod";
 import { MEMORY_SOURCE_TAG } from "../lib/constants/supermemory";
 import { supermemoryCreateResponseSchema } from "../lib/schemas/supermemory";
+import { requireOrganizationId } from "../lib/utils/organization";
 import {
   getOrganizationContainerTag,
   requestSupermemory,
@@ -12,11 +13,11 @@ export default defineTool({
   description:
     "Save one curated, durable fact about the organization to Supermemory: positioning, tone evidence, audience, covered topics, or competitors. Never raw scrapes.",
   inputSchema: z.object({
-    organizationId: z.string().min(1),
     content: z.string().min(1),
     topic: z.string().min(1),
   }),
-  async execute({ organizationId, content, topic }) {
+  async execute({ content, topic }, ctx) {
+    const organizationId = requireOrganizationId(ctx);
     const response = supermemoryCreateResponseSchema.parse(
       await requestSupermemory("/v4/memories", {
         containerTag: getOrganizationContainerTag(organizationId),

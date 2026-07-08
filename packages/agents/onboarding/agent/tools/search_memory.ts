@@ -3,6 +3,7 @@ import { defineTool } from "eve/tools";
 import * as z from "zod";
 import { MEMORY_SEARCH_DEFAULT_LIMIT } from "../lib/constants/supermemory";
 import { supermemorySearchResponseSchema } from "../lib/schemas/supermemory";
+import { requireOrganizationId } from "../lib/utils/organization";
 import {
   getOrganizationContainerTag,
   requestSupermemory,
@@ -12,11 +13,11 @@ export default defineTool({
   description:
     "Search the organization's Supermemory for existing facts before saving new ones or making claims about what is already known.",
   inputSchema: z.object({
-    organizationId: z.string().min(1),
     query: z.string().min(1),
     limit: z.number().int().min(1).max(20).default(MEMORY_SEARCH_DEFAULT_LIMIT),
   }),
-  async execute({ organizationId, query, limit }) {
+  async execute({ query, limit }, ctx) {
+    const organizationId = requireOrganizationId(ctx);
     const response = supermemorySearchResponseSchema.parse(
       await requestSupermemory("/v4/search", {
         q: query,

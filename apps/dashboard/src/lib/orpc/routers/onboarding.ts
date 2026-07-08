@@ -1,16 +1,26 @@
+import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
   contentTriggers,
   githubIntegrations,
+  onboardingSuggestions,
   organizations,
 } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
+import { ORPCError } from "@orpc/server";
+import { and, desc, eq } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+import { AGENT_RUN_HARD_LIMIT_MS } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { getOnboardingAgentState } from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
+import {
+  dismissSuggestionInputSchema,
+  listSuggestionsInputSchema,
+  startAgentRunInputSchema,
+} from "@/schemas/onboarding-agent";
 
 const onboardingInputSchema = z.object({
   organizationId: organizationIdSchema,
@@ -76,5 +86,102 @@ export const onboardingRouter = {
             : onboardingCompleted,
         onboardingDismissed,
       };
+    }),
+  agentRun: authorizedProcedure
+    .input(onboardingInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const { ran, startedAt } = await getOnboardingAgentState(
+        input.organizationId
+      );
+      const running =
+        !ran &&
+        startedAt !== null &&
+        Date.now() - startedAt.getTime() < AGENT_RUN_HARD_LIMIT_MS;
+
+      return { ran, running, startedAt };
+    }),
+  startAgentRun: authorizedProcedure
+    .input(startAgentRunInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const { ran, startedAt } = await getOnboardingAgentState(
+        input.organizationId
+      );
+      const running =
+        !ran &&
+        startedAt !== null &&
+        Date.now() - startedAt.getTime() < AGENT_RUN_HARD_LIMIT_MS;
+      if (running) {
+        throw new ORPCError("CONFLICT", {
+          message: "An onboarding agent run is already in progress",
+        });
+      }
+
+      const workflowRunId = await triggerOnboardingAgent({
+        domain: input.domain,
+        organizationId: input.organizationId,
+      });
+
+      return { workflowRunId };
+    }),
+  suggestions: authorizedProcedure
+    .input(listSuggestionsInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const filters = [
+        eq(onboardingSuggestions.organizationId, input.organizationId),
+      ];
+      if (!input.includeDismissed) {
+        filters.push(eq(onboardingSuggestions.dismissed, false));
+      }
+
+      return await db.query.onboardingSuggestions.findMany({
+        orderBy: [desc(onboardingSuggestions.createdAt)],
+        where: and(...filters),
+      });
+    }),
+  dismissSuggestion: authorizedProcedure
+    .input(dismissSuggestionInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const updated = await db
+        .update(onboardingSuggestions)
+        .set({ dismissed: true })
+        .where(
+          and(
+            eq(onboardingSuggestions.id, input.suggestionId),
+            eq(onboardingSuggestions.organizationId, input.organizationId)
+          )
+        )
+        .returning({ id: onboardingSuggestions.id });
+
+      if (!updated[0]) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Suggestion not found",
+        });
+      }
+
+      return { id: updated[0].id };
     }),
 };

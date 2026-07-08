@@ -15,5 +15,8 @@ export const onboardingProfileSchema = z.object({
   competitors: z.array(z.string()),
   memoriesSaved: z.array(z.string()),
   skillEditsApplied: z.array(z.string()),
+  brandUpdatesApplied: z.array(z.string()),
+  referencesAdded: z.array(z.string()),
+  suggestionsCreated: z.array(z.string()),
   sources: z.array(z.string()),
 });
