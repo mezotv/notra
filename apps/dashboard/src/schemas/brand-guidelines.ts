@@ -190,7 +190,7 @@ export const styleguideFontSchema = z.union([
     .object({
       fontFamily: styleguideTextSchema,
       fontWeight: optionalStyleguideTextOrNumberSchema,
-      weight: optionalStyleguideTextSchema,
+      weight: optionalStyleguideTextOrNumberSchema,
       fontSize: optionalStyleguideTextSchema,
       size: optionalStyleguideTextSchema,
       lineHeight: optionalStyleguideTextOrNumberSchema,
@@ -208,7 +208,7 @@ export const styleguideTokenValueSchema = z.union([
   z.number().transform((value) => ({ value: String(value), metadata: null })),
   z
     .looseObject({
-      value: optionalStyleguideTextSchema,
+      value: optionalStyleguideTextOrNumberSchema,
       boxShadow: optionalStyleguideTextSchema,
       borderRadius: optionalStyleguideTextSchema,
     })
