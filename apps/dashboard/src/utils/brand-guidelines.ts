@@ -8,6 +8,12 @@ import {
   BRAND_GUIDELINE_LEADING_WWW_REGEX,
   BRAND_GUIDELINE_TOKEN_GROUPS,
 } from "@/constants/brand-guidelines";
+import {
+  styleguideColorSchema,
+  styleguideFontSchema,
+  styleguideRecordSchema,
+  styleguideTokenValueSchema,
+} from "@/schemas/brand-guidelines";
 import type {
   NormalizedAsset,
   NormalizedColor,
@@ -20,18 +26,6 @@ import type {
   BrandGuidelineTokenType,
 } from "@/types/hooks/brand-guidelines";
 import { selectPreferredBrandGuidelineAssets } from "@/utils/brand-guideline-assets";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function stringValue(value: unknown) {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function objectValue(value: unknown) {
-  return isRecord(value) ? value : null;
-}
 
 export function normalizeBrandGuidelineSourceUrl(rawUrl: string) {
   return new URL(rawUrl).href;
@@ -98,58 +92,29 @@ function normalizeTokenType(type: string): BrandGuidelineTokenType {
   return "unknown";
 }
 
-function getDarkColorValue(color: Record<string, unknown>) {
-  return (
-    stringValue(color.darkHex) ??
-    stringValue(color.darkValue) ??
-    stringValue(color.dark)
-  );
-}
-
 export function extractStyleguideColors(
   styleguide: ContextDevStyleguideResponse
 ): NormalizedColor[] {
-  const colors = objectValue(styleguide.styleguide.colors);
+  const colors = styleguideRecordSchema.safeParse(styleguide.styleguide.colors);
 
-  if (!colors) {
+  if (!colors.success) {
     return [];
   }
 
-  return Object.entries(colors).flatMap(([key, value], index) => {
-    if (
-      typeof value === "string" &&
-      BRAND_GUIDELINE_HEX_COLOR_REGEX.test(value)
-    ) {
-      return [
-        {
-          role: normalizeColorRole(key),
-          name: key,
-          lightValue: value,
-          darkValue: null,
-          usage: null,
-          sortOrder: index,
-        },
-      ];
-    }
+  return Object.entries(colors.data).flatMap(([key, value], index) => {
+    const color = styleguideColorSchema.safeParse(value);
 
-    const color = objectValue(value);
-    const hex = stringValue(color?.hex);
-    const darkHex = color ? getDarkColorValue(color) : null;
-
-    if (!hex || !BRAND_GUIDELINE_HEX_COLOR_REGEX.test(hex)) {
+    if (!color.success) {
       return [];
     }
 
     return [
       {
         role: normalizeColorRole(key),
-        name: stringValue(color?.name) ?? key,
-        lightValue: hex,
-        darkValue:
-          darkHex && BRAND_GUIDELINE_HEX_COLOR_REGEX.test(darkHex)
-            ? darkHex
-            : null,
-        usage: stringValue(color?.usage),
+        name: color.data.name ?? key,
+        lightValue: color.data.hex,
+        darkValue: color.data.darkValue,
+        usage: color.data.usage,
         sortOrder: index,
       },
     ];
@@ -204,45 +169,37 @@ export function dedupeColors(colors: NormalizedColor[]) {
 export function extractFonts(
   styleguide: ContextDevStyleguideResponse
 ): NormalizedFont[] {
-  const typography = objectValue(styleguide.styleguide.typography);
+  const typography = styleguideRecordSchema.safeParse(
+    styleguide.styleguide.typography
+  );
 
-  if (!typography) {
+  if (!typography.success) {
     return [];
   }
 
-  const entries = Object.entries(typography).flatMap(([key, value]) => {
+  const entries = Object.entries(typography.data).flatMap(([key, value]) => {
     if (key === "headings") {
-      const headings = objectValue(value);
-      return headings ? Object.entries(headings) : [];
+      const headings = styleguideRecordSchema.safeParse(value);
+      return headings.success ? Object.entries(headings.data) : [];
     }
 
     return [[key, value] as const];
   });
 
   return entries.flatMap(([key, value], index) => {
-    const token = objectValue(value);
-    const family = stringValue(token?.fontFamily) ?? stringValue(value);
+    const font = styleguideFontSchema.safeParse(value);
 
-    if (!family) {
+    if (!font.success) {
       return [];
     }
 
     return [
       {
         role: normalizeFontRole(key),
-        family,
-        weight:
-          stringValue(token?.fontWeight) ??
-          stringValue(token?.weight) ??
-          (typeof token?.fontWeight === "number"
-            ? String(token.fontWeight)
-            : null),
-        size: stringValue(token?.fontSize) ?? stringValue(token?.size),
-        lineHeight:
-          stringValue(token?.lineHeight) ??
-          (typeof token?.lineHeight === "number"
-            ? String(token.lineHeight)
-            : null),
+        family: font.data.family,
+        weight: font.data.weight,
+        size: font.data.size,
+        lineHeight: font.data.lineHeight,
         source: "styleguide",
         sortOrder: index,
       },
@@ -255,26 +212,18 @@ function extractTokenGroup(
   groupName: string,
   startSortOrder: number
 ): NormalizedToken[] {
-  const group = objectValue(styleguide.styleguide[groupName]);
+  const group = styleguideRecordSchema.safeParse(
+    styleguide.styleguide[groupName]
+  );
 
-  if (!group) {
+  if (!group.success) {
     return [];
   }
 
-  return Object.entries(group).flatMap(([key, value], index) => {
-    const stringToken = stringValue(value);
-    const numericToken =
-      typeof value === "number" && Number.isFinite(value)
-        ? String(value)
-        : null;
-    const recordToken = objectValue(value);
-    const recordValue =
-      stringValue(recordToken?.value) ??
-      stringValue(recordToken?.boxShadow) ??
-      stringValue(recordToken?.borderRadius);
-    const tokenValue = stringToken ?? numericToken ?? recordValue;
+  return Object.entries(group.data).flatMap(([key, value], index) => {
+    const token = styleguideTokenValueSchema.safeParse(value);
 
-    if (!tokenValue) {
+    if (!token.success) {
       return [];
     }
 
@@ -282,9 +231,9 @@ function extractTokenGroup(
       {
         type: normalizeTokenType(groupName),
         name: key,
-        value: tokenValue,
+        value: token.data.value,
         source: "styleguide",
-        metadata: recordToken,
+        metadata: token.data.metadata,
         sortOrder: startSortOrder + index,
       },
     ];
