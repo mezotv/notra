@@ -2,7 +2,9 @@ import { generateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { db } from "@notra/db/drizzle";
 import { postCollections } from "@notra/db/schema";
 import { isLegacyPostCollectionName } from "@notra/db/utils/post-collections";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
+
+const POSITIVE_INTEGER_REGEX = /^\d+$/;
 
 function hasFlag(name: string) {
   return process.argv.includes(`--${name}`);
@@ -16,15 +18,24 @@ function getArgValue(name: string) {
 
 async function main() {
   const dryRun = hasFlag("dry-run");
+  const redoBackfilled = hasFlag("redo-backfilled");
   const organizationId = getArgValue("org");
   const limitValue = getArgValue("limit");
+  if (limitValue && !POSITIVE_INTEGER_REGEX.test(limitValue)) {
+    throw new Error(`Invalid --limit value: ${limitValue}`);
+  }
+
   const limit = limitValue ? Number.parseInt(limitValue, 10) : undefined;
 
   if (limitValue && (!limit || limit <= 0)) {
     throw new Error(`Invalid --limit value: ${limitValue}`);
   }
 
-  const filters = [eq(postCollections.nameSource, "generated")];
+  const filters = [
+    redoBackfilled
+      ? inArray(postCollections.nameSource, ["generated", "backfill"])
+      : eq(postCollections.nameSource, "generated"),
+  ];
   if (organizationId) {
     filters.push(eq(postCollections.organizationId, organizationId));
   }
@@ -34,25 +45,31 @@ async function main() {
       id: postCollections.id,
       organizationId: postCollections.organizationId,
       name: postCollections.name,
+      nameSource: postCollections.nameSource,
     })
     .from(postCollections)
     .where(and(...filters))
     .orderBy(desc(postCollections.createdAt));
 
-  const legacyCollections = candidates.filter((collection) =>
-    isLegacyPostCollectionName(collection.name)
+  const eligibleCollections = candidates.filter(
+    (collection) =>
+      isLegacyPostCollectionName(collection.name) ||
+      (redoBackfilled && collection.nameSource === "backfill")
   );
-  const targets = limit ? legacyCollections.slice(0, limit) : legacyCollections;
+  const targets = limit
+    ? eligibleCollections.slice(0, limit)
+    : eligibleCollections;
 
   console.log(
-    `Found ${candidates.length} generated-name collections, ${legacyCollections.length} with legacy titles, processing ${targets.length}${dryRun ? " (dry run)" : ""}`
+    `Found ${candidates.length} candidate collections, ${eligibleCollections.length} eligible, processing ${targets.length}${dryRun ? " (dry run)" : ""}`
   );
 
   let renamed = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const collection of targets) {
+  for (const [index, collection] of targets.entries()) {
+    const progress = `(${index + 1}/${targets.length})`;
     try {
       const title = await generateCollectionTitle({
         collectionId: collection.id,
@@ -63,14 +80,21 @@ async function main() {
 
       if (title) {
         renamed += 1;
-        console.log(`[${collection.id}] "${collection.name}" -> "${title}"`);
+        console.log(
+          `${progress} [${collection.id}] "${collection.name}" -> "${title}"`
+        );
       } else {
         skipped += 1;
-        console.log(`[${collection.id}] skipped (no posts or empty title)`);
+        console.log(
+          `${progress} [${collection.id}] skipped (no posts or empty title)`
+        );
       }
     } catch (error) {
       failed += 1;
-      console.error(`[${collection.id}] failed to generate title:`, error);
+      console.error(
+        `${progress} [${collection.id}] failed to generate title:`,
+        error
+      );
     }
   }
 
