@@ -6,9 +6,6 @@
     "includes": [
       "!packages/ui/src",
       "!packages/db/migrations",
-      "!packages/agents/onboarding/app",
-      "!packages/agents/onboarding/components",
-      "!packages/agents/onboarding/lib",
       "!.temp",
       "!**/*.astro"
     ]
