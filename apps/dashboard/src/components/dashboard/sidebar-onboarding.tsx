@@ -13,7 +13,7 @@ import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { localStorageKeys } from "@/constants/storage";
@@ -24,6 +24,26 @@ import {
 } from "@/lib/hooks/use-onboarding";
 
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
+
+// localStorage-backed collapsed state, exposed as an external store so the
+// component derives it during render instead of syncing it via effects.
+const collapsedListeners = new Set<() => void>();
+
+function subscribeToCollapsedStorage(callback: () => void) {
+  collapsedListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    collapsedListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function setStoredCollapsed(storageKey: string, value: boolean) {
+  localStorage.setItem(storageKey, String(value));
+  for (const listener of collapsedListeners) {
+    listener();
+  }
+}
 
 export function SidebarOnboarding() {
   const { activeOrganization } = useOrganizationsContext();
@@ -39,31 +59,21 @@ export function SidebarOnboarding() {
   const { data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
   });
-  const [collapsed, setCollapsed] = useState(false);
 
   const storageKey = localStorageKeys.sidebarOnboardingCollapsed(orgId);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(storageKey);
-    if (stored !== null) {
-      setCollapsed(stored === "true");
-      return;
-    }
-    if (!data) {
-      return;
-    }
-    const hasCompletedStep =
-      data.hasBrandIdentity || data.hasIntegration || data.hasSchedule;
-    setCollapsed(hasCompletedStep);
-  }, [storageKey, data]);
+  const storedCollapsed = useSyncExternalStore(
+    subscribeToCollapsedStorage,
+    () => localStorage.getItem(storageKey),
+    () => null
+  );
+  const hasCompletedStep =
+    data?.hasBrandIdentity || data?.hasIntegration || data?.hasSchedule;
+  const collapsed =
+    storedCollapsed === null ? !!hasCompletedStep : storedCollapsed === "true";
 
   const toggleCollapsed = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem(storageKey, String(next));
-      return next;
-    });
-  }, [storageKey]);
+    setStoredCollapsed(storageKey, !collapsed);
+  }, [storageKey, collapsed]);
 
   const hasActiveSubscription = customer?.subscriptions.some(
     (subscription) => !subscription.addOn && subscription.status === "active"

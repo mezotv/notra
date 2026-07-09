@@ -94,6 +94,22 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
+function normalizeIntegrationError(error: unknown): Error {
+  const errorWithCode = error as Error & { code?: string };
+  if (
+    errorWithCode?.code === "INTEGRATION_NOT_FOUND" ||
+    (error instanceof Error &&
+      error.message.includes("integrations have been deleted"))
+  ) {
+    const integrationError = new Error(
+      error instanceof Error ? error.message : "Integration not found"
+    ) as Error & { code?: string };
+    integrationError.code = "INTEGRATION_NOT_FOUND";
+    return integrationError;
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 interface PageClientProps {
   organizationSlug: string;
 }
@@ -158,6 +174,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Unsupported schedule output");
       }
 
+      const lookbackWindow = trigger.lookbackWindow ?? "last_7_days";
+      const outputConfig = trigger.outputConfig ?? {};
+
       try {
         return await dashboardOrpc.automation.schedules.update.call({
           organizationId,
@@ -167,28 +186,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           sourceConfig: { cron: cronConfig },
           targets: trigger.targets,
           outputType: trigger.outputType,
-          lookbackWindow: trigger.lookbackWindow ?? "last_7_days",
-          outputConfig: trigger.outputConfig ?? {},
+          lookbackWindow,
+          outputConfig,
           enabled: !trigger.enabled,
           autoPublish: trigger.autoPublish,
         });
       } catch (error) {
-        const errorWithCode = error as Error & { code?: string };
-        if (
-          errorWithCode?.code === "INTEGRATION_NOT_FOUND" ||
-          (error instanceof Error &&
-            error.message.includes("integrations have been deleted"))
-        ) {
-          const integrationError = new Error(
-            error instanceof Error ? error.message : "Integration not found"
-          ) as Error & {
-            code?: string;
-          };
-          integrationError.code = "INTEGRATION_NOT_FOUND";
-          throw integrationError;
-        }
-
-        throw error;
+        throw normalizeIntegrationError(error);
       }
     },
     onError: (error) => {
