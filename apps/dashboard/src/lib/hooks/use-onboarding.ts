@@ -24,7 +24,10 @@ export function useOnboardingStatus(
 
 export function useOnboardingAgentRun(organizationId: string) {
   const queryClient = useQueryClient();
-  const wasRunningRef = useRef(false);
+  const previousRunRef = useRef<{
+    organizationId: string;
+    running: boolean;
+  } | null>(null);
 
   const query = useQuery(
     dashboardOrpc.onboarding.agentRun.queryOptions({
@@ -39,8 +42,15 @@ export function useOnboardingAgentRun(organizationId: string) {
   const running = query.data?.running ?? false;
 
   // When a run finishes, refresh the checklist and suggestions it produced.
+  // Scoped per organization so switching orgs never reads as a run finishing.
   useEffect(() => {
-    if (organizationId && wasRunningRef.current && !running) {
+    const previous = previousRunRef.current;
+    if (
+      organizationId &&
+      previous?.organizationId === organizationId &&
+      previous.running &&
+      !running
+    ) {
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.onboarding.get.queryKey({
           input: { organizationId },
@@ -52,7 +62,9 @@ export function useOnboardingAgentRun(organizationId: string) {
         }),
       });
     }
-    wasRunningRef.current = running;
+    previousRunRef.current = organizationId
+      ? { organizationId, running }
+      : null;
   }, [running, organizationId, queryClient]);
 
   return query;
@@ -93,32 +105,35 @@ export function useDismissOnboardingSuggestion() {
  * Owns the create-from-suggestion flow shared by the automation pages:
  * remember which suggestion opened the create dialog, dismiss it when the
  * dialog succeeds, and forget it when the dialog closes without creating.
+ * The pending suggestion is bound to its organization so completing a
+ * create after switching organizations never dismisses the wrong one.
  */
 export function useCreateFromSuggestion(organizationId: string | undefined) {
-  const [pendingSuggestionId, setPendingSuggestionId] = useState<string | null>(
-    null
-  );
+  const [pending, setPending] = useState<{
+    organizationId: string;
+    suggestionId: string;
+  } | null>(null);
   const { mutate: dismissSuggestion } = useDismissOnboardingSuggestion();
 
-  const beginCreate = useCallback((suggestionId: string) => {
-    setPendingSuggestionId(suggestionId);
-  }, []);
+  const beginCreate = useCallback(
+    (suggestionId: string) => {
+      setPending(organizationId ? { organizationId, suggestionId } : null);
+    },
+    [organizationId]
+  );
 
   const handleDialogOpenChange = useCallback((open: boolean) => {
     if (!open) {
-      setPendingSuggestionId(null);
+      setPending(null);
     }
   }, []);
 
   const handleCreateSuccess = useCallback(() => {
-    if (organizationId && pendingSuggestionId) {
-      dismissSuggestion({
-        organizationId,
-        suggestionId: pendingSuggestionId,
-      });
-      setPendingSuggestionId(null);
+    if (pending && pending.organizationId === organizationId) {
+      dismissSuggestion(pending);
     }
-  }, [organizationId, pendingSuggestionId, dismissSuggestion]);
+    setPending(null);
+  }, [organizationId, pending, dismissSuggestion]);
 
   return { beginCreate, handleDialogOpenChange, handleCreateSuccess };
 }
