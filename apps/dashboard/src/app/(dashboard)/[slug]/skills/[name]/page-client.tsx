@@ -79,18 +79,18 @@ export default function PageClient({ slug, name }: PageClientProps) {
     enabled: !!organizationId,
   });
 
-  useEffect(() => {
-    if (skill && !original) {
-      setOriginal({
-        name: skill.name,
-        description: skill.description,
-        content: skill.content,
-      });
-      setNameInput(skill.name);
-      setDescription(skill.description);
-      setContent(skill.content);
-    }
-  }, [skill, original]);
+  // Initialize editable state from the query result during render (one-time,
+  // guarded by `original` being null) instead of via a setState-in-effect.
+  if (skill && !original) {
+    setOriginal({
+      name: skill.name,
+      description: skill.description,
+      content: skill.content,
+    });
+    setNameInput(skill.name);
+    setDescription(skill.description);
+    setContent(skill.content);
+  }
 
   const hasChanges =
     !!original &&

@@ -49,7 +49,11 @@ export function ConnectedAccountsSection({
       });
 
       if (result.error) {
-        toast.error(result.error.message ?? `Failed to unlink ${provider}`);
+        let message = result.error.message;
+        if (message === undefined) {
+          message = `Failed to unlink ${provider}`;
+        }
+        toast.error(message);
         setLoadingProvider(null);
         return;
       }

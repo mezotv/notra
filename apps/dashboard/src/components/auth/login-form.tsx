@@ -86,9 +86,11 @@ export function LoginForm({
       });
 
       if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to sign in. Please try again."
-        );
+        let message = result.error.message;
+        if (message === undefined) {
+          message = "Failed to sign in. Please try again.";
+        }
+        toast.error(message);
         authInFlightRef.current = false;
         setAuthMethod(null);
         return;
@@ -98,7 +100,7 @@ export function LoginForm({
       if (onSuccess) {
         onSuccess();
       } else {
-        window.location.href = callbackURL;
+        window.location.assign(callbackURL);
       }
     } catch (error) {
       console.error("Email login error:", error);

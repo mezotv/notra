@@ -66,7 +66,11 @@ export function LoginDetailsSection({
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to change password");
+          let message = result.error.message;
+          if (message == null) {
+            message = "Failed to change password";
+          }
+          toast.error(message);
           setIsChangingPassword(false);
           return;
         }

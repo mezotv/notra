@@ -68,11 +68,10 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
       return;
     }
     setLoading(true);
+    const successUrl = activeOrganization?.slug
+      ? `${window.location.origin}/${activeOrganization.slug}/settings/credits?success=true`
+      : undefined;
     try {
-      const successUrl = activeOrganization?.slug
-        ? `${window.location.origin}/${activeOrganization.slug}/settings/credits?success=true`
-        : undefined;
-
       const credits = activeAmount * 100;
 
       const result = await attach({
@@ -85,11 +84,13 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
       });
 
       if (result.paymentUrl) {
-        window.location.href = result.paymentUrl;
+        window.location.assign(result.paymentUrl);
       } else {
         await refetch();
         toast.success("Credits added successfully");
-        onSuccess?.();
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (err) {
       toast.error(

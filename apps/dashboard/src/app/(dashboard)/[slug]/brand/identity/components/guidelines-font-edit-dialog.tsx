@@ -58,15 +58,16 @@ export function GuidelinesFontEditDialog({
   const { family, lineHeight, role, size, weight } = state;
 
   const handleSave = async () => {
+    const payload = {
+      fontId: font.id,
+      role,
+      family: family.trim(),
+      weight: weight.trim() || null,
+      size: size.trim() || null,
+      lineHeight: lineHeight.trim() || null,
+    };
     try {
-      await update.mutateAsync({
-        fontId: font.id,
-        role,
-        family: family.trim(),
-        weight: weight.trim() || null,
-        size: size.trim() || null,
-        lineHeight: lineHeight.trim() || null,
-      });
+      await update.mutateAsync(payload);
       toast.success("Font updated");
       onOpenChange(false);
     } catch (error) {

@@ -111,9 +111,9 @@ export function PricingClient({ slug }: PricingClientProps) {
       });
 
       if (result.paymentUrl) {
-        window.location.href = result.paymentUrl;
+        window.location.assign(result.paymentUrl);
       } else {
-        window.location.href = `/${slug}`;
+        window.location.assign(`/${slug}`);
       }
     } catch (err) {
       toast.error(

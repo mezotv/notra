@@ -13,7 +13,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavMain } from "./nav-main";
@@ -59,9 +59,11 @@ export function DashboardSidebar({
   const isSubpage = isSettingsRoute || isChatRoute;
 
   const hasVisitedMainRef = useRef(false);
-  if (!isSubpage) {
-    hasVisitedMainRef.current = true;
-  }
+  useEffect(() => {
+    if (!isSubpage) {
+      hasVisitedMainRef.current = true;
+    }
+  }, [isSubpage]);
 
   function handleBack() {
     if (hasVisitedMainRef.current) {

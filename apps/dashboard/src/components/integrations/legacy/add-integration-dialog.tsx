@@ -56,6 +56,11 @@ interface ProbeResult {
   description?: string;
 }
 
+const TOKEN_PROMPT_PROBE_STATUSES = new Set<ProbeResult["status"]>([
+  "not_found",
+  "unauthorized",
+]);
+
 function getRepoKey(owner: string, repo: string) {
   return `${owner.toLowerCase()}/${repo.toLowerCase()}`;
 }
@@ -95,6 +100,8 @@ export function LegacyAddIntegrationDialog({
 
       setProbeStatus("loading");
 
+      const normalizedToken = token || undefined;
+
       try {
         if (controller.signal.aborted) {
           return null;
@@ -103,10 +110,10 @@ export function LegacyAddIntegrationDialog({
         const data = (await dashboardOrpc.github.probeRepository.call({
           owner,
           repo,
-          token: token || undefined,
+          token: normalizedToken,
         })) as ProbeResult;
 
-        if (data.status === "not_found" || data.status === "unauthorized") {
+        if (TOKEN_PROMPT_PROBE_STATUSES.has(data.status)) {
           setProbeStatus("not_found");
           setTokenOpen(true);
           return data;
@@ -141,10 +148,17 @@ export function LegacyAddIntegrationDialog({
     []
   );
 
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setHasAttemptedSubmit(false);
+    }
+  }
+
   useEffect(() => {
     if (open) {
       initializedBranchReposRef.current = new Set();
-      setHasAttemptedSubmit(false);
     }
   }, [open]);
 

@@ -121,8 +121,8 @@ export function TwitterPreview({
           title,
           markdown: draftMarkdown,
         });
-      } else {
-        onApprove?.();
+      } else if (onApprove) {
+        onApprove();
       }
       dispatch({ type: "userActionChanged", userAction: "none" });
       toast.success("Saved as draft", { id: toastId });

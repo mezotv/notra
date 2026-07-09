@@ -303,7 +303,11 @@ export function OrgSelector() {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to switch organization");
+        let message = error.message;
+        if (!message) {
+          message = "Failed to switch organization";
+        }
+        toast.error(message);
         setIsSwitching(false);
         return;
       }

@@ -83,6 +83,7 @@ export function DeleteAccountDialog({
 
   async function handleDeleteAccount() {
     setIsDeleting(true);
+    let deleteError: { message?: string | null } | null = null;
     try {
       if (ownedOrganizations.length > 0) {
         const transfers: TransferDecision[] = [
@@ -112,15 +113,20 @@ export function DeleteAccountDialog({
         callbackURL: "/",
       });
 
-      if (result?.error) {
-        toast.error(result.error.message ?? "Failed to delete account");
-      } else {
-        toast.success("Account deleted successfully");
-        router.push("/");
+      if (result) {
+        deleteError = result.error;
       }
     } catch (error) {
       console.error("Delete account error:", error);
       toast.error("Failed to delete account");
+      setIsDeleting(false);
+      return;
+    }
+    if (deleteError) {
+      toast.error(deleteError.message ?? "Failed to delete account");
+    } else {
+      toast.success("Account deleted successfully");
+      router.push("/");
     }
     setIsDeleting(false);
   }

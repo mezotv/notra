@@ -88,6 +88,13 @@ function normalizeMemberRole(role: string): MemberRole {
   return role === "admin" ? "admin" : "member";
 }
 
+function messageOrFallback(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message || fallback;
+}
+
 export function MemberActions({ member }: MemberActionsProps) {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
@@ -193,7 +200,9 @@ export function MemberActions({ member }: MemberActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to remove member");
+        toast.error(
+          messageOrFallback(error.message, "Failed to remove member")
+        );
         dispatch({ type: "removeFinished" });
         return;
       }

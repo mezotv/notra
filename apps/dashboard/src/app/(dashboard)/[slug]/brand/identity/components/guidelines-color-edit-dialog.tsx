@@ -74,13 +74,15 @@ export function GuidelinesColorEditDialog({
       usage: usage.trim() || null,
     };
 
+    const successMessage = isCreate ? "Color added" : "Color updated";
+
     try {
       if (color) {
         await update.mutateAsync({ colorId: color.id, ...payload });
       } else {
         await create.mutateAsync(payload);
       }
-      toast.success(isCreate ? "Color added" : "Color updated");
+      toast.success(successMessage);
       onOpenChange(false);
     } catch (error) {
       toast.error(

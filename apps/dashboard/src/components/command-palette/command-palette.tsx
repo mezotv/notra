@@ -35,6 +35,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -75,6 +76,22 @@ const BRAILLE_FRAMES = [
 ] as const;
 const BRAILLE_INTERVAL_MS = 80;
 
+const emptySubscribe = () => () => {
+  // Platform never changes during a session; nothing to unsubscribe.
+};
+
+let cachedIsApplePlatform: boolean | null = null;
+
+function readIsApplePlatform(): boolean {
+  if (cachedIsApplePlatform === null) {
+    const platform = navigator.platform || navigator.userAgent;
+    cachedIsApplePlatform = APPLE_PLATFORM_PATTERN.test(platform);
+  }
+  return cachedIsApplePlatform;
+}
+
+const getServerIsApplePlatform = () => true;
+
 function BrailleSpinner({ className }: { className?: string }) {
   const [frame, setFrame] = useState(0);
 
@@ -100,7 +117,11 @@ export function CommandPalette() {
   const { activeOrganization } = useOrganizationsContext();
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [isApplePlatform, setIsApplePlatform] = useState(true);
+  const isApplePlatform = useSyncExternalStore(
+    emptySubscribe,
+    readIsApplePlatform,
+    getServerIsApplePlatform
+  );
   const [aiState, setAiState] = useState<
     | { status: "idle" }
     | { status: "loading" }
@@ -307,11 +328,6 @@ export function CommandPalette() {
     }
   }, [aiState.status, isNavigating, handleOpenChange]);
 
-  useEffect(() => {
-    const platform = navigator.platform || navigator.userAgent;
-    setIsApplePlatform(APPLE_PLATFORM_PATTERN.test(platform));
-  }, []);
-
   const groupedRoutes = useMemo(() => {
     const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
       Navigation: [],
@@ -369,6 +385,7 @@ export function CommandPalette() {
     const controller = new AbortController();
     abortRef.current = controller;
     setAiState({ status: "loading" });
+    let result: AiResult | undefined;
     try {
       const response = await fetch("/api/command-palette/navigate", {
         method: "POST",
@@ -383,26 +400,27 @@ export function CommandPalette() {
         setAiState({ status: "error" });
         return;
       }
-      const result = (await response.json()) as AiResult;
-      if (controller.signal.aborted) {
-        return;
-      }
-      if (result.action === "navigate" && result.path) {
-        navigateFromAi(result.path, "Opening");
-        return;
-      }
-      if (result.action === "chat") {
-        const qs = trimmed ? `?q=${encodeURIComponent(trimmed)}` : "";
-        navigateFromAi(`/${slug}/chat${qs}`, "Opening chat");
-        return;
-      }
-      setAiState({ status: "error" });
+      result = (await response.json()) as AiResult;
     } catch (error) {
       if ((error as Error).name === "AbortError") {
         return;
       }
       setAiState({ status: "error" });
+      return;
     }
+    if (controller.signal.aborted || !result) {
+      return;
+    }
+    if (result.action === "navigate" && result.path) {
+      navigateFromAi(result.path, "Opening");
+      return;
+    }
+    if (result.action === "chat") {
+      const qs = trimmed ? `?q=${encodeURIComponent(trimmed)}` : "";
+      navigateFromAi(`/${slug}/chat${qs}`, "Opening chat");
+      return;
+    }
+    setAiState({ status: "error" });
   }, [query, slug, navigateFromAi]);
 
   if (!slug) {

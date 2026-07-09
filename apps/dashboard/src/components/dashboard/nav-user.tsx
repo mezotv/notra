@@ -33,12 +33,18 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
+
+const emptySubscribe = () => () => {
+  // No external store to unsubscribe from; used only for hydration detection.
+};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function NavUser() {
   const router = useRouter();
@@ -54,8 +60,12 @@ export function NavUser() {
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const isRedirectingRef = useRef(false);
+  const hasHydrated = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  );
   const { activeOrganization } = useOrganizationsContext();
   const { hidePersonalData } = useHidePersonalData();
 
@@ -66,18 +76,14 @@ export function NavUser() {
   useHotkey("D", toggleTheme);
 
   useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
-  useEffect(() => {
     // Wait for hydration and auth resolution before redirecting unauthenticated users.
-    if (!hasHydrated || isPending || user || isRedirecting) {
+    if (!hasHydrated || isPending || user || isRedirectingRef.current) {
       return;
     }
 
-    setIsRedirecting(true);
+    isRedirectingRef.current = true;
     router.push("/login");
-  }, [hasHydrated, user, isPending, isRedirecting, router]);
+  }, [hasHydrated, user, isPending, router]);
 
   async function handleSignOut() {
     setIsSigningOut(true);

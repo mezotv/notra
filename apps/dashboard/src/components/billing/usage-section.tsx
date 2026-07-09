@@ -74,11 +74,13 @@ export function UsageSection() {
       ? (total?.[FEATURES.AI_CREDITS]?.sum ?? 0)
       : 0;
 
+  const balances = customer?.balances;
+
   const features = useMemo<FeatureData[]>(() => {
-    if (!customer?.balances) {
+    if (!balances) {
       return [];
     }
-    return Object.entries(customer.balances).map(([id, feature]) => {
+    return Object.entries(balances).map(([id, feature]) => {
       const balance =
         typeof feature?.remaining === "number" ? feature.remaining : null;
       const included =
@@ -92,7 +94,7 @@ export function UsageSection() {
         unlimited: feature?.unlimited === true,
       };
     });
-  }, [customer?.balances]);
+  }, [balances]);
 
   const limitedFeatures = features.filter(
     (feature) =>

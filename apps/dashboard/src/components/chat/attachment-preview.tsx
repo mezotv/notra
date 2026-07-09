@@ -6,9 +6,9 @@ import {
   DialogContent,
   DialogTitle,
 } from "@notra/ui/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
   isImageMimeType,
@@ -18,45 +18,27 @@ import {
 import { formatBytes } from "@/utils/format";
 
 function TextPreview({ url }: { url: string }) {
-  const [content, setContent] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setContent(null);
-    setError(null);
-    fetch(url, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`Failed to load (${response.status})`);
-        }
-        return response.text();
-      })
-      .then((text) => {
-        if (!controller.signal.aborted) {
-          setContent(text);
-        }
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setError(err instanceof Error ? err.message : "Failed to load file");
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [url]);
+  const { data: content, error } = useQuery({
+    queryKey: ["attachment-text-preview", url],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(url, { signal });
+      if (!response.ok) {
+        throw new Error(`Failed to load (${response.status})`);
+      }
+      return await response.text();
+    },
+    retry: false,
+  });
 
   if (error) {
     return (
       <div className="flex h-full items-center justify-center text-destructive text-sm">
-        {error}
+        {error.message}
       </div>
     );
   }
 
-  if (content === null) {
+  if (content === undefined) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">
         <Loader2Icon className="size-4 animate-spin" />

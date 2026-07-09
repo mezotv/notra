@@ -35,7 +35,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -55,6 +55,10 @@ import {
 } from "../../../../../../lib/hooks/use-brand-references";
 
 type Step = "source" | "tweet-url" | "import-x" | "custom";
+
+function pluralSuffix(count: number) {
+  return count === 1 ? "" : "s";
+}
 
 function useReferenceBalance() {
   const { check, data: customer } = useCustomer();
@@ -151,12 +155,17 @@ export function AddReferenceDialog({
   initialStep,
 }: AddReferenceDialogProps) {
   const [step, setStep] = useState<Step>(initialStep ?? "source");
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialStep, setPrevInitialStep] = useState(initialStep);
 
-  useEffect(() => {
+  // Adjust state during render when the dialog opens with a requested step.
+  if (open !== prevOpen || initialStep !== prevInitialStep) {
+    setPrevOpen(open);
+    setPrevInitialStep(initialStep);
     if (open && initialStep) {
       setStep(initialStep);
     }
-  }, [open, initialStep]);
+  }
 
   const handleClose = () => {
     setStep("source");
@@ -371,14 +380,13 @@ function ImportXStep({
   const [maxResults, setMaxResults] = useState(20);
   const { remaining } = useReferenceBalance();
 
+  // Derive the clamped value during render instead of syncing state in an effect.
+  const maxResultsCap = remaining !== null ? Math.min(20, remaining) : 20;
+  const clampedMaxResults = Math.max(1, Math.min(maxResults, maxResultsCap));
   const effectiveMax =
-    remaining !== null ? Math.min(maxResults, remaining) : maxResults;
-
-  useEffect(() => {
-    if (remaining !== null && remaining < maxResults) {
-      setMaxResults(Math.max(1, Math.min(20, remaining)));
-    }
-  }, [remaining, maxResults]);
+    remaining !== null
+      ? Math.min(clampedMaxResults, remaining)
+      : clampedMaxResults;
 
   const twitterAccounts =
     data?.accounts.filter((a) => a.provider === "twitter") ?? [];
@@ -403,7 +411,7 @@ function ImportXStep({
       });
       if (result.count > 0) {
         toast.success(
-          `Imported ${result.count} post${result.count === 1 ? "" : "s"} from @${account.username}`
+          `Imported ${result.count} post${pluralSuffix(result.count)} from @${account.username}`
         );
         onClose();
       } else {
@@ -465,10 +473,10 @@ function ImportXStep({
                   }
                 }}
                 type="number"
-                value={maxResults}
+                value={clampedMaxResults}
               />
             </div>
-            <ReferenceUsageInfo afterCount={maxResults} />
+            <ReferenceUsageInfo afterCount={clampedMaxResults} />
           </div>
         )}
 
@@ -635,12 +643,14 @@ function CustomTextStep({
       return;
     }
 
+    const trimmedNote = note.trim() || null;
+
     try {
       await createReference.mutateAsync({
         type: "custom",
         content: trimmed,
         metadata: null,
-        note: note.trim() || null,
+        note: trimmedNote,
         applicableTo,
       });
       toast.success("Reference added");

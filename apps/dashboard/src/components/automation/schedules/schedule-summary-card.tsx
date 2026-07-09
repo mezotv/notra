@@ -2,7 +2,7 @@
 
 import { Calendar02Icon, Clock04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import type { ScheduleSummaryCardProps } from "@/types/automation/schedule";
 import {
   computeNextRun,
@@ -12,14 +12,40 @@ import {
   getLocalTimezone,
 } from "@/utils/schedule-summary";
 
-export function ScheduleSummaryCard({ schedule }: ScheduleSummaryCardProps) {
-  const [now, setNow] = useState<Date | null>(null);
+const NOW_REFRESH_INTERVAL_MS = 60_000;
+const nowListeners = new Set<() => void>();
+let nowIntervalId: ReturnType<typeof setInterval> | null = null;
+let currentNow: Date | null = null;
 
-  useEffect(() => {
-    setNow(new Date());
-    const interval = setInterval(() => setNow(new Date()), 60_000);
-    return () => clearInterval(interval);
-  }, []);
+function subscribeToNow(listener: () => void) {
+  nowListeners.add(listener);
+  if (nowIntervalId === null) {
+    currentNow = new Date();
+    nowIntervalId = setInterval(() => {
+      currentNow = new Date();
+      for (const notify of nowListeners) {
+        notify();
+      }
+    }, NOW_REFRESH_INTERVAL_MS);
+  }
+  return () => {
+    nowListeners.delete(listener);
+    if (nowListeners.size === 0 && nowIntervalId !== null) {
+      clearInterval(nowIntervalId);
+      nowIntervalId = null;
+    }
+  };
+}
+
+const getNowSnapshot = () => currentNow;
+const getServerNowSnapshot = () => null;
+
+export function ScheduleSummaryCard({ schedule }: ScheduleSummaryCardProps) {
+  const now = useSyncExternalStore(
+    subscribeToNow,
+    getNowSnapshot,
+    getServerNowSnapshot
+  );
 
   const summary = formatScheduleSummary(schedule);
 

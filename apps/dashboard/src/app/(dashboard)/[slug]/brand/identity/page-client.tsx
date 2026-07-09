@@ -51,6 +51,19 @@ import { EmptyBrandIdentityState } from "./components/empty-brand-identity-state
 import { VoiceSelector } from "./components/voice-selector";
 import { BrandIdentityPageSkeleton } from "./skeleton";
 
+function buildDeleteSuccessMessage(
+  disabledSchedules: readonly unknown[] | null | undefined,
+  disabledEvents: readonly unknown[] | null | undefined
+): string {
+  const disabledCount =
+    (disabledSchedules?.length ?? 0) + (disabledEvents?.length ?? 0);
+  if (disabledCount === 0) {
+    return "Brand identity deleted";
+  }
+  const triggerText = disabledCount === 1 ? "trigger was" : "triggers were";
+  return `Brand identity deleted. ${disabledCount} ${triggerText} disabled.`;
+}
+
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
@@ -261,17 +274,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
       dispatchUi({ type: "set-delete-target-voice-id", voiceId: null });
 
-      const disabledCount =
-        (result.disabledSchedules?.length ?? 0) +
-        (result.disabledEvents?.length ?? 0);
-
-      if (disabledCount > 0) {
-        toast.success(
-          `Brand identity deleted. ${disabledCount} ${disabledCount === 1 ? "trigger was" : "triggers were"} disabled.`
-        );
-      } else {
-        toast.success("Brand identity deleted");
-      }
+      toast.success(
+        buildDeleteSuccessMessage(
+          result.disabledSchedules,
+          result.disabledEvents
+        )
+      );
     } catch (error) {
       toast.error(
         error instanceof Error

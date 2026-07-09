@@ -66,6 +66,7 @@ export default function KiboCodeBlockComponent({
   const [isSelected, setSelected, clearSelection] =
     useLexicalNodeSelection(nodeKey);
   const [localCode, setLocalCode] = useState(code);
+  const [prevCode, setPrevCode] = useState(code);
   const [isCopied, setIsCopied] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -76,10 +77,11 @@ export default function KiboCodeBlockComponent({
   const normalizedLanguage = language || "plain";
   const lineCount = Math.max(1, localCode.split("\n").length);
 
-  // Sync local code with prop
-  useEffect(() => {
+  // Sync local code with prop by adjusting state during render
+  if (code !== prevCode) {
+    setPrevCode(code);
     setLocalCode(code);
-  }, [code]);
+  }
 
   // Auto-resize textarea when content changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: localCode triggers resize

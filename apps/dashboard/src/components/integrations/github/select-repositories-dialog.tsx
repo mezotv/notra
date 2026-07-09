@@ -14,7 +14,7 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import type React from "react";
-import { isValidElement, useEffect, useState } from "react";
+import { isValidElement, useState } from "react";
 import { Button } from "@/components/button";
 import type { SelectRepositoriesDialogProps } from "@/types/integrations/github";
 import { RepositoryMultiSelect } from "./repository-multi-select";
@@ -40,12 +40,20 @@ export function SelectRepositoriesDialog({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
 
   const [selected, setSelected] = useState<string[]>(initialSelected);
+  const [prevResetInputs, setPrevResetInputs] = useState({
+    open,
+    initialSelected,
+  });
 
-  useEffect(() => {
+  if (
+    prevResetInputs.open !== open ||
+    prevResetInputs.initialSelected !== initialSelected
+  ) {
+    setPrevResetInputs({ open, initialSelected });
     if (open) {
       setSelected(initialSelected);
     }
-  }, [open, initialSelected]);
+  }
 
   const triggerElement =
     trigger && isValidElement(trigger) ? (

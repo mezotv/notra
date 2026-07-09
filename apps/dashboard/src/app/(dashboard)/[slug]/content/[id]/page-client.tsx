@@ -458,28 +458,13 @@ export default function PageClient({
     }
   }, []);
 
-  const currentMarkdownRef = useRef(currentMarkdown);
-  const selectionRef = useRef(selection);
-  const contextRef = useRef(context);
-  const contentTypeRef = useRef(data?.content?.contentType);
-  currentMarkdownRef.current = currentMarkdown;
-  selectionRef.current = selection;
-  contextRef.current = context;
-  contentTypeRef.current = data?.content?.contentType;
+  const contentType = data?.content?.contentType;
 
   const [chatError, setChatError] = useState<string | null>(null);
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
       api: `/api/organizations/${organizationId}/content/${contentId}/chat`,
-      body: () => ({
-        currentMarkdown:
-          contentTypeRef.current === "image" ? "" : currentMarkdownRef.current,
-        contentType: contentTypeRef.current,
-        selection: selectionRef.current ?? undefined,
-        context: contextRef.current,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }),
     }),
     onFinish: () => {
       clearSelection();
@@ -652,9 +637,20 @@ export default function PageClient({
 
   const handleAiEdit = useCallback(
     async (instruction: string) => {
-      await sendMessage({ text: instruction });
+      await sendMessage(
+        { text: instruction },
+        {
+          body: {
+            currentMarkdown: contentType === "image" ? "" : currentMarkdown,
+            contentType,
+            selection: selection ?? undefined,
+            context,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          },
+        }
+      );
     },
-    [sendMessage]
+    [sendMessage, contentType, currentMarkdown, selection, context]
   );
 
   const chatInputSection = (

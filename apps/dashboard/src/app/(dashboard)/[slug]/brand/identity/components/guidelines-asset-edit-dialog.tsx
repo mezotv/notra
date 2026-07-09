@@ -59,6 +59,28 @@ interface AssetDialogState {
   variant: BrandGuidelineAssetVariant;
 }
 
+interface AssetUpload {
+  aspectRatio: number | null;
+  format: string | null;
+  height: number | null;
+  key: string;
+  mimeType: string;
+  url: string;
+  width: number | null;
+}
+
+function toAssetUploadFields(upload: AssetUpload | undefined) {
+  return {
+    aspectRatio: upload?.aspectRatio,
+    format: upload?.format,
+    height: upload?.height,
+    mimeType: upload?.mimeType,
+    storageKey: upload?.key,
+    url: upload?.url,
+    width: upload?.width,
+  };
+}
+
 function updateAssetDialogState(
   state: AssetDialogState,
   next: Partial<AssetDialogState>
@@ -236,18 +258,10 @@ export function GuidelinesAssetEditDialog({
 
     setState({ saving: true });
 
+    const successMessage = isCreate ? "Asset added" : "Asset updated";
+
     try {
-      let upload:
-        | {
-            aspectRatio: number | null;
-            format: string | null;
-            height: number | null;
-            key: string;
-            mimeType: string;
-            url: string;
-            width: number | null;
-          }
-        | undefined;
+      let upload: AssetUpload | undefined;
 
       if (file) {
         const [uploaded, dimensions] = await Promise.all([
@@ -266,16 +280,10 @@ export function GuidelinesAssetEditDialog({
 
       if (asset) {
         await update.mutateAsync({
-          aspectRatio: upload?.aspectRatio,
+          ...toAssetUploadFields(upload),
           assetId: asset.id,
-          format: upload?.format,
-          height: upload?.height,
           kind,
-          mimeType: upload?.mimeType,
-          storageKey: upload?.key,
-          url: upload?.url,
           variant,
-          width: upload?.width,
         });
       } else if (upload) {
         await create.mutateAsync({
@@ -290,7 +298,7 @@ export function GuidelinesAssetEditDialog({
           width: upload.width,
         });
       }
-      toast.success(isCreate ? "Asset added" : "Asset updated");
+      toast.success(successMessage);
       setState({ saving: false });
       onOpenChange(false);
     } catch (error) {

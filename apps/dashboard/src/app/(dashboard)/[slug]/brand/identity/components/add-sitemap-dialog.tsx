@@ -63,11 +63,12 @@ export function AddSitemapDialog({
     }
 
     const normalizedUrl = normalizeSitemapUrl(trimmedUrl);
+    const trimmedLabel = label.trim() || undefined;
 
     try {
       await createSitemap.mutateAsync({
         url: normalizedUrl,
-        label: label.trim() || undefined,
+        label: trimmedLabel,
       });
       toast.success("Sitemap added");
       handleClose();

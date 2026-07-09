@@ -154,14 +154,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     handleGitHubInstalled();
   }, [searchParams, organizationId, handleGitHubInstalled]);
 
-  useHotkey(
-    "C",
-    () => (isConnected ? handleAddAccount() : handleOpenConnect()),
-    {
-      enabled: !!organizationId,
-    }
-  );
-
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {
       return dashboardOrpc.github.app.saveRepositories.call({
@@ -218,6 +210,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const handleConnect = openInstallTab;
 
   const handleAddAccount = openInstallTab;
+
+  useHotkey(
+    "C",
+    () => (isConnected ? handleAddAccount() : handleOpenConnect()),
+    {
+      enabled: !!organizationId,
+    }
+  );
 
   const handleDisconnect = () => {
     disconnectMutation.mutate();

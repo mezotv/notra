@@ -23,21 +23,34 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { detectPlatform } from "@/lib/cli-auth/platform";
 import type { CliAuthFormProps } from "@/types/cli-auth/form";
 
+function subscribeToNothing() {
+  return () => {
+    // The platform never changes, so there is nothing to subscribe to.
+  };
+}
+
+function getServerPlatform(): string {
+  return "";
+}
+
 export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
   const [organizationId, setOrganizationId] = useState(
     organizations[0]?.id ?? ""
   );
-  const [name, setName] = useState("");
-
-  useEffect(() => {
-    setName(`Notra CLI on ${detectPlatform()}`);
-  }, []);
+  const platform = useSyncExternalStore(
+    subscribeToNothing,
+    detectPlatform,
+    getServerPlatform
+  );
+  const defaultName = platform ? `Notra CLI on ${platform}` : "";
+  const [editedName, setEditedName] = useState<string | null>(null);
+  const name = editedName ?? defaultName;
 
   const selectedOrg = useMemo(
     () => organizations.find((o) => o.id === organizationId) ?? null,
@@ -191,7 +204,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
           disabled={isPending}
           id="cli-auth-name"
           maxLength={100}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setEditedName(e.target.value)}
           placeholder="Notra CLI on my-laptop"
           value={name}
         />

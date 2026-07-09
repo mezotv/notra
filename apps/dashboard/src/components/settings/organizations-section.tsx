@@ -31,6 +31,13 @@ import { setLastVisitedOrganization } from "@/utils/cookies";
 import { getHeardAboutNotraLabel } from "@/utils/onboarding";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
+function messageOrFallback(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message || fallback;
+}
+
 export function OrganizationsSection() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -71,7 +78,9 @@ export function OrganizationsSection() {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to switch organization");
+        toast.error(
+          messageOrFallback(error.message, "Failed to switch organization")
+        );
         setIsSwitching(null);
         return;
       }
@@ -95,6 +104,7 @@ export function OrganizationsSection() {
     action: "leave" | "delete"
   ) {
     setIsProcessingOrgAction(org.id);
+    const activeOrganizationId = activeOrganization?.id;
 
     try {
       await dashboardOrpc.user.membership.applyAction.call({
@@ -123,7 +133,7 @@ export function OrganizationsSection() {
         },
       });
 
-      if (activeOrganization?.id === org.id) {
+      if (activeOrganizationId === org.id) {
         const firstOrg = freshOrgs[0];
         if (firstOrg) {
           await authClient.organization.setActive({

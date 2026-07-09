@@ -47,6 +47,13 @@ import type {
 type Invitation = InvitationPageClientProps["invitation"];
 type InvitationUser = NonNullable<InvitationPageClientProps["user"]>;
 
+function errorMessageOr(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message || fallback;
+}
+
 function invitationReducer(
   state: InvitationState,
   action: InvitationAction
@@ -140,7 +147,10 @@ function PageClient({
       if (res.error) {
         dispatch({
           type: "errorChanged",
-          error: res.error.message || "Failed to reject invitation",
+          error: errorMessageOr(
+            res.error.message,
+            "Failed to reject invitation"
+          ),
         });
         dispatch({ type: "rejectFinished" });
         return;

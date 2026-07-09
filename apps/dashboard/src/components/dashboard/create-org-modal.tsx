@@ -27,6 +27,13 @@ interface CreateOrgModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function messageOrFallback(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message || fallback;
+}
+
 export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -50,7 +57,9 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
         if (error) {
           setIsCreating(false);
-          toast.error(error.message || "Failed to create organization");
+          toast.error(
+            messageOrFallback(error.message, "Failed to create organization")
+          );
           return;
         }
 

@@ -45,18 +45,22 @@ export function FeedbackForm({
     }
 
     setIsSubmitting(true);
+    const sentimentValue = sentiment ?? undefined;
+    const organizationId = activeOrganization?.id;
     try {
       await dashboardOrpcClient.feedback.submit({
         message: trimmed,
-        sentiment: sentiment ?? undefined,
-        organizationId: activeOrganization?.id,
+        sentiment: sentimentValue,
+        organizationId,
         pageUrl: getFeedbackPageUrl(pathname),
       });
 
       toast.success("Thanks for the feedback!");
       setMessage("");
       setSentiment(null);
-      onSubmitted?.();
+      if (onSubmitted) {
+        onSubmitted();
+      }
     } catch (error) {
       const errMessage =
         error instanceof Error ? error.message : "Failed to send feedback";

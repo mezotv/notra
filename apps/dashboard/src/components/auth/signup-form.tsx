@@ -26,6 +26,12 @@ import {
 } from "@/utils/marketing-attribution";
 import { marketingAttributionUrlKeys } from "@/utils/marketing-attribution-keys";
 
+const SIGNUP_ERROR_FALLBACK = "Failed to sign up. Please try again.";
+
+function signupErrorMessage(message: string | null | undefined): string {
+  return message ?? SIGNUP_ERROR_FALLBACK;
+}
+
 const signupSchema = z.object({
   email: z
     .string()
@@ -138,17 +144,16 @@ export function SignupForm({
 
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod("email"));
+    const fallbackName = email.split("@")[0] || "User";
     try {
       const result = await authClient.signUp.email({
         email,
         password,
-        name: email.split("@")[0] || "User",
+        name: fallbackName,
       });
 
       if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to sign up. Please try again."
-        );
+        toast.error(signupErrorMessage(result.error.message));
         authInFlightRef.current = false;
         setAuthMethod(null);
         return;
@@ -159,7 +164,7 @@ export function SignupForm({
         onSuccess();
       } else {
         persistMarketingAttribution({ ...attribution, signupMethod: "email" });
-        window.location.href = buildCallbackUrl("email");
+        window.location.assign(buildCallbackUrl("email"));
       }
     } catch (error) {
       console.error("Email signup error:", error);

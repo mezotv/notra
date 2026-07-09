@@ -91,6 +91,8 @@ function ResetPasswordForm() {
 
     setIsLoading(true);
 
+    let hasResetError = false;
+    let resetErrorMessage: string | null | undefined;
     try {
       const result = await authClient.resetPassword({
         newPassword: password,
@@ -98,24 +100,31 @@ function ResetPasswordForm() {
       });
 
       if (result.error) {
-        if (result.error.message?.includes("expired")) {
-          toast.error("This reset link has expired. Please request a new one.");
-        } else if (result.error.message?.includes("invalid")) {
-          toast.error("This reset link is invalid. Please request a new one.");
-        } else {
-          toast.error(
-            result.error.message ?? "Something went wrong. Please try again."
-          );
-        }
-        setIsLoading(false);
-        return;
+        hasResetError = true;
+        resetErrorMessage = result.error.message;
       }
-
-      toast.success("Password reset successfully! Please log in.");
-      router.push("/login");
     } catch {
       toast.error("Network error. Please check your connection and try again.");
+      setIsLoading(false);
+      return;
     }
+
+    if (hasResetError) {
+      if (resetErrorMessage?.includes("expired")) {
+        toast.error("This reset link has expired. Please request a new one.");
+      } else if (resetErrorMessage?.includes("invalid")) {
+        toast.error("This reset link is invalid. Please request a new one.");
+      } else {
+        toast.error(
+          resetErrorMessage ?? "Something went wrong. Please try again."
+        );
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    toast.success("Password reset successfully! Please log in.");
+    router.push("/login");
     setIsLoading(false);
   }
 

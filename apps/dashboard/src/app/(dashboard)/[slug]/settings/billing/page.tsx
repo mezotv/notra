@@ -184,6 +184,8 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
   const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
+  // Capture once per mount; Date.now() during render is impure.
+  const [now] = useState(() => Date.now());
   const invoiceListId = useId();
   const freeFeatureListId = useId();
   const proFeatureListId = useId();
@@ -216,15 +218,14 @@ export default function BillingPage() {
   const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
   const isTrialing =
     activeSubscription?.trialEndsAt != null &&
-    activeSubscription.trialEndsAt > Date.now();
+    activeSubscription.trialEndsAt > now;
 
   async function handleCheckout(planId: string) {
     setLoading(planId);
+    const successUrl = activeOrganization?.slug
+      ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
+      : undefined;
     try {
-      const successUrl = activeOrganization?.slug
-        ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
-        : undefined;
-
       const result = await attach({
         planId,
         redirectMode: "if_required",
@@ -232,7 +233,7 @@ export default function BillingPage() {
       });
 
       if (result.paymentUrl) {
-        window.location.href = result.paymentUrl;
+        window.location.assign(result.paymentUrl);
       } else {
         await refetch();
       }
@@ -249,9 +250,10 @@ export default function BillingPage() {
 
   async function handleManageSubscription() {
     setPortalLoading(true);
+    const returnUrl = `${window.location.origin}/${activeOrganization?.slug}/settings/billing`;
     try {
       await openCustomerPortal({
-        returnUrl: `${window.location.origin}/${activeOrganization?.slug}/settings/billing`,
+        returnUrl,
       });
     } catch (err) {
       toast.error(

@@ -93,9 +93,8 @@ const ContentCard = memo(function ContentCard({
       setShowDeleteDialog(false);
     } catch {
       toast.error("Failed to delete post");
-    } finally {
-      setIsDeleting(false);
     }
+    setIsDeleting(false);
   }
 
   async function handleToggleStatus() {
@@ -129,9 +128,8 @@ const ContentCard = memo(function ContentCard({
       ]);
     } catch {
       toast.error("Failed to update post status");
-    } finally {
-      setIsTogglingStatus(false);
     }
+    setIsTogglingStatus(false);
   }
 
   const cardContent = (

@@ -47,6 +47,20 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+function errorMessageOr(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message ?? fallback;
+}
+
+function slugOrFallback(
+  data: { slug?: string | null } | null | undefined,
+  fallbackSlug: string
+): string {
+  return data?.slug ?? fallbackSlug;
+}
+
 export default function GeneralSettingsPage({ params }: PageProps) {
   const { slug } = use(params);
   const router = useRouter();
@@ -91,6 +105,11 @@ export default function GeneralSettingsPage({ params }: PageProps) {
 
     setIsRemovingOrganization(true);
 
+    const successMessage =
+      action === "delete"
+        ? `Deleted ${organization.name}`
+        : `Left ${organization.name}`;
+
     try {
       await dashboardOrpc.user.membership.applyAction.call({
         organizationId: organization.id,
@@ -127,11 +146,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });
 
-      toast.success(
-        action === "delete"
-          ? `Deleted ${organization.name}`
-          : `Left ${organization.name}`
-      );
+      toast.success(successMessage);
       router.push(`/${firstOrg.slug}/settings/account`);
     } catch (error) {
       toast.error("Failed to update organization membership");
@@ -157,7 +172,10 @@ export default function GeneralSettingsPage({ params }: PageProps) {
 
       if (result.error) {
         toast.error(
-          result.error.message ?? "Failed to update organization logo"
+          errorMessageOr(
+            result.error.message,
+            "Failed to update organization logo"
+          )
         );
         setIsUploadingLogo(false);
         return;
@@ -214,7 +232,12 @@ export default function GeneralSettingsPage({ params }: PageProps) {
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to update organization");
+          toast.error(
+            errorMessageOr(
+              result.error.message,
+              "Failed to update organization"
+            )
+          );
           setIsUpdating(false);
           return;
         }
@@ -239,7 +262,7 @@ export default function GeneralSettingsPage({ params }: PageProps) {
           }),
         ]);
 
-        const updatedSlug = result.data?.slug ?? value.slug;
+        const updatedSlug = slugOrFallback(result.data, value.slug);
 
         await setLastVisitedOrganization(updatedSlug);
 
