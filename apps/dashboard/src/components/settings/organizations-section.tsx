@@ -27,16 +27,10 @@ import {
   getOrganizationMembershipActionLabel,
 } from "@/lib/organizations/membership-action";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import { errorMessageOr } from "@/lib/utils";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { getHeardAboutNotraLabel } from "@/utils/onboarding";
 import { QUERY_KEYS } from "@/utils/query-keys";
-
-function messageOrFallback(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message || fallback;
-}
 
 export function OrganizationsSection() {
   const router = useRouter();
@@ -79,7 +73,7 @@ export function OrganizationsSection() {
 
       if (error) {
         toast.error(
-          messageOrFallback(error.message, "Failed to switch organization")
+          errorMessageOr(error.message, "Failed to switch organization")
         );
         setIsSwitching(null);
         return;

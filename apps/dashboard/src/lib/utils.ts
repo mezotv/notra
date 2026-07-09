@@ -15,3 +15,10 @@ export function slugify(text: string) {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+export function errorMessageOr(
+  message: string | null | undefined,
+  fallback: string
+): string {
+  return message || fallback;
+}

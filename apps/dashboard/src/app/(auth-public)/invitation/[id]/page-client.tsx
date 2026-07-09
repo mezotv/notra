@@ -38,6 +38,7 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import { errorMessageOr } from "@/lib/utils";
 import type {
   InvitationAction,
   InvitationPageClientProps,
@@ -46,13 +47,6 @@ import type {
 
 type Invitation = InvitationPageClientProps["invitation"];
 type InvitationUser = NonNullable<InvitationPageClientProps["user"]>;
-
-function errorMessageOr(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message || fallback;
-}
 
 function invitationReducer(
   state: InvitationState,

@@ -49,6 +49,7 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import { errorMessageOr } from "@/lib/utils";
 import type {
   MemberActionsAction,
   MemberActionsState,
@@ -86,13 +87,6 @@ function memberActionsReducer(
 
 function normalizeMemberRole(role: string): MemberRole {
   return role === "admin" ? "admin" : "member";
-}
-
-function messageOrFallback(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message || fallback;
 }
 
 export function MemberActions({ member }: MemberActionsProps) {
@@ -200,9 +194,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       });
 
       if (error) {
-        toast.error(
-          messageOrFallback(error.message, "Failed to remove member")
-        );
+        toast.error(errorMessageOr(error.message, "Failed to remove member"));
         dispatch({ type: "removeFinished" });
         return;
       }

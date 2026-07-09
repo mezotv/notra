@@ -19,16 +19,10 @@ import * as z from "zod";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { ProfileSectionProps } from "@/types/settings/account";
 
 const nameSchema = z.string().trim().min(1, "Name cannot be empty");
-
-function errorMessageOr(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message ?? fallback;
-}
 
 export function ProfileSection({
   user,

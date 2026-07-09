@@ -39,19 +39,13 @@ import {
 } from "@/lib/organizations/membership-action";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { uploadFile } from "@/lib/upload/client";
+import { errorMessageOr } from "@/lib/utils";
 import { organizationSlugSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-}
-
-function errorMessageOr(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message ?? fallback;
 }
 
 function slugOrFallback(

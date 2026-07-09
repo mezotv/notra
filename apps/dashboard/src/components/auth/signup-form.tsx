@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { AuthMethod } from "@/types/auth/method";
 import {
   marketingAttributionSearchParams,
@@ -27,10 +28,6 @@ import {
 import { marketingAttributionUrlKeys } from "@/utils/marketing-attribution-keys";
 
 const SIGNUP_ERROR_FALLBACK = "Failed to sign up. Please try again.";
-
-function signupErrorMessage(message: string | null | undefined): string {
-  return message ?? SIGNUP_ERROR_FALLBACK;
-}
 
 const signupSchema = z.object({
   email: z
@@ -153,7 +150,9 @@ export function SignupForm({
       });
 
       if (result.error) {
-        toast.error(signupErrorMessage(result.error.message));
+        toast.error(
+          errorMessageOr(result.error.message, SIGNUP_ERROR_FALLBACK)
+        );
         authInFlightRef.current = false;
         setAuthMethod(null);
         return;

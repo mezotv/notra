@@ -17,7 +17,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
-import { generateOrganizationAvatar, slugify } from "@/lib/utils";
+import {
+  errorMessageOr,
+  generateOrganizationAvatar,
+  slugify,
+} from "@/lib/utils";
 import { createOrganizationSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -25,13 +29,6 @@ import { QUERY_KEYS } from "@/utils/query-keys";
 interface CreateOrgModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-function messageOrFallback(
-  message: string | null | undefined,
-  fallback: string
-): string {
-  return message || fallback;
 }
 
 export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
@@ -58,7 +55,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
         if (error) {
           setIsCreating(false);
           toast.error(
-            messageOrFallback(error.message, "Failed to create organization")
+            errorMessageOr(error.message, "Failed to create organization")
           );
           return;
         }
