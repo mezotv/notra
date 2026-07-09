@@ -11,6 +11,7 @@ import {
 } from "@/constants/onboarding-agent";
 import {
   getOnboardingAgentState,
+  releaseOnboardingAgentReservation,
   sendOnboardingSlackInvite,
   startOnboardingAgentSession,
 } from "@/lib/onboarding-agent";
@@ -80,13 +81,15 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
   },
   {
     baseUrl: getBaseUrl(),
-    failureFunction: ({ context, failStatus, failResponse }) => {
+    failureFunction: async ({ context, failStatus, failResponse }) => {
       const { organizationId } = context.requestPayload;
       console.error(
         `[Onboarding Agent] Workflow failed for organization ${organizationId}:`,
         { response: failResponse, status: failStatus }
       );
-      return Promise.resolve();
+      if (organizationId) {
+        await releaseOnboardingAgentReservation(organizationId);
+      }
     },
   }
 );

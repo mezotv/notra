@@ -1275,7 +1275,6 @@ export const onboardingSuggestions = pgTable(
       .notNull(),
   },
   (table) => [
-    index("onboardingSuggestions_organizationId_idx").on(table.organizationId),
     index("onboardingSuggestions_org_type_idx").on(
       table.organizationId,
       table.type

@@ -13,7 +13,11 @@ import { and, desc, eq } from "drizzle-orm";
 import * as z from "zod";
 import { AGENT_RUN_HARD_LIMIT_MS } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { getOnboardingAgentState } from "@/lib/onboarding-agent";
+import {
+  getOnboardingAgentState,
+  releaseOnboardingAgentReservation,
+  reserveOnboardingAgentRerun,
+} from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
@@ -115,25 +119,23 @@ export const onboardingRouter = {
         user: context.user,
       });
 
-      const { ran, startedAt } = await getOnboardingAgentState(
-        input.organizationId
-      );
-      const running =
-        !ran &&
-        startedAt !== null &&
-        Date.now() - startedAt.getTime() < AGENT_RUN_HARD_LIMIT_MS;
-      if (running) {
+      const reserved = await reserveOnboardingAgentRerun(input.organizationId);
+      if (!reserved) {
         throw new ORPCError("CONFLICT", {
           message: "An onboarding agent run is already in progress",
         });
       }
 
-      const workflowRunId = await triggerOnboardingAgent({
-        domain: input.domain,
-        organizationId: input.organizationId,
-      });
-
-      return { workflowRunId };
+      try {
+        const workflowRunId = await triggerOnboardingAgent({
+          domain: input.domain,
+          organizationId: input.organizationId,
+        });
+        return { workflowRunId };
+      } catch (error) {
+        await releaseOnboardingAgentReservation(input.organizationId);
+        throw error;
+      }
     }),
   suggestions: authorizedProcedure
     .input(listSuggestionsInputSchema)

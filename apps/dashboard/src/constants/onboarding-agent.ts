@@ -1,5 +1,3 @@
-export const EVE_AGENT_SERVICE_USERNAME = "notra-dashboard";
-export const EVE_AGENT_ORGANIZATION_HEADER = "x-notra-organization-id";
 export const AGENT_RUN_POLL_INTERVAL_SECONDS = 30;
 export const AGENT_RUN_SOFT_LIMIT_POLLS = 30;
 export const AGENT_RUN_HARD_LIMIT_POLLS = 60;

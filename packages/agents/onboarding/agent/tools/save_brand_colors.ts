@@ -43,21 +43,24 @@ export default defineTool({
       );
     }
 
-    const existingGuideline = await db.query.brandGuidelines.findFirst({
+    await db
+      .insert(brandGuidelines)
+      .values({
+        brandSettingsId: settings.id,
+        id: randomUUID(),
+        lastGeneratedAt: new Date(),
+        status: "ready",
+      })
+      .onConflictDoNothing({ target: brandGuidelines.brandSettingsId });
+
+    const guideline = await db.query.brandGuidelines.findFirst({
       columns: { id: true },
       where: eq(brandGuidelines.brandSettingsId, settings.id),
     });
-
-    let guidelineId = existingGuideline?.id;
-    if (!guidelineId) {
-      guidelineId = randomUUID();
-      await db.insert(brandGuidelines).values({
-        brandSettingsId: settings.id,
-        id: guidelineId,
-        lastGeneratedAt: new Date(),
-        status: "ready",
-      });
+    if (!guideline) {
+      throw new Error("Brand guideline row could not be created or found");
     }
+    const guidelineId = guideline.id;
 
     const existingColor = await db.query.brandGuidelineColors.findFirst({
       columns: { id: true },

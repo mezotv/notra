@@ -344,6 +344,13 @@
       "when": 1783548127682,
       "tag": "0048_moaning_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1783605888415,
+      "tag": "0049_giant_smasher",
+      "breakpoints": true
     }
   ]
 }

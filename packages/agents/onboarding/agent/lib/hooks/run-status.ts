@@ -1,5 +1,6 @@
 import { defineHook, type HookDefinition } from "eve/hooks";
 import {
+  forgetSessionOrganization,
   markOnboardingAgentRan,
   rememberSessionOrganization,
 } from "../utils/run-status";
@@ -22,6 +23,7 @@ export function createRunStatusHook(): HookDefinition {
         );
       },
       "session.failed"(event, ctx) {
+        forgetSessionOrganization(ctx.session.id);
         console.error(
           `[run-status] Onboarding agent session failed for session ${ctx.session.id}: ${event.data.message}`
         );

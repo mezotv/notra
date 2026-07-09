@@ -16,7 +16,10 @@ import {
   isWebsiteReachable,
   resolveCompanyDomain,
 } from "@/lib/onboarding/company-domain";
-import { getOnboardingAgentState } from "@/lib/onboarding-agent";
+import {
+  releaseOnboardingAgentReservation,
+  reserveInitialOnboardingAgentRun,
+} from "@/lib/onboarding-agent";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   type OnboardingBrandAnalysisInput,
@@ -150,11 +153,6 @@ export async function triggerOnboardingAgentSetup(
     );
   }
 
-  const state = await getOnboardingAgentState(input.organizationId);
-  if (state.ran || state.startedAt) {
-    return { skipped: "already-started", success: true };
-  }
-
   const resolution = resolveCompanyDomain({
     email: session.user.email,
     websiteUrl: input.websiteUrl,
@@ -168,17 +166,27 @@ export async function triggerOnboardingAgentSetup(
     return { skipped: "website-unreachable", success: true };
   }
 
+  const reserved = await reserveInitialOnboardingAgentRun(input.organizationId);
+  if (!reserved) {
+    return { skipped: "already-started", success: true };
+  }
+
   const organization = await db.query.organizations.findFirst({
     columns: { slug: true },
     where: eq(organizations.id, input.organizationId),
   });
 
-  await triggerOnboardingAgent({
-    domain: resolution.domain,
-    email: session.user.email,
-    organizationId: input.organizationId,
-    organizationSlug: organization?.slug,
-  });
+  try {
+    await triggerOnboardingAgent({
+      domain: resolution.domain,
+      email: session.user.email,
+      organizationId: input.organizationId,
+      organizationSlug: organization?.slug,
+    });
+  } catch (error) {
+    await releaseOnboardingAgentReservation(input.organizationId);
+    throw error;
+  }
 
   return { success: true };
 }

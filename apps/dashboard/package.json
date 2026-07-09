@@ -60,6 +60,7 @@
     "@upstash/realtime": "^1.0.3",
     "@upstash/redis": "^1.35.8",
     "@upstash/workflow": "^1.1.0",
+    "@vercel/oidc": "^3.8.0",
     "@vercel/otel": "^2.1.2",
     "ai": "6.0.206",
     "autumn-js": "^1.2.7",

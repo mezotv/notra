@@ -2,10 +2,10 @@
 import * as z from "zod";
 
 export const onboardingAgentWorkflowPayloadSchema = z.object({
-  organizationId: z.string().min(1),
-  domain: z.string().min(1),
+  organizationId: z.string().trim().min(1),
+  domain: z.string().trim().min(1),
   email: z.email().optional(),
-  organizationSlug: z.string().min(1).optional(),
+  organizationSlug: z.string().trim().min(1).optional(),
 });
 
 export const triggerOnboardingAgentSetupSchema = z.object({

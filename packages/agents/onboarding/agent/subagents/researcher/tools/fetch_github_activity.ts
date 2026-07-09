@@ -62,6 +62,8 @@ export default defineTool({
       : [];
 
     return {
+      commitsAvailable: commitsResponse.ok,
+      releasesAvailable: releasesResponse.ok,
       commitCount: commits.length,
       lastCommitAt: commits[0]?.commit.author?.date ?? null,
       latestReleases: releases

@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, type SQL, sql } from "drizzle-orm";
 import { defineTool } from "eve/tools";
 // biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
 import * as z from "zod";
@@ -42,9 +42,16 @@ export default defineTool({
       );
     }
 
+    const columns = {
+      audience: brandSettings.audience,
+      companyDescription: brandSettings.companyDescription,
+      companyName: brandSettings.companyName,
+      toneProfile: brandSettings.toneProfile,
+    } as const;
+
     const updatedFields: BrandProfileField[] = [];
     const skippedFields: BrandProfileField[] = [];
-    const patch: Partial<Record<BrandProfileField, string>> = {};
+    const patch: Partial<Record<BrandProfileField, SQL>> = {};
 
     for (const field of BRAND_PROFILE_FIELDS) {
       const value = fields[field];
@@ -56,7 +63,8 @@ export default defineTool({
         skippedFields.push(field);
         continue;
       }
-      patch[field] = value;
+      patch[field] =
+        sql`COALESCE(NULLIF(TRIM(${columns[field]}), ''), ${value})`;
       updatedFields.push(field);
     }
 
