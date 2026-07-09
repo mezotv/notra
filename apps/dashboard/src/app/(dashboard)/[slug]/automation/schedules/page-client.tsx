@@ -53,7 +53,7 @@ import {
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
@@ -147,7 +147,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     })
   );
 
-  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
+  const { brandVoiceMap, defaultBrandVoice } = (() => {
     const map: Record<string, BrandSettings> = {};
     let defaultVoice: BrandSettings | undefined;
     for (const voice of brandResponse?.voices ?? []) {
@@ -157,7 +157,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
     }
     return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
-  }, [brandResponse]);
+  })();
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
@@ -331,18 +331,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const triggers = data?.triggers ?? [];
-  const scheduleTriggers = useMemo(
-    () => triggers.filter((trigger) => trigger.sourceType === "cron"),
-    [triggers]
+  const scheduleTriggers = triggers.filter(
+    (trigger) => trigger.sourceType === "cron"
   );
 
-  const filteredTriggers = useMemo(() => {
-    return scheduleTriggers.filter((t) =>
-      activeTab === "active" ? t.enabled : !t.enabled
-    );
-  }, [scheduleTriggers, activeTab]);
+  const filteredTriggers = scheduleTriggers.filter((trigger) =>
+    activeTab === "active" ? trigger.enabled : !trigger.enabled
+  );
 
-  const activeCounts = useMemo(() => {
+  const activeCounts = (() => {
     let active = 0;
     let paused = 0;
     for (const t of scheduleTriggers) {
@@ -353,31 +350,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
     }
     return { active, paused };
-  }, [scheduleTriggers]);
+  })();
 
-  const handleToggle = useCallback(
-    (trigger: Trigger) => updateMutation.mutate(trigger),
-    [updateMutation]
-  );
+  const handleToggle = (trigger: Trigger) => updateMutation.mutate(trigger);
 
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = (id: string) => {
     setDeleteTriggerId(id);
-  }, []);
+  };
 
-  const handleEdit = useCallback((trigger: Trigger) => {
+  const handleEdit = (trigger: Trigger) => {
     setEditTrigger(trigger);
-  }, []);
+  };
 
-  const confirmDelete = useCallback(() => {
+  const confirmDelete = () => {
     if (deleteTriggerId) {
       deleteMutation.mutate(deleteTriggerId);
     }
-  }, [deleteTriggerId, deleteMutation]);
+  };
 
-  const handleRunNow = useCallback(
-    (triggerId: string) => runNowMutation.mutate(triggerId),
-    [runNowMutation]
-  );
+  const handleRunNow = (triggerId: string) => runNowMutation.mutate(triggerId);
 
   const triggerToDelete = deleteTriggerId
     ? triggers.find((t) => t.id === deleteTriggerId)
@@ -664,7 +655,7 @@ function ScheduleTable({
   updatingTriggerId?: string;
   runningTriggerId?: string;
 }) {
-  const sortedTriggers = useMemo(() => {
+  const sortedTriggers = (() => {
     if (createdSortOrder === false) {
       return triggers;
     }
@@ -676,7 +667,7 @@ function ScheduleTable({
         ? createdAtB - createdAtA
         : createdAtA - createdAtB;
     });
-  }, [triggers, createdSortOrder]);
+  })();
 
   function getSortIcon(isSorted: false | "asc" | "desc") {
     if (isSorted === "asc") {

@@ -6,7 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -86,7 +86,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
   const repositories = data?.repositories ? [...data.repositories] : [];
 
-  const handleGitHubInstalled = useCallback(() => {
+  const handleGitHubInstalled = useEffectEvent(() => {
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.github.app.get.queryKey({
         input: { organizationId },
@@ -94,7 +94,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     });
     setConnectOpen(false);
     setReposOpen(true);
-  }, [organizationId, queryClient]);
+  });
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -126,7 +126,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       window.removeEventListener("message", handleMessage);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [handleGitHubInstalled, organizationId]);
+  }, [organizationId]);
 
   useEffect(() => {
     if (searchParams.get("githubConnected") !== "true" || !organizationId) {
@@ -152,7 +152,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       crypto.randomUUID()
     );
     handleGitHubInstalled();
-  }, [searchParams, organizationId, handleGitHubInstalled]);
+  }, [searchParams, organizationId]);
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {

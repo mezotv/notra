@@ -12,8 +12,8 @@ import {
 import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useSyncExternalStore } from "react";
+import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
+import { useSyncExternalStore } from "react";
 import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { localStorageKeys } from "@/constants/storage";
@@ -71,9 +71,9 @@ export function SidebarOnboarding() {
   const collapsed =
     storedCollapsed === null ? !!hasCompletedStep : storedCollapsed === "true";
 
-  const toggleCollapsed = useCallback(() => {
+  const toggleCollapsed = () => {
     setStoredCollapsed(storageKey, !collapsed);
-  }, [storageKey, collapsed]);
+  };
 
   const hasActiveSubscription = customer?.subscriptions.some(
     (subscription) => !subscription.addOn && subscription.status === "active"
@@ -110,107 +110,109 @@ export function SidebarOnboarding() {
 
   return (
     <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
-      <motion.div
-        layout
-        style={{ transformOrigin: "top" }}
-        transition={MORPH_TRANSITION}
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          {collapsed ? (
-            <motion.div
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="collapsed"
-              transition={MORPH_TRANSITION}
-            >
-              <button
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-muted"
-                onClick={toggleCollapsed}
-                type="button"
-              >
-                <motion.span
-                  className="flex-1 truncate font-medium"
-                  layoutId="onboarding-title"
-                  transition={MORPH_TRANSITION}
-                >
-                  Getting Started ({completedCount}/{steps.length})
-                </motion.span>
-                {agentRunning && <BrailleLoader className="text-xs" />}
-                <svg
-                  aria-hidden="true"
-                  className="size-3 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <title>Expand</title>
-                  <path d="m18 15-6-6-6 6" />
-                </svg>
-              </button>
-              <motion.div
-                className="mt-1"
-                layoutId="onboarding-progress"
+      <LazyMotion features={domMax}>
+        <m.div
+          layout
+          style={{ transformOrigin: "top" }}
+          transition={MORPH_TRANSITION}
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            {collapsed ? (
+              <m.div
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="collapsed"
                 transition={MORPH_TRANSITION}
               >
-                <Progress className="h-1" value={progress} />
-              </motion.div>
-            </motion.div>
-          ) : (
-            <motion.div
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              initial={{ opacity: 0 }}
-              key="expanded"
-              transition={MORPH_TRANSITION}
-            >
-              <OnboardingChecklist
-                className="bg-sidebar-accent/40 py-2 ring-0"
-                onClose={toggleCollapsed}
-              >
-                <OnboardingChecklistHeader>
-                  <motion.div
+                <button
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-muted"
+                  onClick={toggleCollapsed}
+                  type="button"
+                >
+                  <m.span
+                    className="flex-1 truncate font-medium"
                     layoutId="onboarding-title"
                     transition={MORPH_TRANSITION}
                   >
-                    <OnboardingChecklistTitle>
-                      Getting Started
-                    </OnboardingChecklistTitle>
-                  </motion.div>
-                </OnboardingChecklistHeader>
-                <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
-                  {agentRunning && (
-                    <div className="flex items-center gap-2 pb-1 text-muted-foreground text-xs">
-                      <BrailleLoader className="text-xs" />
-                      <span>Eve is setting up your workspace…</span>
-                    </div>
-                  )}
-                  <motion.div
-                    layoutId="onboarding-progress"
-                    transition={MORPH_TRANSITION}
+                    Getting Started ({completedCount}/{steps.length})
+                  </m.span>
+                  {agentRunning && <BrailleLoader className="text-xs" />}
+                  <svg
+                    aria-hidden="true"
+                    className="size-3 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
                   >
-                    <OnboardingChecklistProgress value={progress} />
-                  </motion.div>
-                  <OnboardingChecklistItems>
-                    {steps.map((step) => (
-                      <OnboardingChecklistItem
-                        completed={step.completed}
-                        href={step.href}
-                        key={step.href}
-                      >
-                        {step.label}
-                      </OnboardingChecklistItem>
-                    ))}
-                  </OnboardingChecklistItems>
-                </OnboardingChecklistContent>
-              </OnboardingChecklist>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+                    <title>Expand</title>
+                    <path d="m18 15-6-6-6 6" />
+                  </svg>
+                </button>
+                <m.div
+                  className="mt-1"
+                  layoutId="onboarding-progress"
+                  transition={MORPH_TRANSITION}
+                >
+                  <Progress className="h-1" value={progress} />
+                </m.div>
+              </m.div>
+            ) : (
+              <m.div
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }}
+                key="expanded"
+                transition={MORPH_TRANSITION}
+              >
+                <OnboardingChecklist
+                  className="bg-sidebar-accent/40 py-2 ring-0"
+                  onClose={toggleCollapsed}
+                >
+                  <OnboardingChecklistHeader>
+                    <m.div
+                      layoutId="onboarding-title"
+                      transition={MORPH_TRANSITION}
+                    >
+                      <OnboardingChecklistTitle>
+                        Getting Started
+                      </OnboardingChecklistTitle>
+                    </m.div>
+                  </OnboardingChecklistHeader>
+                  <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
+                    {agentRunning && (
+                      <div className="flex items-center gap-2 pb-1 text-muted-foreground text-xs">
+                        <BrailleLoader className="text-xs" />
+                        <span>Eve is setting up your workspace…</span>
+                      </div>
+                    )}
+                    <m.div
+                      layoutId="onboarding-progress"
+                      transition={MORPH_TRANSITION}
+                    >
+                      <OnboardingChecklistProgress value={progress} />
+                    </m.div>
+                    <OnboardingChecklistItems>
+                      {steps.map((step) => (
+                        <OnboardingChecklistItem
+                          completed={step.completed}
+                          href={step.href}
+                          key={step.href}
+                        >
+                          {step.label}
+                        </OnboardingChecklistItem>
+                      ))}
+                    </OnboardingChecklistItems>
+                  </OnboardingChecklistContent>
+                </OnboardingChecklist>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </m.div>
+      </LazyMotion>
     </SidebarGroup>
   );
 }

@@ -24,13 +24,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import {
-  isValidElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { isValidElement, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -92,61 +86,58 @@ export function LegacyAddIntegrationDialog({
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const probeRepo = useCallback(
-    async (owner: string, repo: string, token?: string) => {
-      abortControllerRef.current?.abort();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+  const probeRepo = async (owner: string, repo: string, token?: string) => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      setProbeStatus("loading");
+    setProbeStatus("loading");
 
-      const normalizedToken = token || undefined;
+    const normalizedToken = token || undefined;
 
-      try {
-        if (controller.signal.aborted) {
-          return null;
-        }
-
-        const data = (await dashboardOrpc.github.probeRepository.call({
-          owner,
-          repo,
-          token: normalizedToken,
-        })) as ProbeResult;
-
-        if (TOKEN_PROMPT_PROBE_STATUSES.has(data.status)) {
-          setProbeStatus("not_found");
-          setTokenOpen(true);
-          return data;
-        }
-
-        setProbeStatus("success");
-
-        if (data.status === "private") {
-          setTokenOpen(true);
-        }
-
-        return data;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return null;
-        }
-
-        if (
-          error instanceof Error &&
-          (error.message === "Repository not found" ||
-            error.message === "Repository access denied")
-        ) {
-          setProbeStatus("not_found");
-          setTokenOpen(true);
-          return null;
-        }
-
-        setProbeStatus("error");
+    try {
+      if (controller.signal.aborted) {
         return null;
       }
-    },
-    []
-  );
+
+      const data = (await dashboardOrpc.github.probeRepository.call({
+        owner,
+        repo,
+        token: normalizedToken,
+      })) as ProbeResult;
+
+      if (TOKEN_PROMPT_PROBE_STATUSES.has(data.status)) {
+        setProbeStatus("not_found");
+        setTokenOpen(true);
+        return data;
+      }
+
+      setProbeStatus("success");
+
+      if (data.status === "private") {
+        setTokenOpen(true);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return null;
+      }
+
+      if (
+        error instanceof Error &&
+        (error.message === "Repository not found" ||
+          error.message === "Repository access denied")
+      ) {
+        setProbeStatus("not_found");
+        setTokenOpen(true);
+        return null;
+      }
+
+      setProbeStatus("error");
+      return null;
+    }
+  };
 
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
@@ -226,27 +217,28 @@ export function LegacyAddIntegrationDialog({
 
   const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
 
-  const resetProbeState = useCallback(() => {
+  const resetProbeState = () => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setRepoInfo(null);
     setProbeStatus("idle");
     form.setFieldValue("branch", "");
-  }, [form]);
+  };
 
-  const initializeBranch = useCallback(
-    (owner: string, repo: string, defaultBranch: string) => {
-      const repoKey = getRepoKey(owner, repo);
+  const initializeBranch = (
+    owner: string,
+    repo: string,
+    defaultBranch: string
+  ) => {
+    const repoKey = getRepoKey(owner, repo);
 
-      if (initializedBranchReposRef.current.has(repoKey)) {
-        return;
-      }
+    if (initializedBranchReposRef.current.has(repoKey)) {
+      return;
+    }
 
-      initializedBranchReposRef.current.add(repoKey);
-      form.setFieldValue("branch", defaultBranch);
-    },
-    [form]
-  );
+    initializedBranchReposRef.current.add(repoKey);
+    form.setFieldValue("branch", defaultBranch);
+  };
 
   const repoProbeDebouncer = useAsyncDebouncer(
     async ({

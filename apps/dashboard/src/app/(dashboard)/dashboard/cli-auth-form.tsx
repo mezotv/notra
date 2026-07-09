@@ -23,7 +23,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { detectPlatform } from "@/lib/cli-auth/platform";
@@ -52,10 +52,9 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
   const [editedName, setEditedName] = useState<string | null>(null);
   const name = editedName ?? defaultName;
 
-  const selectedOrg = useMemo(
-    () => organizations.find((o) => o.id === organizationId) ?? null,
-    [organizations, organizationId]
-  );
+  const selectedOrg =
+    organizations.find((organization) => organization.id === organizationId) ??
+    null;
 
   const mutation = useMutation({
     mutationFn: async () => {

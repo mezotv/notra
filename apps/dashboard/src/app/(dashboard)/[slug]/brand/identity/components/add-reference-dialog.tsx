@@ -35,7 +35,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -62,7 +62,7 @@ function pluralSuffix(count: number) {
 
 function useReferenceBalance() {
   const { check, data: customer } = useCustomer();
-  return useMemo(() => {
+  return (() => {
     if (!customer) {
       return {
         remaining: null,
@@ -107,7 +107,7 @@ function useReferenceBalance() {
       overageAllowed: data.balance?.overageAllowed === true,
       unlimited: false,
     };
-  }, [check, customer]);
+  })();
 }
 
 function ReferenceUsageInfo({ afterCount }: { afterCount: number }) {

@@ -20,7 +20,7 @@ import {
   KEY_DELETE_COMMAND,
 } from "lexical";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 import { $isKiboCodeBlockNode } from "./kibo-code-block-node";
@@ -55,6 +55,13 @@ interface KiboCodeBlockComponentProps {
   code: string;
   language: string;
   nodeKey: string;
+}
+
+function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+  const isModifierKey = event.metaKey || event.ctrlKey;
+  if (!isModifierKey) {
+    event.stopPropagation();
+  }
 }
 
 export default function KiboCodeBlockComponent({
@@ -102,8 +109,8 @@ export default function KiboCodeBlockComponent({
     };
   }, []);
 
-  const onDelete = useCallback(
-    (event: KeyboardEvent) => {
+  useEffect(() => {
+    const onDelete = (event: KeyboardEvent) => {
       if (isSelected && $isNodeSelection($getSelection())) {
         event.preventDefault();
         editor.update(() => {
@@ -115,11 +122,8 @@ export default function KiboCodeBlockComponent({
         return true;
       }
       return false;
-    },
-    [editor, isSelected, nodeKey]
-  );
+    };
 
-  useEffect(() => {
     return mergeRegister(
       editor.registerCommand(
         CLICK_COMMAND,
@@ -147,38 +151,32 @@ export default function KiboCodeBlockComponent({
         COMMAND_PRIORITY_LOW
       )
     );
-  }, [editor, clearSelection, setSelected, onDelete]);
+  }, [editor, clearSelection, setSelected, isSelected, nodeKey]);
 
-  const handleLanguageChange = useCallback(
-    (newLanguage: string | null) => {
-      if (newLanguage === null) {
-        return;
+  const handleLanguageChange = (newLanguage: string | null) => {
+    if (newLanguage === null) {
+      return;
+    }
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isKiboCodeBlockNode(node)) {
+        node.setLanguage(newLanguage === "plain" ? "" : newLanguage);
       }
-      editor.update(() => {
-        const node = $getNodeByKey(nodeKey);
-        if ($isKiboCodeBlockNode(node)) {
-          node.setLanguage(newLanguage === "plain" ? "" : newLanguage);
-        }
-      });
-    },
-    [editor, nodeKey]
-  );
+    });
+  };
 
-  const handleCodeChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newCode = e.target.value;
-      setLocalCode(newCode);
-      editor.update(() => {
-        const node = $getNodeByKey(nodeKey);
-        if ($isKiboCodeBlockNode(node)) {
-          node.setCode(newCode);
-        }
-      });
-    },
-    [editor, nodeKey]
-  );
+  const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newCode = e.target.value;
+    setLocalCode(newCode);
+    editor.update(() => {
+      const node = $getNodeByKey(nodeKey);
+      if ($isKiboCodeBlockNode(node)) {
+        node.setCode(newCode);
+      }
+    });
+  };
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = () => {
     if (typeof window === "undefined" || !navigator?.clipboard?.writeText) {
       return;
     }
@@ -193,20 +191,7 @@ export default function KiboCodeBlockComponent({
       setIsCopied(false);
       copyTimeoutRef.current = null;
     }, 2000);
-  }, [localCode]);
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Only stop propagation for keys that would trigger Lexical commands
-      // Allow system shortcuts (Cmd/Ctrl+Z, Cmd/Ctrl+A, etc.) to work normally
-      const isModifierKey = event.metaKey || event.ctrlKey;
-      if (!isModifierKey) {
-        // Stop propagation for regular typing to prevent Lexical interference
-        event.stopPropagation();
-      }
-    },
-    []
-  );
+  };
 
   const CopyButtonIcon = isCopied ? CheckIcon : CopyIcon;
 

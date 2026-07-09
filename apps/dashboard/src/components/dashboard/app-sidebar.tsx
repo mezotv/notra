@@ -10,7 +10,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@notra/ui/components/ui/sidebar";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useRef } from "react";
@@ -82,87 +88,89 @@ export function DashboardSidebar({
       {...props}
       className="overflow-hidden overscroll-none border-none"
     >
-      <SidebarHeader>
-        <OrgSelector />
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSubpage && (
-            <motion.div
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              key="back-button"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <SidebarMenu>
-                <SidebarMenuButton
-                  className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
-                  onClick={handleBack}
-                  tooltip="Back"
-                >
-                  <HugeiconsIcon icon={ArrowLeft01Icon} />
-                  <span>Back</span>
-                </SidebarMenuButton>
-              </SidebarMenu>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SidebarHeader>
-      <SidebarContent>
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSettingsRoute && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="settings"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <NavSettings slug={slug} />
-            </motion.div>
-          )}
-          {!isSettingsRoute && isChatRoute && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="chat"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <ChatHistoryNav />
-              <div className="mt-auto">
-                <NavSecondary />
-              </div>
-            </motion.div>
-          )}
-          {!(isSettingsRoute || isChatRoute) && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="main"
-              transition={TRANSITION}
-              variants={mainVariants}
-            >
-              <NavMain />
-              <div className="mt-auto">
-                <SidebarTrialExpired />
-                <SidebarOnboarding />
-                <SidebarUpgrade />
-                <NavSecondary />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
+      <LazyMotion features={domAnimation}>
+        <SidebarHeader>
+          <OrgSelector />
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSubpage && (
+              <m.div
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                key="back-button"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <SidebarMenu>
+                  <SidebarMenuButton
+                    className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
+                    onClick={handleBack}
+                    tooltip="Back"
+                  >
+                    <HugeiconsIcon icon={ArrowLeft01Icon} />
+                    <span>Back</span>
+                  </SidebarMenuButton>
+                </SidebarMenu>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarHeader>
+        <SidebarContent>
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSettingsRoute && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="settings"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <NavSettings slug={slug} />
+              </m.div>
+            )}
+            {!isSettingsRoute && isChatRoute && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="chat"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <ChatHistoryNav />
+                <div className="mt-auto">
+                  <NavSecondary />
+                </div>
+              </m.div>
+            )}
+            {!(isSettingsRoute || isChatRoute) && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="main"
+                transition={TRANSITION}
+                variants={mainVariants}
+              >
+                <NavMain />
+                <div className="mt-auto">
+                  <SidebarTrialExpired />
+                  <SidebarOnboarding />
+                  <SidebarUpgrade />
+                  <NavSecondary />
+                </div>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarContent>
+        <SidebarFooter>
+          <NavUser />
+        </SidebarFooter>
+      </LazyMotion>
     </Sidebar>
   );
 }
