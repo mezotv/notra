@@ -69,6 +69,7 @@
     "effect": "4.0.0-beta.78",
     "eve": "^0.17.0",
     "evlog": "2.13.0",
+    "free-email-domains-list": "^1.0.16",
     "gray-matter": "^4.0.3",
     "lexical": "^0.39.0",
     "lucide-react": "^0.562.0",

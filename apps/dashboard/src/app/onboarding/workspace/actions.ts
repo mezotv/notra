@@ -1,5 +1,6 @@
 "use server";
 
+import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
@@ -11,16 +12,26 @@ import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { auth } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
+import {
+  isWebsiteReachable,
+  resolveCompanyDomain,
+} from "@/lib/onboarding/company-domain";
+import { getOnboardingAgentState } from "@/lib/onboarding-agent";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   type OnboardingBrandAnalysisInput,
   onboardingBrandAnalysisSchema,
 } from "@/schemas/brand-analysis";
 import { onboardingWorkspaceAttributionSchema } from "@/schemas/onboarding/workspace";
+import { triggerOnboardingAgentSetupSchema } from "@/schemas/onboarding-agent";
 import type {
   SaveOnboardingAttributionInput,
   SaveOnboardingAttributionResult,
 } from "@/types/onboarding";
+import type {
+  TriggerOnboardingAgentSetupInput,
+  TriggerOnboardingAgentSetupResult,
+} from "@/types/onboarding-agent";
 import { ratelimit } from "@/utils/ratelimit";
 
 const ANALYSIS_LOCK_TTL_SECONDS = 60;
@@ -103,6 +114,71 @@ export async function triggerOnboardingBrandAnalysis(
       "Couldn't kick off the brand analysis. Please try again in a moment."
     );
   }
+
+  return { success: true };
+}
+
+export async function triggerOnboardingAgentSetup(
+  rawInput: TriggerOnboardingAgentSetupInput
+): Promise<TriggerOnboardingAgentSetupResult> {
+  const input = triggerOnboardingAgentSetupSchema.parse(rawInput);
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const membership = await db.query.members.findFirst({
+    where: and(
+      eq(members.userId, session.user.id),
+      eq(members.organizationId, input.organizationId)
+    ),
+    columns: { id: true },
+  });
+
+  if (!membership) {
+    throw new Error("Forbidden");
+  }
+
+  const { success: withinLimit } = await ratelimit.onboardingAgent.limit(
+    input.organizationId
+  );
+
+  if (!withinLimit) {
+    throw new Error(
+      "Too many onboarding agent requests. Please try again shortly."
+    );
+  }
+
+  const state = await getOnboardingAgentState(input.organizationId);
+  if (state.ran || state.startedAt) {
+    return { skipped: "already-started", success: true };
+  }
+
+  const resolution = resolveCompanyDomain({
+    email: session.user.email,
+    websiteUrl: input.websiteUrl,
+  });
+  if (!resolution) {
+    return { skipped: "no-company-domain", success: true };
+  }
+
+  const reachable = await isWebsiteReachable(resolution.domain);
+  if (!reachable) {
+    return { skipped: "website-unreachable", success: true };
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    columns: { slug: true },
+    where: eq(organizations.id, input.organizationId),
+  });
+
+  await triggerOnboardingAgent({
+    domain: resolution.domain,
+    email: session.user.email,
+    organizationId: input.organizationId,
+    organizationSlug: organization?.slug,
+  });
 
   return { success: true };
 }

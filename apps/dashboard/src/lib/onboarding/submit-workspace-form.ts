@@ -1,5 +1,6 @@
 import {
   saveOnboardingAttribution,
+  triggerOnboardingAgentSetup,
   triggerOnboardingBrandAnalysis,
 } from "@/app/onboarding/workspace/actions";
 import { authClient } from "@/lib/auth/client";
@@ -88,4 +89,16 @@ export async function submitWorkspaceForm({
       });
     });
   }
+
+  const agentSetupPromise = triggerOnboardingAgentSetup({
+    organizationId,
+    websiteUrl: parsed.data.websiteUrl || undefined,
+  });
+
+  agentSetupPromise.catch((error) => {
+    console.error("[Onboarding] Background onboarding agent setup failed", {
+      organizationId,
+      error,
+    });
+  });
 }

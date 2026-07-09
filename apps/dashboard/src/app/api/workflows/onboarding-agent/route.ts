@@ -11,6 +11,7 @@ import {
 } from "@/constants/onboarding-agent";
 import {
   getOnboardingAgentState,
+  sendOnboardingSlackInvite,
   startOnboardingAgentSession,
 } from "@/lib/onboarding-agent";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/onboarding-agent";
@@ -35,7 +36,8 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
       await context.cancel();
       return;
     }
-    const { organizationId, domain } = parseResult.data;
+    const { organizationId, domain, email, organizationSlug } =
+      parseResult.data;
 
     log.set({ domain, feature: "onboarding_agent", organizationId });
 
@@ -54,6 +56,12 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
 
         if (state.ran) {
           log.set({ polls: poll, runStatus: "completed" });
+          if (email && organizationSlug) {
+            const invite = await context.run("slack-connect-invite", () =>
+              sendOnboardingSlackInvite({ email, organizationSlug })
+            );
+            log.set({ slackInvited: invite.invited });
+          }
           return;
         }
 
