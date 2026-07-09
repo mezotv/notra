@@ -245,7 +245,11 @@ export async function sendScheduledContentFailedEmail(
     subject,
   }: SendScheduledContentFailedEmailProps
 ) {
-  const settingsLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const appUrl =
+    process.env.PORTLESS_URL ??
+    process.env.BETTER_AUTH_URL ??
+    EMAIL_CONFIG.getAppUrl();
+  const settingsLink = `${appUrl}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,
@@ -279,7 +283,11 @@ export async function sendScheduledContentSkippedEmail(
     subject,
   }: SendScheduledContentSkippedEmailProps
 ) {
-  const settingsLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const appUrl =
+    process.env.PORTLESS_URL ??
+    process.env.BETTER_AUTH_URL ??
+    EMAIL_CONFIG.getAppUrl();
+  const settingsLink = `${appUrl}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,

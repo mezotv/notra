@@ -20,6 +20,7 @@
     "GOOGLE_CLIENT_SECRET",
     "INTEGRATION_ENCRYPTION_KEY",
     "OPENROUTER_API_KEY",
+    "PORTLESS_URL",
     "QSTASH_URL",
     "QSTASH_CURRENT_SIGNING_KEY",
     "QSTASH_NEXT_SIGNING_KEY",
@@ -75,7 +76,7 @@
     },
     "dev": {
       "cache": false,
-      "passThroughEnv": ["PORTLESS", "PORTLESS_*"],
+      "passThroughEnv": ["PORT", "PORTLESS", "PORTLESS_*"],
       "persistent": true
     }
   }
