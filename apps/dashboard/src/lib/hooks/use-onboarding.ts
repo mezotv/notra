@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AGENT_RUN_POLL_INTERVAL_MS,
+  AGENT_RUN_REFETCH_INTERVAL_MS,
   AGENT_RUN_STALE_TIME_MS,
   SUGGESTIONS_STALE_TIME_MS,
 } from "@/constants/onboarding-agent";
@@ -39,7 +39,7 @@ export function useOnboardingAgentRun(organizationId: string) {
       enabled: !!organizationId,
       staleTime: AGENT_RUN_STALE_TIME_MS,
       refetchInterval: (current) =>
-        current.state.data?.running ? AGENT_RUN_POLL_INTERVAL_MS : false,
+        current.state.data?.running ? AGENT_RUN_REFETCH_INTERVAL_MS : false,
     })
   );
 
@@ -84,7 +84,7 @@ export function useOnboardingSuggestions(
       enabled: !!organizationId,
       staleTime: SUGGESTIONS_STALE_TIME_MS,
       refetchInterval: options?.agentRunning
-        ? AGENT_RUN_POLL_INTERVAL_MS
+        ? AGENT_RUN_REFETCH_INTERVAL_MS
         : false,
     })
   );

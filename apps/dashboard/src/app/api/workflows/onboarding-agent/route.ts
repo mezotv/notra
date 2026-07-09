@@ -5,8 +5,8 @@ import { serve } from "@upstash/workflow/nextjs";
 import { createRequestLogger } from "evlog";
 import { flattenError } from "zod";
 import {
+  AGENT_RUN_BACKEND_SLEEP_SECONDS,
   AGENT_RUN_HARD_LIMIT_POLLS,
-  AGENT_RUN_POLL_INTERVAL_SECONDS,
   AGENT_RUN_SOFT_LIMIT_POLLS,
 } from "@/constants/onboarding-agent";
 import {
@@ -58,7 +58,7 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
       log.set({ sessionId });
 
       for (let poll = 1; poll <= AGENT_RUN_HARD_LIMIT_POLLS; poll++) {
-        await context.sleep(`wait-${poll}`, AGENT_RUN_POLL_INTERVAL_SECONDS);
+        await context.sleep(`wait-${poll}`, AGENT_RUN_BACKEND_SLEEP_SECONDS);
 
         const state = await context.run(`check-${poll}`, () =>
           getOnboardingAgentState(organizationId)

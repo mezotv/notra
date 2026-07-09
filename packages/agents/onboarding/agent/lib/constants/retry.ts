@@ -22,7 +22,6 @@ export const RETRYABLE_DATABASE_ERROR_CODES: ReadonlySet<string> = new Set([
   "08004",
   "08006",
   "08007",
-  "08P01",
   "40001",
   "40P01",
   "53300",

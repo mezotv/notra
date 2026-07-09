@@ -54,7 +54,7 @@ export const requestSupermemoryEffect = Effect.fn("requestSupermemory")(
           new ToolOperationError({
             cause,
             operationName,
-            retryable: false,
+            retryable: isTransientError(cause),
             status: response.status,
           }),
       });
@@ -74,7 +74,7 @@ export const requestSupermemoryEffect = Effect.fn("requestSupermemory")(
         new ToolOperationError({
           cause,
           operationName,
-          retryable: false,
+          retryable: isTransientError(cause),
           status: response.status,
         }),
     });

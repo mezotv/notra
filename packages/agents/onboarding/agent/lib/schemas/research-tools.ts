@@ -1,6 +1,9 @@
 // biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
 import * as z from "zod";
-import { SITEMAP_DEFAULT_MAX_LINKS } from "../constants/context-dev";
+import {
+  SITEMAP_DEFAULT_MAX_LINKS,
+  WEB_SEARCH_MAX_RESULTS,
+} from "../constants/context-dev";
 import {
   RECENT_TWEETS_DEFAULT_COUNT,
   RECENT_TWEETS_MAX_COUNT,
@@ -32,10 +35,10 @@ export const recentTweetsInputSchema = z.object({
 });
 
 export const webpageInputSchema = z.object({
-  url: z.string().min(1),
+  url: z.url(),
 });
 
 export const webSearchInputSchema = z.object({
   query: z.string().min(1),
-  limit: z.number().int().min(1).max(10).optional(),
+  limit: z.number().int().min(1).max(WEB_SEARCH_MAX_RESULTS).optional(),
 });

@@ -151,7 +151,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       getGitHubInstallStorageKey(organizationId),
       crypto.randomUUID()
     );
-    handleGitHubInstalled();
   }, [searchParams, organizationId]);
 
   const saveRepositoriesMutation = useMutation({

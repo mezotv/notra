@@ -12,11 +12,12 @@ import {
 import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
-import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
+import { AnimatePresence, domMax, LazyMotion } from "motion/react";
+import { div as MotionDiv, span as MotionSpan } from "motion/react-m";
 import { useSyncExternalStore } from "react";
 import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { AGENT_RUN_POLL_INTERVAL_MS } from "@/constants/onboarding-agent";
+import { AGENT_RUN_REFETCH_INTERVAL_MS } from "@/constants/onboarding-agent";
 import { localStorageKeys } from "@/constants/storage";
 import {
   useOnboardingAgentRun,
@@ -54,7 +55,7 @@ export function SidebarOnboarding() {
   const agentRunning = agentRun?.running ?? false;
   // While the agent works, poll the checklist so steps tick live.
   const { data } = useOnboardingStatus(orgId, {
-    refetchInterval: agentRunning ? AGENT_RUN_POLL_INTERVAL_MS : false,
+    refetchInterval: agentRunning ? AGENT_RUN_REFETCH_INTERVAL_MS : false,
   });
   const { data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
@@ -111,14 +112,14 @@ export function SidebarOnboarding() {
   return (
     <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
       <LazyMotion features={domMax}>
-        <m.div
+        <MotionDiv
           layout
           style={{ transformOrigin: "top" }}
           transition={MORPH_TRANSITION}
         >
           <AnimatePresence initial={false} mode="popLayout">
             {collapsed ? (
-              <m.div
+              <MotionDiv
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -130,13 +131,13 @@ export function SidebarOnboarding() {
                   onClick={toggleCollapsed}
                   type="button"
                 >
-                  <m.span
+                  <MotionSpan
                     className="flex-1 truncate font-medium"
                     layoutId="onboarding-title"
                     transition={MORPH_TRANSITION}
                   >
                     Getting Started ({completedCount}/{steps.length})
-                  </m.span>
+                  </MotionSpan>
                   {agentRunning && <BrailleLoader className="text-xs" />}
                   <svg
                     aria-hidden="true"
@@ -152,16 +153,16 @@ export function SidebarOnboarding() {
                     <path d="m18 15-6-6-6 6" />
                   </svg>
                 </button>
-                <m.div
+                <MotionDiv
                   className="mt-1"
                   layoutId="onboarding-progress"
                   transition={MORPH_TRANSITION}
                 >
                   <Progress className="h-1" value={progress} />
-                </m.div>
-              </m.div>
+                </MotionDiv>
+              </MotionDiv>
             ) : (
-              <m.div
+              <MotionDiv
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
@@ -173,14 +174,14 @@ export function SidebarOnboarding() {
                   onClose={toggleCollapsed}
                 >
                   <OnboardingChecklistHeader>
-                    <m.div
+                    <MotionDiv
                       layoutId="onboarding-title"
                       transition={MORPH_TRANSITION}
                     >
                       <OnboardingChecklistTitle>
                         Getting Started
                       </OnboardingChecklistTitle>
-                    </m.div>
+                    </MotionDiv>
                   </OnboardingChecklistHeader>
                   <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
                     {agentRunning && (
@@ -189,12 +190,12 @@ export function SidebarOnboarding() {
                         <span>Eve is setting up your workspace…</span>
                       </div>
                     )}
-                    <m.div
+                    <MotionDiv
                       layoutId="onboarding-progress"
                       transition={MORPH_TRANSITION}
                     >
                       <OnboardingChecklistProgress value={progress} />
-                    </m.div>
+                    </MotionDiv>
                     <OnboardingChecklistItems>
                       {steps.map((step) => (
                         <OnboardingChecklistItem
@@ -208,10 +209,10 @@ export function SidebarOnboarding() {
                     </OnboardingChecklistItems>
                   </OnboardingChecklistContent>
                 </OnboardingChecklist>
-              </m.div>
+              </MotionDiv>
             )}
           </AnimatePresence>
-        </m.div>
+        </MotionDiv>
       </LazyMotion>
     </SidebarGroup>
   );

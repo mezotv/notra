@@ -110,6 +110,16 @@ function normalizeIntegrationError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+function getSortIcon(isSorted: false | "asc" | "desc") {
+  if (isSorted === "asc") {
+    return ArrowUp01Icon;
+  }
+  if (isSorted === "desc") {
+    return ArrowDown01Icon;
+  }
+  return ArrowUpDownIcon;
+}
+
 interface PageClientProps {
   organizationSlug: string;
 }
@@ -669,15 +679,6 @@ function ScheduleTable({
     });
   })();
 
-  function getSortIcon(isSorted: false | "asc" | "desc") {
-    if (isSorted === "asc") {
-      return ArrowUp01Icon;
-    }
-    if (isSorted === "desc") {
-      return ArrowDown01Icon;
-    }
-    return ArrowUpDownIcon;
-  }
   const sortIcon = getSortIcon(createdSortOrder);
 
   if (triggers.length === 0) {
