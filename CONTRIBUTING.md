@@ -99,6 +99,11 @@ bun run db:migrate
 bun dev
 ```
 
+On first run, approve Portless's local certificate prompt. The apps are then
+available at `https://app.notra.localhost`, `https://notra.localhost`,
+`https://api.notra.localhost`, and `https://docs.notra.localhost`. Portless
+prefixes these hostnames automatically in linked Git worktrees.
+
 Run a single app when needed:
 
 ```bash
@@ -107,6 +112,9 @@ bun dev --filter=api
 bun dev --filter=web
 bun dev --filter=docs
 ```
+
+The React Email preview is available at `https://email.notra.localhost` when
+running all development tasks, or on its own with `bun run email:dev`.
 
 ## QStash Local Workflows
 

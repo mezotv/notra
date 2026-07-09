@@ -2,11 +2,17 @@
   "name": "docs",
   "type": "module",
   "scripts": {
-    "dev": "mint dev --port 3005 --no-open",
+    "dev": "portless",
+    "dev:app": "mint dev --port ${PORT:-3005} --no-open",
     "open": "mint dev --port 3005",
     "openapi:check": "mint openapi-check https://api.usenotra.com/openapi.json"
   },
+  "portless": {
+    "name": "docs.notra",
+    "script": "dev:app"
+  },
   "devDependencies": {
-    "mint": "^4.2.536"
+    "mint": "^4.2.536",
+    "portless": "^0.15.1"
   }
 }

@@ -48,6 +48,7 @@
         "@notra/typescript-config": "workspace:*",
         "@types/sanitize-html": "^2.16.0",
         "knip": "^6.12.1",
+        "portless": "^0.15.1",
         "typescript": "^5",
       },
     },
@@ -148,6 +149,7 @@
         "babel-plugin-react-compiler": "^1.0.0",
         "drizzle-kit": "^0.31.8",
         "knip": "^6.12.1",
+        "portless": "^0.15.1",
         "postcss": "^8.5.8",
         "tailwindcss": "^4",
         "typescript": "^5",
@@ -157,6 +159,7 @@
       "name": "docs",
       "devDependencies": {
         "mint": "^4.2.536",
+        "portless": "^0.15.1",
       },
     },
     "apps/web": {
@@ -211,6 +214,7 @@
         "@types/react-dom": "^19.2.3",
         "babel-plugin-react-compiler": "1.0.0",
         "knip": "^6.12.1",
+        "portless": "^0.15.1",
         "tailwindcss": "^4",
         "typescript": "^5",
       },
@@ -299,6 +303,7 @@
         "@react-email/preview-server": "5.2.8",
         "@types/node": "22.9.0",
         "@types/react": "^19.2.10",
+        "portless": "^0.15.1",
         "react-email": "5.2.8",
         "typescript": "^5.6.3",
       },
@@ -3560,6 +3565,8 @@
     "points-on-path": ["points-on-path@0.2.1", "", { "dependencies": { "path-data-parser": "0.1.0", "points-on-curve": "0.2.0" } }, "sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g=="],
 
     "pony-cause": ["pony-cause@1.1.1", "", {}, "sha512-PxkIc/2ZpLiEzQXu5YRDOUgBlfGYBY8156HY5ZcRAwwonMk5W/MrJP2LLkG/hF7GEQzaHo2aS7ho6ZLCOvf+6g=="],
+
+    "portless": ["portless@0.15.1", "", { "os": [ "linux", "win32", "darwin", ], "bin": { "portless": "dist/cli.js" } }, "sha512-MQTt405HrcIa3m9OSKpH6WjJDbfNP4oFMNg0VzAoUO4B19l1eFJBFcSWfQY8KYMhzZVfa+Gea2OUrlDm8+/M4A=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
 

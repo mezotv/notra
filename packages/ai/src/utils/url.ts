@@ -16,6 +16,7 @@ export function getConfiguredWorkflowUrl(): string | undefined {
 
 export function getConfiguredAppUrl(): string | undefined {
   const url =
+    process.env.PORTLESS_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);

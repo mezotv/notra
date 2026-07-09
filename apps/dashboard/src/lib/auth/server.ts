@@ -143,6 +143,7 @@ function getTrustedOrigins() {
       [
         "http://localhost:3000",
         "https://app.usenotra.com",
+        process.env.PORTLESS_URL,
         process.env.BETTER_AUTH_URL,
         process.env.NEXT_PUBLIC_APP_URL,
         process.env.WORKFLOW_BASE_URL,
@@ -257,7 +258,7 @@ export const auth = betterAuth({
     }),
     organization({
       sendInvitationEmail: async (data) => {
-        const inviteLink = `${process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
+        const inviteLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
         await sendInviteEmailAction({
           inviteeEmail: data.email,
           inviterName: data.inviter.user.name,
@@ -415,7 +416,7 @@ export const auth = betterAuth({
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,
   },
-  baseURL: process.env.BETTER_AUTH_URL,
+  baseURL: process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL,
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

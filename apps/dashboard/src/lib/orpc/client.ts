@@ -9,6 +9,7 @@ function getBaseUrl() {
   }
 
   return (
+    process.env.PORTLESS_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.BETTER_AUTH_URL ??
     "http://localhost:3000"

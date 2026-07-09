@@ -245,7 +245,7 @@ export async function sendScheduledContentFailedEmail(
     subject,
   }: SendScheduledContentFailedEmailProps
 ) {
-  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const settingsLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,
@@ -279,7 +279,7 @@ export async function sendScheduledContentSkippedEmail(
     subject,
   }: SendScheduledContentSkippedEmailProps
 ) {
-  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const settingsLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,
@@ -312,7 +312,10 @@ export async function sendAiCreditsDepletedEmail(
     subject,
   }: SendAiCreditsDepletedEmailProps
 ) {
-  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const appUrl =
+    process.env.PORTLESS_URL ??
+    process.env.BETTER_AUTH_URL ??
+    EMAIL_CONFIG.getAppUrl();
   const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
   const idempotencyKey = createHash("sha256")
     .update(
@@ -352,7 +355,10 @@ export async function sendWorkflowPausedEmail(
     subject,
   }: SendWorkflowPausedEmailProps
 ) {
-  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const appUrl =
+    process.env.PORTLESS_URL ??
+    process.env.BETTER_AUTH_URL ??
+    EMAIL_CONFIG.getAppUrl();
   const settingsLink = `${appUrl}/${organizationSlug}/automation/schedules`;
   const idempotencyKey = createHash("sha256")
     .update(

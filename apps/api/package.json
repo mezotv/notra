@@ -2,11 +2,16 @@
   "name": "api",
   "type": "module",
   "scripts": {
-    "dev": "NODE_ENV=development bun --watch src/index.ts",
+    "dev": "portless",
+    "dev:app": "NODE_ENV=development bun --watch src/index.ts",
     "build": "tsup",
     "start": "node dist/index.mjs",
     "check-types": "bunx tsc --noEmit",
     "knip": "knip"
+  },
+  "portless": {
+    "name": "api.notra",
+    "script": "dev:app"
   },
   "dependencies": {
     "@contextcompany/otel": "^1.0.16",
@@ -36,6 +41,7 @@
     "@types/sanitize-html": "^2.16.0",
     "@notra/typescript-config": "workspace:*",
     "knip": "^6.12.1",
+    "portless": "^0.15.1",
     "typescript": "^5"
   }
 }

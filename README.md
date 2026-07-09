@@ -53,11 +53,28 @@ bun install
 bun run dev
 ```
 
+Development servers run through [Portless](https://portless.sh/), which assigns
+free internal ports and exposes stable HTTPS URLs:
+
+| Service | Local URL |
+| --- | --- |
+| Dashboard | `https://app.notra.localhost` |
+| Website | `https://notra.localhost` |
+| API | `https://api.notra.localhost` |
+| Docs | `https://docs.notra.localhost` |
+| Email preview | `https://email.notra.localhost` |
+
+The first run asks to trust Portless's local certificate authority. Linked Git
+worktrees automatically receive a hostname prefix, so their servers do not
+collide with the main checkout.
+
 To run only the dashboard app:
 
 ```bash
 bun run dev --filter=dashboard
 ```
+
+Set `PORTLESS=0` to bypass the proxy and use the apps' fallback ports.
 
 To build the dashboard app:
 

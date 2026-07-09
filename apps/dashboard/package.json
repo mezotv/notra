@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "portless",
+    "dev:app": "next dev --port ${PORT:-3000}",
     "build": "next build",
     "start": "next start",
     "check-types": "tsc --noEmit",
@@ -14,6 +15,10 @@
     "db:studio": "drizzle-kit studio",
     "backfill:system-skills": "bun run scripts/backfill-system-skills.ts",
     "backfill:collection-titles": "bun run scripts/backfill-collection-titles.ts"
+  },
+  "portless": {
+    "name": "app.notra",
+    "script": "dev:app"
   },
   "dependencies": {
     "@ai-sdk/react": "3.0.208",
@@ -110,6 +115,7 @@
     "drizzle-kit": "^0.31.8",
     "knip": "^6.12.1",
     "postcss": "^8.5.8",
+    "portless": "^0.15.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

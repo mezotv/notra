@@ -127,7 +127,9 @@ export const socialAccountsRouter = {
         }
 
         const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+          process.env.PORTLESS_URL ??
+          process.env.BETTER_AUTH_URL ??
+          process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {
           throw badRequest("Application base URL is not configured");
         }

@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001",
+    "dev": "portless",
+    "dev:app": "next dev --port ${PORT:-3001}",
     "build": "next build",
     "start": "next start",
     "knip": "knip"
+  },
+  "portless": {
+    "name": "notra",
+    "script": "dev:app"
   },
   "dependencies": {
     "@bydefault/vercel": "^0.1.4",
@@ -57,6 +62,7 @@
     "@types/react-dom": "^19.2.3",
     "babel-plugin-react-compiler": "1.0.0",
     "knip": "^6.12.1",
+    "portless": "^0.15.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

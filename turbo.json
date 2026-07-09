@@ -75,6 +75,7 @@
     },
     "dev": {
       "cache": false,
+      "passThroughEnv": ["PORTLESS", "PORTLESS_*"],
       "persistent": true
     }
   }
