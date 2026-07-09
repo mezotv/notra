@@ -2,27 +2,15 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { desc, eq, type SQL, sql } from "drizzle-orm";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
 import { BRAND_PROFILE_FIELDS } from "../lib/constants/brand";
+import { updateBrandProfileInputSchema } from "../lib/schemas/onboarding-tools";
 import type { BrandProfileField } from "../lib/types/brand";
 import { requireOrganizationId } from "../lib/utils/organization";
 
 export default defineTool({
   description:
     "Fill in missing fields on the organization's default brand voice from research findings: company name, description, tone profile, and audience. Never overwrites fields the user already filled in.",
-  inputSchema: z
-    .object({
-      companyName: z.string().min(1).optional(),
-      companyDescription: z.string().min(1).optional(),
-      toneProfile: z.string().min(1).optional(),
-      audience: z.string().min(1).optional(),
-    })
-    .refine(
-      (input) =>
-        BRAND_PROFILE_FIELDS.some((field) => input[field] !== undefined),
-      { message: "Provide at least one brand profile field to update" }
-    ),
+  inputSchema: updateBrandProfileInputSchema,
   async execute(fields, ctx) {
     const organizationId = requireOrganizationId(ctx);
     const settings = await db.query.brandSettings.findFirst({

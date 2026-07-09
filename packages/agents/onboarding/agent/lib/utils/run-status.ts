@@ -1,41 +1,33 @@
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+import type { SessionContext } from "eve/context";
+import { getOrganizationId } from "./organization";
+import { withTransientRetryEffect } from "./retry";
 
-const ORGANIZATION_ID_PATTERN = /The organizationId is ([A-Za-z0-9_-]+)\./;
-
-const sessionOrganizations = new Map<string, string>();
-
-export function rememberSessionOrganization(
-  sessionId: string,
-  message: string
-): void {
-  const match = ORGANIZATION_ID_PATTERN.exec(message);
-  const organizationId = match?.[1];
-  if (organizationId) {
-    sessionOrganizations.set(sessionId, organizationId);
-  }
-}
-
-export function forgetSessionOrganization(sessionId: string): void {
-  sessionOrganizations.delete(sessionId);
-}
-
-export async function markOnboardingAgentRan(sessionId: string): Promise<void> {
-  const organizationId = sessionOrganizations.get(sessionId);
+export async function markOnboardingAgentRan(
+  ctx: SessionContext
+): Promise<void> {
+  const organizationId = getOrganizationId(ctx);
   if (!organizationId) {
     return;
   }
-  try {
-    await db
-      .update(organizations)
-      .set({ onboardingAgentRan: true })
-      .where(eq(organizations.id, organizationId));
-    sessionOrganizations.delete(sessionId);
-  } catch (error) {
-    console.error(
-      `[run-status] Failed to mark onboarding agent ran for organization ${organizationId}`,
-      error
-    );
-  }
+  await withTransientRetryEffect(
+    async () => {
+      await db
+        .update(organizations)
+        .set({ onboardingAgentRan: true })
+        .where(eq(organizations.id, organizationId));
+    },
+    { operationName: `Mark onboarding agent ran for ${organizationId}` }
+  ).pipe(
+    Effect.catchTag("ToolOperationError", (error) =>
+      Effect.logError(
+        `[run-status] Failed to mark onboarding agent ran for organization ${organizationId}`,
+        error.cause
+      )
+    ),
+    Effect.runPromise
+  );
 }

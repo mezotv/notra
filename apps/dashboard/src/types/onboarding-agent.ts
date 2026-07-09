@@ -27,3 +27,10 @@ export interface OnboardingSlackInviteResult {
   invited: boolean;
   channelId?: string;
 }
+
+export interface LaunchReservedOnboardingAgentInput {
+  payload: Omit<OnboardingAgentWorkflowPayload, "reservedAt">;
+  reservedAt: Date;
+}
+
+import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";

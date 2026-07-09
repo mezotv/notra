@@ -1,5 +1,23 @@
+import { Schema } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
+export class OnboardingAgentTriggerError extends Schema.TaggedErrorClass<OnboardingAgentTriggerError>()(
+  "OnboardingAgentTriggerError",
+  {
+    cause: Schema.Defect(),
+    organizationId: Schema.String,
+  }
+) {}
+
+export class OnboardingAgentCompensationError extends Schema.TaggedErrorClass<OnboardingAgentCompensationError>()(
+  "OnboardingAgentCompensationError",
+  {
+    cause: Schema.Defect(),
+    organizationId: Schema.String,
+    triggerCause: Schema.Defect(),
+  }
+) {}
 
 export const onboardingAgentWorkflowPayloadSchema = z.object({
   organizationId: z.string().trim().min(1),
@@ -12,10 +30,6 @@ export const onboardingAgentWorkflowPayloadSchema = z.object({
 export const triggerOnboardingAgentSetupSchema = z.object({
   organizationId: z.string().trim().min(1),
   websiteUrl: z.string().trim().min(1).optional(),
-});
-
-export const eveSessionResponseSchema = z.object({
-  sessionId: z.string().min(1),
 });
 
 export const startAgentRunInputSchema = z.object({
@@ -31,4 +45,8 @@ export const listSuggestionsInputSchema = z.object({
 export const dismissSuggestionInputSchema = z.object({
   organizationId: z.string().trim().min(1),
   suggestionId: z.string().min(1),
+});
+
+export const onboardingSuggestionDataSchema = z.looseObject({
+  evidence: z.string().trim().min(1).optional(),
 });

@@ -1,19 +1,16 @@
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
 import {
   GITHUB_API_BASE,
   README_MAX_LENGTH,
 } from "../../../lib/constants/github";
 import { githubRepoSchema } from "../../../lib/schemas/github-repo";
+import { githubRepositoryInputSchema } from "../../../lib/schemas/research-tools";
+import { fetchWithTransientRetry } from "../../../lib/utils/retry";
 
 export default defineTool({
   description:
     "Fetch a public GitHub repository's metadata and README to research the customer's product during onboarding.",
-  inputSchema: z.object({
-    owner: z.string().min(1),
-    repo: z.string().min(1),
-  }),
+  inputSchema: githubRepositoryInputSchema,
   async execute({ owner, repo }) {
     const headers: Record<string, string> = {
       accept: "application/vnd.github+json",
@@ -24,9 +21,10 @@ export default defineTool({
       headers.authorization = `Bearer ${token}`;
     }
 
-    const repoResponse = await fetch(
+    const repoResponse = await fetchWithTransientRetry(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}`,
-      { headers }
+      { headers },
+      `GitHub repository lookup for ${owner}/${repo}`
     );
     if (!repoResponse.ok) {
       throw new Error(
@@ -35,9 +33,10 @@ export default defineTool({
     }
     const repoData = githubRepoSchema.parse(await repoResponse.json());
 
-    const readmeResponse = await fetch(
+    const readmeResponse = await fetchWithTransientRetry(
       `${GITHUB_API_BASE}/repos/${owner}/${repo}/readme`,
-      { headers: { ...headers, accept: "application/vnd.github.raw+json" } }
+      { headers: { ...headers, accept: "application/vnd.github.raw+json" } },
+      `GitHub README lookup for ${owner}/${repo}`
     );
     const readme = readmeResponse.ok
       ? (await readmeResponse.text()).slice(0, README_MAX_LENGTH)

@@ -1,21 +1,14 @@
 import { defineHook, type HookDefinition } from "eve/hooks";
-import {
-  forgetSessionOrganization,
-  markOnboardingAgentRan,
-  rememberSessionOrganization,
-} from "../utils/run-status";
+import { markOnboardingAgentRan } from "../utils/run-status";
 
 export function createRunStatusHook(): HookDefinition {
   return defineHook({
     events: {
-      "message.received"(event, ctx) {
-        rememberSessionOrganization(ctx.session.id, event.data.message);
-      },
       async "turn.completed"(_event, ctx) {
-        await markOnboardingAgentRan(ctx.session.id);
+        await markOnboardingAgentRan(ctx);
       },
       async "session.completed"(_event, ctx) {
-        await markOnboardingAgentRan(ctx.session.id);
+        await markOnboardingAgentRan(ctx);
       },
       "turn.failed"(event, ctx) {
         console.error(
@@ -23,7 +16,6 @@ export function createRunStatusHook(): HookDefinition {
         );
       },
       "session.failed"(event, ctx) {
-        forgetSessionOrganization(ctx.session.id);
         console.error(
           `[run-status] Onboarding agent session failed for session ${ctx.session.id}: ${event.data.message}`
         );

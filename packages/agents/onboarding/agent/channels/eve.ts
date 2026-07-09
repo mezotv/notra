@@ -13,18 +13,14 @@ import {
   verifyVercelOidc,
 } from "eve/channels/auth";
 import { eveChannel } from "eve/channels/eve";
+import { ALLOWED_VERCEL_ENVIRONMENTS } from "../lib/constants/auth";
 import type { VerifiedSessionAuth } from "../lib/types/auth";
-
-const ALLOWED_ENVIRONMENTS: readonly VercelSubjectEnvironment[] = [
-  "production",
-  "preview",
-  "development",
-  "*",
-];
 
 function getDashboardEnvironment(): VercelSubjectEnvironment {
   const configured = process.env.DASHBOARD_VERCEL_ENVIRONMENT;
-  const match = ALLOWED_ENVIRONMENTS.find((value) => value === configured);
+  const match = ALLOWED_VERCEL_ENVIRONMENTS.find(
+    (value) => value === configured
+  );
   return match ?? "production";
 }
 

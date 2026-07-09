@@ -1,6 +1,5 @@
+import { Effect } from "effect";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
 import {
   COMMITS_PER_PAGE,
   GITHUB_API_BASE,
@@ -12,6 +11,11 @@ import {
   githubCommitListSchema,
   githubReleaseListSchema,
 } from "../../../lib/schemas/github-activity";
+import { githubRepositoryInputSchema } from "../../../lib/schemas/research-tools";
+import {
+  fetchWithTransientRetryEffect,
+  runToolOperation,
+} from "../../../lib/utils/retry";
 
 function buildGithubHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
@@ -28,23 +32,27 @@ function buildGithubHeaders(): Record<string, string> {
 export default defineTool({
   description:
     "Fetch a public GitHub repository's recent activity: published releases and recent commits. Use it to learn how the team ships (release cadence, commit frequency) so the caller can suggest matching content workflows like changelog posts.",
-  inputSchema: z.object({
-    owner: z.string().min(1),
-    repo: z.string().min(1),
-  }),
+  inputSchema: githubRepositoryInputSchema,
   async execute({ owner, repo }) {
     const headers = buildGithubHeaders();
 
-    const [releasesResponse, commitsResponse] = await Promise.all([
-      fetch(
-        `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases?per_page=${RELEASES_PER_PAGE}`,
-        { headers }
-      ),
-      fetch(
-        `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits?per_page=${COMMITS_PER_PAGE}`,
-        { headers }
-      ),
-    ]);
+    const [releasesResponse, commitsResponse] = await runToolOperation(
+      Effect.all(
+        [
+          fetchWithTransientRetryEffect(
+            `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases?per_page=${RELEASES_PER_PAGE}`,
+            { headers },
+            `GitHub releases lookup for ${owner}/${repo}`
+          ),
+          fetchWithTransientRetryEffect(
+            `${GITHUB_API_BASE}/repos/${owner}/${repo}/commits?per_page=${COMMITS_PER_PAGE}`,
+            { headers },
+            `GitHub commits lookup for ${owner}/${repo}`
+          ),
+        ],
+        { concurrency: "unbounded" }
+      )
+    );
 
     if (!(releasesResponse.ok || commitsResponse.ok)) {
       throw new Error(

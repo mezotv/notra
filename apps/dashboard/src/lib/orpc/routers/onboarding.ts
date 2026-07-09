@@ -1,4 +1,3 @@
-import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -9,13 +8,14 @@ import {
 } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
+import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { AGENT_RUN_HARD_LIMIT_MS } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import {
   getOnboardingAgentState,
-  releaseOnboardingAgentReservation,
+  launchReservedOnboardingAgent,
   reserveOnboardingAgentRerun,
 } from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
@@ -128,20 +128,16 @@ export const onboardingRouter = {
         });
       }
 
-      try {
-        const workflowRunId = await triggerOnboardingAgent({
-          domain: input.domain,
-          organizationId: input.organizationId,
-          reservedAt: reservedAt.toISOString(),
-        });
-        return { workflowRunId };
-      } catch (error) {
-        await releaseOnboardingAgentReservation(
-          input.organizationId,
-          reservedAt
-        );
-        throw error;
-      }
+      const workflowRunId = await Effect.runPromise(
+        launchReservedOnboardingAgent({
+          payload: {
+            domain: input.domain,
+            organizationId: input.organizationId,
+          },
+          reservedAt,
+        })
+      );
+      return { workflowRunId };
     }),
   suggestions: authorizedProcedure
     .input(listSuggestionsInputSchema)

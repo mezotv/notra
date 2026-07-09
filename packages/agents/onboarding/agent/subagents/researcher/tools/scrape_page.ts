@@ -1,17 +1,17 @@
 import { fetchWebpage } from "@notra/ai/utils/context-dev";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
 import { SCRAPE_MARKDOWN_MAX_LENGTH } from "../../../lib/constants/context-dev";
+import { webpageInputSchema } from "../../../lib/schemas/research-tools";
+import { withTransientRetry } from "../../../lib/utils/retry";
 
 export default defineTool({
   description:
     "Scrape a web page into clean markdown via context.dev. Use for company websites, blog posts, changelogs, and LinkedIn company pages.",
-  inputSchema: z.object({
-    url: z.string().min(1),
-  }),
+  inputSchema: webpageInputSchema,
   async execute({ url }) {
-    const page = await fetchWebpage({ url });
+    const page = await withTransientRetry(() => fetchWebpage({ url }), {
+      operationName: `Context.dev page scrape for ${url}`,
+    });
     return {
       url: page.url,
       title: page.metadata?.title ?? null,

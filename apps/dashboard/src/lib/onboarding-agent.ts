@@ -2,26 +2,35 @@ import {
   EVE_AGENT_ORGANIZATION_HEADER,
   EVE_AGENT_SERVICE_USERNAME,
 } from "@notra/ai/constants/onboarding-agent";
+import {
+  SLACK_CHANNEL_NAME_MAX_LENGTH,
+  SLACK_INVALID_CHANNEL_CHARS_REGEX,
+} from "@notra/ai/constants/slack";
 import { createSlackConnectChannelWithInvite } from "@notra/ai/integrations/slack";
+import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
+import { onboardingProfileSchema } from "@notra/ai/schemas/onboarding-agent";
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
+import { Effect } from "effect";
+import { Client } from "eve/client";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
-  SLACK_CHANNEL_NAME_MAX_LENGTH,
   SLACK_CHANNEL_PREFIX,
+  TRAILING_SLASH_PATTERN,
 } from "@/constants/onboarding-agent";
 import { buildOnboardingAgentMessage } from "@/lib/debug/onboarding-agent";
-import { eveSessionResponseSchema } from "@/schemas/onboarding-agent";
+import {
+  OnboardingAgentCompensationError,
+  OnboardingAgentTriggerError,
+} from "@/schemas/onboarding-agent";
 import type {
+  LaunchReservedOnboardingAgentInput,
   OnboardingSlackInviteInput,
   OnboardingSlackInviteResult,
   StartOnboardingAgentSessionInput,
 } from "@/types/onboarding-agent";
-
-const TRAILING_SLASH_PATTERN = /\/$/;
-const SLACK_CHANNEL_INVALID_CHARS_PATTERN = /[^a-z0-9_-]/g;
 
 function getEveOnboardingAgentUrl() {
   const url = process.env.EVE_ONBOARDING_AGENT_URL;
@@ -31,35 +40,36 @@ function getEveOnboardingAgentUrl() {
   return url.replace(TRAILING_SLASH_PATTERN, "");
 }
 
-async function resolveEveAgentAuthorization(): Promise<string | null> {
+async function createEveAgentClient(organizationId: string) {
+  const clientOptions = {
+    headers: { [EVE_AGENT_ORGANIZATION_HEADER]: organizationId },
+    host: getEveOnboardingAgentUrl(),
+    redirect: "error" as const,
+  };
+
   try {
     const token = await getVercelOidcToken();
     if (token) {
-      return `Bearer ${token}`;
+      return new Client({
+        ...clientOptions,
+        auth: { vercelOidc: { token } },
+      });
     }
-  } catch {}
+  } catch {
+    // Fall back to Basic auth outside Vercel or when OIDC is unavailable.
+  }
+
   const password = process.env.EVE_ONBOARDING_AGENT_PASSWORD;
   if (password) {
-    const credentials = Buffer.from(
-      `${EVE_AGENT_SERVICE_USERNAME}:${password}`
-    ).toString("base64");
-    return `Basic ${credentials}`;
+    return new Client({
+      ...clientOptions,
+      auth: {
+        basic: { password, username: EVE_AGENT_SERVICE_USERNAME },
+      },
+    });
   }
-  return null;
-}
 
-async function buildEveAgentHeaders(
-  organizationId: string
-): Promise<Record<string, string>> {
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-    [EVE_AGENT_ORGANIZATION_HEADER]: organizationId,
-  };
-  const authorization = await resolveEveAgentAuthorization();
-  if (authorization) {
-    headers.authorization = authorization;
-  }
-  return headers;
+  return new Client(clientOptions);
 }
 
 export async function reserveInitialOnboardingAgentRun(
@@ -124,26 +134,45 @@ export async function releaseOnboardingAgentReservation(
     );
 }
 
+export const launchReservedOnboardingAgent = Effect.fn(
+  "launchReservedOnboardingAgent"
+)(function* ({ payload, reservedAt }: LaunchReservedOnboardingAgentInput) {
+  const organizationId = payload.organizationId;
+  return yield* Effect.tryPromise({
+    try: () =>
+      triggerOnboardingAgent({
+        ...payload,
+        reservedAt: reservedAt.toISOString(),
+      }),
+    catch: (cause) =>
+      new OnboardingAgentTriggerError({ cause, organizationId }),
+  }).pipe(
+    Effect.catchTag("OnboardingAgentTriggerError", (triggerError) =>
+      Effect.tryPromise({
+        try: () =>
+          releaseOnboardingAgentReservation(organizationId, reservedAt),
+        catch: (cause) =>
+          new OnboardingAgentCompensationError({
+            cause,
+            organizationId,
+            triggerCause: triggerError.cause,
+          }),
+      }).pipe(Effect.flatMap(() => Effect.fail(triggerError)))
+    )
+  );
+});
+
 export async function startOnboardingAgentSession({
   organizationId,
   domain,
 }: StartOnboardingAgentSessionInput) {
-  const response = await fetch(`${getEveOnboardingAgentUrl()}/eve/v1/session`, {
-    body: JSON.stringify({
-      message: buildOnboardingAgentMessage(domain, organizationId),
-    }),
-    headers: await buildEveAgentHeaders(organizationId),
-    method: "POST",
+  const client = await createEveAgentClient(organizationId);
+  const session = client.session();
+  const response = await session.send({
+    message: buildOnboardingAgentMessage(domain, organizationId),
+    outputSchema: onboardingProfileSchema,
   });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to start the onboarding agent session: status ${response.status}`
-    );
-  }
-
-  const { sessionId } = eveSessionResponseSchema.parse(await response.json());
-
-  return { sessionId };
+  return { sessionId: response.sessionId };
 }
 
 export async function sendOnboardingSlackInvite({
@@ -156,7 +185,7 @@ export async function sendOnboardingSlackInvite({
 
   const channelName = `${SLACK_CHANNEL_PREFIX}${organizationSlug}`
     .toLowerCase()
-    .replace(SLACK_CHANNEL_INVALID_CHARS_PATTERN, "-")
+    .replace(SLACK_INVALID_CHANNEL_CHARS_REGEX, "-")
     .slice(0, SLACK_CHANNEL_NAME_MAX_LENGTH);
 
   try {

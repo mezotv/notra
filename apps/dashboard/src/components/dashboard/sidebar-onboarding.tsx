@@ -16,9 +16,9 @@ import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useSyncExternalStore } from "react";
 import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { AGENT_RUN_POLL_INTERVAL_MS } from "@/constants/onboarding-agent";
 import { localStorageKeys } from "@/constants/storage";
 import {
-  AGENT_RUN_POLL_INTERVAL_MS,
   useOnboardingAgentRun,
   useOnboardingStatus,
 } from "@/lib/hooks/use-onboarding";

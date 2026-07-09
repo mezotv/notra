@@ -2,16 +2,23 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { OnboardingStatus } from "@/types/hooks/onboarding";
+import {
+  AGENT_RUN_POLL_INTERVAL_MS,
+  AGENT_RUN_STALE_TIME_MS,
+  SUGGESTIONS_STALE_TIME_MS,
+} from "@/constants/onboarding-agent";
+import type {
+  OnboardingRunSnapshot,
+  OnboardingStatus,
+  PendingOnboardingSuggestion,
+  UseOnboardingStatusOptions,
+  UseOnboardingSuggestionsOptions,
+} from "@/types/hooks/onboarding";
 import { dashboardOrpc } from "../orpc/query";
-
-export const AGENT_RUN_POLL_INTERVAL_MS = 10_000;
-const AGENT_RUN_STALE_TIME_MS = 60_000;
-const SUGGESTIONS_STALE_TIME_MS = 300_000;
 
 export function useOnboardingStatus(
   organizationId: string,
-  options?: { refetchInterval?: number | false }
+  options?: UseOnboardingStatusOptions
 ) {
   return useQuery<OnboardingStatus>(
     dashboardOrpc.onboarding.get.queryOptions({
@@ -24,10 +31,7 @@ export function useOnboardingStatus(
 
 export function useOnboardingAgentRun(organizationId: string) {
   const queryClient = useQueryClient();
-  const previousRunRef = useRef<{
-    organizationId: string;
-    running: boolean;
-  } | null>(null);
+  const previousRunRef = useRef<OnboardingRunSnapshot | null>(null);
 
   const query = useQuery(
     dashboardOrpc.onboarding.agentRun.queryOptions({
@@ -72,7 +76,7 @@ export function useOnboardingAgentRun(organizationId: string) {
 
 export function useOnboardingSuggestions(
   organizationId: string,
-  options?: { agentRunning?: boolean }
+  options?: UseOnboardingSuggestionsOptions
 ) {
   return useQuery(
     dashboardOrpc.onboarding.suggestions.queryOptions({
@@ -109,10 +113,9 @@ export function useDismissOnboardingSuggestion() {
  * create after switching organizations never dismisses the wrong one.
  */
 export function useCreateFromSuggestion(organizationId: string | undefined) {
-  const [pending, setPending] = useState<{
-    organizationId: string;
-    suggestionId: string;
-  } | null>(null);
+  const [pending, setPending] = useState<PendingOnboardingSuggestion | null>(
+    null
+  );
   const { mutate: dismissSuggestion } = useDismissOnboardingSuggestion();
 
   const beginCreate = useCallback(

@@ -1,10 +1,11 @@
 import { DOMAINS } from "free-email-domains-list";
 import { isValid as isNotDisposableEmail } from "mailchecker";
-import { WEBSITE_REACHABILITY_TIMEOUT_MS } from "@/constants/onboarding-agent";
+import {
+  SERVER_ERROR_STATUS,
+  WEBSITE_REACHABILITY_TIMEOUT_MS,
+  WWW_PREFIX_PATTERN,
+} from "@/constants/onboarding-agent";
 import type { CompanyDomainResolution } from "@/types/onboarding-agent";
-
-const WWW_PREFIX_PATTERN = /^www\./;
-const SERVER_ERROR_STATUS = 500;
 
 function extractDomain(value: string): string | null {
   const trimmed = value.trim().toLowerCase();
@@ -63,7 +64,9 @@ export async function isWebsiteReachable(domain: string): Promise<boolean> {
     if (response.status < SERVER_ERROR_STATUS) {
       return true;
     }
-  } catch {}
+  } catch {
+    // Some hosts reject HEAD requests; retry with GET before marking unreachable.
+  }
 
   try {
     const response = await fetchWebsite(domain, "GET");

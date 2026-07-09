@@ -1,35 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
-  brandGuidelineColorRoleEnum,
   brandGuidelineColors,
   brandGuidelines,
   brandSettings,
 } from "@notra/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
-import { MAX_BRAND_COLORS } from "../lib/constants/brand";
+import { saveBrandColorsInputSchema } from "../lib/schemas/onboarding-tools";
 import { requireOrganizationId } from "../lib/utils/organization";
 
 export default defineTool({
   description:
     "Save the researched brand colors to the organization's brand guidelines. Skips without overwriting when colors already exist. Use exact color values quoted in the research brief.",
-  inputSchema: z.object({
-    colors: z
-      .array(
-        z.object({
-          role: z.enum(brandGuidelineColorRoleEnum.enumValues),
-          name: z.string().min(1).optional(),
-          lightValue: z.string().min(1),
-          darkValue: z.string().min(1).optional(),
-          usage: z.string().min(1).optional(),
-        })
-      )
-      .min(1)
-      .max(MAX_BRAND_COLORS),
-  }),
+  inputSchema: saveBrandColorsInputSchema,
   async execute({ colors }, ctx) {
     const organizationId = requireOrganizationId(ctx);
     const settings = await db.query.brandSettings.findFirst({

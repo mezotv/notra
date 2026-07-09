@@ -1,7 +1,6 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-
-const STREAM_LOG_DIR = path.join(process.cwd(), "logs", "streams");
+import { STREAM_LOG_DIR } from "../constants/stream-log";
 
 let ensureLogDir: Promise<string | undefined> | undefined;
 

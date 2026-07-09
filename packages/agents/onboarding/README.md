@@ -16,10 +16,10 @@ dashboard: triggerOnboardingAgentSetup (server action)
         │
         ▼
 Upstash Workflow: POST /api/workflows/onboarding-agent   (dashboard deployment)
+  - sends the Slack Connect invite when the workflow starts
   - start-session: POST {EVE_ONBOARDING_AGENT_URL}/eve/v1/session
   - polls organizations.onboarding_agent_ran every 30s
   - 15 min soft limit (logged), 30 min hard limit (logged as timed out)
-  - on completion: Slack Connect invite to the signup email
         │
         ▼
 eve agent (this package, separate Vercel project)
@@ -90,8 +90,9 @@ The 401 is the point: route auth fails closed. Only three callers get in — the
 - Session state is persisted by eve's runtime (not in process memory), so a function instance dying mid-run does not lose the run; the workflow resumes.
 - Each org's data writes are scoped by the session's organization id, and Supermemory is partitioned per organization by container tag. Nothing is shared between concurrent runs except code.
 - Model throughput is the practical bottleneck under load: every run makes many gateway calls (GPT-5.5 + Sonnet). If signups spike, runs queue at the provider rate limit and simply take longer; the 15-minute target is per-run, not global.
-
-One caveat: the completion flag is flipped by a hook that resolves the org from an in-process map populated at run start. A function instance recycling mid-run can lose that map entry, in which case the workflow logs a timeout and the signup flow degrades gracefully (the run's DB writes still landed; only the "ran" flag and Slack invite are skipped).
+- The completion hook resolves the organization from Eve's durable session-auth snapshot, not process memory, so it survives workflow step boundaries and serverless instance recycling.
+- External research reads retry transient network, rate-limit, and 5xx failures with bounded exponential backoff. Permanent 4xx and validation errors fail immediately so the agent can record the unavailable source and continue.
+- Side-effecting database tools are replay-safe: brand colors already use an atomic row lock, and references and suggestions deduplicate under an organization-scoped lock before inserting.
 
 ## Signup wiring
 
@@ -103,7 +104,7 @@ One caveat: the completion flag is flipped by a hook that resolves the org from 
 4. Checks the website actually responds (HEAD/GET with a 5s timeout).
 5. Triggers the Upstash workflow with `{ organizationId, domain, email, organizationSlug }`.
 
-When the workflow sees the run complete, it creates a Slack Connect channel `notra-<slug>` and invites the signup email (skipped when `SLACK_BOT_TOKEN` is unset or the invite fails; failures never fail the workflow).
+When the workflow starts, it creates a Slack Connect channel `notra-<slug>` and invites the signup email (skipped when `SLACK_BOT_TOKEN` is unset or the invite fails; failures never fail the workflow).
 
 ## Local development
 

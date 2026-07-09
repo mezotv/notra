@@ -2,25 +2,13 @@ import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { updateSkillInputSchema } from "../../../lib/schemas/skill-tools";
 import { requireOrganizationId } from "../../../lib/utils/organization";
 
 export default defineTool({
   description:
     "Update a skill's content and/or description for the organization. Requires at least one field to change.",
-  inputSchema: z
-    .object({
-      name: z.string().min(1),
-      content: z.string().min(1).optional(),
-      description: z.string().min(1).optional(),
-    })
-    .refine(
-      (input) => input.content !== undefined || input.description !== undefined,
-      {
-        message: "Provide content or description to update",
-      }
-    ),
+  inputSchema: updateSkillInputSchema,
   async execute({ name, content, description }, ctx) {
     const organizationId = requireOrganizationId(ctx);
     const updated = await db

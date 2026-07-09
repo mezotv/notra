@@ -7,27 +7,14 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { toast } from "sonner";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
+import { EVE_ACCENT_COLOR } from "@/constants/onboarding-agent";
 import {
   useDismissOnboardingSuggestion,
   useOnboardingAgentRun,
   useOnboardingSuggestions,
 } from "@/lib/hooks/use-onboarding";
-
-const EVE_ACCENT_COLOR = "#9333EA";
-
-interface OnboardingSuggestionsProps {
-  organizationId: string;
-  type: "schedule_automation" | "event_automation";
-  onCreate: (suggestionId: string) => void;
-}
-
-function getEvidence(data: unknown): string | null {
-  if (!data || typeof data !== "object") {
-    return null;
-  }
-  const { evidence } = data as { evidence?: unknown };
-  return typeof evidence === "string" && evidence.length > 0 ? evidence : null;
-}
+import type { OnboardingSuggestionsProps } from "@/types/components/onboarding-suggestions";
+import { getOnboardingSuggestionEvidence } from "@/utils/onboarding-suggestions";
 
 export function OnboardingSuggestions({
   organizationId,
@@ -73,7 +60,7 @@ export function OnboardingSuggestions({
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {matching.map((suggestion) => {
-          const evidence = getEvidence(suggestion.data);
+          const evidence = getOnboardingSuggestionEvidence(suggestion.data);
           return (
             <TitleCard
               accentColor={EVE_ACCENT_COLOR}

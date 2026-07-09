@@ -1,11 +1,11 @@
 "use server";
 
-import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
+import { Effect } from "effect";
 import { headers } from "next/headers";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -17,7 +17,7 @@ import {
   resolveCompanyDomain,
 } from "@/lib/onboarding/company-domain";
 import {
-  releaseOnboardingAgentReservation,
+  launchReservedOnboardingAgent,
   reserveInitialOnboardingAgentRun,
 } from "@/lib/onboarding-agent";
 import { organizationIdSchema } from "@/schemas/auth/organization";
@@ -166,6 +166,11 @@ export async function triggerOnboardingAgentSetup(
     return { skipped: "website-unreachable", success: true };
   }
 
+  const organization = await db.query.organizations.findFirst({
+    columns: { slug: true },
+    where: eq(organizations.id, input.organizationId),
+  });
+
   const reservedAt = await reserveInitialOnboardingAgentRun(
     input.organizationId
   );
@@ -173,23 +178,17 @@ export async function triggerOnboardingAgentSetup(
     return { skipped: "already-started", success: true };
   }
 
-  try {
-    const organization = await db.query.organizations.findFirst({
-      columns: { slug: true },
-      where: eq(organizations.id, input.organizationId),
-    });
-
-    await triggerOnboardingAgent({
-      domain: resolution.domain,
-      email: session.user.email,
-      organizationId: input.organizationId,
-      organizationSlug: organization?.slug,
-      reservedAt: reservedAt.toISOString(),
-    });
-  } catch (error) {
-    await releaseOnboardingAgentReservation(input.organizationId, reservedAt);
-    throw error;
-  }
+  await Effect.runPromise(
+    launchReservedOnboardingAgent({
+      payload: {
+        domain: resolution.domain,
+        email: session.user.email,
+        organizationId: input.organizationId,
+        organizationSlug: organization?.slug,
+      },
+      reservedAt,
+    })
+  );
 
   return { success: true };
 }

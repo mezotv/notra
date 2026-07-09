@@ -1,6 +1,6 @@
+import { onboardingProfileSchema } from "@notra/ai/schemas/onboarding-agent";
 import { defineAgent } from "eve";
 import { GPT_5_5_CONTEXT_WINDOW_TOKENS } from "./lib/constants/models";
-import { onboardingProfileSchema } from "./lib/schemas/onboarding-profile";
 import { createAgentModel } from "./lib/utils/model";
 
 export default defineAgent({

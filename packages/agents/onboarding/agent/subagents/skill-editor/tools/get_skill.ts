@@ -2,16 +2,13 @@ import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { skillNameInputSchema } from "../../../lib/schemas/skill-tools";
 import { requireOrganizationId } from "../../../lib/utils/organization";
 
 export default defineTool({
   description:
     "Read the full content of one of the organization's skills by name.",
-  inputSchema: z.object({
-    name: z.string().min(1),
-  }),
+  inputSchema: skillNameInputSchema,
   async execute({ name }, ctx) {
     const organizationId = requireOrganizationId(ctx);
     const rows = await db

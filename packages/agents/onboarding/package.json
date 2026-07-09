@@ -20,6 +20,7 @@
     "@notra/db": "workspace:*",
     "ai": "^7.0.0",
     "drizzle-orm": "^0.45.2",
+    "effect": "4.0.0-beta.78",
     "eve": "0.17.0",
     "pg": "^8.20.0",
     "zod": "^4.3.4"
