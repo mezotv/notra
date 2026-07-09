@@ -14,9 +14,14 @@ import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
+import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { localStorageKeys } from "@/constants/storage";
-import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
+import {
+  AGENT_RUN_POLL_INTERVAL_MS,
+  useOnboardingAgentRun,
+  useOnboardingStatus,
+} from "@/lib/hooks/use-onboarding";
 
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
@@ -25,7 +30,12 @@ export function SidebarOnboarding() {
   const orgId = activeOrganization?.id ?? "";
   const slug = activeOrganization?.slug ?? "";
 
-  const { data } = useOnboardingStatus(orgId);
+  const { data: agentRun } = useOnboardingAgentRun(orgId);
+  const agentRunning = agentRun?.running ?? false;
+  // While the agent works, poll the checklist so steps tick live.
+  const { data } = useOnboardingStatus(orgId, {
+    refetchInterval: agentRunning ? AGENT_RUN_POLL_INTERVAL_MS : false,
+  });
   const { data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
   });
@@ -116,6 +126,7 @@ export function SidebarOnboarding() {
                 >
                   Getting Started ({completedCount}/{steps.length})
                 </motion.span>
+                {agentRunning && <BrailleLoader className="text-xs" />}
                 <svg
                   aria-hidden="true"
                   className="size-3 shrink-0"
@@ -161,6 +172,12 @@ export function SidebarOnboarding() {
                   </motion.div>
                 </OnboardingChecklistHeader>
                 <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
+                  {agentRunning && (
+                    <div className="flex items-center gap-2 pb-1 text-muted-foreground text-xs">
+                      <BrailleLoader className="text-xs" />
+                      <span>Eve is setting up your workspace…</span>
+                    </div>
+                  )}
                   <motion.div
                     layoutId="onboarding-progress"
                     transition={MORPH_TRANSITION}

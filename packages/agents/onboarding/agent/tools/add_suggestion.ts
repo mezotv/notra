@@ -11,19 +11,21 @@ import { requireOrganizationId } from "../lib/utils/organization";
 
 export default defineTool({
   description:
-    "Add one onboarding suggestion for the organization, typed by the automation page it belongs to: event_automation for event-triggered content (for example: they publish GitHub releases, so suggest changelog posts on release) or schedule_automation for recurring content (for example: they blog weekly, so suggest a weekly schedule). Only suggest what the research evidence supports.",
+    "Add one onboarding suggestion for the organization, typed by the automation page it belongs to: event_automation for event-triggered content (for example: they publish GitHub releases, so suggest changelog posts on release) or schedule_automation for recurring content (for example: they blog weekly, so suggest a weekly schedule). Only suggest what the research evidence supports; put the specific supporting finding in evidence.",
   inputSchema: z.object({
     type: z.enum(onboardingSuggestionTypeEnum.enumValues),
     title: z.string().min(1),
     description: z.string().min(1).optional(),
+    evidence: z.string().min(1).optional(),
     data: z.record(z.string(), z.unknown()).optional(),
   }),
-  async execute({ type, title, description, data }, ctx) {
+  async execute({ type, title, description, evidence, data }, ctx) {
     const organizationId = requireOrganizationId(ctx);
+    const payload = { ...data, ...(evidence ? { evidence } : {}) };
     const inserted = await db
       .insert(onboardingSuggestions)
       .values({
-        data: data ?? null,
+        data: Object.keys(payload).length > 0 ? payload : null,
         description: description ?? null,
         id: randomUUID(),
         organizationId,

@@ -56,6 +56,7 @@ import { Loader2Icon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
+import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
 import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
@@ -63,6 +64,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useCreateFromSuggestion } from "@/lib/hooks/use-onboarding";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
@@ -108,6 +110,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const { beginCreate, handleDialogOpenChange, handleCreateSuccess } =
+    useCreateFromSuggestion(organizationId);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
@@ -389,7 +393,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <CreateScheduleDialog
-            onOpenChange={setCreateOpen}
+            onOpenChange={(open) => {
+              setCreateOpen(open);
+              handleDialogOpenChange(open);
+            }}
             onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.schedules.list.queryKey({
@@ -403,6 +410,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   }),
                 });
               }
+              handleCreateSuccess();
             }}
             open={createOpen}
             organizationId={organizationId ?? ""}
@@ -415,6 +423,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
           />
         </div>
+
+        {organizationId && (
+          <OnboardingSuggestions
+            onCreate={(suggestionId) => {
+              beginCreate(suggestionId);
+              setCreateOpen(true);
+            }}
+            organizationId={organizationId}
+            type="schedule_automation"
+          />
+        )}
 
         {isPending && <SchedulePageSkeleton />}
 
