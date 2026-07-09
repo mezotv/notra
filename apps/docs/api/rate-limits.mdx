@@ -1,6 +1,25 @@
 ---
 title: "Rate Limits"
 description: "Per-key rate limits on generation, integration, and update endpoints."
+authors:
+  - handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/rate-limits
+  type: reference
+  applies_to:
+    - notra-api
+  language: en
+  difficulty: beginner
+  time_estimate: 6m
+  status: stable
+  aliases:
+    - rate limits
+    - 429 errors
+    - API throttling
+    - retry-after
+  prev: ./authentication.mdx
 ---
 
 The Notra API enforces rate limits on a small set of write-heavy endpoints to protect the service. Read endpoints (listing posts, fetching brand identities, etc.) are not currently rate limited.

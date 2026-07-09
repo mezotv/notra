@@ -1,6 +1,29 @@
 ---
 title: "Caching"
 description: "Cache paginated Notra post data safely, including sorting and invalidation patterns."
+authors:
+  - handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/caching
+  type: how-to
+  applies_to:
+    - notra-api
+    - typescript
+    - react
+    - nextjs
+  language: en
+  difficulty: intermediate
+  time_estimate: 10m
+  status: stable
+  aliases:
+    - API caching
+    - cache invalidation
+    - cache key design
+    - TanStack Query
+  prev: ./rust-sdk.mdx
+  next: ./common-tasks.mdx
 ---
 
 When caching Notra post data, include every query input that changes the result set in the cache key.

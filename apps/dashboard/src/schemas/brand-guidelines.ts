@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { BRAND_GUIDELINE_HEX_COLOR_REGEX } from "@/constants/brand-guidelines";
 
 export const guidelineColorRoleSchema = z.enum([
   "primary",
@@ -131,3 +132,94 @@ export const brandGuidelinesWorkflowPayloadSchema = z.object({
   organizationId: z.string().min(1),
   sourceUrl: z.string().min(1),
 });
+
+const styleguideTextSchema = z.string().trim().min(1);
+const optionalStyleguideTextSchema = styleguideTextSchema
+  .optional()
+  .catch(undefined);
+
+const styleguideHexSchema = styleguideTextSchema.regex(
+  BRAND_GUIDELINE_HEX_COLOR_REGEX
+);
+const optionalStyleguideHexSchema = styleguideHexSchema
+  .optional()
+  .catch(undefined);
+
+const styleguideTextOrNumberSchema = z.union([
+  styleguideTextSchema,
+  z.number().transform((value) => String(value)),
+]);
+const optionalStyleguideTextOrNumberSchema = styleguideTextOrNumberSchema
+  .optional()
+  .catch(undefined);
+
+export const styleguideRecordSchema = z.record(z.string(), z.unknown());
+
+export const styleguideColorSchema = z.union([
+  styleguideHexSchema.transform((hex) => ({
+    hex,
+    name: null,
+    usage: null,
+    darkValue: null,
+  })),
+  z
+    .object({
+      hex: styleguideHexSchema,
+      name: optionalStyleguideTextSchema,
+      usage: optionalStyleguideTextSchema,
+      darkHex: optionalStyleguideHexSchema,
+      darkValue: optionalStyleguideHexSchema,
+      dark: optionalStyleguideHexSchema,
+    })
+    .transform((color) => ({
+      hex: color.hex,
+      name: color.name ?? null,
+      usage: color.usage ?? null,
+      darkValue: color.darkHex ?? color.darkValue ?? color.dark ?? null,
+    })),
+]);
+
+export const styleguideFontSchema = z.union([
+  styleguideTextSchema.transform((family) => ({
+    family,
+    weight: null,
+    size: null,
+    lineHeight: null,
+  })),
+  z
+    .object({
+      fontFamily: styleguideTextSchema,
+      fontWeight: optionalStyleguideTextOrNumberSchema,
+      weight: optionalStyleguideTextOrNumberSchema,
+      fontSize: optionalStyleguideTextSchema,
+      size: optionalStyleguideTextSchema,
+      lineHeight: optionalStyleguideTextOrNumberSchema,
+    })
+    .transform((font) => ({
+      family: font.fontFamily,
+      weight: font.fontWeight ?? font.weight ?? null,
+      size: font.fontSize ?? font.size ?? null,
+      lineHeight: font.lineHeight ?? null,
+    })),
+]);
+
+export const styleguideTokenValueSchema = z.union([
+  styleguideTextSchema.transform((value) => ({ value, metadata: null })),
+  z.number().transform((value) => ({ value: String(value), metadata: null })),
+  z
+    .looseObject({
+      value: optionalStyleguideTextOrNumberSchema,
+      boxShadow: optionalStyleguideTextSchema,
+      borderRadius: optionalStyleguideTextSchema,
+    })
+    .transform((token, ctx) => {
+      const value = token.value ?? token.boxShadow ?? token.borderRadius;
+
+      if (!value) {
+        ctx.addIssue({ code: "custom", message: "Token value is missing" });
+        return z.NEVER;
+      }
+
+      return { value, metadata: token };
+    }),
+]);

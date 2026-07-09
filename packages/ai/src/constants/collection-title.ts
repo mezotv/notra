@@ -1,0 +1,4 @@
+export const COLLECTION_TITLE_MODEL_ID = "openai/gpt-5.5";
+export const COLLECTION_TITLE_MAX_POSTS = 10;
+export const COLLECTION_TITLE_EXCERPT_LENGTH = 400;
+export const COLLECTION_TITLE_MAX_IMAGES = 4;

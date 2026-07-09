@@ -1,3 +1,6 @@
+const LEGACY_POST_COLLECTION_NAME_REGEX =
+  / - (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}(?:st|nd|rd|th) \d{4}$/;
+
 const CONTENT_TYPE_LABELS: Record<string, string> = {
   blog_post: "Blog post",
   changelog: "Changelog",
@@ -41,6 +44,10 @@ export function formatPostCollectionDate(date: Date) {
   const year = date.getFullYear();
 
   return `${month} ${day}${ordinalSuffix(day)} ${year}`;
+}
+
+export function isLegacyPostCollectionName(name: string) {
+  return LEGACY_POST_COLLECTION_NAME_REGEX.test(name);
 }
 
 export function buildPostCollectionName(

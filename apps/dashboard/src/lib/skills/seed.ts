@@ -48,7 +48,9 @@ function buildSystemSkills(): SystemSkillDefinition[] {
   ];
 }
 
-export async function seedSystemSkills(organizationId: string): Promise<void> {
+export async function seedSystemSkills(
+  organizationId: string
+): Promise<number> {
   const definitions = buildSystemSkills();
 
   const rows = definitions.map((def) => ({
@@ -60,10 +62,13 @@ export async function seedSystemSkills(organizationId: string): Promise<void> {
     isSystem: true,
   }));
 
-  await db
+  const inserted = await db
     .insert(skills)
     .values(rows)
     .onConflictDoNothing({
       target: [skills.organizationId, skills.name],
-    });
+    })
+    .returning({ id: skills.id });
+
+  return inserted.length;
 }

@@ -270,6 +270,40 @@ export const auth = betterAuth({
         beforeCreateOrganization: async ({ organization }) => {
           return validateAndNormalizeOrganizationSlug(organization);
         },
+        afterCreateOrganization: async ({ organization }) => {
+          try {
+            await seedSystemSkills(organization.id);
+          } catch (error) {
+            console.error(
+              "[Skills] Failed to seed system skills for new org:",
+              {
+                organizationId: organization.id,
+                error,
+              }
+            );
+          }
+
+          if (!autumn) {
+            console.warn(
+              "[Autumn] Skipping customer creation - AUTUMN_SECRET_KEY not configured"
+            );
+            return;
+          }
+          try {
+            await autumn.customers.getOrCreate({
+              customerId: organization.id,
+              name: organization.name,
+              metadata: {
+                orgId: organization.id,
+              },
+            });
+          } catch (error) {
+            console.error("[Autumn] Failed to create customer for new org:", {
+              organizationId: organization.id,
+              error,
+            });
+          }
+        },
         beforeCreateInvitation: async ({ invitation, organization }) => {
           if (!isNotDisposableEmail(invitation.email)) {
             throw new APIError("BAD_REQUEST", {
@@ -416,37 +450,6 @@ export const auth = betterAuth({
         },
         after: async (user) => {
           sendWelcomeEmailAction({ userEmail: user.email ?? "" });
-        },
-      },
-    },
-    organization: {
-      create: {
-        after: async (org: { id: string; name: string }) => {
-          try {
-            await seedSystemSkills(org.id);
-          } catch (error) {
-            console.error(
-              "[Skills] Failed to seed system skills for new org:",
-              {
-                organizationId: org.id,
-                error,
-              }
-            );
-          }
-
-          if (!autumn) {
-            console.warn(
-              "[Autumn] Skipping customer creation - AUTUMN_SECRET_KEY not configured"
-            );
-            return;
-          }
-          await autumn.customers.getOrCreate({
-            customerId: org.id,
-            name: org.name,
-            metadata: {
-              orgId: org.id,
-            },
-          });
         },
       },
     },

@@ -1,3 +1,4 @@
+import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_SLUG_MAX_LENGTH,
@@ -132,6 +133,10 @@ export function createCreatePostTool(
               )
             );
         });
+        await maybeGenerateCollectionTitle({
+          collectionId,
+          organizationId: config.organizationId,
+        });
         result.posts ??= [];
         result.posts.push({
           postId: id,
@@ -212,6 +217,10 @@ export function createCreatePostTool(
               eq(postCollections.organizationId, config.organizationId)
             )
           );
+      });
+      await maybeGenerateCollectionTitle({
+        collectionId,
+        organizationId: config.organizationId,
       });
       result.posts ??= [];
       result.posts.push({
