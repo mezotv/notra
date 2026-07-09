@@ -82,13 +82,16 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
   {
     baseUrl: getBaseUrl(),
     failureFunction: async ({ context, failStatus, failResponse }) => {
-      const { organizationId } = context.requestPayload;
+      const { organizationId, reservedAt } = context.requestPayload;
       console.error(
         `[Onboarding Agent] Workflow failed for organization ${organizationId}:`,
         { response: failResponse, status: failStatus }
       );
-      if (organizationId) {
-        await releaseOnboardingAgentReservation(organizationId);
+      if (organizationId && reservedAt) {
+        await releaseOnboardingAgentReservation(
+          organizationId,
+          new Date(reservedAt)
+        );
       }
     },
   }

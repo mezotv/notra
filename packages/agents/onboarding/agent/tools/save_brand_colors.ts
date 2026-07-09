@@ -43,57 +43,62 @@ export default defineTool({
       );
     }
 
-    await db
-      .insert(brandGuidelines)
-      .values({
-        brandSettingsId: settings.id,
-        id: randomUUID(),
-        lastGeneratedAt: new Date(),
-        status: "ready",
-      })
-      .onConflictDoNothing({ target: brandGuidelines.brandSettingsId });
+    // Serialize concurrent runs: lock the guideline row so the "check existing
+    // colors then insert" sequence is atomic and cannot produce duplicates.
+    return await db.transaction(async (tx) => {
+      await tx
+        .insert(brandGuidelines)
+        .values({
+          brandSettingsId: settings.id,
+          id: randomUUID(),
+          lastGeneratedAt: new Date(),
+          status: "ready",
+        })
+        .onConflictDoNothing({ target: brandGuidelines.brandSettingsId });
 
-    const guideline = await db.query.brandGuidelines.findFirst({
-      columns: { id: true },
-      where: eq(brandGuidelines.brandSettingsId, settings.id),
-    });
-    if (!guideline) {
-      throw new Error("Brand guideline row could not be created or found");
-    }
-    const guidelineId = guideline.id;
+      const [guideline] = await tx
+        .select({ id: brandGuidelines.id })
+        .from(brandGuidelines)
+        .where(eq(brandGuidelines.brandSettingsId, settings.id))
+        .for("update");
+      if (!guideline) {
+        throw new Error("Brand guideline row could not be created or found");
+      }
+      const guidelineId = guideline.id;
 
-    const existingColor = await db.query.brandGuidelineColors.findFirst({
-      columns: { id: true },
-      where: eq(brandGuidelineColors.guidelineId, guidelineId),
-    });
-    if (existingColor) {
+      const existingColor = await tx.query.brandGuidelineColors.findFirst({
+        columns: { id: true },
+        where: eq(brandGuidelineColors.guidelineId, guidelineId),
+      });
+      if (existingColor) {
+        return {
+          guidelineId,
+          savedCount: 0,
+          skipped: true,
+          skippedReason:
+            "Brand guideline colors already exist for this organization; left them untouched",
+        };
+      }
+
+      await tx.insert(brandGuidelineColors).values(
+        colors.map((color, index) => ({
+          darkValue: color.darkValue ?? null,
+          guidelineId,
+          id: randomUUID(),
+          lightValue: color.lightValue,
+          name: color.name ?? null,
+          role: color.role,
+          sortOrder: index,
+          usage: color.usage ?? null,
+        }))
+      );
+
       return {
         guidelineId,
-        savedCount: 0,
-        skipped: true,
-        skippedReason:
-          "Brand guideline colors already exist for this organization; left them untouched",
+        savedCount: colors.length,
+        skipped: false,
+        skippedReason: null,
       };
-    }
-
-    await db.insert(brandGuidelineColors).values(
-      colors.map((color, index) => ({
-        darkValue: color.darkValue ?? null,
-        guidelineId,
-        id: randomUUID(),
-        lightValue: color.lightValue,
-        name: color.name ?? null,
-        role: color.role,
-        sortOrder: index,
-        usage: color.usage ?? null,
-      }))
-    );
-
-    return {
-      guidelineId,
-      savedCount: colors.length,
-      skipped: false,
-      skippedReason: null,
-    };
+    });
   },
 });

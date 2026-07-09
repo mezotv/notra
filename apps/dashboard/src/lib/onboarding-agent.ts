@@ -64,10 +64,11 @@ async function buildEveAgentHeaders(
 
 export async function reserveInitialOnboardingAgentRun(
   organizationId: string
-): Promise<boolean> {
+): Promise<Date | null> {
+  const reservedAt = new Date();
   const reserved = await db
     .update(organizations)
-    .set({ onboardingAgentStartedAt: new Date() })
+    .set({ onboardingAgentStartedAt: reservedAt })
     .where(
       and(
         eq(organizations.id, organizationId),
@@ -76,16 +77,17 @@ export async function reserveInitialOnboardingAgentRun(
       )
     )
     .returning({ id: organizations.id });
-  return reserved.length > 0;
+  return reserved.length > 0 ? reservedAt : null;
 }
 
 export async function reserveOnboardingAgentRerun(
   organizationId: string
-): Promise<boolean> {
-  const staleBefore = new Date(Date.now() - AGENT_RUN_HARD_LIMIT_MS);
+): Promise<Date | null> {
+  const reservedAt = new Date();
+  const staleBefore = new Date(reservedAt.getTime() - AGENT_RUN_HARD_LIMIT_MS);
   const reserved = await db
     .update(organizations)
-    .set({ onboardingAgentRan: false, onboardingAgentStartedAt: new Date() })
+    .set({ onboardingAgentRan: false, onboardingAgentStartedAt: reservedAt })
     .where(
       and(
         eq(organizations.id, organizationId),
@@ -97,11 +99,18 @@ export async function reserveOnboardingAgentRerun(
       )
     )
     .returning({ id: organizations.id });
-  return reserved.length > 0;
+  return reserved.length > 0 ? reservedAt : null;
 }
 
+/**
+ * Clears an onboarding agent reservation, but only when the current reservation
+ * still matches the timestamp token acquired by the caller. This prevents a
+ * delayed failure from an older, superseded run from clearing a newer
+ * in-progress reservation.
+ */
 export async function releaseOnboardingAgentReservation(
-  organizationId: string
+  organizationId: string,
+  reservedAt: Date
 ): Promise<void> {
   await db
     .update(organizations)
@@ -109,7 +118,8 @@ export async function releaseOnboardingAgentReservation(
     .where(
       and(
         eq(organizations.id, organizationId),
-        eq(organizations.onboardingAgentRan, false)
+        eq(organizations.onboardingAgentRan, false),
+        eq(organizations.onboardingAgentStartedAt, reservedAt)
       )
     );
 }
@@ -132,11 +142,6 @@ export async function startOnboardingAgentSession({
   }
 
   const { sessionId } = eveSessionResponseSchema.parse(await response.json());
-
-  await db
-    .update(organizations)
-    .set({ onboardingAgentRan: false, onboardingAgentStartedAt: new Date() })
-    .where(eq(organizations.id, organizationId));
 
   return { sessionId };
 }

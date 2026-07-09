@@ -119,8 +119,10 @@ export const onboardingRouter = {
         user: context.user,
       });
 
-      const reserved = await reserveOnboardingAgentRerun(input.organizationId);
-      if (!reserved) {
+      const reservedAt = await reserveOnboardingAgentRerun(
+        input.organizationId
+      );
+      if (!reservedAt) {
         throw new ORPCError("CONFLICT", {
           message: "An onboarding agent run is already in progress",
         });
@@ -130,10 +132,14 @@ export const onboardingRouter = {
         const workflowRunId = await triggerOnboardingAgent({
           domain: input.domain,
           organizationId: input.organizationId,
+          reservedAt: reservedAt.toISOString(),
         });
         return { workflowRunId };
       } catch (error) {
-        await releaseOnboardingAgentReservation(input.organizationId);
+        await releaseOnboardingAgentReservation(
+          input.organizationId,
+          reservedAt
+        );
         throw error;
       }
     }),

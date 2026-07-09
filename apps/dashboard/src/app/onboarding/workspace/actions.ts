@@ -166,25 +166,28 @@ export async function triggerOnboardingAgentSetup(
     return { skipped: "website-unreachable", success: true };
   }
 
-  const reserved = await reserveInitialOnboardingAgentRun(input.organizationId);
-  if (!reserved) {
+  const reservedAt = await reserveInitialOnboardingAgentRun(
+    input.organizationId
+  );
+  if (!reservedAt) {
     return { skipped: "already-started", success: true };
   }
 
-  const organization = await db.query.organizations.findFirst({
-    columns: { slug: true },
-    where: eq(organizations.id, input.organizationId),
-  });
-
   try {
+    const organization = await db.query.organizations.findFirst({
+      columns: { slug: true },
+      where: eq(organizations.id, input.organizationId),
+    });
+
     await triggerOnboardingAgent({
       domain: resolution.domain,
       email: session.user.email,
       organizationId: input.organizationId,
       organizationSlug: organization?.slug,
+      reservedAt: reservedAt.toISOString(),
     });
   } catch (error) {
-    await releaseOnboardingAgentReservation(input.organizationId);
+    await releaseOnboardingAgentReservation(input.organizationId, reservedAt);
     throw error;
   }
 
