@@ -11,6 +11,8 @@ import type {
   McpHeaderMap,
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
+import type { McpAuthType } from "../types/mcp-oauth";
+import { getMcpRequestAuth } from "./mcp-auth";
 import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -28,6 +30,13 @@ function decryptHeaders(encryptedHeaders: McpHeaderMap | null): McpHeaderMap {
       decryptToken(value),
     ])
   );
+}
+
+function getMcpAuthType(authType: string): McpAuthType {
+  if (authType === "headers" || authType === "oauth") {
+    return authType;
+  }
+  return "none";
 }
 
 async function assertOrganizationMember(
@@ -52,12 +61,16 @@ export function serializeMcpServerIntegration<
     name: string;
     url: string;
     description: string | null;
+    authType: string;
     encryptedHeaders: McpHeaderMap;
     enabled: boolean;
     lastToolSyncAt?: Date | null;
     toolSyncStatus?: string;
     toolSyncError?: string | null;
     indexedToolCount?: number;
+    oauthCredential?: {
+      status: string;
+    } | null;
     createdAt: Date;
     createdByUser?: {
       id: string;
@@ -72,6 +85,11 @@ export function serializeMcpServerIntegration<
     name: integration.name,
     url: integration.url,
     description: integration.description,
+    authType: getMcpAuthType(integration.authType),
+    oauthStatus:
+      integration.authType === "oauth"
+        ? (integration.oauthCredential?.status ?? "error")
+        : null,
     enabled: integration.enabled,
     headerNames: Object.keys(integration.encryptedHeaders ?? {}),
     hasHeaders: Object.keys(integration.encryptedHeaders ?? {}).length > 0,
@@ -101,7 +119,9 @@ export async function createMcpServerIntegration(
       name: params.name,
       url: params.url,
       description: params.description ?? null,
-      encryptedHeaders: encryptHeaders(params.headers),
+      authType: params.authType,
+      encryptedHeaders:
+        params.authType === "headers" ? encryptHeaders(params.headers) : {},
     })
     .returning();
 
@@ -129,6 +149,11 @@ export async function getMcpServerIntegrationById(integrationId: string) {
           image: true,
         },
       },
+      oauthCredential: {
+        columns: {
+          status: true,
+        },
+      },
     },
   });
 
@@ -147,6 +172,11 @@ export async function getMcpServerIntegrationsByOrganization(
           name: true,
           email: true,
           image: true,
+        },
+      },
+      oauthCredential: {
+        columns: {
+          status: true,
         },
       },
     },
@@ -187,6 +217,12 @@ export async function updateMcpServerIntegration(
       ...(updates.headers !== undefined
         ? { encryptedHeaders: encryptHeaders(updates.headers) }
         : {}),
+      ...(updates.authType !== undefined
+        ? {
+            authType: updates.authType,
+            ...(updates.authType === "none" ? { encryptedHeaders: {} } : {}),
+          }
+        : {}),
       ...(updates.enabled !== undefined ? { enabled: updates.enabled } : {}),
       updatedAt: new Date(),
     })
@@ -213,20 +249,7 @@ export async function getDecryptedMcpHeaders(
   integrationId: string,
   organizationId: string
 ) {
-  const [integration] = await db
-    .select({
-      encryptedHeaders: mcpServerIntegrations.encryptedHeaders,
-    })
-    .from(mcpServerIntegrations)
-    .where(
-      and(
-        eq(mcpServerIntegrations.id, integrationId),
-        eq(mcpServerIntegrations.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  return decryptHeaders(integration?.encryptedHeaders ?? {});
+  return (await getMcpRequestAuth(integrationId, organizationId)).headers;
 }
 
 export async function testMcpServerConnection(input: {

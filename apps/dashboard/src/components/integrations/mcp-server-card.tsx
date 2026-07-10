@@ -40,9 +40,13 @@ export function McpServerCard({
   onToggle,
   onDelete,
   onRefreshTools,
+  onReauthorize,
   refreshing = false,
+  reauthorizing = false,
 }: McpServerCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const needsReauthorization =
+    server.authType === "oauth" && server.oauthStatus !== "connected";
 
   return (
     <>
@@ -71,6 +75,18 @@ export function McpServerCard({
                 >
                   {server.enabled ? "Disable" : "Enable"}
                 </DropdownMenuItem>
+                {server.authType === "oauth" ? (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={reauthorizing}
+                    onClick={() => onReauthorize?.(server.id)}
+                  >
+                    <RefreshCcwIcon
+                      className={`size-4 ${reauthorizing ? "animate-spin" : ""}`}
+                    />
+                    Reauthorize
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   className="cursor-pointer"
                   disabled={refreshing || !server.enabled}
@@ -97,6 +113,24 @@ export function McpServerCard({
           </div>
         }
         className="h-full"
+        footer={
+          needsReauthorization ? (
+            <>
+              <p className="text-amber-700 text-sm dark:text-amber-300">
+                Access expired. Reauthorize to keep tools working.
+              </p>
+              <Button
+                aria-label={`Reauthorize ${server.name}`}
+                disabled={reauthorizing}
+                onClick={() => onReauthorize?.(server.id)}
+                size="sm"
+                variant="outline"
+              >
+                {reauthorizing ? "Redirecting..." : "Reauthorize"}
+              </Button>
+            </>
+          ) : undefined
+        }
         heading={server.name}
         icon={
           <Avatar className="size-7 rounded-md after:hidden">
@@ -114,6 +148,12 @@ export function McpServerCard({
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge className="font-normal text-xs" variant="secondary">
               Streamable HTTP
+            </Badge>
+            <Badge
+              className="font-normal text-xs"
+              variant={needsReauthorization ? "destructive" : "outline"}
+            >
+              {getAuthLabel(server)}
             </Badge>
             <Badge
               className="font-normal text-xs"
@@ -168,6 +208,13 @@ export function McpServerCard({
       </ResponsiveAlertDialog>
     </>
   );
+}
+
+function getAuthLabel(server: McpServerCardProps["server"]) {
+  if (server.authType === "oauth") {
+    return server.oauthStatus === "connected" ? "OAuth" : "Reauthorize needed";
+  }
+  return server.authType === "headers" ? "API key" : "No auth";
 }
 
 function getSyncLabel(status: McpServerCardProps["server"]["toolSyncStatus"]) {

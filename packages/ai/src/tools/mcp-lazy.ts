@@ -12,7 +12,8 @@ import {
 } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { decryptToken } from "../crypto/token-encryption";
+import { getMcpRequestAuth } from "../integrations/mcp-auth";
+import { refreshMcpOAuthRequestAuth } from "../integrations/mcp-oauth";
 import {
   type ActivatedMcpTool,
   activateSessionMcpTools,
@@ -33,6 +34,8 @@ import {
   searchMcpToolIndex,
   touchMcpSessionToolActivation,
 } from "../integrations/mcp-tool-index";
+import type { McpClientEntry } from "../types/mcp-oauth";
+import { isMcpUnauthorizedError } from "../utils/mcp-auth-error";
 
 export interface LazyMcpRuntimeParams {
   organizationId: string;
@@ -71,7 +74,7 @@ export async function createLazyMcpRuntime({
   baseActiveToolNames,
   tools: sharedTools,
 }: LazyMcpRuntimeParams): Promise<LazyMcpRuntime> {
-  const clients = new Map<string, Promise<MCPClient>>();
+  const clients = new Map<string, Promise<McpClientEntry>>();
   const hasActiveIndexedTools = await hasActiveIndexedMcpToolsForOrganization({
     organizationId,
   });
@@ -266,7 +269,7 @@ export async function createLazyMcpRuntime({
       const settledClients = await Promise.allSettled(clients.values());
       await Promise.allSettled(
         settledClients.flatMap((result) =>
-          result.status === "fulfilled" ? [result.value.close()] : []
+          result.status === "fulfilled" ? [result.value.client.close()] : []
         )
       );
       clients.clear();
@@ -285,7 +288,7 @@ function createRuntimeMcpTool({
   sessionId: string;
   surface: McpSessionSurface;
   indexedTool: IndexedMcpTool;
-  clients: Map<string, Promise<MCPClient>>;
+  clients: Map<string, Promise<McpClientEntry>>;
 }): Tool {
   return dynamicTool({
     title: indexedTool.title ?? indexedTool.runtimeToolName,
@@ -319,26 +322,45 @@ function createRuntimeMcpTool({
             `MCP tool ${indexedTool.runtimeToolName} is no longer available. Search and activate the tool again before retrying.`
           );
         }
-        const client = await getMcpClient({
+        let clientEntry = await getMcpClient({
           organizationId,
           integrationId: latestTool.serverIntegrationId,
           clients,
         });
-        const definitions = {
-          tools: [toMcpToolDefinition(latestTool)],
-        } as Awaited<ReturnType<MCPClient["listTools"]>>;
-        const convertedTools = client.toolsFromDefinitions(definitions);
-        const convertedTool = convertedTools[latestTool.serverToolName];
-        if (!convertedTool?.execute) {
-          throw new Error(
-            `MCP tool ${latestTool.serverToolName} could not be prepared for execution.`
-          );
-        }
+        let output: unknown;
+        try {
+          output = await executeMcpTool({
+            clientEntry,
+            indexedTool: latestTool,
+            input,
+            options,
+          });
+        } catch (error) {
+          if (
+            clientEntry.requestAuth.authType !== "oauth" ||
+            !isMcpUnauthorizedError(error)
+          ) {
+            throw error;
+          }
 
-        const output = await convertedTool.execute(input, {
-          ...options,
-          abortSignal: withExecutionTimeout(options),
-        });
+          await refreshMcpOAuthRequestAuth({
+            organizationId,
+            integrationId: latestTool.serverIntegrationId,
+            expectedTokenVersion: clientEntry.requestAuth.oauthTokenVersion,
+          });
+          await evictMcpClient(clients, latestTool.serverIntegrationId);
+          clientEntry = await getMcpClient({
+            organizationId,
+            integrationId: latestTool.serverIntegrationId,
+            clients,
+          });
+          output = await executeMcpTool({
+            clientEntry,
+            indexedTool: latestTool,
+            input,
+            options,
+          });
+        }
 
         await touchMcpSessionToolActivation({
           organizationId,
@@ -385,7 +407,7 @@ async function getMcpClient({
 }: {
   organizationId: string;
   integrationId: string;
-  clients: Map<string, Promise<MCPClient>>;
+  clients: Map<string, Promise<McpClientEntry>>;
 }) {
   const existing = clients.get(integrationId);
   if (existing) {
@@ -424,13 +446,53 @@ async function createMcpClientForIntegration({
 
   await assertPublicHttpUrlResolution(integration.url);
 
+  let requestAuth = await getMcpRequestAuth(integrationId, organizationId);
+  let client: MCPClient;
+  try {
+    client = await connectMcpClient({
+      integrationId,
+      organizationId,
+      requestAuth,
+      url: integration.url,
+    });
+  } catch (error) {
+    if (requestAuth.authType !== "oauth" || !isMcpUnauthorizedError(error)) {
+      throw error;
+    }
+    requestAuth = await refreshMcpOAuthRequestAuth({
+      organizationId,
+      integrationId,
+      expectedTokenVersion: requestAuth.oauthTokenVersion,
+    });
+    client = await connectMcpClient({
+      integrationId,
+      organizationId,
+      requestAuth,
+      url: integration.url,
+    });
+  }
+
+  return { client, requestAuth };
+}
+
+async function connectMcpClient({
+  integrationId,
+  organizationId,
+  requestAuth,
+  url,
+}: {
+  integrationId: string;
+  organizationId: string;
+  requestAuth: McpClientEntry["requestAuth"];
+  url: string;
+}) {
   return createMCPClient({
     clientName: "notra",
     version: "0.0.1",
     transport: {
       type: "http",
-      url: integration.url,
-      headers: decryptHeaders(integration.encryptedHeaders),
+      url,
+      headers: requestAuth.headers,
       redirect: "error",
     },
     onUncaughtError: (error) => {
@@ -440,6 +502,47 @@ async function createMcpClientForIntegration({
         error: error instanceof Error ? error.message : String(error),
       });
     },
+  });
+}
+
+async function evictMcpClient(
+  clients: Map<string, Promise<McpClientEntry>>,
+  integrationId: string
+) {
+  const existing = clients.get(integrationId);
+  clients.delete(integrationId);
+  if (!existing) {
+    return;
+  }
+  const settled = await existing.catch(() => undefined);
+  await settled?.client.close().catch(() => undefined);
+}
+
+async function executeMcpTool({
+  clientEntry,
+  indexedTool,
+  input,
+  options,
+}: {
+  clientEntry: McpClientEntry;
+  indexedTool: IndexedMcpTool;
+  input: unknown;
+  options: ToolExecutionOptions;
+}) {
+  const definitions = {
+    tools: [toMcpToolDefinition(indexedTool)],
+  } as Awaited<ReturnType<MCPClient["listTools"]>>;
+  const convertedTools = clientEntry.client.toolsFromDefinitions(definitions);
+  const convertedTool = convertedTools[indexedTool.serverToolName];
+  if (!convertedTool?.execute) {
+    throw new Error(
+      `MCP tool ${indexedTool.serverToolName} could not be prepared for execution.`
+    );
+  }
+
+  return convertedTool.execute(input, {
+    ...options,
+    abortSignal: withExecutionTimeout(options),
   });
 }
 
@@ -490,15 +593,6 @@ function toMcpDefinitionInputSchema(
         ? (schema.properties as Record<string, unknown>)
         : {},
   } as McpToolDefinition["inputSchema"];
-}
-
-function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
 }
 
 function withExecutionTimeout(options: ToolExecutionOptions) {

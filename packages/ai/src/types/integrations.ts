@@ -62,6 +62,7 @@ export interface McpHeaderMap {
 }
 
 export interface CreateMcpServerIntegrationParams {
+  authType: "none" | "headers";
   organizationId: string;
   userId: string;
   name: string;
@@ -71,6 +72,7 @@ export interface CreateMcpServerIntegrationParams {
 }
 
 export interface UpdateMcpServerIntegrationParams {
+  authType?: "none" | "headers";
   name?: string;
   url?: string;
   description?: string | null;

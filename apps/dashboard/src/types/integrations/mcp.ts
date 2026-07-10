@@ -1,6 +1,7 @@
 export type McpTestStatus = "idle" | "testing" | "success" | "error";
 
 export interface McpServer {
+  authType: "none" | "headers" | "oauth";
   id: string;
   name: string;
   url: string;
@@ -12,6 +13,7 @@ export interface McpServer {
   toolSyncStatus?: "idle" | "syncing" | "synced" | "error" | string;
   toolSyncError?: string | null;
   indexedToolCount?: number;
+  oauthStatus?: "connected" | "reauth_required" | "error" | string | null;
 }
 
 export interface AddMcpServerDialogProps {
@@ -27,7 +29,9 @@ export interface McpServerCardProps {
   onToggle?: (id: string, enabled: boolean) => void;
   onDelete?: (id: string) => void;
   onRefreshTools?: (id: string) => void;
+  onReauthorize?: (id: string) => void;
   refreshing?: boolean;
+  reauthorizing?: boolean;
 }
 
 export interface McpIntegrationCardProps {

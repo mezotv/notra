@@ -20,7 +20,10 @@ import {
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-import { decryptToken } from "../crypto/token-encryption";
+import type { McpRequestAuth } from "../types/mcp-oauth";
+import { isMcpUnauthorizedError } from "../utils/mcp-auth-error";
+import { getMcpRequestAuth } from "./mcp-auth";
+import { refreshMcpOAuthRequestAuth } from "./mcp-oauth";
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
 
 export const MCP_SESSION_ACTIVE_TOOL_LIMIT = 20;
@@ -147,49 +150,50 @@ export async function refreshMcpToolIndexForIntegration({
 
   try {
     await assertPublicHttpUrlResolution(integration.url);
+    let requestAuth = await getMcpRequestAuth(integrationId, organizationId);
+    let definitions: McpToolDefinition[];
 
-    client = await createMCPClient({
-      clientName: "notra",
-      version: "0.0.1",
-      transport: {
-        type: "http",
-        url: integration.url,
-        headers: decryptHeaders(integration.encryptedHeaders),
-        redirect: "error",
-      },
-      onUncaughtError: (error) => {
-        console.error("[MCP Index Client Error]", {
-          integrationId,
-          organizationId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      },
-    });
-
-    let cursor: string | undefined;
-    do {
-      const definitions = await client.listTools({
-        params: cursor ? { cursor } : undefined,
-        options: {
-          signal: AbortSignal.timeout(MCP_INDEX_TIMEOUT_MS),
-        },
+    try {
+      const result = await listMcpToolsForIndex({
+        integration,
+        integrationId,
+        organizationId,
+        requestAuth,
       });
-
-      for (const definition of definitions.tools) {
-        seenToolNames.push(definition.name);
-        await upsertIndexedTool({
-          organizationId,
-          integration: {
-            id: integration.id,
-            name: integration.name,
-            description: integration.description,
-          },
-          definition,
-        });
+      client = result.client;
+      definitions = result.definitions;
+    } catch (error) {
+      if (requestAuth.authType !== "oauth" || !isMcpUnauthorizedError(error)) {
+        throw error;
       }
 
-      cursor = definitions.nextCursor;
-    } while (cursor);
+      requestAuth = await refreshMcpOAuthRequestAuth({
+        organizationId,
+        integrationId,
+        expectedTokenVersion: requestAuth.oauthTokenVersion,
+      });
+      const result = await listMcpToolsForIndex({
+        integration,
+        integrationId,
+        organizationId,
+        requestAuth,
+      });
+      client = result.client;
+      definitions = result.definitions;
+    }
+
+    for (const definition of definitions) {
+      seenToolNames.push(definition.name);
+      await upsertIndexedTool({
+        organizationId,
+        integration: {
+          id: integration.id,
+          name: integration.name,
+          description: integration.description,
+        },
+        definition,
+      });
+    }
 
     if (seenToolNames.length > 0) {
       await db
@@ -718,13 +722,53 @@ export async function getEnabledMcpServerCount(organizationId: string) {
   return Number(row?.value ?? 0);
 }
 
-function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
+async function listMcpToolsForIndex({
+  integration,
+  integrationId,
+  organizationId,
+  requestAuth,
+}: {
+  integration: { url: string };
+  integrationId: string;
+  organizationId: string;
+  requestAuth: McpRequestAuth;
+}) {
+  const client = await createMCPClient({
+    clientName: "notra",
+    version: "0.0.1",
+    transport: {
+      type: "http",
+      url: integration.url,
+      headers: requestAuth.headers,
+      redirect: "error",
+    },
+    onUncaughtError: (error) => {
+      console.error("[MCP Index Client Error]", {
+        integrationId,
+        organizationId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+
+  try {
+    const definitions: McpToolDefinition[] = [];
+    let cursor: string | undefined;
+    do {
+      const result = await client.listTools({
+        params: cursor ? { cursor } : undefined,
+        options: {
+          signal: AbortSignal.timeout(MCP_INDEX_TIMEOUT_MS),
+        },
+      });
+      definitions.push(...result.tools);
+      cursor = result.nextCursor;
+    } while (cursor);
+    return { client, definitions };
+  } catch (error) {
+    await client.close().catch(() => undefined);
+    throw error;
+  }
 }
 
 async function upsertIndexedTool({
