@@ -39,7 +39,7 @@ import {
 import { beginMcpOAuthAuthorization } from "@notra/ai/integrations/mcp-oauth";
 import {
   McpOAuthAuthorizationError,
-  McpOAuthRefreshTokenRequiredError,
+  McpOAuthNameConflictError,
 } from "@notra/ai/integrations/mcp-oauth-errors";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
@@ -1009,13 +1009,15 @@ export const integrationsRouter = {
         } catch (error) {
           if (
             error instanceof McpOAuthAuthorizationError ||
-            error instanceof McpOAuthRefreshTokenRequiredError ||
             error instanceof PublicUrlValidationError
           ) {
             throw badRequest(error.message);
           }
           if (isUniqueConstraintError(error)) {
             throw conflict("An MCP server with this name already exists");
+          }
+          if (error instanceof McpOAuthNameConflictError) {
+            throw conflict(error.message);
           }
           throw internalServerError("Failed to start MCP OAuth", error);
         }

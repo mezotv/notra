@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -16,23 +15,22 @@ const MCP_OAUTH_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function useMcpConnectionToast() {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
-
   useEffect(() => {
-    const connected = searchParams.get("mcpConnected");
-    const error = searchParams.get("error");
+    const url = new URL(window.location.href);
+    const connected = url.searchParams.get("mcpConnected");
+    const error = url.searchParams.get("error");
     if (connected === "true") {
       toast.success("MCP server connected with OAuth");
-      router.replace(pathname, { scroll: false });
-      return;
     }
 
     const message = error ? MCP_OAUTH_ERROR_MESSAGES[error] : undefined;
     if (message) {
       toast.error(message);
-      router.replace(pathname, { scroll: false });
     }
-  }, [pathname, router, searchParams]);
+    if (connected === "true" || message) {
+      url.searchParams.delete("mcpConnected");
+      url.searchParams.delete("error");
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
 }

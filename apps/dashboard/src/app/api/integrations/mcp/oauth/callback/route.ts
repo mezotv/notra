@@ -17,7 +17,9 @@ import { buildCallbackUrl } from "@/utils/build-callback-url";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    process.env.BETTER_AUTH_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    new URL(request.url).origin;
   const { searchParams } = new URL(request.url);
   const parsed = mcpOAuthCallbackQuerySchema.safeParse({
     code: searchParams.get("code") ?? undefined,
@@ -25,9 +27,9 @@ export async function GET(request: NextRequest) {
     state: searchParams.get("state") ?? undefined,
   });
 
-  if (!parsed.success || !baseUrl) {
+  if (!parsed.success) {
     return NextResponse.redirect(
-      `${baseUrl}/?error=mcp_oauth_invalid_callback`
+      new URL("/?error=mcp_oauth_invalid_callback", request.url)
     );
   }
 

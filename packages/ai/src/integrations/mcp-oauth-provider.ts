@@ -9,11 +9,12 @@ import {
   MCP_OAUTH_CLIENT_NAME,
   MCP_OAUTH_CLIENT_URI,
 } from "../constants/mcp-auth";
-import { mcpOAuthScopesMetadataSchema } from "../schemas/mcp-oauth";
+import { mcpOAuthErrorResponseSchema } from "../schemas/mcp-oauth";
 import type {
   McpOAuthProviderPersistence,
   McpOAuthProviderState,
 } from "../types/mcp-oauth";
+import { McpOAuthTokenError } from "./mcp-oauth-errors";
 
 interface CreateMcpOAuthProviderOptions {
   onRedirect: (authorizationUrl: URL) => void | Promise<void>;
@@ -38,6 +39,7 @@ export function createMcpOAuthProvider({
       grant_types: ["authorization_code", "refresh_token"],
       redirect_uris: [redirectUrl],
       response_types: ["code"],
+      scope: "offline_access",
     },
     authorizationServerInformation() {
       return state.authorizationServerInformation;
@@ -98,26 +100,29 @@ export async function publicMcpOAuthFetch(
 ) {
   const url = input instanceof Request ? input.url : String(input);
   await assertPublicHttpUrlResolution(url);
-  return fetch(input, { ...init, redirect: "error" });
-}
-
-export function createPublicMcpOAuthFetch(
-  onScopesSupported: (scopes: string[]) => void
-) {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    const response = await publicMcpOAuthFetch(input, init);
-    const contentType = response.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
-      const metadata = mcpOAuthScopesMetadataSchema.safeParse(
+  const response = await fetch(input, { ...init, redirect: "error" });
+  if (!response.ok) {
+    const contentLength = Number(response.headers.get("content-length") ?? 0);
+    const contentType = response.headers.get("content-type")?.toLowerCase();
+    if (
+      contentType?.includes("application/json") &&
+      contentLength > 0 &&
+      contentLength <= 65_536
+    ) {
+      const parsed = mcpOAuthErrorResponseSchema.safeParse(
         await response
           .clone()
           .json()
           .catch(() => undefined)
       );
-      if (metadata.success && metadata.data.scopes_supported) {
-        onScopesSupported(metadata.data.scopes_supported);
+      if (parsed.success) {
+        throw new McpOAuthTokenError({
+          code: parsed.data.error,
+          description: parsed.data.error_description,
+          status: response.status,
+        });
       }
     }
-    return response;
-  };
+  }
+  return response;
 }

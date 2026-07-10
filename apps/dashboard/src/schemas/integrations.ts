@@ -470,6 +470,12 @@ const createMcpServerRequestFieldsSchema = z.object({
   headers: mcpHeadersSchema,
 });
 
+const mcpOAuthCallbackPathSchema = z
+  .string()
+  .trim()
+  .startsWith("/")
+  .refine((path) => !path.startsWith("//"), "Invalid callback path");
+
 export const createMcpServerRequestSchema =
   createMcpServerRequestFieldsSchema.superRefine((value, ctx) => {
     if (
@@ -491,28 +497,15 @@ export const beginMcpOAuthRequestSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
   name: addMcpServerFormFieldsSchema.shape.name,
   url: mcpUrlSchema,
-  description: z
-    .string()
-    .trim()
-    .max(1000, "Description is too long")
-    .optional()
-    .nullable(),
-  callbackPath: z
-    .string()
-    .trim()
-    .startsWith("/")
-    .refine((path) => !path.startsWith("//"), "Invalid callback path"),
+  description: createMcpServerRequestFieldsSchema.shape.description,
+  callbackPath: mcpOAuthCallbackPathSchema,
 });
 export type BeginMcpOAuthRequest = z.infer<typeof beginMcpOAuthRequestSchema>;
 
 export const reauthorizeMcpOAuthRequestSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
   serverId: z.string().min(1, "MCP server ID is required"),
-  callbackPath: z
-    .string()
-    .trim()
-    .startsWith("/")
-    .refine((path) => !path.startsWith("//"), "Invalid callback path"),
+  callbackPath: mcpOAuthCallbackPathSchema,
 });
 
 export const mcpOAuthCallbackQuerySchema = z.object({
@@ -529,6 +522,18 @@ export const updateMcpServerBodySchema = z
     headers: mcpHeadersSchema.optional(),
     authType: z.enum(["none", "headers"]).optional(),
     enabled: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (
+      value.authType === "headers" &&
+      (!value.headers || Object.keys(value.headers).length === 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Add at least one authentication header",
+        path: ["headers"],
+      });
+    }
   })
   .refine(
     (value) =>

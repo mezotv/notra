@@ -1,5 +1,5 @@
 {
-  "id": "fe571d14-7161-4e4f-a2e2-626742d05342",
+  "id": "75598923-a9b8-4499-866d-6633f236688c",
   "prevId": "93029cde-e8db-4cc5-bac2-9b72d065991c",
   "version": "7",
   "dialect": "postgresql",
@@ -3182,7 +3182,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "mcpOAuthCredentials_status_check": {
+          "name": "mcpOAuthCredentials_status_check",
+          "value": "\"mcp_oauth_credentials\".\"status\" IN ('connected', 'refreshing', 'reauth_required', 'error')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.mcp_oauth_pending_authorizations": {
@@ -3391,6 +3396,21 @@
             "server_integration_id"
           ],
           "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcpOAuthPendingAuthorizations_org_server_fk": {
+          "name": "mcpOAuthPendingAuthorizations_org_server_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "organization_id",
+            "server_integration_id"
+          ],
+          "columnsTo": [
+            "organization_id",
             "id"
           ],
           "onDelete": "cascade",
@@ -3618,7 +3638,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "mcpServerIntegrations_authType_check": {
+          "name": "mcpServerIntegrations_authType_check",
+          "value": "\"mcp_server_integrations\".\"auth_type\" IN ('none', 'headers', 'oauth')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.mcp_session_tool_activations": {

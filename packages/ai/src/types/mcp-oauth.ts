@@ -62,3 +62,21 @@ export interface CompleteMcpOAuthAuthorizationParams {
   redirectUrl: string;
   userId: string;
 }
+
+export interface McpOAuthPendingSecrets {
+  encryptedAuthorizationServerInformation: string | null;
+  encryptedClientInformation: string | null;
+}
+
+export interface McpOAuthRetryParams<T> {
+  integrationId: string;
+  operation: (requestAuth: McpRequestAuth, isRetry: boolean) => Promise<T>;
+  organizationId: string;
+  requestAuth: McpRequestAuth;
+}
+
+export interface RefreshMcpOAuthRequestAuthParams {
+  expectedTokenVersion?: number;
+  integrationId: string;
+  organizationId: string;
+}

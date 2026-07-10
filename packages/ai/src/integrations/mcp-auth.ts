@@ -1,19 +1,13 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
-import { decryptToken } from "../crypto/token-encryption";
-import type { McpHeaderMap } from "../types/integrations";
-import type { McpRequestAuth } from "../types/mcp-oauth";
-import { getMcpOAuthRequestAuth } from "./mcp-oauth";
-
-function decryptHeaders(encryptedHeaders: McpHeaderMap | null): McpHeaderMap {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
-}
+import type { McpOAuthRetryParams, McpRequestAuth } from "../types/mcp-oauth";
+import { isMcpUnauthorizedError } from "../utils/mcp-auth-error";
+import { decryptMcpHeaders } from "../utils/mcp-headers";
+import {
+  getMcpOAuthRequestAuth,
+  refreshMcpOAuthRequestAuth,
+} from "./mcp-oauth-refresh";
 
 export async function getMcpRequestAuth(
   integrationId: string,
@@ -44,9 +38,30 @@ export async function getMcpRequestAuth(
   if (integration.authType === "headers") {
     return {
       authType: "headers",
-      headers: decryptHeaders(integration.encryptedHeaders),
+      headers: decryptMcpHeaders(integration.encryptedHeaders),
     };
   }
 
   return { authType: "none", headers: {} };
+}
+
+export async function withMcpOAuthRetry<T>({
+  integrationId,
+  operation,
+  organizationId,
+  requestAuth,
+}: McpOAuthRetryParams<T>) {
+  try {
+    return await operation(requestAuth, false);
+  } catch (error) {
+    if (requestAuth.authType !== "oauth" || !isMcpUnauthorizedError(error)) {
+      throw error;
+    }
+    const refreshedAuth = await refreshMcpOAuthRequestAuth({
+      organizationId,
+      integrationId,
+      expectedTokenVersion: requestAuth.oauthTokenVersion,
+    });
+    return operation(refreshedAuth, true);
+  }
 }

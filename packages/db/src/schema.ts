@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -512,6 +513,10 @@ export const mcpServerIntegrations = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "mcpServerIntegrations_authType_check",
+      sql`${table.authType} IN ('none', 'headers', 'oauth')`
+    ),
     index("mcpServerIntegrations_organizationId_idx").on(table.organizationId),
     index("mcpServerIntegrations_createdByUserId_idx").on(
       table.createdByUserId
@@ -556,6 +561,10 @@ export const mcpOAuthCredentials = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "mcpOAuthCredentials_status_check",
+      sql`${table.status} IN ('connected', 'refreshing', 'reauth_required', 'error')`
+    ),
     index("mcpOAuthCredentials_organizationId_idx").on(table.organizationId),
     index("mcpOAuthCredentials_connectedByUserId_idx").on(
       table.connectedByUserId
@@ -613,6 +622,14 @@ export const mcpOAuthPendingAuthorizations = pgTable(
       table.serverIntegrationId
     ),
     index("mcpOAuthPendingAuthorizations_expiresAt_idx").on(table.expiresAt),
+    foreignKey({
+      columns: [table.organizationId, table.serverIntegrationId],
+      foreignColumns: [
+        mcpServerIntegrations.organizationId,
+        mcpServerIntegrations.id,
+      ],
+      name: "mcpOAuthPendingAuthorizations_org_server_fk",
+    }).onDelete("cascade"),
   ]
 );
 

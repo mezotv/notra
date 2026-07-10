@@ -22,6 +22,7 @@ export const mcpOAuthClientInformationSchema = z
     client_id_issued_at: z.number().optional(),
     client_secret: z.string().optional(),
     client_secret_expires_at: z.number().optional(),
+    redirect_uris: z.array(z.string().url()).optional(),
     token_endpoint: z.string().url().optional(),
   })
   .passthrough();
@@ -31,8 +32,7 @@ export const mcpOAuthAuthorizationServerInformationSchema = z.object({
   tokenEndpoint: z.string().url(),
 });
 
-export const mcpOAuthScopesMetadataSchema = z
-  .object({
-    scopes_supported: z.array(z.string()).optional(),
-  })
-  .passthrough();
+export const mcpOAuthErrorResponseSchema = z.object({
+  error: z.string().min(1),
+  error_description: z.string().optional(),
+});

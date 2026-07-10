@@ -13,7 +13,6 @@ import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dia
 import { McpServerCard } from "@/components/integrations/mcp-server-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { useMcpConnectionToast } from "@/lib/hooks/use-mcp-connection-toast";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { IntegrationsPageSkeleton } from "../skeleton";
 
@@ -27,8 +26,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organizationId = organization?.id ?? "";
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-  useMcpConnectionToast();
-
   useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
   const queryInput = { organizationId };

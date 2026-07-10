@@ -21,9 +21,8 @@ import {
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import type { McpRequestAuth } from "../types/mcp-oauth";
-import { isMcpUnauthorizedError } from "../utils/mcp-auth-error";
-import { getMcpRequestAuth } from "./mcp-auth";
-import { refreshMcpOAuthRequestAuth } from "./mcp-oauth";
+import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
+import { getMcpRequestAuth, withMcpOAuthRetry } from "./mcp-auth";
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
 
 export const MCP_SESSION_ACTIVE_TOOL_LIMIT = 20;
@@ -146,56 +145,37 @@ export async function refreshMcpToolIndexForIntegration({
     .where(eq(mcpServerIntegrations.id, integrationId));
 
   let client: MCPClient | null = null;
-  const seenToolNames: string[] = [];
+  const seenToolNames = new Set<string>();
 
   try {
     await assertPublicHttpUrlResolution(integration.url);
-    let requestAuth = await getMcpRequestAuth(integrationId, organizationId);
-    let definitions: McpToolDefinition[];
+    const requestAuth = await getMcpRequestAuth(integrationId, organizationId);
+    client = await withMcpOAuthRetry({
+      integrationId,
+      organizationId,
+      requestAuth,
+      operation: async (nextAuth) =>
+        listMcpToolsForIndex(
+          integration.url,
+          integrationId,
+          organizationId,
+          nextAuth,
+          async (definition) => {
+            seenToolNames.add(definition.name);
+            await upsertIndexedTool({
+              organizationId,
+              integration: {
+                id: integration.id,
+                name: integration.name,
+                description: integration.description,
+              },
+              definition,
+            });
+          }
+        ),
+    });
 
-    try {
-      const result = await listMcpToolsForIndex({
-        integration,
-        integrationId,
-        organizationId,
-        requestAuth,
-      });
-      client = result.client;
-      definitions = result.definitions;
-    } catch (error) {
-      if (requestAuth.authType !== "oauth" || !isMcpUnauthorizedError(error)) {
-        throw error;
-      }
-
-      requestAuth = await refreshMcpOAuthRequestAuth({
-        organizationId,
-        integrationId,
-        expectedTokenVersion: requestAuth.oauthTokenVersion,
-      });
-      const result = await listMcpToolsForIndex({
-        integration,
-        integrationId,
-        organizationId,
-        requestAuth,
-      });
-      client = result.client;
-      definitions = result.definitions;
-    }
-
-    for (const definition of definitions) {
-      seenToolNames.push(definition.name);
-      await upsertIndexedTool({
-        organizationId,
-        integration: {
-          id: integration.id,
-          name: integration.name,
-          description: integration.description,
-        },
-        definition,
-      });
-    }
-
-    if (seenToolNames.length > 0) {
+    if (seenToolNames.size > 0) {
       await db
         .update(mcpToolIndex)
         .set({
@@ -205,7 +185,7 @@ export async function refreshMcpToolIndexForIntegration({
         .where(
           and(
             eq(mcpToolIndex.serverIntegrationId, integrationId),
-            notInArray(mcpToolIndex.serverToolName, seenToolNames)
+            notInArray(mcpToolIndex.serverToolName, Array.from(seenToolNames))
           )
         );
     } else {
@@ -224,12 +204,12 @@ export async function refreshMcpToolIndexForIntegration({
         lastToolSyncAt: new Date(),
         toolSyncStatus: "synced",
         toolSyncError: null,
-        indexedToolCount: seenToolNames.length,
+        indexedToolCount: seenToolNames.size,
         updatedAt: new Date(),
       })
       .where(eq(mcpServerIntegrations.id, integrationId));
 
-    return { integrationId, indexedToolCount: seenToolNames.length };
+    return { integrationId, indexedToolCount: seenToolNames.size };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await db
@@ -722,24 +702,21 @@ export async function getEnabledMcpServerCount(organizationId: string) {
   return Number(row?.value ?? 0);
 }
 
-async function listMcpToolsForIndex({
-  integration,
-  integrationId,
-  organizationId,
-  requestAuth,
-}: {
-  integration: { url: string };
-  integrationId: string;
-  organizationId: string;
-  requestAuth: McpRequestAuth;
-}) {
+async function listMcpToolsForIndex(
+  url: string,
+  integrationId: string,
+  organizationId: string,
+  requestAuth: McpRequestAuth,
+  onDefinition: (definition: McpToolDefinition) => Promise<void>
+) {
   const client = await createMCPClient({
     clientName: "notra",
     version: "0.0.1",
     transport: {
       type: "http",
-      url: integration.url,
+      url,
       headers: requestAuth.headers,
+      fetch: publicMcpRuntimeFetch,
       redirect: "error",
     },
     onUncaughtError: (error) => {
@@ -752,7 +729,6 @@ async function listMcpToolsForIndex({
   });
 
   try {
-    const definitions: McpToolDefinition[] = [];
     let cursor: string | undefined;
     do {
       const result = await client.listTools({
@@ -761,10 +737,12 @@ async function listMcpToolsForIndex({
           signal: AbortSignal.timeout(MCP_INDEX_TIMEOUT_MS),
         },
       });
-      definitions.push(...result.tools);
+      for (const definition of result.tools) {
+        await onDefinition(definition);
+      }
       cursor = result.nextCursor;
     } while (cursor);
-    return { client, definitions };
+    return client;
   } catch (error) {
     await client.close().catch(() => undefined);
     throw error;

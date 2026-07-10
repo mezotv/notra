@@ -1,36 +1,22 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { db } from "@notra/db/drizzle";
-import { mcpServerIntegrations, members } from "@notra/db/schema";
+import { mcpOAuthCredentials, mcpServerIntegrations } from "@notra/db/schema";
 import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type {
   CreateMcpServerIntegrationParams,
   McpHeaderMap,
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
 import type { McpAuthType } from "../types/mcp-oauth";
+import { encryptMcpHeaders } from "../utils/mcp-headers";
+import { hasMcpOrganizationAccess } from "./mcp-access";
 import { getMcpRequestAuth } from "./mcp-auth";
 import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
-
-function encryptHeaders(headers: McpHeaderMap = {}) {
-  return Object.fromEntries(
-    Object.entries(headers).map(([key, value]) => [key, encryptToken(value)])
-  );
-}
-
-function decryptHeaders(encryptedHeaders: McpHeaderMap | null): McpHeaderMap {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
-}
 
 function getMcpAuthType(authType: string): McpAuthType {
   if (authType === "headers" || authType === "oauth") {
@@ -39,18 +25,20 @@ function getMcpAuthType(authType: string): McpAuthType {
   return "none";
 }
 
+function getMcpOAuthStatus(status: string | undefined) {
+  if (status === "connected" || status === "refreshing") {
+    return "connected" as const;
+  }
+  return status === "reauth_required"
+    ? ("reauth_required" as const)
+    : ("error" as const);
+}
+
 async function assertOrganizationMember(
   organizationId: string,
   userId: string
 ) {
-  const member = await db.query.members.findFirst({
-    where: and(
-      eq(members.organizationId, organizationId),
-      eq(members.userId, userId)
-    ),
-  });
-
-  if (!member) {
+  if (!(await hasMcpOrganizationAccess(organizationId, userId))) {
     throw new Error("User does not have access to this organization.");
   }
 }
@@ -88,7 +76,7 @@ export function serializeMcpServerIntegration<
     authType: getMcpAuthType(integration.authType),
     oauthStatus:
       integration.authType === "oauth"
-        ? (integration.oauthCredential?.status ?? "error")
+        ? getMcpOAuthStatus(integration.oauthCredential?.status)
         : null,
     enabled: integration.enabled,
     headerNames: Object.keys(integration.encryptedHeaders ?? {}),
@@ -121,7 +109,7 @@ export async function createMcpServerIntegration(
       description: params.description ?? null,
       authType: params.authType,
       encryptedHeaders:
-        params.authType === "headers" ? encryptHeaders(params.headers) : {},
+        params.authType === "headers" ? encryptMcpHeaders(params.headers) : {},
     })
     .returning();
 
@@ -206,28 +194,46 @@ export async function updateMcpServerIntegration(
     await assertPublicHttpUrlResolution(updates.url);
   }
 
-  const [updated] = await db
-    .update(mcpServerIntegrations)
-    .set({
-      ...(updates.name !== undefined ? { name: updates.name } : {}),
-      ...(updates.url !== undefined ? { url: updates.url } : {}),
-      ...(updates.description !== undefined
-        ? { description: updates.description }
-        : {}),
-      ...(updates.headers !== undefined
-        ? { encryptedHeaders: encryptHeaders(updates.headers) }
-        : {}),
-      ...(updates.authType !== undefined
-        ? {
-            authType: updates.authType,
-            ...(updates.authType === "none" ? { encryptedHeaders: {} } : {}),
-          }
-        : {}),
-      ...(updates.enabled !== undefined ? { enabled: updates.enabled } : {}),
-      updatedAt: new Date(),
-    })
-    .where(eq(mcpServerIntegrations.id, integrationId))
-    .returning();
+  const updated = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(mcpServerIntegrations)
+      .set({
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        ...(updates.url !== undefined ? { url: updates.url } : {}),
+        ...(updates.description !== undefined
+          ? { description: updates.description }
+          : {}),
+        ...(updates.headers !== undefined
+          ? { encryptedHeaders: encryptMcpHeaders(updates.headers) }
+          : {}),
+        ...(updates.authType !== undefined
+          ? {
+              authType: updates.authType,
+              ...(updates.authType === "none" ? { encryptedHeaders: {} } : {}),
+            }
+          : {}),
+        ...(updates.enabled !== undefined ? { enabled: updates.enabled } : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(mcpServerIntegrations.id, integrationId))
+      .returning();
+
+    if (!row) {
+      return null;
+    }
+    if (updates.authType) {
+      await tx
+        .delete(mcpOAuthCredentials)
+        .where(eq(mcpOAuthCredentials.serverIntegrationId, integrationId));
+    }
+    return tx.query.mcpServerIntegrations.findFirst({
+      where: eq(mcpServerIntegrations.id, integrationId),
+      with: {
+        createdByUser: true,
+        oauthCredential: { columns: { status: true } },
+      },
+    });
+  });
 
   if (updated) {
     await refreshMcpToolIndexForIntegration({

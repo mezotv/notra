@@ -14,6 +14,7 @@ import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { toast } from "sonner";
+import { useMcpConnectionToast } from "@/lib/hooks/use-mcp-connection-toast";
 import {
   DATABUDDY_DASHBOARD_MASK_PATTERNS,
   normalizeDatabuddyEventPath,
@@ -77,6 +78,8 @@ function DatabuddyAnalytics() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useMcpConnectionToast();
+
   return (
     <QueryClientProvider client={queryClient}>
       {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
