@@ -7,7 +7,7 @@ import {
   MCP_OAUTH_REFRESH_LEASE_MS,
   MCP_OAUTH_REFRESH_WAIT_ATTEMPTS,
   MCP_OAUTH_REFRESH_WAIT_MS,
-  TERMINAL_OAUTH_ERROR_REGEX,
+  TERMINAL_OAUTH_ERROR_CODES,
 } from "../constants/mcp-auth";
 import {
   mcpOAuthClientInformationSchema,
@@ -49,11 +49,10 @@ function getOAuthErrorCode(error: unknown) {
 
 function isTerminalOAuthError(error: unknown) {
   const errorCode = getOAuthErrorCode(error);
-  const message = error instanceof Error ? error.message : String(error);
   return (
     error instanceof McpOAuthReauthorizationRequiredError ||
     error instanceof McpOAuthRefreshTokenRequiredError ||
-    TERMINAL_OAUTH_ERROR_REGEX.test(`${errorCode ?? ""} ${message}`)
+    (errorCode !== undefined && TERMINAL_OAUTH_ERROR_CODES.has(errorCode))
   );
 }
 

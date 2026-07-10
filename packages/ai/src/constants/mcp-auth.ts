@@ -17,5 +17,8 @@ export const MCP_OAUTH_CALLBACK_PATH = "/api/integrations/mcp/oauth/callback";
 export const MCP_OAUTH_CLIENT_NAME = "Notra";
 export const MCP_OAUTH_CLIENT_URI = "https://www.usenotra.com";
 
-export const TERMINAL_OAUTH_ERROR_REGEX =
-  /invalid_grant|invalid_client|unauthorized_client|refresh token/i;
+export const TERMINAL_OAUTH_ERROR_CODES = new Set([
+  "invalid_grant",
+  "invalid_client",
+  "unauthorized_client",
+]);
