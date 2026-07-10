@@ -1,13 +1,14 @@
+import type { MCPClient } from "@ai-sdk/mcp";
 import type {
-  MCPClient,
-  OAuthAuthorizationServerInformation,
-  OAuthClientInformation,
-  OAuthTokens,
-} from "@ai-sdk/mcp";
+  AuthorizationServerMetadata,
+  OAuthProtectedResourceMetadata,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
+import type { z } from "zod";
 import type {
   MCP_AUTH_TYPES,
   MCP_OAUTH_CREDENTIAL_STATUSES,
 } from "../constants/mcp-auth";
+import type { mcpOAuthStoredAuthorizationServerSchema } from "../schemas/mcp-oauth";
 import type { McpHeaderMap } from "./integrations";
 
 export type McpAuthType = (typeof MCP_AUTH_TYPES)[number];
@@ -24,25 +25,6 @@ export interface McpRequestAuth {
 export interface McpClientEntry {
   client: MCPClient;
   requestAuth: McpRequestAuth;
-}
-
-export interface McpOAuthProviderState {
-  authorizationServerInformation?: OAuthAuthorizationServerInformation;
-  clientInformation?: OAuthClientInformation;
-  codeVerifier?: string;
-  state?: string;
-  tokens?: OAuthTokens;
-}
-
-export interface McpOAuthProviderPersistence {
-  saveAuthorizationServerInformation?: (
-    information: OAuthAuthorizationServerInformation
-  ) => Promise<void>;
-  saveClientInformation?: (
-    information: OAuthClientInformation
-  ) => Promise<void>;
-  saveCodeVerifier?: (codeVerifier: string) => Promise<void>;
-  saveTokens?: (tokens: OAuthTokens) => Promise<void>;
 }
 
 export interface BeginMcpOAuthAuthorizationParams {
@@ -63,10 +45,16 @@ export interface CompleteMcpOAuthAuthorizationParams {
   userId: string;
 }
 
-export interface McpOAuthPendingSecrets {
-  encryptedAuthorizationServerInformation: string | null;
-  encryptedClientInformation: string | null;
+export interface McpOAuthServerConfiguration {
+  authorizationServerMetadata: AuthorizationServerMetadata;
+  authorizationServerUrl: URL;
+  resource?: URL;
+  resourceMetadata?: OAuthProtectedResourceMetadata;
 }
+
+export type McpOAuthStoredAuthorizationServer = z.infer<
+  typeof mcpOAuthStoredAuthorizationServerSchema
+>;
 
 export interface McpOAuthRetryParams<T> {
   integrationId: string;

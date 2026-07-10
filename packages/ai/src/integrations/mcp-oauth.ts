@@ -1,12 +1,9 @@
 import { createHash } from "node:crypto";
 import {
-  auth,
-  createMCPClient,
-  type MCPClient,
-  type OAuthAuthorizationServerInformation,
-  type OAuthClientInformation,
-  type OAuthTokens,
-} from "@ai-sdk/mcp";
+  exchangeAuthorization,
+  registerClient,
+  startAuthorization,
+} from "@modelcontextprotocol/sdk/client/auth.js";
 import { db } from "@notra/db/drizzle";
 import {
   mcpOAuthCredentials,
@@ -19,15 +16,15 @@ import { Effect } from "effect";
 import { customAlphabet } from "nanoid";
 import { MCP_OAUTH_PENDING_TTL_MS } from "../constants/mcp-auth";
 import {
-  mcpOAuthAuthorizationServerInformationSchema,
   mcpOAuthClientInformationSchema,
   mcpOAuthSecretStringSchema,
+  mcpOAuthStoredAuthorizationServerSchema,
 } from "../schemas/mcp-oauth";
 import type {
   BeginMcpOAuthAuthorizationParams,
   CompleteMcpOAuthAuthorizationParams,
-  McpOAuthPendingSecrets,
 } from "../types/mcp-oauth";
+import { createMcpOAuthClientMetadata } from "../utils/mcp-oauth-client";
 import {
   decryptMcpOAuthSecret,
   encryptMcpOAuthSecret,
@@ -35,14 +32,16 @@ import {
 import { getMcpAccessTokenExpiresAt } from "../utils/mcp-oauth-tokens";
 import { hasMcpOrganizationAccess } from "./mcp-access";
 import {
+  discoverMcpOAuthServerConfiguration,
+  getMcpOAuthRequestedScope,
+  restoreMcpOAuthServerConfiguration,
+} from "./mcp-oauth-discovery";
+import {
   McpOAuthAuthorizationError,
   McpOAuthNameConflictError,
   McpOAuthRefreshTokenRequiredError,
 } from "./mcp-oauth-errors";
-import {
-  createMcpOAuthProvider,
-  publicMcpOAuthFetch,
-} from "./mcp-oauth-provider";
+import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
 import { getStoredMcpOAuthCredential } from "./mcp-oauth-refresh";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -59,38 +58,6 @@ async function assertOrganizationMember(
       "You do not have access to this organization."
     );
   }
-}
-
-function createPendingAuthorizationPersistence(
-  pendingId: string,
-  secrets: McpOAuthPendingSecrets
-) {
-  return {
-    async saveAuthorizationServerInformation(
-      information: OAuthAuthorizationServerInformation
-    ) {
-      secrets.encryptedAuthorizationServerInformation =
-        encryptMcpOAuthSecret(information);
-      await db
-        .update(mcpOAuthPendingAuthorizations)
-        .set({
-          encryptedAuthorizationServerInformation:
-            secrets.encryptedAuthorizationServerInformation,
-          updatedAt: new Date(),
-        })
-        .where(eq(mcpOAuthPendingAuthorizations.id, pendingId));
-    },
-    async saveClientInformation(information: OAuthClientInformation) {
-      secrets.encryptedClientInformation = encryptMcpOAuthSecret(information);
-      await db
-        .update(mcpOAuthPendingAuthorizations)
-        .set({
-          encryptedClientInformation: secrets.encryptedClientInformation,
-          updatedAt: new Date(),
-        })
-        .where(eq(mcpOAuthPendingAuthorizations.id, pendingId));
-    },
-  };
 }
 
 async function beginMcpOAuthAuthorizationPromise(
@@ -149,82 +116,65 @@ async function beginMcpOAuthAuthorizationPromise(
     expiresAt,
   });
 
-  let authorizationUrl: URL | undefined;
-  let client: MCPClient | undefined;
-  const pendingSecrets: McpOAuthPendingSecrets = {
-    encryptedAuthorizationServerInformation:
-      existingCredential?.credential.encryptedAuthorizationServerInformation ??
-      null,
-    encryptedClientInformation:
-      existingCredential?.credential.encryptedClientInformation ?? null,
-  };
-  const provider = createMcpOAuthProvider({
-    redirectUrl: params.redirectUrl,
-    state: {
-      state,
-      clientInformation: decryptMcpOAuthSecret(
-        existingCredential?.credential.encryptedClientInformation,
-        mcpOAuthClientInformationSchema
-      ),
-      authorizationServerInformation: decryptMcpOAuthSecret(
-        existingCredential?.credential.encryptedAuthorizationServerInformation,
-        mcpOAuthAuthorizationServerInformationSchema
-      ),
-    },
-    onRedirect(url) {
-      authorizationUrl = url;
-    },
-    persistence: {
-      ...createPendingAuthorizationPersistence(id, pendingSecrets),
-      async saveCodeVerifier(codeVerifier) {
-        await db
-          .update(mcpOAuthPendingAuthorizations)
-          .set({
-            encryptedCodeVerifier: encryptMcpOAuthSecret(codeVerifier),
-            updatedAt: new Date(),
-          })
-          .where(eq(mcpOAuthPendingAuthorizations.id, id));
-      },
-    },
-  });
-
   try {
-    client = await createMCPClient({
-      clientName: "notra-dashboard",
-      version: "0.0.1",
-      transport: {
-        type: "http",
-        url: params.url,
-        authProvider: provider,
-        fetch: publicMcpOAuthFetch,
-        redirect: "error",
-      },
-    });
-  } catch (error) {
-    if (!authorizationUrl) {
-      await db
-        .delete(mcpOAuthPendingAuthorizations)
-        .where(eq(mcpOAuthPendingAuthorizations.id, id));
-      throw new McpOAuthAuthorizationError(
-        error instanceof Error
-          ? error.message
-          : "Could not start MCP OAuth authorization."
+    const configuration = await discoverMcpOAuthServerConfiguration(params.url);
+    const scope = getMcpOAuthRequestedScope(configuration);
+    let clientInformation = decryptMcpOAuthSecret(
+      existingCredential?.credential.encryptedClientInformation,
+      mcpOAuthClientInformationSchema
+    );
+    if (!clientInformation) {
+      if (!configuration.authorizationServerMetadata.registration_endpoint) {
+        throw new McpOAuthAuthorizationError(
+          "This MCP server does not support dynamic OAuth client registration."
+        );
+      }
+      clientInformation = await registerClient(
+        configuration.authorizationServerUrl,
+        {
+          metadata: configuration.authorizationServerMetadata,
+          clientMetadata: createMcpOAuthClientMetadata(
+            params.redirectUrl,
+            scope
+          ),
+          scope,
+          fetchFn: publicMcpOAuthFetch,
+        }
       );
     }
-  } finally {
-    await client?.close().catch(() => undefined);
-  }
-
-  if (!authorizationUrl) {
+    const { authorizationUrl, codeVerifier } = await startAuthorization(
+      configuration.authorizationServerUrl,
+      {
+        metadata: configuration.authorizationServerMetadata,
+        clientInformation,
+        redirectUrl: params.redirectUrl,
+        resource: configuration.resource,
+        scope,
+        state,
+      }
+    );
+    await db
+      .update(mcpOAuthPendingAuthorizations)
+      .set({
+        encryptedAuthorizationServerInformation: encryptMcpOAuthSecret(
+          configuration.authorizationServerMetadata
+        ),
+        encryptedClientInformation: encryptMcpOAuthSecret(clientInformation),
+        encryptedCodeVerifier: encryptMcpOAuthSecret(codeVerifier),
+        updatedAt: new Date(),
+      })
+      .where(eq(mcpOAuthPendingAuthorizations.id, id));
+    return { authorizationUrl: authorizationUrl.toString() };
+  } catch (error) {
     await db
       .delete(mcpOAuthPendingAuthorizations)
       .where(eq(mcpOAuthPendingAuthorizations.id, id));
     throw new McpOAuthAuthorizationError(
-      "This MCP server did not request OAuth authorization."
+      error instanceof Error
+        ? error.message
+        : "Could not start MCP OAuth authorization."
     );
   }
-
-  return { authorizationUrl: authorizationUrl.toString() };
 }
 
 async function completeMcpOAuthAuthorizationPromise(
@@ -248,10 +198,6 @@ async function completeMcpOAuthAuthorizationPromise(
 
   await assertOrganizationMember(pending.organizationId, params.userId);
 
-  const state = decryptMcpOAuthSecret(
-    pending.encryptedState,
-    mcpOAuthSecretStringSchema
-  );
   const codeVerifier = decryptMcpOAuthSecret(
     pending.encryptedCodeVerifier,
     mcpOAuthSecretStringSchema
@@ -260,63 +206,37 @@ async function completeMcpOAuthAuthorizationPromise(
     pending.encryptedClientInformation,
     mcpOAuthClientInformationSchema
   );
-  const authorizationServerInformation = decryptMcpOAuthSecret(
+  const storedAuthorizationServer = decryptMcpOAuthSecret(
     pending.encryptedAuthorizationServerInformation,
-    mcpOAuthAuthorizationServerInformationSchema
+    mcpOAuthStoredAuthorizationServerSchema
   );
 
-  if (!(state && codeVerifier)) {
+  if (!(codeVerifier && clientInformation && storedAuthorizationServer)) {
     throw new McpOAuthAuthorizationError(
       "The MCP OAuth authorization request is incomplete or has expired."
     );
   }
-
-  const pendingSecrets: McpOAuthPendingSecrets = {
-    encryptedAuthorizationServerInformation:
-      pending.encryptedAuthorizationServerInformation,
-    encryptedClientInformation: pending.encryptedClientInformation,
-  };
-  let savedTokens: OAuthTokens | undefined;
-  const provider = createMcpOAuthProvider({
-    redirectUrl: params.redirectUrl,
-    state: {
-      authorizationServerInformation,
+  const configuration = await restoreMcpOAuthServerConfiguration(
+    pending.url,
+    storedAuthorizationServer
+  );
+  const tokens = await exchangeAuthorization(
+    configuration.authorizationServerUrl,
+    {
+      metadata: configuration.authorizationServerMetadata,
       clientInformation,
+      authorizationCode: params.code,
       codeVerifier,
-      state,
-    },
-    onRedirect() {
-      throw new McpOAuthAuthorizationError(
-        "The MCP server requested authorization again."
-      );
-    },
-    persistence: {
-      ...createPendingAuthorizationPersistence(pending.id, pendingSecrets),
-      async saveTokens(tokens) {
-        savedTokens = tokens;
-      },
-    },
-  });
-
-  const result = await auth(provider, {
-    serverUrl: pending.url,
-    authorizationCode: params.code,
-    callbackState: params.callbackState,
-    fetchFn: publicMcpOAuthFetch,
-  });
-
-  if (result !== "AUTHORIZED") {
-    throw new McpOAuthAuthorizationError(
-      "The MCP OAuth authorization did not complete."
-    );
-  }
-
-  if (!savedTokens) {
+      redirectUri: params.redirectUrl,
+      resource: configuration.resource,
+      fetchFn: publicMcpOAuthFetch,
+    }
+  );
+  if (!tokens) {
     throw new McpOAuthAuthorizationError(
       "The MCP OAuth token exchange did not return credentials."
     );
   }
-  const tokens = savedTokens;
   const encryptedTokens = encryptMcpOAuthSecret(tokens);
 
   if (!tokens?.refresh_token) {
@@ -334,9 +254,10 @@ async function completeMcpOAuthAuthorizationPromise(
         .set({
           connectedByUserId: pending.userId,
           encryptedTokens,
-          encryptedClientInformation: pendingSecrets.encryptedClientInformation,
-          encryptedAuthorizationServerInformation:
-            pendingSecrets.encryptedAuthorizationServerInformation,
+          encryptedClientInformation: pending.encryptedClientInformation,
+          encryptedAuthorizationServerInformation: encryptMcpOAuthSecret(
+            configuration.authorizationServerMetadata
+          ),
           accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
           status: "connected",
           tokenVersion: sql`${mcpOAuthCredentials.tokenVersion} + 1`,
@@ -365,9 +286,10 @@ async function completeMcpOAuthAuthorizationPromise(
         organizationId: pending.organizationId,
         connectedByUserId: pending.userId,
         encryptedTokens,
-        encryptedClientInformation: pendingSecrets.encryptedClientInformation,
-        encryptedAuthorizationServerInformation:
-          pendingSecrets.encryptedAuthorizationServerInformation,
+        encryptedClientInformation: pending.encryptedClientInformation,
+        encryptedAuthorizationServerInformation: encryptMcpOAuthSecret(
+          configuration.authorizationServerMetadata
+        ),
         accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
         status: "connected",
       });

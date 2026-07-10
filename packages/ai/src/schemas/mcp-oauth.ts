@@ -1,3 +1,9 @@
+import {
+  OAuthClientInformationFullSchema,
+  OAuthClientInformationSchema,
+  OAuthMetadataSchema,
+  OpenIdProviderDiscoveryMetadataSchema,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
 import { z } from "zod";
 
 export const mcpOAuthSecretStringSchema = z.string().min(1);
@@ -15,24 +21,20 @@ export const mcpOAuthTokensSchema = z
   })
   .passthrough();
 
-export const mcpOAuthClientInformationSchema = z
-  .object({
-    authorization_server: z.string().url().optional(),
-    client_id: z.string().min(1),
-    client_id_issued_at: z.number().optional(),
-    client_secret: z.string().optional(),
-    client_secret_expires_at: z.number().optional(),
-    redirect_uris: z.array(z.string().url()).optional(),
-    token_endpoint: z.string().url().optional(),
-  })
-  .passthrough();
+export const mcpOAuthClientInformationSchema = z.union([
+  OAuthClientInformationFullSchema,
+  OAuthClientInformationSchema,
+]);
 
-export const mcpOAuthAuthorizationServerInformationSchema = z.object({
-  authorizationServerUrl: z.string().url(),
-  tokenEndpoint: z.string().url(),
-});
+const mcpOAuthAuthorizationServerMetadataSchema = z.union([
+  OAuthMetadataSchema,
+  OpenIdProviderDiscoveryMetadataSchema,
+]);
 
-export const mcpOAuthErrorResponseSchema = z.object({
-  error: z.string().min(1),
-  error_description: z.string().optional(),
-});
+export const mcpOAuthStoredAuthorizationServerSchema = z.union([
+  mcpOAuthAuthorizationServerMetadataSchema,
+  z.object({
+    authorizationServerUrl: z.string().url(),
+    tokenEndpoint: z.string().url(),
+  }),
+]);

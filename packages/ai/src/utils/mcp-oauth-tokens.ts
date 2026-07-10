@@ -1,4 +1,4 @@
-import type { OAuthTokens } from "@ai-sdk/mcp";
+import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { MCP_OAUTH_TOKEN_EXPIRY_BUFFER_MS } from "../constants/mcp-auth";
 
 export function getMcpAccessTokenExpiresAt(tokens: OAuthTokens) {

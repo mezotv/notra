@@ -33,30 +33,6 @@ export class McpOAuthReauthorizationRequiredError extends Data.TaggedError(
   }
 }
 
-export class McpOAuthTokenError extends Data.TaggedError("McpOAuthTokenError")<{
-  readonly code: string;
-  readonly description?: string;
-  readonly message: string;
-  readonly status: number;
-}> {
-  constructor({
-    code,
-    description,
-    status,
-  }: {
-    code: string;
-    description?: string;
-    status: number;
-  }) {
-    super({
-      code,
-      description,
-      message: description ?? `OAuth token request failed: ${code}`,
-      status,
-    });
-  }
-}
-
 export class McpOAuthNameConflictError extends Data.TaggedError(
   "McpOAuthNameConflictError"
 )<{

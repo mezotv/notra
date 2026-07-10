@@ -1,4 +1,5 @@
-import { auth, type OAuthTokens } from "@ai-sdk/mcp";
+import { refreshAuthorization } from "@modelcontextprotocol/sdk/client/auth.js";
+import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { db } from "@notra/db/drizzle";
 import { mcpOAuthCredentials, mcpServerIntegrations } from "@notra/db/schema";
 import { and, eq, ne } from "drizzle-orm";
@@ -6,10 +7,11 @@ import {
   MCP_OAUTH_REFRESH_LEASE_MS,
   MCP_OAUTH_REFRESH_WAIT_ATTEMPTS,
   MCP_OAUTH_REFRESH_WAIT_MS,
+  TERMINAL_OAUTH_ERROR_REGEX,
 } from "../constants/mcp-auth";
 import {
-  mcpOAuthAuthorizationServerInformationSchema,
   mcpOAuthClientInformationSchema,
+  mcpOAuthStoredAuthorizationServerSchema,
   mcpOAuthTokensSchema,
 } from "../schemas/mcp-oauth";
 import type {
@@ -25,29 +27,33 @@ import {
   isMcpAccessTokenExpiring,
   toMcpOAuthRequestAuth,
 } from "../utils/mcp-oauth-tokens";
+import { restoreMcpOAuthServerConfiguration } from "./mcp-oauth-discovery";
 import {
   McpOAuthAuthorizationError,
   McpOAuthReauthorizationRequiredError,
   McpOAuthRefreshTokenRequiredError,
-  McpOAuthTokenError,
 } from "./mcp-oauth-errors";
-import {
-  createMcpOAuthProvider,
-  publicMcpOAuthFetch,
-} from "./mcp-oauth-provider";
+import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
 
-const TERMINAL_OAUTH_ERROR_CODES = new Set([
-  "invalid_grant",
-  "invalid_client",
-  "unauthorized_client",
-]);
+function getOAuthErrorCode(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "errorCode" in error &&
+    typeof error.errorCode === "string"
+  ) {
+    return error.errorCode;
+  }
+  return undefined;
+}
 
 function isTerminalOAuthError(error: unknown) {
+  const errorCode = getOAuthErrorCode(error);
+  const message = error instanceof Error ? error.message : String(error);
   return (
     error instanceof McpOAuthReauthorizationRequiredError ||
     error instanceof McpOAuthRefreshTokenRequiredError ||
-    (error instanceof McpOAuthTokenError &&
-      TERMINAL_OAUTH_ERROR_CODES.has(error.code))
+    TERMINAL_OAUTH_ERROR_REGEX.test(`${errorCode ?? ""} ${message}`)
   );
 }
 
@@ -196,56 +202,45 @@ async function refreshClaimedMcpOAuthCredential(
   organizationId: string,
   stored: NonNullable<Awaited<ReturnType<typeof getStoredMcpOAuthCredential>>>
 ) {
-  let savedTokens: OAuthTokens | undefined;
-  let authorizationServerInformation = decryptMcpOAuthSecret(
+  const storedRefreshToken = currentTokens.refresh_token;
+  if (!storedRefreshToken) {
+    throw new McpOAuthRefreshTokenRequiredError();
+  }
+  const storedAuthorizationServer = decryptMcpOAuthSecret(
     stored.credential.encryptedAuthorizationServerInformation,
-    mcpOAuthAuthorizationServerInformationSchema
+    mcpOAuthStoredAuthorizationServerSchema
   );
-  let clientInformation = decryptMcpOAuthSecret(
+  const clientInformation = decryptMcpOAuthSecret(
     stored.credential.encryptedClientInformation,
     mcpOAuthClientInformationSchema
   );
-  const redirectUrl = clientInformation?.redirect_uris?.[0];
-  if (!(clientInformation && redirectUrl)) {
+  if (!(storedAuthorizationServer && clientInformation)) {
     throw new McpOAuthReauthorizationRequiredError();
   }
-  const provider = createMcpOAuthProvider({
-    redirectUrl,
-    state: {
-      authorizationServerInformation,
+  const configuration = await restoreMcpOAuthServerConfiguration(
+    stored.serverUrl,
+    storedAuthorizationServer
+  );
+  const nextTokens = await refreshAuthorization(
+    configuration.authorizationServerUrl,
+    {
+      metadata: configuration.authorizationServerMetadata,
       clientInformation,
-      tokens: currentTokens,
-    },
-    onRedirect() {
-      throw new McpOAuthReauthorizationRequiredError();
-    },
-    persistence: {
-      async saveAuthorizationServerInformation(information) {
-        authorizationServerInformation = information;
-      },
-      async saveClientInformation(information) {
-        clientInformation = information;
-      },
-      async saveTokens(tokens) {
-        savedTokens = tokens;
-      },
-    },
-  });
-  const result = await auth(provider, {
-    serverUrl: stored.serverUrl,
-    fetchFn: publicMcpOAuthFetch,
-  });
-  if (result !== "AUTHORIZED" || !savedTokens) {
-    throw new McpOAuthReauthorizationRequiredError();
-  }
-  const refreshedTokens = savedTokens;
+      refreshToken: storedRefreshToken,
+      resource: configuration.resource,
+      fetchFn: publicMcpOAuthFetch,
+    }
+  );
+  const refreshedTokens = nextTokens.refresh_token
+    ? nextTokens
+    : { ...nextTokens, refresh_token: storedRefreshToken };
   const [persisted] = await db
     .update(mcpOAuthCredentials)
     .set({
       encryptedTokens: encryptMcpOAuthSecret(refreshedTokens),
-      encryptedAuthorizationServerInformation: authorizationServerInformation
-        ? encryptMcpOAuthSecret(authorizationServerInformation)
-        : stored.credential.encryptedAuthorizationServerInformation,
+      encryptedAuthorizationServerInformation: encryptMcpOAuthSecret(
+        configuration.authorizationServerMetadata
+      ),
       encryptedClientInformation: encryptMcpOAuthSecret(clientInformation),
       accessTokenExpiresAt: getMcpAccessTokenExpiresAt(refreshedTokens),
       status: "connected",

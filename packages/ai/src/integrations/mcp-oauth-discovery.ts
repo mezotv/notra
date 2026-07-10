@@ -1,0 +1,80 @@
+import {
+  discoverAuthorizationServerMetadata,
+  discoverOAuthProtectedResourceMetadata,
+} from "@modelcontextprotocol/sdk/client/auth.js";
+import { assertPublicHttpUrlResolution } from "@notra/utils/url";
+import type {
+  McpOAuthServerConfiguration,
+  McpOAuthStoredAuthorizationServer,
+} from "../types/mcp-oauth";
+import { McpOAuthAuthorizationError } from "./mcp-oauth-errors";
+import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
+
+export async function discoverMcpOAuthServerConfiguration(
+  serverUrl: string
+): Promise<McpOAuthServerConfiguration> {
+  const resourceMetadata = await discoverMcpOAuthProtectedResource(serverUrl);
+  const authorizationServerUrl = new URL(
+    resourceMetadata?.authorization_servers?.[0] ?? new URL(serverUrl).origin
+  );
+  await assertPublicHttpUrlResolution(authorizationServerUrl.toString());
+  const authorizationServerMetadata = await discoverAuthorizationServerMetadata(
+    authorizationServerUrl,
+    {
+      fetchFn: publicMcpOAuthFetch,
+    }
+  );
+  if (!authorizationServerMetadata) {
+    throw new McpOAuthAuthorizationError(
+      "This MCP server does not support OAuth discovery."
+    );
+  }
+  const resource = resourceMetadata
+    ? new URL(resourceMetadata.resource)
+    : undefined;
+  return {
+    authorizationServerMetadata,
+    authorizationServerUrl,
+    resource,
+    resourceMetadata,
+  };
+}
+
+async function discoverMcpOAuthProtectedResource(serverUrl: string) {
+  return discoverOAuthProtectedResourceMetadata(
+    serverUrl,
+    undefined,
+    publicMcpOAuthFetch
+  ).catch(() => undefined);
+}
+
+export async function restoreMcpOAuthServerConfiguration(
+  serverUrl: string,
+  storedAuthorizationServer: McpOAuthStoredAuthorizationServer
+): Promise<McpOAuthServerConfiguration> {
+  if (!("issuer" in storedAuthorizationServer)) {
+    return discoverMcpOAuthServerConfiguration(serverUrl);
+  }
+  const authorizationServerUrl = new URL(storedAuthorizationServer.issuer);
+  await assertPublicHttpUrlResolution(authorizationServerUrl.toString());
+  const resourceMetadata = await discoverMcpOAuthProtectedResource(serverUrl);
+  return {
+    authorizationServerMetadata: storedAuthorizationServer,
+    authorizationServerUrl,
+    resource: resourceMetadata ? new URL(resourceMetadata.resource) : undefined,
+    resourceMetadata,
+  };
+}
+
+export function getMcpOAuthRequestedScope({
+  authorizationServerMetadata,
+  resourceMetadata,
+}: McpOAuthServerConfiguration) {
+  const scopes = new Set(resourceMetadata?.scopes_supported ?? []);
+  if (
+    authorizationServerMetadata.scopes_supported?.includes("offline_access")
+  ) {
+    scopes.add("offline_access");
+  }
+  return scopes.size > 0 ? [...scopes].join(" ") : undefined;
+}
