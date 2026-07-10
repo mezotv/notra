@@ -53,6 +53,9 @@ export function serializeMcpServerIntegration<
     url: string;
     description: string | null;
     encryptedHeaders: McpHeaderMap;
+    authType?: string;
+    encryptedOauthAccessToken?: string | null;
+    encryptedOauthRefreshToken?: string | null;
     enabled: boolean;
     lastToolSyncAt?: Date | null;
     toolSyncStatus?: string;
@@ -67,12 +70,22 @@ export function serializeMcpServerIntegration<
     } | null;
   },
 >(integration: T) {
+  const authType = integration.authType ?? "headers";
+  let oauthStatus: "connected" | "pending" | null = null;
+  if (authType === "oauth") {
+    oauthStatus = integration.encryptedOauthAccessToken
+      ? "connected"
+      : "pending";
+  }
+
   return {
     id: integration.id,
     name: integration.name,
     url: integration.url,
     description: integration.description,
     enabled: integration.enabled,
+    authType,
+    oauthStatus,
     headerNames: Object.keys(integration.encryptedHeaders ?? {}),
     hasHeaders: Object.keys(integration.encryptedHeaders ?? {}).length > 0,
     lastToolSyncAt: integration.lastToolSyncAt?.toISOString() ?? null,
@@ -102,6 +115,7 @@ export async function createMcpServerIntegration(
       url: params.url,
       description: params.description ?? null,
       encryptedHeaders: encryptHeaders(params.headers),
+      authType: params.authType ?? "headers",
     })
     .returning();
 
@@ -109,10 +123,12 @@ export async function createMcpServerIntegration(
     throw new Error("Failed to create MCP server integration.");
   }
 
-  await refreshMcpToolIndexForIntegration({
-    organizationId: params.organizationId,
-    integrationId: integration.id,
-  }).catch(() => undefined);
+  if (integration.authType !== "oauth") {
+    await refreshMcpToolIndexForIntegration({
+      organizationId: params.organizationId,
+      integrationId: integration.id,
+    }).catch(() => undefined);
+  }
 
   return (await getMcpServerIntegrationById(integration.id)) ?? integration;
 }
@@ -207,26 +223,6 @@ export async function deleteMcpServerIntegration(integrationId: string) {
   await db
     .delete(mcpServerIntegrations)
     .where(eq(mcpServerIntegrations.id, integrationId));
-}
-
-export async function getDecryptedMcpHeaders(
-  integrationId: string,
-  organizationId: string
-) {
-  const [integration] = await db
-    .select({
-      encryptedHeaders: mcpServerIntegrations.encryptedHeaders,
-    })
-    .from(mcpServerIntegrations)
-    .where(
-      and(
-        eq(mcpServerIntegrations.id, integrationId),
-        eq(mcpServerIntegrations.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  return decryptHeaders(integration?.encryptedHeaders ?? {});
 }
 
 export async function testMcpServerConnection(input: {

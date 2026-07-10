@@ -40,9 +40,11 @@ export function McpServerCard({
   onToggle,
   onDelete,
   onRefreshTools,
+  onReconnect,
   refreshing = false,
 }: McpServerCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const isOauth = server.authType === "oauth";
 
   return (
     <>
@@ -81,6 +83,16 @@ export function McpServerCard({
                   />
                   Refresh tools
                 </DropdownMenuItem>
+                {isOauth ? (
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={() => onReconnect?.(server.id)}
+                  >
+                    {server.oauthStatus === "pending"
+                      ? "Authorize"
+                      : "Reconnect OAuth"}
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={(event) => {
@@ -115,6 +127,18 @@ export function McpServerCard({
             <Badge className="font-normal text-xs" variant="secondary">
               Streamable HTTP
             </Badge>
+            {isOauth ? (
+              <Badge
+                className="font-normal text-xs"
+                variant={
+                  server.oauthStatus === "pending" ? "destructive" : "secondary"
+                }
+              >
+                {server.oauthStatus === "pending"
+                  ? "Authorization required"
+                  : "OAuth"}
+              </Badge>
+            ) : null}
             <Badge
               className="font-normal text-xs"
               variant={

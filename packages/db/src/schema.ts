@@ -499,6 +499,15 @@ export const mcpServerIntegrations = pgTable(
       .$type<Record<string, string>>()
       .default(sql`'{}'::jsonb`)
       .notNull(),
+    authType: text("auth_type").default("headers").notNull(),
+    oauthAuthorizationServerUrl: text("oauth_authorization_server_url"),
+    oauthResource: text("oauth_resource"),
+    oauthScope: text("oauth_scope"),
+    oauthClientId: text("oauth_client_id"),
+    encryptedOauthClientSecret: text("encrypted_oauth_client_secret"),
+    encryptedOauthAccessToken: text("encrypted_oauth_access_token"),
+    encryptedOauthRefreshToken: text("encrypted_oauth_refresh_token"),
+    oauthTokenExpiresAt: timestamp("oauth_token_expires_at"),
     enabled: boolean("enabled").default(true).notNull(),
     lastToolSyncAt: timestamp("last_tool_sync_at"),
     toolSyncStatus: text("tool_sync_status").default("idle").notNull(),

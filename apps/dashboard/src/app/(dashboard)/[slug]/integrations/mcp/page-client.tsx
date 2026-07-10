@@ -5,7 +5,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -13,6 +14,10 @@ import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dia
 import { McpServerCard } from "@/components/integrations/mcp-server-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import {
+  buildMcpOauthAuthorizeUrl,
+  getMcpOauthErrorMessage,
+} from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { IntegrationsPageSkeleton } from "../skeleton";
 
@@ -25,9 +30,30 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id ?? "";
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("mcpOauthConnected");
+    const errorCode = params.get("mcpOauthError");
+    if (!(connected || errorCode)) {
+      return;
+    }
+    if (connected) {
+      toast.success("MCP server authorized");
+    }
+    if (errorCode) {
+      toast.error(getMcpOauthErrorMessage(errorCode));
+    }
+    params.delete("mcpOauthConnected");
+    params.delete("mcpOauthError");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }, [pathname, router]);
 
   const queryInput = { organizationId };
 
@@ -140,6 +166,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <McpServerCard
                   key={server.id}
                   onDelete={(id) => deleteMutation.mutate(id)}
+                  onReconnect={(id) =>
+                    window.location.assign(
+                      buildMcpOauthAuthorizeUrl({
+                        organizationId,
+                        serverId: id,
+                        callbackPath: pathname,
+                      })
+                    )
+                  }
                   onRefreshTools={(id) => refreshMutation.mutate(id)}
                   onToggle={(id, enabled) =>
                     toggleMutation.mutate({ id, enabled })

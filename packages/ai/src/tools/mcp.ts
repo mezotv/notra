@@ -1,8 +1,6 @@
 import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
-import {
-  getDecryptedMcpHeaders,
-  getMcpServerIntegrationsByOrganization,
-} from "@notra/ai/integrations/mcp";
+import { getMcpServerIntegrationsByOrganization } from "@notra/ai/integrations/mcp";
+import { getMcpIntegrationRequestHeaders } from "@notra/ai/integrations/mcp-oauth";
 import type { McpRuntimeTool, McpRuntimeToolSet } from "@notra/ai/types/tools";
 import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import type { Tool } from "ai";
@@ -29,10 +27,7 @@ export async function createMcpRuntimeToolSet(
   for (const integration of integrations) {
     try {
       await assertPublicHttpUrlResolution(integration.url);
-      const headers = await getDecryptedMcpHeaders(
-        integration.id,
-        organizationId
-      );
+      const headers = await getMcpIntegrationRequestHeaders(integration);
       const client = await createMCPClient({
         clientName: "notra",
         version: "0.0.1",

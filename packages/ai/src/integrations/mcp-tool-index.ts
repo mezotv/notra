@@ -20,7 +20,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-import { decryptToken } from "../crypto/token-encryption";
+import { getMcpIntegrationRequestHeaders } from "./mcp-oauth";
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
 
 export const MCP_SESSION_ACTIVE_TOOL_LIMIT = 20;
@@ -154,7 +154,7 @@ export async function refreshMcpToolIndexForIntegration({
       transport: {
         type: "http",
         url: integration.url,
-        headers: decryptHeaders(integration.encryptedHeaders),
+        headers: await getMcpIntegrationRequestHeaders(integration),
         redirect: "error",
       },
       onUncaughtError: (error) => {
@@ -716,15 +716,6 @@ export async function getEnabledMcpServerCount(organizationId: string) {
       )
     );
   return Number(row?.value ?? 0);
-}
-
-function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
 }
 
 async function upsertIndexedTool({

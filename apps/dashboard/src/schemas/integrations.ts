@@ -413,10 +413,14 @@ export const mcpHeaderRowSchema = z.object({
 });
 export type McpHeaderRow = z.infer<typeof mcpHeaderRowSchema>;
 
+export const mcpAuthTypeSchema = z.enum(["headers", "oauth"]);
+export type McpAuthType = z.infer<typeof mcpAuthTypeSchema>;
+
 export const addMcpServerFormFieldsSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
   url: mcpFormUrlSchema,
   description: z.string().trim().max(1000, "Description is too long"),
+  authType: mcpAuthTypeSchema,
   headers: z
     .array(mcpHeaderRowSchema)
     .max(MAX_MCP_HEADERS, `You can add up to ${MAX_MCP_HEADERS} headers`),
@@ -452,10 +456,20 @@ export const createMcpServerRequestSchema = z.object({
     .max(1000, "Description is too long")
     .optional()
     .nullable(),
+  authType: mcpAuthTypeSchema.default("headers"),
   headers: mcpHeadersSchema,
 });
 export type CreateMcpServerRequest = z.infer<
   typeof createMcpServerRequestSchema
+>;
+
+export const mcpOauthAuthorizeQuerySchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  serverId: z.string().min(1, "MCP server ID is required"),
+  callbackPath: z.string().min(1).default("/"),
+});
+export type McpOauthAuthorizeQuery = z.infer<
+  typeof mcpOauthAuthorizeQuerySchema
 >;
 
 export const updateMcpServerBodySchema = z

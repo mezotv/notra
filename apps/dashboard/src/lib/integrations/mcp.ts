@@ -1,6 +1,7 @@
 import {
   type AddMcpServerFormValues,
   MCP_URL_PROTOCOL_REGEX,
+  type McpAuthType,
 } from "@/schemas/integrations";
 
 export const MCP_ACCENT_COLOR = "#9333EA";
@@ -36,6 +37,45 @@ export function getMcpFormErrorMessage(error: unknown) {
   }
 
   return "Invalid value";
+}
+
+export function buildMcpOauthAuthorizeUrl(params: {
+  organizationId: string;
+  serverId: string;
+  callbackPath: string;
+}) {
+  const query = new URLSearchParams({
+    organizationId: params.organizationId,
+    serverId: params.serverId,
+    callbackPath: params.callbackPath,
+  });
+  return `/api/integrations/mcp/oauth/authorize?${query.toString()}`;
+}
+
+const MCP_OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  access_denied: "Authorization was cancelled on the MCP server.",
+  unsupported:
+    "This MCP server does not support OAuth. Connect it with API key headers instead.",
+  discovery_failed:
+    "Could not discover OAuth support on this MCP server. Connect it with API key headers instead.",
+  token_exchange_failed:
+    "The MCP server rejected the authorization. Try connecting again.",
+  server_not_found: "MCP server not found.",
+  mcp_oauth_not_configured: "OAuth connections are not configured.",
+};
+
+export function getSubmitLabel(authType: McpAuthType, isPending: boolean) {
+  if (authType === "oauth") {
+    return isPending ? "Connecting..." : "Connect & Authorize";
+  }
+  return isPending ? "Adding..." : "Add Server";
+}
+
+export function getMcpOauthErrorMessage(code: string) {
+  return (
+    MCP_OAUTH_ERROR_MESSAGES[code] ??
+    "Could not authorize the MCP server. Try again."
+  );
 }
 
 export function buildMcpHeaders(

@@ -61,6 +61,8 @@ export interface McpHeaderMap {
   [key: string]: string;
 }
 
+export type McpServerAuthType = "headers" | "oauth";
+
 export interface CreateMcpServerIntegrationParams {
   organizationId: string;
   userId: string;
@@ -68,6 +70,48 @@ export interface CreateMcpServerIntegrationParams {
   url: string;
   description?: string | null;
   headers?: McpHeaderMap;
+  authType?: McpServerAuthType;
+}
+
+export interface McpOauthAuthorizationContext {
+  authorizationServerUrl: string;
+  clientId: string;
+  clientSecret?: string;
+  scope?: string;
+  resource?: string;
+  codeVerifier: string;
+}
+
+export interface StartMcpOauthAuthorizationParams {
+  serverUrl: string;
+  redirectUrl: string;
+  state: string;
+}
+
+export interface StartMcpOauthAuthorizationResult {
+  authorizationUrl: string;
+  context: McpOauthAuthorizationContext;
+}
+
+export interface CompleteMcpOauthAuthorizationParams {
+  integrationId: string;
+  organizationId: string;
+  authorizationCode: string;
+  redirectUri: string;
+  context: McpOauthAuthorizationContext;
+}
+
+export interface McpIntegrationAuthState {
+  id: string;
+  authType: string;
+  encryptedHeaders: McpHeaderMap | null;
+  oauthAuthorizationServerUrl: string | null;
+  oauthResource: string | null;
+  oauthClientId: string | null;
+  encryptedOauthClientSecret: string | null;
+  encryptedOauthAccessToken: string | null;
+  encryptedOauthRefreshToken: string | null;
+  oauthTokenExpiresAt: Date | null;
 }
 
 export interface UpdateMcpServerIntegrationParams {

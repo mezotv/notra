@@ -912,6 +912,7 @@ export const integrationsRouter = {
             url: input.url,
             description: input.description ?? null,
             headers: input.headers,
+            authType: input.authType,
           });
 
           return serializeMcpServerIntegration(integration);

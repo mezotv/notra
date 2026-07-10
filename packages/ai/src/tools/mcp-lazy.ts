@@ -12,7 +12,7 @@ import {
 } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { decryptToken } from "../crypto/token-encryption";
+import { getMcpIntegrationRequestHeaders } from "../integrations/mcp-oauth";
 import {
   type ActivatedMcpTool,
   activateSessionMcpTools,
@@ -430,7 +430,7 @@ async function createMcpClientForIntegration({
     transport: {
       type: "http",
       url: integration.url,
-      headers: decryptHeaders(integration.encryptedHeaders),
+      headers: await getMcpIntegrationRequestHeaders(integration),
       redirect: "error",
     },
     onUncaughtError: (error) => {
@@ -490,15 +490,6 @@ function toMcpDefinitionInputSchema(
         ? (schema.properties as Record<string, unknown>)
         : {},
   } as McpToolDefinition["inputSchema"];
-}
-
-function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
 }
 
 function withExecutionTimeout(options: ToolExecutionOptions) {
