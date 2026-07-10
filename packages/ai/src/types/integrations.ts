@@ -61,6 +61,30 @@ export interface McpHeaderMap {
   [key: string]: string;
 }
 
+export interface McpServerIntegrationSerializationInput {
+  id: string;
+  name: string;
+  url: string;
+  description: string | null;
+  authType: string;
+  encryptedHeaders: McpHeaderMap;
+  enabled: boolean;
+  lastToolSyncAt?: Date | null;
+  toolSyncStatus?: string;
+  toolSyncError?: string | null;
+  indexedToolCount?: number;
+  oauthCredential?: {
+    status: string;
+  } | null;
+  createdAt: Date;
+  createdByUser?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  } | null;
+}
+
 export interface CreateMcpServerIntegrationParams {
   authType: "none" | "headers";
   organizationId: string;

@@ -1,3 +1,10 @@
+import type { Dispatch, SetStateAction } from "react";
+import type { z } from "zod";
+import type { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";
+import type { beginMcpOAuthRequestSchema } from "@/schemas/integrations";
+
+export type BeginMcpOAuthRequest = z.infer<typeof beginMcpOAuthRequestSchema>;
+
 export type McpTestStatus = "idle" | "testing" | "success" | "error";
 
 export interface McpConnectionTestStatusProps {
@@ -68,6 +75,3 @@ export interface McpIntegrationCardProps {
   organizationId: string;
   organizationSlug: string;
 }
-
-import type { Dispatch, SetStateAction } from "react";
-import type { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";

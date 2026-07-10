@@ -33,7 +33,6 @@ import {
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   type AddMcpServerFormValues,
-  type BeginMcpOAuthRequest,
   beginMcpOAuthRequestSchema,
   type CreateMcpServerRequest,
   createMcpServerRequestSchema,
@@ -41,6 +40,7 @@ import {
 } from "@/schemas/integrations";
 import type {
   AddMcpServerDialogProps,
+  BeginMcpOAuthRequest,
   McpTestStatus,
 } from "@/types/integrations/mcp";
 

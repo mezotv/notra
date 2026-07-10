@@ -1,4 +1,3 @@
-import type { MCPClient } from "@ai-sdk/mcp";
 import type {
   AuthorizationServerMetadata,
   OAuthProtectedResourceMetadata,
@@ -20,11 +19,6 @@ export interface McpRequestAuth {
   authType: McpAuthType;
   headers: McpHeaderMap;
   oauthTokenVersion?: number;
-}
-
-export interface McpClientEntry {
-  client: MCPClient;
-  requestAuth: McpRequestAuth;
 }
 
 export interface BeginMcpOAuthAuthorizationParams {

@@ -25,6 +25,8 @@ import type {
   CompleteMcpOAuthAuthorizationParams,
 } from "../types/mcp-oauth";
 import { createMcpOAuthClientMetadata } from "../utils/mcp-oauth-client";
+import { publicMcpOAuthFetch } from "../utils/mcp-oauth-fetch";
+import { getMcpOAuthRequestedScope } from "../utils/mcp-oauth-scope";
 import {
   decryptMcpOAuthSecret,
   encryptMcpOAuthSecret,
@@ -33,7 +35,6 @@ import { getMcpAccessTokenExpiresAt } from "../utils/mcp-oauth-tokens";
 import { hasMcpOrganizationAccess } from "./mcp-access";
 import {
   discoverMcpOAuthServerConfiguration,
-  getMcpOAuthRequestedScope,
   restoreMcpOAuthServerConfiguration,
 } from "./mcp-oauth-discovery";
 import {
@@ -41,7 +42,6 @@ import {
   McpOAuthNameConflictError,
   McpOAuthRefreshTokenRequiredError,
 } from "./mcp-oauth-errors";
-import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
 import { getStoredMcpOAuthCredential } from "./mcp-oauth-refresh";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);

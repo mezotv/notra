@@ -500,7 +500,6 @@ export const beginMcpOAuthRequestSchema = z.object({
   description: createMcpServerRequestFieldsSchema.shape.description,
   callbackPath: mcpOAuthCallbackPathSchema,
 });
-export type BeginMcpOAuthRequest = z.infer<typeof beginMcpOAuthRequestSchema>;
 
 export const reauthorizeMcpOAuthRequestSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),

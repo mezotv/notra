@@ -7,8 +7,8 @@ import type {
   McpOAuthServerConfiguration,
   McpOAuthStoredAuthorizationServer,
 } from "../types/mcp-oauth";
+import { publicMcpOAuthFetch } from "../utils/mcp-oauth-fetch";
 import { McpOAuthAuthorizationError } from "./mcp-oauth-errors";
-import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
 
 export async function discoverMcpOAuthServerConfiguration(
   serverUrl: string
@@ -64,17 +64,4 @@ export async function restoreMcpOAuthServerConfiguration(
     resource: resourceMetadata ? new URL(resourceMetadata.resource) : undefined,
     resourceMetadata,
   };
-}
-
-export function getMcpOAuthRequestedScope({
-  authorizationServerMetadata,
-  resourceMetadata,
-}: McpOAuthServerConfiguration) {
-  const scopes = new Set(resourceMetadata?.scopes_supported ?? []);
-  if (
-    authorizationServerMetadata.scopes_supported?.includes("offline_access")
-  ) {
-    scopes.add("offline_access");
-  }
-  return scopes.size > 0 ? [...scopes].join(" ") : undefined;
 }

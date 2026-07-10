@@ -18,6 +18,7 @@ import type {
   McpRequestAuth,
   RefreshMcpOAuthRequestAuthParams,
 } from "../types/mcp-oauth";
+import { publicMcpOAuthFetch } from "../utils/mcp-oauth-fetch";
 import {
   decryptMcpOAuthSecret,
   encryptMcpOAuthSecret,
@@ -33,7 +34,6 @@ import {
   McpOAuthReauthorizationRequiredError,
   McpOAuthRefreshTokenRequiredError,
 } from "./mcp-oauth-errors";
-import { publicMcpOAuthFetch } from "./mcp-oauth-provider";
 
 function getOAuthErrorCode(error: unknown) {
   if (

@@ -20,52 +20,24 @@ import {
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import {
+  MCP_ACTIVATE_BATCH_LIMIT,
+  MCP_INDEX_TIMEOUT_MS,
+  MCP_MAX_RUNTIME_WRAPPERS,
+  MCP_SEARCH_LIMIT_DEFAULT,
+  MCP_SEARCH_LIMIT_MAX,
+  MCP_SESSION_ACTIVE_TOOL_LIMIT,
+} from "../constants/mcp-tool-index";
 import type { McpRequestAuth } from "../types/mcp-oauth";
+import type {
+  ActivatedMcpTool,
+  IndexedMcpTool,
+  McpSessionSurface,
+  McpToolDefinition,
+} from "../types/mcp-tool-index";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { getMcpRequestAuth, withMcpOAuthRetry } from "./mcp-auth";
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
-
-export const MCP_SESSION_ACTIVE_TOOL_LIMIT = 20;
-export const MCP_ACTIVATE_BATCH_LIMIT = 5;
-export const MCP_SEARCH_LIMIT_DEFAULT = 8;
-export const MCP_SEARCH_LIMIT_MAX = 15;
-export const MCP_INDEX_TIMEOUT_MS = 15_000;
-export const MCP_EXECUTION_TIMEOUT_MS = 30_000;
-export const MCP_MAX_RUNTIME_WRAPPERS = 2000;
-
-export type McpToolIndexStatus = "active" | "stale" | "unavailable" | "error";
-export type McpToolSyncStatus = "idle" | "syncing" | "synced" | "error";
-export type McpSessionSurface = "standalone-chat" | "editor-chat";
-
-type McpListToolsResult = Awaited<ReturnType<MCPClient["listTools"]>>;
-export type McpToolDefinition = McpListToolsResult["tools"][number];
-
-export interface IndexedMcpTool {
-  id: string;
-  organizationId: string;
-  serverIntegrationId: string;
-  serverToolName: string;
-  runtimeToolName: string;
-  title: string | null;
-  description: string | null;
-  inputSchema: unknown;
-  outputSchema: unknown;
-  annotations: unknown;
-  meta: unknown;
-  schemaHash: string;
-  searchText: string;
-  status: string;
-  serverName: string;
-  serverUrl: string;
-  serverEnabled: boolean;
-}
-
-export interface ActivatedMcpTool extends IndexedMcpTool {
-  activationId: string;
-  sourceQuery: string | null;
-  activatedAt: Date;
-  lastUsedAt: Date | null;
-}
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 export async function refreshMcpToolIndexForOrganization({
