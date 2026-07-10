@@ -2,6 +2,7 @@ import { oauthProvider } from "@better-auth/oauth-provider";
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { redis } from "@notra/ai/utils/redis";
+import { getPortlessUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { members, organizations, sessions } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
@@ -143,7 +144,7 @@ function getTrustedOrigins() {
       [
         "http://localhost:3000",
         "https://app.usenotra.com",
-        process.env.PORTLESS_URL,
+        getPortlessUrl(),
         process.env.BETTER_AUTH_URL,
         process.env.NEXT_PUBLIC_APP_URL,
         process.env.WORKFLOW_BASE_URL,
@@ -258,7 +259,7 @@ export const auth = betterAuth({
     }),
     organization({
       sendInvitationEmail: async (data) => {
-        const inviteLink = `${process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
+        const inviteLink = `${getPortlessUrl() ?? process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
         await sendInviteEmailAction({
           inviteeEmail: data.email,
           inviterName: data.inviter.user.name,
@@ -416,7 +417,7 @@ export const auth = betterAuth({
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,
   },
-  baseURL: process.env.PORTLESS_URL ?? process.env.BETTER_AUTH_URL,
+  baseURL: getPortlessUrl() ?? process.env.BETTER_AUTH_URL,
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {

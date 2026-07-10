@@ -4,6 +4,14 @@ export function normalizeUrl(url: string): string {
   return url.replace(TRAILING_SLASHES_REGEX, "");
 }
 
+export function getPortlessUrl(): string | undefined {
+  if (process.env.NODE_ENV !== "development" || !process.env.PORTLESS_URL) {
+    return undefined;
+  }
+
+  return normalizeUrl(process.env.PORTLESS_URL);
+}
+
 export function getConfiguredWorkflowUrl(): string | undefined {
   const url = process.env.WORKFLOW_BASE_URL;
 
@@ -16,7 +24,7 @@ export function getConfiguredWorkflowUrl(): string | undefined {
 
 export function getConfiguredAppUrl(): string | undefined {
   const url =
-    process.env.PORTLESS_URL ||
+    getPortlessUrl() ||
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.APP_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);

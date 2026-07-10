@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+import { getPortlessUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -127,7 +128,7 @@ export const socialAccountsRouter = {
         }
 
         const baseUrl =
-          process.env.PORTLESS_URL ??
+          getPortlessUrl() ??
           process.env.BETTER_AUTH_URL ??
           process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { getPortlessUrl } from "@notra/ai/utils/url";
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
 import { InviteUserEmail } from "@notra/email/emails/invite";
@@ -246,9 +247,7 @@ export async function sendScheduledContentFailedEmail(
   }: SendScheduledContentFailedEmailProps
 ) {
   const appUrl =
-    process.env.PORTLESS_URL ??
-    process.env.BETTER_AUTH_URL ??
-    EMAIL_CONFIG.getAppUrl();
+    getPortlessUrl() ?? process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
   const settingsLink = `${appUrl}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
@@ -284,9 +283,7 @@ export async function sendScheduledContentSkippedEmail(
   }: SendScheduledContentSkippedEmailProps
 ) {
   const appUrl =
-    process.env.PORTLESS_URL ??
-    process.env.BETTER_AUTH_URL ??
-    EMAIL_CONFIG.getAppUrl();
+    getPortlessUrl() ?? process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
   const settingsLink = `${appUrl}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
@@ -321,9 +318,7 @@ export async function sendAiCreditsDepletedEmail(
   }: SendAiCreditsDepletedEmailProps
 ) {
   const appUrl =
-    process.env.PORTLESS_URL ??
-    process.env.BETTER_AUTH_URL ??
-    EMAIL_CONFIG.getAppUrl();
+    getPortlessUrl() ?? process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
   const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
   const idempotencyKey = createHash("sha256")
     .update(
@@ -364,9 +359,7 @@ export async function sendWorkflowPausedEmail(
   }: SendWorkflowPausedEmailProps
 ) {
   const appUrl =
-    process.env.PORTLESS_URL ??
-    process.env.BETTER_AUTH_URL ??
-    EMAIL_CONFIG.getAppUrl();
+    getPortlessUrl() ?? process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
   const settingsLink = `${appUrl}/${organizationSlug}/automation/schedules`;
   const idempotencyKey = createHash("sha256")
     .update(

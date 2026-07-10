@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+import { getPortlessUrl } from "@notra/ai/utils/url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
@@ -7,7 +8,7 @@ import { linearAuthorizeQuerySchema } from "@/schemas/linear";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.PORTLESS_URL ??
+    getPortlessUrl() ??
     process.env.BETTER_AUTH_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     "";

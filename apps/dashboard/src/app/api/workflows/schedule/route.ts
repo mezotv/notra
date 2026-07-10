@@ -5,6 +5,7 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integra
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { getBaseUrl, triggerScheduleNow } from "@notra/ai/qstash/triggers";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
+import { getPortlessUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import {
@@ -1144,7 +1145,7 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
         await context.run("send-notification-emails", async () => {
           const baseUrl =
-            process.env.PORTLESS_URL ??
+            getPortlessUrl() ??
             process.env.BETTER_AUTH_URL ??
             "https://app.usenotra.com";
           const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
