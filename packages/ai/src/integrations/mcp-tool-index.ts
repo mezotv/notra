@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { createMCPClient, type MCPClient } from "@ai-sdk/mcp";
 import { db } from "@notra/db/drizzle";
 import {
@@ -36,6 +35,7 @@ import type {
   McpToolIndexTransaction,
 } from "../types/mcp-tool-index";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
+import { createMcpToolFingerprint } from "../utils/mcp-tool-fingerprint";
 import { getMcpRequestAuth, withMcpOAuthRetry } from "./mcp-auth";
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
 
@@ -754,7 +754,7 @@ async function upsertIndexedTool({
     definition,
     runtimeToolName,
   });
-  const schemaHash = hashStable({
+  const schemaHash = createMcpToolFingerprint({
     name: definition.name,
     title: definition.title,
     description: definition.description,
@@ -1014,26 +1014,6 @@ function schemaPropertyNames(inputSchema: unknown) {
     return "";
   }
   return Object.keys(properties).join(" ");
-}
-
-function hashStable(value: unknown) {
-  return createHash("sha256")
-    .update(JSON.stringify(sortJson(value)))
-    .digest("hex");
-}
-
-function sortJson(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortJson);
-  }
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, nested]) => [key, sortJson(nested)])
-  );
 }
 
 function sanitizeErrorMessage(message: string) {

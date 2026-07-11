@@ -224,6 +224,7 @@
         "@aws-sdk/client-s3": "^3.990.0",
         "@linear/sdk": "^80.0.0",
         "@modelcontextprotocol/sdk": "^1.29.0",
+        "@noble/hashes": "2.2.0",
         "@notra/db": "workspace:*",
         "@notra/utils": "workspace:*",
         "@octokit/core": "^7.0.6",
