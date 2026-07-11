@@ -1,5 +1,6 @@
 import { resolvePublicHttpUrl } from "@notra/utils/url";
-import { Agent } from "undici";
+import { Agent, fetch as undiciFetch } from "undici/index.js";
+import { mcpFetchResponseSchema } from "../schemas/mcp-fetch";
 import type { McpDispatcherRequestInit } from "../types/mcp-fetch";
 
 export async function fetchPublicMcpUrl(
@@ -7,13 +8,17 @@ export async function fetchPublicMcpUrl(
   init?: RequestInit,
   timeoutMs?: number
 ) {
-  const url = input instanceof Request ? input.url : String(input);
-  const addresses = await resolvePublicHttpUrl(url);
+  const request = new Request(input, init);
+  const addresses = await resolvePublicHttpUrl(request.url);
   let addressIndex = 0;
   const dispatcher = new Agent({
     pipelining: 0,
     connect: {
-      lookup: (_hostname, _options, callback) => {
+      lookup: (_hostname, options, callback) => {
+        if (options.all) {
+          callback(null, addresses);
+          return;
+        }
         const address = addresses[addressIndex % addresses.length];
         addressIndex += 1;
         if (!address) {
@@ -28,17 +33,30 @@ export async function fetchPublicMcpUrl(
       },
     },
   });
-  const signal = createMcpFetchSignal(input, init?.signal, timeoutMs);
+  const signal = createMcpFetchSignal(request.signal, timeoutMs);
   const requestInit: McpDispatcherRequestInit = {
-    ...init,
+    body: request.body,
+    cache: request.cache,
+    credentials: request.credentials,
     dispatcher,
+    duplex: "half",
+    headers: request.headers,
+    integrity: request.integrity,
+    keepalive: request.keepalive,
+    method: request.method,
+    mode: request.mode,
     redirect: "error",
+    referrer: request.referrer,
+    referrerPolicy: request.referrerPolicy,
     signal,
   };
   try {
-    const response = await fetch(input, requestInit);
+    const response = await Reflect.apply(undiciFetch, undefined, [
+      request.url,
+      requestInit,
+    ]);
     dispatcher.close().catch(() => undefined);
-    return response;
+    return mcpFetchResponseSchema.parse(response);
   } catch (error) {
     await dispatcher.close().catch(() => undefined);
     throw error;
@@ -46,18 +64,10 @@ export async function fetchPublicMcpUrl(
 }
 
 function createMcpFetchSignal(
-  input: RequestInfo | URL,
-  initSignal: AbortSignal | null | undefined,
+  requestSignal: AbortSignal,
   timeoutMs: number | undefined
 ) {
-  const inputSignal = input instanceof Request ? input.signal : undefined;
-  const requestSignal = initSignal ?? inputSignal;
-  const signals = requestSignal ? [requestSignal] : [];
-  if (timeoutMs !== undefined) {
-    signals.push(AbortSignal.timeout(timeoutMs));
-  }
-  if (signals.length === 0) {
-    return undefined;
-  }
-  return signals.length === 1 ? signals[0] : AbortSignal.any(signals);
+  return timeoutMs === undefined
+    ? requestSignal
+    : AbortSignal.any([requestSignal, AbortSignal.timeout(timeoutMs)]);
 }
