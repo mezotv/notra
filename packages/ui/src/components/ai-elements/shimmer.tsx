@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import {
   type CSSProperties,
   type ElementType,
@@ -25,7 +25,7 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
-  const MotionComponent = motion.create(
+  const MotionComponent = m.create(
     Component as keyof JSX.IntrinsicElements
   );
 
