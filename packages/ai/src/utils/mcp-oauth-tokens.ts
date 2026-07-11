@@ -7,11 +7,20 @@ export function getMcpAccessTokenExpiresAt(tokens: OAuthTokens) {
     : null;
 }
 
-export function isMcpAccessTokenExpiring(expiresAt: Date | null) {
-  return Boolean(
-    expiresAt &&
-      expiresAt.getTime() - MCP_OAUTH_TOKEN_EXPIRY_BUFFER_MS <= Date.now()
+export function getMcpAccessTokenRefreshAt(tokens: OAuthTokens) {
+  if (tokens.expires_in === undefined) {
+    return null;
+  }
+  const lifetimeMs = tokens.expires_in * 1000;
+  const bufferMs = Math.min(
+    MCP_OAUTH_TOKEN_EXPIRY_BUFFER_MS,
+    Math.max(1000, lifetimeMs * 0.1)
   );
+  return new Date(Date.now() + Math.max(0, lifetimeMs - bufferMs));
+}
+
+export function isMcpAccessTokenExpiring(refreshAt: Date | null) {
+  return Boolean(refreshAt && refreshAt.getTime() <= Date.now());
 }
 
 export function toMcpOAuthRequestAuth(

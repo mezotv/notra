@@ -99,6 +99,7 @@ export function McpAuthenticationFields({
                             {(field) => (
                               <Field className="flex-1">
                                 <Input
+                                  aria-label={`Authentication header ${index + 1} name`}
                                   autoComplete="off"
                                   onBlur={field.handleBlur}
                                   onChange={(event) => {
@@ -125,6 +126,7 @@ export function McpAuthenticationFields({
                             {(field) => (
                               <Field className="flex-[1.3]">
                                 <Input
+                                  aria-label={`Authentication header ${index + 1} value`}
                                   autoComplete="off"
                                   onBlur={field.handleBlur}
                                   onChange={(event) => {

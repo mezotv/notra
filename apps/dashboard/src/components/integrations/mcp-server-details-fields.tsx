@@ -8,7 +8,10 @@ import {
 import { Input } from "@notra/ui/components/ui/input";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { getMcpFormErrorMessage } from "@/lib/integrations/mcp";
-import { addMcpServerFormFieldsSchema } from "@/schemas/integrations";
+import {
+  addMcpServerFormFieldsSchema,
+  MCP_URL_PROTOCOL_REGEX,
+} from "@/schemas/integrations";
 import type { McpServerDetailsFieldsProps } from "@/types/integrations/mcp";
 
 export function McpServerDetailsFields({
@@ -75,7 +78,9 @@ export function McpServerDetailsFields({
                 id="mcp-url"
                 onBlur={field.handleBlur}
                 onChange={(event) => {
-                  field.handleChange(event.target.value);
+                  field.handleChange(
+                    event.target.value.replace(MCP_URL_PROTOCOL_REGEX, "")
+                  );
                   invalidateTestResult();
                 }}
                 placeholder="mcp.example.com/mcp"

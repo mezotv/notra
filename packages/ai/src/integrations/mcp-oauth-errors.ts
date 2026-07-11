@@ -1,20 +1,21 @@
-import { Data } from "effect";
+import { Schema } from "effect";
 
-export class McpOAuthAuthorizationError extends Data.TaggedError(
-  "McpOAuthAuthorizationError"
-)<{
-  readonly message: string;
-}> {
-  constructor(message: string) {
-    super({ message });
+export class McpOAuthAuthorizationError extends Schema.TaggedErrorClass<McpOAuthAuthorizationError>()(
+  "McpOAuthAuthorizationError",
+  {
+    message: Schema.String,
+    cause: Schema.optional(Schema.Defect()),
+  }
+) {
+  constructor(message: string, cause?: unknown) {
+    super({ message, ...(cause === undefined ? {} : { cause }) });
   }
 }
 
-export class McpOAuthRefreshTokenRequiredError extends Data.TaggedError(
-  "McpOAuthRefreshTokenRequiredError"
-)<{
-  readonly message: string;
-}> {
+export class McpOAuthRefreshTokenRequiredError extends Schema.TaggedErrorClass<McpOAuthRefreshTokenRequiredError>()(
+  "McpOAuthRefreshTokenRequiredError",
+  { message: Schema.String }
+) {
   constructor() {
     super({
       message:
@@ -23,21 +24,19 @@ export class McpOAuthRefreshTokenRequiredError extends Data.TaggedError(
   }
 }
 
-export class McpOAuthReauthorizationRequiredError extends Data.TaggedError(
-  "McpOAuthReauthorizationRequiredError"
-)<{
-  readonly message: string;
-}> {
+export class McpOAuthReauthorizationRequiredError extends Schema.TaggedErrorClass<McpOAuthReauthorizationRequiredError>()(
+  "McpOAuthReauthorizationRequiredError",
+  { message: Schema.String }
+) {
   constructor() {
     super({ message: "Reconnect this MCP server to restore OAuth access." });
   }
 }
 
-export class McpOAuthNameConflictError extends Data.TaggedError(
-  "McpOAuthNameConflictError"
-)<{
-  readonly message: string;
-}> {
+export class McpOAuthNameConflictError extends Schema.TaggedErrorClass<McpOAuthNameConflictError>()(
+  "McpOAuthNameConflictError",
+  { message: Schema.String }
+) {
   constructor() {
     super({ message: "An MCP server with this name already exists." });
   }

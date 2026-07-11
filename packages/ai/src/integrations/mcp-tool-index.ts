@@ -30,10 +30,10 @@ import {
 } from "../constants/mcp-tool-index";
 import type { McpRequestAuth } from "../types/mcp-oauth";
 import type {
-  ActivatedMcpTool,
   IndexedMcpTool,
   McpSessionSurface,
   McpToolDefinition,
+  McpToolIndexTransaction,
 } from "../types/mcp-tool-index";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { getMcpRequestAuth, withMcpOAuthRetry } from "./mcp-auth";
@@ -122,7 +122,7 @@ export async function refreshMcpToolIndexForIntegration({
   try {
     await assertPublicHttpUrlResolution(integration.url);
     const requestAuth = await getMcpRequestAuth(integrationId, organizationId);
-    client = await withMcpOAuthRetry({
+    const listing = await withMcpOAuthRetry({
       integrationId,
       organizationId,
       requestAuth,
@@ -131,55 +131,62 @@ export async function refreshMcpToolIndexForIntegration({
           integration.url,
           integrationId,
           organizationId,
-          nextAuth,
-          async (definition) => {
-            seenToolNames.add(definition.name);
-            await upsertIndexedTool({
-              organizationId,
-              integration: {
-                id: integration.id,
-                name: integration.name,
-                description: integration.description,
-              },
-              definition,
-            });
-          }
+          nextAuth
         ),
     });
-
-    if (seenToolNames.size > 0) {
-      await db
-        .update(mcpToolIndex)
-        .set({
-          status: "stale",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(mcpToolIndex.serverIntegrationId, integrationId),
-            notInArray(mcpToolIndex.serverToolName, Array.from(seenToolNames))
-          )
-        );
-    } else {
-      await db
-        .update(mcpToolIndex)
-        .set({
-          status: "stale",
-          updatedAt: new Date(),
-        })
-        .where(eq(mcpToolIndex.serverIntegrationId, integrationId));
+    client = listing.client;
+    for (const definition of listing.definitions) {
+      seenToolNames.add(definition.name);
     }
 
-    await db
-      .update(mcpServerIntegrations)
-      .set({
-        lastToolSyncAt: new Date(),
-        toolSyncStatus: "synced",
-        toolSyncError: null,
-        indexedToolCount: seenToolNames.size,
-        updatedAt: new Date(),
-      })
-      .where(eq(mcpServerIntegrations.id, integrationId));
+    await db.transaction(async (tx) => {
+      for (const definition of listing.definitions) {
+        await upsertIndexedTool({
+          database: tx,
+          organizationId,
+          integration: {
+            id: integration.id,
+            name: integration.name,
+            description: integration.description,
+          },
+          definition,
+        });
+      }
+
+      if (seenToolNames.size > 0) {
+        await tx
+          .update(mcpToolIndex)
+          .set({
+            status: "stale",
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(mcpToolIndex.serverIntegrationId, integrationId),
+              notInArray(mcpToolIndex.serverToolName, Array.from(seenToolNames))
+            )
+          );
+      } else {
+        await tx
+          .update(mcpToolIndex)
+          .set({
+            status: "stale",
+            updatedAt: new Date(),
+          })
+          .where(eq(mcpToolIndex.serverIntegrationId, integrationId));
+      }
+
+      await tx
+        .update(mcpServerIntegrations)
+        .set({
+          lastToolSyncAt: new Date(),
+          toolSyncStatus: "synced",
+          toolSyncError: null,
+          indexedToolCount: seenToolNames.size,
+          updatedAt: new Date(),
+        })
+        .where(eq(mcpServerIntegrations.id, integrationId));
+    });
 
     return { integrationId, indexedToolCount: seenToolNames.size };
   } catch (error) {
@@ -678,8 +685,7 @@ async function listMcpToolsForIndex(
   url: string,
   integrationId: string,
   organizationId: string,
-  requestAuth: McpRequestAuth,
-  onDefinition: (definition: McpToolDefinition) => Promise<void>
+  requestAuth: McpRequestAuth
 ) {
   const client = await createMCPClient({
     clientName: "notra",
@@ -701,6 +707,7 @@ async function listMcpToolsForIndex(
   });
 
   try {
+    const definitions: McpToolDefinition[] = [];
     let cursor: string | undefined;
     do {
       const result = await client.listTools({
@@ -709,12 +716,10 @@ async function listMcpToolsForIndex(
           signal: AbortSignal.timeout(MCP_INDEX_TIMEOUT_MS),
         },
       });
-      for (const definition of result.tools) {
-        await onDefinition(definition);
-      }
+      definitions.push(...result.tools);
       cursor = result.nextCursor;
     } while (cursor);
-    return client;
+    return { client, definitions };
   } catch (error) {
     await client.close().catch(() => undefined);
     throw error;
@@ -722,10 +727,12 @@ async function listMcpToolsForIndex(
 }
 
 async function upsertIndexedTool({
+  database,
   organizationId,
   integration,
   definition,
 }: {
+  database: McpToolIndexTransaction;
   organizationId: string;
   integration: {
     id: string;
@@ -735,6 +742,7 @@ async function upsertIndexedTool({
   definition: McpToolDefinition;
 }) {
   const runtimeToolName = await createUniqueRuntimeToolName({
+    database,
     organizationId,
     integrationId: integration.id,
     serverName: integration.name,
@@ -757,14 +765,17 @@ async function upsertIndexedTool({
   });
 
   try {
-    await upsertIndexedToolWithRuntimeName({
-      organizationId,
-      integrationId: integration.id,
-      definition,
-      runtimeToolName,
-      searchText,
-      schemaHash,
-    });
+    await database.transaction((tx) =>
+      upsertIndexedToolWithRuntimeName({
+        database: tx,
+        organizationId,
+        integrationId: integration.id,
+        definition,
+        runtimeToolName,
+        searchText,
+        schemaHash,
+      })
+    );
   } catch (error) {
     if (!isRuntimeToolNameConflict(error)) {
       throw error;
@@ -777,6 +788,7 @@ async function upsertIndexedTool({
       withHash: true,
     });
     await upsertIndexedToolWithRuntimeName({
+      database,
       organizationId,
       integrationId: integration.id,
       definition,
@@ -793,6 +805,7 @@ async function upsertIndexedTool({
 }
 
 async function upsertIndexedToolWithRuntimeName({
+  database,
   organizationId,
   integrationId,
   definition,
@@ -800,6 +813,7 @@ async function upsertIndexedToolWithRuntimeName({
   searchText,
   schemaHash,
 }: {
+  database: McpToolIndexTransaction;
   organizationId: string;
   integrationId: string;
   definition: McpToolDefinition;
@@ -807,7 +821,7 @@ async function upsertIndexedToolWithRuntimeName({
   searchText: string;
   schemaHash: string;
 }) {
-  await db
+  await database
     .insert(mcpToolIndex)
     .values({
       id: `mcpt_${nanoid()}`,
@@ -913,11 +927,13 @@ function toIndexedMcpTool(
 }
 
 async function createUniqueRuntimeToolName({
+  database,
   organizationId,
   integrationId,
   serverName,
   serverToolName,
 }: {
+  database: McpToolIndexTransaction;
   organizationId: string;
   integrationId: string;
   serverName: string;
@@ -928,7 +944,7 @@ async function createUniqueRuntimeToolName({
     serverName,
     serverToolName,
   });
-  const [existing] = await db
+  const [existing] = await database
     .select({
       serverIntegrationId: mcpToolIndex.serverIntegrationId,
       serverToolName: mcpToolIndex.serverToolName,

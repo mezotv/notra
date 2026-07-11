@@ -8,6 +8,7 @@ import type {
   McpOAuthStoredAuthorizationServer,
 } from "../types/mcp-oauth";
 import { publicMcpOAuthFetch } from "../utils/mcp-oauth-fetch";
+import { getValidatedMcpOAuthResource } from "../utils/mcp-oauth-url";
 import { McpOAuthAuthorizationError } from "./mcp-oauth-errors";
 
 export async function discoverMcpOAuthServerConfiguration(
@@ -29,9 +30,7 @@ export async function discoverMcpOAuthServerConfiguration(
       "This MCP server does not support OAuth discovery."
     );
   }
-  const resource = resourceMetadata
-    ? new URL(resourceMetadata.resource)
-    : undefined;
+  const resource = getValidatedMcpOAuthResource(serverUrl, resourceMetadata);
   return {
     authorizationServerMetadata,
     authorizationServerUrl,
@@ -61,7 +60,7 @@ export async function restoreMcpOAuthServerConfiguration(
   return {
     authorizationServerMetadata: storedAuthorizationServer,
     authorizationServerUrl,
-    resource: resourceMetadata ? new URL(resourceMetadata.resource) : undefined,
+    resource: getValidatedMcpOAuthResource(serverUrl, resourceMetadata),
     resourceMetadata,
   };
 }

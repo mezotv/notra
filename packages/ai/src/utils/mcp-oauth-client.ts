@@ -1,4 +1,7 @@
-import type { OAuthClientMetadata } from "@modelcontextprotocol/sdk/shared/auth.js";
+import type {
+  OAuthClientInformationMixed,
+  OAuthClientMetadata,
+} from "@modelcontextprotocol/sdk/shared/auth.js";
 import {
   MCP_OAUTH_CLIENT_NAME,
   MCP_OAUTH_CLIENT_URI,
@@ -16,4 +19,15 @@ export function createMcpOAuthClientMetadata(
     response_types: ["code"],
     scope,
   };
+}
+
+export function isMcpOAuthClientRegistrationExpired(
+  clientInformation: OAuthClientInformationMixed
+) {
+  return (
+    "client_secret_expires_at" in clientInformation &&
+    typeof clientInformation.client_secret_expires_at === "number" &&
+    clientInformation.client_secret_expires_at !== 0 &&
+    clientInformation.client_secret_expires_at * 1000 <= Date.now()
+  );
 }

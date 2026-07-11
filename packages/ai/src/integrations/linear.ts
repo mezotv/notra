@@ -1,10 +1,11 @@
 import { db } from "@notra/db/drizzle";
-import { linearIntegrations, members } from "@notra/db/schema";
+import { linearIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type { CreateLinearIntegrationParams } from "../types/integrations";
 import type { LinearToolContext } from "../types/tools";
+import { hasOrganizationAccess } from "../utils/organization-access";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -22,14 +23,7 @@ export async function createLinearIntegration(
     linearTeamName,
   } = params;
 
-  const member = await db.query.members.findFirst({
-    where: and(
-      eq(members.organizationId, organizationId),
-      eq(members.userId, userId)
-    ),
-  });
-
-  if (!member) {
+  if (!(await hasOrganizationAccess(userId, organizationId))) {
     throw new Error("User does not have access to this organization.");
   }
 

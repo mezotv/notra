@@ -2,11 +2,13 @@ import { refreshAuthorization } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
 import { db } from "@notra/db/drizzle";
 import { mcpOAuthCredentials, mcpServerIntegrations } from "@notra/db/schema";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, isNull, lt, ne, or, sql } from "drizzle-orm";
 import {
+  MCP_OAUTH_REFRESH_HEARTBEAT_MS,
   MCP_OAUTH_REFRESH_LEASE_MS,
-  MCP_OAUTH_REFRESH_WAIT_ATTEMPTS,
+  MCP_OAUTH_REFRESH_RETRY_DELAY_MS,
   MCP_OAUTH_REFRESH_WAIT_MS,
+  MCP_OAUTH_REFRESH_WAIT_TIMEOUT_MS,
   TERMINAL_OAUTH_ERROR_CODES,
 } from "../constants/mcp-auth";
 import {
@@ -25,6 +27,7 @@ import {
 } from "../utils/mcp-oauth-secrets";
 import {
   getMcpAccessTokenExpiresAt,
+  getMcpAccessTokenRefreshAt,
   isMcpAccessTokenExpiring,
   toMcpOAuthRequestAuth,
 } from "../utils/mcp-oauth-tokens";
@@ -91,7 +94,16 @@ export async function getMcpOAuthRequestAuth(
   if (!stored || stored.credential.status === "reauth_required") {
     throw new McpOAuthReauthorizationRequiredError();
   }
-  if (isMcpAccessTokenExpiring(stored.credential.accessTokenExpiresAt)) {
+  if (isMcpAccessTokenExpiring(stored.credential.accessTokenRefreshAt)) {
+    if (
+      stored.credential.lastError &&
+      Date.now() - stored.credential.updatedAt.getTime() <
+        MCP_OAUTH_REFRESH_RETRY_DELAY_MS
+    ) {
+      throw new McpOAuthAuthorizationError(
+        "OAuth token refresh is temporarily unavailable."
+      );
+    }
     return refreshMcpOAuthRequestAuth({
       organizationId,
       integrationId,
@@ -113,7 +125,7 @@ export async function refreshMcpOAuthRequestAuth({
   integrationId,
   expectedTokenVersion,
 }: RefreshMcpOAuthRequestAuthParams): Promise<McpRequestAuth> {
-  let claimedTokenVersion: number | undefined;
+  let refreshLeaseId: string | undefined;
   try {
     const stored = await getStoredMcpOAuthCredential(
       organizationId,
@@ -131,8 +143,8 @@ export async function refreshMcpOAuthRequestAuth({
     }
     const refreshIsCurrent =
       stored.credential.status === "refreshing" &&
-      Date.now() - stored.credential.updatedAt.getTime() <
-        MCP_OAUTH_REFRESH_LEASE_MS;
+      stored.credential.refreshLeaseExpiresAt !== null &&
+      stored.credential.refreshLeaseExpiresAt.getTime() > Date.now();
     if (refreshIsCurrent) {
       return waitForMcpOAuthRefresh(organizationId, integrationId);
     }
@@ -146,30 +158,40 @@ export async function refreshMcpOAuthRequestAuth({
         stored.credential.tokenVersion
       );
     }
+    const leaseId = crypto.randomUUID();
+    const leaseClaimedAt = new Date();
     const [claim] = await db
       .update(mcpOAuthCredentials)
       .set({
         status: "refreshing",
-        tokenVersion: stored.credential.tokenVersion + 1,
-        updatedAt: new Date(),
+        refreshLeaseId: leaseId,
+        refreshLeaseExpiresAt: new Date(
+          leaseClaimedAt.getTime() + MCP_OAUTH_REFRESH_LEASE_MS
+        ),
+        updatedAt: leaseClaimedAt,
       })
       .where(
         and(
           eq(mcpOAuthCredentials.organizationId, organizationId),
           eq(mcpOAuthCredentials.serverIntegrationId, integrationId),
           eq(mcpOAuthCredentials.tokenVersion, stored.credential.tokenVersion),
-          ne(mcpOAuthCredentials.status, "reauth_required")
+          ne(mcpOAuthCredentials.status, "reauth_required"),
+          or(
+            ne(mcpOAuthCredentials.status, "refreshing"),
+            isNull(mcpOAuthCredentials.refreshLeaseExpiresAt),
+            lt(mcpOAuthCredentials.refreshLeaseExpiresAt, leaseClaimedAt)
+          )
         )
       )
-      .returning({ tokenVersion: mcpOAuthCredentials.tokenVersion });
+      .returning({ refreshLeaseId: mcpOAuthCredentials.refreshLeaseId });
     if (!claim) {
       return waitForMcpOAuthRefresh(organizationId, integrationId);
     }
-    claimedTokenVersion = claim.tokenVersion;
+    refreshLeaseId = leaseId;
     return await refreshClaimedMcpOAuthCredential(
-      claimedTokenVersion,
       currentTokens,
       integrationId,
+      leaseId,
       organizationId,
       stored
     );
@@ -178,15 +200,15 @@ export async function refreshMcpOAuthRequestAuth({
       await markMcpOAuthReauthorizationRequired(
         organizationId,
         integrationId,
-        claimedTokenVersion
+        refreshLeaseId
       );
       throw new McpOAuthReauthorizationRequiredError();
     }
-    if (claimedTokenVersion !== undefined) {
+    if (refreshLeaseId !== undefined) {
       await releaseMcpOAuthRefreshClaim(
         organizationId,
         integrationId,
-        claimedTokenVersion,
+        refreshLeaseId,
         error
       );
     }
@@ -195,9 +217,34 @@ export async function refreshMcpOAuthRequestAuth({
 }
 
 async function refreshClaimedMcpOAuthCredential(
-  claimedTokenVersion: number,
   currentTokens: OAuthTokens,
   integrationId: string,
+  refreshLeaseId: string,
+  organizationId: string,
+  stored: NonNullable<Awaited<ReturnType<typeof getStoredMcpOAuthCredential>>>
+) {
+  const stopHeartbeat = startMcpOAuthRefreshHeartbeat(
+    organizationId,
+    integrationId,
+    refreshLeaseId
+  );
+  try {
+    return await refreshClaimedMcpOAuthCredentialWithHeartbeat(
+      currentTokens,
+      integrationId,
+      refreshLeaseId,
+      organizationId,
+      stored
+    );
+  } finally {
+    stopHeartbeat();
+  }
+}
+
+async function refreshClaimedMcpOAuthCredentialWithHeartbeat(
+  currentTokens: OAuthTokens,
+  integrationId: string,
+  refreshLeaseId: string,
   organizationId: string,
   stored: NonNullable<Awaited<ReturnType<typeof getStoredMcpOAuthCredential>>>
 ) {
@@ -242,7 +289,11 @@ async function refreshClaimedMcpOAuthCredential(
       ),
       encryptedClientInformation: encryptMcpOAuthSecret(clientInformation),
       accessTokenExpiresAt: getMcpAccessTokenExpiresAt(refreshedTokens),
+      accessTokenRefreshAt: getMcpAccessTokenRefreshAt(refreshedTokens),
       status: "connected",
+      tokenVersion: sql`${mcpOAuthCredentials.tokenVersion} + 1`,
+      refreshLeaseId: null,
+      refreshLeaseExpiresAt: null,
       lastRefreshedAt: new Date(),
       lastError: null,
       updatedAt: new Date(),
@@ -251,7 +302,7 @@ async function refreshClaimedMcpOAuthCredential(
       and(
         eq(mcpOAuthCredentials.organizationId, organizationId),
         eq(mcpOAuthCredentials.serverIntegrationId, integrationId),
-        eq(mcpOAuthCredentials.tokenVersion, claimedTokenVersion),
+        eq(mcpOAuthCredentials.refreshLeaseId, refreshLeaseId),
         eq(mcpOAuthCredentials.status, "refreshing")
       )
     )
@@ -262,15 +313,46 @@ async function refreshClaimedMcpOAuthCredential(
   return toMcpOAuthRequestAuth(refreshedTokens, persisted.tokenVersion);
 }
 
+function startMcpOAuthRefreshHeartbeat(
+  organizationId: string,
+  integrationId: string,
+  refreshLeaseId: string
+) {
+  const interval = setInterval(() => {
+    const now = new Date();
+    return db
+      .update(mcpOAuthCredentials)
+      .set({
+        refreshLeaseExpiresAt: new Date(
+          now.getTime() + MCP_OAUTH_REFRESH_LEASE_MS
+        ),
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(mcpOAuthCredentials.organizationId, organizationId),
+          eq(mcpOAuthCredentials.serverIntegrationId, integrationId),
+          eq(mcpOAuthCredentials.refreshLeaseId, refreshLeaseId),
+          eq(mcpOAuthCredentials.status, "refreshing")
+        )
+      )
+      .catch((error) => {
+        console.error("[MCP OAuth Refresh Heartbeat Error]", {
+          integrationId,
+          organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+  }, MCP_OAUTH_REFRESH_HEARTBEAT_MS);
+  return () => clearInterval(interval);
+}
+
 async function waitForMcpOAuthRefresh(
   organizationId: string,
   integrationId: string
 ): Promise<McpRequestAuth> {
-  for (
-    let attempt = 0;
-    attempt < MCP_OAUTH_REFRESH_WAIT_ATTEMPTS;
-    attempt += 1
-  ) {
+  const deadline = Date.now() + MCP_OAUTH_REFRESH_WAIT_TIMEOUT_MS;
+  while (Date.now() < deadline) {
     await new Promise((resolve) =>
       setTimeout(resolve, MCP_OAUTH_REFRESH_WAIT_MS)
     );
@@ -282,6 +364,11 @@ async function waitForMcpOAuthRefresh(
       throw new McpOAuthReauthorizationRequiredError();
     }
     if (stored.credential.status !== "refreshing") {
+      if (isMcpAccessTokenExpiring(stored.credential.accessTokenRefreshAt)) {
+        throw new McpOAuthAuthorizationError(
+          "OAuth token refresh did not complete."
+        );
+      }
       const tokens = decryptMcpOAuthSecret(
         stored.credential.encryptedTokens,
         mcpOAuthTokensSchema
@@ -291,6 +378,16 @@ async function waitForMcpOAuthRefresh(
       }
       return toMcpOAuthRequestAuth(tokens, stored.credential.tokenVersion);
     }
+    if (
+      stored.credential.refreshLeaseExpiresAt === null ||
+      stored.credential.refreshLeaseExpiresAt.getTime() <= Date.now()
+    ) {
+      return refreshMcpOAuthRequestAuth({
+        organizationId,
+        integrationId,
+        expectedTokenVersion: stored.credential.tokenVersion,
+      });
+    }
   }
   throw new McpOAuthAuthorizationError("OAuth token refresh timed out.");
 }
@@ -298,12 +395,14 @@ async function waitForMcpOAuthRefresh(
 async function markMcpOAuthReauthorizationRequired(
   organizationId: string,
   integrationId: string,
-  claimedTokenVersion?: number
+  refreshLeaseId?: string
 ) {
   await db
     .update(mcpOAuthCredentials)
     .set({
       status: "reauth_required",
+      refreshLeaseId: null,
+      refreshLeaseExpiresAt: null,
       lastError: "OAuth authorization must be renewed.",
       updatedAt: new Date(),
     })
@@ -311,9 +410,9 @@ async function markMcpOAuthReauthorizationRequired(
       and(
         eq(mcpOAuthCredentials.organizationId, organizationId),
         eq(mcpOAuthCredentials.serverIntegrationId, integrationId),
-        ...(claimedTokenVersion === undefined
+        ...(refreshLeaseId === undefined
           ? []
-          : [eq(mcpOAuthCredentials.tokenVersion, claimedTokenVersion)])
+          : [eq(mcpOAuthCredentials.refreshLeaseId, refreshLeaseId)])
       )
     );
 }
@@ -321,23 +420,30 @@ async function markMcpOAuthReauthorizationRequired(
 async function releaseMcpOAuthRefreshClaim(
   organizationId: string,
   integrationId: string,
-  claimedTokenVersion: number,
+  refreshLeaseId: string,
   error: unknown
 ) {
   await db
     .update(mcpOAuthCredentials)
     .set({
       status: "connected",
-      lastError:
-        error instanceof Error ? error.message : "OAuth refresh failed.",
+      refreshLeaseId: null,
+      refreshLeaseExpiresAt: null,
+      lastError: "OAuth refresh failed.",
       updatedAt: new Date(),
     })
     .where(
       and(
         eq(mcpOAuthCredentials.organizationId, organizationId),
         eq(mcpOAuthCredentials.serverIntegrationId, integrationId),
-        eq(mcpOAuthCredentials.tokenVersion, claimedTokenVersion),
+        eq(mcpOAuthCredentials.refreshLeaseId, refreshLeaseId),
         eq(mcpOAuthCredentials.status, "refreshing")
       )
     );
+
+  console.error("[MCP OAuth Refresh Error]", {
+    integrationId,
+    organizationId,
+    error: error instanceof Error ? error.message : String(error),
+  });
 }

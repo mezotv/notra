@@ -12,9 +12,9 @@ import type {
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
 import type { McpAuthType } from "../types/mcp-oauth";
+import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { encryptMcpHeaders } from "../utils/mcp-headers";
-import { hasMcpOrganizationAccess } from "./mcp-access";
-import { getMcpRequestAuth } from "./mcp-auth";
+import { hasOrganizationAccess } from "../utils/organization-access";
 import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -39,7 +39,7 @@ async function assertOrganizationMember(
   organizationId: string,
   userId: string
 ) {
-  if (!(await hasMcpOrganizationAccess(organizationId, userId))) {
+  if (!(await hasOrganizationAccess(userId, organizationId))) {
     throw new Error("User does not have access to this organization.");
   }
 }
@@ -208,7 +208,14 @@ export async function updateMcpServerIntegration(
     return tx.query.mcpServerIntegrations.findFirst({
       where: eq(mcpServerIntegrations.id, integrationId),
       with: {
-        createdByUser: true,
+        createdByUser: {
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
         oauthCredential: { columns: { status: true } },
       },
     });
@@ -230,13 +237,6 @@ export async function deleteMcpServerIntegration(integrationId: string) {
     .where(eq(mcpServerIntegrations.id, integrationId));
 }
 
-export async function getDecryptedMcpHeaders(
-  integrationId: string,
-  organizationId: string
-) {
-  return (await getMcpRequestAuth(integrationId, organizationId)).headers;
-}
-
 export async function testMcpServerConnection(input: {
   url: string;
   headers?: McpHeaderMap;
@@ -247,6 +247,7 @@ export async function testMcpServerConnection(input: {
   try {
     await assertPublicHttpUrlResolution(input.url);
     const transport = new StreamableHTTPClientTransport(new URL(input.url), {
+      fetch: publicMcpRuntimeFetch,
       requestInit: {
         headers: input.headers ?? {},
         redirect: "error",
@@ -275,7 +276,7 @@ export async function testMcpServerConnection(input: {
       message: `MCP connection successful. Discovered ${toolCount} ${toolCount === 1 ? "tool" : "tools"}.`,
       toolCount,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       status: null,

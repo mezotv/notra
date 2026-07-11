@@ -10,7 +10,10 @@ import {
   mcpOAuthPendingAuthorizations,
   mcpServerIntegrations,
 } from "@notra/db/schema";
-import { assertPublicHttpUrlResolution } from "@notra/utils/url";
+import {
+  assertPublicHttpUrlResolution,
+  PublicUrlValidationError,
+} from "@notra/utils/url";
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import { customAlphabet } from "nanoid";
@@ -24,15 +27,22 @@ import type {
   BeginMcpOAuthAuthorizationParams,
   CompleteMcpOAuthAuthorizationParams,
 } from "../types/mcp-oauth";
-import { createMcpOAuthClientMetadata } from "../utils/mcp-oauth-client";
+import {
+  createMcpOAuthClientMetadata,
+  isMcpOAuthClientRegistrationExpired,
+} from "../utils/mcp-oauth-client";
 import { publicMcpOAuthFetch } from "../utils/mcp-oauth-fetch";
 import { getMcpOAuthRequestedScope } from "../utils/mcp-oauth-scope";
 import {
   decryptMcpOAuthSecret,
   encryptMcpOAuthSecret,
 } from "../utils/mcp-oauth-secrets";
-import { getMcpAccessTokenExpiresAt } from "../utils/mcp-oauth-tokens";
-import { hasMcpOrganizationAccess } from "./mcp-access";
+import {
+  getMcpAccessTokenExpiresAt,
+  getMcpAccessTokenRefreshAt,
+} from "../utils/mcp-oauth-tokens";
+import { assertValidMcpOAuthAuthorizationUrl } from "../utils/mcp-oauth-url";
+import { hasOrganizationAccess } from "../utils/organization-access";
 import {
   discoverMcpOAuthServerConfiguration,
   restoreMcpOAuthServerConfiguration,
@@ -53,7 +63,7 @@ async function assertOrganizationMember(
   organizationId: string,
   userId: string
 ) {
-  if (!(await hasMcpOrganizationAccess(organizationId, userId))) {
+  if (!(await hasOrganizationAccess(userId, organizationId))) {
     throw new McpOAuthAuthorizationError(
       "You do not have access to this organization."
     );
@@ -119,10 +129,19 @@ async function beginMcpOAuthAuthorizationPromise(
   try {
     const configuration = await discoverMcpOAuthServerConfiguration(params.url);
     const scope = getMcpOAuthRequestedScope(configuration);
-    let clientInformation = decryptMcpOAuthSecret(
-      existingCredential?.credential.encryptedClientInformation,
-      mcpOAuthClientInformationSchema
-    );
+    let clientInformation =
+      existingCredential?.credential.status === "reauth_required"
+        ? undefined
+        : decryptMcpOAuthSecret(
+            existingCredential?.credential.encryptedClientInformation,
+            mcpOAuthClientInformationSchema
+          );
+    if (
+      clientInformation &&
+      isMcpOAuthClientRegistrationExpired(clientInformation)
+    ) {
+      clientInformation = undefined;
+    }
     if (!clientInformation) {
       if (!configuration.authorizationServerMetadata.registration_endpoint) {
         throw new McpOAuthAuthorizationError(
@@ -153,6 +172,7 @@ async function beginMcpOAuthAuthorizationPromise(
         state,
       }
     );
+    await assertValidMcpOAuthAuthorizationUrl(authorizationUrl);
     await db
       .update(mcpOAuthPendingAuthorizations)
       .set({
@@ -169,10 +189,15 @@ async function beginMcpOAuthAuthorizationPromise(
     await db
       .delete(mcpOAuthPendingAuthorizations)
       .where(eq(mcpOAuthPendingAuthorizations.id, id));
+    if (
+      error instanceof McpOAuthAuthorizationError ||
+      error instanceof PublicUrlValidationError
+    ) {
+      throw error;
+    }
     throw new McpOAuthAuthorizationError(
-      error instanceof Error
-        ? error.message
-        : "Could not start MCP OAuth authorization."
+      "Could not start MCP OAuth authorization.",
+      error
     );
   }
 }
@@ -232,14 +257,9 @@ async function completeMcpOAuthAuthorizationPromise(
       fetchFn: publicMcpOAuthFetch,
     }
   );
-  if (!tokens) {
-    throw new McpOAuthAuthorizationError(
-      "The MCP OAuth token exchange did not return credentials."
-    );
-  }
   const encryptedTokens = encryptMcpOAuthSecret(tokens);
 
-  if (!tokens?.refresh_token) {
+  if (!tokens.refresh_token) {
     await db
       .delete(mcpOAuthPendingAuthorizations)
       .where(eq(mcpOAuthPendingAuthorizations.id, pending.id));
@@ -249,7 +269,7 @@ async function completeMcpOAuthAuthorizationPromise(
   const integrationId = pending.serverIntegrationId ?? `mcp_${nanoid()}`;
   await db.transaction(async (tx) => {
     if (pending.serverIntegrationId) {
-      await tx
+      const [updatedCredential] = await tx
         .update(mcpOAuthCredentials)
         .set({
           connectedByUserId: pending.userId,
@@ -259,8 +279,11 @@ async function completeMcpOAuthAuthorizationPromise(
             configuration.authorizationServerMetadata
           ),
           accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
+          accessTokenRefreshAt: getMcpAccessTokenRefreshAt(tokens),
           status: "connected",
           tokenVersion: sql`${mcpOAuthCredentials.tokenVersion} + 1`,
+          refreshLeaseId: null,
+          refreshLeaseExpiresAt: null,
           lastError: null,
           updatedAt: new Date(),
         })
@@ -269,7 +292,15 @@ async function completeMcpOAuthAuthorizationPromise(
             mcpOAuthCredentials.serverIntegrationId,
             pending.serverIntegrationId
           )
+        )
+        .returning({
+          serverIntegrationId: mcpOAuthCredentials.serverIntegrationId,
+        });
+      if (!updatedCredential) {
+        throw new McpOAuthAuthorizationError(
+          "The MCP OAuth connection changed during authorization."
         );
+      }
     } else {
       await tx.insert(mcpServerIntegrations).values({
         id: integrationId,
@@ -291,6 +322,7 @@ async function completeMcpOAuthAuthorizationPromise(
           configuration.authorizationServerMetadata
         ),
         accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
+        accessTokenRefreshAt: getMcpAccessTokenRefreshAt(tokens),
         status: "connected",
       });
     }
@@ -307,9 +339,15 @@ async function completeMcpOAuthAuthorizationPromise(
 }
 
 function normalizeMcpOAuthEffectError(cause: unknown) {
-  return cause instanceof Error
-    ? cause
-    : new McpOAuthAuthorizationError("The MCP OAuth request failed.");
+  if (
+    cause instanceof McpOAuthAuthorizationError ||
+    cause instanceof McpOAuthNameConflictError ||
+    cause instanceof McpOAuthRefreshTokenRequiredError ||
+    cause instanceof PublicUrlValidationError
+  ) {
+    return cause;
+  }
+  return new McpOAuthAuthorizationError("The MCP OAuth request failed.", cause);
 }
 
 export const beginMcpOAuthAuthorization = Effect.fn(

@@ -550,8 +550,11 @@ export const mcpOAuthCredentials = pgTable(
       "encrypted_authorization_server_information"
     ),
     accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    accessTokenRefreshAt: timestamp("access_token_refresh_at"),
     status: text("status").default("connected").notNull(),
     tokenVersion: integer("token_version").default(1).notNull(),
+    refreshLeaseId: text("refresh_lease_id"),
+    refreshLeaseExpiresAt: timestamp("refresh_lease_expires_at"),
     lastRefreshedAt: timestamp("last_refreshed_at"),
     lastError: text("last_error"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -563,7 +566,7 @@ export const mcpOAuthCredentials = pgTable(
   (table) => [
     check(
       "mcpOAuthCredentials_status_check",
-      sql`${table.status} IN ('connected', 'refreshing', 'reauth_required', 'error')`
+      sql`${table.status} IN ('connected', 'refreshing', 'reauth_required')`
     ),
     index("mcpOAuthCredentials_organizationId_idx").on(table.organizationId),
     index("mcpOAuthCredentials_connectedByUserId_idx").on(
@@ -601,7 +604,6 @@ export const mcpOAuthPendingAuthorizations = pgTable(
     stateHash: text("state_hash").notNull().unique(),
     encryptedState: text("encrypted_state").notNull(),
     encryptedCodeVerifier: text("encrypted_code_verifier"),
-    encryptedTokens: text("encrypted_tokens"),
     encryptedClientInformation: text("encrypted_client_information"),
     encryptedAuthorizationServerInformation: text(
       "encrypted_authorization_server_information"

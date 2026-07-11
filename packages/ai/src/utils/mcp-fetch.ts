@@ -1,14 +1,13 @@
-import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import { McpUnauthorizedError } from "../integrations/mcp-auth-errors";
+import { fetchPublicMcpUrl } from "./mcp-public-fetch";
 
 export async function publicMcpRuntimeFetch(
   input: RequestInfo | URL,
   init?: RequestInit
 ) {
-  const url = input instanceof Request ? input.url : String(input);
-  await assertPublicHttpUrlResolution(url);
-  const response = await fetch(input, { ...init, redirect: "error" });
+  const response = await fetchPublicMcpUrl(input, init);
   if (response.status === 401) {
+    await response.body?.cancel();
     throw new McpUnauthorizedError();
   }
   return response;

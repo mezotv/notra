@@ -3,23 +3,20 @@ import type {
   OAuthProtectedResourceMetadata,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { z } from "zod";
-import type {
-  MCP_AUTH_TYPES,
-  MCP_OAUTH_CREDENTIAL_STATUSES,
-} from "../constants/mcp-auth";
+import type { MCP_AUTH_TYPES } from "../constants/mcp-auth";
 import type { mcpOAuthStoredAuthorizationServerSchema } from "../schemas/mcp-oauth";
 import type { McpHeaderMap } from "./integrations";
 
 export type McpAuthType = (typeof MCP_AUTH_TYPES)[number];
 
-export type McpOAuthCredentialStatus =
-  (typeof MCP_OAUTH_CREDENTIAL_STATUSES)[number];
-
-export interface McpRequestAuth {
-  authType: McpAuthType;
-  headers: McpHeaderMap;
-  oauthTokenVersion?: number;
-}
+export type McpRequestAuth =
+  | { authType: "none"; headers: McpHeaderMap }
+  | { authType: "headers"; headers: McpHeaderMap }
+  | {
+      authType: "oauth";
+      headers: McpHeaderMap;
+      oauthTokenVersion: number;
+    };
 
 export interface BeginMcpOAuthAuthorizationParams {
   callbackPath: string;

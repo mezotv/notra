@@ -1,5 +1,5 @@
 {
-  "id": "75598923-a9b8-4499-866d-6633f236688c",
+  "id": "9933e51c-0529-469a-84e5-86b374899923",
   "prevId": "93029cde-e8db-4cc5-bac2-9b72d065991c",
   "version": "7",
   "dialect": "postgresql",
@@ -3050,6 +3050,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "access_token_refresh_at": {
+          "name": "access_token_refresh_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "text",
@@ -3063,6 +3069,18 @@
           "primaryKey": false,
           "notNull": true,
           "default": 1
+        },
+        "refresh_lease_id": {
+          "name": "refresh_lease_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_lease_expires_at": {
+          "name": "refresh_lease_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "last_refreshed_at": {
           "name": "last_refreshed_at",
@@ -3185,7 +3203,7 @@
       "checkConstraints": {
         "mcpOAuthCredentials_status_check": {
           "name": "mcpOAuthCredentials_status_check",
-          "value": "\"mcp_oauth_credentials\".\"status\" IN ('connected', 'refreshing', 'reauth_required', 'error')"
+          "value": "\"mcp_oauth_credentials\".\"status\" IN ('connected', 'refreshing', 'reauth_required')"
         }
       },
       "isRLSEnabled": false
@@ -3256,12 +3274,6 @@
         },
         "encrypted_code_verifier": {
           "name": "encrypted_code_verifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "encrypted_tokens": {
-          "name": "encrypted_tokens",
           "type": "text",
           "primaryKey": false,
           "notNull": false

@@ -7,6 +7,8 @@ export type BeginMcpOAuthRequest = z.infer<typeof beginMcpOAuthRequestSchema>;
 
 export type McpTestStatus = "idle" | "testing" | "success" | "error";
 
+export type McpDialogStatus = "idle" | "testing" | "creating" | "redirecting";
+
 export interface McpConnectionTestStatusProps {
   message: string;
   status: McpTestStatus;
@@ -29,11 +31,8 @@ export interface McpServerDetailsFieldsProps {
 export interface McpDialogFooterProps {
   authType: "none" | "headers" | "oauth";
   canSubmit: boolean;
-  isCreating: boolean;
-  isRedirecting: boolean;
-  isTesting: boolean;
+  status: McpDialogStatus;
   onCancel: () => void;
-  onSubmit: () => void;
   onTest: () => void;
 }
 

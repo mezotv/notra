@@ -6,13 +6,16 @@ CREATE TABLE "mcp_oauth_credentials" (
 	"encrypted_client_information" text,
 	"encrypted_authorization_server_information" text,
 	"access_token_expires_at" timestamp,
+	"access_token_refresh_at" timestamp,
 	"status" text DEFAULT 'connected' NOT NULL,
 	"token_version" integer DEFAULT 1 NOT NULL,
+	"refresh_lease_id" text,
+	"refresh_lease_expires_at" timestamp,
 	"last_refreshed_at" timestamp,
 	"last_error" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "mcpOAuthCredentials_status_check" CHECK ("mcp_oauth_credentials"."status" IN ('connected', 'refreshing', 'reauth_required', 'error'))
+	CONSTRAINT "mcpOAuthCredentials_status_check" CHECK ("mcp_oauth_credentials"."status" IN ('connected', 'refreshing', 'reauth_required'))
 );
 --> statement-breakpoint
 CREATE TABLE "mcp_oauth_pending_authorizations" (
@@ -27,7 +30,6 @@ CREATE TABLE "mcp_oauth_pending_authorizations" (
 	"state_hash" text NOT NULL,
 	"encrypted_state" text NOT NULL,
 	"encrypted_code_verifier" text,
-	"encrypted_tokens" text,
 	"encrypted_client_information" text,
 	"encrypted_authorization_server_information" text,
 	"expires_at" timestamp NOT NULL,

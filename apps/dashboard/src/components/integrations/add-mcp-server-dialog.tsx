@@ -41,6 +41,7 @@ import {
 import type {
   AddMcpServerDialogProps,
   BeginMcpOAuthRequest,
+  McpDialogStatus,
   McpTestStatus,
 } from "@/types/integrations/mcp";
 
@@ -200,10 +201,26 @@ export function AddMcpServerDialog({
     createMutation.mutate(payload.data);
   }
 
+  function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    form.handleSubmit();
+  }
+
   const triggerElement =
     trigger && isValidElement(trigger) ? (
       <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
     ) : null;
+
+  let dialogStatus: McpDialogStatus = "idle";
+  if (testMutation.isPending) {
+    dialogStatus = "testing";
+  }
+  if (beginOAuthMutation.isPending) {
+    dialogStatus = "redirecting";
+  }
+  if (createMutation.isPending) {
+    dialogStatus = "creating";
+  }
 
   return (
     <ResponsiveDialog
@@ -244,7 +261,7 @@ export function AddMcpServerDialog({
           </div>
         </ResponsiveDialogHeader>
 
-        <div>
+        <form onSubmit={handleFormSubmit}>
           <div className="space-y-4 py-4">
             <McpServerDetailsFields
               form={form}
@@ -275,11 +292,7 @@ export function AddMcpServerDialog({
                 <McpDialogFooter
                   authType={authType}
                   canSubmit={canSubmit}
-                  isCreating={createMutation.isPending}
-                  isRedirecting={beginOAuthMutation.isPending}
-                  isTesting={testMutation.isPending}
                   onCancel={resetForm}
-                  onSubmit={() => form.handleSubmit()}
                   onTest={async () => {
                     const urlErrors = await form.validateField("url", "change");
                     if (urlErrors.length > 0) {
@@ -292,11 +305,12 @@ export function AddMcpServerDialog({
                       value: { ...form.state.values },
                     });
                   }}
+                  status={dialogStatus}
                 />
               )}
             </form.Subscribe>
           </ResponsiveDialogFooter>
-        </div>
+        </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

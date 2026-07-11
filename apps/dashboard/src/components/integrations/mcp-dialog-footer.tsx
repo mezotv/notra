@@ -7,13 +7,13 @@ import type { McpDialogFooterProps } from "@/types/integrations/mcp";
 export function McpDialogFooter({
   authType,
   canSubmit,
-  isCreating,
-  isRedirecting,
-  isTesting,
+  status,
   onCancel,
-  onSubmit,
   onTest,
 }: McpDialogFooterProps) {
+  const isCreating = status === "creating";
+  const isRedirecting = status === "redirecting";
+  const isTesting = status === "testing";
   const isPending = isCreating || isRedirecting;
   let submitLabel = authType === "oauth" ? "Connect & Authorize" : "Add Server";
   if (isCreating) {
@@ -40,15 +40,11 @@ export function McpDialogFooter({
       <ResponsiveDialogClose
         disabled={isPending}
         onClick={onCancel}
-        render={<Button variant="outline" />}
+        render={<Button type="button" variant="outline" />}
       >
         Cancel
       </ResponsiveDialogClose>
-      <Button
-        disabled={!canSubmit || isPending}
-        onClick={onSubmit}
-        type="button"
-      >
+      <Button disabled={!canSubmit || isPending} type="submit">
         {submitLabel}
       </Button>
     </>

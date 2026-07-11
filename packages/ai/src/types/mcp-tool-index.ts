@@ -1,4 +1,5 @@
 import type { MCPClient } from "@ai-sdk/mcp";
+import type { db } from "@notra/db/drizzle";
 
 export type McpToolIndexStatus = "active" | "stale" | "unavailable" | "error";
 export type McpToolSyncStatus = "idle" | "syncing" | "synced" | "error";
@@ -6,6 +7,9 @@ export type McpSessionSurface = "standalone-chat" | "editor-chat";
 
 type McpListToolsResult = Awaited<ReturnType<MCPClient["listTools"]>>;
 export type McpToolDefinition = McpListToolsResult["tools"][number];
+export type McpToolIndexTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];
 
 export interface IndexedMcpTool {
   id: string;
