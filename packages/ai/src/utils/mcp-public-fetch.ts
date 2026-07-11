@@ -37,7 +37,8 @@ export async function fetchPublicMcpUrl(
   };
   try {
     const response = await fetch(input, requestInit);
-    return closeDispatcherWithResponse(response, dispatcher);
+    dispatcher.close().catch(() => undefined);
+    return response;
   } catch (error) {
     await dispatcher.close().catch(() => undefined);
     throw error;
@@ -59,35 +60,4 @@ function createMcpFetchSignal(
     return undefined;
   }
   return signals.length === 1 ? signals[0] : AbortSignal.any(signals);
-}
-
-function closeDispatcherWithResponse(response: Response, dispatcher: Agent) {
-  if (!response.body) {
-    dispatcher.close().catch(() => undefined);
-    return response;
-  }
-
-  const passthrough = new TransformStream<Uint8Array, Uint8Array>();
-  const bodyCompletion = response.body.pipeTo(passthrough.writable);
-  closeDispatcherAfterBody(bodyCompletion, dispatcher).catch(() => undefined);
-
-  const trackedResponse = new Response(passthrough.readable, {
-    headers: response.headers,
-    status: response.status,
-    statusText: response.statusText,
-  });
-  Object.defineProperties(trackedResponse, {
-    redirected: { value: response.redirected },
-    type: { value: response.type },
-    url: { value: response.url },
-  });
-  return trackedResponse;
-}
-
-async function closeDispatcherAfterBody(
-  bodyCompletion: Promise<void>,
-  dispatcher: Agent
-) {
-  await bodyCompletion.catch(() => undefined);
-  await dispatcher.close();
 }
