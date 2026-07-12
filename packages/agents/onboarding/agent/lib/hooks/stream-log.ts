@@ -17,15 +17,19 @@ export function createStreamLogHook(): HookDefinition {
       async "*"(event, ctx) {
         await appendStreamEvent(ctx.session.id, event);
         if (isTerminalStreamEvent(event)) {
-          if (shouldUseDurableStreamStorage()) {
-            const events = await readDurableStreamEvents(ctx.session.id);
-            await writeDurableStreamReport(
-              ctx.session.id,
-              renderStreamReport(ctx.session.id, events),
-              events
-            );
-          } else {
-            await writeStreamReport(ctx.session.id);
+          try {
+            if (shouldUseDurableStreamStorage()) {
+              const events = await readDurableStreamEvents(ctx.session.id);
+              await writeDurableStreamReport(
+                ctx.session.id,
+                renderStreamReport(ctx.session.id, events),
+                events
+              );
+            } else {
+              await writeStreamReport(ctx.session.id);
+            }
+          } catch (error) {
+            console.error("Failed to persist onboarding stream report", error);
           }
         }
       },

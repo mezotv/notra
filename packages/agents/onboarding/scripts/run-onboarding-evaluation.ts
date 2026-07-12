@@ -1,10 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import {
-  EVE_AGENT_ORGANIZATION_HEADER,
-  EVE_AGENT_SERVICE_USERNAME,
-} from "@notra/ai/constants/onboarding-agent";
+import { EVE_AGENT_ORGANIZATION_HEADER } from "@notra/ai/constants/onboarding-agent";
 import { db } from "@notra/db/drizzle";
 import {
   brandReferences,
@@ -22,6 +19,7 @@ import type {
   EvaluationCompanySnapshot,
   OnboardingEvaluationState,
 } from "../agent/lib/types/onboarding-evaluation";
+import { getEveServiceAuth } from "../agent/lib/utils/eve-client-auth";
 
 async function ensureMintlifyEvaluationOrganization(): Promise<void> {
   const company = ONBOARDING_EVALUATION_COMPANIES[0];
@@ -159,15 +157,9 @@ if (!host) {
 
 const sessionEntries = await Promise.all(
   ONBOARDING_EVALUATION_COMPANIES.map(async (company) => {
-    const password = process.env.EVE_ONBOARDING_AGENT_PASSWORD;
+    const auth = await getEveServiceAuth();
     const client = new Client({
-      ...(password
-        ? {
-            auth: {
-              basic: { password, username: EVE_AGENT_SERVICE_USERNAME },
-            },
-          }
-        : {}),
+      ...(auth ? { auth } : {}),
       headers: {
         [EVE_AGENT_ORGANIZATION_HEADER]: company.organizationId,
       },

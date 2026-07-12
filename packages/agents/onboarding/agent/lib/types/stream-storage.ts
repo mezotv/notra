@@ -7,5 +7,6 @@ export interface StreamStorageConfig {
 
 export interface StoredStreamEvent {
   event: unknown;
+  order: string;
   recordedAt: string;
 }

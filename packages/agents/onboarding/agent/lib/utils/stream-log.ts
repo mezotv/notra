@@ -12,18 +12,23 @@ export async function appendStreamEvent(
   sessionId: string,
   event: unknown
 ): Promise<void> {
-  if (shouldUseDurableStreamStorage()) {
-    await appendDurableStreamEvent(sessionId, event);
-    return;
-  }
+  try {
+    if (shouldUseDurableStreamStorage()) {
+      await appendDurableStreamEvent(sessionId, event);
+      return;
+    }
 
-  const streamLogDir = getStreamLogDir();
-  if (ensuredLogDir !== streamLogDir) {
-    await mkdir(streamLogDir, { recursive: true });
-    ensuredLogDir = streamLogDir;
+    const streamLogDir = getStreamLogDir();
+    if (ensuredLogDir !== streamLogDir) {
+      await mkdir(streamLogDir, { recursive: true });
+      ensuredLogDir = streamLogDir;
+    }
+    await appendFile(
+      path.join(streamLogDir, `${sessionId}.ndjson`),
+      `${JSON.stringify(event)}\n`
+    );
+  } catch (error) {
+    ensuredLogDir = undefined;
+    console.error("Failed to persist onboarding stream event", error);
   }
-  await appendFile(
-    path.join(streamLogDir, `${sessionId}.ndjson`),
-    `${JSON.stringify(event)}\n`
-  );
 }

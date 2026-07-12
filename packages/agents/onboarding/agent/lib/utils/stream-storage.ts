@@ -16,7 +16,20 @@ import type {
 
 let cachedClient: S3Client | undefined;
 let cachedConfig: StreamStorageConfig | undefined;
+const lastOrderBySession = new Map<string, number>();
 const TRAILING_SLASHES_RE = /\/+$/;
+
+function nextStreamEventOrder(sessionId: string): string {
+  const currentMicros = Math.floor(
+    (performance.timeOrigin + performance.now()) * 1000
+  );
+  const order = Math.max(
+    currentMicros,
+    (lastOrderBySession.get(sessionId) ?? 0) + 1
+  );
+  lastOrderBySession.set(sessionId, order);
+  return order.toString().padStart(16, "0");
+}
 
 function getStreamStorageConfig(): StreamStorageConfig {
   if (cachedConfig) {
@@ -69,8 +82,10 @@ export async function appendDurableStreamEvent(
 ): Promise<void> {
   const config = getStreamStorageConfig();
   const recordedAt = new Date().toISOString();
+  const order = nextStreamEventOrder(sessionId);
   const body = JSON.stringify({
     event,
+    order,
     recordedAt,
   } satisfies StoredStreamEvent);
   await getStreamStorageClient().send(
@@ -78,7 +93,7 @@ export async function appendDurableStreamEvent(
       Body: body,
       Bucket: config.bucketName,
       ContentType: "application/json; charset=utf-8",
-      Key: `${DURABLE_STREAM_STORAGE_PREFIX}/streams/${sessionId}/${recordedAt}-${randomUUID()}.json`,
+      Key: `${DURABLE_STREAM_STORAGE_PREFIX}/streams/${sessionId}/${order}-${randomUUID()}.json`,
     })
   );
 }
@@ -134,7 +149,9 @@ export async function readDurableStreamEvents(
       ))
     );
   }
-  return storedEvents.map((stored) => stored.event);
+  return storedEvents
+    .sort((left, right) => left.order.localeCompare(right.order))
+    .map((stored) => stored.event);
 }
 
 export async function writeDurableStreamReport(
