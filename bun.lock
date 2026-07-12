@@ -109,7 +109,7 @@
         "date-fns": "^4.1.0",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
-        "eve": "^0.17.0",
+        "eve": "0.19.0",
         "evlog": "2.13.0",
         "free-email-domains-list": "^1.0.16",
         "gray-matter": "^4.0.3",
@@ -229,7 +229,7 @@
         "ai": "^7.0.0",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
-        "eve": "0.17.0",
+        "eve": "0.19.0",
         "pg": "^8.20.0",
         "zod": "^4.3.4",
       },
@@ -334,7 +334,7 @@
       "name": "@notra/eve-tools",
       "version": "0.0.1",
       "dependencies": {
-        "eve": "0.17.0",
+        "eve": "0.19.0",
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
@@ -2662,7 +2662,7 @@
 
     "etag": ["etag@1.8.1", "", {}, "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg=="],
 
-    "eve": ["eve@0.17.0", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "@sveltejs/kit": "^2.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0", "next": "^16.0.0", "nuxt": "^4.0.0", "react": "^19.0.0", "svelte": "^5.0.0", "vite": "^8.0.0", "vue": "^3.5.0" }, "optionalPeers": ["@opentelemetry/api", "@sveltejs/kit", "braintrust", "just-bash", "microsandbox", "next", "nuxt", "react", "svelte", "vite", "vue"], "bin": { "eve": "./bin/eve.js" } }, "sha512-kn/82wtvsHw9+s1JzBk4+lyLL+cKz3oUAFrHvAK41uqaGe8DpOnTSh8dOTE3ptMPWVPfqGc4IAmXuvLL5WCpIw=="],
+    "eve": ["eve@0.19.0", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0" }, "optionalPeers": ["@opentelemetry/api", "braintrust", "just-bash", "microsandbox"], "bin": { "eve": "./bin/eve.js" } }, "sha512-fZ4gyBUoJ8FWtA+vUz6Q/OWJDXPf++RYsbVL+NrEAn2VJCrZyiuDj4todsBJlDib3+sZtzHMsNSn06EP0j0++w=="],
 
     "event-target-shim": ["event-target-shim@5.0.1", "", {}, "sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ=="],
 
@@ -4898,8 +4898,6 @@
 
     "dashboard/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
 
-    "dashboard/eve": ["eve@0.17.2", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "@sveltejs/kit": "^2.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0", "next": "^16.0.0", "nuxt": "^4.0.0", "react": "^19.0.0", "svelte": "^5.0.0", "vite": "^8.0.0", "vue": "^3.5.0" }, "optionalPeers": ["@opentelemetry/api", "@sveltejs/kit", "braintrust", "just-bash", "microsandbox", "next", "nuxt", "react", "svelte", "vite", "vue"], "bin": { "eve": "./bin/eve.js" } }, "sha512-QBa7XGLx1SpD2GfAmYN5Qn+orVBSPj36ae97RNxmZQl+uM1ZEAb9xlq0cpuSYz3EYHqibVrKIt1aXOCMTK3UGg=="],
-
     "decompress-response/mimic-response": ["mimic-response@3.1.0", "", {}, "sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ=="],
 
     "degenerator/ast-types": ["ast-types@0.13.4", "", { "dependencies": { "tslib": "^2.0.1" } }, "sha512-x1FCFnFifvYDDzTaLII71vG5uvDwgtmDTEVWAxrgeiR8VjMONcCXJx7E+USjDtHlwFmt9MysbqgF9b9Vjr6w+w=="],
@@ -5680,8 +5678,6 @@
 
     "d3-sankey/d3-shape/d3-path": ["d3-path@1.0.9", "", {}, "sha512-VLaYcn81dtHVTjEHd8B+pbe9yHWpXKZUC87PzoFmsFrJqgFwDe/qxfp5MlfsfM1V5E/iVt0MmEbWQ7FVIXh/bg=="],
 
-    "dashboard/eve/ai": ["ai@7.0.11", "", { "dependencies": { "@ai-sdk/gateway": "4.0.8", "@ai-sdk/provider": "4.0.1", "@ai-sdk/provider-utils": "5.0.3" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ecCtume1NKJG/8oIkV8G26KL9jmFJRx6+Gjx2260FcDZqIUGPiF1uBoNeGy4S1vxbHmFxUul4D7axqiXZZ1XuA=="],
-
     "engine.io/accepts/mime-types": ["mime-types@2.1.35", "", { "dependencies": { "mime-db": "1.52.0" } }, "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw=="],
 
     "engine.io/accepts/negotiator": ["negotiator@0.6.3", "", {}, "sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg=="],
@@ -6056,12 +6052,6 @@
 
     "binary-version/execa/onetime/mimic-fn": ["mimic-fn@4.0.0", "", {}, "sha512-vqiC06CuhBTUdZH+RYl8sFrL096vA45Ok5ISO6sE/Mr1jRbGH4Csnhi8f3wKVl7x8mO4Au7Ir9D3Oyv1VYMFJw=="],
 
-    "dashboard/eve/ai/@ai-sdk/gateway": ["@ai-sdk/gateway@4.0.8", "", { "dependencies": { "@ai-sdk/provider": "4.0.1", "@ai-sdk/provider-utils": "5.0.3", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-esHzojMp+LllqOnEu6sYa6NKOmPcE5UObPV61LE6L2QAzCH6WHMgTS+Q/HF5HU3lVUWsHtkDzN7TNqMfv/ecCg=="],
-
-    "dashboard/eve/ai/@ai-sdk/provider": ["@ai-sdk/provider@4.0.1", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-6p3C/vGqVIjcptBu1DnVd/BZJ2wWmV9TUv9192vT6ZvT9KNED8EwRTqyqFpoQZKgSbMDSvBSq3dqR524Nt/Crw=="],
-
-    "dashboard/eve/ai/@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@5.0.3", "", { "dependencies": { "@ai-sdk/provider": "4.0.1", "@standard-schema/spec": "^1.1.0", "@workflow/serde": "4.1.0", "eventsource-parser": "^3.0.8" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-El0JOXXGcHFe6+owJ1UV0VgB9XtdivP8vcZni+rUIt6lt+cBHCnUdddaA6LE2avJGJ5AD0uXSY+uAvRL2tSvgw=="],
-
     "engine.io/accepts/mime-types/mime-db": ["mime-db@1.52.0", "", {}, "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg=="],
 
     "eve/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.2.0", "", {}, "sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug=="],
@@ -6117,8 +6107,6 @@
     "@puppeteer/browsers/yargs/cliui/wrap-ansi/ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 
     "@puppeteer/browsers/yargs/string-width/strip-ansi/ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
-
-    "dashboard/eve/ai/@ai-sdk/gateway/@vercel/oidc": ["@vercel/oidc@3.2.0", "", {}, "sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug=="],
 
     "pkg-up/find-up/locate-path/p-locate/p-limit": ["p-limit@2.3.0", "", { "dependencies": { "p-try": "^2.0.0" } }, "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w=="],
 

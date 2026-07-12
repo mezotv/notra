@@ -10,7 +10,7 @@
     "./disabled": "./src/disabled.ts"
   },
   "dependencies": {
-    "eve": "0.17.0"
+    "eve": "0.19.0"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
