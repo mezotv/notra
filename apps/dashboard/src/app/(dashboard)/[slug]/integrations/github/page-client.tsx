@@ -97,22 +97,23 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   useEffect(() => {
+    const effectOrganizationId = organization?.id ?? "";
     const handleMessage = (event: MessageEvent) => {
       if (
         event.origin === window.location.origin &&
-        isGitHubInstallMessage(event.data, organizationId)
+        isGitHubInstallMessage(event.data, effectOrganizationId)
       ) {
         handleGitHubInstalled();
       }
     };
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === getGitHubInstallStorageKey(organizationId)) {
+      if (event.key === getGitHubInstallStorageKey(effectOrganizationId)) {
         handleGitHubInstalled();
       }
     };
     const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
     const handleChannelMessage = (event: MessageEvent) => {
-      if (isGitHubInstallMessage(event.data, organizationId)) {
+      if (isGitHubInstallMessage(event.data, effectOrganizationId)) {
         handleGitHubInstalled();
       }
     };
@@ -126,16 +127,20 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       window.removeEventListener("message", handleMessage);
       window.removeEventListener("storage", handleStorage);
     };
-  }, [organizationId]);
+  }, [organization?.id]);
 
   useEffect(() => {
-    if (searchParams.get("githubConnected") !== "true" || !organizationId) {
+    const effectOrganizationId = organization?.id ?? "";
+    if (
+      searchParams.get("githubConnected") !== "true" ||
+      !effectOrganizationId
+    ) {
       return;
     }
 
     const message: GitHubInstallMessage = {
       type: GITHUB_INSTALL_MESSAGE,
-      organizationId,
+      organizationId: effectOrganizationId,
     };
 
     if (window.opener && window.opener !== window) {
@@ -148,10 +153,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     channel.postMessage(message);
     channel.close();
     window.localStorage.setItem(
-      getGitHubInstallStorageKey(organizationId),
+      getGitHubInstallStorageKey(effectOrganizationId),
       crypto.randomUUID()
     );
-  }, [searchParams, organizationId]);
+  }, [searchParams, organization?.id]);
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {

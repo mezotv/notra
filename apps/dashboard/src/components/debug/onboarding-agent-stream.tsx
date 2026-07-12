@@ -59,10 +59,10 @@ export function OnboardingAgentStream() {
 
   useEffect(() => {
     const element = scrollRef.current;
-    if (element && messageCount > 0) {
+    if (element && agent.data.messages.length > 0) {
       element.scrollTop = element.scrollHeight;
     }
-  }, [messageCount]);
+  }, [agent.data.messages.length]);
 
   useEffect(() => {
     if (agent.status === "error" && agent.error) {

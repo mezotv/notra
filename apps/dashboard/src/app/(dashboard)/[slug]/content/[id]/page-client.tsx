@@ -641,8 +641,11 @@ export default function PageClient({
         { text: instruction },
         {
           body: {
-            currentMarkdown: contentType === "image" ? "" : currentMarkdown,
-            contentType,
+            currentMarkdown:
+              data?.content?.contentType === "image"
+                ? ""
+                : (editedMarkdown ?? data?.content?.markdown ?? ""),
+            contentType: data?.content?.contentType,
             selection: selection ?? undefined,
             context,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -650,7 +653,14 @@ export default function PageClient({
         }
       );
     },
-    [sendMessage, contentType, currentMarkdown, selection, context]
+    [
+      sendMessage,
+      data?.content?.contentType,
+      editedMarkdown,
+      data?.content?.markdown,
+      selection,
+      context,
+    ]
   );
 
   const chatInputSection = (

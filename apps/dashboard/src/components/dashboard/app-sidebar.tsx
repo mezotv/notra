@@ -66,10 +66,10 @@ export function DashboardSidebar({
 
   const hasVisitedMainRef = useRef(false);
   useEffect(() => {
-    if (!isSubpage) {
+    if (!(isSettingsRoute || isChatRoute)) {
       hasVisitedMainRef.current = true;
     }
-  }, [isSubpage]);
+  }, [isSettingsRoute, isChatRoute]);
 
   function handleBack() {
     if (hasVisitedMainRef.current) {
