@@ -97,23 +97,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   useEffect(() => {
-    const effectOrganizationId = organization?.id ?? "";
     const handleMessage = (event: MessageEvent) => {
       if (
         event.origin === window.location.origin &&
-        isGitHubInstallMessage(event.data, effectOrganizationId)
+        isGitHubInstallMessage(event.data, organization?.id ?? "")
       ) {
         handleGitHubInstalled();
       }
     };
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === getGitHubInstallStorageKey(effectOrganizationId)) {
+      if (event.key === getGitHubInstallStorageKey(organization?.id ?? "")) {
         handleGitHubInstalled();
       }
     };
     const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
     const handleChannelMessage = (event: MessageEvent) => {
-      if (isGitHubInstallMessage(event.data, effectOrganizationId)) {
+      if (isGitHubInstallMessage(event.data, organization?.id ?? "")) {
         handleGitHubInstalled();
       }
     };
@@ -130,17 +129,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   }, [organization?.id]);
 
   useEffect(() => {
-    const effectOrganizationId = organization?.id ?? "";
-    if (
-      searchParams.get("githubConnected") !== "true" ||
-      !effectOrganizationId
-    ) {
+    if (searchParams.get("githubConnected") !== "true" || !organization?.id) {
       return;
     }
 
     const message: GitHubInstallMessage = {
       type: GITHUB_INSTALL_MESSAGE,
-      organizationId: effectOrganizationId,
+      organizationId: organization.id,
     };
 
     if (window.opener && window.opener !== window) {
@@ -153,7 +148,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     channel.postMessage(message);
     channel.close();
     window.localStorage.setItem(
-      getGitHubInstallStorageKey(effectOrganizationId),
+      getGitHubInstallStorageKey(organization.id),
       crypto.randomUUID()
     );
   }, [searchParams, organization?.id]);
