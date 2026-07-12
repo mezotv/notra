@@ -51,6 +51,10 @@ The agent is a standalone eve server. It is not part of the dashboard's Next.js 
 | `DASHBOARD_VERCEL_TEAM_SLUG` | prod | Vercel team slug of the dashboard project (OIDC route auth) |
 | `DASHBOARD_VERCEL_PROJECT_NAME` | prod | Vercel project name of the dashboard (OIDC route auth) |
 | `EVE_ONBOARDING_AGENT_PASSWORD` | fallback | Shared secret for HTTP Basic auth when OIDC is not used |
+| `CLOUDFLARE_ACCESS_KEY_ID` | yes | R2 credentials for durable production stream events and reports |
+| `CLOUDFLARE_SECRET_ACCESS_KEY` | yes | R2 credentials for durable production stream events and reports |
+| `CLOUDFLARE_S3_ENDPOINT` | yes | R2 S3 endpoint |
+| `CLOUDFLARE_BUCKET_NAME` | yes | Private bucket containing production traces |
 
 Model access needs no key on Vercel: the agent uses gateway model ids (`openai/gpt-5.5`, `anthropic/claude-sonnet-5`) which authenticate through the linked project's Vercel AI Gateway OIDC. Off Vercel, set `AI_GATEWAY_API_KEY`.
 
@@ -110,9 +114,12 @@ When the workflow starts, it creates a Slack Connect channel `notra-<slug>` and 
 
 `bun dev` at the repo root starts the agent on `http://127.0.0.1:3100` next to the apps (turbo runs this package's `dev` script). The dashboard's `/eve/v1/*` rewrite proxies to it, and the debug page at `/debug/onboarding-agent` streams runs live. Local requests authenticate via eve's loopback `localDev()` fallback; org-scoped tools require going through the workflow path (or setting `EVE_ONBOARDING_AGENT_PASSWORD` locally) so the org header gets stamped.
 
-Every root-agent and subagent stream is appended as NDJSON in `logs/streams/`.
-When a session finishes or waits for more input, the stream-log hook also writes a
-self-contained HTML trace to `logs/reports/`. The report separates the request and
+In local development, every root-agent and subagent stream is appended as NDJSON in
+`logs/streams/`. In production, each event is written durably to the private R2 bucket
+under `onboarding-agent/streams/`, so serverless filesystem resets cannot lose traces.
+When a session finishes or waits for more input, the stream-log hook also writes an
+aggregate NDJSON stream plus a self-contained HTML trace. The HTML lives locally in
+`logs/reports/` or durably in R2 under `onboarding-agent/reports/`. The report separates the request and
 final response, tool/subagent calls and their results, completed reasoning, and the
 raw event timeline. To rebuild the newest report (or a specific session) manually:
 

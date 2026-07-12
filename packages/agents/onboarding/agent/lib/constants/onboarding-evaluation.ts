@@ -1,3 +1,10 @@
+const STRIPE_EVALUATION_COMPANY = {
+  domain: "stripe.com",
+  organizationId: "OPCplumQX6Ca9p2fqF2ubEHboxybPXiJ",
+  organizationName: "Stripe",
+  organizationSlug: "stripe",
+} as const;
+
 export const ONBOARDING_EVALUATION_COMPANIES = [
   {
     domain: "mintlify.com",
@@ -11,13 +18,8 @@ export const ONBOARDING_EVALUATION_COMPANIES = [
     organizationName: "Context.dev",
     organizationSlug: "contextdev",
   },
-  {
-    domain: "stripe.com",
-    organizationId: "OPCplumQX6Ca9p2fqF2ubEHboxybPXiJ",
-    organizationName: "Stripe",
-    organizationSlug: "stripe",
-  },
+  STRIPE_EVALUATION_COMPANY,
 ] as const;
 
 export const ONBOARDING_EVALUATION_SKILL_SOURCE_ORGANIZATION_ID =
-  "OPCplumQX6Ca9p2fqF2ubEHboxybPXiJ";
+  STRIPE_EVALUATION_COMPANY.organizationId;

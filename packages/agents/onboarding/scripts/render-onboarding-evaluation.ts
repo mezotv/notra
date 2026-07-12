@@ -9,6 +9,7 @@ import {
 } from "@notra/db/schema";
 import { and, asc, eq, gte } from "drizzle-orm";
 import { onboardingEvaluationStateSchema } from "../agent/lib/schemas/onboarding-evaluation";
+import { readUtf8FileIfExists } from "../agent/lib/utils/file-system";
 import { diffTextLines, getTextDiffPrefix } from "../agent/lib/utils/text-diff";
 
 function escapeHtml(value: string): string {
@@ -93,13 +94,12 @@ for (const [companyIndex, baseline] of state.companies.entries()) {
     .orderBy(asc(onboardingSuggestions.createdAt));
 
   const sessionId = state.sessionIds[baseline.domain];
-  const streamPath = path.join(
-    process.cwd(),
-    "logs",
-    "streams",
-    `${sessionId}.ndjson`
-  );
-  const events = (await readFile(streamPath, "utf8"))
+  const streamContents = sessionId
+    ? await readUtf8FileIfExists(
+        path.join(process.cwd(), "logs", "streams", `${sessionId}.ndjson`)
+      )
+    : undefined;
+  const events = (streamContents ?? "")
     .split("\n")
     .filter(Boolean)
     .map((line) => record(JSON.parse(line)))

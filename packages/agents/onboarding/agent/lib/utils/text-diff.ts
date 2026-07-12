@@ -18,10 +18,7 @@ export function diffTextLines(before: string, after: string): TextDiffLine[] {
   );
 
   for (let oldIndex = beforeLines.length - 1; oldIndex >= 0; oldIndex--) {
-    const row = lengths[oldIndex];
-    if (!row) {
-      continue;
-    }
+    const row = lengths[oldIndex] as number[];
     for (let newIndex = afterLines.length - 1; newIndex >= 0; newIndex--) {
       row[newIndex] =
         beforeLines[oldIndex] === afterLines[newIndex]

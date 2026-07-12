@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getStreamLogDir, getStreamReportDir } from "../constants/stream-log";
 import type {
@@ -6,6 +6,7 @@ import type {
   StreamEvent,
   StreamReport,
 } from "../types/stream-report";
+import { readUtf8FileIfExists } from "./file-system";
 
 const TERMINAL_EVENT_TYPES = new Set([
   "session.completed",
@@ -113,6 +114,7 @@ function collectReport(sessionId: string, events: StreamEvent[]): StreamReport {
   }
 
   return {
+    actions: [...actions.values()],
     agentName,
     events,
     finalMessage,
@@ -120,7 +122,6 @@ function collectReport(sessionId: string, events: StreamEvent[]): StreamReport {
     reasoning: [...reasoning.values()].filter(Boolean),
     receivedMessage,
     sessionId,
-    toolCalls: [...actions.values()],
     usage,
   };
 }
@@ -239,11 +240,11 @@ function renderReport(report: StreamReport): string {
   const finished = report.events.some((event) =>
     TERMINAL_EVENT_TYPES.has(event.type)
   );
-  const failedCalls = report.toolCalls.filter(
+  const failedCalls = report.actions.filter(
     (call) => call.status === "failed"
   ).length;
   const totalTokens = report.usage.inputTokens + report.usage.outputTokens;
-  const toolCards = report.toolCalls.map(renderToolCard).join("");
+  const toolCards = report.actions.map(renderToolCard).join("");
   const reasoningItems = report.reasoning
     .map(
       (value, index) =>
@@ -259,8 +260,8 @@ function renderReport(report: StreamReport): string {
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(report.agentName)} · ${escapeHtml(report.sessionId)}</title><style>${REPORT_STYLES}</style></head><body><main>
 <header><p class="eyebrow">Onboarding agent trace</p><h1>${escapeHtml(report.agentName)}</h1><div class="meta"><span class="pill">${escapeHtml(report.sessionId)}</span><span class="pill">${escapeHtml(report.modelId)}</span><span class="pill ${finished ? "done" : "live"}"><span class="dot" aria-hidden="true"></span>${finished ? "Finished" : "In progress"}</span></div></header>
-<div class="metrics"><div class="metric"><small>Events</small><strong>${report.events.length.toLocaleString()}</strong></div><div class="metric"><small>Tool calls</small><strong>${report.toolCalls.length.toLocaleString()}</strong></div><div class="metric"><small>Failed calls</small><strong>${failedCalls.toLocaleString()}</strong></div><div class="metric"><small>Tokens</small><strong>${totalTokens.toLocaleString()}</strong><span class="sub">in ${report.usage.inputTokens.toLocaleString()} · out ${report.usage.outputTokens.toLocaleString()} · cache ${report.usage.cacheReadTokens.toLocaleString()}</span></div></div>
-<nav aria-label="Report sections" class="tabs" role="tablist">${renderTab("conversation", "Conversation", 2)}${renderTab("tools", "Tools", report.toolCalls.length)}${renderTab("reasoning", "Reasoning", report.reasoning.length)}${renderTab("raw", "Raw", report.events.length)}</nav>
+<div class="metrics"><div class="metric"><small>Events</small><strong>${report.events.length.toLocaleString()}</strong></div><div class="metric"><small>Actions</small><strong>${report.actions.length.toLocaleString()}</strong></div><div class="metric"><small>Failed actions</small><strong>${failedCalls.toLocaleString()}</strong></div><div class="metric"><small>Tokens</small><strong>${totalTokens.toLocaleString()}</strong><span class="sub">in ${report.usage.inputTokens.toLocaleString()} · out ${report.usage.outputTokens.toLocaleString()} · cache ${report.usage.cacheReadTokens.toLocaleString()}</span></div></div>
+<nav aria-label="Report sections" class="tabs" role="tablist">${renderTab("conversation", "Conversation", 2)}${renderTab("tools", "Tools & subagents", report.actions.length)}${renderTab("reasoning", "Reasoning", report.reasoning.length)}${renderTab("raw", "Raw", report.events.length)}</nav>
 <section aria-labelledby="tab-conversation" id="panel-conversation" role="tabpanel"><article class="panel prompt"><h2>Request</h2><div class="message">${escapeHtml(report.receivedMessage ?? "No request captured")}</div></article><article class="panel answer"><h2>Final response</h2><div class="message">${escapeHtml(report.finalMessage ?? "No final response captured")}</div></article></section>
 <section aria-labelledby="tab-tools" hidden id="panel-tools" role="tabpanel">${toolCards || '<div class="panel empty">No tool calls captured.</div>'}</section>
 <section aria-labelledby="tab-reasoning" hidden id="panel-reasoning" role="tabpanel">${reasoningItems || '<div class="panel empty">No completed reasoning captured.</div>'}</section>
@@ -273,17 +274,29 @@ export function isTerminalStreamEvent(event: unknown): boolean {
   return type ? TERMINAL_EVENT_TYPES.has(type) : false;
 }
 
+export function renderStreamReport(
+  sessionId: string,
+  events: unknown[]
+): string {
+  const streamEvents = events.filter((event): event is StreamEvent =>
+    Boolean(asString(asRecord(event)?.type))
+  );
+  return renderReport(collectReport(sessionId, streamEvents));
+}
+
 export async function writeStreamReport(sessionId: string): Promise<string> {
   const logPath = path.join(getStreamLogDir(), `${sessionId}.ndjson`);
-  const contents = await readFile(logPath, "utf8");
+  const contents = await readUtf8FileIfExists(logPath);
+  if (!contents) {
+    throw new Error(`No stream logs found for session ${sessionId}`);
+  }
   const events = contents
     .split("\n")
     .filter(Boolean)
     .map((line) => JSON.parse(line) as StreamEvent);
-  const report = collectReport(sessionId, events);
   const streamReportDir = getStreamReportDir();
   await mkdir(streamReportDir, { recursive: true });
   const reportPath = path.join(streamReportDir, `${sessionId}.html`);
-  await writeFile(reportPath, renderReport(report));
+  await writeFile(reportPath, renderStreamReport(sessionId, events));
   return reportPath;
 }

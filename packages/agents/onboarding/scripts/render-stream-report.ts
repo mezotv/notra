@@ -1,6 +1,7 @@
-import { readdir, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
 import path from "node:path";
 import { getStreamLogDir } from "../agent/lib/constants/stream-log";
+import { readDirectoryIfExists } from "../agent/lib/utils/file-system";
 import { writeStreamReport } from "../agent/lib/utils/stream-report";
 
 const requestedSessionId = process.argv[2];
@@ -10,7 +11,7 @@ const sessionId =
   (
     await Promise.all(
       (
-        await readdir(streamLogDir, { withFileTypes: true })
+        await readDirectoryIfExists(streamLogDir)
       )
         .filter((entry) => entry.isFile() && entry.name.endsWith(".ndjson"))
         .map(async (entry) => ({

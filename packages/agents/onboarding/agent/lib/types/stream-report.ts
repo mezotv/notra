@@ -13,6 +13,7 @@ export interface StreamAction {
 }
 
 export interface StreamReport {
+  actions: StreamAction[];
   agentName: string;
   events: StreamEvent[];
   finalMessage?: string;
@@ -20,7 +21,6 @@ export interface StreamReport {
   receivedMessage?: string;
   reasoning: string[];
   sessionId: string;
-  toolCalls: StreamAction[];
   usage: {
     cacheReadTokens: number;
     inputTokens: number;
