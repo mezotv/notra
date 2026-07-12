@@ -8,6 +8,7 @@ import {
 } from "../utils/stream-report";
 import {
   readDurableStreamEvents,
+  releaseStreamEventOrder,
   writeDurableStreamReport,
 } from "../utils/stream-storage";
 
@@ -30,6 +31,8 @@ export function createStreamLogHook(): HookDefinition {
             }
           } catch (error) {
             console.error("Failed to persist onboarding stream report", error);
+          } finally {
+            releaseStreamEventOrder(ctx.session.id);
           }
         }
       },

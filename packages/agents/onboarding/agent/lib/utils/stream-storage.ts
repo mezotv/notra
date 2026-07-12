@@ -31,6 +31,10 @@ function nextStreamEventOrder(sessionId: string): string {
   return order.toString().padStart(16, "0");
 }
 
+export function releaseStreamEventOrder(sessionId: string): void {
+  lastOrderBySession.delete(sessionId);
+}
+
 function getStreamStorageConfig(): StreamStorageConfig {
   if (cachedConfig) {
     return cachedConfig;
