@@ -215,20 +215,15 @@ const createSlackConnectChannelWithInviteEffect = Effect.fn(
     isPrivate: input.isPrivate,
   });
 
-  return yield* inviteToSlackConnectEffect({
+  const inviteEffect = inviteToSlackConnectEffect({
     channelId: channel.channelId,
     email: input.email,
     userId: input.userId,
     externalLimited: input.externalLimited,
-  }).pipe(
-    Effect.map(
-      (invite) =>
-        ({
-          ...channel,
-          ...invite,
-        }) satisfies CreateSlackConnectChannelInviteResult
-    ),
-    Effect.catch((cause) =>
+  });
+
+  return yield* Effect.matchEffect(inviteEffect, {
+    onFailure: (cause) =>
       archiveSlackChannelEffect(channel.channelId).pipe(
         Effect.matchEffect({
           onFailure: (archiveCause) =>
@@ -249,9 +244,13 @@ const createSlackConnectChannelWithInviteEffect = Effect.fn(
               })
             ),
         })
-      )
-    )
-  );
+      ),
+    onSuccess: (invite) =>
+      Effect.succeed({
+        ...channel,
+        ...invite,
+      } satisfies CreateSlackConnectChannelInviteResult),
+  });
 });
 
 export function createSlackConnectChannelWithInvite(

@@ -83,6 +83,19 @@ function dashboardServiceAuth(): AuthFn<Request> {
   };
 }
 
+function localDevOrganizationAuth(): AuthFn<Request> {
+  const authenticate = localDev();
+  return async (request) => {
+    const sessionAuth = await authenticate(request);
+    return sessionAuth ? withOrganizationAttribute(sessionAuth, request) : null;
+  };
+}
+
 export default eveChannel({
-  auth: [dashboardOidcAuth(), dashboardServiceAuth(), vercelOidc(), localDev()],
+  auth: [
+    dashboardOidcAuth(),
+    dashboardServiceAuth(),
+    vercelOidc(),
+    localDevOrganizationAuth(),
+  ],
 });

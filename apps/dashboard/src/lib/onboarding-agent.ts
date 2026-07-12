@@ -18,6 +18,7 @@ import { Client } from "eve/client";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
   SLACK_CHANNEL_PREFIX,
+  SLACK_CHANNEL_SUFFIX,
   TRAILING_SLASH_PATTERN,
 } from "@/constants/onboarding-agent";
 import { buildOnboardingAgentMessage } from "@/lib/debug/onboarding-agent";
@@ -183,10 +184,11 @@ export async function sendOnboardingSlackInvite({
     return { invited: false };
   }
 
-  const channelName = `${SLACK_CHANNEL_PREFIX}${organizationSlug}`
-    .toLowerCase()
-    .replace(SLACK_INVALID_CHANNEL_CHARS_REGEX, "-")
-    .slice(0, SLACK_CHANNEL_NAME_MAX_LENGTH);
+  const channelName =
+    `${SLACK_CHANNEL_PREFIX}${organizationSlug}${SLACK_CHANNEL_SUFFIX}`
+      .toLowerCase()
+      .replace(SLACK_INVALID_CHANNEL_CHARS_REGEX, "-")
+      .slice(0, SLACK_CHANNEL_NAME_MAX_LENGTH);
 
   try {
     const result = await createSlackConnectChannelWithInvite({

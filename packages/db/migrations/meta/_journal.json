@@ -344,6 +344,13 @@
       "when": 1783725516669,
       "tag": "0048_known_emma_frost",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1783879597847,
+      "tag": "0049_redundant_meltdown",
+      "breakpoints": true
     }
   ]
 }

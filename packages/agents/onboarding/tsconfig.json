@@ -5,6 +5,6 @@
     "moduleResolution": "Bundler",
     "noEmit": true
   },
-  "include": ["agent"],
+  "include": ["agent", "scripts"],
   "exclude": ["node_modules", ".eve"]
 }

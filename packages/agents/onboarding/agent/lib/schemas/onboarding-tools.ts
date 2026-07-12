@@ -9,7 +9,7 @@ import * as z from "zod";
 import { BRAND_PROFILE_FIELDS, MAX_BRAND_COLORS } from "../constants/brand";
 import { MEMORY_SEARCH_DEFAULT_LIMIT } from "../constants/supermemory";
 
-export const addReferenceInputSchema = z.object({
+export const referenceInputSchema = z.object({
   type: z.enum(referenceTypeEnum.enumValues),
   content: z.string().min(1),
   note: z.string().min(1).optional(),
@@ -18,6 +18,12 @@ export const addReferenceInputSchema = z.object({
     .min(1)
     .optional(),
   sourceUrl: z.url().optional(),
+});
+
+export const addReferenceInputSchema = referenceInputSchema;
+
+export const addReferencesInputSchema = z.object({
+  references: z.array(referenceInputSchema).min(1).max(50),
 });
 
 export const addSuggestionInputSchema = z.object({

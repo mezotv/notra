@@ -1,6 +1,6 @@
 {
-  "id": "bd155a6d-1f9e-4c71-aa5a-cbda3dd8449f",
-  "prevId": "db16460e-2dc6-4683-bdce-64309f38009c",
+  "id": "51f8cea1-631e-47fa-b64d-39bf2df46c92",
+  "prevId": "9933e51c-0529-469a-84e5-86b374899923",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -3004,6 +3004,445 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.mcp_oauth_credentials": {
+      "name": "mcp_oauth_credentials",
+      "schema": "",
+      "columns": {
+        "server_integration_id": {
+          "name": "server_integration_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connected_by_user_id": {
+          "name": "connected_by_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_tokens": {
+          "name": "encrypted_tokens",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_client_information": {
+          "name": "encrypted_client_information",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "encrypted_authorization_server_information": {
+          "name": "encrypted_authorization_server_information",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_refresh_at": {
+          "name": "access_token_refresh_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'connected'"
+        },
+        "token_version": {
+          "name": "token_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "refresh_lease_id": {
+          "name": "refresh_lease_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_lease_expires_at": {
+          "name": "refresh_lease_expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_refreshed_at": {
+          "name": "last_refreshed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mcpOAuthCredentials_organizationId_idx": {
+          "name": "mcpOAuthCredentials_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mcpOAuthCredentials_connectedByUserId_idx": {
+          "name": "mcpOAuthCredentials_connectedByUserId_idx",
+          "columns": [
+            {
+              "expression": "connected_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "mcp_oauth_credentials_server_integration_id_mcp_server_integrations_id_fk": {
+          "name": "mcp_oauth_credentials_server_integration_id_mcp_server_integrations_id_fk",
+          "tableFrom": "mcp_oauth_credentials",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "server_integration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcp_oauth_credentials_organization_id_organizations_id_fk": {
+          "name": "mcp_oauth_credentials_organization_id_organizations_id_fk",
+          "tableFrom": "mcp_oauth_credentials",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcp_oauth_credentials_connected_by_user_id_users_id_fk": {
+          "name": "mcp_oauth_credentials_connected_by_user_id_users_id_fk",
+          "tableFrom": "mcp_oauth_credentials",
+          "tableTo": "users",
+          "columnsFrom": [
+            "connected_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcpOAuthCredentials_org_server_fk": {
+          "name": "mcpOAuthCredentials_org_server_fk",
+          "tableFrom": "mcp_oauth_credentials",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "organization_id",
+            "server_integration_id"
+          ],
+          "columnsTo": [
+            "organization_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "mcpOAuthCredentials_status_check": {
+          "name": "mcpOAuthCredentials_status_check",
+          "value": "\"mcp_oauth_credentials\".\"status\" IN ('connected', 'refreshing', 'reauth_required')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.mcp_oauth_pending_authorizations": {
+      "name": "mcp_oauth_pending_authorizations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "server_integration_id": {
+          "name": "server_integration_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "callback_path": {
+          "name": "callback_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state_hash": {
+          "name": "state_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_state": {
+          "name": "encrypted_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "encrypted_code_verifier": {
+          "name": "encrypted_code_verifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "encrypted_client_information": {
+          "name": "encrypted_client_information",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "encrypted_authorization_server_information": {
+          "name": "encrypted_authorization_server_information",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "mcpOAuthPendingAuthorizations_organizationId_idx": {
+          "name": "mcpOAuthPendingAuthorizations_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mcpOAuthPendingAuthorizations_userId_idx": {
+          "name": "mcpOAuthPendingAuthorizations_userId_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mcpOAuthPendingAuthorizations_serverIntegrationId_idx": {
+          "name": "mcpOAuthPendingAuthorizations_serverIntegrationId_idx",
+          "columns": [
+            {
+              "expression": "server_integration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mcpOAuthPendingAuthorizations_expiresAt_idx": {
+          "name": "mcpOAuthPendingAuthorizations_expiresAt_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "mcp_oauth_pending_authorizations_organization_id_organizations_id_fk": {
+          "name": "mcp_oauth_pending_authorizations_organization_id_organizations_id_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcp_oauth_pending_authorizations_user_id_users_id_fk": {
+          "name": "mcp_oauth_pending_authorizations_user_id_users_id_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcp_oauth_pending_authorizations_server_integration_id_mcp_server_integrations_id_fk": {
+          "name": "mcp_oauth_pending_authorizations_server_integration_id_mcp_server_integrations_id_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "server_integration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcpOAuthPendingAuthorizations_org_server_fk": {
+          "name": "mcpOAuthPendingAuthorizations_org_server_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "organization_id",
+            "server_integration_id"
+          ],
+          "columnsTo": [
+            "organization_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "mcp_oauth_pending_authorizations_state_hash_unique": {
+          "name": "mcp_oauth_pending_authorizations_state_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "state_hash"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.mcp_server_integrations": {
       "name": "mcp_server_integrations",
       "schema": "",
@@ -3043,6 +3482,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "auth_type": {
+          "name": "auth_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'none'"
         },
         "encrypted_headers": {
           "name": "encrypted_headers",
@@ -3204,7 +3650,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "mcpServerIntegrations_authType_check": {
+          "name": "mcpServerIntegrations_authType_check",
+          "value": "\"mcp_server_integrations\".\"auth_type\" IN ('none', 'headers', 'oauth')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.mcp_session_tool_activations": {

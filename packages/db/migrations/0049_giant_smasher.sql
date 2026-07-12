@@ -1,1 +1,0 @@
-DROP INDEX "onboardingSuggestions_organizationId_idx";

@@ -1,3 +1,9 @@
 import path from "node:path";
 
-export const STREAM_LOG_DIR = path.join(process.cwd(), "logs", "streams");
+export function getStreamLogDir(): string {
+  return path.join(process.cwd(), "logs", "streams");
+}
+
+export function getStreamReportDir(): string {
+  return path.join(process.cwd(), "logs", "reports");
+}

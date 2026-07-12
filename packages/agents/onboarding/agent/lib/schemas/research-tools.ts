@@ -38,6 +38,10 @@ export const webpageInputSchema = z.object({
   url: z.url(),
 });
 
+export const webpagesInputSchema = z.object({
+  urls: z.array(z.url()).min(1).max(50),
+});
+
 export const webSearchInputSchema = z.object({
   query: z.string().min(1),
   limit: z.number().int().min(1).max(WEB_SEARCH_MAX_RESULTS).optional(),

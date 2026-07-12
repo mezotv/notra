@@ -48,19 +48,22 @@ export default defineTool({
 
     const response = supermemoryCreateResponseSchema.parse(
       await runToolOperation(
-        requestSupermemoryEffect("/v4/memories", {
-          containerTag,
-          memories: [
-            {
-              content,
-              metadata: {
-                source: MEMORY_SOURCE_TAG,
-                organizationId,
-                topic,
+        retryTransientEffect(
+          requestSupermemoryEffect("/v4/memories", {
+            containerTag,
+            memories: [
+              {
+                content,
+                metadata: {
+                  source: MEMORY_SOURCE_TAG,
+                  organizationId,
+                  topic,
+                },
               },
-            },
-          ],
-        })
+            ],
+          }),
+          { operationName: "Supermemory memory creation" }
+        )
       )
     );
 

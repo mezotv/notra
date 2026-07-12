@@ -11,5 +11,18 @@ export const researchBriefSchema = z.object({
       sources: z.array(z.string().min(1)).min(1),
     })
   ),
+  references: z
+    .array(
+      z.object({
+        type: z.enum(["twitter_post", "linkedin_post", "blog_post"]),
+        content: z.string().min(1),
+        sourceUrl: z.url(),
+        note: z.string().min(1),
+        applicableTo: z
+          .array(z.enum(["twitter", "linkedin", "blog", "all"]))
+          .min(1),
+      })
+    )
+    .max(50),
   unavailableSources: z.array(z.string()),
 });

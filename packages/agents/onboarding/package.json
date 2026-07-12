@@ -8,6 +8,7 @@
     "agent:build": "eve build",
     "agent:start": "eve start",
     "check-types": "tsc --noEmit",
+    "report": "bun scripts/render-stream-report.ts",
     "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../../.env -- eve dev",
     "devtools": "bun x @ai-sdk/devtools"
   },
@@ -18,9 +19,10 @@
     "@ai-sdk/devtools": "1.0.1",
     "@notra/ai": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/eve-tools": "workspace:*",
     "ai": "^7.0.0",
     "drizzle-orm": "^0.45.2",
-    "effect": "4.0.0-beta.78",
+    "effect": "4.0.0-beta.94",
     "eve": "0.17.0",
     "pg": "^8.20.0",
     "zod": "^4.3.4"

@@ -119,6 +119,16 @@ export const onboardingRouter = {
         user: context.user,
       });
 
+      const organization = await db.query.organizations.findFirst({
+        columns: { slug: true },
+        where: eq(organizations.id, input.organizationId),
+      });
+      if (!organization) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Organization not found",
+        });
+      }
+
       const reservedAt = await reserveOnboardingAgentRerun(
         input.organizationId
       );
@@ -132,7 +142,9 @@ export const onboardingRouter = {
         launchReservedOnboardingAgent({
           payload: {
             domain: input.domain,
+            email: context.user.email,
             organizationId: input.organizationId,
+            organizationSlug: organization.slug,
           },
           reservedAt,
         })
