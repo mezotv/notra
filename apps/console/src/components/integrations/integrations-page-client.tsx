@@ -259,6 +259,7 @@ export function IntegrationsPageClient({
             </p>
           </div>
           <Button
+            nativeButton={false}
             render={
               <a href={dashboardUrl} rel="noopener noreferrer" target="_blank">
                 Manage in the Notra dashboard

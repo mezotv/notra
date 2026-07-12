@@ -34,12 +34,11 @@ export default async function OverviewPage({
         </CardHeader>
         <CardContent>
           <Button
-            render={
-              <Link href={`/${organization.slug}/integrations`}>
-                Manage integrations
-              </Link>
-            }
-          />
+            nativeButton={false}
+            render={<Link href={`/${organization.slug}/integrations`} />}
+          >
+            Manage integrations
+          </Button>
         </CardContent>
       </Card>
     </main>

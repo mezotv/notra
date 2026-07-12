@@ -124,8 +124,8 @@ function OrganizationSwitcher({
             side={side}
             sideOffset={4}
           >
-            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
             <DropdownMenuGroup>
+              <DropdownMenuLabel>Organizations</DropdownMenuLabel>
               {(organizations ?? []).map((organization) => (
                 <DropdownMenuItem
                   disabled={isSwitching}
@@ -256,12 +256,14 @@ function UserMenu({ user }: { user: User }) {
             side={side}
             sideOffset={4}
           >
-            <DropdownMenuLabel>
-              <span className="block truncate text-foreground">
-                {user.name}
-              </span>
-              <span className="block truncate font-normal">{user.email}</span>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>
+                <span className="block truncate text-foreground">
+                  {user.name}
+                </span>
+                <span className="block truncate font-normal">{user.email}</span>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               disabled={isSigningOut}
