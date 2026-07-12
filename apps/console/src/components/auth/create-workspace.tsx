@@ -35,7 +35,10 @@ export function CreateWorkspace() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const validation = createOrganizationSchema.safeParse({ name, slug });
+    const validation = createOrganizationSchema.safeParse({
+      name: name.trim(),
+      slug,
+    });
     if (!validation.success) {
       toast.error(validation.error.issues[0]?.message ?? "Invalid workspace");
       return;
@@ -52,9 +55,16 @@ export function CreateWorkspace() {
         return;
       }
 
-      await authClient.organization.setActive({
+      const setActiveResult = await authClient.organization.setActive({
         organizationId: data.id,
       });
+      if (setActiveResult.error) {
+        toast.error(
+          setActiveResult.error.message ?? "Failed to activate workspace"
+        );
+        setIsCreating(false);
+        return;
+      }
       router.push(`/${data.slug}/integrations`);
       router.refresh();
     } catch {

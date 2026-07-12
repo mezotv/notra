@@ -4,6 +4,7 @@ import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
   haveIBeenPwned,
@@ -11,6 +12,7 @@ import {
   organization,
 } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
+import { isValid as isNotDisposableEmail } from "mailchecker";
 import { organizationSlugSchema } from "@/schemas/organization";
 
 const authSecret = process.env.BETTER_AUTH_SECRET;
@@ -106,9 +108,35 @@ export const auth = betterAuth({
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,
   },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": {
+        window: 60,
+        max: 5,
+      },
+      "/sign-up/email": {
+        window: 60,
+        max: 5,
+      },
+    },
+  },
   baseURL: process.env.CONSOLE_BETTER_AUTH_URL ?? "http://localhost:3003",
   trustedOrigins: getTrustedOrigins(),
   databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (!isNotDisposableEmail(user.email)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Disposable email addresses are not allowed",
+            });
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {

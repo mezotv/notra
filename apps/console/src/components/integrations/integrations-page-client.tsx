@@ -44,6 +44,16 @@ interface McpServer {
   indexedToolCount: number;
 }
 
+function formatAuthType(authType: string) {
+  if (authType === "none") {
+    return "No auth";
+  }
+  if (authType === "oauth") {
+    return "OAuth";
+  }
+  return "Headers";
+}
+
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
@@ -96,9 +106,7 @@ function McpServerCard({
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">
-              {server.authType === "none" ? "No auth" : "Headers"}
-            </Badge>
+            <Badge variant="outline">{formatAuthType(server.authType)}</Badge>
             <Badge variant="secondary">
               {server.indexedToolCount}{" "}
               {server.indexedToolCount === 1 ? "tool" : "tools"}

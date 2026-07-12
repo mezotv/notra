@@ -3,6 +3,7 @@ import { members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { auth } from "@/lib/auth/server";
 
 export async function requireAuth() {
@@ -44,7 +45,7 @@ export async function getOrganizationsForUser(userId: string) {
     .filter((organization) => organization !== null);
 }
 
-export async function validateOrganizationAccess(slug: string) {
+export const validateOrganizationAccess = cache(async (slug: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -71,4 +72,4 @@ export async function validateOrganizationAccess(slug: string) {
     user: session.user,
     member: organization.members[0],
   };
-}
+});
