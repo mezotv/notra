@@ -5,64 +5,54 @@ import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import {
   dynamicTool,
   jsonSchema,
-  type PrepareStepFunction,
   type Tool,
   type ToolExecutionOptions,
   tool,
 } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { decryptToken } from "../crypto/token-encryption";
 import {
-  type ActivatedMcpTool,
+  LAZY_MCP_DESCRIPTION,
+  MCP_MANAGER_TOOL_NAMES,
+  MCP_STALE_TOOL_ERROR_REGEX,
+} from "../constants/mcp-runtime";
+import {
+  MCP_EXECUTION_TIMEOUT_MS,
+  MCP_SEARCH_LIMIT_DEFAULT,
+  MCP_SEARCH_LIMIT_MAX,
+  MCP_SESSION_ACTIVE_TOOL_LIMIT,
+} from "../constants/mcp-tool-index";
+import { getMcpRequestAuth, withMcpOAuthRetry } from "../integrations/mcp-auth";
+import {
   activateSessionMcpTools,
   deactivateSessionMcpTools,
   getIndexedMcpToolByRuntimeName,
   getSessionActivatedMcpTools,
   hasActiveIndexedMcpToolsForOrganization,
-  type IndexedMcpTool,
   isMcpToolActivatedForSession,
-  MCP_EXECUTION_TIMEOUT_MS,
-  MCP_SEARCH_LIMIT_DEFAULT,
-  MCP_SEARCH_LIMIT_MAX,
-  MCP_SESSION_ACTIVE_TOOL_LIMIT,
-  type McpSessionSurface,
-  type McpToolDefinition,
   markMcpToolIndexRowStale,
   refreshMcpToolIndexForOrganization,
   searchMcpToolIndex,
   touchMcpSessionToolActivation,
 } from "../integrations/mcp-tool-index";
-
-export interface LazyMcpRuntimeParams {
-  organizationId: string;
-  sessionId: string;
-  surface: McpSessionSurface;
-  baseActiveToolNames: string[];
-  tools?: Record<string, Tool>;
-  maxRuntimeTools?: number;
-}
-
-export interface LazyMcpRuntime {
-  tools: Record<string, Tool>;
-  initialActiveTools: string[];
-  prepareStep: PrepareStepFunction<Record<string, Tool>>;
-  descriptions: string[];
-  cleanup: () => Promise<void>;
-}
-
-const MCP_MANAGER_TOOL_NAMES = [
-  "searchMcpTools",
-  "activateMcpTools",
-  "listActiveMcpTools",
-  "deactivateMcpTools",
-] as const;
-
-const MCP_STALE_TOOL_ERROR_REGEX =
-  /unknown tool|tool.*not found|no such tool|method not found|invalid params.*schema|schema validation|input schema|output schema|invalid request.*tool/i;
-
-const LAZY_MCP_DESCRIPTION =
-  "MCP tools are available through lazy discovery. Use searchMcpTools to find external tools by intent, activateMcpTools before using them, then call the activated runtime tool by name. Do not invent MCP tool names.";
+import type {
+  ConnectMcpClientParams,
+  CreateMcpClientForIntegrationParams,
+  CreateRuntimeMcpToolParams,
+  ExecuteMcpToolParams,
+  GetMcpClientParams,
+  LazyMcpRuntime,
+  LazyMcpRuntimeParams,
+  McpClientRegistry,
+  RetiredMcpClients,
+  RetireMcpClientParams,
+} from "../types/mcp-runtime";
+import type {
+  ActivatedMcpTool,
+  IndexedMcpTool,
+  McpToolDefinition,
+} from "../types/mcp-tool-index";
+import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 
 export async function createLazyMcpRuntime({
   organizationId,
@@ -71,7 +61,8 @@ export async function createLazyMcpRuntime({
   baseActiveToolNames,
   tools: sharedTools,
 }: LazyMcpRuntimeParams): Promise<LazyMcpRuntime> {
-  const clients = new Map<string, Promise<MCPClient>>();
+  const clients: McpClientRegistry = new Map();
+  const retiredClients: RetiredMcpClients = new Set();
   const hasActiveIndexedTools = await hasActiveIndexedMcpToolsForOrganization({
     organizationId,
   });
@@ -109,6 +100,7 @@ export async function createLazyMcpRuntime({
       surface,
       indexedTool,
       clients,
+      retiredClients,
     });
   };
 
@@ -263,13 +255,17 @@ export async function createLazyMcpRuntime({
       ...formatActiveToolDescriptions(activatedTools),
     ],
     cleanup: async () => {
-      const settledClients = await Promise.allSettled(clients.values());
+      const settledClients = await Promise.allSettled([
+        ...clients.values(),
+        ...retiredClients,
+      ]);
       await Promise.allSettled(
         settledClients.flatMap((result) =>
-          result.status === "fulfilled" ? [result.value.close()] : []
+          result.status === "fulfilled" ? [result.value.client.close()] : []
         )
       );
       clients.clear();
+      retiredClients.clear();
     },
   };
 }
@@ -280,13 +276,8 @@ function createRuntimeMcpTool({
   surface,
   indexedTool,
   clients,
-}: {
-  organizationId: string;
-  sessionId: string;
-  surface: McpSessionSurface;
-  indexedTool: IndexedMcpTool;
-  clients: Map<string, Promise<MCPClient>>;
-}): Tool {
+  retiredClients,
+}: CreateRuntimeMcpToolParams): Tool {
   return dynamicTool({
     title: indexedTool.title ?? indexedTool.runtimeToolName,
     description:
@@ -319,25 +310,36 @@ function createRuntimeMcpTool({
             `MCP tool ${indexedTool.runtimeToolName} is no longer available. Search and activate the tool again before retrying.`
           );
         }
-        const client = await getMcpClient({
+        let clientEntry = await getMcpClient({
           organizationId,
           integrationId: latestTool.serverIntegrationId,
           clients,
         });
-        const definitions = {
-          tools: [toMcpToolDefinition(latestTool)],
-        } as Awaited<ReturnType<MCPClient["listTools"]>>;
-        const convertedTools = client.toolsFromDefinitions(definitions);
-        const convertedTool = convertedTools[latestTool.serverToolName];
-        if (!convertedTool?.execute) {
-          throw new Error(
-            `MCP tool ${latestTool.serverToolName} could not be prepared for execution.`
-          );
-        }
-
-        const output = await convertedTool.execute(input, {
-          ...options,
-          abortSignal: withExecutionTimeout(options),
+        const output = await withMcpOAuthRetry({
+          integrationId: latestTool.serverIntegrationId,
+          organizationId,
+          requestAuth: clientEntry.requestAuth,
+          operation: async (_requestAuth, isRetry) => {
+            if (isRetry) {
+              await retireMcpClient({
+                clientEntry,
+                clients,
+                integrationId: latestTool.serverIntegrationId,
+                retiredClients,
+              });
+              clientEntry = await getMcpClient({
+                organizationId,
+                integrationId: latestTool.serverIntegrationId,
+                clients,
+              });
+            }
+            return executeMcpTool({
+              clientEntry,
+              indexedTool: latestTool,
+              input,
+              options,
+            });
+          },
         });
 
         await touchMcpSessionToolActivation({
@@ -382,11 +384,7 @@ async function getMcpClient({
   organizationId,
   integrationId,
   clients,
-}: {
-  organizationId: string;
-  integrationId: string;
-  clients: Map<string, Promise<MCPClient>>;
-}) {
+}: GetMcpClientParams) {
   const existing = clients.get(integrationId);
   if (existing) {
     return existing;
@@ -406,10 +404,7 @@ async function getMcpClient({
 async function createMcpClientForIntegration({
   organizationId,
   integrationId,
-}: {
-  organizationId: string;
-  integrationId: string;
-}) {
+}: CreateMcpClientForIntegrationParams) {
   const integration = await db.query.mcpServerIntegrations.findFirst({
     where: and(
       eq(mcpServerIntegrations.id, integrationId),
@@ -424,13 +419,37 @@ async function createMcpClientForIntegration({
 
   await assertPublicHttpUrlResolution(integration.url);
 
+  const requestAuth = await getMcpRequestAuth(integrationId, organizationId);
+  return withMcpOAuthRetry({
+    integrationId,
+    organizationId,
+    requestAuth,
+    operation: async (nextAuth) => ({
+      client: await connectMcpClient({
+        integrationId,
+        organizationId,
+        requestAuth: nextAuth,
+        url: integration.url,
+      }),
+      requestAuth: nextAuth,
+    }),
+  });
+}
+
+async function connectMcpClient({
+  integrationId,
+  organizationId,
+  requestAuth,
+  url,
+}: ConnectMcpClientParams) {
   return createMCPClient({
     clientName: "notra",
     version: "0.0.1",
     transport: {
       type: "http",
-      url: integration.url,
-      headers: decryptHeaders(integration.encryptedHeaders),
+      url,
+      headers: requestAuth.headers,
+      fetch: publicMcpRuntimeFetch,
       redirect: "error",
     },
     onUncaughtError: (error) => {
@@ -440,6 +459,47 @@ async function createMcpClientForIntegration({
         error: error instanceof Error ? error.message : String(error),
       });
     },
+  });
+}
+
+async function retireMcpClient({
+  clientEntry,
+  clients,
+  integrationId,
+  retiredClients,
+}: RetireMcpClientParams) {
+  const existing = clients.get(integrationId);
+  if (!existing) {
+    return;
+  }
+  const settled = await existing.catch(() => undefined);
+  if (settled !== clientEntry) {
+    return;
+  }
+  clients.delete(integrationId);
+  retiredClients.add(existing);
+}
+
+async function executeMcpTool({
+  clientEntry,
+  indexedTool,
+  input,
+  options,
+}: ExecuteMcpToolParams) {
+  const definitions = {
+    tools: [toMcpToolDefinition(indexedTool)],
+  } as Awaited<ReturnType<MCPClient["listTools"]>>;
+  const convertedTools = clientEntry.client.toolsFromDefinitions(definitions);
+  const convertedTool = convertedTools[indexedTool.serverToolName];
+  if (!convertedTool?.execute) {
+    throw new Error(
+      `MCP tool ${indexedTool.serverToolName} could not be prepared for execution.`
+    );
+  }
+
+  return convertedTool.execute(input, {
+    ...options,
+    abortSignal: withExecutionTimeout(options),
   });
 }
 
@@ -490,15 +550,6 @@ function toMcpDefinitionInputSchema(
         ? (schema.properties as Record<string, unknown>)
         : {},
   } as McpToolDefinition["inputSchema"];
-}
-
-function decryptHeaders(encryptedHeaders: Record<string, string> | null) {
-  return Object.fromEntries(
-    Object.entries(encryptedHeaders ?? {}).map(([key, value]) => [
-      key,
-      decryptToken(value),
-    ])
-  );
 }
 
 function withExecutionTimeout(options: ToolExecutionOptions) {

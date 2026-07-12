@@ -1,3 +1,4 @@
+import { MCP_OAUTH_CALLBACK_PATH } from "@notra/ai/constants/mcp-auth";
 import {
   addRepository,
   configureOutput,
@@ -35,12 +36,18 @@ import {
   testMcpServerConnection,
   updateMcpServerIntegration,
 } from "@notra/ai/integrations/mcp";
+import { beginMcpOAuthAuthorization } from "@notra/ai/integrations/mcp-oauth";
+import {
+  McpOAuthAuthorizationError,
+  McpOAuthNameConflictError,
+} from "@notra/ai/integrations/mcp-oauth-errors";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
@@ -49,6 +56,7 @@ import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
 import {
   addRepositoryRequestSchema,
+  beginMcpOAuthRequestSchema,
   configureOutputBodySchema,
   createGitHubIntegrationRequestSchema,
   createMcpServerRequestSchema,
@@ -56,6 +64,7 @@ import {
   integrationIdParamSchema,
   mcpServerIdParamSchema,
   outputIdParamSchema,
+  reauthorizeMcpOAuthRequestSchema,
   repositoryIdParamSchema,
   testMcpServerRequestSchema,
   triggerTargetsSchema,
@@ -906,6 +915,7 @@ export const integrationsRouter = {
 
         try {
           const integration = await createMcpServerIntegration({
+            authType: input.authType,
             organizationId: input.organizationId,
             userId: auth.user.id,
             name: input.name,
@@ -945,6 +955,7 @@ export const integrationsRouter = {
           | undefined;
         try {
           updated = await updateMcpServerIntegration(input.serverId, {
+            authType: input.authType,
             name: input.name,
             url: input.url,
             description: input.description,
@@ -967,6 +978,96 @@ export const integrationsRouter = {
         }
 
         return serializeMcpServerIntegration(updated);
+      }),
+    beginOAuth: baseProcedure
+      .input(beginMcpOAuthRequestSchema)
+      .handler(async ({ context, input }) => {
+        const access = await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const baseUrl =
+          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        if (!baseUrl) {
+          throw internalServerError("MCP OAuth is not configured");
+        }
+
+        try {
+          return await Effect.runPromise(
+            beginMcpOAuthAuthorization({
+              organizationId: input.organizationId,
+              userId: access.user.id,
+              name: input.name,
+              url: input.url,
+              description: input.description,
+              callbackPath: input.callbackPath,
+              redirectUrl: `${baseUrl}${MCP_OAUTH_CALLBACK_PATH}`,
+            })
+          );
+        } catch (error) {
+          if (
+            error instanceof McpOAuthAuthorizationError ||
+            error instanceof PublicUrlValidationError
+          ) {
+            throw badRequest(error.message);
+          }
+          if (isUniqueConstraintError(error)) {
+            throw conflict("An MCP server with this name already exists");
+          }
+          if (error instanceof McpOAuthNameConflictError) {
+            throw conflict(error.message);
+          }
+          throw internalServerError("Failed to start MCP OAuth", error);
+        }
+      }),
+    reauthorizeOAuth: baseProcedure
+      .input(reauthorizeMcpOAuthRequestSchema)
+      .handler(async ({ context, input }) => {
+        const access = await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const existing = await getMcpServerIntegrationById(input.serverId);
+        if (
+          !existing ||
+          existing.organizationId !== input.organizationId ||
+          existing.authType !== "oauth"
+        ) {
+          throw notFound("OAuth MCP server not found");
+        }
+
+        const baseUrl =
+          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        if (!baseUrl) {
+          throw internalServerError("MCP OAuth is not configured");
+        }
+
+        try {
+          return await Effect.runPromise(
+            beginMcpOAuthAuthorization({
+              organizationId: input.organizationId,
+              userId: access.user.id,
+              serverIntegrationId: existing.id,
+              name: existing.name,
+              url: existing.url,
+              description: existing.description,
+              callbackPath: input.callbackPath,
+              redirectUrl: `${baseUrl}${MCP_OAUTH_CALLBACK_PATH}`,
+            })
+          );
+        } catch (error) {
+          if (
+            error instanceof McpOAuthAuthorizationError ||
+            error instanceof PublicUrlValidationError
+          ) {
+            throw badRequest(error.message);
+          }
+          throw internalServerError("Failed to restart MCP OAuth", error);
+        }
       }),
     delete: baseProcedure
       .input(mcpServerInputSchema)

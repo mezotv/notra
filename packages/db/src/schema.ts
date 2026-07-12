@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   foreignKey,
   index,
   integer,
@@ -499,6 +500,7 @@ export const mcpServerIntegrations = pgTable(
     name: text("name").notNull(),
     url: text("url").notNull(),
     description: text("description"),
+    authType: text("auth_type").default("none").notNull(),
     encryptedHeaders: jsonb("encrypted_headers")
       .$type<Record<string, string>>()
       .default(sql`'{}'::jsonb`)
@@ -515,6 +517,10 @@ export const mcpServerIntegrations = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "mcpServerIntegrations_authType_check",
+      sql`${table.authType} IN ('none', 'headers', 'oauth')`
+    ),
     index("mcpServerIntegrations_organizationId_idx").on(table.organizationId),
     index("mcpServerIntegrations_createdByUserId_idx").on(
       table.createdByUserId
@@ -527,6 +533,109 @@ export const mcpServerIntegrations = pgTable(
       table.organizationId,
       table.name
     ),
+  ]
+);
+
+export const mcpOAuthCredentials = pgTable(
+  "mcp_oauth_credentials",
+  {
+    serverIntegrationId: text("server_integration_id")
+      .primaryKey()
+      .references(() => mcpServerIntegrations.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    connectedByUserId: text("connected_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    encryptedTokens: text("encrypted_tokens").notNull(),
+    encryptedClientInformation: text("encrypted_client_information"),
+    encryptedAuthorizationServerInformation: text(
+      "encrypted_authorization_server_information"
+    ),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    accessTokenRefreshAt: timestamp("access_token_refresh_at"),
+    status: text("status").default("connected").notNull(),
+    tokenVersion: integer("token_version").default(1).notNull(),
+    refreshLeaseId: text("refresh_lease_id"),
+    refreshLeaseExpiresAt: timestamp("refresh_lease_expires_at"),
+    lastRefreshedAt: timestamp("last_refreshed_at"),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    check(
+      "mcpOAuthCredentials_status_check",
+      sql`${table.status} IN ('connected', 'refreshing', 'reauth_required')`
+    ),
+    index("mcpOAuthCredentials_organizationId_idx").on(table.organizationId),
+    index("mcpOAuthCredentials_connectedByUserId_idx").on(
+      table.connectedByUserId
+    ),
+    foreignKey({
+      columns: [table.organizationId, table.serverIntegrationId],
+      foreignColumns: [
+        mcpServerIntegrations.organizationId,
+        mcpServerIntegrations.id,
+      ],
+      name: "mcpOAuthCredentials_org_server_fk",
+    }).onDelete("cascade"),
+  ]
+);
+
+export const mcpOAuthPendingAuthorizations = pgTable(
+  "mcp_oauth_pending_authorizations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    serverIntegrationId: text("server_integration_id").references(
+      () => mcpServerIntegrations.id,
+      { onDelete: "cascade" }
+    ),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    description: text("description"),
+    callbackPath: text("callback_path").notNull(),
+    stateHash: text("state_hash").notNull().unique(),
+    encryptedState: text("encrypted_state").notNull(),
+    encryptedCodeVerifier: text("encrypted_code_verifier"),
+    encryptedClientInformation: text("encrypted_client_information"),
+    encryptedAuthorizationServerInformation: text(
+      "encrypted_authorization_server_information"
+    ),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("mcpOAuthPendingAuthorizations_organizationId_idx").on(
+      table.organizationId
+    ),
+    index("mcpOAuthPendingAuthorizations_userId_idx").on(table.userId),
+    index("mcpOAuthPendingAuthorizations_serverIntegrationId_idx").on(
+      table.serverIntegrationId
+    ),
+    index("mcpOAuthPendingAuthorizations_expiresAt_idx").on(table.expiresAt),
+    foreignKey({
+      columns: [table.organizationId, table.serverIntegrationId],
+      foreignColumns: [
+        mcpServerIntegrations.organizationId,
+        mcpServerIntegrations.id,
+      ],
+      name: "mcpOAuthPendingAuthorizations_org_server_fk",
+    }).onDelete("cascade"),
   ]
 );
 
@@ -1472,7 +1581,47 @@ export const mcpServerIntegrationsRelations = relations(
       fields: [mcpServerIntegrations.createdByUserId],
       references: [users.id],
     }),
+    oauthCredential: one(mcpOAuthCredentials, {
+      fields: [mcpServerIntegrations.id],
+      references: [mcpOAuthCredentials.serverIntegrationId],
+    }),
     tools: many(mcpToolIndex),
+  })
+);
+
+export const mcpOAuthCredentialsRelations = relations(
+  mcpOAuthCredentials,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [mcpOAuthCredentials.organizationId],
+      references: [organizations.id],
+    }),
+    connectedByUser: one(users, {
+      fields: [mcpOAuthCredentials.connectedByUserId],
+      references: [users.id],
+    }),
+    serverIntegration: one(mcpServerIntegrations, {
+      fields: [mcpOAuthCredentials.serverIntegrationId],
+      references: [mcpServerIntegrations.id],
+    }),
+  })
+);
+
+export const mcpOAuthPendingAuthorizationsRelations = relations(
+  mcpOAuthPendingAuthorizations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [mcpOAuthPendingAuthorizations.organizationId],
+      references: [organizations.id],
+    }),
+    user: one(users, {
+      fields: [mcpOAuthPendingAuthorizations.userId],
+      references: [users.id],
+    }),
+    serverIntegration: one(mcpServerIntegrations, {
+      fields: [mcpOAuthPendingAuthorizations.serverIntegrationId],
+      references: [mcpServerIntegrations.id],
+    }),
   })
 );
 

@@ -341,15 +341,8 @@
     {
       "idx": 48,
       "version": "7",
-      "when": 1783548127682,
-      "tag": "0048_moaning_pete_wisdom",
-      "breakpoints": true
-    },
-    {
-      "idx": 49,
-      "version": "7",
-      "when": 1783605888415,
-      "tag": "0049_giant_smasher",
+      "when": 1783725516669,
+      "tag": "0048_known_emma_frost",
       "breakpoints": true
     }
   ]

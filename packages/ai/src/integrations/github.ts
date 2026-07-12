@@ -3,7 +3,6 @@ import { db } from "@notra/db/drizzle";
 import {
   githubAppInstallations,
   githubIntegrations,
-  members,
   repositoryOutputs,
 } from "@notra/db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -28,6 +27,7 @@ import type {
 } from "../types/integrations";
 import type { GitHubToolRepositoryContext } from "../types/tools";
 import { createOctokit } from "../utils/octokit";
+import { hasOrganizationAccess } from "../utils/organization-access";
 import { redis } from "../utils/redis";
 import { getConfiguredAppUrl } from "../utils/url";
 
@@ -292,19 +292,6 @@ export async function validateRepositoryAccess(params: {
   }
 }
 
-export async function validateUserOrgAccess(
-  userId: string,
-  organizationId: string
-) {
-  const member = await db.query.members.findFirst({
-    where: and(
-      eq(members.userId, userId),
-      eq(members.organizationId, organizationId)
-    ),
-  });
-  return !!member;
-}
-
 export async function createGitHubIntegration(
   params: CreateGitHubIntegrationParams
 ) {
@@ -318,7 +305,7 @@ export async function createGitHubIntegration(
     defaultBranch,
   } = params;
 
-  const hasAccess = await validateUserOrgAccess(userId, organizationId);
+  const hasAccess = await hasOrganizationAccess(userId, organizationId);
   if (!hasAccess) {
     throw new Error("User does not have access to this organization");
   }
@@ -433,7 +420,7 @@ export async function upsertGitHubAppInstallation(params: {
   userId: string;
   installationId: string;
 }) {
-  const hasAccess = await validateUserOrgAccess(
+  const hasAccess = await hasOrganizationAccess(
     params.userId,
     params.organizationId
   );
@@ -788,7 +775,7 @@ export async function getDecryptedToken(integrationId: string, userId: string) {
     throw new Error("Integration not found");
   }
 
-  const hasAccess = await validateUserOrgAccess(
+  const hasAccess = await hasOrganizationAccess(
     userId,
     integration.organizationId
   );
@@ -1236,7 +1223,7 @@ export async function generateWebhookSecretForRepository(
     throw new Error("Repository not found");
   }
 
-  const hasAccess = await validateUserOrgAccess(
+  const hasAccess = await hasOrganizationAccess(
     userId,
     repository.integration.organizationId
   );
@@ -1278,7 +1265,7 @@ export async function getWebhookConfigForRepository(
     throw new Error("Repository not found");
   }
 
-  const hasAccess = await validateUserOrgAccess(
+  const hasAccess = await hasOrganizationAccess(
     userId,
     repository.integration.organizationId
   );

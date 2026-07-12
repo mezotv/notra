@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createMcpToolFingerprint } from "../utils/mcp-tool-fingerprint";
 
 const MCP_ID_PREFIX_REGEX = /^mcp_/;
 const INVALID_TOOL_NAME_CHARS_REGEX = /[^a-z0-9_-]+/g;
@@ -24,7 +24,10 @@ export function createMcpRuntimeToolName({
     return base;
   }
 
-  const hash = hashStable({ integrationId, serverToolName }).slice(0, 8);
+  const hash = createMcpToolFingerprint({
+    integrationId,
+    serverToolName,
+  }).slice(0, 8);
   const prefix = base.slice(0, MAX_RUNTIME_TOOL_NAME_LENGTH - hash.length - 1);
   return `${prefix}_${hash}`.replace(EDGE_UNDERSCORES_REGEX, "");
 }
@@ -36,25 +39,5 @@ function sanitizeToolName(name: string) {
       .toLowerCase()
       .replace(INVALID_TOOL_NAME_CHARS_REGEX, "_")
       .replace(EDGE_UNDERSCORES_REGEX, "") || "mcp_tool"
-  );
-}
-
-function hashStable(value: unknown) {
-  return createHash("sha256")
-    .update(JSON.stringify(sortJson(value)))
-    .digest("hex");
-}
-
-function sortJson(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(sortJson);
-  }
-  if (typeof value !== "object" || value === null) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, nested]) => [key, sortJson(nested)])
   );
 }

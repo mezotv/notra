@@ -26,7 +26,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organizationId = organization?.id ?? "";
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
-
   useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
   const queryInput = { organizationId };
@@ -94,6 +93,21 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
+  const reauthorizeMutation = useMutation({
+    mutationFn: async (id: string) =>
+      dashboardOrpc.integrations.mcp.reauthorizeOAuth.call({
+        organizationId,
+        serverId: id,
+        callbackPath: window.location.pathname,
+      }),
+    onSuccess: ({ authorizationUrl }) => {
+      window.location.assign(authorizationUrl);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const servers = data?.servers ?? [];
   const showLoading = Boolean(organizationId) && isLoading && !data;
 
@@ -140,9 +154,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <McpServerCard
                   key={server.id}
                   onDelete={(id) => deleteMutation.mutate(id)}
+                  onReauthorize={(id) => reauthorizeMutation.mutate(id)}
                   onRefreshTools={(id) => refreshMutation.mutate(id)}
                   onToggle={(id, enabled) =>
                     toggleMutation.mutate({ id, enabled })
+                  }
+                  reauthorizing={
+                    reauthorizeMutation.isPending &&
+                    reauthorizeMutation.variables === server.id
                   }
                   refreshing={
                     refreshMutation.isPending &&

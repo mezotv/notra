@@ -414,6 +414,7 @@ export const mcpHeaderRowSchema = z.object({
 export type McpHeaderRow = z.infer<typeof mcpHeaderRowSchema>;
 
 export const addMcpServerFormFieldsSchema = z.object({
+  authType: z.enum(["none", "headers", "oauth"]),
   name: z.string().trim().min(1, "Name is required").max(120),
   url: mcpFormUrlSchema,
   description: z.string().trim().max(1000, "Description is too long"),
@@ -424,9 +425,15 @@ export const addMcpServerFormFieldsSchema = z.object({
 
 export const addMcpServerFormSchema = addMcpServerFormFieldsSchema.superRefine(
   (value, ctx) => {
+    if (value.authType !== "headers") {
+      return;
+    }
+
+    let hasCompleteHeader = false;
     value.headers.forEach((row, index) => {
       const hasName = row.name.trim() !== "";
       const hasValue = row.value.trim() !== "";
+      hasCompleteHeader ||= hasName && hasValue;
       if (hasName !== hasValue) {
         ctx.addIssue({
           code: "custom",
@@ -435,6 +442,13 @@ export const addMcpServerFormSchema = addMcpServerFormFieldsSchema.superRefine(
         });
       }
     });
+    if (!hasCompleteHeader) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Add at least one authentication header",
+        path: ["headers"],
+      });
+    }
   }
 );
 
@@ -442,7 +456,8 @@ export type AddMcpServerFormValues = z.infer<
   typeof addMcpServerFormFieldsSchema
 >;
 
-export const createMcpServerRequestSchema = z.object({
+const createMcpServerRequestFieldsSchema = z.object({
+  authType: z.enum(["none", "headers"]),
   organizationId: z.string().min(1, "Organization ID is required"),
   name: addMcpServerFormFieldsSchema.shape.name,
   url: mcpUrlSchema,
@@ -454,9 +469,49 @@ export const createMcpServerRequestSchema = z.object({
     .nullable(),
   headers: mcpHeadersSchema,
 });
+
+const mcpOAuthCallbackPathSchema = z
+  .string()
+  .trim()
+  .startsWith("/")
+  .refine((path) => !path.startsWith("//"), "Invalid callback path");
+
+export const createMcpServerRequestSchema =
+  createMcpServerRequestFieldsSchema.superRefine((value, ctx) => {
+    if (
+      value.authType === "headers" &&
+      Object.keys(value.headers).length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Add at least one authentication header",
+        path: ["headers"],
+      });
+    }
+  });
 export type CreateMcpServerRequest = z.infer<
   typeof createMcpServerRequestSchema
 >;
+
+export const beginMcpOAuthRequestSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  name: addMcpServerFormFieldsSchema.shape.name,
+  url: mcpUrlSchema,
+  description: createMcpServerRequestFieldsSchema.shape.description,
+  callbackPath: mcpOAuthCallbackPathSchema,
+});
+
+export const reauthorizeMcpOAuthRequestSchema = z.object({
+  organizationId: z.string().min(1, "Organization ID is required"),
+  serverId: z.string().min(1, "MCP server ID is required"),
+  callbackPath: mcpOAuthCallbackPathSchema,
+});
+
+export const mcpOAuthCallbackQuerySchema = z.object({
+  code: z.string().min(1).optional(),
+  error: z.string().min(1).optional(),
+  state: z.string().min(1),
+});
 
 export const updateMcpServerBodySchema = z
   .object({
@@ -464,7 +519,20 @@ export const updateMcpServerBodySchema = z
     url: mcpUrlSchema.optional(),
     description: z.string().trim().max(1000).optional().nullable(),
     headers: mcpHeadersSchema.optional(),
+    authType: z.enum(["none", "headers"]).optional(),
     enabled: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (
+      value.authType === "headers" &&
+      (!value.headers || Object.keys(value.headers).length === 0)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Add at least one authentication header",
+        path: ["headers"],
+      });
+    }
   })
   .refine(
     (value) =>
@@ -472,6 +540,7 @@ export const updateMcpServerBodySchema = z
       value.url !== undefined ||
       value.description !== undefined ||
       value.headers !== undefined ||
+      value.authType !== undefined ||
       value.enabled !== undefined,
     {
       message: "At least one field must be provided",
@@ -483,9 +552,10 @@ export const mcpServerIdParamSchema = z.object({
   serverId: z.string().min(1, "MCP server ID is required"),
 });
 
-export const testMcpServerRequestSchema = createMcpServerRequestSchema.pick({
-  organizationId: true,
-  url: true,
-  headers: true,
-});
+export const testMcpServerRequestSchema =
+  createMcpServerRequestFieldsSchema.pick({
+    organizationId: true,
+    url: true,
+    headers: true,
+  });
 export type TestMcpServerRequest = z.infer<typeof testMcpServerRequestSchema>;

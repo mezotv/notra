@@ -242,15 +242,16 @@ export function assertPublicHttpUrl(raw: string): void {
   }
 }
 
-export async function assertPublicHttpUrlResolution(
+export async function resolvePublicHttpUrl(
   raw: string
-): Promise<void> {
+): Promise<LookupAddress[]> {
   assertPublicHttpUrl(raw);
 
   const parsed = new URL(raw);
   const hostname = parsed.hostname.replace(/^\[|\]$/g, "");
-  if (isIP(hostname)) {
-    return;
+  const ipVersion = isIP(hostname);
+  if (ipVersion) {
+    return [{ address: hostname, family: ipVersion }];
   }
 
   let addresses: LookupAddress[];
@@ -277,4 +278,12 @@ export async function assertPublicHttpUrlResolution(
       );
     }
   }
+
+  return addresses;
+}
+
+export async function assertPublicHttpUrlResolution(
+  raw: string
+): Promise<void> {
+  await resolvePublicHttpUrl(raw);
 }
