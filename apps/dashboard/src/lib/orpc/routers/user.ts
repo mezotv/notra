@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { and, count, eq, ne } from "drizzle-orm";
+import { deleteAutumnCustomer } from "@/lib/billing/delete-autumn-customer";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   deleteOrganizationChatFiles,
@@ -193,6 +194,12 @@ export const userRouter = {
                 error
               );
             }),
+            deleteAutumnCustomer(input.organizationId).catch((error) => {
+              console.error(
+                `[Delete Org] Failed to cancel Autumn subscription for ${input.organizationId}:`,
+                error
+              );
+            }),
           ]);
         }
 
@@ -289,6 +296,12 @@ export const userRouter = {
           deleteOrganizationChatFiles(orgId).catch((error) => {
             console.error(
               `[Delete Org] Failed to cleanup chat files for ${orgId}:`,
+              error
+            );
+          }),
+          deleteAutumnCustomer(orgId).catch((error) => {
+            console.error(
+              `[Delete Org] Failed to cancel Autumn subscription for ${orgId}:`,
               error
             );
           }),
