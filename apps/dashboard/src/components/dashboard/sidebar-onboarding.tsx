@@ -181,12 +181,6 @@ export function SidebarOnboarding() {
                     </MotionDiv>
                   </OnboardingChecklistHeader>
                   <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
-                    {agentRunning && (
-                      <div className="flex items-center gap-2 pb-1 text-muted-foreground text-xs">
-                        <BrailleLoader className="text-xs" />
-                        <span>Eve is setting up your workspace…</span>
-                      </div>
-                    )}
                     <MotionDiv
                       layoutId="onboarding-progress"
                       transition={MORPH_TRANSITION}
