@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build": "eve build",
     "dev": "dotenv -e ../../../.env -- eve dev --port 3100",
     "agent:dev": "dotenv -e ../../../.env -- eve dev",
     "agent:build": "eve build",
