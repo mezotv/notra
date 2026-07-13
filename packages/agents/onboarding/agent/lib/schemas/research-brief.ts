@@ -16,7 +16,7 @@ export const researchBriefSchema = z.object({
       z.object({
         type: z.enum(["twitter_post", "linkedin_post", "blog_post"]),
         content: z.string().min(1),
-        sourceUrl: z.url(),
+        sourceUrl: z.url({ protocol: /^https?$/ }).max(2048),
         sourceSnapshotKey: z.string().min(1).optional(),
         sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
         sourceCapturedAt: z.iso.datetime().optional(),

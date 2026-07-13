@@ -1,7 +1,6 @@
 import { defineTool } from "eve/tools";
 import {
   HANDLE_PREFIX_REGEX,
-  RECENT_TWEETS_API_MIN_COUNT,
   TWITTER_API_BASE,
 } from "../../../lib/constants/twitter";
 import { recentTweetsInputSchema } from "../../../lib/schemas/research-tools";
@@ -43,7 +42,7 @@ export default defineTool({
     }
 
     const timelineParams = new URLSearchParams({
-      max_results: String(Math.max(count, RECENT_TWEETS_API_MIN_COUNT)),
+      max_results: String(count),
       exclude: "replies,retweets",
       "tweet.fields": "text,public_metrics,created_at",
     });

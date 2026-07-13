@@ -22,7 +22,13 @@ export interface TriggerOnboardingAgentSetupInput {
 
 export interface TriggerOnboardingAgentSetupResult {
   success: boolean;
-  skipped?: "already-started" | "no-company-domain" | "website-unreachable";
+  skipped?: "no-company-domain";
+}
+
+export interface OnboardingAgentSetupTaskInput {
+  domain: string;
+  email: string;
+  organizationId: string;
 }
 
 export interface OnboardingSlackInviteInput {

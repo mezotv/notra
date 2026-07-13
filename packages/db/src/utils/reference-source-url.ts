@@ -28,6 +28,9 @@ function isTrackingQueryParameter(key: string) {
 
 export function canonicalizeReferenceSourceUrl(sourceUrl: string) {
   const url = new URL(sourceUrl);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Reference source URL must use HTTP or HTTPS");
+  }
   url.hash = "";
   url.hostname = url.hostname.toLowerCase();
 

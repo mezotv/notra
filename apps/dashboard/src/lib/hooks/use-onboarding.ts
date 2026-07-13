@@ -116,18 +116,41 @@ export function useCreateFromSuggestion(organizationId: string | undefined) {
     [organizationId]
   );
 
-  const handleDialogOpenChange = useCallback((open: boolean) => {
-    if (!open) {
-      setPending(null);
-    }
-  }, []);
+  const cancelCreate = useCallback(
+    (suggestion: PendingOnboardingSuggestion | null) => {
+      if (!suggestion) {
+        return;
+      }
+      setPending((current) =>
+        current?.organizationId === suggestion.organizationId &&
+        current.suggestionId === suggestion.suggestionId
+          ? null
+          : current
+      );
+    },
+    []
+  );
 
-  const handleCreateSuccess = useCallback(() => {
-    if (pending && pending.organizationId === organizationId) {
-      dismissSuggestion(pending);
-    }
-    setPending(null);
-  }, [organizationId, pending, dismissSuggestion]);
+  const handleCreateSuccess = useCallback(
+    (suggestion: PendingOnboardingSuggestion | null) => {
+      if (!suggestion || suggestion.organizationId !== organizationId) {
+        return;
+      }
+      dismissSuggestion(suggestion);
+      setPending((current) =>
+        current?.organizationId === suggestion.organizationId &&
+        current.suggestionId === suggestion.suggestionId
+          ? null
+          : current
+      );
+    },
+    [organizationId, dismissSuggestion]
+  );
 
-  return { beginCreate, handleDialogOpenChange, handleCreateSuccess };
+  return {
+    beginCreate,
+    cancelCreate,
+    handleCreateSuccess,
+    pendingSuggestion: pending,
+  };
 }

@@ -1,11 +1,14 @@
 import { createHash } from "node:crypto";
 import {
   SUPERMEMORY_BASE_URL,
+  SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH,
+  SUPERMEMORY_CUSTOM_ID_HASH_LENGTH,
   SUPERMEMORY_REQUEST_TIMEOUT_MS,
 } from "../constants/supermemory";
 import type {
   BrandReferenceMemoryLink,
   BrandReferenceMemoryPayload,
+  DeleteBrandReferenceMemoryInput,
   SupermemorySearchResult,
 } from "../types/supermemory";
 
@@ -44,7 +47,23 @@ function truncateText(value: string, maxLength: number) {
 }
 
 export function getBrandReferenceContainerTag(voiceId: string) {
-  return `brand_voice:${voiceId}`;
+  const voiceHash = createHash("sha256").update(voiceId).digest("hex");
+  return `brand_voice_${voiceHash.slice(0, SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH)}`;
+}
+
+function getApplicableToMetadataKey(platform: string) {
+  switch (platform) {
+    case "all":
+      return "applicableToAll";
+    case "twitter":
+      return "applicableToTwitter";
+    case "linkedin":
+      return "applicableToLinkedin";
+    case "blog":
+      return "applicableToBlog";
+    default:
+      return null;
+  }
 }
 
 export function buildBrandReferenceMemoryContent(
@@ -106,103 +125,42 @@ export function getBrandReferenceMemorySyncHash(
     .digest("hex");
 }
 
-async function findBrandReferenceMemory(
-  payload: BrandReferenceMemoryPayload,
-  syncHash: string
-): Promise<BrandReferenceMemoryLink | null> {
-  const response = await fetch(`${SUPERMEMORY_BASE_URL}/v4/search`, {
-    method: "POST",
-    headers: getHeaders(),
-    signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
-    body: JSON.stringify({
-      q: buildBrandReferenceMemoryContent(payload),
-      limit: 1,
-      threshold: 0.2,
-      rerank: false,
-      containerTag: getBrandReferenceContainerTag(payload.voiceId),
-      include: { chunks: true },
-      filters: {
-        AND: [
-          { key: "source", value: "brand_reference" },
-          { key: "referenceId", value: payload.referenceId },
-          { key: "syncHash", value: syncHash },
-        ],
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Failed to find existing Supermemory reference memory: ${await parseError(response)}`
-    );
-  }
-
-  const data: unknown = await response.json();
-  if (!(isRecord(data) && Array.isArray(data.results))) {
-    return null;
-  }
-
-  const result = data.results.find((candidate) => {
-    if (!isRecord(candidate) || !isRecord(candidate.metadata)) {
-      return false;
-    }
-    return (
-      candidate.metadata.referenceId === payload.referenceId &&
-      candidate.metadata.syncHash === syncHash
-    );
-  });
-  if (!isRecord(result)) {
-    return null;
-  }
-
-  const chunks = Array.isArray(result.chunks) ? result.chunks : [];
-  const documentChunk = chunks.find(
-    (chunk) => isRecord(chunk) && typeof chunk.documentId === "string"
-  );
-  let documentId: string | null = null;
-  if (typeof result.documentId === "string") {
-    documentId = result.documentId;
-  } else if (
-    isRecord(documentChunk) &&
-    typeof documentChunk.documentId === "string"
-  ) {
-    documentId = documentChunk.documentId;
-  }
-  const memoryId = typeof result.id === "string" ? result.id : null;
-  return documentId || memoryId ? { documentId, memoryId } : null;
+export function getBrandReferenceMemoryCustomId(
+  payload: BrandReferenceMemoryPayload
+) {
+  const referenceHash = createHash("sha256")
+    .update(payload.referenceId)
+    .digest("hex");
+  const syncHash = getBrandReferenceMemorySyncHash(payload);
+  return `brand-reference-${referenceHash.slice(0, SUPERMEMORY_CUSTOM_ID_HASH_LENGTH)}-${syncHash.slice(0, SUPERMEMORY_CUSTOM_ID_HASH_LENGTH)}`;
 }
 
 export async function createBrandReferenceMemory(
   payload: BrandReferenceMemoryPayload
 ): Promise<BrandReferenceMemoryLink> {
   const syncHash = getBrandReferenceMemorySyncHash(payload);
-  const existing = await findBrandReferenceMemory(payload, syncHash);
-  if (existing) {
-    return existing;
-  }
-
-  const response = await fetch(`${SUPERMEMORY_BASE_URL}/v4/memories`, {
+  const response = await fetch(`${SUPERMEMORY_BASE_URL}/v3/documents`, {
     method: "POST",
     headers: getHeaders(),
     signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
+      content: buildBrandReferenceMemoryContent(payload),
       containerTag: getBrandReferenceContainerTag(payload.voiceId),
-      memories: [
-        {
-          content: buildBrandReferenceMemoryContent(payload),
-          metadata: {
-            source: "brand_reference",
-            organizationId: payload.organizationId,
-            voiceId: payload.voiceId,
-            referenceId: payload.referenceId,
-            syncHash,
-            type: payload.type,
-            applicableTo: payload.applicableTo,
-            tweetId: payload.tweetId ?? undefined,
-            url: payload.sourceUrl ?? undefined,
-          },
-        },
-      ],
+      customId: getBrandReferenceMemoryCustomId(payload),
+      metadata: {
+        source: "brand_reference",
+        organizationId: payload.organizationId,
+        voiceId: payload.voiceId,
+        referenceId: payload.referenceId,
+        syncHash,
+        type: payload.type,
+        applicableToAll: payload.applicableTo.includes("all"),
+        applicableToBlog: payload.applicableTo.includes("blog"),
+        applicableToLinkedin: payload.applicableTo.includes("linkedin"),
+        applicableToTwitter: payload.applicableTo.includes("twitter"),
+        tweetId: payload.tweetId ?? undefined,
+        url: payload.sourceUrl ?? undefined,
+      },
     }),
   });
 
@@ -219,29 +177,26 @@ export async function createBrandReferenceMemory(
     );
   }
 
-  const documentId =
-    typeof data.documentId === "string" ? data.documentId : null;
-  const firstMemory = Array.isArray(data.memories) ? data.memories[0] : null;
-  const memoryId =
-    isRecord(firstMemory) && typeof firstMemory.id === "string"
-      ? firstMemory.id
-      : null;
+  if (typeof data.id !== "string") {
+    throw new Error("Supermemory did not return a document ID");
+  }
 
   return {
-    documentId,
-    memoryId,
+    documentId: data.id,
+    memoryId: null,
   };
 }
 
-export async function deleteBrandReferenceMemory(input: {
-  documentId?: string | null;
-}) {
-  if (!input.documentId) {
+export async function deleteBrandReferenceMemory(
+  input: DeleteBrandReferenceMemoryInput
+) {
+  const identifier = input.documentId ?? input.customId;
+  if (!identifier) {
     return;
   }
 
   const response = await fetch(
-    `${SUPERMEMORY_BASE_URL}/v3/documents/${encodeURIComponent(input.documentId)}`,
+    `${SUPERMEMORY_BASE_URL}/v3/documents/${encodeURIComponent(identifier)}`,
     {
       method: "DELETE",
       headers: getHeaders(),
@@ -266,6 +221,9 @@ export async function searchBrandReferenceMemories(input: {
   applicableTo?: string;
   limit?: number;
 }) {
+  const applicableToMetadataKey = input.applicableTo
+    ? getApplicableToMetadataKey(input.applicableTo)
+    : null;
   const response = await fetch(`${SUPERMEMORY_BASE_URL}/v4/search`, {
     method: "POST",
     headers: getHeaders(),
@@ -285,15 +243,17 @@ export async function searchBrandReferenceMemories(input: {
                 {
                   OR: [
                     {
-                      filterType: "array_contains",
-                      key: "applicableTo",
-                      value: "all",
+                      key: "applicableToAll",
+                      value: true,
                     },
-                    {
-                      filterType: "array_contains",
-                      key: "applicableTo",
-                      value: input.applicableTo,
-                    },
+                    ...(applicableToMetadataKey
+                      ? [
+                          {
+                            key: applicableToMetadataKey,
+                            value: true,
+                          },
+                        ]
+                      : []),
                   ],
                 },
               ]

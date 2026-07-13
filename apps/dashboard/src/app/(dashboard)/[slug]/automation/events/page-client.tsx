@@ -90,7 +90,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTrigger, setEditTrigger] = useState<Trigger | null>(null);
-  const { beginCreate, handleDialogOpenChange, handleCreateSuccess } =
+  const { beginCreate, cancelCreate, handleCreateSuccess, pendingSuggestion } =
     useCreateFromSuggestion(organizationId);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
@@ -223,7 +223,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           <CreateEventTriggerDialog
             onOpenChange={(open) => {
               setCreateOpen(open);
-              handleDialogOpenChange(open);
+              if (!open) {
+                cancelCreate(pendingSuggestion);
+              }
             }}
             onSuccess={() => {
               queryClient.invalidateQueries({
@@ -231,7 +233,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   input: { organizationId: organizationId ?? "" },
                 }),
               });
-              handleCreateSuccess();
+              handleCreateSuccess(pendingSuggestion);
             }}
             open={createOpen}
             organizationId={organizationId ?? ""}

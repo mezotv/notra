@@ -136,7 +136,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const { beginCreate, handleDialogOpenChange, handleCreateSuccess } =
+  const { beginCreate, cancelCreate, handleCreateSuccess, pendingSuggestion } =
     useCreateFromSuggestion(organizationId);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
@@ -400,7 +400,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           <CreateScheduleDialog
             onOpenChange={(open) => {
               setCreateOpen(open);
-              handleDialogOpenChange(open);
+              if (!open) {
+                cancelCreate(pendingSuggestion);
+              }
             }}
             onSuccess={() => {
               queryClient.invalidateQueries({
@@ -415,7 +417,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   }),
                 });
               }
-              handleCreateSuccess();
+              handleCreateSuccess(pendingSuggestion);
             }}
             open={createOpen}
             organizationId={organizationId ?? ""}

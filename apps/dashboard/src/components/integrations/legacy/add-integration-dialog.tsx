@@ -149,9 +149,6 @@ export function LegacyAddIntegrationDialog({
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (nextOpen) {
-      initializedBranchReposRef.current = new Set();
-    }
   };
 
   useEffect(() => {

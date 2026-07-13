@@ -40,6 +40,7 @@ import type {
   TweetMetadata,
 } from "@/types/hooks/brand-references";
 import { formatTweetContent } from "@/utils/format-tweet-content";
+import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const PLATFORM_OPTIONS = [
   { value: "all", label: "All platforms" },
@@ -59,7 +60,6 @@ const TRAILING_ZERO_REGEX = /\.0$/;
 const REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   month: "short",
-  timeZone: "UTC",
 });
 
 function formatCompactNumber(num: number): string {
@@ -98,11 +98,15 @@ function SourceLink({ sourceUrl }: { sourceUrl: string | null | undefined }) {
   if (!sourceUrl) {
     return null;
   }
+  const safeSourceUrl = getSafeReferenceSourceUrl(sourceUrl);
+  if (!safeSourceUrl) {
+    return null;
+  }
 
   return (
     <a
       className="inline-flex w-fit items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
-      href={sourceUrl}
+      href={safeSourceUrl}
       rel="noreferrer"
       target="_blank"
     >
@@ -361,7 +365,10 @@ function TwitterReferenceCard({
                 {metadata?.createdAt && (
                   <>
                     <span className="text-muted-foreground/50 text-xs">·</span>
-                    <span className="shrink-0 text-muted-foreground/70 text-xs">
+                    <span
+                      className="shrink-0 text-muted-foreground/70 text-xs"
+                      suppressHydrationWarning
+                    >
                       {formatRelativeDate(metadata.createdAt)}
                     </span>
                   </>
@@ -444,7 +451,10 @@ function CustomReferenceCard({
               <span className="font-semibold text-sm leading-tight">
                 Custom reference
               </span>
-              <p className="text-muted-foreground/70 text-xs">
+              <p
+                className="text-muted-foreground/70 text-xs"
+                suppressHydrationWarning
+              >
                 {formatRelativeDate(reference.createdAt)}
               </p>
             </div>

@@ -120,40 +120,37 @@ async function requestWebsiteUrl(
 async function fetchWebsite(domain: string, method: "HEAD" | "GET") {
   const signal = AbortSignal.timeout(WEBSITE_REACHABILITY_TIMEOUT_MS);
   let url = new URL(`https://${domain}`);
-  for (
-    let redirectCount = 0;
-    redirectCount <= WEBSITE_REACHABILITY_MAX_REDIRECTS;
-    redirectCount += 1
-  ) {
+  let redirectsRemaining = WEBSITE_REACHABILITY_MAX_REDIRECTS;
+  while (true) {
     const response = await requestWebsiteUrl(url, method, signal);
     if (
       response.status < 300 ||
       response.status >= 400 ||
       response.location === null
     ) {
-      return response.status;
+      return { status: response.status, url: url.toString() };
     }
-    if (redirectCount === WEBSITE_REACHABILITY_MAX_REDIRECTS) {
+    if (redirectsRemaining === 0) {
       throw new Error(`Too many redirects while checking ${domain}`);
     }
+    redirectsRemaining -= 1;
     url = new URL(response.location, url);
   }
-  return SERVER_ERROR_STATUS;
 }
 
-async function isWebsiteMethodReachable(
-  domain: string,
-  method: "HEAD" | "GET"
-) {
+async function resolveWebsiteMethodUrl(domain: string, method: "HEAD" | "GET") {
   return await fetchWebsite(domain, method).then(
-    (status) => status < SERVER_ERROR_STATUS,
-    () => false
+    (result) => (result.status < SERVER_ERROR_STATUS ? result.url : null),
+    () => null
   );
 }
 
-export async function isWebsiteReachable(domain: string): Promise<boolean> {
-  if (await isWebsiteMethodReachable(domain, "HEAD")) {
-    return true;
+export async function resolveReachableWebsiteUrl(
+  domain: string
+): Promise<string | null> {
+  const headUrl = await resolveWebsiteMethodUrl(domain, "HEAD");
+  if (headUrl) {
+    return headUrl;
   }
-  return await isWebsiteMethodReachable(domain, "GET");
+  return await resolveWebsiteMethodUrl(domain, "GET");
 }

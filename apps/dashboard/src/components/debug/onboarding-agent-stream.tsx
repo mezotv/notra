@@ -1,5 +1,6 @@
 "use client";
 
+import { EVE_AGENT_ORGANIZATION_HEADER } from "@notra/ai/constants/onboarding-agent";
 import {
   Message,
   MessageContent,
@@ -42,7 +43,17 @@ import { QUERY_KEYS } from "@/utils/query-keys";
 export function OnboardingAgentStream() {
   const [domain, setDomain] = useState("");
   const [organizationId, setOrganizationId] = useState(NO_ORGANIZATION_VALUE);
-  const agent = useEveAgent({ maxReconnectAttempts: 50 });
+  const organizationIdRef = useRef(NO_ORGANIZATION_VALUE);
+  const agent = useEveAgent({
+    headers: (): Record<string, string> => {
+      const currentOrganizationId = organizationIdRef.current;
+      return currentOrganizationId === NO_ORGANIZATION_VALUE
+        ? {}
+        : { [EVE_AGENT_ORGANIZATION_HEADER]: currentOrganizationId };
+    },
+    maxReconnectAttempts: 50,
+    onError: (error) => toast.error(error.message),
+  });
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const { data: organizations } = useQuery({
@@ -63,12 +74,6 @@ export function OnboardingAgentStream() {
       element.scrollTop = element.scrollHeight;
     }
   }, [agent.data.messages.length]);
-
-  useEffect(() => {
-    if (agent.status === "error" && agent.error) {
-      toast.error(agent.error.message);
-    }
-  }, [agent.status, agent.error]);
 
   const runAgent = async () => {
     if (agent.events.length > 0) {
@@ -113,9 +118,12 @@ export function OnboardingAgentStream() {
           <Field className="flex-1">
             <FieldLabel htmlFor="agent-org-id">Organization</FieldLabel>
             <Select
-              onValueChange={(value) =>
-                setOrganizationId(value ?? NO_ORGANIZATION_VALUE)
-              }
+              disabled={isBusy}
+              onValueChange={(value) => {
+                const nextOrganizationId = value ?? NO_ORGANIZATION_VALUE;
+                organizationIdRef.current = nextOrganizationId;
+                setOrganizationId(nextOrganizationId);
+              }}
               value={organizationId}
             >
               <SelectTrigger id="agent-org-id">

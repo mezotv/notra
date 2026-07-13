@@ -6,6 +6,7 @@ import {
 import {
   RECENT_TWEETS_DEFAULT_COUNT,
   RECENT_TWEETS_MAX_COUNT,
+  RECENT_TWEETS_MIN_COUNT,
 } from "../constants/twitter";
 
 export const companyDomainInputSchema = z.object({
@@ -28,7 +29,7 @@ export const recentTweetsInputSchema = z.object({
   count: z
     .number()
     .int()
-    .min(1)
+    .min(RECENT_TWEETS_MIN_COUNT)
     .max(RECENT_TWEETS_MAX_COUNT)
     .default(RECENT_TWEETS_DEFAULT_COUNT),
 });

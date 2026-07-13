@@ -38,6 +38,7 @@ import {
   createReferenceSchema,
   fetchTweetSchema,
   importTweetsSchema,
+  referenceSourceUrlSchema,
   updateBrandSettingsSchema,
   updateReferenceSchema,
 } from "@/schemas/brand";
@@ -978,9 +979,13 @@ export const brandRouter = {
         const metadata = input.metadata ?? null;
         const tweetId = (metadata as Record<string, unknown> | null)?.tweetId;
         const metadataUrl = (metadata as Record<string, unknown> | null)?.url;
+        const parsedMetadataUrl =
+          typeof metadataUrl === "string"
+            ? referenceSourceUrlSchema.safeParse(metadataUrl)
+            : null;
         const sourceUrl =
           input.sourceUrl ??
-          (typeof metadataUrl === "string" ? metadataUrl : null);
+          (parsedMetadataUrl?.success ? parsedMetadataUrl.data : null);
 
         if (tweetId) {
           const existing = await db.query.brandReferences.findFirst({

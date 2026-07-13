@@ -17,7 +17,10 @@ export const referenceInputSchema = z.object({
     .array(z.enum(applicablePlatformEnum.enumValues))
     .min(1)
     .optional(),
-  sourceUrl: z.url().optional(),
+  sourceUrl: z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .optional(),
   sourceSnapshotKey: z.string().min(1).optional(),
   sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
   sourceCapturedAt: z.iso.datetime().optional(),

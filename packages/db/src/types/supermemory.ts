@@ -15,8 +15,12 @@ export interface BrandReferenceMemoryLink {
   memoryId: string | null;
 }
 
+export interface DeleteBrandReferenceMemoryInput {
+  customId?: string | null;
+  documentId?: string | null;
+}
+
 export interface SupermemorySearchResult {
-  documentId?: string;
   id?: string;
   memory?: string;
   similarity?: number;

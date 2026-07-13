@@ -23,6 +23,9 @@ export function useStreamWatchdog(
       return;
     }
 
+    lastEventAtRef.current = Date.now();
+    setIsStale(false);
+
     const interval = setInterval(() => {
       setIsStale(Date.now() - lastEventAtRef.current > STREAM_STALE_AFTER_MS);
     }, 5000);

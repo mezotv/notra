@@ -7,13 +7,14 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { auth } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
 import {
-  isWebsiteReachable,
   resolveCompanyDomain,
+  resolveReachableWebsiteUrl,
 } from "@/lib/onboarding/company-domain";
 import {
   launchReservedOnboardingAgent,
@@ -32,6 +33,7 @@ import type {
 } from "@/types/onboarding";
 import type {
   EnsureDefaultBrandIdentityInput,
+  OnboardingAgentSetupTaskInput,
   TriggerOnboardingAgentSetupInput,
   TriggerOnboardingAgentSetupResult,
 } from "@/types/onboarding-agent";
@@ -94,6 +96,48 @@ async function tryAcquireBrandAnalysisLock(organizationId: string) {
   );
 
   return result === "OK";
+}
+
+async function runOnboardingAgentSetup({
+  domain,
+  email,
+  organizationId,
+}: OnboardingAgentSetupTaskInput) {
+  const websiteUrl = await resolveReachableWebsiteUrl(domain);
+  if (!websiteUrl) {
+    return;
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    columns: { name: true },
+    where: eq(organizations.id, organizationId),
+  });
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  await ensureDefaultBrandIdentity({
+    companyName: organization.name,
+    organizationId,
+    websiteUrl,
+  });
+
+  const reservedAt = await reserveInitialOnboardingAgentRun(organizationId);
+  if (!reservedAt) {
+    return;
+  }
+
+  await Effect.runPromise(
+    launchReservedOnboardingAgent({
+      payload: {
+        domain,
+        email,
+        organizationId,
+        organizationName: organization.name,
+      },
+      reservedAt,
+    })
+  );
 }
 
 export async function triggerOnboardingBrandAnalysis(
@@ -201,43 +245,22 @@ export async function triggerOnboardingAgentSetup(
     return { skipped: "no-company-domain", success: true };
   }
 
-  const reachable = await isWebsiteReachable(resolution.domain);
-  if (!reachable) {
-    return { skipped: "website-unreachable", success: true };
-  }
-
-  const organization = await db.query.organizations.findFirst({
-    columns: { name: true },
-    where: eq(organizations.id, input.organizationId),
-  });
-  if (!organization) {
-    throw new Error("Organization not found");
-  }
-
-  await ensureDefaultBrandIdentity({
-    companyName: organization.name,
+  const taskInput: OnboardingAgentSetupTaskInput = {
+    domain: resolution.domain,
+    email: session.user.email,
     organizationId: input.organizationId,
-    websiteUrl: input.websiteUrl ?? `https://${resolution.domain}`,
+  };
+
+  after(async () => {
+    try {
+      await runOnboardingAgentSetup(taskInput);
+    } catch (error) {
+      console.error("[Onboarding] Background onboarding agent setup failed", {
+        error,
+        organizationId: taskInput.organizationId,
+      });
+    }
   });
-
-  const reservedAt = await reserveInitialOnboardingAgentRun(
-    input.organizationId
-  );
-  if (!reservedAt) {
-    return { skipped: "already-started", success: true };
-  }
-
-  await Effect.runPromise(
-    launchReservedOnboardingAgent({
-      payload: {
-        domain: resolution.domain,
-        email: session.user.email,
-        organizationId: input.organizationId,
-        organizationName: organization.name,
-      },
-      reservedAt,
-    })
-  );
 
   return { success: true };
 }

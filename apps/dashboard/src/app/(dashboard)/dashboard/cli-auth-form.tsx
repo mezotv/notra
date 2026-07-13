@@ -83,6 +83,9 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
         const body = (await response.json().catch(() => ({}))) as {
           error?: string;
         };
+        if (controller.signal.aborted) {
+          return;
+        }
         toast.error(
           body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
         );

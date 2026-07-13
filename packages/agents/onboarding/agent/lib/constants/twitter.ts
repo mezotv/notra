@@ -1,8 +1,9 @@
 export const TWITTER_API_BASE = "https://api.x.com/2";
-export const RECENT_TWEETS_DEFAULT_COUNT = 25;
+export const RECENT_TWEETS_MIN_COUNT = 25;
+export const RECENT_TWEETS_DEFAULT_COUNT = RECENT_TWEETS_MIN_COUNT;
 export const RECENT_TWEETS_MAX_COUNT = 50;
-export const RECENT_TWEETS_API_MIN_COUNT = 5;
 export const HANDLE_PREFIX_REGEX = /^@/;
+export const TWITTER_WWW_PREFIX_PATTERN = /^www\./;
 export const PUBLIC_TWEET_SEARCH_QUERY_TOKEN = "{username}";
 export const PUBLIC_TWEET_SEARCH_QUERY_TEMPLATES = [
   "site:x.com/{username}/status",

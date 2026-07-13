@@ -20,7 +20,10 @@ import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
 import { errorMessageOr } from "@/lib/utils";
-import { organizationSlugSchema } from "@/schemas/organization";
+import {
+  organizationNameSchema,
+  organizationSlugSchema,
+} from "@/schemas/organization";
 import type { OrganizationDetailsCardProps } from "@/types/settings/general";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -166,7 +169,7 @@ export function OrganizationDetailsCard({
       name: organization.name,
       slug: organization.slug,
     });
-  }, [form.reset, organization]);
+  }, [form.reset, organization.name, organization.slug]);
 
   return (
     <TitleCard heading="Organization Details">
@@ -222,7 +225,13 @@ export function OrganizationDetailsCard({
           </div>
         </div>
 
-        <form.Field name="name">
+        <form.Field
+          name="name"
+          validators={{
+            onChange: ({ value }) =>
+              organizationNameSchema.safeParse(value).error?.issues[0]?.message,
+          }}
+        >
           {(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name}>Name</Label>{" "}
@@ -231,12 +240,18 @@ export function OrganizationDetailsCard({
                 platform
               </p>
               <Input
+                aria-invalid={field.state.meta.errors.length > 0}
                 id={field.name}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
                 placeholder="My Organization"
                 value={field.state.value}
               />
+              {field.state.meta.errors.length > 0 ? (
+                <p className="text-destructive text-xs">
+                  {field.state.meta.errors[0]}
+                </p>
+              ) : null}
             </div>
           )}
         </form.Field>

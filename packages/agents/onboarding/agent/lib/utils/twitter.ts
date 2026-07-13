@@ -14,6 +14,7 @@ import {
   TWITTER_MARKDOWN_QUOTE_REGEX,
   TWITTER_MARKDOWN_TIME_REGEX,
   TWITTER_STATUS_ID_REGEX,
+  TWITTER_WWW_PREFIX_PATTERN,
 } from "../constants/twitter";
 import type { RecentTweet, RecentTweetsResult } from "../types/twitter";
 import { withTransientRetry } from "./retry";
@@ -29,7 +30,9 @@ export function getTwitterHeaders(): Record<string, string> | null {
 function getTweetIdentity(url: string, username: string) {
   try {
     const parsed = new URL(url);
-    const hostname = parsed.hostname.toLowerCase();
+    const hostname = parsed.hostname
+      .toLowerCase()
+      .replace(TWITTER_WWW_PREFIX_PATTERN, "");
     if (hostname !== "x.com" && hostname !== "twitter.com") {
       return null;
     }

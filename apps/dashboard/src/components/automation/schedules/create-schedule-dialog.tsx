@@ -107,6 +107,7 @@ export function CreateScheduleDialog({
   );
 
   const [addRepoOpen, setAddRepoOpen] = useState(false);
+  const dialogOpen = open && !addRepoOpen;
   const comboboxAnchor = useComboboxAnchor();
 
   const mutation = useMutation<{ trigger: Trigger }, Error, ScheduleFormValues>(
@@ -308,7 +309,7 @@ export function CreateScheduleDialog({
 
   return (
     <>
-      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={setOpen} open={dialogOpen}>
         {trigger && <ResponsiveDialogTrigger render={trigger} />}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
@@ -450,7 +451,6 @@ export function CreateScheduleDialog({
                       </span>
                       <AddRepositoryButton
                         onAdd={() => {
-                          setOpen(false);
                           setAddRepoOpen(true);
                         }}
                       />
@@ -673,9 +673,6 @@ export function CreateScheduleDialog({
           integrationId={githubIntegrationId}
           onOpenChange={(isOpen) => {
             setAddRepoOpen(isOpen);
-            if (!isOpen) {
-              setOpen(true);
-            }
           }}
           open={addRepoOpen}
           organizationId={organizationId}
@@ -684,9 +681,6 @@ export function CreateScheduleDialog({
         <AddIntegrationDialog
           onOpenChange={(isOpen) => {
             setAddRepoOpen(isOpen);
-            if (!isOpen) {
-              setOpen(true);
-            }
           }}
           open={addRepoOpen}
           organizationId={organizationId}
