@@ -12,9 +12,8 @@ import {
   EVE_BANNER_DITHER_SPEED,
   EVE_BANNER_DITHER_TYPE,
 } from "@/constants/onboarding-agent";
-import type { OnboardingAgentBannerProps } from "@/types/components/onboarding-agent-banner";
 
-export function OnboardingAgentBanner({ debug }: OnboardingAgentBannerProps) {
+export function OnboardingAgentBanner() {
   const { resolvedTheme } = useTheme();
   const colors =
     resolvedTheme === "dark" ? EVE_BANNER_COLORS_DARK : EVE_BANNER_COLORS_LIGHT;
@@ -36,11 +35,6 @@ export function OnboardingAgentBanner({ debug }: OnboardingAgentBannerProps) {
         <span className="font-medium text-sm">
           We are setting up your workspace
         </span>
-        {debug ? (
-          <span className="rounded-full bg-foreground/10 px-2 py-0.5 font-medium text-[0.625rem] uppercase tracking-wide">
-            debug
-          </span>
-        ) : null}
       </div>
     </div>
   );

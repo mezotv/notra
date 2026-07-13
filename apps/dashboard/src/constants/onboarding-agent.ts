@@ -9,7 +9,6 @@ export const SUGGESTIONS_STALE_TIME_MS = 300_000;
 export const WEBSITE_REACHABILITY_TIMEOUT_MS = 5000;
 export const WEBSITE_REACHABILITY_MAX_REDIRECTS = 5;
 export const EVE_ACCENT_COLOR = "#9333EA";
-export const EVE_BANNER_DEBUG_PARAM = "eve-banner-debug";
 export const EVE_BANNER_COLORS_LIGHT = {
   colorBack: "#FFFFFF",
   colorFront: "#CBB6EF",

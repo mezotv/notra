@@ -19,11 +19,6 @@ export interface OnboardingRunSnapshot {
   running: boolean;
 }
 
-export interface OnboardingAgentBannerState {
-  visible: boolean;
-  debug: boolean;
-}
-
 export interface PendingOnboardingSuggestion {
   organizationId: string;
   suggestionId: string;
