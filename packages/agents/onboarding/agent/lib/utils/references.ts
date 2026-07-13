@@ -6,6 +6,7 @@ import { syncPersistedBrandReferenceMemory } from "@notra/db/utils/brand-referen
 import { canonicalizeReferenceSourceUrl } from "@notra/db/utils/reference-source-url";
 import { desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+import { REFERENCE_INSERT_BATCH_SIZE } from "../constants/references";
 import { REFERENCE_MEMORY_SYNC_CONCURRENCY } from "../constants/supermemory";
 import type { ReferenceInput } from "../types/references";
 
@@ -139,10 +140,12 @@ export async function addBrandReferences(
       sourceUrl: reference.sourceUrl ?? null,
       type: reference.type,
     }));
-    const inserted =
-      values.length > 0
-        ? await tx.insert(brandReferences).values(values).returning()
-        : [];
+    const inserted: (typeof brandReferences.$inferSelect)[] = [];
+    for (let i = 0; i < values.length; i += REFERENCE_INSERT_BATCH_SIZE) {
+      const chunk = values.slice(i, i + REFERENCE_INSERT_BATCH_SIZE);
+      const rows = await tx.insert(brandReferences).values(chunk).returning();
+      inserted.push(...rows);
+    }
 
     return {
       brandSettingsId: settings.id,

@@ -115,7 +115,9 @@ When the workflow starts, it creates a Slack Connect channel `ext-<company-name>
 `bun dev` at the repo root starts the agent on `http://127.0.0.1:3100` next to the apps (turbo runs this package's `dev` script). The dashboard's `/eve/v1/*` rewrite proxies to it, and the debug page at `/debug/onboarding-agent` streams runs live. Local requests authenticate via eve's loopback `localDev()` fallback; org-scoped tools require going through the workflow path (or setting `EVE_ONBOARDING_AGENT_PASSWORD` locally) so the org header gets stamped.
 
 Social/editorial research fetches 25 to 50 original tweets and up to 50 owned
-blog or newsroom pages. The root agent bulk-imports 25–50 deduplicated brand
-references when enough credible material exists. Bulk imports retain canonical
-source URLs and run under the same organization-scoped transaction lock as
-single-reference writes.
+blog or newsroom pages. The root agent bulk-imports deduplicated brand
+references when enough credible material exists, targeting at least 25 with no
+upper cap; every candidate that clears the quality bar is saved. Bulk imports
+retain canonical source URLs, carry author/title/date/engagement display
+metadata, insert in fixed-size chunks, and run under the same
+organization-scoped transaction lock as single-reference writes.
