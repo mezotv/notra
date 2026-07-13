@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@notra/ui/components/ui/sidebar";
+import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
   domAnimation,
@@ -50,6 +51,7 @@ const createSubpageVariants = (shouldReduceMotion: boolean | null) => ({
 const TRANSITION = { duration: 0.2, type: "spring" as const, bounce: 0.1 };
 
 export function DashboardSidebar({
+  className,
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -86,7 +88,7 @@ export function DashboardSidebar({
     <Sidebar
       collapsible="icon"
       {...props}
-      className="overflow-hidden overscroll-none border-none"
+      className={cn("overflow-hidden overscroll-none border-none", className)}
     >
       <LazyMotion features={domAnimation}>
         <SidebarHeader>

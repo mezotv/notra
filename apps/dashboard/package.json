@@ -46,6 +46,7 @@
     "@orpc/client": "^1.13.9",
     "@orpc/server": "^1.13.9",
     "@orpc/tanstack-query": "^1.13.9",
+    "@paper-design/shaders-react": "^0.0.77",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-form": "^1.27.7",
     "@tanstack/react-hotkeys": "^0.3.0",
