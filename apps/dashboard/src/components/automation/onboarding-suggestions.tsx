@@ -32,20 +32,8 @@ export function OnboardingSuggestions({
     (suggestion) => suggestion.type === type
   );
 
-  if (matching.length === 0 && !agentRunning) {
-    return null;
-  }
-
   if (matching.length === 0) {
-    return (
-      <div className="flex items-center gap-2.5 rounded-lg border border-border/60 border-dashed px-4 py-3">
-        <BrailleLoader className="text-sm" />
-        <p className="text-muted-foreground text-sm">
-          Eve is researching your company — automation suggestions will appear
-          here.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
