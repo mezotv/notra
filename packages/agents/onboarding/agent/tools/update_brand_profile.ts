@@ -9,7 +9,7 @@ import { requireOrganizationId } from "../lib/utils/organization";
 
 export default defineTool({
   description:
-    "Fill in missing fields on the organization's default brand voice from research findings: company name, description, tone profile, and audience. Never overwrites fields the user already filled in.",
+    "Fill in missing fields on the organization's default brand voice from research findings: company name, description, tone profile, and audience. The tone profile must be one of the presets: Conversational, Professional, Casual, or Formal; pick the closest match to the evidence. Never overwrites fields the user already filled in.",
   inputSchema: updateBrandProfileInputSchema,
   async execute(fields, ctx) {
     const organizationId = requireOrganizationId(ctx);

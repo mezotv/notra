@@ -829,6 +829,10 @@ export const brandSettings = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "brandSettings_toneProfile_check",
+      sql`${table.toneProfile} IS NULL OR ${table.toneProfile} IN ('Conversational', 'Professional', 'Casual', 'Formal')`
+    ),
     uniqueIndex("brandSettings_org_name_uidx").on(
       table.organizationId,
       table.name

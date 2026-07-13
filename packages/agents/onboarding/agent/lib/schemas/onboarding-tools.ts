@@ -1,3 +1,4 @@
+import { toneProfileSchema } from "@notra/ai/schemas/tone";
 import {
   applicablePlatformEnum,
   brandGuidelineColorRoleEnum,
@@ -69,7 +70,7 @@ export const updateBrandProfileInputSchema = z
   .object({
     companyName: z.string().min(1).optional(),
     companyDescription: z.string().min(1).optional(),
-    toneProfile: z.string().min(1).optional(),
+    toneProfile: toneProfileSchema.optional(),
     audience: z.string().min(1).optional(),
   })
   .refine(
