@@ -5,7 +5,6 @@ import {
 } from "@notra/ai/constants/onboarding-agent";
 import { createSlackConnectChannelWithInvite } from "@notra/ai/integrations/slack";
 import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
-import { onboardingProfileSchema } from "@notra/ai/schemas/onboarding-agent";
 import { buildExternalChannelName } from "@notra/ai/utils/slack";
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
@@ -15,10 +14,13 @@ import { Effect } from "effect";
 import { Client } from "eve/client";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
+  EVE_CREATE_SESSION_ROUTE_PATH,
+  EVE_SESSION_TASK_MODE,
   TRAILING_SLASH_PATTERN,
 } from "@/constants/onboarding-agent";
 import { buildOnboardingAgentMessage } from "@/lib/debug/onboarding-agent";
 import {
+  eveCreateSessionResponseSchema,
   OnboardingAgentCompensationError,
   OnboardingAgentTriggerError,
 } from "@/schemas/onboarding-agent";
@@ -143,12 +145,22 @@ export async function startOnboardingAgentSession({
   reservedAt,
 }: StartOnboardingAgentSessionInput) {
   const client = await createEveAgentClient(organizationId, reservedAt);
-  const session = client.session();
-  const response = await session.send({
-    message: buildOnboardingAgentMessage(domain, organizationId),
-    outputSchema: onboardingProfileSchema,
+  const response = await client.fetch(EVE_CREATE_SESSION_ROUTE_PATH, {
+    body: JSON.stringify({
+      message: buildOnboardingAgentMessage(domain, organizationId),
+      mode: EVE_SESSION_TASK_MODE,
+    }),
+    headers: { "content-type": "application/json" },
+    method: "POST",
   });
-  return { sessionId: response.sessionId };
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Failed to start onboarding agent session (${response.status}): ${body}`
+    );
+  }
+  const payload = eveCreateSessionResponseSchema.parse(await response.json());
+  return { sessionId: payload.sessionId };
 }
 
 export async function sendOnboardingSlackInvite({

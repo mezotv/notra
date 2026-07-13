@@ -44,3 +44,8 @@ export const dismissSuggestionInputSchema = z.object({
 export const onboardingSuggestionDataSchema = z.looseObject({
   evidence: z.string().trim().min(1).optional(),
 });
+
+export const eveCreateSessionResponseSchema = z.object({
+  ok: z.literal(true),
+  sessionId: z.string().min(1),
+});
