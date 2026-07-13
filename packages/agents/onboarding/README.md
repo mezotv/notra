@@ -112,7 +112,7 @@ When the workflow starts, it creates a Slack Connect channel `ext-<company-name>
 
 ## Local development
 
-`bun dev` at the repo root starts the agent on `http://127.0.0.1:3100` next to the apps (turbo runs this package's `dev` script). The dashboard's `/eve/v1/*` rewrite proxies to it, and the debug page at `/debug/onboarding-agent` streams runs live. Local requests authenticate via eve's loopback `localDev()` fallback; org-scoped tools require going through the workflow path (or setting `EVE_ONBOARDING_AGENT_PASSWORD` locally) so the org header gets stamped.
+`bun dev` at the repo root starts the agent on `http://127.0.0.1:3100` next to the apps (turbo runs this package's `dev` script). The dashboard's `/eve/v1/*` rewrite proxies to it. Local requests authenticate via eve's loopback `localDev()` fallback; org-scoped tools require going through the workflow path (or setting `EVE_ONBOARDING_AGENT_PASSWORD` locally) so the org header gets stamped.
 
 Social/editorial research fetches 25 to 50 original tweets and up to 50 owned
 blog or newsroom pages. The root agent bulk-imports deduplicated brand
