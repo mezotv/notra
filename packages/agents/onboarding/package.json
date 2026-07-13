@@ -8,7 +8,6 @@
     "agent:build": "eve build",
     "agent:start": "eve start",
     "check-types": "tsc --noEmit",
-    "report": "bun scripts/render-stream-report.ts",
     "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../../.env -- eve dev",
     "devtools": "bun x @ai-sdk/devtools"
   },

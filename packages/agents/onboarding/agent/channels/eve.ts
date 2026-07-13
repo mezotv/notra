@@ -1,5 +1,6 @@
 import {
   EVE_AGENT_ORGANIZATION_HEADER,
+  EVE_AGENT_RESERVATION_HEADER,
   EVE_AGENT_SERVICE_USERNAME,
 } from "@notra/ai/constants/onboarding-agent";
 import {
@@ -29,12 +30,17 @@ function withOrganizationAttribute(
   request: Request
 ): VerifiedSessionAuth {
   const organizationId = request.headers.get(EVE_AGENT_ORGANIZATION_HEADER);
+  const reservedAt = request.headers.get(EVE_AGENT_RESERVATION_HEADER);
   if (!organizationId) {
     return sessionAuth;
   }
   return {
     ...sessionAuth,
-    attributes: { ...sessionAuth.attributes, organizationId },
+    attributes: {
+      ...sessionAuth.attributes,
+      organizationId,
+      ...(reservedAt && { reservedAt }),
+    },
   };
 }
 

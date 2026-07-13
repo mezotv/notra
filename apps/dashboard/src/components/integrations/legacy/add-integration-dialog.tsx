@@ -154,6 +154,12 @@ export function LegacyAddIntegrationDialog({
     }
   };
 
+  useEffect(() => {
+    if (open) {
+      initializedBranchReposRef.current = new Set();
+    }
+  }, [open]);
+
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {
       if (!organizationId) {

@@ -46,15 +46,15 @@ The agent is a standalone eve server. It is not part of the dashboard's Next.js 
 | `DATABASE_URL` | yes | Direct Postgres access for skills, brand data, suggestions, and the ran flag |
 | `SUPERMEMORY_API_KEY` | yes | Organization memory |
 | `CONTEXT_DEV_API_KEY` | yes | Website scraping, brand lookup, web search |
-| `TWITTER_BEARER_TOKEN` | yes | `fetch_recent_tweets` |
+| `TWITTER_BEARER_TOKEN` | no | Higher-fidelity X API data for `fetch_recent_tweets`; Context.dev web research is used when unset |
 | `GITHUB_TOKEN` | no | Higher GitHub rate limits for repo/activity tools |
 | `DASHBOARD_VERCEL_TEAM_SLUG` | prod | Vercel team slug of the dashboard project (OIDC route auth) |
 | `DASHBOARD_VERCEL_PROJECT_NAME` | prod | Vercel project name of the dashboard (OIDC route auth) |
 | `EVE_ONBOARDING_AGENT_PASSWORD` | fallback | Shared secret for HTTP Basic auth when OIDC is not used |
-| `CLOUDFLARE_ACCESS_KEY_ID` | prod | R2 credentials for durable production streams, reports, and private reference snapshots |
-| `CLOUDFLARE_SECRET_ACCESS_KEY` | prod | R2 credentials for durable production streams, reports, and private reference snapshots |
+| `CLOUDFLARE_ACCESS_KEY_ID` | prod | R2 credentials for private reference snapshots |
+| `CLOUDFLARE_SECRET_ACCESS_KEY` | prod | R2 credentials for private reference snapshots |
 | `CLOUDFLARE_S3_ENDPOINT` | prod | R2 S3 endpoint |
-| `CLOUDFLARE_BUCKET_NAME` | prod | Private bucket containing production traces and full-Markdown reference snapshots |
+| `CLOUDFLARE_BUCKET_NAME` | prod | Private bucket containing full-Markdown reference snapshots |
 
 Model access needs no key on Vercel: the agent uses gateway model ids (`openai/gpt-5.5`, `anthropic/claude-sonnet-5`) which authenticate through the linked project's Vercel AI Gateway OIDC. Off Vercel, set `AI_GATEWAY_API_KEY`.
 
@@ -106,29 +106,15 @@ The 401 is the point: route auth fails closed. Only three callers get in — the
 2. Skips if the agent already ran or is running for this org (`organizations.onboarding_agent_ran` / `onboarding_agent_started_at`).
 3. Resolves the company domain: the entered website wins; if it's missing or a free-mail domain (gmail.com, outlook.com, ... via `free-email-domains-list`), it falls back to the signup email's domain — but only when that email is not disposable (mailchecker) and not itself a free provider. Gmail signups without a website simply skip the agent.
 4. Checks the website actually responds (HEAD/GET with a 5s timeout).
-5. Triggers the Upstash workflow with `{ organizationId, domain, email, organizationSlug }`.
+5. Triggers the Upstash workflow with `{ organizationId, domain, email, organizationName }`.
 
-When the workflow starts, it creates a Slack Connect channel `notra-<slug>` and invites the signup email (skipped when `SLACK_BOT_TOKEN` is unset or the invite fails; failures never fail the workflow).
+When the workflow starts, it creates a Slack Connect channel `ext-<company-name>-notra` and invites the signup email (skipped when `SLACK_BOT_TOKEN` is unset or the invite fails; failures never fail the workflow).
 
 ## Local development
 
 `bun dev` at the repo root starts the agent on `http://127.0.0.1:3100` next to the apps (turbo runs this package's `dev` script). The dashboard's `/eve/v1/*` rewrite proxies to it, and the debug page at `/debug/onboarding-agent` streams runs live. Local requests authenticate via eve's loopback `localDev()` fallback; org-scoped tools require going through the workflow path (or setting `EVE_ONBOARDING_AGENT_PASSWORD` locally) so the org header gets stamped.
 
-In local development, every root-agent and subagent stream is appended as NDJSON in
-`logs/streams/`. In production, each event is written durably to the private R2 bucket
-under `onboarding-agent/streams/`, so serverless filesystem resets cannot lose traces.
-When a session finishes or waits for more input, the stream-log hook also writes an
-aggregate NDJSON stream plus a self-contained HTML trace. The HTML lives locally in
-`logs/reports/` or durably in R2 under `onboarding-agent/reports/`. The report separates the request and
-final response, tool/subagent calls and their results, completed reasoning, and the
-raw event timeline. To rebuild the newest report (or a specific session) manually:
-
-```bash
-bun run report
-bun run report wrun_01EXAMPLE
-```
-
-Social/editorial research fetches up to 50 original tweets and up to 50 owned
+Social/editorial research fetches 25 to 50 original tweets and up to 50 owned
 blog or newsroom pages. The root agent bulk-imports 25–50 deduplicated brand
 references when enough credible material exists. Bulk imports retain canonical
 source URLs and run under the same organization-scoped transaction lock as

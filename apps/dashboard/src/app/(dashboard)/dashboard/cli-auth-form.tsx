@@ -22,7 +22,7 @@ import {
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { detectPlatform } from "@/lib/cli-auth/platform";
@@ -50,42 +50,55 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
   const [authorizationStatus, setAuthorizationStatus] = useState<
     "idle" | "pending" | "success"
   >("idle");
+  const authorizationRequestRef = useRef<AbortController | null>(null);
   const name = editedName ?? defaultName;
 
   const selectedOrg =
     organizations.find((organization) => organization.id === organizationId) ??
     null;
 
+  useEffect(() => {
+    return () => authorizationRequestRef.current?.abort();
+  }, []);
+
   const authorize = async () => {
+    authorizationRequestRef.current?.abort();
+    const controller = new AbortController();
+    authorizationRequestRef.current = controller;
     setAuthorizationStatus("pending");
-    let response: Response;
     try {
-      response = await fetch(
+      const response = await fetch(
         `/api/cli/sessions/${encodeURIComponent(sessionId)}/authorize`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ organizationId, name: name.trim() }),
+          signal: controller.signal,
         }
       );
+      if (controller.signal.aborted) {
+        return;
+      }
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        toast.error(
+          body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
+        );
+        setAuthorizationStatus("idle");
+        return;
+      }
+      setAuthorizationStatus("success");
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
       toast.error(
         error instanceof Error ? error.message : "Failed to authorize CLI"
       );
       setAuthorizationStatus("idle");
-      return;
     }
-    if (!response.ok) {
-      const body = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      };
-      toast.error(
-        body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
-      );
-      setAuthorizationStatus("idle");
-      return;
-    }
-    setAuthorizationStatus("success");
   };
 
   if (organizations.length === 0) {

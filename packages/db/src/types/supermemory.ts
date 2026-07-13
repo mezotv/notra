@@ -16,6 +16,7 @@ export interface BrandReferenceMemoryLink {
 }
 
 export interface SupermemorySearchResult {
+  documentId?: string;
   id?: string;
   memory?: string;
   similarity?: number;

@@ -8,6 +8,7 @@ import type {
   BrandIdentityUiState,
   StepIconState,
 } from "@/types/brand-identity";
+import type { ProgressData } from "@/types/hooks/brand-analysis";
 
 const BRITISH_ENGLISH_LOCALE_REGEX = /^en[-_]GB\b/i;
 
@@ -46,6 +47,27 @@ export function getStepperValue(status: string, currentStep: number): string {
   }
   const stepIndex = Math.max(0, currentStep - 1);
   return ANALYSIS_STEPS[stepIndex]?.value ?? ANALYSIS_STEPS[0]?.value ?? "";
+}
+
+export function getEffectiveBrandAnalysisProgress(
+  progress: ProgressData,
+  isPending: boolean
+): ProgressData {
+  return isPending && progress.status === "idle"
+    ? { status: "scraping", currentStep: 1, totalSteps: 3 }
+    : progress;
+}
+
+export function isBrandAnalysisRunning(
+  progress: ProgressData,
+  isPending: boolean
+): boolean {
+  return (
+    isPending ||
+    progress.status === "scraping" ||
+    progress.status === "extracting" ||
+    progress.status === "saving"
+  );
 }
 
 export function getModalTitle(

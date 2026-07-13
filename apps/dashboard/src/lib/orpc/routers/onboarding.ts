@@ -8,22 +8,15 @@ import {
 } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
-import { Effect } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
+import { z } from "zod";
 import { AGENT_RUN_HARD_LIMIT_MS } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import {
-  getOnboardingAgentState,
-  launchReservedOnboardingAgent,
-  reserveOnboardingAgentRerun,
-} from "@/lib/onboarding-agent";
+import { getOnboardingAgentState } from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
-  startAgentRunInputSchema,
 } from "@/schemas/onboarding-agent";
 
 const onboardingInputSchema = z.object({
@@ -109,47 +102,6 @@ export const onboardingRouter = {
         Date.now() - startedAt.getTime() < AGENT_RUN_HARD_LIMIT_MS;
 
       return { ran, running, startedAt };
-    }),
-  startAgentRun: authorizedProcedure
-    .input(startAgentRunInputSchema)
-    .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const organization = await db.query.organizations.findFirst({
-        columns: { slug: true },
-        where: eq(organizations.id, input.organizationId),
-      });
-      if (!organization) {
-        throw new ORPCError("NOT_FOUND", {
-          message: "Organization not found",
-        });
-      }
-
-      const reservedAt = await reserveOnboardingAgentRerun(
-        input.organizationId
-      );
-      if (!reservedAt) {
-        throw new ORPCError("CONFLICT", {
-          message: "An onboarding agent run is already in progress",
-        });
-      }
-
-      const workflowRunId = await Effect.runPromise(
-        launchReservedOnboardingAgent({
-          payload: {
-            domain: input.domain,
-            email: context.user.email,
-            organizationId: input.organizationId,
-            organizationSlug: organization.slug,
-          },
-          reservedAt,
-        })
-      );
-      return { workflowRunId };
     }),
   suggestions: authorizedProcedure
     .input(listSuggestionsInputSchema)

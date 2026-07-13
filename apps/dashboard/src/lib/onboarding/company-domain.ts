@@ -1,7 +1,13 @@
+import type { LookupAddress } from "node:dns";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { isIP } from "node:net";
+import { assertPublicHttpUrl, resolvePublicHttpUrl } from "@notra/utils/url";
 import { DOMAINS } from "free-email-domains-list";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import {
   SERVER_ERROR_STATUS,
+  WEBSITE_REACHABILITY_MAX_REDIRECTS,
   WEBSITE_REACHABILITY_TIMEOUT_MS,
   WWW_PREFIX_PATTERN,
 } from "@/constants/onboarding-agent";
@@ -18,7 +24,11 @@ function extractDomain(value: string): string | null {
       WWW_PREFIX_PATTERN,
       ""
     );
-    return hostname.includes(".") ? hostname : null;
+    if (!hostname.includes(".") || isIP(hostname) !== 0) {
+      return null;
+    }
+    assertPublicHttpUrl(`https://${hostname}`);
+    return hostname;
   } catch {
     return null;
   }
@@ -50,26 +60,100 @@ export function resolveCompanyDomain({
   return null;
 }
 
-async function fetchWebsite(domain: string, method: "HEAD" | "GET") {
-  return await fetch(`https://${domain}`, {
-    method,
-    redirect: "follow",
-    signal: AbortSignal.timeout(WEBSITE_REACHABILITY_TIMEOUT_MS),
+function requestWebsiteAddress(
+  url: URL,
+  method: "HEAD" | "GET",
+  address: LookupAddress,
+  signal: AbortSignal
+) {
+  const request = url.protocol === "https:" ? httpsRequest : httpRequest;
+  return new Promise<readonly [number, string | null]>((resolve, reject) => {
+    const outgoingRequest = request(
+      url,
+      {
+        family: address.family,
+        lookup: (_hostname, options, callback) => {
+          if (options.all) {
+            callback(null, [address]);
+            return;
+          }
+          callback(null, address.address, address.family);
+        },
+        method,
+        signal,
+      },
+      (response) => {
+        const status = response.statusCode ?? SERVER_ERROR_STATUS;
+        const location = response.headers.location ?? null;
+        response.destroy();
+        resolve([status, location]);
+      }
+    );
+    outgoingRequest.once("error", reject);
+    outgoingRequest.end();
   });
 }
 
-export async function isWebsiteReachable(domain: string): Promise<boolean> {
-  try {
-    const response = await fetchWebsite(domain, "HEAD");
-    if (response.status < SERVER_ERROR_STATUS) {
-      return true;
+async function requestWebsiteUrl(
+  url: URL,
+  method: "HEAD" | "GET",
+  signal: AbortSignal
+) {
+  const addresses = await resolvePublicHttpUrl(url.toString());
+  let lastError: unknown;
+  for (const address of addresses) {
+    try {
+      const [status, location] = await requestWebsiteAddress(
+        url,
+        method,
+        address,
+        signal
+      );
+      return { location, status };
+    } catch (error) {
+      lastError = error;
     }
-  } catch {}
-
-  try {
-    const response = await fetchWebsite(domain, "GET");
-    return response.status < SERVER_ERROR_STATUS;
-  } catch {
-    return false;
   }
+  throw lastError ?? new Error(`Could not connect to ${url.hostname}`);
+}
+
+async function fetchWebsite(domain: string, method: "HEAD" | "GET") {
+  const signal = AbortSignal.timeout(WEBSITE_REACHABILITY_TIMEOUT_MS);
+  let url = new URL(`https://${domain}`);
+  for (
+    let redirectCount = 0;
+    redirectCount <= WEBSITE_REACHABILITY_MAX_REDIRECTS;
+    redirectCount += 1
+  ) {
+    const response = await requestWebsiteUrl(url, method, signal);
+    if (
+      response.status < 300 ||
+      response.status >= 400 ||
+      response.location === null
+    ) {
+      return response.status;
+    }
+    if (redirectCount === WEBSITE_REACHABILITY_MAX_REDIRECTS) {
+      throw new Error(`Too many redirects while checking ${domain}`);
+    }
+    url = new URL(response.location, url);
+  }
+  return SERVER_ERROR_STATUS;
+}
+
+async function isWebsiteMethodReachable(
+  domain: string,
+  method: "HEAD" | "GET"
+) {
+  return await fetchWebsite(domain, method).then(
+    (status) => status < SERVER_ERROR_STATUS,
+    () => false
+  );
+}
+
+export async function isWebsiteReachable(domain: string): Promise<boolean> {
+  if (await isWebsiteMethodReachable(domain, "HEAD")) {
+    return true;
+  }
+  return await isWebsiteMethodReachable(domain, "GET");
 }

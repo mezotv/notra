@@ -7,8 +7,7 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import { headers } from "next/headers";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { auth } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
@@ -32,12 +31,53 @@ import type {
   SaveOnboardingAttributionResult,
 } from "@/types/onboarding";
 import type {
+  EnsureDefaultBrandIdentityInput,
   TriggerOnboardingAgentSetupInput,
   TriggerOnboardingAgentSetupResult,
 } from "@/types/onboarding-agent";
 import { ratelimit } from "@/utils/ratelimit";
 
 const ANALYSIS_LOCK_TTL_SECONDS = 60;
+
+async function ensureDefaultBrandIdentity({
+  companyName,
+  organizationId,
+  websiteUrl,
+}: EnsureDefaultBrandIdentityInput) {
+  const existing = await db.query.brandSettings.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(brandSettings.organizationId, organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
+  });
+  if (existing) {
+    return;
+  }
+
+  await db
+    .insert(brandSettings)
+    .values({
+      companyName,
+      id: crypto.randomUUID(),
+      isDefault: true,
+      name: companyName,
+      organizationId,
+      websiteUrl,
+    })
+    .onConflictDoNothing();
+
+  const created = await db.query.brandSettings.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(brandSettings.organizationId, organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
+  });
+  if (!created) {
+    throw new Error("Failed to create the default brand identity");
+  }
+}
 
 async function tryAcquireBrandAnalysisLock(organizationId: string) {
   if (!redis) {
@@ -167,8 +207,17 @@ export async function triggerOnboardingAgentSetup(
   }
 
   const organization = await db.query.organizations.findFirst({
-    columns: { slug: true },
+    columns: { name: true },
     where: eq(organizations.id, input.organizationId),
+  });
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  await ensureDefaultBrandIdentity({
+    companyName: organization.name,
+    organizationId: input.organizationId,
+    websiteUrl: input.websiteUrl ?? `https://${resolution.domain}`,
   });
 
   const reservedAt = await reserveInitialOnboardingAgentRun(
@@ -184,7 +233,7 @@ export async function triggerOnboardingAgentSetup(
         domain: resolution.domain,
         email: session.user.email,
         organizationId: input.organizationId,
-        organizationSlug: organization?.slug,
+        organizationName: organization.name,
       },
       reservedAt,
     })

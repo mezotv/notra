@@ -81,25 +81,31 @@ export async function saveReferenceSnapshot({
   const sourceContentHash = createHash("sha256").update(body).digest("hex");
   const sourceSnapshotKey = `${REFERENCE_SNAPSHOT_STORAGE_PREFIX}/${organizationId}/brand-references/snapshots/${sourceContentHash}.md`;
   const sourceCapturedAt = new Date().toISOString();
-  const env = getReferenceSnapshotStorageEnv();
-
-  await withTransientRetry(
-    () =>
-      getReferenceSnapshotClient().send(
-        new PutObjectCommand({
-          Body: body,
-          Bucket: env.bucketName,
-          CacheControl: "private, max-age=31536000, immutable",
-          ContentLength: body.byteLength,
-          ContentType: REFERENCE_SNAPSHOT_CONTENT_TYPE,
-          Key: sourceSnapshotKey,
-          Metadata: {
-            capturedAt: sourceCapturedAt,
-          },
-        })
-      ),
-    { operationName: `R2 reference snapshot upload for ${sourceContentHash}` }
-  );
+  try {
+    const env = getReferenceSnapshotStorageEnv();
+    await withTransientRetry(
+      () =>
+        getReferenceSnapshotClient().send(
+          new PutObjectCommand({
+            Body: body,
+            Bucket: env.bucketName,
+            CacheControl: "private, max-age=31536000, immutable",
+            ContentLength: body.byteLength,
+            ContentType: REFERENCE_SNAPSHOT_CONTENT_TYPE,
+            Key: sourceSnapshotKey,
+            Metadata: {
+              capturedAt: sourceCapturedAt,
+            },
+          })
+        ),
+      {
+        operationName: `R2 reference snapshot upload for ${sourceContentHash}`,
+      }
+    );
+  } catch (error) {
+    console.error("Failed to persist reference snapshot", error);
+    return null;
+  }
 
   return {
     sourceCapturedAt,

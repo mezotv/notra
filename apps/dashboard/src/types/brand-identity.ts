@@ -1,8 +1,9 @@
 import type { SupportedLanguage } from "@notra/ai/constants/languages";
 import type { ToneProfile } from "@notra/ai/schemas/tone";
+import type { Dispatch } from "react";
 import type { useBrandForm } from "@/lib/hooks/use-brand-form";
 import type { AffectedTrigger } from "@/schemas/integrations";
-import type { BrandSettings } from "@/types/hooks/brand-analysis";
+import type { BrandSettings, ProgressData } from "@/types/hooks/brand-analysis";
 import type {
   BrandGuidelineAsset,
   BrandGuidelineAssetKind,
@@ -134,6 +135,36 @@ export interface BrandIdentityTabsProps {
   sitemapCount: number;
   voiceId: string;
   voiceWebsiteUrl: string | null;
+}
+
+export interface BrandIdentityWorkspaceProps {
+  activeTab: BrandTab;
+  affectedEvents: AffectedTrigger[];
+  affectedSchedules: AffectedTrigger[];
+  analyzePending: boolean;
+  deleteVoicePending: boolean;
+  dispatchUi: Dispatch<BrandIdentityUiAction>;
+  effectiveProgress: ProgressData;
+  guidelinesRefreshPending: boolean;
+  handleAddIdentityOpenChange: (open: boolean) => void;
+  handleDeleteVoice: () => void;
+  handleReanalyze: (voiceUrl: string) => void;
+  handleSelectVoice: (voiceId: string) => void;
+  handleSetDefault: () => void;
+  isAddIdentityOpen: boolean;
+  isAnalyzing: boolean;
+  isLoadingAffected: boolean;
+  organizationId: string;
+  progressError?: string;
+  referenceCount: number;
+  selectedVoice: BrandSettings;
+  setDefaultPending: boolean;
+  setActiveTab: (tab: BrandTab) => void;
+  sitemapCount: number;
+  startPolling: () => void;
+  uiState: BrandIdentityUiState;
+  voices: BrandSettings[];
+  onRefreshGuidelines: () => void;
 }
 
 export interface PageClientProps {

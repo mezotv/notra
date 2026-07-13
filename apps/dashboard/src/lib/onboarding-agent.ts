@@ -1,14 +1,12 @@
 import {
   EVE_AGENT_ORGANIZATION_HEADER,
+  EVE_AGENT_RESERVATION_HEADER,
   EVE_AGENT_SERVICE_USERNAME,
 } from "@notra/ai/constants/onboarding-agent";
-import {
-  SLACK_CHANNEL_NAME_MAX_LENGTH,
-  SLACK_INVALID_CHANNEL_CHARS_REGEX,
-} from "@notra/ai/constants/slack";
 import { createSlackConnectChannelWithInvite } from "@notra/ai/integrations/slack";
 import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { onboardingProfileSchema } from "@notra/ai/schemas/onboarding-agent";
+import { buildExternalChannelName } from "@notra/ai/utils/slack";
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
@@ -17,8 +15,6 @@ import { Effect } from "effect";
 import { Client } from "eve/client";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
-  SLACK_CHANNEL_PREFIX,
-  SLACK_CHANNEL_SUFFIX,
   TRAILING_SLASH_PATTERN,
 } from "@/constants/onboarding-agent";
 import { buildOnboardingAgentMessage } from "@/lib/debug/onboarding-agent";
@@ -41,22 +37,26 @@ function getEveOnboardingAgentUrl() {
   return url.replace(TRAILING_SLASH_PATTERN, "");
 }
 
-async function createEveAgentClient(organizationId: string) {
+async function createEveAgentClient(
+  organizationId: string,
+  reservedAt: string
+) {
   const clientOptions = {
-    headers: { [EVE_AGENT_ORGANIZATION_HEADER]: organizationId },
+    headers: {
+      [EVE_AGENT_ORGANIZATION_HEADER]: organizationId,
+      [EVE_AGENT_RESERVATION_HEADER]: reservedAt,
+    },
     host: getEveOnboardingAgentUrl(),
     redirect: "error" as const,
   };
 
-  try {
-    const token = await getVercelOidcToken();
-    if (token) {
-      return new Client({
-        ...clientOptions,
-        auth: { vercelOidc: { token } },
-      });
-    }
-  } catch {}
+  const token = await getVercelOidcToken().catch(() => null);
+  if (token) {
+    return new Client({
+      ...clientOptions,
+      auth: { vercelOidc: { token } },
+    });
+  }
 
   const password = process.env.EVE_ONBOARDING_AGENT_PASSWORD;
   if (password) {
@@ -75,6 +75,7 @@ export async function reserveInitialOnboardingAgentRun(
   organizationId: string
 ): Promise<Date | null> {
   const reservedAt = new Date();
+  const staleBefore = new Date(reservedAt.getTime() - AGENT_RUN_HARD_LIMIT_MS);
   const reserved = await db
     .update(organizations)
     .set({ onboardingAgentStartedAt: reservedAt })
@@ -82,26 +83,7 @@ export async function reserveInitialOnboardingAgentRun(
       and(
         eq(organizations.id, organizationId),
         eq(organizations.onboardingAgentRan, false),
-        isNull(organizations.onboardingAgentStartedAt)
-      )
-    )
-    .returning({ id: organizations.id });
-  return reserved.length > 0 ? reservedAt : null;
-}
-
-export async function reserveOnboardingAgentRerun(
-  organizationId: string
-): Promise<Date | null> {
-  const reservedAt = new Date();
-  const staleBefore = new Date(reservedAt.getTime() - AGENT_RUN_HARD_LIMIT_MS);
-  const reserved = await db
-    .update(organizations)
-    .set({ onboardingAgentRan: false, onboardingAgentStartedAt: reservedAt })
-    .where(
-      and(
-        eq(organizations.id, organizationId),
         or(
-          eq(organizations.onboardingAgentRan, true),
           isNull(organizations.onboardingAgentStartedAt),
           lt(organizations.onboardingAgentStartedAt, staleBefore)
         )
@@ -158,8 +140,9 @@ export const launchReservedOnboardingAgent = Effect.fn(
 export async function startOnboardingAgentSession({
   organizationId,
   domain,
+  reservedAt,
 }: StartOnboardingAgentSessionInput) {
-  const client = await createEveAgentClient(organizationId);
+  const client = await createEveAgentClient(organizationId, reservedAt);
   const session = client.session();
   const response = await session.send({
     message: buildOnboardingAgentMessage(domain, organizationId),
@@ -170,19 +153,14 @@ export async function startOnboardingAgentSession({
 
 export async function sendOnboardingSlackInvite({
   email,
-  organizationSlug,
+  organizationName,
 }: OnboardingSlackInviteInput): Promise<OnboardingSlackInviteResult> {
   if (!process.env.SLACK_BOT_TOKEN) {
     return { invited: false };
   }
 
-  const channelName =
-    `${SLACK_CHANNEL_PREFIX}${organizationSlug}${SLACK_CHANNEL_SUFFIX}`
-      .toLowerCase()
-      .replace(SLACK_INVALID_CHANNEL_CHARS_REGEX, "-")
-      .slice(0, SLACK_CHANNEL_NAME_MAX_LENGTH);
-
   try {
+    const channelName = buildExternalChannelName(organizationName);
     const result = await createSlackConnectChannelWithInvite({
       channelName,
       email,
@@ -190,7 +168,7 @@ export async function sendOnboardingSlackInvite({
     return { channelId: result.channelId, invited: true };
   } catch (error) {
     console.error(
-      `[Onboarding Agent] Slack Connect invite failed for ${organizationSlug}`,
+      `[Onboarding Agent] Slack Connect invite failed for ${organizationName}`,
       error
     );
     return { invited: false };

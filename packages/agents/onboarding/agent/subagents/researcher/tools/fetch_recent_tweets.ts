@@ -10,15 +10,21 @@ import {
   twitterUserLookupSchema,
 } from "../../../lib/schemas/twitter";
 import { fetchWithTransientRetry } from "../../../lib/utils/retry";
-import { getTwitterHeaders } from "../../../lib/utils/twitter";
+import {
+  fetchPublicRecentTweets,
+  getTwitterHeaders,
+} from "../../../lib/utils/twitter";
 
 export default defineTool({
   description:
-    "Fetch a company's recent original tweets from the X API by handle, with engagement metrics. Use to study their real social voice.",
+    "Fetch 25 to 50 recent original company tweets by handle. Uses the X API when configured and public Context.dev web research otherwise.",
   inputSchema: recentTweetsInputSchema,
   async execute({ handle, count }) {
     const headers = getTwitterHeaders();
     const username = handle.replace(HANDLE_PREFIX_REGEX, "");
+    if (!headers) {
+      return await fetchPublicRecentTweets(username, count);
+    }
 
     const userResponse = await fetchWithTransientRetry(
       `${TWITTER_API_BASE}/users/by/username/${encodeURIComponent(username)}?user.fields=description,public_metrics`,
@@ -58,6 +64,7 @@ export default defineTool({
       name: account.name,
       bio: account.description ?? null,
       followers: account.public_metrics?.followers_count ?? null,
+      source: "x_api",
       tweets: (timeline.data ?? []).slice(0, count).map((tweet) => ({
         id: tweet.id,
         text: tweet.text,

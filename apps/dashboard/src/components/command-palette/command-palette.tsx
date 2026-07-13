@@ -30,9 +30,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Command as CommandPrimitive } from "cmdk";
 import { useRouter } from "next/navigation";
 import {
-  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -75,6 +73,26 @@ const BRAILLE_FRAMES = [
   "⠏",
 ] as const;
 const BRAILLE_INTERVAL_MS = 80;
+const ENTITY_SECTION_ORDER = [
+  "Posts",
+  "Brand voices",
+  "References",
+  "Integrations",
+] as const;
+
+const GROUPED_ROUTES = (() => {
+  const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
+    Navigation: [],
+    Workspace: [],
+    Automation: [],
+    Manage: [],
+    Settings: [],
+  };
+  for (const route of COMMAND_ROUTES) {
+    groups[route.section].push(route);
+  }
+  return groups;
+})();
 
 const emptySubscribe = () => () => undefined;
 
@@ -126,7 +144,7 @@ export function CommandPalette() {
     | { status: "navigating"; label: string }
     | { status: "error" }
   >({ status: "idle" });
-  const [isNavigating, startNavigation] = useTransition();
+  const [, startNavigation] = useTransition();
   const { openFeedback: triggerFeedback } = useFeedback();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -156,7 +174,7 @@ export function CommandPalette() {
     staleTime: 15_000,
   });
 
-  const entityHits = useMemo<EntityHit[]>(() => {
+  const entityHits: EntityHit[] = (() => {
     const data = searchResults.data;
     if (!(data && slug)) {
       return [];
@@ -256,9 +274,9 @@ export function CommandPalette() {
       });
     }
     return hits;
-  }, [searchResults.data, slug, debouncedQuery]);
+  })();
 
-  const entityHitsBySection = useMemo(() => {
+  const entityHitsBySection = (() => {
     const groups = {
       Posts: [] as EntityHit[],
       "Brand voices": [] as EntityHit[],
@@ -277,26 +295,17 @@ export function CommandPalette() {
       }
     }
     return groups;
-  }, [entityHits]);
-  const entitySectionOrder: Array<keyof typeof entityHitsBySection> = [
-    "Posts",
-    "Brand voices",
-    "References",
-    "Integrations",
-  ];
+  })();
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      setOpen(next);
-      if (!next) {
-        abortRef.current?.abort();
-        abortRef.current = null;
-        setQuery("");
-        setAiState({ status: "idle" });
-      }
-    },
-    [setOpen]
-  );
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setQuery("");
+      setAiState({ status: "idle" });
+    }
+  };
 
   useHotkeys(
     "mod+k",
@@ -320,56 +329,33 @@ export function CommandPalette() {
     };
   }, []);
 
-  const groupedRoutes = useMemo(() => {
-    const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
-      Navigation: [],
-      Workspace: [],
-      Automation: [],
-      Manage: [],
-      Settings: [],
-    };
-    for (const route of COMMAND_ROUTES) {
-      groups[route.section].push(route);
-    }
-    return groups;
-  }, []);
+  const navigate = (path: string) => {
+    handleOpenChange(false);
+    router.push(path);
+  };
 
-  const navigate = useCallback(
-    (path: string) => {
-      handleOpenChange(false);
+  const navigateFromAi = (path: string, label: string) => {
+    setAiState({ status: "navigating", label });
+    startNavigation(() => {
       router.push(path);
-    },
-    [router, handleOpenChange]
-  );
+    });
+    handleOpenChange(false);
+  };
 
-  const navigateFromAi = useCallback(
-    (path: string, label: string) => {
-      setAiState({ status: "navigating", label });
-      startNavigation(() => {
-        router.push(path);
-      });
-      handleOpenChange(false);
-    },
-    [router, handleOpenChange]
-  );
-
-  const openFeedback = useCallback(() => {
+  const openFeedback = () => {
     handleOpenChange(false);
     triggerFeedback();
-  }, [handleOpenChange, triggerFeedback]);
+  };
 
-  const openChatWithQuery = useCallback(
-    (text: string) => {
-      if (!slug) {
-        return;
-      }
-      const qs = text ? `?q=${encodeURIComponent(text)}` : "";
-      navigate(`/${slug}/chat${qs}`);
-    },
-    [navigate, slug]
-  );
+  const openChatWithQuery = (text: string) => {
+    if (!slug) {
+      return;
+    }
+    const qs = text ? `?q=${encodeURIComponent(text)}` : "";
+    navigate(`/${slug}/chat${qs}`);
+  };
 
-  const runAiSearch = useCallback(async () => {
+  const runAiSearch = async () => {
     const trimmed = query.trim();
     if (!(trimmed && slug)) {
       return;
@@ -414,7 +400,7 @@ export function CommandPalette() {
       return;
     }
     setAiState({ status: "error" });
-  }, [query, slug, navigateFromAi]);
+  };
 
   if (!slug) {
     return null;
@@ -576,7 +562,7 @@ export function CommandPalette() {
               </CommandPrimitive.Empty>
 
               {COMMAND_SECTIONS.map((section) => {
-                const items = groupedRoutes[section];
+                const items = GROUPED_ROUTES[section];
                 if (items.length === 0) {
                   return null;
                 }
@@ -615,7 +601,7 @@ export function CommandPalette() {
                 );
               })}
 
-              {entitySectionOrder.map((section) => {
+              {ENTITY_SECTION_ORDER.map((section) => {
                 const items = entityHitsBySection[section];
                 if (!items || items.length === 0) {
                   return null;

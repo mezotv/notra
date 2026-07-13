@@ -74,12 +74,16 @@ export function OnboardingAgentStream() {
     if (agent.events.length > 0) {
       agent.reset();
     }
-    await agent.send({
-      message: buildOnboardingAgentMessage(
-        domain.trim(),
-        organizationId === NO_ORGANIZATION_VALUE ? undefined : organizationId
-      ),
-    });
+    try {
+      await agent.send({
+        message: buildOnboardingAgentMessage(
+          domain.trim(),
+          organizationId === NO_ORGANIZATION_VALUE ? undefined : organizationId
+        ),
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Agent run failed");
+    }
   };
 
   const respondToInput = (requestId: string, optionId: string) => {
@@ -181,8 +185,8 @@ export function OnboardingAgentStream() {
           {isStreamStale ? (
             <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-600 text-sm dark:text-amber-400">
               No stream events for over 90 seconds. The connection likely
-              dropped; the run may have finished server-side. Check
-              packages/agents/onboarding/logs/streams/ for the ground truth.
+              dropped; the run may have finished server-side. Check the browser
+              network panel for details.
             </div>
           ) : null}
         </div>

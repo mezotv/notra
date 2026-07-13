@@ -56,6 +56,11 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 const TRAILING_ZERO_REGEX = /\.0$/;
+const REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+  timeZone: "UTC",
+});
 
 function formatCompactNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -86,7 +91,7 @@ function formatRelativeDate(dateStr: string): string {
     return `${Math.floor(diffDays / 7)}w ago`;
   }
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return REFERENCE_DATE_FORMATTER.format(date);
 }
 
 function SourceLink({ sourceUrl }: { sourceUrl: string | null | undefined }) {

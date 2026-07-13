@@ -2,6 +2,6 @@ export interface OnboardingAgentWorkflowPayload {
   organizationId: string;
   domain: string;
   email?: string;
-  organizationSlug?: string;
+  organizationName?: string;
   reservedAt: string;
 }

@@ -1121,17 +1121,18 @@ export const brandRouter = {
           throw notFound("Reference not found");
         }
 
+        const sourceUrlChanged =
+          input.sourceUrl !== undefined &&
+          input.sourceUrl !== existing.sourceUrl;
+
         const updated = await db
           .update(brandReferences)
           .set({
             note: input.note,
             content: input.content,
-            sourceCapturedAt:
-              input.sourceUrl === undefined
-                ? undefined
-                : input.sourceUrl
-                  ? new Date()
-                  : null,
+            sourceCapturedAt: sourceUrlChanged ? null : undefined,
+            sourceContentHash: sourceUrlChanged ? null : undefined,
+            sourceSnapshotKey: sourceUrlChanged ? null : undefined,
             sourceUrl: input.sourceUrl,
             applicableTo: input.applicableTo,
             updatedAt: new Date(),

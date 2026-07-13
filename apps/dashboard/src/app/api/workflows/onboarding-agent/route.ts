@@ -37,21 +37,26 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
       await context.cancel();
       return;
     }
-    const { organizationId, domain, email, organizationSlug } =
+    const { organizationId, domain, email, organizationName, reservedAt } =
       parseResult.data;
+    const reservationDate = new Date(reservedAt);
 
     log.set({ domain, feature: "onboarding_agent", organizationId });
 
     try {
-      if (email && organizationSlug) {
+      if (email && organizationName) {
         const invite = await context.run("slack-connect-invite", () =>
-          sendOnboardingSlackInvite({ email, organizationSlug })
+          sendOnboardingSlackInvite({ email, organizationName })
         );
         log.set({ slackInvited: invite.invited });
       }
 
       const { sessionId } = await context.run("start-session", () =>
-        startOnboardingAgentSession({ domain, organizationId })
+        startOnboardingAgentSession({
+          domain,
+          organizationId,
+          reservedAt,
+        })
       );
       log.set({ sessionId });
 
@@ -75,6 +80,9 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
       log.set({ runStatus: "timed_out" });
       console.error(
         `[Onboarding Agent] Run for organization ${organizationId} did not finish within the hard time limit`
+      );
+      await context.run("release-timed-out-reservation", () =>
+        releaseOnboardingAgentReservation(organizationId, reservationDate)
       );
     } finally {
       log.emit();

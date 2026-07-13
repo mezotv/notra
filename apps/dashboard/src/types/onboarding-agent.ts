@@ -1,6 +1,13 @@
 export interface StartOnboardingAgentSessionInput {
   organizationId: string;
   domain: string;
+  reservedAt: string;
+}
+
+export interface EnsureDefaultBrandIdentityInput {
+  companyName: string;
+  organizationId: string;
+  websiteUrl: string;
 }
 
 export interface CompanyDomainResolution {
@@ -20,7 +27,7 @@ export interface TriggerOnboardingAgentSetupResult {
 
 export interface OnboardingSlackInviteInput {
   email: string;
-  organizationSlug: string;
+  organizationName: string;
 }
 
 export interface OnboardingSlackInviteResult {

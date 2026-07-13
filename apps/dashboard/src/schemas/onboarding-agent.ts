@@ -22,18 +22,13 @@ export const onboardingAgentWorkflowPayloadSchema = z.object({
   organizationId: z.string().trim().min(1),
   domain: z.string().trim().min(1),
   email: z.email().optional(),
-  organizationSlug: z.string().trim().min(1).optional(),
+  organizationName: z.string().trim().min(1).optional(),
   reservedAt: z.iso.datetime(),
 });
 
 export const triggerOnboardingAgentSetupSchema = z.object({
   organizationId: z.string().trim().min(1),
   websiteUrl: z.string().trim().min(1).optional(),
-});
-
-export const startAgentRunInputSchema = z.object({
-  organizationId: z.string().trim().min(1),
-  domain: z.string().trim().min(1),
 });
 
 export const listSuggestionsInputSchema = z.object({
