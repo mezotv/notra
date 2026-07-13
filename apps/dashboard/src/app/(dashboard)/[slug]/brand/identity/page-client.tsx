@@ -176,21 +176,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     selectedVoice?.id ?? ""
   );
 
-  const selectedVoiceId = selectedVoice?.id;
-  const selectedVoiceUpdatedAt = selectedVoice?.updatedAt;
   const effectiveUrl = uiState.url.trim();
 
   useEffect(() => {
-    if (!selectedVoiceId || !selectedVoiceUpdatedAt) {
+    if (!selectedVoice?.updatedAt) {
       dispatchUi({ type: "set-last-saved-at-ms", savedAtMs: null });
       return;
     }
 
     dispatchUi({
       type: "set-last-saved-at-ms",
-      savedAtMs: new Date(selectedVoiceUpdatedAt).getTime(),
+      savedAtMs: new Date(selectedVoice.updatedAt).getTime(),
     });
-  }, [selectedVoiceId, selectedVoiceUpdatedAt]);
+  }, [selectedVoice]);
 
   const triggerAnalysis = async (rawUrl: string, voiceId?: string) => {
     let urlToAnalyze = rawUrl.trim();

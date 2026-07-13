@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, sql } from "drizzle-orm";
 import { db } from "../drizzle";
 import { brandReferences } from "../schema";
 import type {
@@ -31,7 +31,10 @@ export async function syncPersistedBrandReferenceMemory(
       );
 
       const [reference] = await tx
-        .select()
+        .select({
+          ...getTableColumns(brandReferences),
+          rowVersion: sql<string>`xmin::text`,
+        })
         .from(brandReferences)
         .where(
           and(
@@ -71,7 +74,7 @@ export async function syncPersistedBrandReferenceMemory(
           and(
             eq(brandReferences.id, input.referenceId),
             eq(brandReferences.brandSettingsId, input.voiceId),
-            eq(brandReferences.updatedAt, reference.updatedAt)
+            sql`xmin::text = ${reference.rowVersion}`
           )
         )
         .returning({ id: brandReferences.id });
@@ -99,7 +102,10 @@ export async function syncPersistedBrandReferenceMemory(
         );
 
         const [currentReference] = await tx
-          .select()
+          .select({
+            ...getTableColumns(brandReferences),
+            rowVersion: sql<string>`xmin::text`,
+          })
           .from(brandReferences)
           .where(
             and(
@@ -160,7 +166,7 @@ export async function syncPersistedBrandReferenceMemory(
               and(
                 eq(brandReferences.id, input.referenceId),
                 eq(brandReferences.brandSettingsId, input.voiceId),
-                eq(brandReferences.updatedAt, currentReference.updatedAt)
+                sql`xmin::text = ${currentReference.rowVersion}`
               )
             );
         }

@@ -152,10 +152,10 @@ export function LegacyAddIntegrationDialog({
   };
 
   useEffect(() => {
-    if (open) {
+    if (controlledOpen ?? internalOpen) {
       initializedBranchReposRef.current = new Set();
     }
-  }, [open]);
+  }, [controlledOpen, internalOpen]);
 
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {

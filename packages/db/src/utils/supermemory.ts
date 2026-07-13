@@ -51,6 +51,10 @@ export function getBrandReferenceContainerTag(voiceId: string) {
   return `brand_voice_${voiceHash.slice(0, SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH)}`;
 }
 
+function getLegacyBrandReferenceContainerTag(voiceId: string) {
+  return `brand_voice:${voiceId}`;
+}
+
 function getApplicableToMetadataKey(platform: string) {
   switch (platform) {
     case "all":
@@ -64,6 +68,17 @@ function getApplicableToMetadataKey(platform: string) {
     default:
       return null;
   }
+}
+
+function getBrandReferenceSearchResultKey(result: SupermemorySearchResult) {
+  const referenceId = getBrandReferenceIdFromSearchResult(result);
+  if (referenceId) {
+    return `reference:${referenceId}`;
+  }
+  if (result.id) {
+    return `memory:${result.id}`;
+  }
+  return null;
 }
 
 export function buildBrandReferenceMemoryContent(
@@ -221,6 +236,48 @@ export async function searchBrandReferenceMemories(input: {
   applicableTo?: string;
   limit?: number;
 }) {
+  const limit = input.limit ?? 6;
+  const [currentResults, legacyResults] = await Promise.all([
+    searchBrandReferenceContainer({
+      ...input,
+      containerTag: getBrandReferenceContainerTag(input.voiceId),
+      legacyMetadata: false,
+      limit,
+    }),
+    searchBrandReferenceContainer({
+      ...input,
+      containerTag: getLegacyBrandReferenceContainerTag(input.voiceId),
+      legacyMetadata: true,
+      limit,
+    }),
+  ]);
+  const seen = new Set<string>();
+
+  return [...currentResults, ...legacyResults]
+    .filter((result) => {
+      const resultKey = getBrandReferenceSearchResultKey(result);
+
+      if (!resultKey || !seen.has(resultKey)) {
+        if (resultKey) {
+          seen.add(resultKey);
+        }
+        return true;
+      }
+
+      return false;
+    })
+    .sort((left, right) => (right.similarity ?? 0) - (left.similarity ?? 0))
+    .slice(0, limit);
+}
+
+async function searchBrandReferenceContainer(input: {
+  voiceId: string;
+  query: string;
+  applicableTo?: string;
+  limit: number;
+  containerTag: string;
+  legacyMetadata: boolean;
+}) {
   const applicableToMetadataKey = input.applicableTo
     ? getApplicableToMetadataKey(input.applicableTo)
     : null;
@@ -230,10 +287,10 @@ export async function searchBrandReferenceMemories(input: {
     signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       q: input.query,
-      limit: input.limit ?? 6,
+      limit: input.limit,
       threshold: 0.2,
       rerank: true,
-      containerTag: getBrandReferenceContainerTag(input.voiceId),
+      containerTag: input.containerTag,
       filters: {
         AND: [
           { key: "source", value: "brand_reference" },
@@ -241,20 +298,33 @@ export async function searchBrandReferenceMemories(input: {
           ...(input.applicableTo
             ? [
                 {
-                  OR: [
-                    {
-                      key: "applicableToAll",
-                      value: true,
-                    },
-                    ...(applicableToMetadataKey
-                      ? [
-                          {
-                            key: applicableToMetadataKey,
-                            value: true,
-                          },
-                        ]
-                      : []),
-                  ],
+                  OR: input.legacyMetadata
+                    ? [
+                        {
+                          filterType: "array_contains",
+                          key: "applicableTo",
+                          value: "all",
+                        },
+                        {
+                          filterType: "array_contains",
+                          key: "applicableTo",
+                          value: input.applicableTo,
+                        },
+                      ]
+                    : [
+                        {
+                          key: "applicableToAll",
+                          value: true,
+                        },
+                        ...(applicableToMetadataKey
+                          ? [
+                              {
+                                key: applicableToMetadataKey,
+                                value: true,
+                              },
+                            ]
+                          : []),
+                      ],
                 },
               ]
             : []),
