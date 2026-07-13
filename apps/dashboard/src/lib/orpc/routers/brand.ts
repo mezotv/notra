@@ -178,11 +178,13 @@ function isMemorySyncFieldUpdate(data: {
   applicableTo?: string[];
   content?: string;
   note?: string | null;
+  sourceUrl?: string | null;
 }) {
   return (
     Object.hasOwn(data, "content") ||
     Object.hasOwn(data, "note") ||
-    Object.hasOwn(data, "applicableTo")
+    Object.hasOwn(data, "applicableTo") ||
+    Object.hasOwn(data, "sourceUrl")
   );
 }
 
@@ -279,6 +281,10 @@ function serializeBrandReference(reference: {
   id: string;
   metadata: unknown;
   note: string | null;
+  sourceCapturedAt: Date | null;
+  sourceContentHash: string | null;
+  sourceSnapshotKey: string | null;
+  sourceUrl: string | null;
   supermemoryDocumentId: string | null;
   supermemoryLastSyncError: string | null;
   supermemoryMemoryId: string | null;
@@ -296,6 +302,10 @@ function serializeBrandReference(reference: {
         ? (reference.metadata as Record<string, unknown>)
         : null,
     note: reference.note,
+    sourceCapturedAt: reference.sourceCapturedAt?.toISOString() ?? null,
+    sourceContentHash: reference.sourceContentHash,
+    sourceSnapshotKey: reference.sourceSnapshotKey,
+    sourceUrl: reference.sourceUrl,
     supermemoryDocumentId: reference.supermemoryDocumentId,
     supermemoryMemoryId: reference.supermemoryMemoryId,
     supermemorySyncedAt: reference.supermemorySyncedAt?.toISOString() ?? null,
@@ -967,6 +977,10 @@ export const brandRouter = {
 
         const metadata = input.metadata ?? null;
         const tweetId = (metadata as Record<string, unknown> | null)?.tweetId;
+        const metadataUrl = (metadata as Record<string, unknown> | null)?.url;
+        const sourceUrl =
+          input.sourceUrl ??
+          (typeof metadataUrl === "string" ? metadataUrl : null);
 
         if (tweetId) {
           const existing = await db.query.brandReferences.findFirst({
@@ -1015,6 +1029,8 @@ export const brandRouter = {
             content: input.content,
             metadata,
             note: input.note ?? null,
+            sourceCapturedAt: sourceUrl ? new Date() : null,
+            sourceUrl,
             applicableTo,
           })
           .returning();
@@ -1110,6 +1126,13 @@ export const brandRouter = {
           .set({
             note: input.note,
             content: input.content,
+            sourceCapturedAt:
+              input.sourceUrl === undefined
+                ? undefined
+                : input.sourceUrl
+                  ? new Date()
+                  : null,
+            sourceUrl: input.sourceUrl,
             applicableTo: input.applicableTo,
             updatedAt: new Date(),
           })
@@ -1126,6 +1149,7 @@ export const brandRouter = {
           !isMemorySyncFieldUpdate({
             content: input.content,
             note: input.note,
+            sourceUrl: input.sourceUrl,
             applicableTo: input.applicableTo,
           })
         ) {
@@ -1512,6 +1536,8 @@ export const brandRouter = {
             createdAt: tweet.created_at ?? new Date().toISOString(),
           },
           note: null,
+          sourceCapturedAt: new Date(),
+          sourceUrl: `https://x.com/${authorHandle}/status/${tweet.id}`,
           applicableTo: ["twitter"] as ApplicablePlatform[],
         }));
 

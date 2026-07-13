@@ -13,6 +13,10 @@ const TERMINAL_EVENT_TYPES = new Set([
   "session.failed",
   "session.waiting",
 ]);
+const REDUNDANT_RAW_EVENT_TYPES = new Set([
+  "message.appended",
+  "reasoning.appended",
+]);
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object"
@@ -251,21 +255,28 @@ function renderReport(report: StreamReport): string {
         `<details class="item"><summary><span class="index" aria-hidden="true">${index + 1}</span><span>Reasoning step ${index + 1}</span><span class="size">${formatSize(value.length)}</span></summary><pre tabindex="0">${escapeHtml(clampText(value))}</pre></details>`
     )
     .join("");
-  const rawEvents = report.events
-    .map((event, index) => {
+  const rawEventEntries = report.events
+    .map((event, index) => ({ event, index }))
+    .filter(({ event }) => !REDUNDANT_RAW_EVENT_TYPES.has(event.type));
+  const omittedRawEventCount = report.events.length - rawEventEntries.length;
+  const rawEvents = rawEventEntries
+    .map(({ event, index }) => {
       const text = pretty(event.data);
       return `<details class="item"><summary><span class="index" aria-hidden="true">${index + 1}</span><span class="type">${escapeHtml(event.type)}</span><span class="size">${formatSize(text.length)}</span></summary><div class="block-body"><button class="copy" type="button" aria-label="Copy event ${index + 1}">Copy</button><pre tabindex="0">${escapeHtml(clampText(text))}</pre></div></details>`;
     })
     .join("");
+  const rawEventNotice = omittedRawEventCount
+    ? `<div class="panel empty">Omitted ${omittedRawEventCount.toLocaleString()} cumulative streaming deltas already represented by completed messages and reasoning.</div>`
+    : "";
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(report.agentName)} · ${escapeHtml(report.sessionId)}</title><style>${REPORT_STYLES}</style></head><body><main>
 <header><p class="eyebrow">Onboarding agent trace</p><h1>${escapeHtml(report.agentName)}</h1><div class="meta"><span class="pill">${escapeHtml(report.sessionId)}</span><span class="pill">${escapeHtml(report.modelId)}</span><span class="pill ${finished ? "done" : "live"}"><span class="dot" aria-hidden="true"></span>${finished ? "Finished" : "In progress"}</span></div></header>
 <div class="metrics"><div class="metric"><small>Events</small><strong>${report.events.length.toLocaleString()}</strong></div><div class="metric"><small>Actions</small><strong>${report.actions.length.toLocaleString()}</strong></div><div class="metric"><small>Failed actions</small><strong>${failedCalls.toLocaleString()}</strong></div><div class="metric"><small>Tokens</small><strong>${totalTokens.toLocaleString()}</strong><span class="sub">in ${report.usage.inputTokens.toLocaleString()} · out ${report.usage.outputTokens.toLocaleString()} · cache ${report.usage.cacheReadTokens.toLocaleString()}</span></div></div>
-<nav aria-label="Report sections" class="tabs" role="tablist">${renderTab("conversation", "Conversation", 2)}${renderTab("tools", "Tools & subagents", report.actions.length)}${renderTab("reasoning", "Reasoning", report.reasoning.length)}${renderTab("raw", "Raw", report.events.length)}</nav>
+<nav aria-label="Report sections" class="tabs" role="tablist">${renderTab("conversation", "Conversation", 2)}${renderTab("tools", "Tools & subagents", report.actions.length)}${renderTab("reasoning", "Reasoning", report.reasoning.length)}${renderTab("raw", "Raw", rawEventEntries.length)}</nav>
 <section aria-labelledby="tab-conversation" id="panel-conversation" role="tabpanel"><article class="panel prompt"><h2>Request</h2><div class="message">${escapeHtml(report.receivedMessage ?? "No request captured")}</div></article><article class="panel answer"><h2>Final response</h2><div class="message">${escapeHtml(report.finalMessage ?? "No final response captured")}</div></article></section>
 <section aria-labelledby="tab-tools" hidden id="panel-tools" role="tabpanel">${toolCards || '<div class="panel empty">No tool calls captured.</div>'}</section>
 <section aria-labelledby="tab-reasoning" hidden id="panel-reasoning" role="tabpanel">${reasoningItems || '<div class="panel empty">No completed reasoning captured.</div>'}</section>
-<section aria-labelledby="tab-raw" hidden id="panel-raw" role="tabpanel">${rawEvents || '<div class="panel empty">No events captured.</div>'}</section>
+<section aria-labelledby="tab-raw" hidden id="panel-raw" role="tabpanel">${rawEventNotice}${rawEvents || '<div class="panel empty">No events captured.</div>'}</section>
 </main><script>${REPORT_SCRIPT}</script></body></html>`;
 }
 

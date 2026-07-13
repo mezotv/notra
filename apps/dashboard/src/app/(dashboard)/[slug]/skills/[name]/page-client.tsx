@@ -79,8 +79,6 @@ export default function PageClient({ slug, name }: PageClientProps) {
     enabled: !!organizationId,
   });
 
-  // Initialize editable state from the query result during render (one-time,
-  // guarded by `original` being null) instead of via a setState-in-effect.
   if (skill && !original) {
     setOriginal({
       name: skill.name,

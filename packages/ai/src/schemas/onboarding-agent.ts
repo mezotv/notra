@@ -1,5 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 
 export const onboardingProfileSchema = z.object({
   companyName: z.string().min(1),

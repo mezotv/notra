@@ -1,5 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 
 export const skillNameInputSchema = z.object({
   name: z.string().min(1),

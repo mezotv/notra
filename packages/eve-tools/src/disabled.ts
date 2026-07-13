@@ -1,3 +1,5 @@
 import { disableTool } from "eve/tools";
 
-export const disabledTool = disableTool();
+export function createDisabledTool() {
+  return disableTool();
+}

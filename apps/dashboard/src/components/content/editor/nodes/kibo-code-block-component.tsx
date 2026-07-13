@@ -84,7 +84,6 @@ export default function KiboCodeBlockComponent({
   const normalizedLanguage = language || "plain";
   const lineCount = Math.max(1, localCode.split("\n").length);
 
-  // Sync local code with prop by adjusting state during render
   if (code !== prevCode) {
     setPrevCode(code);
     setLocalCode(code);

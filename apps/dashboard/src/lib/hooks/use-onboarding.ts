@@ -45,8 +45,6 @@ export function useOnboardingAgentRun(organizationId: string) {
 
   const running = query.data?.running ?? false;
 
-  // When a run finishes, refresh the checklist and suggestions it produced.
-  // Scoped per organization so switching orgs never reads as a run finishing.
   useEffect(() => {
     const previous = previousRunRef.current;
     if (
@@ -105,13 +103,6 @@ export function useDismissOnboardingSuggestion() {
   );
 }
 
-/**
- * Owns the create-from-suggestion flow shared by the automation pages:
- * remember which suggestion opened the create dialog, dismiss it when the
- * dialog succeeds, and forget it when the dialog closes without creating.
- * The pending suggestion is bound to its organization so completing a
- * create after switching organizations never dismisses the wrong one.
- */
 export function useCreateFromSuggestion(organizationId: string | undefined) {
   const [pending, setPending] = useState<PendingOnboardingSuggestion | null>(
     null

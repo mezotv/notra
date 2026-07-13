@@ -184,7 +184,6 @@ export default function BillingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
   const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
-  // Capture once per mount; Date.now() during render is impure.
   const [now] = useState(() => Date.now());
   const invoiceListId = useId();
   const freeFeatureListId = useId();

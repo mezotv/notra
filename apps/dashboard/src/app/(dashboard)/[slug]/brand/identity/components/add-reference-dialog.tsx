@@ -158,7 +158,6 @@ export function AddReferenceDialog({
   const [prevOpen, setPrevOpen] = useState(open);
   const [prevInitialStep, setPrevInitialStep] = useState(initialStep);
 
-  // Adjust state during render when the dialog opens with a requested step.
   if (open !== prevOpen || initialStep !== prevInitialStep) {
     setPrevOpen(open);
     setPrevInitialStep(initialStep);
@@ -287,6 +286,7 @@ function TweetUrlStep({
       await createReference.mutateAsync({
         type: "twitter_post",
         content: tweet.content,
+        sourceUrl: tweet.url,
         metadata: {
           tweetId: tweet.tweetId,
           authorHandle: tweet.authorHandle,
@@ -380,7 +380,6 @@ function ImportXStep({
   const [maxResults, setMaxResults] = useState(20);
   const { remaining } = useReferenceBalance();
 
-  // Derive the clamped value during render instead of syncing state in an effect.
   const maxResultsCap = remaining !== null ? Math.min(20, remaining) : 20;
   const clampedMaxResults = Math.max(1, Math.min(maxResults, maxResultsCap));
   const effectiveMax =
@@ -616,6 +615,7 @@ function CustomTextStep({
 }) {
   const [content, setContent] = useState("");
   const [note, setNote] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [applicableTo, setApplicableTo] = useState<ApplicablePlatform[]>([
     "all",
   ]);
@@ -649,6 +649,7 @@ function CustomTextStep({
       await createReference.mutateAsync({
         type: "custom",
         content: trimmed,
+        sourceUrl: sourceUrl.trim() || null,
         metadata: null,
         note: trimmedNote,
         applicableTo,
@@ -681,6 +682,17 @@ function CustomTextStep({
             placeholder="Paste or write text that represents your writing style..."
             rows={5}
             value={content}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="custom-source-url">Source URL (optional)</Label>
+          <Input
+            id="custom-source-url"
+            onChange={(event) => setSourceUrl(event.target.value)}
+            placeholder="https://example.com/blog/post"
+            type="url"
+            value={sourceUrl}
           />
         </div>
 

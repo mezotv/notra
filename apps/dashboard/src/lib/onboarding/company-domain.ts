@@ -64,9 +64,7 @@ export async function isWebsiteReachable(domain: string): Promise<boolean> {
     if (response.status < SERVER_ERROR_STATUS) {
       return true;
     }
-  } catch {
-    // Some hosts reject HEAD requests; retry with GET before marking unreachable.
-  }
+  } catch {}
 
   try {
     const response = await fetchWebsite(domain, "GET");

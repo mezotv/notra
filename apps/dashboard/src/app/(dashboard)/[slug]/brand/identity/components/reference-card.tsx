@@ -5,6 +5,7 @@ import {
   Delete02Icon,
   Edit02Icon,
   FavouriteIcon,
+  Link04Icon,
   MoreHorizontalIcon,
   RepeatIcon,
   TextIcon,
@@ -86,6 +87,24 @@ function formatRelativeDate(dateStr: string): string {
   }
 
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function SourceLink({ sourceUrl }: { sourceUrl: string | null | undefined }) {
+  if (!sourceUrl) {
+    return null;
+  }
+
+  return (
+    <a
+      className="inline-flex w-fit items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
+      href={sourceUrl}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <HugeiconsIcon className="size-3.5" icon={Link04Icon} />
+      Open source
+    </a>
+  );
 }
 
 export function ReferenceCard({
@@ -361,6 +380,8 @@ function TwitterReferenceCard({
           {formatTweetContent(reference.content)}
         </p>
 
+        <SourceLink sourceUrl={reference.sourceUrl ?? metadata?.url} />
+
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
             {(metadata?.replies ?? 0) > 0 && (
@@ -438,6 +459,8 @@ function CustomReferenceCard({
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
+
+        <SourceLink sourceUrl={reference.sourceUrl} />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">

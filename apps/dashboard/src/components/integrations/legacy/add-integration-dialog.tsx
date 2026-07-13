@@ -147,11 +147,12 @@ export function LegacyAddIntegrationDialog({
     }
   }
 
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (nextOpen) {
       initializedBranchReposRef.current = new Set();
     }
-  }, [open]);
+  };
 
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {
@@ -300,7 +301,7 @@ export function LegacyAddIntegrationDialog({
 
   return (
     <>
-      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {triggerElement}
         <ResponsiveDialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-[520px] [&>*]:min-w-0">
           <ResponsiveDialogHeader>

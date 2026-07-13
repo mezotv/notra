@@ -71,7 +71,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [searchInput, setSearchInput] = useState(search);
   const [prevSearch, setPrevSearch] = useState(search);
 
-  // Adjust state during render when the URL search param changes.
   if (search !== prevSearch) {
     setPrevSearch(search);
     setSearchInput(search);

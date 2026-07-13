@@ -1,5 +1,5 @@
 {
-  "id": "51f8cea1-631e-47fa-b64d-39bf2df46c92",
+  "id": "23701320-4c52-447f-a10a-2eba3e238623",
   "prevId": "9933e51c-0529-469a-84e5-86b374899923",
   "version": "7",
   "dialect": "postgresql",
@@ -1003,6 +1003,30 @@
           "primaryKey": false,
           "notNull": true
         },
+        "source_url": {
+          "name": "source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_snapshot_key": {
+          "name": "source_snapshot_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_content_hash": {
+          "name": "source_content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_captured_at": {
+          "name": "source_captured_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -1068,6 +1092,27 @@
           "columns": [
             {
               "expression": "brand_settings_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "brandReferences_brandSettingsId_sourceUrl_idx": {
+          "name": "brandReferences_brandSettingsId_sourceUrl_idx",
+          "columns": [
+            {
+              "expression": "brand_settings_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_url",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

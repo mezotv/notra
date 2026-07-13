@@ -27,8 +27,6 @@ export default defineTool({
       );
     }
 
-    // Serialize concurrent runs: lock the guideline row so the "check existing
-    // colors then insert" sequence is atomic and cannot produce duplicates.
     return await db.transaction(async (tx) => {
       await tx
         .insert(brandGuidelines)

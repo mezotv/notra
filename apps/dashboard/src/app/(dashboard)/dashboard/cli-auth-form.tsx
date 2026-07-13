@@ -21,7 +21,6 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -30,9 +29,7 @@ import { detectPlatform } from "@/lib/cli-auth/platform";
 import type { CliAuthFormProps } from "@/types/cli-auth/form";
 
 function subscribeToNothing() {
-  return () => {
-    // The platform never changes, so there is nothing to subscribe to.
-  };
+  return () => undefined;
 }
 
 function getServerPlatform(): string {
@@ -50,15 +47,20 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
   );
   const defaultName = platform ? `Notra CLI on ${platform}` : "";
   const [editedName, setEditedName] = useState<string | null>(null);
+  const [authorizationStatus, setAuthorizationStatus] = useState<
+    "idle" | "pending" | "success"
+  >("idle");
   const name = editedName ?? defaultName;
 
   const selectedOrg =
     organizations.find((organization) => organization.id === organizationId) ??
     null;
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(
+  const authorize = async () => {
+    setAuthorizationStatus("pending");
+    let response: Response;
+    try {
+      response = await fetch(
         `/api/cli/sessions/${encodeURIComponent(sessionId)}/authorize`,
         {
           method: "POST",
@@ -66,20 +68,25 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
           body: JSON.stringify({ organizationId, name: name.trim() }),
         }
       );
-      if (!response.ok) {
-        const body = (await response.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        throw new Error(
-          body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
-        );
-      }
-      return response.json();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to authorize CLI"
+      );
+      setAuthorizationStatus("idle");
+      return;
+    }
+    if (!response.ok) {
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      toast.error(
+        body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
+      );
+      setAuthorizationStatus("idle");
+      return;
+    }
+    setAuthorizationStatus("success");
+  };
 
   if (organizations.length === 0) {
     return (
@@ -95,7 +102,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
     );
   }
 
-  if (mutation.isSuccess) {
+  if (authorizationStatus === "success") {
     return (
       <div className="space-y-4 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
@@ -110,7 +117,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
     );
   }
 
-  const isPending = mutation.isPending;
+  const isPending = authorizationStatus === "pending";
   const canSubmit =
     organizationId !== "" && name.trim().length > 0 && !isPending;
 
@@ -120,7 +127,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         if (canSubmit) {
-          mutation.mutate();
+          authorize();
         }
       }}
     >

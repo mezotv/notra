@@ -1,6 +1,5 @@
 import { Schema } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
+import { z } from "zod";
 
 export class OnboardingAgentTriggerError extends Schema.TaggedErrorClass<OnboardingAgentTriggerError>()(
   "OnboardingAgentTriggerError",

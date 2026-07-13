@@ -26,8 +26,6 @@ import {
 
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
-// localStorage-backed collapsed state, exposed as an external store so the
-// component derives it during render instead of syncing it via effects.
 const collapsedListeners = new Set<() => void>();
 
 function subscribeToCollapsedStorage(callback: () => void) {
@@ -53,7 +51,6 @@ export function SidebarOnboarding() {
 
   const { data: agentRun } = useOnboardingAgentRun(orgId);
   const agentRunning = agentRun?.running ?? false;
-  // While the agent works, poll the checklist so steps tick live.
   const { data } = useOnboardingStatus(orgId, {
     refetchInterval: agentRunning ? AGENT_RUN_REFETCH_INTERVAL_MS : false,
   });

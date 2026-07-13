@@ -98,6 +98,7 @@ export const createReferenceSchema = z.object({
   content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH),
   metadata: brandReferenceMetadataSchema.nullable().optional(),
   note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
+  sourceUrl: z.url().max(2048).nullable().optional(),
   applicableTo: applicableToSchema.optional(),
 });
 
@@ -106,6 +107,7 @@ export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;
 export const updateReferenceSchema = z.object({
   note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
   content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH).optional(),
+  sourceUrl: z.url().max(2048).nullable().optional(),
   applicableTo: applicableToSchema.optional(),
 });
 

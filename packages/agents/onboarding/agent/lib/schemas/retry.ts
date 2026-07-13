@@ -1,6 +1,5 @@
 import { Schema } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 
 export const retryErrorSchema = z.looseObject({
   code: z.string().optional(),

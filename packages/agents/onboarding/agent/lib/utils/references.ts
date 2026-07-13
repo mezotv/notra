@@ -49,9 +49,14 @@ export async function addBrandReferences(
       id: randomUUID(),
       metadata: {
         source: "onboarding-agent",
-        ...(reference.sourceUrl ? { sourceUrl: reference.sourceUrl } : {}),
       },
       note: reference.note ?? null,
+      sourceCapturedAt: reference.sourceCapturedAt
+        ? new Date(reference.sourceCapturedAt)
+        : null,
+      sourceContentHash: reference.sourceContentHash ?? null,
+      sourceSnapshotKey: reference.sourceSnapshotKey ?? null,
+      sourceUrl: reference.sourceUrl ?? null,
       type: reference.type,
     }));
     const inserted =

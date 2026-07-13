@@ -922,6 +922,10 @@ export const brandReferences = pgTable(
       .references(() => brandSettings.id, { onDelete: "cascade" }),
     type: referenceTypeEnum("type").notNull(),
     content: text("content").notNull(),
+    sourceUrl: text("source_url"),
+    sourceSnapshotKey: text("source_snapshot_key"),
+    sourceContentHash: text("source_content_hash"),
+    sourceCapturedAt: timestamp("source_captured_at"),
     metadata: jsonb("metadata"),
     note: text("note"),
     supermemoryDocumentId: text("supermemory_document_id"),
@@ -940,6 +944,10 @@ export const brandReferences = pgTable(
   },
   (table) => [
     index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+    index("brandReferences_brandSettingsId_sourceUrl_idx").on(
+      table.brandSettingsId,
+      table.sourceUrl
+    ),
   ]
 );
 

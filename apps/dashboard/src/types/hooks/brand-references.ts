@@ -7,6 +7,10 @@ export interface BrandReference {
   content: string;
   metadata: Record<string, unknown> | null;
   note: string | null;
+  sourceCapturedAt: string | null;
+  sourceContentHash: string | null;
+  sourceSnapshotKey: string | null;
+  sourceUrl: string | null;
   supermemoryDocumentId: string | null;
   supermemoryMemoryId: string | null;
   supermemorySyncedAt: string | null;

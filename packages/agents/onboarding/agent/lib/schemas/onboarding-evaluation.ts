@@ -1,5 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: Zod recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 
 const evaluationReferenceSnapshotSchema = z.object({
   applicableTo: z.array(z.string()),

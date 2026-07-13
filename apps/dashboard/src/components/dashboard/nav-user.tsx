@@ -33,16 +33,14 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
 
-const emptySubscribe = () => () => {
-  // No external store to unsubscribe from; used only for hydration detection.
-};
+const emptySubscribe = () => () => undefined;
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
@@ -60,7 +58,6 @@ export function NavUser() {
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const isRedirectingRef = useRef(false);
   const hasHydrated = useSyncExternalStore(
     emptySubscribe,
     getClientSnapshot,
@@ -74,21 +71,6 @@ export function NavUser() {
   const slug = activeOrganization?.slug ?? "";
 
   useHotkey("D", toggleTheme);
-
-  useEffect(() => {
-    // Wait for hydration and auth resolution before redirecting unauthenticated users.
-    if (
-      !hasHydrated ||
-      isPending ||
-      session?.user ||
-      isRedirectingRef.current
-    ) {
-      return;
-    }
-
-    isRedirectingRef.current = true;
-    router.push("/login");
-  }, [hasHydrated, session?.user, isPending, router]);
 
   async function handleSignOut() {
     setIsSigningOut(true);

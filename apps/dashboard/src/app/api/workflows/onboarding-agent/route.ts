@@ -43,8 +43,6 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
     log.set({ domain, feature: "onboarding_agent", organizationId });
 
     try {
-      // Invite as soon as the workflow starts (right after org creation);
-      // the trigger path already guarantees a non-free-email company domain.
       if (email && organizationSlug) {
         const invite = await context.run("slack-connect-invite", () =>
           sendOnboardingSlackInvite({ email, organizationSlug })

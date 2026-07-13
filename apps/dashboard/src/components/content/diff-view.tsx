@@ -21,7 +21,6 @@ export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
     );
   }
 
-  // `resolvedTheme` is undefined until next-themes hydrates; default to dark.
   const isDark = resolvedTheme !== "light";
 
   return (

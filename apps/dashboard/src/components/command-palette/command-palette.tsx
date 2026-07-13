@@ -76,9 +76,7 @@ const BRAILLE_FRAMES = [
 ] as const;
 const BRAILLE_INTERVAL_MS = 80;
 
-const emptySubscribe = () => () => {
-  // Platform never changes during a session; nothing to unsubscribe.
-};
+const emptySubscribe = () => () => undefined;
 
 let cachedIsApplePlatform: boolean | null = null;
 
@@ -322,12 +320,6 @@ export function CommandPalette() {
     };
   }, []);
 
-  useEffect(() => {
-    if (aiState.status === "navigating" && !isNavigating) {
-      handleOpenChange(false);
-    }
-  }, [aiState.status, isNavigating, handleOpenChange]);
-
   const groupedRoutes = useMemo(() => {
     const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
       Navigation: [],
@@ -356,8 +348,9 @@ export function CommandPalette() {
       startNavigation(() => {
         router.push(path);
       });
+      handleOpenChange(false);
     },
-    [router]
+    [router, handleOpenChange]
   );
 
   const openFeedback = useCallback(() => {

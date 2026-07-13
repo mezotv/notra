@@ -4,9 +4,9 @@ import {
   onboardingSuggestionTypeEnum,
   referenceTypeEnum,
 } from "@notra/db/schema";
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 import { BRAND_PROFILE_FIELDS, MAX_BRAND_COLORS } from "../constants/brand";
+import { SHA256_HEX_REGEX } from "../constants/reference-snapshot";
 import { MEMORY_SEARCH_DEFAULT_LIMIT } from "../constants/supermemory";
 
 export const referenceInputSchema = z.object({
@@ -18,6 +18,9 @@ export const referenceInputSchema = z.object({
     .min(1)
     .optional(),
   sourceUrl: z.url().optional(),
+  sourceSnapshotKey: z.string().min(1).optional(),
+  sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
+  sourceCapturedAt: z.iso.datetime().optional(),
 });
 
 export const addReferenceInputSchema = referenceInputSchema;

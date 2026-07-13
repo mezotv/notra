@@ -53,7 +53,7 @@ export function buildBrandReferenceMemoryContent(
     `Reference type: ${payload.type}`,
     `Applicable platforms: ${applicableTo}`,
     note ? `When to use: ${note}` : null,
-    payload.url ? `Source URL: ${payload.url}` : null,
+    payload.sourceUrl ? `Source URL: ${payload.sourceUrl}` : null,
     payload.tweetId ? `Tweet ID: ${payload.tweetId}` : null,
     "Sample:",
     truncateText(payload.content.trim(), 9500),
@@ -72,11 +72,10 @@ export function buildBrandReferenceMemoryPayload(input: {
     note: string | null;
     applicableTo: string[];
     metadata: Record<string, unknown> | null;
+    sourceUrl: string | null;
   };
 }) {
   const tweetId = input.reference.metadata?.tweetId;
-  const url = input.reference.metadata?.url;
-
   return {
     organizationId: input.organizationId,
     voiceId: input.voiceId,
@@ -86,7 +85,7 @@ export function buildBrandReferenceMemoryPayload(input: {
     note: input.reference.note,
     applicableTo: input.reference.applicableTo,
     tweetId: typeof tweetId === "string" ? tweetId : null,
-    url: typeof url === "string" ? url : null,
+    sourceUrl: input.reference.sourceUrl,
   } satisfies BrandReferenceMemoryPayload;
 }
 
@@ -109,7 +108,7 @@ export async function createBrandReferenceMemory(
             type: payload.type,
             applicableTo: payload.applicableTo,
             tweetId: payload.tweetId ?? undefined,
-            url: payload.url ?? undefined,
+            url: payload.sourceUrl ?? undefined,
           },
         },
       ],

@@ -7,7 +7,7 @@ export interface BrandReferenceMemoryPayload {
   note?: string | null;
   applicableTo: string[];
   tweetId?: string | null;
-  url?: string | null;
+  sourceUrl?: string | null;
 }
 
 export interface BrandReferenceMemoryLink {

@@ -10,7 +10,6 @@ export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  // `resolvedTheme` stays undefined until next-themes hydrates on the client.
   const mounted = resolvedTheme !== undefined;
 
   const isDark = resolvedTheme === "dark";

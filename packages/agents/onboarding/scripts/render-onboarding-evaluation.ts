@@ -129,8 +129,7 @@ for (const [companyIndex, baseline] of state.companies.entries()) {
 
   const referencesHtml = addedReferences
     .map((reference) => {
-      const metadata = record(reference.metadata);
-      const sourceUrl = string(metadata?.sourceUrl);
+      const sourceUrl = string(reference.sourceUrl);
       return `<article class="card reference"><div class="card-head"><span class="badge">${escapeHtml(reference.type)}</span><span>${reference.applicableTo.join(", ")}</span></div><blockquote>${escapeHtml(reference.content)}</blockquote>${reference.note ? `<p>${escapeHtml(reference.note)}</p>` : ""}${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noreferrer">Open source ↗</a>` : ""}</article>`;
     })
     .join("");

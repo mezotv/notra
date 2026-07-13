@@ -51,10 +51,10 @@ The agent is a standalone eve server. It is not part of the dashboard's Next.js 
 | `DASHBOARD_VERCEL_TEAM_SLUG` | prod | Vercel team slug of the dashboard project (OIDC route auth) |
 | `DASHBOARD_VERCEL_PROJECT_NAME` | prod | Vercel project name of the dashboard (OIDC route auth) |
 | `EVE_ONBOARDING_AGENT_PASSWORD` | fallback | Shared secret for HTTP Basic auth when OIDC is not used |
-| `CLOUDFLARE_ACCESS_KEY_ID` | prod | R2 credentials for durable production stream events and reports |
-| `CLOUDFLARE_SECRET_ACCESS_KEY` | prod | R2 credentials for durable production stream events and reports |
+| `CLOUDFLARE_ACCESS_KEY_ID` | prod | R2 credentials for durable production streams, reports, and private reference snapshots |
+| `CLOUDFLARE_SECRET_ACCESS_KEY` | prod | R2 credentials for durable production streams, reports, and private reference snapshots |
 | `CLOUDFLARE_S3_ENDPOINT` | prod | R2 S3 endpoint |
-| `CLOUDFLARE_BUCKET_NAME` | prod | Private bucket containing production traces |
+| `CLOUDFLARE_BUCKET_NAME` | prod | Private bucket containing production traces and full-Markdown reference snapshots |
 
 Model access needs no key on Vercel: the agent uses gateway model ids (`openai/gpt-5.5`, `anthropic/claude-sonnet-5`) which authenticate through the linked project's Vercel AI Gateway OIDC. Off Vercel, set `AI_GATEWAY_API_KEY`.
 

@@ -1,5 +1,4 @@
-// biome-ignore lint/performance/noNamespaceImport: zod v4 recommends the namespace import
-import * as z from "zod";
+import { z } from "zod";
 import {
   SITEMAP_DEFAULT_MAX_LINKS,
   WEB_SEARCH_MAX_RESULTS,

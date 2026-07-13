@@ -56,9 +56,7 @@ async function createEveAgentClient(organizationId: string) {
         auth: { vercelOidc: { token } },
       });
     }
-  } catch {
-    // Fall back to Basic auth outside Vercel or when OIDC is unavailable.
-  }
+  } catch {}
 
   const password = process.env.EVE_ONBOARDING_AGENT_PASSWORD;
   if (password) {
@@ -113,12 +111,6 @@ export async function reserveOnboardingAgentRerun(
   return reserved.length > 0 ? reservedAt : null;
 }
 
-/**
- * Clears an onboarding agent reservation, but only when the current reservation
- * still matches the timestamp token acquired by the caller. This prevents a
- * delayed failure from an older, superseded run from clearing a newer
- * in-progress reservation.
- */
 export async function releaseOnboardingAgentReservation(
   organizationId: string,
   reservedAt: Date
