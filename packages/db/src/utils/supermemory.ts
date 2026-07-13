@@ -254,6 +254,7 @@ export async function searchBrandReferenceMemories(input: {
   const seen = new Set<string>();
 
   return [...currentResults, ...legacyResults]
+    .sort((left, right) => (right.similarity ?? 0) - (left.similarity ?? 0))
     .filter((result) => {
       const resultKey = getBrandReferenceSearchResultKey(result);
 
@@ -266,7 +267,6 @@ export async function searchBrandReferenceMemories(input: {
 
       return false;
     })
-    .sort((left, right) => (right.similarity ?? 0) - (left.similarity ?? 0))
     .slice(0, limit);
 }
 
