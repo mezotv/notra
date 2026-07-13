@@ -79,8 +79,11 @@ function formatCompactNumber(num: number): string {
   return String(num);
 }
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string): string | null {
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -360,6 +363,9 @@ function TwitterReferenceCard({
   const displayName =
     metadata?.authorName ?? (handle ? `@${handle}` : "Unknown");
   const showHandle = Boolean(handle && metadata?.authorName);
+  const createdAtLabel = metadata?.createdAt
+    ? formatRelativeDate(metadata.createdAt)
+    : null;
 
   return (
     <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
@@ -387,7 +393,7 @@ function TwitterReferenceCard({
                     @{handle}
                   </span>
                 )}
-                {metadata?.createdAt && (
+                {createdAtLabel && (
                   <>
                     {showHandle && (
                       <span className="text-muted-foreground/50 text-xs">
@@ -398,7 +404,7 @@ function TwitterReferenceCard({
                       className="shrink-0 text-muted-foreground/70 text-xs"
                       suppressHydrationWarning
                     >
-                      {formatRelativeDate(metadata.createdAt)}
+                      {createdAtLabel}
                     </span>
                   </>
                 )}
@@ -469,7 +475,9 @@ function BlogReferenceCard({
     reference.sourceUrl ?? getMetadataString(reference.metadata, "url");
   const domain = getReferenceDomain(sourceUrl);
   const title = getMetadataString(reference.metadata, "title");
+  const authorName = getMetadataString(reference.metadata, "authorName");
   const publishedAt = getMetadataString(reference.metadata, "createdAt");
+  const publishedAtLabel = publishedAt ? formatRelativeDate(publishedAt) : null;
   const showDomainLine = Boolean(domain && title);
 
   return (
@@ -493,14 +501,26 @@ function BlogReferenceCard({
                 {title ?? domain ?? "Blog post"}
               </span>
               <div className="flex items-center gap-1">
-                {showDomainLine && (
+                {authorName && (
                   <span className="truncate text-muted-foreground text-xs">
-                    {domain}
+                    {authorName}
                   </span>
                 )}
-                {publishedAt && (
+                {showDomainLine && (
                   <>
-                    {showDomainLine && (
+                    {authorName && (
+                      <span className="text-muted-foreground/50 text-xs">
+                        ·
+                      </span>
+                    )}
+                    <span className="truncate text-muted-foreground text-xs">
+                      {domain}
+                    </span>
+                  </>
+                )}
+                {publishedAtLabel && (
+                  <>
+                    {(authorName || showDomainLine) && (
                       <span className="text-muted-foreground/50 text-xs">
                         ·
                       </span>
@@ -509,7 +529,7 @@ function BlogReferenceCard({
                       className="shrink-0 text-muted-foreground/70 text-xs"
                       suppressHydrationWarning
                     >
-                      {formatRelativeDate(publishedAt)}
+                      {publishedAtLabel}
                     </span>
                   </>
                 )}

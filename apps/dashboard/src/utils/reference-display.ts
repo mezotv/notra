@@ -40,6 +40,9 @@ export function getTwitterHandleFromUrl(
   }
   try {
     const parsed = new URL(sourceUrl);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
     const host = parsed.hostname.replace(WWW_PREFIX_REGEX, "");
     if (!TWITTER_HOSTS.has(host)) {
       return null;

@@ -10,34 +10,42 @@ import { BRAND_PROFILE_FIELDS, MAX_BRAND_COLORS } from "../constants/brand";
 import { SHA256_HEX_REGEX } from "../constants/reference-snapshot";
 import { MEMORY_SEARCH_DEFAULT_LIMIT } from "../constants/supermemory";
 
-export const referenceInputSchema = z.object({
-  type: z.enum(referenceTypeEnum.enumValues),
-  content: z.string().min(1),
-  note: z.string().min(1).optional(),
-  applicableTo: z
-    .array(z.enum(applicablePlatformEnum.enumValues))
-    .min(1)
-    .optional(),
-  sourceUrl: z
-    .url({ protocol: /^https?$/ })
-    .max(2048)
-    .optional(),
-  sourceSnapshotKey: z.string().min(1).optional(),
-  sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
-  sourceCapturedAt: z.iso.datetime().optional(),
-  authorName: z.string().min(1).optional(),
-  authorHandle: z.string().min(1).optional(),
-  title: z.string().min(1).optional(),
-  publishedAt: z.iso.datetime().optional(),
-  likes: z.number().int().min(0).optional(),
-  retweets: z.number().int().min(0).optional(),
-  replies: z.number().int().min(0).optional(),
-});
+export const referenceInputSchema = z
+  .object({
+    type: z.enum(referenceTypeEnum.enumValues),
+    content: z.string().min(1),
+    note: z.string().min(1).optional(),
+    applicableTo: z
+      .array(z.enum(applicablePlatformEnum.enumValues))
+      .min(1)
+      .optional(),
+    sourceUrl: z
+      .url({ protocol: /^https?$/ })
+      .max(2048)
+      .optional(),
+    sourceSnapshotKey: z.string().min(1).optional(),
+    sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
+    sourceCapturedAt: z.iso.datetime().optional(),
+    authorName: z.string().min(1).nullish(),
+    authorHandle: z.string().min(1).nullish(),
+    title: z.string().min(1).nullish(),
+    publishedAt: z.iso.datetime().nullish(),
+    likes: z.number().int().min(0).nullish(),
+    retweets: z.number().int().min(0).nullish(),
+    replies: z.number().int().min(0).nullish(),
+  })
+  .refine(
+    (reference) => reference.type === "custom" || Boolean(reference.sourceUrl),
+    {
+      message: "sourceUrl is required for non-custom references",
+      path: ["sourceUrl"],
+    }
+  );
 
 export const addReferenceInputSchema = referenceInputSchema;
 
 export const addReferencesInputSchema = z.object({
-  references: z.array(referenceInputSchema).min(1).max(50),
+  references: z.array(referenceInputSchema).min(1),
 });
 
 export const addSuggestionInputSchema = z.object({

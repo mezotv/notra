@@ -27,13 +27,13 @@ function buildReferenceMetadata(reference: ReferenceInput) {
   if (reference.publishedAt) {
     metadata.createdAt = reference.publishedAt;
   }
-  if (reference.likes !== undefined) {
+  if (reference.likes != null) {
     metadata.likes = reference.likes;
   }
-  if (reference.retweets !== undefined) {
+  if (reference.retweets != null) {
     metadata.retweets = reference.retweets;
   }
-  if (reference.replies !== undefined) {
+  if (reference.replies != null) {
     metadata.replies = reference.replies;
   }
   return metadata;

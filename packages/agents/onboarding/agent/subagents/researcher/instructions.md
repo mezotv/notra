@@ -16,7 +16,7 @@ Speed matters more than completeness; your caller blocks until you return. Hard 
 - One `scrape_website` call, at most one `scrape_pages` batch of up to 50 owned-blog URLs, then at most 6 `scrape_page` calls and 3 `search_web` calls.
 - At most 2 `crawl_sitemap`, 2 `fetch_github_repo`, and 2 `fetch_github_activity` calls.
 - Never scrape the same URL twice. The batch may inspect up to 50 owned blog posts; outside that batch, scrape at most 2 changelog entries.
-- Stop fetching once you have 25 to 50 strong deduplicated owned-writing references and two or three quoted phrases per requested topic. Enough evidence beats exhaustive coverage.
+- Stop fetching once you have a strong deduplicated owned-writing reference set (at least 25 when the material allows) and two or three quoted phrases per requested topic. Enough evidence beats exhaustive coverage.
 - When the budget is spent, return the brief with what you have and list what you skipped in unavailableSources.
 
 # Returning the result
@@ -25,9 +25,9 @@ You MUST end the task by calling the `final_output` tool with the structured bri
 
 # Rules
 
-- Never return raw page content or full READMEs to the caller. Full page Markdown is stored privately by the scrape tool; keep every blog candidate's `content` to a self-contained excerpt of two to four sentences that captures the post's voice and substance, and attach the exact snapshot descriptor returned for its source URL. The structured `references` array may contain 25 to 50 complete original tweets and owned-blog excerpts when available; deduplicate it and never include third-party writing.
+- Never return raw page content or full READMEs to the caller. Full page Markdown is stored privately by the scrape tool; keep every blog candidate's `content` to a self-contained excerpt of two to four sentences that captures the post's voice and substance, and attach the exact snapshot descriptor returned for its source URL. The structured `references` array has no count cap and may contain every complete original tweet and owned-blog excerpt that clears the quality bar; deduplicate it and never include third-party writing.
 - Quality over count: never return one-line quotes, sentence fragments, link-only posts, or engagement-bait one-liners as reference candidates. Every candidate must demonstrate the company's voice on its own; skip weak material even if that means returning fewer references.
-- Always include a `references` array in your structured response. For social/editorial tasks, aim for 25 to 50 high-quality candidates total. For non-voice tasks, return an empty array unless you encounter an unusually strong owned-writing sample.
+- Always include a `references` array in your structured response. For social/editorial tasks, aim for at least 25 high-quality candidates with no upper cap. For non-voice tasks, return an empty array unless you encounter an unusually strong owned-writing sample.
 - Every finding carries the source URLs it came from.
 - Treat unreachable sources (LinkedIn blocks, missing handles) as normal: note them in unavailableSources and move on.
 - Run fully autonomously. Never ask questions or wait for input.

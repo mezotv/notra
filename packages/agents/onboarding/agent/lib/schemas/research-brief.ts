@@ -11,28 +11,26 @@ export const researchBriefSchema = z.object({
       sources: z.array(z.string().min(1)).min(1),
     })
   ),
-  references: z
-    .array(
-      z.object({
-        type: z.enum(["twitter_post", "linkedin_post", "blog_post"]),
-        content: z.string().min(1),
-        sourceUrl: z.url({ protocol: /^https?$/ }).max(2048),
-        sourceSnapshotKey: z.string().min(1).optional(),
-        sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
-        sourceCapturedAt: z.iso.datetime().optional(),
-        authorName: z.string().min(1).optional(),
-        authorHandle: z.string().min(1).optional(),
-        title: z.string().min(1).optional(),
-        publishedAt: z.iso.datetime().optional(),
-        likes: z.number().int().min(0).optional(),
-        retweets: z.number().int().min(0).optional(),
-        replies: z.number().int().min(0).optional(),
-        note: z.string().min(1),
-        applicableTo: z
-          .array(z.enum(["twitter", "linkedin", "blog", "all"]))
-          .min(1),
-      })
-    )
-    .max(50),
+  references: z.array(
+    z.object({
+      type: z.enum(["twitter_post", "linkedin_post", "blog_post"]),
+      content: z.string().min(1),
+      sourceUrl: z.url({ protocol: /^https?$/ }).max(2048),
+      sourceSnapshotKey: z.string().min(1).optional(),
+      sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
+      sourceCapturedAt: z.iso.datetime().optional(),
+      authorName: z.string().min(1).nullish(),
+      authorHandle: z.string().min(1).nullish(),
+      title: z.string().min(1).nullish(),
+      publishedAt: z.iso.datetime().nullish(),
+      likes: z.number().int().min(0).nullish(),
+      retweets: z.number().int().min(0).nullish(),
+      replies: z.number().int().min(0).nullish(),
+      note: z.string().min(1),
+      applicableTo: z
+        .array(z.enum(["twitter", "linkedin", "blog", "all"]))
+        .min(1),
+    })
+  ),
   unavailableSources: z.array(z.string()),
 });
