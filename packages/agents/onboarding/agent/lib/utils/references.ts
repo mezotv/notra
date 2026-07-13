@@ -13,6 +13,32 @@ function referenceKey(reference: Pick<ReferenceInput, "content" | "type">) {
   return `${reference.type}\u0000${reference.content}`;
 }
 
+function buildReferenceMetadata(reference: ReferenceInput) {
+  const metadata: Record<string, unknown> = { source: "onboarding-agent" };
+  if (reference.authorName) {
+    metadata.authorName = reference.authorName;
+  }
+  if (reference.authorHandle) {
+    metadata.authorHandle = reference.authorHandle;
+  }
+  if (reference.title) {
+    metadata.title = reference.title;
+  }
+  if (reference.publishedAt) {
+    metadata.createdAt = reference.publishedAt;
+  }
+  if (reference.likes !== undefined) {
+    metadata.likes = reference.likes;
+  }
+  if (reference.retweets !== undefined) {
+    metadata.retweets = reference.retweets;
+  }
+  if (reference.replies !== undefined) {
+    metadata.replies = reference.replies;
+  }
+  return metadata;
+}
+
 function getCanonicalSourceUrl(sourceUrl: string | null | undefined) {
   if (!sourceUrl) {
     return null;
@@ -103,9 +129,7 @@ export async function addBrandReferences(
       brandSettingsId: settings.id,
       content: reference.content,
       id: randomUUID(),
-      metadata: {
-        source: "onboarding-agent",
-      },
+      metadata: buildReferenceMetadata(reference),
       note: reference.note ?? null,
       sourceCapturedAt: reference.sourceCapturedAt
         ? new Date(reference.sourceCapturedAt)

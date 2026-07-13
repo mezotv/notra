@@ -31,6 +31,13 @@ export interface TweetMetadata {
   createdAt?: string;
 }
 
+export interface BlogMetadata {
+  authorName?: string;
+  title?: string;
+  url?: string;
+  createdAt?: string;
+}
+
 export interface ReferenceCardProps {
   reference: BrandReference;
   onDelete: (id: string) => void;

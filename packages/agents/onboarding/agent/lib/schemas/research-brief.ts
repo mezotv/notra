@@ -20,6 +20,13 @@ export const researchBriefSchema = z.object({
         sourceSnapshotKey: z.string().min(1).optional(),
         sourceContentHash: z.string().regex(SHA256_HEX_REGEX).optional(),
         sourceCapturedAt: z.iso.datetime().optional(),
+        authorName: z.string().min(1).optional(),
+        authorHandle: z.string().min(1).optional(),
+        title: z.string().min(1).optional(),
+        publishedAt: z.iso.datetime().optional(),
+        likes: z.number().int().min(0).optional(),
+        retweets: z.number().int().min(0).optional(),
+        replies: z.number().int().min(0).optional(),
         note: z.string().min(1),
         applicableTo: z
           .array(z.enum(["twitter", "linkedin", "blog", "all"]))
