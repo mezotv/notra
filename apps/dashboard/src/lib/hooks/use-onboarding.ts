@@ -114,12 +114,12 @@ export function useOnboardingAgentBannerDismissal(organizationId: string) {
     () => localStorage.getItem(storageKey) === "true",
     () => false
   );
-  const dismiss = useCallback(() => {
+  const dismiss = () => {
     localStorage.setItem(storageKey, "true");
     for (const listener of bannerDismissListeners) {
       listener();
     }
-  }, [storageKey]);
+  };
   return { dismiss, dismissed };
 }
 

@@ -18,11 +18,11 @@ import {
   EVE_SESSION_TASK_MODE,
   TRAILING_SLASH_PATTERN,
 } from "@/constants/onboarding-agent";
-import { buildOnboardingAgentMessage } from "@/lib/onboarding/onboarding-agent-message";
 import {
   resolveCompanyDomain,
   resolveReachableWebsiteUrl,
 } from "@/lib/onboarding/company-domain";
+import { buildOnboardingAgentMessage } from "@/lib/onboarding/onboarding-agent-message";
 import {
   eveCreateSessionResponseSchema,
   OnboardingAgentCompensationError,
