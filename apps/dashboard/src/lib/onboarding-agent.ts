@@ -7,7 +7,7 @@ import { createSlackConnectChannelWithInvite } from "@notra/ai/integrations/slac
 import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { buildExternalChannelName } from "@notra/ai/utils/slack";
 import { db } from "@notra/db/drizzle";
-import { organizations } from "@notra/db/schema";
+import { brandSettings, organizations } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { Effect } from "effect";
@@ -20,15 +20,22 @@ import {
 } from "@/constants/onboarding-agent";
 import { buildOnboardingAgentMessage } from "@/lib/debug/onboarding-agent";
 import {
+  resolveCompanyDomain,
+  resolveReachableWebsiteUrl,
+} from "@/lib/onboarding/company-domain";
+import {
   eveCreateSessionResponseSchema,
   OnboardingAgentCompensationError,
   OnboardingAgentTriggerError,
 } from "@/schemas/onboarding-agent";
 import type {
+  EnsureDefaultBrandIdentityInput,
   LaunchReservedOnboardingAgentInput,
   OnboardingSlackInviteInput,
   OnboardingSlackInviteResult,
+  SelfServeOnboardingAgentResult,
   StartOnboardingAgentSessionInput,
+  StartSelfServeOnboardingAgentInput,
 } from "@/types/onboarding-agent";
 
 function getEveOnboardingAgentUrl() {
@@ -185,6 +192,103 @@ export async function sendOnboardingSlackInvite({
     );
     return { invited: false };
   }
+}
+
+export async function ensureDefaultBrandIdentity({
+  companyName,
+  organizationId,
+  websiteUrl,
+}: EnsureDefaultBrandIdentityInput) {
+  const existing = await db.query.brandSettings.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(brandSettings.organizationId, organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
+  });
+  if (existing) {
+    return;
+  }
+
+  await db
+    .insert(brandSettings)
+    .values({
+      companyName,
+      id: crypto.randomUUID(),
+      isDefault: true,
+      name: companyName,
+      organizationId,
+      websiteUrl,
+    })
+    .onConflictDoNothing();
+
+  const created = await db.query.brandSettings.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(brandSettings.organizationId, organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
+  });
+  if (!created) {
+    throw new Error("Failed to create the default brand identity");
+  }
+}
+
+export async function startSelfServeOnboardingAgent({
+  email,
+  organizationId,
+}: StartSelfServeOnboardingAgentInput): Promise<SelfServeOnboardingAgentResult> {
+  const organization = await db.query.organizations.findFirst({
+    columns: { name: true, onboardingAgentRan: true },
+    where: eq(organizations.id, organizationId),
+  });
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+  if (organization.onboardingAgentRan) {
+    return { reason: "already-ran", started: false };
+  }
+
+  const brand = await db.query.brandSettings.findFirst({
+    columns: { websiteUrl: true },
+    where: and(
+      eq(brandSettings.organizationId, organizationId),
+      eq(brandSettings.isDefault, true)
+    ),
+  });
+
+  const resolution = resolveCompanyDomain({
+    email,
+    websiteUrl: brand?.websiteUrl ?? undefined,
+  });
+  if (!resolution) {
+    return { reason: "no-company-domain", started: false };
+  }
+
+  const websiteUrl = await resolveReachableWebsiteUrl(resolution.domain);
+  if (!websiteUrl) {
+    return { reason: "website-unreachable", started: false };
+  }
+
+  await ensureDefaultBrandIdentity({
+    companyName: organization.name,
+    organizationId,
+    websiteUrl,
+  });
+
+  const reservedAt = await reserveInitialOnboardingAgentRun(organizationId);
+  if (!reservedAt) {
+    return { reason: "already-running", started: false };
+  }
+
+  await Effect.runPromise(
+    launchReservedOnboardingAgent({
+      payload: { domain: resolution.domain, organizationId },
+      reservedAt,
+    })
+  );
+
+  return { started: true };
 }
 
 export async function getOnboardingAgentState(organizationId: string) {

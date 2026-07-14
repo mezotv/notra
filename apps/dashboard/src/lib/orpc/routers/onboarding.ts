@@ -9,15 +9,22 @@ import {
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { AGENT_RUN_HARD_LIMIT_MS } from "@/constants/onboarding-agent";
+import {
+  AGENT_RUN_HARD_LIMIT_MS,
+  SELF_SERVE_AGENT_ERROR_MESSAGES,
+} from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { getOnboardingAgentState } from "@/lib/onboarding-agent";
+import {
+  getOnboardingAgentState,
+  startSelfServeOnboardingAgent,
+} from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
 } from "@/schemas/onboarding-agent";
+import { ratelimit } from "@/utils/ratelimit";
 
 const onboardingInputSchema = z.object({
   organizationId: organizationIdSchema,
@@ -102,6 +109,42 @@ export const onboardingRouter = {
         Date.now() - startedAt.getTime() < AGENT_RUN_HARD_LIMIT_MS;
 
       return { ran, running, startedAt };
+    }),
+  runAgent: authorizedProcedure
+    .input(onboardingInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const { success: withinLimit } = await ratelimit.onboardingAgent.limit(
+        input.organizationId
+      );
+      if (!withinLimit) {
+        throw new ORPCError("TOO_MANY_REQUESTS", {
+          message:
+            "Too many onboarding agent requests. Please try again shortly.",
+        });
+      }
+
+      const result = await startSelfServeOnboardingAgent({
+        email: context.user.email,
+        organizationId: input.organizationId,
+      });
+
+      if (
+        !result.started &&
+        (result.reason === "no-company-domain" ||
+          result.reason === "website-unreachable")
+      ) {
+        throw new ORPCError("BAD_REQUEST", {
+          message: SELF_SERVE_AGENT_ERROR_MESSAGES[result.reason],
+        });
+      }
+
+      return { started: result.started };
     }),
   suggestions: authorizedProcedure
     .input(listSuggestionsInputSchema)

@@ -17,6 +17,7 @@ import {
   resolveReachableWebsiteUrl,
 } from "@/lib/onboarding/company-domain";
 import {
+  ensureDefaultBrandIdentity,
   launchReservedOnboardingAgent,
   reserveInitialOnboardingAgentRun,
 } from "@/lib/onboarding-agent";
@@ -32,7 +33,6 @@ import type {
   SaveOnboardingAttributionResult,
 } from "@/types/onboarding";
 import type {
-  EnsureDefaultBrandIdentityInput,
   OnboardingAgentSetupTaskInput,
   TriggerOnboardingAgentSetupInput,
   TriggerOnboardingAgentSetupResult,
@@ -40,46 +40,6 @@ import type {
 import { ratelimit } from "@/utils/ratelimit";
 
 const ANALYSIS_LOCK_TTL_SECONDS = 60;
-
-async function ensureDefaultBrandIdentity({
-  companyName,
-  organizationId,
-  websiteUrl,
-}: EnsureDefaultBrandIdentityInput) {
-  const existing = await db.query.brandSettings.findFirst({
-    columns: { id: true },
-    where: and(
-      eq(brandSettings.organizationId, organizationId),
-      eq(brandSettings.isDefault, true)
-    ),
-  });
-  if (existing) {
-    return;
-  }
-
-  await db
-    .insert(brandSettings)
-    .values({
-      companyName,
-      id: crypto.randomUUID(),
-      isDefault: true,
-      name: companyName,
-      organizationId,
-      websiteUrl,
-    })
-    .onConflictDoNothing();
-
-  const created = await db.query.brandSettings.findFirst({
-    columns: { id: true },
-    where: and(
-      eq(brandSettings.organizationId, organizationId),
-      eq(brandSettings.isDefault, true)
-    ),
-  });
-  if (!created) {
-    throw new Error("Failed to create the default brand identity");
-  }
-}
 
 async function tryAcquireBrandAnalysisLock(organizationId: string) {
   if (!redis) {

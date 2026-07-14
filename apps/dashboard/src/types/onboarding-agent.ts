@@ -41,6 +41,21 @@ export interface OnboardingSlackInviteResult {
   channelId?: string;
 }
 
+export interface StartSelfServeOnboardingAgentInput {
+  email: string;
+  organizationId: string;
+}
+
+export type SelfServeOnboardingAgentBlockedReason =
+  | "already-ran"
+  | "already-running"
+  | "no-company-domain"
+  | "website-unreachable";
+
+export type SelfServeOnboardingAgentResult =
+  | { started: true }
+  | { started: false; reason: SelfServeOnboardingAgentBlockedReason };
+
 export interface LaunchReservedOnboardingAgentInput {
   payload: Omit<OnboardingAgentWorkflowPayload, "reservedAt">;
   reservedAt: Date;

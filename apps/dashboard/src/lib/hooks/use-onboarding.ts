@@ -1,12 +1,19 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   AGENT_RUN_REFETCH_INTERVAL_MS,
   AGENT_RUN_STALE_TIME_MS,
   SUGGESTIONS_STALE_TIME_MS,
 } from "@/constants/onboarding-agent";
+import { localStorageKeys } from "@/constants/storage";
 import type {
   OnboardingRunSnapshot,
   OnboardingStatus,
@@ -84,6 +91,49 @@ export function useOnboardingSuggestions(
       refetchInterval: options?.agentRunning
         ? AGENT_RUN_REFETCH_INTERVAL_MS
         : false,
+    })
+  );
+}
+
+const bannerDismissListeners = new Set<() => void>();
+
+function subscribeToBannerDismissal(callback: () => void) {
+  bannerDismissListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    bannerDismissListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+export function useOnboardingAgentBannerDismissal(organizationId: string) {
+  const storageKey =
+    localStorageKeys.onboardingAgentBannerDismissed(organizationId);
+  const dismissed = useSyncExternalStore(
+    subscribeToBannerDismissal,
+    () => localStorage.getItem(storageKey) === "true",
+    () => false
+  );
+  const dismiss = useCallback(() => {
+    localStorage.setItem(storageKey, "true");
+    for (const listener of bannerDismissListeners) {
+      listener();
+    }
+  }, [storageKey]);
+  return { dismiss, dismissed };
+}
+
+export function useRunOnboardingAgent() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    dashboardOrpc.onboarding.runAgent.mutationOptions({
+      onSettled: (_data, _error, variables) => {
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.onboarding.agentRun.queryKey({
+            input: { organizationId: variables.organizationId },
+          }),
+        });
+      },
     })
   );
 }
