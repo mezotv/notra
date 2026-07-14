@@ -56,7 +56,13 @@
     "FEEDBACK_EMAIL_TO",
     "OSS_PROGRAM_EMAIL_TO",
     "UPSTASH_BOX_API_KEY",
-    "TCC_API_KEY"
+    "SLACK_BOT_TOKEN",
+    "TCC_API_KEY",
+    "EVE_ONBOARDING_AGENT_URL",
+    "EVE_ONBOARDING_AGENT_PASSWORD",
+    "DASHBOARD_VERCEL_TEAM_SLUG",
+    "DASHBOARD_VERCEL_PROJECT_NAME",
+    "DASHBOARD_VERCEL_ENVIRONMENT"
   ],
   "envMode": "strict",
   "tasks": {
@@ -67,6 +73,10 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
+    },
+    "@notra/onboarding-agent#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".output/**", ".eve/compile/**", ".eve/discovery/**"]
     },
     "check-types": {
       "dependsOn": ["transit"]

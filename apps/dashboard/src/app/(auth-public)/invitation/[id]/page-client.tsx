@@ -38,6 +38,7 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import { errorMessageOr } from "@/lib/utils";
 import type {
   InvitationAction,
   InvitationPageClientProps,
@@ -140,7 +141,10 @@ function PageClient({
       if (res.error) {
         dispatch({
           type: "errorChanged",
-          error: res.error.message || "Failed to reject invitation",
+          error: errorMessageOr(
+            res.error.message,
+            "Failed to reject invitation"
+          ),
         });
         dispatch({ type: "rejectFinished" });
         return;

@@ -1,0 +1,4 @@
+export const SUPERMEMORY_BASE_URL = "https://api.supermemory.ai";
+export const SUPERMEMORY_REQUEST_TIMEOUT_MS = 15_000;
+export const SUPERMEMORY_CUSTOM_ID_HASH_LENGTH = 32;
+export const SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH = 32;

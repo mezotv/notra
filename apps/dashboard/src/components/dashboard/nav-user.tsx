@@ -33,12 +33,16 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
+
+const emptySubscribe = () => () => undefined;
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function NavUser() {
   const router = useRouter();
@@ -54,8 +58,11 @@ export function NavUser() {
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const hasHydrated = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  );
   const { activeOrganization } = useOrganizationsContext();
   const { hidePersonalData } = useHidePersonalData();
 
@@ -64,20 +71,6 @@ export function NavUser() {
   const slug = activeOrganization?.slug ?? "";
 
   useHotkey("D", toggleTheme);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    // Wait for hydration and auth resolution before redirecting unauthenticated users.
-    if (!hasHydrated || isPending || user || isRedirecting) {
-      return;
-    }
-
-    setIsRedirecting(true);
-    router.push("/login");
-  }, [hasHydrated, user, isPending, isRedirecting, router]);
 
   async function handleSignOut() {
     setIsSigningOut(true);

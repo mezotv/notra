@@ -1,6 +1,7 @@
 import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
 import type { BrandGuidelinesWorkflowPayload } from "../types/brand-guidelines";
+import type { OnboardingAgentWorkflowPayload } from "../types/onboarding-agent";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -191,6 +192,22 @@ export async function triggerBrandGuidelines(
   const appUrl = getAppUrl();
 
   const destination = `${appUrl}/api/workflows/brand-guidelines`;
+
+  const result = await client.trigger({
+    url: destination,
+    body: payload,
+  });
+
+  return result.workflowRunId;
+}
+
+export async function triggerOnboardingAgent(
+  payload: OnboardingAgentWorkflowPayload
+) {
+  const client = getWorkflowClient();
+  const appUrl = getAppUrl();
+
+  const destination = `${appUrl}/api/workflows/onboarding-agent`;
 
   const result = await client.trigger({
     url: destination,

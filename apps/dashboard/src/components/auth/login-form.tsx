@@ -16,6 +16,7 @@ import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { AuthMethod } from "@/types/auth/method";
 
 export interface LoginFormProps {
@@ -86,9 +87,11 @@ export function LoginForm({
       });
 
       if (result.error) {
-        toast.error(
-          result.error.message ?? "Failed to sign in. Please try again."
+        const message = errorMessageOr(
+          result.error.message,
+          "Failed to sign in. Please try again."
         );
+        toast.error(message);
         authInFlightRef.current = false;
         setAuthMethod(null);
         return;
@@ -98,7 +101,7 @@ export function LoginForm({
       if (onSuccess) {
         onSuccess();
       } else {
-        window.location.href = callbackURL;
+        window.location.assign(callbackURL);
       }
     } catch (error) {
       console.error("Email login error:", error);

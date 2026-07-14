@@ -40,7 +40,11 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/agents/*"
   ],
-  "packageManager": "bun@1.3.9"
+  "packageManager": "bun@1.3.9",
+  "overrides": {
+    "nf3": "0.3.17"
+  }
 }

@@ -7,12 +7,17 @@ export interface BrandReferenceMemoryPayload {
   note?: string | null;
   applicableTo: string[];
   tweetId?: string | null;
-  url?: string | null;
+  sourceUrl?: string | null;
 }
 
 export interface BrandReferenceMemoryLink {
   documentId: string | null;
   memoryId: string | null;
+}
+
+export interface DeleteBrandReferenceMemoryInput {
+  customId?: string | null;
+  documentId?: string | null;
 }
 
 export interface SupermemorySearchResult {

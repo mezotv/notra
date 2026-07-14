@@ -11,6 +11,7 @@ export interface ReferenceMemoryRecord {
   note: string | null;
   applicableTo: string[];
   metadata: Record<string, unknown> | null;
+  sourceUrl: string | null;
   supermemoryDocumentId: string | null;
 }
 

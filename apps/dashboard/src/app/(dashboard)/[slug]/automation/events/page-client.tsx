@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
+import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
@@ -37,6 +38,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useCreateFromSuggestion } from "@/lib/hooks/use-onboarding";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
@@ -88,6 +90,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTrigger, setEditTrigger] = useState<Trigger | null>(null);
+  const { beginCreate, cancelCreate, handleCreateSuccess, pendingSuggestion } =
+    useCreateFromSuggestion(organizationId);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
@@ -217,14 +221,20 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <CreateEventTriggerDialog
-            onOpenChange={setCreateOpen}
-            onSuccess={() =>
+            onOpenChange={(open) => {
+              setCreateOpen(open);
+              if (!open) {
+                cancelCreate(pendingSuggestion);
+              }
+            }}
+            onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.events.list.queryKey({
                   input: { organizationId: organizationId ?? "" },
                 }),
-              })
-            }
+              });
+              handleCreateSuccess(pendingSuggestion);
+            }}
             open={createOpen}
             organizationId={organizationId ?? ""}
             trigger={
@@ -236,6 +246,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
           />
         </div>
+
+        {organizationId && (
+          <OnboardingSuggestions
+            onCreate={(suggestionId) => {
+              beginCreate(suggestionId);
+              setCreateOpen(true);
+            }}
+            organizationId={organizationId}
+            type="event_automation"
+          />
+        )}
 
         {isPending && <EventsPageSkeleton />}
 

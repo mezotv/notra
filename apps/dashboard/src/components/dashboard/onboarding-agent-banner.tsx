@@ -1,0 +1,152 @@
+"use client";
+
+import {
+  Cancel01Icon,
+  MinusSignIcon,
+  PlusSignIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
+import { Dithering } from "@paper-design/shaders-react";
+import { Loader2Icon } from "lucide-react";
+import { useReducedMotion } from "motion/react";
+import { useTheme } from "next-themes";
+import { useState } from "react";
+import { Button } from "@/components/button";
+import {
+  EVE_BANNER_COLORS_DARK,
+  EVE_BANNER_COLORS_LIGHT,
+  EVE_BANNER_DITHER_SCALE,
+  EVE_BANNER_DITHER_SHAPE,
+  EVE_BANNER_DITHER_SIZE,
+  EVE_BANNER_DITHER_SPEED,
+  EVE_BANNER_DITHER_TYPE,
+  EVE_SETUP_CONS,
+  EVE_SETUP_PROS,
+} from "@/constants/onboarding-agent";
+import type { OnboardingAgentBannerProps } from "@/types/components/onboarding-agent-banner";
+
+export function OnboardingAgentBanner({
+  onDismiss,
+  onStart,
+  starting,
+  state,
+}: OnboardingAgentBannerProps) {
+  const { resolvedTheme } = useTheme();
+  const shouldReduceMotion = useReducedMotion();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const colors =
+    resolvedTheme === "dark" ? EVE_BANNER_COLORS_DARK : EVE_BANNER_COLORS_LIGHT;
+
+  const handleConfirm = () => {
+    setConfirmOpen(false);
+    onStart();
+  };
+
+  return (
+    <div className="relative isolate flex h-(--eve-banner-height) w-full shrink-0 items-center justify-center overflow-hidden">
+      <Dithering
+        className="-z-10 absolute inset-0 h-full w-full"
+        colorBack={colors.colorBack}
+        colorFront={colors.colorFront}
+        scale={EVE_BANNER_DITHER_SCALE}
+        shape={EVE_BANNER_DITHER_SHAPE}
+        size={EVE_BANNER_DITHER_SIZE}
+        speed={shouldReduceMotion ? 0 : EVE_BANNER_DITHER_SPEED}
+        type={EVE_BANNER_DITHER_TYPE}
+      />
+      {state === "running" ? (
+        <output className="flex items-center gap-2 text-foreground">
+          <Loader2Icon
+            aria-hidden
+            className="size-4 animate-spin motion-reduce:animate-none"
+          />
+          <span className="font-medium text-sm">
+            We are setting up your workspace
+          </span>
+        </output>
+      ) : (
+        <div className="flex items-center gap-3 text-foreground">
+          <span className="font-medium text-sm">
+            We can set up your workspace for you
+          </span>
+          <ResponsiveDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
+            <ResponsiveDialogTrigger
+              disabled={starting}
+              render={<Button size="sm" />}
+            >
+              {starting ? (
+                <Loader2Icon
+                  aria-hidden
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                />
+              ) : null}
+              Start Setup
+            </ResponsiveDialogTrigger>
+            <ResponsiveDialogContent>
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle className="font-semibold text-lg">
+                  Let us set up your workspace
+                </ResponsiveDialogTitle>
+                <ResponsiveDialogDescription>
+                  We visit your website, work out what your company does, and
+                  set Notra up to match. It takes a few minutes.
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <ul className="space-y-2.5">
+                {EVE_SETUP_PROS.map((item) => (
+                  <li className="flex items-center gap-2.5" key={item}>
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      <HugeiconsIcon
+                        className="size-3"
+                        icon={PlusSignIcon}
+                        strokeWidth={2.5}
+                      />
+                    </span>
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+                {EVE_SETUP_CONS.map((item) => (
+                  <li className="flex items-center gap-2.5" key={item}>
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
+                      <HugeiconsIcon
+                        className="size-3"
+                        icon={MinusSignIcon}
+                        strokeWidth={2.5}
+                      />
+                    </span>
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <ResponsiveDialogFooter className="sm:justify-center">
+                <ResponsiveDialogClose render={<Button variant="outline" />}>
+                  Cancel
+                </ResponsiveDialogClose>
+                <Button onClick={handleConfirm}>Start Setup</Button>
+              </ResponsiveDialogFooter>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
+          <Button
+            aria-label="Dismiss workspace setup banner"
+            className="-translate-y-1/2 absolute top-1/2 right-3"
+            onClick={onDismiss}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}

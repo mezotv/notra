@@ -21,53 +21,88 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { detectPlatform } from "@/lib/cli-auth/platform";
 import type { CliAuthFormProps } from "@/types/cli-auth/form";
 
+function subscribeToNothing() {
+  return () => undefined;
+}
+
+function getServerPlatform(): string {
+  return "";
+}
+
 export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
   const [organizationId, setOrganizationId] = useState(
     organizations[0]?.id ?? ""
   );
-  const [name, setName] = useState("");
+  const platform = useSyncExternalStore(
+    subscribeToNothing,
+    detectPlatform,
+    getServerPlatform
+  );
+  const defaultName = platform ? `Notra CLI on ${platform}` : "";
+  const [editedName, setEditedName] = useState<string | null>(null);
+  const [authorizationStatus, setAuthorizationStatus] = useState<
+    "idle" | "pending" | "success"
+  >("idle");
+  const authorizationRequestRef = useRef<AbortController | null>(null);
+  const name = editedName ?? defaultName;
+
+  const selectedOrg =
+    organizations.find((organization) => organization.id === organizationId) ??
+    null;
 
   useEffect(() => {
-    setName(`Notra CLI on ${detectPlatform()}`);
+    return () => authorizationRequestRef.current?.abort();
   }, []);
 
-  const selectedOrg = useMemo(
-    () => organizations.find((o) => o.id === organizationId) ?? null,
-    [organizations, organizationId]
-  );
-
-  const mutation = useMutation({
-    mutationFn: async () => {
+  const authorize = async () => {
+    authorizationRequestRef.current?.abort();
+    const controller = new AbortController();
+    authorizationRequestRef.current = controller;
+    setAuthorizationStatus("pending");
+    try {
       const response = await fetch(
         `/api/cli/sessions/${encodeURIComponent(sessionId)}/authorize`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ organizationId, name: name.trim() }),
+          signal: controller.signal,
         }
       );
+      if (controller.signal.aborted) {
+        return;
+      }
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as {
           error?: string;
         };
-        throw new Error(
+        if (controller.signal.aborted) {
+          return;
+        }
+        toast.error(
           body.error ?? `Failed to authorize CLI (HTTP ${response.status})`
         );
+        setAuthorizationStatus("idle");
+        return;
       }
-      return response.json();
-    },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
-  });
+      setAuthorizationStatus("success");
+    } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+      toast.error(
+        error instanceof Error ? error.message : "Failed to authorize CLI"
+      );
+      setAuthorizationStatus("idle");
+    }
+  };
 
   if (organizations.length === 0) {
     return (
@@ -83,7 +118,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
     );
   }
 
-  if (mutation.isSuccess) {
+  if (authorizationStatus === "success") {
     return (
       <div className="space-y-4 text-center">
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
@@ -98,7 +133,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
     );
   }
 
-  const isPending = mutation.isPending;
+  const isPending = authorizationStatus === "pending";
   const canSubmit =
     organizationId !== "" && name.trim().length > 0 && !isPending;
 
@@ -108,7 +143,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
       onSubmit={(e) => {
         e.preventDefault();
         if (canSubmit) {
-          mutation.mutate();
+          authorize();
         }
       }}
     >
@@ -191,7 +226,7 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
           disabled={isPending}
           id="cli-auth-name"
           maxLength={100}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setEditedName(e.target.value)}
           placeholder="Notra CLI on my-laptop"
           value={name}
         />

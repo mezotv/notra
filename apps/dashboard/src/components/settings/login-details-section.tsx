@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { LoginDetailsSectionProps } from "@/types/settings/account";
 
 const passwordSchema = z
@@ -66,7 +67,11 @@ export function LoginDetailsSection({
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to change password");
+          const message = errorMessageOr(
+            result.error.message,
+            "Failed to change password"
+          );
+          toast.error(message);
           setIsChangingPassword(false);
           return;
         }

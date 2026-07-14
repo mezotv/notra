@@ -40,6 +40,7 @@ export function CreateEventTriggerDialog({
     }
   };
   const [addRepoOpen, setAddRepoOpen] = useState(false);
+  const dialogOpen = open && !addRepoOpen;
 
   const { form, isPending } = useEventTriggerForm({
     organizationId,
@@ -109,14 +110,11 @@ export function CreateEventTriggerDialog({
 
   const handleOpenAddRepoFlow = () => {
     setAddRepoOpen(true);
-    if (!isEditMode) {
-      setOpen(false);
-    }
   };
 
   return (
     <>
-      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={setOpen} open={dialogOpen}>
         {trigger && <ResponsiveDialogTrigger render={trigger} />}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
@@ -168,9 +166,6 @@ export function CreateEventTriggerDialog({
         isEditMode={isEditMode}
         onOpenChange={(isOpen) => {
           setAddRepoOpen(isOpen);
-          if (!(isOpen || isEditMode)) {
-            setOpen(true);
-          }
         }}
         open={addRepoOpen}
         organizationId={organizationId}

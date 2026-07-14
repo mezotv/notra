@@ -33,12 +33,23 @@ const nextConfig: NextConfig = {
   ],
   serverExternalPackages: ["@resvg/resvg-js"],
   async rewrites() {
-    return [
+    const rewrites = [
       {
         source: "/api/c15t/:path*",
         destination: `${C15T_BACKEND_URL}/:path*`,
       },
     ];
+
+    if (process.env.NODE_ENV !== "production") {
+      const agentUrl =
+        process.env.EVE_ONBOARDING_AGENT_URL ?? "http://127.0.0.1:3100";
+      rewrites.push({
+        source: "/eve/v1/:path*",
+        destination: `${agentUrl}/eve/v1/:path*`,
+      });
+    }
+
+    return rewrites;
   },
   async redirects() {
     return [

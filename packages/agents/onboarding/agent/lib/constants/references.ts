@@ -1,0 +1,1 @@
+export const REFERENCE_INSERT_BATCH_SIZE = 100;

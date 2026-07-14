@@ -53,9 +53,10 @@ import {
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
+import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
 import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
@@ -63,6 +64,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useCreateFromSuggestion } from "@/lib/hooks/use-onboarding";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
@@ -92,6 +94,32 @@ function formatDate(dateString: string) {
   }).format(new Date(dateString));
 }
 
+function normalizeIntegrationError(error: unknown): Error {
+  const errorWithCode = error as Error & { code?: string };
+  if (
+    errorWithCode?.code === "INTEGRATION_NOT_FOUND" ||
+    (error instanceof Error &&
+      error.message.includes("integrations have been deleted"))
+  ) {
+    const integrationError = new Error(
+      error instanceof Error ? error.message : "Integration not found"
+    ) as Error & { code?: string };
+    integrationError.code = "INTEGRATION_NOT_FOUND";
+    return integrationError;
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function getSortIcon(isSorted: false | "asc" | "desc") {
+  if (isSorted === "asc") {
+    return ArrowUp01Icon;
+  }
+  if (isSorted === "desc") {
+    return ArrowDown01Icon;
+  }
+  return ArrowUpDownIcon;
+}
+
 interface PageClientProps {
   organizationSlug: string;
 }
@@ -108,6 +136,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     false | "asc" | "desc"
   >(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const { beginCreate, cancelCreate, handleCreateSuccess, pendingSuggestion } =
+    useCreateFromSuggestion(organizationId);
 
   useHotkey("C", () => setCreateOpen(true), { enabled: !createOpen });
 
@@ -127,7 +157,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     })
   );
 
-  const { brandVoiceMap, defaultBrandVoice } = useMemo(() => {
+  const { brandVoiceMap, defaultBrandVoice } = (() => {
     const map: Record<string, BrandSettings> = {};
     let defaultVoice: BrandSettings | undefined;
     for (const voice of brandResponse?.voices ?? []) {
@@ -137,7 +167,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
     }
     return { brandVoiceMap: map, defaultBrandVoice: defaultVoice };
-  }, [brandResponse]);
+  })();
 
   const updateMutation = useMutation({
     mutationFn: async (trigger: Trigger) => {
@@ -154,6 +184,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         throw new Error("Unsupported schedule output");
       }
 
+      const lookbackWindow = trigger.lookbackWindow ?? "last_7_days";
+      const outputConfig = trigger.outputConfig ?? {};
+
       try {
         return await dashboardOrpc.automation.schedules.update.call({
           organizationId,
@@ -163,28 +196,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           sourceConfig: { cron: cronConfig },
           targets: trigger.targets,
           outputType: trigger.outputType,
-          lookbackWindow: trigger.lookbackWindow ?? "last_7_days",
-          outputConfig: trigger.outputConfig ?? {},
+          lookbackWindow,
+          outputConfig,
           enabled: !trigger.enabled,
           autoPublish: trigger.autoPublish,
         });
       } catch (error) {
-        const errorWithCode = error as Error & { code?: string };
-        if (
-          errorWithCode?.code === "INTEGRATION_NOT_FOUND" ||
-          (error instanceof Error &&
-            error.message.includes("integrations have been deleted"))
-        ) {
-          const integrationError = new Error(
-            error instanceof Error ? error.message : "Integration not found"
-          ) as Error & {
-            code?: string;
-          };
-          integrationError.code = "INTEGRATION_NOT_FOUND";
-          throw integrationError;
-        }
-
-        throw error;
+        throw normalizeIntegrationError(error);
       }
     },
     onError: (error) => {
@@ -323,18 +341,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const triggers = data?.triggers ?? [];
-  const scheduleTriggers = useMemo(
-    () => triggers.filter((trigger) => trigger.sourceType === "cron"),
-    [triggers]
+  const scheduleTriggers = triggers.filter(
+    (trigger) => trigger.sourceType === "cron"
   );
 
-  const filteredTriggers = useMemo(() => {
-    return scheduleTriggers.filter((t) =>
-      activeTab === "active" ? t.enabled : !t.enabled
-    );
-  }, [scheduleTriggers, activeTab]);
+  const filteredTriggers = scheduleTriggers.filter((trigger) =>
+    activeTab === "active" ? trigger.enabled : !trigger.enabled
+  );
 
-  const activeCounts = useMemo(() => {
+  const activeCounts = (() => {
     let active = 0;
     let paused = 0;
     for (const t of scheduleTriggers) {
@@ -345,31 +360,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
     }
     return { active, paused };
-  }, [scheduleTriggers]);
+  })();
 
-  const handleToggle = useCallback(
-    (trigger: Trigger) => updateMutation.mutate(trigger),
-    [updateMutation]
-  );
+  const handleToggle = (trigger: Trigger) => updateMutation.mutate(trigger);
 
-  const handleDelete = useCallback((id: string) => {
+  const handleDelete = (id: string) => {
     setDeleteTriggerId(id);
-  }, []);
+  };
 
-  const handleEdit = useCallback((trigger: Trigger) => {
+  const handleEdit = (trigger: Trigger) => {
     setEditTrigger(trigger);
-  }, []);
+  };
 
-  const confirmDelete = useCallback(() => {
+  const confirmDelete = () => {
     if (deleteTriggerId) {
       deleteMutation.mutate(deleteTriggerId);
     }
-  }, [deleteTriggerId, deleteMutation]);
+  };
 
-  const handleRunNow = useCallback(
-    (triggerId: string) => runNowMutation.mutate(triggerId),
-    [runNowMutation]
-  );
+  const handleRunNow = (triggerId: string) => runNowMutation.mutate(triggerId);
 
   const triggerToDelete = deleteTriggerId
     ? triggers.find((t) => t.id === deleteTriggerId)
@@ -389,7 +398,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <CreateScheduleDialog
-            onOpenChange={setCreateOpen}
+            onOpenChange={(open) => {
+              setCreateOpen(open);
+              if (!open) {
+                cancelCreate(pendingSuggestion);
+              }
+            }}
             onSuccess={() => {
               queryClient.invalidateQueries({
                 queryKey: dashboardOrpc.automation.schedules.list.queryKey({
@@ -403,6 +417,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   }),
                 });
               }
+              handleCreateSuccess(pendingSuggestion);
             }}
             open={createOpen}
             organizationId={organizationId ?? ""}
@@ -415,6 +430,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             }
           />
         </div>
+
+        {organizationId && (
+          <OnboardingSuggestions
+            onCreate={(suggestionId) => {
+              beginCreate(suggestionId);
+              setCreateOpen(true);
+            }}
+            organizationId={organizationId}
+            type="schedule_automation"
+          />
+        )}
 
         {isPending && <SchedulePageSkeleton />}
 
@@ -641,7 +667,7 @@ function ScheduleTable({
   updatingTriggerId?: string;
   runningTriggerId?: string;
 }) {
-  const sortedTriggers = useMemo(() => {
+  const sortedTriggers = (() => {
     if (createdSortOrder === false) {
       return triggers;
     }
@@ -653,17 +679,8 @@ function ScheduleTable({
         ? createdAtB - createdAtA
         : createdAtA - createdAtB;
     });
-  }, [triggers, createdSortOrder]);
+  })();
 
-  function getSortIcon(isSorted: false | "asc" | "desc") {
-    if (isSorted === "asc") {
-      return ArrowUp01Icon;
-    }
-    if (isSorted === "desc") {
-      return ArrowDown01Icon;
-    }
-    return ArrowUpDownIcon;
-  }
   const sortIcon = getSortIcon(createdSortOrder);
 
   if (triggers.length === 0) {

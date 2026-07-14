@@ -125,7 +125,11 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to cancel invitation");
+        if (error.message) {
+          toast.error(error.message);
+        } else {
+          toast.error("Failed to cancel invitation");
+        }
         setIsCanceling(false);
         return;
       }

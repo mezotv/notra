@@ -29,7 +29,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from "nuqs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -69,10 +69,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     parseAsStringLiteral(STATUS_VALUES).withDefault("all")
   );
   const [searchInput, setSearchInput] = useState(search);
+  const [prevSearch, setPrevSearch] = useState(search);
 
-  useEffect(() => {
+  if (search !== prevSearch) {
+    setPrevSearch(search);
     setSearchInput(search);
-  }, [search]);
+  }
 
   const commitSearch = useDebouncedCallback(
     (value: string) => {

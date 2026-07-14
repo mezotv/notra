@@ -5,22 +5,38 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
+import { Effect } from "effect";
 import { headers } from "next/headers";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
+import { after } from "next/server";
+import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { auth } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
+import {
+  resolveCompanyDomain,
+  resolveReachableWebsiteUrl,
+} from "@/lib/onboarding/company-domain";
+import {
+  ensureDefaultBrandIdentity,
+  launchReservedOnboardingAgent,
+  reserveInitialOnboardingAgentRun,
+} from "@/lib/onboarding-agent";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   type OnboardingBrandAnalysisInput,
   onboardingBrandAnalysisSchema,
 } from "@/schemas/brand-analysis";
 import { onboardingWorkspaceAttributionSchema } from "@/schemas/onboarding/workspace";
+import { triggerOnboardingAgentSetupSchema } from "@/schemas/onboarding-agent";
 import type {
   SaveOnboardingAttributionInput,
   SaveOnboardingAttributionResult,
 } from "@/types/onboarding";
+import type {
+  OnboardingAgentSetupTaskInput,
+  TriggerOnboardingAgentSetupInput,
+  TriggerOnboardingAgentSetupResult,
+} from "@/types/onboarding-agent";
 import { ratelimit } from "@/utils/ratelimit";
 
 const ANALYSIS_LOCK_TTL_SECONDS = 60;
@@ -40,6 +56,48 @@ async function tryAcquireBrandAnalysisLock(organizationId: string) {
   );
 
   return result === "OK";
+}
+
+async function runOnboardingAgentSetup({
+  domain,
+  email,
+  organizationId,
+}: OnboardingAgentSetupTaskInput) {
+  const websiteUrl = await resolveReachableWebsiteUrl(domain);
+  if (!websiteUrl) {
+    return;
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    columns: { name: true },
+    where: eq(organizations.id, organizationId),
+  });
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  await ensureDefaultBrandIdentity({
+    companyName: organization.name,
+    organizationId,
+    websiteUrl,
+  });
+
+  const reservedAt = await reserveInitialOnboardingAgentRun(organizationId);
+  if (!reservedAt) {
+    return;
+  }
+
+  await Effect.runPromise(
+    launchReservedOnboardingAgent({
+      payload: {
+        domain,
+        email,
+        organizationId,
+        organizationName: organization.name,
+      },
+      reservedAt,
+    })
+  );
 }
 
 export async function triggerOnboardingBrandAnalysis(
@@ -103,6 +161,66 @@ export async function triggerOnboardingBrandAnalysis(
       "Couldn't kick off the brand analysis. Please try again in a moment."
     );
   }
+
+  return { success: true };
+}
+
+export async function triggerOnboardingAgentSetup(
+  rawInput: TriggerOnboardingAgentSetupInput
+): Promise<TriggerOnboardingAgentSetupResult> {
+  const input = triggerOnboardingAgentSetupSchema.parse(rawInput);
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const membership = await db.query.members.findFirst({
+    where: and(
+      eq(members.userId, session.user.id),
+      eq(members.organizationId, input.organizationId)
+    ),
+    columns: { id: true },
+  });
+
+  if (!membership) {
+    throw new Error("Forbidden");
+  }
+
+  const { success: withinLimit } = await ratelimit.onboardingAgent.limit(
+    input.organizationId
+  );
+
+  if (!withinLimit) {
+    throw new Error(
+      "Too many onboarding agent requests. Please try again shortly."
+    );
+  }
+
+  const resolution = resolveCompanyDomain({
+    email: session.user.email,
+    websiteUrl: input.websiteUrl,
+  });
+  if (!resolution) {
+    return { skipped: "no-company-domain", success: true };
+  }
+
+  const taskInput: OnboardingAgentSetupTaskInput = {
+    domain: resolution.domain,
+    email: session.user.email,
+    organizationId: input.organizationId,
+  };
+
+  after(async () => {
+    try {
+      await runOnboardingAgentSetup(taskInput);
+    } catch (error) {
+      console.error("[Onboarding] Background onboarding agent setup failed", {
+        error,
+        organizationId: taskInput.organizationId,
+      });
+    }
+  });
 
   return { success: true };
 }

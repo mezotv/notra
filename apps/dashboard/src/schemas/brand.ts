@@ -72,6 +72,10 @@ export const BRAND_REFERENCE_METADATA_MAX_KEYS = 50;
 export const BRAND_REFERENCE_METADATA_KEY_MAX_LENGTH = 128;
 export const BRAND_REFERENCE_METADATA_MAX_BYTES = 16_384;
 
+export const referenceSourceUrlSchema = z
+  .url({ protocol: /^https?$/ })
+  .max(2048);
+
 const brandReferenceMetadataSchema = z
   .record(
     z.string().min(1).max(BRAND_REFERENCE_METADATA_KEY_MAX_LENGTH),
@@ -98,6 +102,7 @@ export const createReferenceSchema = z.object({
   content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH),
   metadata: brandReferenceMetadataSchema.nullable().optional(),
   note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
+  sourceUrl: referenceSourceUrlSchema.nullable().optional(),
   applicableTo: applicableToSchema.optional(),
 });
 
@@ -106,6 +111,7 @@ export type CreateReferenceInput = z.infer<typeof createReferenceSchema>;
 export const updateReferenceSchema = z.object({
   note: z.string().max(BRAND_REFERENCE_NOTE_MAX_LENGTH).nullable().optional(),
   content: z.string().min(1).max(BRAND_REFERENCE_CONTENT_MAX_LENGTH).optional(),
+  sourceUrl: referenceSourceUrlSchema.nullable().optional(),
   applicableTo: applicableToSchema.optional(),
 });
 

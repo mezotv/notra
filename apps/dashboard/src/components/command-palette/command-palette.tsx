@@ -30,11 +30,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Command as CommandPrimitive } from "cmdk";
 import { useRouter } from "next/navigation";
 import {
-  useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   useTransition,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -74,6 +73,40 @@ const BRAILLE_FRAMES = [
   "⠏",
 ] as const;
 const BRAILLE_INTERVAL_MS = 80;
+const ENTITY_SECTION_ORDER = [
+  "Posts",
+  "Brand voices",
+  "References",
+  "Integrations",
+] as const;
+
+const GROUPED_ROUTES = (() => {
+  const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
+    Navigation: [],
+    Workspace: [],
+    Automation: [],
+    Manage: [],
+    Settings: [],
+  };
+  for (const route of COMMAND_ROUTES) {
+    groups[route.section].push(route);
+  }
+  return groups;
+})();
+
+const emptySubscribe = () => () => undefined;
+
+let cachedIsApplePlatform: boolean | null = null;
+
+function readIsApplePlatform(): boolean {
+  if (cachedIsApplePlatform === null) {
+    const platform = navigator.platform || navigator.userAgent;
+    cachedIsApplePlatform = APPLE_PLATFORM_PATTERN.test(platform);
+  }
+  return cachedIsApplePlatform;
+}
+
+const getServerIsApplePlatform = () => true;
 
 function BrailleSpinner({ className }: { className?: string }) {
   const [frame, setFrame] = useState(0);
@@ -100,14 +133,18 @@ export function CommandPalette() {
   const { activeOrganization } = useOrganizationsContext();
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [isApplePlatform, setIsApplePlatform] = useState(true);
+  const isApplePlatform = useSyncExternalStore(
+    emptySubscribe,
+    readIsApplePlatform,
+    getServerIsApplePlatform
+  );
   const [aiState, setAiState] = useState<
     | { status: "idle" }
     | { status: "loading" }
     | { status: "navigating"; label: string }
     | { status: "error" }
   >({ status: "idle" });
-  const [isNavigating, startNavigation] = useTransition();
+  const [, startNavigation] = useTransition();
   const { openFeedback: triggerFeedback } = useFeedback();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -137,7 +174,7 @@ export function CommandPalette() {
     staleTime: 15_000,
   });
 
-  const entityHits = useMemo<EntityHit[]>(() => {
+  const entityHits: EntityHit[] = (() => {
     const data = searchResults.data;
     if (!(data && slug)) {
       return [];
@@ -237,9 +274,9 @@ export function CommandPalette() {
       });
     }
     return hits;
-  }, [searchResults.data, slug, debouncedQuery]);
+  })();
 
-  const entityHitsBySection = useMemo(() => {
+  const entityHitsBySection = (() => {
     const groups = {
       Posts: [] as EntityHit[],
       "Brand voices": [] as EntityHit[],
@@ -258,26 +295,17 @@ export function CommandPalette() {
       }
     }
     return groups;
-  }, [entityHits]);
-  const entitySectionOrder: Array<keyof typeof entityHitsBySection> = [
-    "Posts",
-    "Brand voices",
-    "References",
-    "Integrations",
-  ];
+  })();
 
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      setOpen(next);
-      if (!next) {
-        abortRef.current?.abort();
-        abortRef.current = null;
-        setQuery("");
-        setAiState({ status: "idle" });
-      }
-    },
-    [setOpen]
-  );
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setQuery("");
+      setAiState({ status: "idle" });
+    }
+  };
 
   useHotkeys(
     "mod+k",
@@ -301,66 +329,33 @@ export function CommandPalette() {
     };
   }, []);
 
-  useEffect(() => {
-    if (aiState.status === "navigating" && !isNavigating) {
-      handleOpenChange(false);
-    }
-  }, [aiState.status, isNavigating, handleOpenChange]);
+  const navigate = (path: string) => {
+    handleOpenChange(false);
+    router.push(path);
+  };
 
-  useEffect(() => {
-    const platform = navigator.platform || navigator.userAgent;
-    setIsApplePlatform(APPLE_PLATFORM_PATTERN.test(platform));
-  }, []);
-
-  const groupedRoutes = useMemo(() => {
-    const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
-      Navigation: [],
-      Workspace: [],
-      Automation: [],
-      Manage: [],
-      Settings: [],
-    };
-    for (const route of COMMAND_ROUTES) {
-      groups[route.section].push(route);
-    }
-    return groups;
-  }, []);
-
-  const navigate = useCallback(
-    (path: string) => {
-      handleOpenChange(false);
+  const navigateFromAi = (path: string, label: string) => {
+    setAiState({ status: "navigating", label });
+    startNavigation(() => {
       router.push(path);
-    },
-    [router, handleOpenChange]
-  );
+    });
+    handleOpenChange(false);
+  };
 
-  const navigateFromAi = useCallback(
-    (path: string, label: string) => {
-      setAiState({ status: "navigating", label });
-      startNavigation(() => {
-        router.push(path);
-      });
-    },
-    [router]
-  );
-
-  const openFeedback = useCallback(() => {
+  const openFeedback = () => {
     handleOpenChange(false);
     triggerFeedback();
-  }, [handleOpenChange, triggerFeedback]);
+  };
 
-  const openChatWithQuery = useCallback(
-    (text: string) => {
-      if (!slug) {
-        return;
-      }
-      const qs = text ? `?q=${encodeURIComponent(text)}` : "";
-      navigate(`/${slug}/chat${qs}`);
-    },
-    [navigate, slug]
-  );
+  const openChatWithQuery = (text: string) => {
+    if (!slug) {
+      return;
+    }
+    const qs = text ? `?q=${encodeURIComponent(text)}` : "";
+    navigate(`/${slug}/chat${qs}`);
+  };
 
-  const runAiSearch = useCallback(async () => {
+  const runAiSearch = async () => {
     const trimmed = query.trim();
     if (!(trimmed && slug)) {
       return;
@@ -369,6 +364,7 @@ export function CommandPalette() {
     const controller = new AbortController();
     abortRef.current = controller;
     setAiState({ status: "loading" });
+    let result: AiResult | undefined;
     try {
       const response = await fetch("/api/command-palette/navigate", {
         method: "POST",
@@ -383,27 +379,28 @@ export function CommandPalette() {
         setAiState({ status: "error" });
         return;
       }
-      const result = (await response.json()) as AiResult;
-      if (controller.signal.aborted) {
-        return;
-      }
-      if (result.action === "navigate" && result.path) {
-        navigateFromAi(result.path, "Opening");
-        return;
-      }
-      if (result.action === "chat") {
-        const qs = trimmed ? `?q=${encodeURIComponent(trimmed)}` : "";
-        navigateFromAi(`/${slug}/chat${qs}`, "Opening chat");
-        return;
-      }
-      setAiState({ status: "error" });
+      result = (await response.json()) as AiResult;
     } catch (error) {
       if ((error as Error).name === "AbortError") {
         return;
       }
       setAiState({ status: "error" });
+      return;
     }
-  }, [query, slug, navigateFromAi]);
+    if (controller.signal.aborted || !result) {
+      return;
+    }
+    if (result.action === "navigate" && result.path) {
+      navigateFromAi(result.path, "Opening");
+      return;
+    }
+    if (result.action === "chat") {
+      const qs = trimmed ? `?q=${encodeURIComponent(trimmed)}` : "";
+      navigateFromAi(`/${slug}/chat${qs}`, "Opening chat");
+      return;
+    }
+    setAiState({ status: "error" });
+  };
 
   if (!slug) {
     return null;
@@ -565,7 +562,7 @@ export function CommandPalette() {
               </CommandPrimitive.Empty>
 
               {COMMAND_SECTIONS.map((section) => {
-                const items = groupedRoutes[section];
+                const items = GROUPED_ROUTES[section];
                 if (items.length === 0) {
                   return null;
                 }
@@ -604,7 +601,7 @@ export function CommandPalette() {
                 );
               })}
 
-              {entitySectionOrder.map((section) => {
+              {ENTITY_SECTION_ORDER.map((section) => {
                 const items = entityHitsBySection[section];
                 if (!items || items.length === 0) {
                   return null;

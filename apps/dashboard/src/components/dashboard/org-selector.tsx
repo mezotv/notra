@@ -35,7 +35,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
-import { cn } from "@/lib/utils";
+import { cn, errorMessageOr } from "@/lib/utils";
 import type { OrganizationOptionsListProps } from "@/types/dashboard";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
@@ -303,7 +303,11 @@ export function OrgSelector() {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to switch organization");
+        const message = errorMessageOr(
+          error.message,
+          "Failed to switch organization"
+        );
+        toast.error(message);
         setIsSwitching(false);
         return;
       }

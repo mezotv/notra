@@ -69,17 +69,17 @@ export function SidebarUpgrade() {
 
   async function handleUpgrade() {
     setLoading(true);
+    const successUrl = activeOrganization?.slug
+      ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
+      : undefined;
     try {
-      const successUrl = activeOrganization?.slug
-        ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
-        : undefined;
       const result = await attach({
         planId: targetPlanId,
         redirectMode: "if_required",
         successUrl,
       });
       if (result.paymentUrl) {
-        window.location.href = result.paymentUrl;
+        window.location.assign(result.paymentUrl);
       } else {
         await refetch();
       }

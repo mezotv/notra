@@ -5,17 +5,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { SidebarMenuButton, useSidebar } from "@notra/ui/components/ui/sidebar";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = resolvedTheme !== undefined;
 
   const isDark = resolvedTheme === "dark";
 

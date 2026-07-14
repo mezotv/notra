@@ -12,6 +12,10 @@ export interface BrandReferenceSummary {
   type: string;
   content: string;
   note: string | null;
+  sourceCapturedAt: string | null;
+  sourceContentHash: string | null;
+  sourceSnapshotKey: string | null;
+  sourceUrl: string | null;
   applicableTo: string[];
   createdAt: string;
   updatedAt: string;

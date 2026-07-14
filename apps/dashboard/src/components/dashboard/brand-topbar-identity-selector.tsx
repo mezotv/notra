@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
@@ -32,6 +32,27 @@ import {
   readStoredBrandIdentityId,
   writeStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
+
+const storedBrandIdentityListeners = new Set<() => void>();
+
+function subscribeToStoredBrandIdentity(onStoreChange: () => void) {
+  storedBrandIdentityListeners.add(onStoreChange);
+  window.addEventListener("storage", onStoreChange);
+  return () => {
+    storedBrandIdentityListeners.delete(onStoreChange);
+    window.removeEventListener("storage", onStoreChange);
+  };
+}
+
+function notifyStoredBrandIdentityChange() {
+  for (const listener of storedBrandIdentityListeners) {
+    listener();
+  }
+}
+
+function getServerStoredBrandIdentityId(): string | null {
+  return null;
+}
 
 function BrandIdentityAvatar({
   name,
@@ -60,13 +81,11 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
   const voices = data?.voices ?? [];
   const voiceParam = searchParams.get("voice");
   const isReferencesView = searchParams.get("view") === "references";
-  const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (organizationId) {
-      setStoredVoiceId(readStoredBrandIdentityId(organizationId));
-    }
-  }, [organizationId]);
+  const storedVoiceId = useSyncExternalStore(
+    subscribeToStoredBrandIdentity,
+    () => (organizationId ? readStoredBrandIdentityId(organizationId) : null),
+    getServerStoredBrandIdentityId
+  );
 
   const activeVoice = findSelectedBrandIdentity(
     voices,
@@ -79,7 +98,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
 
   function handleSelectVoice(voiceId: string) {
     writeStoredBrandIdentityId(organizationId, voiceId);
-    setStoredVoiceId(voiceId);
+    notifyStoredBrandIdentityChange();
     router.push(`${brandBasePath}?voice=${voiceId}${viewSuffix}`);
   }
 

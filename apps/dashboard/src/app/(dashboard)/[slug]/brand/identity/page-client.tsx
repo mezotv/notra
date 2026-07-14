@@ -1,36 +1,25 @@
 "use client";
 
-import type { ToneProfile } from "@notra/ai/schemas/tone";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@notra/ui/components/ui/alert";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
-import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { BRAND_IDENTITY_TAB_VALUES } from "@/constants/brand-identity";
-import { getValidLanguage } from "@/schemas/brand";
-import type {
-  BrandFormInitialData,
-  PageClientProps,
-} from "@/types/brand-identity";
+import type { PageClientProps } from "@/types/brand-identity";
 import {
   brandIdentityUiReducer,
+  getEffectiveBrandAnalysisProgress,
   getInitialBrandIdentityUiState,
-  sanitizeBrandUrlInput,
+  isBrandAnalysisRunning,
 } from "@/utils/brand-identity";
 import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
   writeStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
-import { formatRelativeTime } from "@/utils/format";
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
@@ -43,13 +32,22 @@ import { useRefreshBrandGuidelinesAction } from "../../../../../lib/hooks/use-br
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
 import { normalizePublicWebsiteUrl } from "../../../../../schemas/url";
-import { AddIdentityDialog } from "./components/add-identity-dialog";
-import { AnalysisStepper } from "./components/analysis-stepper";
-import { BrandIdentityHeader } from "./components/brand-identity-header";
-import { BrandIdentityTabs } from "./components/brand-identity-tabs";
+import { BrandIdentityWorkspace } from "./components/brand-identity-workspace";
 import { EmptyBrandIdentityState } from "./components/empty-brand-identity-state";
-import { VoiceSelector } from "./components/voice-selector";
 import { BrandIdentityPageSkeleton } from "./skeleton";
+
+function buildDeleteSuccessMessage(
+  disabledSchedules: readonly unknown[] | null | undefined,
+  disabledEvents: readonly unknown[] | null | undefined
+): string {
+  const disabledCount =
+    (disabledSchedules?.length ?? 0) + (disabledEvents?.length ?? 0);
+  if (disabledCount === 0) {
+    return "Brand identity deleted";
+  }
+  const triggerText = disabledCount === 1 ? "trigger was" : "triggers were";
+  return `Brand identity deleted. ${disabledCount} ${triggerText} disabled.`;
+}
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
@@ -178,40 +176,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     selectedVoice?.id ?? ""
   );
 
-  const selectedVoiceId = selectedVoice?.id;
-  const selectedVoiceUpdatedAt = selectedVoice?.updatedAt;
   const effectiveUrl = uiState.url.trim();
 
   useEffect(() => {
-    if (!selectedVoiceId || !selectedVoiceUpdatedAt) {
+    if (!selectedVoice?.updatedAt) {
       dispatchUi({ type: "set-last-saved-at-ms", savedAtMs: null });
       return;
     }
 
     dispatchUi({
       type: "set-last-saved-at-ms",
-      savedAtMs: new Date(selectedVoiceUpdatedAt).getTime(),
+      savedAtMs: new Date(selectedVoice.updatedAt).getTime(),
     });
-  }, [selectedVoiceId, selectedVoiceUpdatedAt]);
-
-  useEffect(() => {
-    if (
-      activeTab !== "identity" ||
-      uiState.isSaving ||
-      !uiState.lastSavedAtMs
-    ) {
-      return;
-    }
-
-    dispatchUi({ type: "set-relative-time-now", now: Date.now() });
-    const interval = window.setInterval(() => {
-      dispatchUi({ type: "set-relative-time-now", now: Date.now() });
-    }, 10_000);
-
-    return () => {
-      window.clearInterval(interval);
-    };
-  }, [activeTab, uiState.isSaving, uiState.lastSavedAtMs]);
+  }, [selectedVoice]);
 
   const triggerAnalysis = async (rawUrl: string, voiceId?: string) => {
     let urlToAnalyze = rawUrl.trim();
@@ -261,17 +238,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       }
       dispatchUi({ type: "set-delete-target-voice-id", voiceId: null });
 
-      const disabledCount =
-        (result.disabledSchedules?.length ?? 0) +
-        (result.disabledEvents?.length ?? 0);
-
-      if (disabledCount > 0) {
-        toast.success(
-          `Brand identity deleted. ${disabledCount} ${disabledCount === 1 ? "trigger was" : "triggers were"} disabled.`
-        );
-      } else {
-        toast.success("Brand identity deleted");
-      }
+      toast.success(
+        buildDeleteSuccessMessage(
+          result.disabledSchedules,
+          result.disabledEvents
+        )
+      );
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -296,20 +268,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     }
   };
 
-  const effectiveProgress =
-    analyzeMutation.isPending && progress.status === "idle"
-      ? {
-          status: "scraping" as const,
-          currentStep: 1,
-          totalSteps: 3,
-        }
-      : progress;
-
-  const isAnalyzing =
-    analyzeMutation.isPending ||
-    progress.status === "scraping" ||
-    progress.status === "extracting" ||
-    progress.status === "saving";
+  const effectiveProgress = getEffectiveBrandAnalysisProgress(
+    progress,
+    analyzeMutation.isPending
+  );
+  const isAnalyzing = isBrandAnalysisRunning(
+    progress,
+    analyzeMutation.isPending
+  );
 
   const hasVoices = voices.length > 0;
 
@@ -335,132 +301,35 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     return null;
   }
 
-  const initialData: BrandFormInitialData = {
-    name: selectedVoice.name,
-    websiteUrl: selectedVoice.websiteUrl
-      ? sanitizeBrandUrlInput(selectedVoice.websiteUrl)
-      : "",
-    companyName: selectedVoice.companyName ?? "",
-    companyDescription: selectedVoice.companyDescription ?? "",
-    toneProfile: (selectedVoice.toneProfile as ToneProfile) ?? "Professional",
-    customTone: selectedVoice.customTone ?? "",
-    customInstructions: selectedVoice.customInstructions ?? "",
-    useCustomTone: Boolean(selectedVoice.customTone),
-    audience: selectedVoice.audience ?? "",
-    language: getValidLanguage(selectedVoice.language),
-  };
-  let saveStatusText = "Saved just now";
-
-  if (uiState.isSaving) {
-    saveStatusText = "Saving...";
-  } else if (uiState.lastSavedAtMs) {
-    saveStatusText = formatRelativeTime(
-      new Date(uiState.lastSavedAtMs),
-      uiState.relativeTimeNow
-    );
-  }
-
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <BrandIdentityHeader
-          activeTab={activeTab}
-          isRefreshingGuidelines={guidelinesRefresh.isPending}
-          onAddIdentity={() =>
-            dispatchUi({ type: "set-add-identity-open", open: true })
-          }
-          onAddReference={() =>
-            dispatchUi({ type: "set-add-reference-open", open: true })
-          }
-          onAddSitemap={() =>
-            dispatchUi({ type: "set-add-sitemap-open", open: true })
-          }
-          onRefreshGuidelines={guidelinesRefresh.refreshGuidelines}
-        />
-
-        <VoiceSelector
-          activeVoiceId={selectedVoice.id}
-          affectedEvents={affectedData?.affectedEvents ?? []}
-          affectedSchedules={affectedData?.affectedSchedules ?? []}
-          isDeleteDialogOpen={!!uiState.deleteTargetVoiceId}
-          isDeleting={deleteVoiceMutation.isPending}
-          isLoadingAffected={isLoadingAffected}
-          isReanalyzing={analyzeMutation.isPending}
-          isSettingDefault={setDefaultMutation.isPending}
-          onDelete={handleDeleteVoice}
-          onDeleteDialogChange={(open) => {
-            if (!open) {
-              dispatchUi({
-                type: "set-delete-target-voice-id",
-                voiceId: null,
-              });
-            }
-          }}
-          onReanalyze={handleReanalyze}
-          onRequestDelete={(voiceId) =>
-            dispatchUi({ type: "set-delete-target-voice-id", voiceId })
-          }
-          onSelect={handleSelectVoice}
-          onSetDefault={handleSetDefault}
-          organizationId={organizationId}
-          voices={voices}
-        />
-
-        <AddIdentityDialog
-          onCreated={(voice) => handleSelectVoice(voice.id)}
-          onOpenChange={handleAddIdentityOpenChange}
-          open={isAddIdentityOpen}
-          organizationId={organizationId}
-          startPolling={startPolling}
-        />
-
-        {(isAnalyzing || progressError) && (
-          <Alert variant={progressError ? "destructive" : "default"}>
-            <AlertTitle>
-              {progressError
-                ? "Brand analysis failed"
-                : "Brand analysis is running"}
-            </AlertTitle>
-            <AlertDescription className="space-y-3">
-              <p>
-                {progressError
-                  ? progressError
-                  : "We are extracting the website details now. The form updates automatically as soon as the analysis finishes."}
-              </p>
-              {isAnalyzing && <AnalysisStepper progress={effectiveProgress} />}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <BrandIdentityTabs
-          activeTab={activeTab}
-          addReferenceOpen={uiState.addReferenceOpen}
-          addSitemapOpen={uiState.addSitemapOpen}
-          initialData={initialData}
-          onActiveTabChange={setActiveTab}
-          onAddReferenceOpenChange={(open) =>
-            dispatchUi({ type: "set-add-reference-open", open })
-          }
-          onAddSitemapOpenChange={(open) =>
-            dispatchUi({ type: "set-add-sitemap-open", open })
-          }
-          onSavedAtChange={(savedAt) =>
-            dispatchUi({
-              type: "set-last-saved-at-ms",
-              savedAtMs: savedAt.getTime(),
-            })
-          }
-          onSavingChange={(isSaving) =>
-            dispatchUi({ type: "set-is-saving", isSaving })
-          }
-          organizationId={organizationId}
-          referenceCount={referenceCount}
-          saveStatusText={saveStatusText}
-          sitemapCount={sitemapCount}
-          voiceId={selectedVoice.id}
-          voiceWebsiteUrl={selectedVoice.websiteUrl}
-        />
-      </div>
-    </PageContainer>
+    <BrandIdentityWorkspace
+      activeTab={activeTab}
+      affectedEvents={affectedData?.affectedEvents ?? []}
+      affectedSchedules={affectedData?.affectedSchedules ?? []}
+      analyzePending={analyzeMutation.isPending}
+      deleteVoicePending={deleteVoiceMutation.isPending}
+      dispatchUi={dispatchUi}
+      effectiveProgress={effectiveProgress}
+      guidelinesRefreshPending={guidelinesRefresh.isPending}
+      handleAddIdentityOpenChange={handleAddIdentityOpenChange}
+      handleDeleteVoice={handleDeleteVoice}
+      handleReanalyze={handleReanalyze}
+      handleSelectVoice={handleSelectVoice}
+      handleSetDefault={handleSetDefault}
+      isAddIdentityOpen={isAddIdentityOpen}
+      isAnalyzing={isAnalyzing}
+      isLoadingAffected={isLoadingAffected}
+      onRefreshGuidelines={guidelinesRefresh.refreshGuidelines}
+      organizationId={organizationId}
+      progressError={progressError}
+      referenceCount={referenceCount}
+      selectedVoice={selectedVoice}
+      setActiveTab={setActiveTab}
+      setDefaultPending={setDefaultMutation.isPending}
+      sitemapCount={sitemapCount}
+      startPolling={startPolling}
+      uiState={uiState}
+      voices={voices}
+    />
   );
 }

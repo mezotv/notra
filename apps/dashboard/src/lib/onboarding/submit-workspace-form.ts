@@ -1,5 +1,6 @@
 import {
   saveOnboardingAttribution,
+  triggerOnboardingAgentSetup,
   triggerOnboardingBrandAnalysis,
 } from "@/app/onboarding/workspace/actions";
 import { authClient } from "@/lib/auth/client";
@@ -75,17 +76,29 @@ export async function submitWorkspaceForm({
   }
 
   if (parsed.data.websiteUrl) {
-    const brandAnalysisPromise = triggerOnboardingBrandAnalysis({
-      organizationId,
-      websiteUrl: parsed.data.websiteUrl,
-      name: parsed.data.name,
-    });
-
-    brandAnalysisPromise.catch((error) => {
+    try {
+      await triggerOnboardingBrandAnalysis({
+        organizationId,
+        websiteUrl: parsed.data.websiteUrl,
+        name: parsed.data.name,
+      });
+    } catch (error) {
       console.error("[Onboarding] Background brand analysis failed", {
         organizationId,
         error,
       });
+    }
+  }
+
+  try {
+    await triggerOnboardingAgentSetup({
+      organizationId,
+      websiteUrl: parsed.data.websiteUrl || undefined,
+    });
+  } catch (error) {
+    console.error("[Onboarding] Background onboarding agent setup failed", {
+      organizationId,
+      error,
     });
   }
 }

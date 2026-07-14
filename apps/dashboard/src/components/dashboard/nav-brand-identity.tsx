@@ -14,7 +14,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
@@ -24,6 +24,15 @@ import {
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
+
+function subscribeToStorage(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function getServerStoredVoiceId(): string | null {
+  return null;
+}
 
 export function NavBrandIdentity({ slug }: { slug: string }) {
   const { activeOrganization } = useOrganizationsContext();
@@ -42,12 +51,11 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
   const isSitemapView = isOnBrandPage && currentView === "sitemap";
   const isGuidelinesView = isOnBrandPage && currentView === "guidelines";
 
-  const [storedVoiceId, setStoredVoiceId] = useState<string | null>(null);
-  useEffect(() => {
-    if (organizationId) {
-      setStoredVoiceId(readStoredBrandIdentityId(organizationId));
-    }
-  }, [organizationId]);
+  const storedVoiceId = useSyncExternalStore(
+    subscribeToStorage,
+    () => (organizationId ? readStoredBrandIdentityId(organizationId) : null),
+    getServerStoredVoiceId
+  );
 
   const activeVoice = findSelectedBrandIdentity(
     voices,

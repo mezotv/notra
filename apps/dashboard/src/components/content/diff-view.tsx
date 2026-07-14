@@ -1,7 +1,6 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 
 interface DiffViewProps {
@@ -11,11 +10,6 @@ interface DiffViewProps {
 
 export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const hasChanges = originalMarkdown !== currentMarkdown;
 
@@ -27,7 +21,7 @@ export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
     );
   }
 
-  const isDark = mounted ? resolvedTheme === "dark" : true;
+  const isDark = resolvedTheme !== "light";
 
   return (
     <div className="overflow-auto rounded-lg text-sm">

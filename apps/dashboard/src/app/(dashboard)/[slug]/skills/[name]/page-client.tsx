@@ -32,7 +32,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DiffView } from "@/components/content/diff-view";
@@ -79,18 +79,16 @@ export default function PageClient({ slug, name }: PageClientProps) {
     enabled: !!organizationId,
   });
 
-  useEffect(() => {
-    if (skill && !original) {
-      setOriginal({
-        name: skill.name,
-        description: skill.description,
-        content: skill.content,
-      });
-      setNameInput(skill.name);
-      setDescription(skill.description);
-      setContent(skill.content);
-    }
-  }, [skill, original]);
+  if (skill && !original) {
+    setOriginal({
+      name: skill.name,
+      description: skill.description,
+      content: skill.content,
+    });
+    setNameInput(skill.name);
+    setDescription(skill.description);
+    setContent(skill.content);
+  }
 
   const hasChanges =
     !!original &&
@@ -98,7 +96,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
       description !== original.description ||
       content !== original.content);
 
-  const invalidate = useCallback(() => {
+  const invalidate = () => {
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.skills.list.queryKey({
         input: { organizationId: organizationId ?? "" },
@@ -109,7 +107,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
         input: { organizationId: organizationId ?? "", name },
       }),
     });
-  }, [queryClient, organizationId, name]);
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -162,26 +160,22 @@ export default function PageClient({ slug, name }: PageClientProps) {
     },
   });
 
-  const handleSave = useCallback(() => {
-    if (!hasChanges || saveMutation.isPending || deleteMutation.isPending) {
-      return;
-    }
-    saveMutation.mutate();
-  }, [hasChanges, saveMutation, deleteMutation]);
-
-  const handleDiscard = useCallback(() => {
-    if (!original) {
-      return;
-    }
-    setNameInput(original.name);
-    setDescription(original.description);
-    setContent(original.content);
-  }, [original]);
-
   useEffect(() => {
-    handleSaveRef.current = handleSave;
-    handleDiscardRef.current = handleDiscard;
-  }, [handleSave, handleDiscard]);
+    handleSaveRef.current = () => {
+      if (!hasChanges || saveMutation.isPending || deleteMutation.isPending) {
+        return;
+      }
+      saveMutation.mutate();
+    };
+    handleDiscardRef.current = () => {
+      if (!original) {
+        return;
+      }
+      setNameInput(original.name);
+      setDescription(original.description);
+      setContent(original.content);
+    };
+  }, [hasChanges, saveMutation, deleteMutation, original]);
 
   useEffect(() => {
     if (hasChanges && !saveToastIdRef.current) {

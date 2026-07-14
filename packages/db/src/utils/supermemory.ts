@@ -1,10 +1,20 @@
+import { createHash } from "node:crypto";
+import {
+  SUPERMEMORY_BASE_URL,
+  SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH,
+  SUPERMEMORY_CUSTOM_ID_HASH_LENGTH,
+  SUPERMEMORY_REQUEST_TIMEOUT_MS,
+} from "../constants/supermemory";
 import type {
   BrandReferenceMemoryLink,
   BrandReferenceMemoryPayload,
+  DeleteBrandReferenceMemoryInput,
   SupermemorySearchResult,
 } from "../types/supermemory";
 
-const SUPERMEMORY_BASE_URL = "https://api.supermemory.ai";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function getApiKey() {
   return process.env.SUPERMEMORY_API_KEY;
@@ -37,7 +47,38 @@ function truncateText(value: string, maxLength: number) {
 }
 
 export function getBrandReferenceContainerTag(voiceId: string) {
+  const voiceHash = createHash("sha256").update(voiceId).digest("hex");
+  return `brand_voice_${voiceHash.slice(0, SUPERMEMORY_CONTAINER_TAG_HASH_LENGTH)}`;
+}
+
+function getLegacyBrandReferenceContainerTag(voiceId: string) {
   return `brand_voice:${voiceId}`;
+}
+
+function getApplicableToMetadataKey(platform: string) {
+  switch (platform) {
+    case "all":
+      return "applicableToAll";
+    case "twitter":
+      return "applicableToTwitter";
+    case "linkedin":
+      return "applicableToLinkedin";
+    case "blog":
+      return "applicableToBlog";
+    default:
+      return null;
+  }
+}
+
+function getBrandReferenceSearchResultKey(result: SupermemorySearchResult) {
+  const referenceId = getBrandReferenceIdFromSearchResult(result);
+  if (referenceId) {
+    return `reference:${referenceId}`;
+  }
+  if (result.id) {
+    return `memory:${result.id}`;
+  }
+  return null;
 }
 
 export function buildBrandReferenceMemoryContent(
@@ -53,7 +94,7 @@ export function buildBrandReferenceMemoryContent(
     `Reference type: ${payload.type}`,
     `Applicable platforms: ${applicableTo}`,
     note ? `When to use: ${note}` : null,
-    payload.url ? `Source URL: ${payload.url}` : null,
+    payload.sourceUrl ? `Source URL: ${payload.sourceUrl}` : null,
     payload.tweetId ? `Tweet ID: ${payload.tweetId}` : null,
     "Sample:",
     truncateText(payload.content.trim(), 9500),
@@ -71,12 +112,13 @@ export function buildBrandReferenceMemoryPayload(input: {
     content: string;
     note: string | null;
     applicableTo: string[];
-    metadata: Record<string, unknown> | null;
+    metadata: unknown;
+    sourceUrl: string | null;
   };
 }) {
-  const tweetId = input.reference.metadata?.tweetId;
-  const url = input.reference.metadata?.url;
-
+  const tweetId = isRecord(input.reference.metadata)
+    ? input.reference.metadata.tweetId
+    : null;
   return {
     organizationId: input.organizationId,
     voiceId: input.voiceId,
@@ -86,33 +128,54 @@ export function buildBrandReferenceMemoryPayload(input: {
     note: input.reference.note,
     applicableTo: input.reference.applicableTo,
     tweetId: typeof tweetId === "string" ? tweetId : null,
-    url: typeof url === "string" ? url : null,
+    sourceUrl: input.reference.sourceUrl,
   } satisfies BrandReferenceMemoryPayload;
+}
+
+export function getBrandReferenceMemorySyncHash(
+  payload: BrandReferenceMemoryPayload
+) {
+  return createHash("sha256")
+    .update(buildBrandReferenceMemoryContent(payload))
+    .digest("hex");
+}
+
+export function getBrandReferenceMemoryCustomId(
+  payload: BrandReferenceMemoryPayload
+) {
+  const referenceHash = createHash("sha256")
+    .update(payload.referenceId)
+    .digest("hex");
+  const syncHash = getBrandReferenceMemorySyncHash(payload);
+  return `brand-reference-${referenceHash.slice(0, SUPERMEMORY_CUSTOM_ID_HASH_LENGTH)}-${syncHash.slice(0, SUPERMEMORY_CUSTOM_ID_HASH_LENGTH)}`;
 }
 
 export async function createBrandReferenceMemory(
   payload: BrandReferenceMemoryPayload
 ): Promise<BrandReferenceMemoryLink> {
-  const response = await fetch(`${SUPERMEMORY_BASE_URL}/v4/memories`, {
+  const syncHash = getBrandReferenceMemorySyncHash(payload);
+  const response = await fetch(`${SUPERMEMORY_BASE_URL}/v3/documents`, {
     method: "POST",
     headers: getHeaders(),
+    signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
+      content: buildBrandReferenceMemoryContent(payload),
       containerTag: getBrandReferenceContainerTag(payload.voiceId),
-      memories: [
-        {
-          content: buildBrandReferenceMemoryContent(payload),
-          metadata: {
-            source: "brand_reference",
-            organizationId: payload.organizationId,
-            voiceId: payload.voiceId,
-            referenceId: payload.referenceId,
-            type: payload.type,
-            applicableTo: payload.applicableTo,
-            tweetId: payload.tweetId ?? undefined,
-            url: payload.url ?? undefined,
-          },
-        },
-      ],
+      customId: getBrandReferenceMemoryCustomId(payload),
+      metadata: {
+        source: "brand_reference",
+        organizationId: payload.organizationId,
+        voiceId: payload.voiceId,
+        referenceId: payload.referenceId,
+        syncHash,
+        type: payload.type,
+        applicableToAll: payload.applicableTo.includes("all"),
+        applicableToBlog: payload.applicableTo.includes("blog"),
+        applicableToLinkedin: payload.applicableTo.includes("linkedin"),
+        applicableToTwitter: payload.applicableTo.includes("twitter"),
+        tweetId: payload.tweetId ?? undefined,
+        url: payload.sourceUrl ?? undefined,
+      },
     }),
   });
 
@@ -122,29 +185,37 @@ export async function createBrandReferenceMemory(
     );
   }
 
-  const data = (await response.json()) as {
-    documentId?: string | null;
-    memories?: Array<{ id?: string }>;
-  };
+  const data: unknown = await response.json();
+  if (!isRecord(data)) {
+    throw new Error(
+      "Supermemory returned an invalid reference memory response"
+    );
+  }
+
+  if (typeof data.id !== "string") {
+    throw new Error("Supermemory did not return a document ID");
+  }
 
   return {
-    documentId: data.documentId ?? null,
-    memoryId: data.memories?.[0]?.id ?? null,
+    documentId: data.id,
+    memoryId: null,
   };
 }
 
-export async function deleteBrandReferenceMemory(input: {
-  documentId?: string | null;
-}) {
-  if (!input.documentId) {
+export async function deleteBrandReferenceMemory(
+  input: DeleteBrandReferenceMemoryInput
+) {
+  const identifier = input.documentId ?? input.customId;
+  if (!identifier) {
     return;
   }
 
   const response = await fetch(
-    `${SUPERMEMORY_BASE_URL}/v3/documents/${encodeURIComponent(input.documentId)}`,
+    `${SUPERMEMORY_BASE_URL}/v3/documents/${encodeURIComponent(identifier)}`,
     {
       method: "DELETE",
       headers: getHeaders(),
+      signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
     }
   );
 
@@ -165,15 +236,61 @@ export async function searchBrandReferenceMemories(input: {
   applicableTo?: string;
   limit?: number;
 }) {
+  const limit = input.limit ?? 6;
+  const [currentResults, legacyResults] = await Promise.all([
+    searchBrandReferenceContainer({
+      ...input,
+      containerTag: getBrandReferenceContainerTag(input.voiceId),
+      legacyMetadata: false,
+      limit,
+    }),
+    searchBrandReferenceContainer({
+      ...input,
+      containerTag: getLegacyBrandReferenceContainerTag(input.voiceId),
+      legacyMetadata: true,
+      limit,
+    }),
+  ]);
+  const seen = new Set<string>();
+
+  return [...currentResults, ...legacyResults]
+    .sort((left, right) => (right.similarity ?? 0) - (left.similarity ?? 0))
+    .filter((result) => {
+      const resultKey = getBrandReferenceSearchResultKey(result);
+
+      if (!resultKey || !seen.has(resultKey)) {
+        if (resultKey) {
+          seen.add(resultKey);
+        }
+        return true;
+      }
+
+      return false;
+    })
+    .slice(0, limit);
+}
+
+async function searchBrandReferenceContainer(input: {
+  voiceId: string;
+  query: string;
+  applicableTo?: string;
+  limit: number;
+  containerTag: string;
+  legacyMetadata: boolean;
+}) {
+  const applicableToMetadataKey = input.applicableTo
+    ? getApplicableToMetadataKey(input.applicableTo)
+    : null;
   const response = await fetch(`${SUPERMEMORY_BASE_URL}/v4/search`, {
     method: "POST",
     headers: getHeaders(),
+    signal: AbortSignal.timeout(SUPERMEMORY_REQUEST_TIMEOUT_MS),
     body: JSON.stringify({
       q: input.query,
-      limit: input.limit ?? 6,
+      limit: input.limit,
       threshold: 0.2,
       rerank: true,
-      containerTag: getBrandReferenceContainerTag(input.voiceId),
+      containerTag: input.containerTag,
       filters: {
         AND: [
           { key: "source", value: "brand_reference" },
@@ -181,18 +298,33 @@ export async function searchBrandReferenceMemories(input: {
           ...(input.applicableTo
             ? [
                 {
-                  OR: [
-                    {
-                      filterType: "array_contains",
-                      key: "applicableTo",
-                      value: "all",
-                    },
-                    {
-                      filterType: "array_contains",
-                      key: "applicableTo",
-                      value: input.applicableTo,
-                    },
-                  ],
+                  OR: input.legacyMetadata
+                    ? [
+                        {
+                          filterType: "array_contains",
+                          key: "applicableTo",
+                          value: "all",
+                        },
+                        {
+                          filterType: "array_contains",
+                          key: "applicableTo",
+                          value: input.applicableTo,
+                        },
+                      ]
+                    : [
+                        {
+                          key: "applicableToAll",
+                          value: true,
+                        },
+                        ...(applicableToMetadataKey
+                          ? [
+                              {
+                                key: applicableToMetadataKey,
+                                value: true,
+                              },
+                            ]
+                          : []),
+                      ],
                 },
               ]
             : []),

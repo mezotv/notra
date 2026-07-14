@@ -10,10 +10,17 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@notra/ui/components/ui/sidebar";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { cn } from "@notra/ui/lib/utils";
+import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavMain } from "./nav-main";
@@ -44,6 +51,7 @@ const createSubpageVariants = (shouldReduceMotion: boolean | null) => ({
 const TRANSITION = { duration: 0.2, type: "spring" as const, bounce: 0.1 };
 
 export function DashboardSidebar({
+  className,
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
@@ -59,9 +67,11 @@ export function DashboardSidebar({
   const isSubpage = isSettingsRoute || isChatRoute;
 
   const hasVisitedMainRef = useRef(false);
-  if (!isSubpage) {
-    hasVisitedMainRef.current = true;
-  }
+  useEffect(() => {
+    if (!(isSettingsRoute || isChatRoute)) {
+      hasVisitedMainRef.current = true;
+    }
+  }, [isSettingsRoute, isChatRoute]);
 
   function handleBack() {
     if (hasVisitedMainRef.current) {
@@ -78,89 +88,91 @@ export function DashboardSidebar({
     <Sidebar
       collapsible="icon"
       {...props}
-      className="overflow-hidden overscroll-none border-none"
+      className={cn("overflow-hidden overscroll-none border-none", className)}
     >
-      <SidebarHeader>
-        <OrgSelector />
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSubpage && (
-            <motion.div
-              animate="animate"
-              exit="exit"
-              initial="initial"
-              key="back-button"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <SidebarMenu>
-                <SidebarMenuButton
-                  className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
-                  onClick={handleBack}
-                  tooltip="Back"
-                >
-                  <HugeiconsIcon icon={ArrowLeft01Icon} />
-                  <span>Back</span>
-                </SidebarMenuButton>
-              </SidebarMenu>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SidebarHeader>
-      <SidebarContent>
-        <AnimatePresence initial={false} mode="popLayout">
-          {isSettingsRoute && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="settings"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <NavSettings slug={slug} />
-            </motion.div>
-          )}
-          {!isSettingsRoute && isChatRoute && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="chat"
-              transition={TRANSITION}
-              variants={subpageVariants}
-            >
-              <ChatHistoryNav />
-              <div className="mt-auto">
-                <NavSecondary />
-              </div>
-            </motion.div>
-          )}
-          {!(isSettingsRoute || isChatRoute) && (
-            <motion.div
-              animate="animate"
-              className="flex flex-1 flex-col"
-              exit="exit"
-              initial="initial"
-              key="main"
-              transition={TRANSITION}
-              variants={mainVariants}
-            >
-              <NavMain />
-              <div className="mt-auto">
-                <SidebarTrialExpired />
-                <SidebarOnboarding />
-                <SidebarUpgrade />
-                <NavSecondary />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser />
-      </SidebarFooter>
+      <LazyMotion features={domAnimation}>
+        <SidebarHeader>
+          <OrgSelector />
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSubpage && (
+              <m.div
+                animate="animate"
+                exit="exit"
+                initial="initial"
+                key="back-button"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <SidebarMenu>
+                  <SidebarMenuButton
+                    className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
+                    onClick={handleBack}
+                    tooltip="Back"
+                  >
+                    <HugeiconsIcon icon={ArrowLeft01Icon} />
+                    <span>Back</span>
+                  </SidebarMenuButton>
+                </SidebarMenu>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarHeader>
+        <SidebarContent>
+          <AnimatePresence initial={false} mode="popLayout">
+            {isSettingsRoute && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="settings"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <NavSettings slug={slug} />
+              </m.div>
+            )}
+            {!isSettingsRoute && isChatRoute && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="chat"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <ChatHistoryNav />
+                <div className="mt-auto">
+                  <NavSecondary />
+                </div>
+              </m.div>
+            )}
+            {!(isSettingsRoute || isChatRoute) && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="main"
+                transition={TRANSITION}
+                variants={mainVariants}
+              >
+                <NavMain />
+                <div className="mt-auto">
+                  <SidebarTrialExpired />
+                  <SidebarOnboarding />
+                  <SidebarUpgrade />
+                  <NavSecondary />
+                </div>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </SidebarContent>
+        <SidebarFooter>
+          <NavUser />
+        </SidebarFooter>
+      </LazyMotion>
     </Sidebar>
   );
 }

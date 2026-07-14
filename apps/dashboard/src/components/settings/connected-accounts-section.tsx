@@ -10,6 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { ConnectedAccountsSectionProps } from "@/types/settings/account";
 
 export function ConnectedAccountsSection({
@@ -49,7 +50,11 @@ export function ConnectedAccountsSection({
       });
 
       if (result.error) {
-        toast.error(result.error.message ?? `Failed to unlink ${provider}`);
+        const message = errorMessageOr(
+          result.error.message,
+          `Failed to unlink ${provider}`
+        );
+        toast.error(message);
         setLoadingProvider(null);
         return;
       }

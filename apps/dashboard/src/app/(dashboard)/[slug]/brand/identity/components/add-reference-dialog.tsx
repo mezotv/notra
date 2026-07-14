@@ -35,7 +35,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -56,9 +56,13 @@ import {
 
 type Step = "source" | "tweet-url" | "import-x" | "custom";
 
+function pluralSuffix(count: number) {
+  return count === 1 ? "" : "s";
+}
+
 function useReferenceBalance() {
   const { check, data: customer } = useCustomer();
-  return useMemo(() => {
+  return (() => {
     if (!customer) {
       return {
         remaining: null,
@@ -103,7 +107,7 @@ function useReferenceBalance() {
       overageAllowed: data.balance?.overageAllowed === true,
       unlimited: false,
     };
-  }, [check, customer]);
+  })();
 }
 
 function ReferenceUsageInfo({ afterCount }: { afterCount: number }) {
@@ -151,12 +155,16 @@ export function AddReferenceDialog({
   initialStep,
 }: AddReferenceDialogProps) {
   const [step, setStep] = useState<Step>(initialStep ?? "source");
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialStep, setPrevInitialStep] = useState(initialStep);
 
-  useEffect(() => {
+  if (open !== prevOpen || initialStep !== prevInitialStep) {
+    setPrevOpen(open);
+    setPrevInitialStep(initialStep);
     if (open && initialStep) {
       setStep(initialStep);
     }
-  }, [open, initialStep]);
+  }
 
   const handleClose = () => {
     setStep("source");
@@ -278,6 +286,7 @@ function TweetUrlStep({
       await createReference.mutateAsync({
         type: "twitter_post",
         content: tweet.content,
+        sourceUrl: tweet.url,
         metadata: {
           tweetId: tweet.tweetId,
           authorHandle: tweet.authorHandle,
@@ -371,14 +380,12 @@ function ImportXStep({
   const [maxResults, setMaxResults] = useState(20);
   const { remaining } = useReferenceBalance();
 
+  const maxResultsCap = remaining !== null ? Math.min(20, remaining) : 20;
+  const clampedMaxResults = Math.max(1, Math.min(maxResults, maxResultsCap));
   const effectiveMax =
-    remaining !== null ? Math.min(maxResults, remaining) : maxResults;
-
-  useEffect(() => {
-    if (remaining !== null && remaining < maxResults) {
-      setMaxResults(Math.max(1, Math.min(20, remaining)));
-    }
-  }, [remaining, maxResults]);
+    remaining !== null
+      ? Math.min(clampedMaxResults, remaining)
+      : clampedMaxResults;
 
   const twitterAccounts =
     data?.accounts.filter((a) => a.provider === "twitter") ?? [];
@@ -403,7 +410,7 @@ function ImportXStep({
       });
       if (result.count > 0) {
         toast.success(
-          `Imported ${result.count} post${result.count === 1 ? "" : "s"} from @${account.username}`
+          `Imported ${result.count} post${pluralSuffix(result.count)} from @${account.username}`
         );
         onClose();
       } else {
@@ -465,10 +472,10 @@ function ImportXStep({
                   }
                 }}
                 type="number"
-                value={maxResults}
+                value={clampedMaxResults}
               />
             </div>
-            <ReferenceUsageInfo afterCount={maxResults} />
+            <ReferenceUsageInfo afterCount={clampedMaxResults} />
           </div>
         )}
 
@@ -608,6 +615,7 @@ function CustomTextStep({
 }) {
   const [content, setContent] = useState("");
   const [note, setNote] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [applicableTo, setApplicableTo] = useState<ApplicablePlatform[]>([
     "all",
   ]);
@@ -635,12 +643,15 @@ function CustomTextStep({
       return;
     }
 
+    const trimmedNote = note.trim() || null;
+
     try {
       await createReference.mutateAsync({
         type: "custom",
         content: trimmed,
+        sourceUrl: sourceUrl.trim() || null,
         metadata: null,
-        note: note.trim() || null,
+        note: trimmedNote,
         applicableTo,
       });
       toast.success("Reference added");
@@ -671,6 +682,17 @@ function CustomTextStep({
             placeholder="Paste or write text that represents your writing style..."
             rows={5}
             value={content}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="custom-source-url">Source URL (optional)</Label>
+          <Input
+            id="custom-source-url"
+            onChange={(event) => setSourceUrl(event.target.value)}
+            placeholder="https://example.com/blog/post"
+            type="url"
+            value={sourceUrl}
           />
         </div>
 

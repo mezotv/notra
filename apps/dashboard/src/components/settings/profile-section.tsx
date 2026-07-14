@@ -19,6 +19,7 @@ import * as z from "zod";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
+import { errorMessageOr } from "@/lib/utils";
 import type { ProfileSectionProps } from "@/types/settings/account";
 
 const nameSchema = z.string().trim().min(1, "Name cannot be empty");
@@ -44,13 +45,20 @@ export function ProfileSection({
       const result = await authClient.updateUser({ image: url });
 
       if (result.error) {
-        toast.error(result.error.message ?? "Failed to update profile picture");
+        toast.error(
+          errorMessageOr(
+            result.error.message,
+            "Failed to update profile picture"
+          )
+        );
         setIsUploadingAvatar(false);
         return;
       }
 
       toast.success("Profile picture updated");
-      await onSessionRefetch?.();
+      if (onSessionRefetch) {
+        await onSessionRefetch();
+      }
     } catch (error) {
       console.error("Avatar upload error:", error);
       toast.error(
@@ -86,13 +94,17 @@ export function ProfileSection({
         });
 
         if (result.error) {
-          toast.error(result.error.message ?? "Failed to update profile");
+          toast.error(
+            errorMessageOr(result.error.message, "Failed to update profile")
+          );
           setIsUpdating(false);
           return;
         }
 
         toast.success("Profile updated successfully");
-        await onSessionRefetch?.();
+        if (onSessionRefetch) {
+          await onSessionRefetch();
+        }
       } catch {
         toast.error("Failed to update profile");
       }

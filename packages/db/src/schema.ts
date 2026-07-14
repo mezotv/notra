@@ -323,6 +323,10 @@ export const organizations = pgTable(
     onboardingDismissed: boolean("onboarding_dismissed")
       .default(false)
       .notNull(),
+    onboardingAgentRan: boolean("onboarding_agent_ran")
+      .default(false)
+      .notNull(),
+    onboardingAgentStartedAt: timestamp("onboarding_agent_started_at"),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );
@@ -825,6 +829,10 @@ export const brandSettings = pgTable(
       .notNull(),
   },
   (table) => [
+    check(
+      "brandSettings_toneProfile_check",
+      sql`${table.toneProfile} IS NULL OR ${table.toneProfile} IN ('Conversational', 'Professional', 'Casual', 'Formal')`
+    ),
     uniqueIndex("brandSettings_org_name_uidx").on(
       table.organizationId,
       table.name
@@ -918,6 +926,10 @@ export const brandReferences = pgTable(
       .references(() => brandSettings.id, { onDelete: "cascade" }),
     type: referenceTypeEnum("type").notNull(),
     content: text("content").notNull(),
+    sourceUrl: text("source_url"),
+    sourceSnapshotKey: text("source_snapshot_key"),
+    sourceContentHash: text("source_content_hash"),
+    sourceCapturedAt: timestamp("source_captured_at"),
     metadata: jsonb("metadata"),
     note: text("note"),
     supermemoryDocumentId: text("supermemory_document_id"),
@@ -936,6 +948,10 @@ export const brandReferences = pgTable(
   },
   (table) => [
     index("brandReferences_brandSettingsId_idx").on(table.brandSettingsId),
+    index("brandReferences_brandSettingsId_sourceUrl_idx").on(
+      table.brandSettingsId,
+      table.sourceUrl
+    ),
   ]
 );
 
@@ -1356,6 +1372,37 @@ export const skills = pgTable(
   ]
 );
 
+export const onboardingSuggestionTypeEnum = pgEnum(
+  "onboarding_suggestion_type",
+  ["schedule_automation", "event_automation"]
+);
+
+export const onboardingSuggestions = pgTable(
+  "onboarding_suggestions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    type: onboardingSuggestionTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    data: jsonb("data"),
+    dismissed: boolean("dismissed").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("onboardingSuggestions_org_type_idx").on(
+      table.organizationId,
+      table.type
+    ),
+  ]
+);
+
 export interface PostSourceMetadata {
   triggerId?: string;
   triggerSourceType?: string;
@@ -1456,6 +1503,17 @@ export const organizationsRelations = relations(
     skills: many(skills),
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
+    onboardingSuggestions: many(onboardingSuggestions),
+  })
+);
+
+export const onboardingSuggestionsRelations = relations(
+  onboardingSuggestions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [onboardingSuggestions.organizationId],
+      references: [organizations.id],
+    }),
   })
 );
 

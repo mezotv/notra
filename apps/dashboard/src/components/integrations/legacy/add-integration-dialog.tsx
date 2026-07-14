@@ -24,13 +24,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDownIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import {
-  isValidElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { isValidElement, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -55,6 +49,11 @@ interface ProbeResult {
   defaultBranch?: string;
   description?: string;
 }
+
+const TOKEN_PROMPT_PROBE_STATUSES = new Set<ProbeResult["status"]>([
+  "not_found",
+  "unauthorized",
+]);
 
 function getRepoKey(owner: string, repo: string) {
   return `${owner.toLowerCase()}/${repo.toLowerCase()}`;
@@ -87,66 +86,76 @@ export function LegacyAddIntegrationDialog({
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const probeRepo = useCallback(
-    async (owner: string, repo: string, token?: string) => {
-      abortControllerRef.current?.abort();
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
+  const probeRepo = async (owner: string, repo: string, token?: string) => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
-      setProbeStatus("loading");
+    setProbeStatus("loading");
 
-      try {
-        if (controller.signal.aborted) {
-          return null;
-        }
+    const normalizedToken = token || undefined;
 
-        const data = (await dashboardOrpc.github.probeRepository.call({
-          owner,
-          repo,
-          token: token || undefined,
-        })) as ProbeResult;
-
-        if (data.status === "not_found" || data.status === "unauthorized") {
-          setProbeStatus("not_found");
-          setTokenOpen(true);
-          return data;
-        }
-
-        setProbeStatus("success");
-
-        if (data.status === "private") {
-          setTokenOpen(true);
-        }
-
-        return data;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return null;
-        }
-
-        if (
-          error instanceof Error &&
-          (error.message === "Repository not found" ||
-            error.message === "Repository access denied")
-        ) {
-          setProbeStatus("not_found");
-          setTokenOpen(true);
-          return null;
-        }
-
-        setProbeStatus("error");
+    try {
+      if (controller.signal.aborted) {
         return null;
       }
-    },
-    []
-  );
 
-  useEffect(() => {
+      const data = (await dashboardOrpc.github.probeRepository.call({
+        owner,
+        repo,
+        token: normalizedToken,
+      })) as ProbeResult;
+
+      if (TOKEN_PROMPT_PROBE_STATUSES.has(data.status)) {
+        setProbeStatus("not_found");
+        setTokenOpen(true);
+        return data;
+      }
+
+      setProbeStatus("success");
+
+      if (data.status === "private") {
+        setTokenOpen(true);
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return null;
+      }
+
+      if (
+        error instanceof Error &&
+        (error.message === "Repository not found" ||
+          error.message === "Repository access denied")
+      ) {
+        setProbeStatus("not_found");
+        setTokenOpen(true);
+        return null;
+      }
+
+      setProbeStatus("error");
+      return null;
+    }
+  };
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
-      initializedBranchReposRef.current = new Set();
       setHasAttemptedSubmit(false);
     }
-  }, [open]);
+  }
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+  };
+
+  useEffect(() => {
+    if (controlledOpen ?? internalOpen) {
+      initializedBranchReposRef.current = new Set();
+    }
+  }, [controlledOpen, internalOpen]);
 
   const mutation = useMutation({
     mutationFn: async (values: AddGitHubIntegrationFormValues) => {
@@ -212,27 +221,28 @@ export function LegacyAddIntegrationDialog({
 
   const [repoInfo, setRepoInfo] = useState<GitHubRepoInfo | null>(null);
 
-  const resetProbeState = useCallback(() => {
+  const resetProbeState = () => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     setRepoInfo(null);
     setProbeStatus("idle");
     form.setFieldValue("branch", "");
-  }, [form]);
+  };
 
-  const initializeBranch = useCallback(
-    (owner: string, repo: string, defaultBranch: string) => {
-      const repoKey = getRepoKey(owner, repo);
+  const initializeBranch = (
+    owner: string,
+    repo: string,
+    defaultBranch: string
+  ) => {
+    const repoKey = getRepoKey(owner, repo);
 
-      if (initializedBranchReposRef.current.has(repoKey)) {
-        return;
-      }
+    if (initializedBranchReposRef.current.has(repoKey)) {
+      return;
+    }
 
-      initializedBranchReposRef.current.add(repoKey);
-      form.setFieldValue("branch", defaultBranch);
-    },
-    [form]
-  );
+    initializedBranchReposRef.current.add(repoKey);
+    form.setFieldValue("branch", defaultBranch);
+  };
 
   const repoProbeDebouncer = useAsyncDebouncer(
     async ({
@@ -294,7 +304,7 @@ export function LegacyAddIntegrationDialog({
 
   return (
     <>
-      <ResponsiveDialog onOpenChange={setOpen} open={open}>
+      <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {triggerElement}
         <ResponsiveDialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-[520px] [&>*]:min-w-0">
           <ResponsiveDialogHeader>

@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
@@ -74,11 +74,13 @@ export function UsageSection() {
       ? (total?.[FEATURES.AI_CREDITS]?.sum ?? 0)
       : 0;
 
-  const features = useMemo<FeatureData[]>(() => {
-    if (!customer?.balances) {
+  const balances = customer?.balances;
+
+  const features: FeatureData[] = (() => {
+    if (!balances) {
       return [];
     }
-    return Object.entries(customer.balances).map(([id, feature]) => {
+    return Object.entries(balances).map(([id, feature]) => {
       const balance =
         typeof feature?.remaining === "number" ? feature.remaining : null;
       const included =
@@ -92,7 +94,7 @@ export function UsageSection() {
         unlimited: feature?.unlimited === true,
       };
     });
-  }, [customer?.balances]);
+  })();
 
   const limitedFeatures = features.filter(
     (feature) =>

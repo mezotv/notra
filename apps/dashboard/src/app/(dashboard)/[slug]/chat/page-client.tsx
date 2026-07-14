@@ -558,6 +558,7 @@ function StandaloneChatPageClient({
   const drainQueueRef = useRef<() => void>(() => {
     // Populated after dispatchMessage is defined below.
   });
+  const isDrainingRef = useRef(false);
 
   const handleFinish = useCallback(
     ({ message }: { message: ChatUIMessage }) => {
@@ -1341,7 +1342,6 @@ function StandaloneChatPageClient({
     queuedMessagesRef.current = queuedMessages;
   }, [queuedMessages]);
 
-  const isDrainingRef = useRef(false);
   const seenToolOutputsRef = useRef<Set<string>>(new Set());
   const prevIsLoadingRef = useRef(false);
 

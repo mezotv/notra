@@ -5,6 +5,7 @@ import {
   Delete02Icon,
   Edit02Icon,
   FavouriteIcon,
+  Link04Icon,
   MoreHorizontalIcon,
   RepeatIcon,
   TextIcon,
@@ -39,6 +40,14 @@ import type {
   TweetMetadata,
 } from "@/types/hooks/brand-references";
 import { formatTweetContent } from "@/utils/format-tweet-content";
+import {
+  getFaviconUrl,
+  getMetadataString,
+  getReferenceDomain,
+  getTwitterAvatarUrl,
+  getTwitterHandleFromUrl,
+} from "@/utils/reference-display";
+import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const PLATFORM_OPTIONS = [
   { value: "all", label: "All platforms" },
@@ -55,6 +64,10 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 const TRAILING_ZERO_REGEX = /\.0$/;
+const REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
+});
 
 function formatCompactNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -66,8 +79,11 @@ function formatCompactNumber(num: number): string {
   return String(num);
 }
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string): string | null {
   const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -85,7 +101,29 @@ function formatRelativeDate(dateStr: string): string {
     return `${Math.floor(diffDays / 7)}w ago`;
   }
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return REFERENCE_DATE_FORMATTER.format(date);
+}
+
+function SourceLink({ sourceUrl }: { sourceUrl: string | null | undefined }) {
+  if (!sourceUrl) {
+    return null;
+  }
+  const safeSourceUrl = getSafeReferenceSourceUrl(sourceUrl);
+  if (!safeSourceUrl) {
+    return null;
+  }
+
+  return (
+    <a
+      className="inline-flex w-fit items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
+      href={safeSourceUrl}
+      rel="noreferrer"
+      target="_blank"
+    >
+      <HugeiconsIcon className="size-3.5" icon={Link04Icon} />
+      Open source
+    </a>
+  );
 }
 
 export function ReferenceCard({
@@ -98,6 +136,18 @@ export function ReferenceCard({
   if (reference.type === "custom") {
     return (
       <CustomReferenceCard
+        isDeleting={isDeleting}
+        onDelete={onDelete}
+        onUpdateApplicableTo={onUpdateApplicableTo}
+        onUpdateNote={onUpdateNote}
+        reference={reference}
+      />
+    );
+  }
+
+  if (reference.type === "blog_post") {
+    return (
+      <BlogReferenceCard
         isDeleting={isDeleting}
         onDelete={onDelete}
         onUpdateApplicableTo={onUpdateApplicableTo}
@@ -305,6 +355,17 @@ function TwitterReferenceCard({
     (metadata?.likes ?? 0) > 0 ||
     (metadata?.retweets ?? 0) > 0 ||
     (metadata?.replies ?? 0) > 0;
+  const handle =
+    metadata?.authorHandle ??
+    getTwitterHandleFromUrl(reference.sourceUrl ?? metadata?.url);
+  const avatarSrc =
+    metadata?.profileImageUrl ?? (handle ? getTwitterAvatarUrl(handle) : null);
+  const displayName =
+    metadata?.authorName ?? (handle ? `@${handle}` : "Unknown");
+  const showHandle = Boolean(handle && metadata?.authorName);
+  const createdAtLabel = metadata?.createdAt
+    ? formatRelativeDate(metadata.createdAt)
+    : null;
 
   return (
     <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
@@ -315,30 +376,35 @@ function TwitterReferenceCard({
               className="size-9 rounded-full after:rounded-full"
               size="sm"
             >
-              {metadata?.profileImageUrl && (
-                <AvatarImage src={metadata.profileImageUrl} />
-              )}
+              {avatarSrc && <AvatarImage src={avatarSrc} />}
               <AvatarFallback>
-                {(metadata?.authorHandle ?? "??").slice(0, 2).toUpperCase()}
+                {(handle ?? "??").slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
                 <span className="truncate font-semibold text-sm leading-tight">
-                  {metadata?.authorName ?? "Unknown"}
+                  {displayName}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                {metadata?.authorHandle && (
+                {showHandle && (
                   <span className="truncate text-muted-foreground text-xs">
-                    @{metadata.authorHandle}
+                    @{handle}
                   </span>
                 )}
-                {metadata?.createdAt && (
+                {createdAtLabel && (
                   <>
-                    <span className="text-muted-foreground/50 text-xs">·</span>
-                    <span className="shrink-0 text-muted-foreground/70 text-xs">
-                      {formatRelativeDate(metadata.createdAt)}
+                    {showHandle && (
+                      <span className="text-muted-foreground/50 text-xs">
+                        ·
+                      </span>
+                    )}
+                    <span
+                      className="shrink-0 text-muted-foreground/70 text-xs"
+                      suppressHydrationWarning
+                    >
+                      {createdAtLabel}
                     </span>
                   </>
                 )}
@@ -360,6 +426,8 @@ function TwitterReferenceCard({
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
+
+        <SourceLink sourceUrl={reference.sourceUrl ?? metadata?.url} />
 
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
@@ -396,6 +464,108 @@ function TwitterReferenceCard({
   );
 }
 
+function BlogReferenceCard({
+  reference,
+  onDelete,
+  onUpdateNote,
+  onUpdateApplicableTo,
+  isDeleting,
+}: ReferenceCardProps) {
+  const sourceUrl =
+    reference.sourceUrl ?? getMetadataString(reference.metadata, "url");
+  const domain = getReferenceDomain(sourceUrl);
+  const title = getMetadataString(reference.metadata, "title");
+  const authorName = getMetadataString(reference.metadata, "authorName");
+  const publishedAt = getMetadataString(reference.metadata, "createdAt");
+  const publishedAtLabel = publishedAt ? formatRelativeDate(publishedAt) : null;
+  const showDomainLine = Boolean(domain && title);
+
+  return (
+    <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
+      <div className="flex flex-col gap-2.5 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Avatar
+              className="size-9 rounded-full bg-muted after:rounded-full"
+              size="sm"
+            >
+              {domain && (
+                <AvatarImage className="p-2" src={getFaviconUrl(domain)} />
+              )}
+              <AvatarFallback>
+                {(domain ?? "??").slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <span className="block truncate font-semibold text-sm leading-tight">
+                {title ?? domain ?? "Blog post"}
+              </span>
+              <div className="flex items-center gap-1">
+                {authorName && (
+                  <span className="truncate text-muted-foreground text-xs">
+                    {authorName}
+                  </span>
+                )}
+                {showDomainLine && (
+                  <>
+                    {authorName && (
+                      <span className="text-muted-foreground/50 text-xs">
+                        ·
+                      </span>
+                    )}
+                    <span className="truncate text-muted-foreground text-xs">
+                      {domain}
+                    </span>
+                  </>
+                )}
+                {publishedAtLabel && (
+                  <>
+                    {(authorName || showDomainLine) && (
+                      <span className="text-muted-foreground/50 text-xs">
+                        ·
+                      </span>
+                    )}
+                    <span
+                      className="shrink-0 text-muted-foreground/70 text-xs"
+                      suppressHydrationWarning
+                    >
+                      {publishedAtLabel}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <PlatformBadges applicableTo={reference.applicableTo} />
+            <CardMenu
+              applicableTo={reference.applicableTo}
+              isDeleting={isDeleting}
+              onDelete={() => onDelete(reference.id)}
+              onUpdateApplicableTo={onUpdateApplicableTo}
+              referenceId={reference.id}
+            />
+          </div>
+        </div>
+
+        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
+          {reference.content}
+        </p>
+
+        <SourceLink sourceUrl={sourceUrl} />
+      </div>
+
+      <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
+        <NoteInput
+          initialNote={reference.note}
+          onUpdateNote={onUpdateNote}
+          referenceId={reference.id}
+        />
+      </div>
+    </div>
+  );
+}
+
 function CustomReferenceCard({
   reference,
   onDelete,
@@ -418,7 +588,10 @@ function CustomReferenceCard({
               <span className="font-semibold text-sm leading-tight">
                 Custom reference
               </span>
-              <p className="text-muted-foreground/70 text-xs">
+              <p
+                className="text-muted-foreground/70 text-xs"
+                suppressHydrationWarning
+              >
                 {formatRelativeDate(reference.createdAt)}
               </p>
             </div>
@@ -438,6 +611,8 @@ function CustomReferenceCard({
         <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
           {formatTweetContent(reference.content)}
         </p>
+
+        <SourceLink sourceUrl={reference.sourceUrl} />
       </div>
 
       <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">

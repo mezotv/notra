@@ -1,0 +1,10 @@
+{
+  "extends": "@notra/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  "include": ["agent", "scripts"],
+  "exclude": ["node_modules", ".eve"]
+}

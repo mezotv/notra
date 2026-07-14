@@ -93,14 +93,15 @@ const ContentCard = memo(function ContentCard({
       setShowDeleteDialog(false);
     } catch {
       toast.error("Failed to delete post");
-    } finally {
-      setIsDeleting(false);
     }
+    setIsDeleting(false);
   }
 
   async function handleToggleStatus() {
     setIsTogglingStatus(true);
     const newStatus = status === "published" ? "draft" : "published";
+    const successMessage =
+      newStatus === "published" ? "Post published" : "Post moved to drafts";
     try {
       await dashboardOrpc.content.update.call({
         organizationId,
@@ -108,9 +109,7 @@ const ContentCard = memo(function ContentCard({
         status: newStatus,
       });
 
-      toast.success(
-        newStatus === "published" ? "Post published" : "Post moved to drafts"
-      );
+      toast.success(successMessage);
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: dashboardOrpc.content.list.key(),
@@ -129,9 +128,8 @@ const ContentCard = memo(function ContentCard({
       ]);
     } catch {
       toast.error("Failed to update post status");
-    } finally {
-      setIsTogglingStatus(false);
     }
+    setIsTogglingStatus(false);
   }
 
   const cardContent = (

@@ -68,7 +68,12 @@ export function useUpdateReference(organizationId: string, voiceId: string) {
       data,
     }: {
       referenceId: string;
-      data: { note?: string | null; content?: string; applicableTo?: string[] };
+      data: {
+        note?: string | null;
+        content?: string;
+        sourceUrl?: string | null;
+        applicableTo?: string[];
+      };
     }) => {
       const applicableTo = data.applicableTo as
         | ("all" | "twitter" | "linkedin" | "blog")[]

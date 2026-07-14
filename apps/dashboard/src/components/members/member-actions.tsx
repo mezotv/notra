@@ -49,6 +49,7 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import { errorMessageOr } from "@/lib/utils";
 import type {
   MemberActionsAction,
   MemberActionsState,
@@ -193,7 +194,7 @@ export function MemberActions({ member }: MemberActionsProps) {
       });
 
       if (error) {
-        toast.error(error.message || "Failed to remove member");
+        toast.error(errorMessageOr(error.message, "Failed to remove member"));
         dispatch({ type: "removeFinished" });
         return;
       }

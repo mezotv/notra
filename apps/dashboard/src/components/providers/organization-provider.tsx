@@ -131,11 +131,14 @@ export function OrganizationsProvider({
     : (activeOrganization ?? optimisticActiveOrg ?? seededActiveOrganization);
 
   // Clear optimistic state when real data arrives
-  useEffect(() => {
+  const [prevActiveOrganization, setPrevActiveOrganization] =
+    useState(activeOrganization);
+  if (activeOrganization !== prevActiveOrganization) {
+    setPrevActiveOrganization(activeOrganization);
     if (activeOrganization) {
       setOptimisticActiveOrg(null);
     }
-  }, [activeOrganization]);
+  }
 
   useEffect(() => {
     if (isLoadingOrgs || isLoadingActive) {
