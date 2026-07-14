@@ -73,10 +73,6 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
     },
-    "eve:build": {
-      "dependsOn": ["^build"],
-      "outputs": [".output/**", ".eve/compile/**", ".eve/discovery/**"]
-    },
     "check-types": {
       "dependsOn": ["transit"]
     },
