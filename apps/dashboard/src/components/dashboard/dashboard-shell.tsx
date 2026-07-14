@@ -31,12 +31,14 @@ export function DashboardShell({
   const running = data?.running ?? false;
   const canStart = !!data && !data.ran && !running && !dismissed;
   const visible = running || canStart;
+  const starting =
+    runAgent.isPending && runAgent.variables?.organizationId === organizationId;
   const shellStyle: DashboardShellStyle = {
     "--eve-banner-height": visible ? EVE_BANNER_HEIGHT : "0rem",
   };
 
   const handleStart = () => {
-    if (!organizationId || runAgent.isPending) {
+    if (!organizationId || starting) {
       return;
     }
     runAgent.mutate(
@@ -59,7 +61,7 @@ export function DashboardShell({
         <OnboardingAgentBanner
           onDismiss={dismiss}
           onStart={handleStart}
-          starting={runAgent.isPending}
+          starting={starting}
           state={running ? "running" : "idle"}
         />
       ) : null}

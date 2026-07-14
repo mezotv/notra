@@ -239,7 +239,11 @@ export async function startSelfServeOnboardingAgent({
   organizationId,
 }: StartSelfServeOnboardingAgentInput): Promise<SelfServeOnboardingAgentResult> {
   const organization = await db.query.organizations.findFirst({
-    columns: { name: true, onboardingAgentRan: true },
+    columns: {
+      name: true,
+      onboardingAgentRan: true,
+      onboardingAgentStartedAt: true,
+    },
     where: eq(organizations.id, organizationId),
   });
   if (!organization) {
@@ -247,6 +251,13 @@ export async function startSelfServeOnboardingAgent({
   }
   if (organization.onboardingAgentRan) {
     return { reason: "already-ran", started: false };
+  }
+  if (
+    organization.onboardingAgentStartedAt &&
+    Date.now() - organization.onboardingAgentStartedAt.getTime() <
+      AGENT_RUN_HARD_LIMIT_MS
+  ) {
+    return { reason: "already-running", started: false };
   }
 
   const brand = await db.query.brandSettings.findFirst({
