@@ -31,7 +31,7 @@ export function DashboardShell({
     >
       {visible ? <OnboardingAgentBanner /> : null}
       <SidebarProvider
-        className="min-h-0 flex-1 overflow-hidden overscroll-none"
+        className="min-h-0! flex-1 overflow-hidden overscroll-none"
         defaultOpen={initialSidebarOpen}
       >
         <DashboardSidebar
