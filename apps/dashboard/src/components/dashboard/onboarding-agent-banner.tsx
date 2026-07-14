@@ -90,7 +90,7 @@ export function OnboardingAgentBanner({
                   className="size-4 animate-spin motion-reduce:animate-none"
                 />
               ) : null}
-              Start setup
+              Start Setup
             </ResponsiveDialogTrigger>
             <ResponsiveDialogContent>
               <ResponsiveDialogHeader>
@@ -128,11 +128,11 @@ export function OnboardingAgentBanner({
                   </li>
                 ))}
               </ul>
-              <ResponsiveDialogFooter>
+              <ResponsiveDialogFooter className="sm:justify-center">
                 <ResponsiveDialogClose render={<Button variant="outline" />}>
                   Cancel
                 </ResponsiveDialogClose>
-                <Button onClick={handleConfirm}>Start setup</Button>
+                <Button onClick={handleConfirm}>Start Setup</Button>
               </ResponsiveDialogFooter>
             </ResponsiveDialogContent>
           </ResponsiveDialog>
