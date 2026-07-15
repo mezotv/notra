@@ -6,6 +6,30 @@ const nextConfig: NextConfig = {
     root: path.resolve(__dirname, "../.."),
   },
   transpilePackages: ["@notra/db", "@notra/ui", "@notra/ai", "@notra/utils"],
+  images: {
+    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.r2.cloudflarestorage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.r2.dev",
+      },
+      ...(process.env.CLOUDFLARE_PUBLIC_URL
+        ? [
+            {
+              protocol:
+                new URL(process.env.CLOUDFLARE_PUBLIC_URL).protocol === "http:"
+                  ? ("http" as const)
+                  : ("https" as const),
+              hostname: new URL(process.env.CLOUDFLARE_PUBLIC_URL).hostname,
+            },
+          ]
+        : []),
+    ],
+  },
   async redirects() {
     return [
       {

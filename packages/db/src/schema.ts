@@ -500,6 +500,16 @@ export const mcpServerIntegrations = pgTable(
     name: text("name").notNull(),
     url: text("url").notNull(),
     description: text("description"),
+    author: text("author"),
+    websiteUrl: text("website_url"),
+    brandColor: text("brand_color"),
+    logoLightUrl: text("logo_light_url"),
+    logoDarkUrl: text("logo_dark_url"),
+    bannerUrl: text("banner_url"),
+    storeStatus: text("store_status").default("draft").notNull(),
+    reviewNote: text("review_note"),
+    submittedAt: timestamp("submitted_at"),
+    reviewedAt: timestamp("reviewed_at"),
     authType: text("auth_type").default("none").notNull(),
     encryptedHeaders: jsonb("encrypted_headers")
       .$type<Record<string, string>>()
@@ -521,6 +531,11 @@ export const mcpServerIntegrations = pgTable(
       "mcpServerIntegrations_authType_check",
       sql`${table.authType} IN ('none', 'headers', 'oauth')`
     ),
+    check(
+      "mcpServerIntegrations_storeStatus_check",
+      sql`${table.storeStatus} IN ('draft', 'pending_review', 'live', 'rejected')`
+    ),
+    index("mcpServerIntegrations_storeStatus_idx").on(table.storeStatus),
     index("mcpServerIntegrations_organizationId_idx").on(table.organizationId),
     index("mcpServerIntegrations_createdByUserId_idx").on(
       table.createdByUserId
@@ -653,6 +668,8 @@ export const mcpToolIndex = pgTable(
     runtimeToolName: text("runtime_tool_name").notNull(),
     title: text("title"),
     description: text("description"),
+    actionPhrasePresent: text("action_phrase_present"),
+    actionPhrasePast: text("action_phrase_past"),
     inputSchema: jsonb("input_schema").notNull(),
     outputSchema: jsonb("output_schema"),
     annotations: jsonb("annotations"),

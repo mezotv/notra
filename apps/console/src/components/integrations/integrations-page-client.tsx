@@ -1,161 +1,226 @@
 "use client";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@notra/ui/components/ui/alert-dialog";
+  Delete02Icon,
+  MoreVerticalIcon,
+  PencilEdit02Icon,
+  PlusSignIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Switch } from "@notra/ui/components/ui/switch";
 import {
-  ExternalLink,
-  Github,
-  PanelsTopLeft,
-  Server,
-  Trash2,
-} from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@notra/ui/components/ui/table";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/button";
+import { STORE_STATUS_LABELS } from "@/lib/integrations/constants";
+import { getIntegrationInitials } from "@/lib/integrations/form";
+import { formatIntegrationDate } from "@/lib/integrations/format";
 import { consoleOrpc } from "@/lib/orpc/query";
-import { AddMcpServerDialog } from "./add-mcp-server-dialog";
+import type { McpServer } from "@/types/integrations";
 
-interface McpServer {
-  id: string;
-  name: string;
-  url: string;
-  description: string | null;
-  authType: "none" | "headers" | "oauth";
-  enabled: boolean;
-  indexedToolCount: number;
-}
+function IntegrationLogo({ server }: { server: McpServer }) {
+  const lightLogo = server.logoLightUrl ?? server.logoDarkUrl;
+  const darkLogo = server.logoDarkUrl ?? server.logoLightUrl;
 
-function formatAuthType(authType: string) {
-  if (authType === "none") {
-    return "No auth";
+  if (lightLogo && darkLogo) {
+    return (
+      <>
+        <Image
+          alt={`${server.name} logo`}
+          className="size-9 shrink-0 rounded-lg border object-cover dark:hidden"
+          height={36}
+          src={lightLogo}
+          width={36}
+        />
+        <Image
+          alt={`${server.name} logo`}
+          className="hidden size-9 shrink-0 rounded-lg border object-cover dark:block"
+          height={36}
+          src={darkLogo}
+          width={36}
+        />
+      </>
+    );
   }
-  if (authType === "oauth") {
-    return "OAuth";
-  }
-  return "Headers";
-}
 
-function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
-      {children}
+    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
+      {getIntegrationInitials(server.name)}
     </div>
   );
 }
 
-function McpServerCard({
+function getStatusBadgeVariant(server: McpServer) {
+  if (server.storeStatus === "live" && server.enabled) {
+    return "default";
+  }
+  if (server.storeStatus === "rejected") {
+    return "destructive";
+  }
+  return "secondary";
+}
+
+function IntegrationRow({
   deleting,
+  editHref,
   onDelete,
+  onToggleEnabled,
   server,
+  toggling,
 }: {
   deleting: boolean;
-  onDelete: (serverId: string) => void;
+  editHref: string;
+  onDelete: () => void;
+  onToggleEnabled: (enabled: boolean) => void;
   server: McpServer;
+  toggling: boolean;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Server className="size-5" />
+      <TableRow
+        className="cursor-pointer"
+        onClick={() => router.push(editHref)}
+      >
+        <TableCell>
+          <div className="flex items-center gap-3">
+            <IntegrationLogo server={server} />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{server.name}</p>
+              {server.description ? (
+                <p className="max-w-[24rem] truncate text-muted-foreground text-sm">
+                  {server.description}
+                </p>
+              ) : null}
+            </div>
           </div>
-          <CardTitle>{server.name}</CardTitle>
-          <CardDescription className="truncate font-mono text-xs">
-            {server.url}
-          </CardDescription>
-          <CardAction className="flex items-center gap-2">
-            <Badge variant={server.enabled ? "default" : "secondary"}>
-              {server.enabled ? "Enabled" : "Disabled"}
-            </Badge>
-            <Button
-              aria-label={`Delete ${server.name}`}
-              disabled={deleting}
-              onClick={() => setConfirmOpen(true)}
-              size="icon-sm"
-              variant="ghost"
-            >
-              <Trash2 />
-            </Button>
-          </CardAction>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {server.description ? (
-            <p className="line-clamp-2 text-muted-foreground text-sm">
-              {server.description}
-            </p>
-          ) : null}
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{formatAuthType(server.authType)}</Badge>
-            <Badge variant="secondary">
-              {server.indexedToolCount}{" "}
-              {server.indexedToolCount === 1 ? "tool" : "tools"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {server.author ?? "—"}
+        </TableCell>
+        <TableCell onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <Switch
+              aria-label={`Toggle ${server.name}`}
+              checked={server.enabled}
+              disabled={toggling}
+              onCheckedChange={onToggleEnabled}
+            />
+            <Badge variant={getStatusBadgeVariant(server)}>
+              {STORE_STATUS_LABELS[server.storeStatus]}
             </Badge>
           </div>
-        </CardContent>
-      </Card>
-      <AlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete MCP server?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This permanently removes &quot;{server.name}&quot; from this
-              organization.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {formatIntegrationDate(server.createdAt)}
+        </TableCell>
+        <TableCell onClick={(event) => event.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  aria-label={`Actions for ${server.name}`}
+                  size="icon-sm"
+                  variant="ghost"
+                >
+                  <HugeiconsIcon className="size-4" icon={MoreVerticalIcon} />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem render={<Link href={editHref} />}>
+                <HugeiconsIcon className="size-4" icon={PencilEdit02Icon} />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={deleting}
+                onClick={() => setConfirmOpen(true)}
+                variant="destructive"
+              >
+                <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </TableRow>
+      <ResponsiveAlertDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Delete integration?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
+              This permanently removes &quot;{server.name}&quot; and takes it
+              out of the integration store.
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={deleting}>
+              Cancel
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
               disabled={deleting}
               onClick={() => {
-                onDelete(server.id);
+                onDelete();
                 setConfirmOpen(false);
               }}
               variant="destructive"
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
     </>
   );
 }
 
-function LoadingCards() {
+function LoadingTable() {
   return (
-    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="space-y-3 rounded-xl border p-4">
       {[0, 1, 2].map((item) => (
-        <Card key={item}>
-          <CardHeader>
-            <Skeleton className="size-9 rounded-lg" />
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-4 w-52" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-5 w-24" />
-          </CardContent>
-        </Card>
+        <div className="flex items-center gap-3" key={item}>
+          <Skeleton className="size-9 rounded-lg" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+          <Skeleton className="h-5 w-16" />
+        </div>
       ))}
     </div>
   );
@@ -163,178 +228,149 @@ function LoadingCards() {
 
 export function IntegrationsPageClient({
   organizationId,
-  organizationName,
-  organizationSlug,
+  slug,
 }: {
   organizationId: string;
-  organizationName: string;
-  organizationSlug: string;
+  slug: string;
 }) {
   const queryClient = useQueryClient();
-  const [deletingServerId, setDeletingServerId] = useState<string | null>(null);
+  const router = useRouter();
+  const newIntegrationHref = `/${slug}/integrations/new`;
+
+  useHotkey("C", () => router.push(newIntegrationHref));
+
   const integrationsQuery = useQuery(
     consoleOrpc.integrations.list.queryOptions({
       input: { organizationId },
     })
   );
 
+  const listQueryKey = consoleOrpc.integrations.list.queryKey({
+    input: { organizationId },
+  });
+
   const deleteMutation = useMutation({
-    mutationFn: (serverId: string) => {
-      setDeletingServerId(serverId);
-      return consoleOrpc.integrations.mcp.delete.call({
+    mutationFn: (serverId: string) =>
+      consoleOrpc.integrations.mcp.delete.call({
         organizationId,
         serverId,
-      });
-    },
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: consoleOrpc.integrations.list.queryKey({
-          input: { organizationId },
-        }),
-      });
-      toast.success("MCP server deleted");
+      await queryClient.invalidateQueries({ queryKey: listQueryKey });
+      toast.success("Integration deleted");
     },
     onError: (error) => {
       toast.error(error.message);
     },
-    onSettled: () => {
-      setDeletingServerId(null);
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (input: { serverId: string; enabled: boolean }) =>
+      consoleOrpc.integrations.mcp.setEnabled.call({
+        organizationId,
+        serverId: input.serverId,
+        enabled: input.enabled,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: listQueryKey });
+    },
+    onError: (error) => {
+      toast.error(error.message);
     },
   });
 
   const data = integrationsQuery.data;
-  const dashboardUrl = `https://app.usenotra.com/${organizationSlug}/integrations`;
-  const connectedCount =
-    (data?.github.length ?? 0) + (data?.linear.length ?? 0);
+  const servers = data?.mcpServers ?? [];
 
   return (
-    <main className="flex flex-1 flex-col gap-8 p-4 md:p-6">
-      <div>
-        <h1 className="font-bold text-3xl tracking-tight">Integrations</h1>
-        <p className="text-muted-foreground">
-          Manage connections for {organizationName}.
-        </p>
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
+          <h1 className="font-semibold text-2xl tracking-tight">
+            My Integrations
+          </h1>
+          <p className="mt-1 text-muted-foreground text-sm">
+            MCP servers you&apos;ve registered for the Notra integration store.
+          </p>
+        </div>
+        <Button
+          className="gap-1.5"
+          nativeButton={false}
+          render={<Link href={newIntegrationHref} />}
+        >
+          <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+          New integration
+          <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+        </Button>
       </div>
 
-      <section className="space-y-4">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="font-semibold text-xl">MCP servers</h2>
-            <p className="text-muted-foreground text-sm">
-              Add custom MCP servers without a subscription.
-            </p>
-          </div>
-          <AddMcpServerDialog organizationId={organizationId} />
-        </div>
-
-        {integrationsQuery.isPending ? <LoadingCards /> : null}
-        {integrationsQuery.isError ? (
-          <EmptyState>
-            <p>Could not load integrations.</p>
-            <Button
-              className="mt-3"
-              onClick={() => integrationsQuery.refetch()}
-              size="sm"
-              variant="outline"
-            >
-              Try again
-            </Button>
-          </EmptyState>
-        ) : null}
-        {data && data.mcpServers.length === 0 ? (
-          <EmptyState>No MCP servers have been added yet.</EmptyState>
-        ) : null}
-        {data && data.mcpServers.length > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {data.mcpServers.map((server) => (
-              <McpServerCard
-                deleting={deletingServerId === server.id}
-                key={server.id}
-                onDelete={(serverId) => deleteMutation.mutate(serverId)}
-                server={server}
-              />
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="font-semibold text-xl">Connected via dashboard</h2>
-            <p className="text-muted-foreground text-sm">
-              GitHub and Linear connections are read-only in the console.
-            </p>
-          </div>
+      {integrationsQuery.isPending ? <LoadingTable /> : null}
+      {integrationsQuery.isError ? (
+        <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+          <p>Could not load integrations.</p>
           <Button
-            nativeButton={false}
-            render={
-              <a href={dashboardUrl} rel="noopener noreferrer" target="_blank">
-                Manage in the Notra dashboard
-                <ExternalLink />
-              </a>
-            }
+            className="mt-3"
+            onClick={() => integrationsQuery.refetch()}
+            size="sm"
             variant="outline"
-          />
+          >
+            Try again
+          </Button>
         </div>
-
-        {integrationsQuery.isPending ? <LoadingCards /> : null}
-        {data && connectedCount === 0 ? (
-          <EmptyState>
-            No GitHub or Linear integrations are connected. Add them from the
-            Notra dashboard.
-          </EmptyState>
-        ) : null}
-        {data && connectedCount > 0 ? (
-          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {data.github.map((integration) => (
-              <Card key={integration.id}>
-                <CardHeader>
-                  <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted">
-                    <Github className="size-5" />
-                  </div>
-                  <CardTitle>{integration.displayName}</CardTitle>
-                  <CardDescription>GitHub</CardDescription>
-                  <CardAction>
-                    <Badge
-                      variant={integration.enabled ? "default" : "secondary"}
-                    >
-                      {integration.enabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </CardAction>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">
-                    {integration.repositories
-                      .map(
-                        (repository) => `${repository.owner}/${repository.repo}`
-                      )
-                      .join(", ")}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-            {data.linear.map((integration) => (
-              <Card key={integration.id}>
-                <CardHeader>
-                  <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-muted">
-                    <PanelsTopLeft className="size-5" />
-                  </div>
-                  <CardTitle>{integration.displayName}</CardTitle>
-                  <CardDescription>Linear</CardDescription>
-                  <CardAction>
-                    <Badge
-                      variant={integration.enabled ? "default" : "secondary"}
-                    >
-                      {integration.enabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </CardAction>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        ) : null}
-      </section>
+      ) : null}
+      {data && servers.length === 0 ? (
+        <div className="rounded-xl border border-dashed p-10 text-center">
+          <p className="font-medium">No integrations yet</p>
+          <p className="mt-1 text-muted-foreground text-sm">
+            Register an MCP server to get it into the integration store.
+          </p>
+          <Button
+            className="mt-4"
+            nativeButton={false}
+            render={<Link href={newIntegrationHref} />}
+            variant="outline"
+          >
+            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+            New integration
+          </Button>
+        </div>
+      ) : null}
+      {servers.length > 0 ? (
+        <div className="overflow-x-auto rounded-xl border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Integration</TableHead>
+                <TableHead>Author</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="w-12" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {servers.map((server) => (
+                <IntegrationRow
+                  deleting={
+                    deleteMutation.isPending &&
+                    deleteMutation.variables === server.id
+                  }
+                  editHref={`/${slug}/integrations/${server.id}`}
+                  key={server.id}
+                  onDelete={() => deleteMutation.mutate(server.id)}
+                  onToggleEnabled={(enabled) =>
+                    toggleMutation.mutate({ serverId: server.id, enabled })
+                  }
+                  server={server}
+                  toggling={
+                    toggleMutation.isPending &&
+                    toggleMutation.variables?.serverId === server.id
+                  }
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : null}
     </main>
   );
 }

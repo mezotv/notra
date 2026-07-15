@@ -1,5 +1,6 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { SimpleCsrfProtectionLinkPlugin } from "@orpc/client/plugins";
 import type { RouterClient } from "@orpc/server";
 import type { ConsoleRouter } from "./router";
 
@@ -13,6 +14,7 @@ function getBaseUrl() {
 
 const link = new RPCLink({
   url: `${getBaseUrl()}/rpc`,
+  plugins: [new SimpleCsrfProtectionLinkPlugin()],
 });
 
 export const consoleOrpcClient: RouterClient<ConsoleRouter> =

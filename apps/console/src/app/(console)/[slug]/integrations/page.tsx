@@ -15,10 +15,6 @@ export default async function IntegrationsPage({
   const { organization } = await validateOrganizationAccess(slug);
 
   return (
-    <IntegrationsPageClient
-      organizationId={organization.id}
-      organizationName={organization.name}
-      organizationSlug={organization.slug}
-    />
+    <IntegrationsPageClient organizationId={organization.id} slug={slug} />
   );
 }

@@ -1,7 +1,7 @@
+import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { db } from "@notra/db/drizzle";
 import { organizations, skills } from "@notra/db/schema";
 import { count, eq } from "drizzle-orm";
-import { seedSystemSkills } from "../src/lib/skills/seed";
 
 async function main() {
   const orgs = await db.select({ id: organizations.id }).from(organizations);
