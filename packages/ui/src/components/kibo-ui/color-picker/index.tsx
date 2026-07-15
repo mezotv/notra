@@ -27,12 +27,16 @@ import {
 } from "@notra/ui/components/ui/select";
 import { cn } from "@notra/ui/lib/utils";
 
-type ColorPickerContextValue = {
+type ColorState = {
   hue: number;
   saturation: number;
   lightness: number;
   alpha: number;
+};
+
+type ColorPickerContextValue = ColorState & {
   mode: string;
+  commit: (partial: Partial<ColorState>) => void;
   setHue: (hue: number) => void;
   setSaturation: (saturation: number) => void;
   setLightness: (lightness: number) => void;
@@ -67,19 +71,22 @@ export const ColorPicker = ({
   className,
   ...props
 }: ColorPickerProps) => {
-  const [hue, setHue] = useState(() => Color(value ?? defaultValue).hue());
-  const [saturation, setSaturation] = useState(() =>
-    Color(value ?? defaultValue).saturationl()
-  );
-  const [lightness, setLightness] = useState(() =>
-    Color(value ?? defaultValue).lightness()
-  );
-  const [alpha, setAlpha] = useState(
-    () => Color(value ?? defaultValue).alpha() * 100
-  );
+  const [initialState] = useState<ColorState>(() => {
+    const color = Color(value ?? defaultValue);
+    return {
+      hue: color.hue(),
+      saturation: color.saturationl(),
+      lightness: color.lightness(),
+      alpha: color.alpha() * 100,
+    };
+  });
+  const [hue, setHue] = useState(initialState.hue);
+  const [saturation, setSaturation] = useState(initialState.saturation);
+  const [lightness, setLightness] = useState(initialState.lightness);
+  const [alpha, setAlpha] = useState(initialState.alpha);
   const [mode, setMode] = useState("hex");
   const onChangeRef = useRef(onChange);
-  const lastNotifiedRef = useRef<[number, number, number, number] | null>(null);
+  const stateRef = useRef<ColorState>(initialState);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -89,46 +96,40 @@ export const ColorPicker = ({
   useEffect(() => {
     if (value) {
       const color = Color(value);
-      const nextAlpha = color.alpha() * 100;
+      const next = {
+        hue: color.hue(),
+        saturation: color.saturationl(),
+        lightness: color.lightness(),
+        alpha: color.alpha() * 100,
+      };
 
-      lastNotifiedRef.current = [
-        color.hue(),
-        color.saturationl(),
-        color.lightness(),
-        nextAlpha,
-      ];
-      setHue(color.hue());
-      setSaturation(color.saturationl());
-      setLightness(color.lightness());
-      setAlpha(nextAlpha);
+      stateRef.current = next;
+      setHue(next.hue);
+      setSaturation(next.saturation);
+      setLightness(next.lightness);
+      setAlpha(next.alpha);
     }
   }, [value]);
 
-  // Notify parent of changes
-  useEffect(() => {
-    const previous = lastNotifiedRef.current;
-    if (previous === null) {
-      lastNotifiedRef.current = [hue, saturation, lightness, alpha];
-      return;
-    }
-    if (
-      previous[0] === hue &&
-      previous[1] === saturation &&
-      previous[2] === lightness &&
-      previous[3] === alpha
-    ) {
-      return;
-    }
+  // Notify the parent directly from user-driven updates
+  const commit = useCallback((partial: Partial<ColorState>) => {
+    const next = { ...stateRef.current, ...partial };
+    stateRef.current = next;
+    setHue(next.hue);
+    setSaturation(next.saturation);
+    setLightness(next.lightness);
+    setAlpha(next.alpha);
 
-    lastNotifiedRef.current = [hue, saturation, lightness, alpha];
-
-    if (onChangeRef.current) {
-      const color = Color.hsl(hue, saturation, lightness).alpha(alpha / 100);
+    const handler = onChangeRef.current;
+    if (handler) {
+      const color = Color.hsl(next.hue, next.saturation, next.lightness).alpha(
+        next.alpha / 100
+      );
       const rgba = color.rgb().array();
 
-      onChangeRef.current([rgba[0], rgba[1], rgba[2], alpha / 100]);
+      handler([rgba[0], rgba[1], rgba[2], next.alpha / 100]);
     }
-  }, [hue, saturation, lightness, alpha]);
+  }, []);
 
   const contextValue = useMemo(
     () => ({
@@ -137,13 +138,16 @@ export const ColorPicker = ({
       lightness,
       alpha,
       mode,
-      setHue,
-      setSaturation,
-      setLightness,
-      setAlpha,
+      commit,
+      setHue: (nextHue: number) => commit({ hue: nextHue }),
+      setSaturation: (nextSaturation: number) =>
+        commit({ saturation: nextSaturation }),
+      setLightness: (nextLightness: number) =>
+        commit({ lightness: nextLightness }),
+      setAlpha: (nextAlpha: number) => commit({ alpha: nextAlpha }),
       setMode,
     }),
-    [hue, saturation, lightness, alpha, mode]
+    [hue, saturation, lightness, alpha, mode, commit]
   );
 
   return (
@@ -162,10 +166,15 @@ export const ColorPickerSelection = memo(
   ({ className, ...props }: ColorPickerSelectionProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
-    const [positionX, setPositionX] = useState(0);
-    const [positionY, setPositionY] = useState(0);
-    const { hue, saturation, lightness, setSaturation, setLightness } =
-      useColorPicker();
+    const { hue, saturation, lightness, commit } = useColorPicker();
+
+    const positionX = saturation / 100;
+    const topLightnessForX =
+      positionX < 0.01 ? 100 : 50 + 50 * (1 - positionX);
+    const positionY =
+      topLightnessForX > 0
+        ? Math.max(0, Math.min(1, 1 - lightness / topLightnessForX))
+        : 1;
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
       const saturationStep = 2;
@@ -191,20 +200,8 @@ export const ColorPickerSelection = memo(
       }
 
       event.preventDefault();
-      setSaturation(nextSaturation);
-      setLightness(nextLightness);
+      commit({ saturation: nextSaturation, lightness: nextLightness });
     };
-
-    useEffect(() => {
-      if (isDragging) {
-        return;
-      }
-      const x = saturation / 100;
-      const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x);
-      const y = topLightness > 0 ? 1 - lightness / topLightness : 1;
-      setPositionX(x);
-      setPositionY(Math.max(0, Math.min(1, y)));
-    }, [isDragging, saturation, lightness]);
 
     const backgroundGradient = useMemo(() => {
       return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
@@ -226,15 +223,11 @@ export const ColorPickerSelection = memo(
           0,
           Math.min(1, (event.clientY - rect.top) / rect.height)
         );
-        setPositionX(x);
-        setPositionY(y);
-        setSaturation(x * 100);
         const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x);
-        const lightness = topLightness * (1 - y);
 
-        setLightness(lightness);
+        commit({ saturation: x * 100, lightness: topLightness * (1 - y) });
       },
-      [setSaturation, setLightness]
+      [commit]
     );
 
     useEffect(() => {
@@ -354,7 +347,7 @@ export const ColorPickerEyeDropper = ({
   onClick,
   ...props
 }: ColorPickerEyeDropperProps) => {
-  const { setHue, setSaturation, setLightness, setAlpha } = useColorPicker();
+  const { commit } = useColorPicker();
 
   const handleEyeDropper = async () => {
     try {
@@ -364,10 +357,7 @@ export const ColorPickerEyeDropper = ({
       const color = Color(result.sRGBHex);
       const [h = 0, s = 0, l = 0] = color.hsl().array();
 
-      setHue(h);
-      setSaturation(s);
-      setLightness(l);
-      setAlpha(100);
+      commit({ hue: h, saturation: s, lightness: l, alpha: 100 });
     } catch (error) {
       console.error("EyeDropper failed:", error);
     }
