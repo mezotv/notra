@@ -1,7 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { z } from "zod";
 import type { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";
-import type { beginMcpOAuthRequestSchema } from "@/schemas/integrations";
+import type {
+  AddMcpServerFormValues,
+  beginMcpOAuthRequestSchema,
+} from "@/schemas/integrations";
 
 export type BeginMcpOAuthRequest = z.infer<typeof beginMcpOAuthRequestSchema>;
 
@@ -58,6 +61,26 @@ export interface AddMcpServerDialogProps {
   organizationId: string;
   onSuccess?: () => void;
   trigger?: React.ReactNode;
+  initialValues?: Partial<AddMcpServerFormValues>;
+}
+
+export interface McpStoreIntegration {
+  id: string;
+  name: string;
+  url: string;
+  description: string | null;
+  author: string | null;
+  websiteUrl: string | null;
+  brandColor: string | null;
+  logoLightUrl: string | null;
+  logoDarkUrl: string | null;
+  authType: string;
+  indexedToolCount: number;
+  connected: boolean;
+}
+
+export interface StoreIntegrationsSectionProps {
+  organizationId: string;
 }
 
 export interface McpServerCardProps {

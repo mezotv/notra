@@ -149,3 +149,27 @@ export async function updateMcpToolActionPhrases(params: {
 
   return applicable.length;
 }
+
+export async function listLiveMcpStoreIntegrations() {
+  return await db.query.mcpServerIntegrations.findMany({
+    where: and(
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+    orderBy: asc(mcpServerIntegrations.name),
+    columns: {
+      id: true,
+      name: true,
+      url: true,
+      description: true,
+      author: true,
+      websiteUrl: true,
+      brandColor: true,
+      logoLightUrl: true,
+      logoDarkUrl: true,
+      bannerUrl: true,
+      authType: true,
+      indexedToolCount: true,
+    },
+  });
+}

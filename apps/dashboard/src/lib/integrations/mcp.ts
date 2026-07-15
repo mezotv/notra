@@ -53,3 +53,12 @@ export function buildMcpHeaders(
 
   return headers;
 }
+
+export function toMcpFormAuthType(
+  authType: string
+): "none" | "headers" | "oauth" {
+  if (authType === "headers" || authType === "oauth") {
+    return authType;
+  }
+  return "none";
+}

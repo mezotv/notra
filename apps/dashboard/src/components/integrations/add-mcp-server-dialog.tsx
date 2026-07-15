@@ -51,6 +51,7 @@ export function AddMcpServerDialog({
   organizationId,
   onSuccess,
   trigger,
+  initialValues,
 }: AddMcpServerDialogProps) {
   const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -68,7 +69,7 @@ export function AddMcpServerDialog({
     openRef.current = open;
   }, [open]);
 
-  const form = useMcpServerForm(submitCreate);
+  const form = useMcpServerForm(submitCreate, initialValues);
 
   const resetForm = () => {
     testRequestIdRef.current += 1;

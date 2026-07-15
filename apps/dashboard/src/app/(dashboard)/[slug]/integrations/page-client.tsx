@@ -18,6 +18,7 @@ import { memo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { McpIntegrationCard } from "@/components/integrations/mcp-integration-card";
+import { StoreIntegrationsSection } from "@/components/integrations/store-integrations-section";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
@@ -253,6 +254,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             );
           })}
         </Tabs>
+
+        <StoreIntegrationsSection organizationId={organizationId} />
       </div>
     </PageContainer>
   );

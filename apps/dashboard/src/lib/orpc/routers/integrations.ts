@@ -41,6 +41,7 @@ import {
   McpOAuthAuthorizationError,
   McpOAuthNameConflictError,
 } from "@notra/ai/integrations/mcp-oauth-errors";
+import { listLiveMcpStoreIntegrations } from "@notra/ai/integrations/mcp-store";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
@@ -902,6 +903,40 @@ export const integrationsRouter = {
         return {
           servers: integrations.map(serializeMcpServerIntegration),
           count: integrations.length,
+        };
+      }),
+    storeList: baseProcedure
+      .input(organizationIdInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const [storeIntegrations, ownIntegrations] = await Promise.all([
+          listLiveMcpStoreIntegrations(),
+          getMcpServerIntegrationsByOrganization(input.organizationId),
+        ]);
+
+        const connectedUrls = new Set(
+          ownIntegrations.map((integration) => integration.url)
+        );
+
+        return {
+          integrations: storeIntegrations.map((integration) => ({
+            id: integration.id,
+            name: integration.name,
+            url: integration.url,
+            description: integration.description,
+            author: integration.author,
+            websiteUrl: integration.websiteUrl,
+            brandColor: integration.brandColor,
+            logoLightUrl: integration.logoLightUrl,
+            logoDarkUrl: integration.logoDarkUrl,
+            authType: integration.authType,
+            indexedToolCount: integration.indexedToolCount,
+            connected: connectedUrls.has(integration.url),
+          })),
         };
       }),
     create: baseProcedure
