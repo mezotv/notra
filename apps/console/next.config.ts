@@ -20,7 +20,10 @@ const nextConfig: NextConfig = {
       ...(process.env.CLOUDFLARE_PUBLIC_URL
         ? [
             {
-              protocol: "https" as const,
+              protocol:
+                new URL(process.env.CLOUDFLARE_PUBLIC_URL).protocol === "http:"
+                  ? ("http" as const)
+                  : ("https" as const),
               hostname: new URL(process.env.CLOUDFLARE_PUBLIC_URL).hostname,
             },
           ]

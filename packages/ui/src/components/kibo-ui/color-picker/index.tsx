@@ -66,32 +66,23 @@ export const ColorPicker = ({
   className,
   ...props
 }: ColorPickerProps) => {
-  const selectedColor = Color(value);
-  const defaultColor = Color(defaultValue);
+  const initialColor = Color(value ?? defaultValue);
 
-  const [hue, setHue] = useState(
-    selectedColor.hue() || defaultColor.hue() || 0
-  );
-  const [saturation, setSaturation] = useState(
-    selectedColor.saturationl() || defaultColor.saturationl() || 100
-  );
-  const [lightness, setLightness] = useState(
-    selectedColor.lightness() || defaultColor.lightness() || 50
-  );
-  const [alpha, setAlpha] = useState(
-    selectedColor.alpha() * 100 || defaultColor.alpha() * 100
-  );
+  const [hue, setHue] = useState(initialColor.hue());
+  const [saturation, setSaturation] = useState(initialColor.saturationl());
+  const [lightness, setLightness] = useState(initialColor.lightness());
+  const [alpha, setAlpha] = useState(initialColor.alpha() * 100);
   const [mode, setMode] = useState("hex");
 
   // Update color when controlled value changes
   useEffect(() => {
     if (value) {
-      const color = Color.rgb(value).rgb().object();
+      const color = Color(value);
 
-      setHue(color.r ?? 0);
-      setSaturation(color.g ?? 0);
-      setLightness(color.b ?? 0);
-      setAlpha(color.a ?? 100);
+      setHue(color.hue());
+      setSaturation(color.saturationl());
+      setLightness(color.lightness());
+      setAlpha(color.alpha() * 100);
     }
   }, [value]);
 
@@ -146,7 +137,7 @@ export const ColorPickerSelection = memo(
 
     const handlePointerMove = useCallback(
       (event: PointerEvent) => {
-        if (!(isDragging && containerRef.current)) {
+        if (!containerRef.current) {
           return;
         }
         const rect = containerRef.current.getBoundingClientRect();
@@ -166,7 +157,7 @@ export const ColorPickerSelection = memo(
 
         setLightness(lightness);
       },
-      [isDragging, setSaturation, setLightness]
+      [setSaturation, setLightness]
     );
 
     useEffect(() => {

@@ -19,6 +19,8 @@ export async function uploadBrandingAsset(params: {
   const response = await fetch("/api/uploads/branding", {
     method: "POST",
     body: formData,
+  }).catch(() => {
+    throw new Error(FALLBACK_UPLOAD_ERROR);
   });
 
   const payload: unknown = await response.json().catch(() => null);

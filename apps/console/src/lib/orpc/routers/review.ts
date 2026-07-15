@@ -48,11 +48,15 @@ export const reviewRouter = {
         throw badRequest("Add a note explaining the rejection");
       }
 
-      await setMcpStoreStatus({
+      const updated = await setMcpStoreStatus({
         integrationId: input.serverId,
         status: input.action === "approve" ? "live" : "rejected",
         reviewNote: input.action === "reject" ? (input.note ?? null) : null,
+        expectedStatus: "pending_review",
       });
+      if (!updated) {
+        throw badRequest("This integration was already reviewed");
+      }
 
       return { success: true };
     }),

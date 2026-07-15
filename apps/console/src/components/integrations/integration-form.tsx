@@ -235,6 +235,7 @@ function IntegrationBrandingCard({
   isSaving,
   logoDarkUrl,
   logoLightUrl,
+  onUploadingChange,
   organizationId,
   setBannerUrl,
   setBrandColor,
@@ -246,6 +247,7 @@ function IntegrationBrandingCard({
   isSaving: boolean;
   logoDarkUrl: string | null;
   logoLightUrl: string | null;
+  onUploadingChange: (uploading: boolean) => void;
   organizationId: string;
   setBannerUrl: Dispatch<SetStateAction<string | null>>;
   setBrandColor: Dispatch<SetStateAction<string>>;
@@ -271,6 +273,7 @@ function IntegrationBrandingCard({
             <LogoVariantUploader
               fallbackUrl={null}
               onChange={setLogoLightUrl}
+              onUploadingChange={onUploadingChange}
               organizationId={organizationId}
               theme="light"
               value={logoLightUrl}
@@ -278,6 +281,7 @@ function IntegrationBrandingCard({
             <LogoVariantUploader
               fallbackUrl={logoLightUrl}
               onChange={setLogoDarkUrl}
+              onUploadingChange={onUploadingChange}
               organizationId={organizationId}
               theme="dark"
               value={logoDarkUrl}
@@ -358,6 +362,7 @@ function IntegrationBrandingCard({
           </Label>
           <BannerUploader
             onChange={setBannerUrl}
+            onUploadingChange={onUploadingChange}
             organizationId={organizationId}
             value={bannerUrl}
           />
@@ -751,6 +756,7 @@ export function IntegrationForm({
   );
   const [logoDarkUrl, setLogoDarkUrl] = useState(server?.logoDarkUrl ?? null);
   const [bannerUrl, setBannerUrl] = useState(server?.bannerUrl ?? null);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [authChoice, setAuthChoice] = useState<AuthChoice>(
     server ? authTypeToAuthChoice(server.authType) : "none"
   );
@@ -889,11 +895,26 @@ export function IntegrationForm({
   });
 
   const submitReviewMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!server) {
         throw new Error("Integration not loaded");
       }
-      return consoleOrpc.integrations.mcp.submitForReview.call({
+      const parsed = updateMcpServerRequestSchema.safeParse({
+        ...getSharedFields(),
+        serverId: server.id,
+      });
+      if (!parsed.success) {
+        throw new Error(
+          parsed.error.issues[0]?.message ?? "Check the integration details"
+        );
+      }
+      await consoleOrpc.integrations.mcp.update.call(parsed.data);
+      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
+        organizationId,
+        serverId: server.id,
+        tools: Object.values(phraseDrafts),
+      });
+      return await consoleOrpc.integrations.mcp.submitForReview.call({
         organizationId,
         serverId: server.id,
       });
@@ -918,11 +939,15 @@ export function IntegrationForm({
     },
   });
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    submitReviewMutation.isPending;
+  const isBusy = isSaving || uploadingCount > 0;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!validateApiKeyInput()) {
+    if (isBusy || !validateApiKeyInput()) {
       return;
     }
     if (isEdit) {
@@ -930,6 +955,13 @@ export function IntegrationForm({
     } else {
       createMutation.mutate();
     }
+  }
+
+  function handleSubmitReview() {
+    if (isBusy || !validateApiKeyInput()) {
+      return;
+    }
+    submitReviewMutation.mutate();
   }
 
   return (
@@ -954,6 +986,9 @@ export function IntegrationForm({
           isSaving={isSaving}
           logoDarkUrl={logoDarkUrl}
           logoLightUrl={logoLightUrl}
+          onUploadingChange={(uploading) =>
+            setUploadingCount((count) => count + (uploading ? 1 : -1))
+          }
           organizationId={organizationId}
           setBannerUrl={setBannerUrl}
           setBrandColor={setBrandColor}
@@ -988,8 +1023,8 @@ export function IntegrationForm({
 
         <IntegrationFormActions
           backHref={backHref}
-          isSaving={isSaving}
-          onSubmitReview={() => submitReviewMutation.mutate()}
+          isSaving={isBusy}
+          onSubmitReview={handleSubmitReview}
           server={server}
           submitReviewPending={submitReviewMutation.isPending}
         />

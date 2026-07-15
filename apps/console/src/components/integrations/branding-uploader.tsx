@@ -27,20 +27,28 @@ const ACCEPTED_IMAGE_TYPES = {
 function useBrandingUpload({
   kind,
   onChange,
+  onUploadingChange,
   organizationId,
 }: {
   kind: BrandingAssetKind;
   onChange: (url: string | null) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   organizationId: string;
 }) {
   return useMutation({
     mutationFn: (file: File) =>
       uploadBrandingAsset({ file, kind, organizationId }),
+    onMutate: () => {
+      onUploadingChange?.(true);
+    },
     onSuccess: (url) => {
       onChange(url);
     },
     onError: (error) => {
       toast.error(error.message);
+    },
+    onSettled: () => {
+      onUploadingChange?.(false);
     },
   });
 }
@@ -74,12 +82,14 @@ function RemoveAssetButton({
 export function LogoVariantUploader({
   fallbackUrl,
   onChange,
+  onUploadingChange,
   organizationId,
   theme,
   value,
 }: {
   fallbackUrl: string | null;
   onChange: (url: string | null) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   organizationId: string;
   theme: LogoTheme;
   value: string | null;
@@ -88,6 +98,7 @@ export function LogoVariantUploader({
   const uploadMutation = useBrandingUpload({
     kind: isDark ? "logo-dark" : "logo-light",
     onChange,
+    onUploadingChange,
     organizationId,
   });
 
@@ -175,16 +186,19 @@ export function LogoVariantUploader({
 
 export function BannerUploader({
   onChange,
+  onUploadingChange,
   organizationId,
   value,
 }: {
   onChange: (url: string | null) => void;
+  onUploadingChange?: (uploading: boolean) => void;
   organizationId: string;
   value: string | null;
 }) {
   const uploadMutation = useBrandingUpload({
     kind: "banner",
     onChange,
+    onUploadingChange,
     organizationId,
   });
 

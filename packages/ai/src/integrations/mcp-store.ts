@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations, mcpToolIndex } from "@notra/db/schema";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
@@ -10,6 +10,7 @@ export async function setMcpStoreStatus(params: {
   integrationId: string;
   status: McpStoreStatus;
   reviewNote?: string | null;
+  expectedStatus?: McpStoreStatus;
 }) {
   const now = new Date();
   const [row] = await db
@@ -17,13 +18,22 @@ export async function setMcpStoreStatus(params: {
     .set({
       storeStatus: params.status,
       reviewNote: params.reviewNote ?? null,
-      ...(params.status === "pending_review" ? { submittedAt: now } : {}),
+      ...(params.status === "pending_review"
+        ? { submittedAt: now, reviewedAt: null }
+        : {}),
       ...(params.status === "live" || params.status === "rejected"
         ? { reviewedAt: now }
         : {}),
       updatedAt: now,
     })
-    .where(eq(mcpServerIntegrations.id, params.integrationId))
+    .where(
+      and(
+        eq(mcpServerIntegrations.id, params.integrationId),
+        ...(params.expectedStatus
+          ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
+          : [])
+      )
+    )
     .returning();
 
   return row ?? null;
@@ -93,26 +103,30 @@ export async function updateMcpToolActionPhrases(params: {
     columns: { serverToolName: true },
   });
   const knownToolNames = new Set(existing.map((tool) => tool.serverToolName));
+  const applicable = params.updates.filter((update) =>
+    knownToolNames.has(update.serverToolName)
+  );
+  if (applicable.length === 0) {
+    return;
+  }
 
-  await db.transaction(async (tx) => {
-    for (const update of params.updates) {
-      if (!knownToolNames.has(update.serverToolName)) {
-        continue;
-      }
-      await tx
-        .update(mcpToolIndex)
-        .set({
-          actionPhrasePresent: update.actionPhrasePresent,
-          actionPhrasePast: update.actionPhrasePast,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(mcpToolIndex.organizationId, params.organizationId),
-            eq(mcpToolIndex.serverIntegrationId, params.integrationId),
-            eq(mcpToolIndex.serverToolName, update.serverToolName)
-          )
-        );
-    }
-  });
+  const valueRows = sql.join(
+    applicable.map(
+      (update) =>
+        sql`(${update.serverToolName}::text, ${update.actionPhrasePresent}::text, ${update.actionPhrasePast}::text)`
+    ),
+    sql`, `
+  );
+
+  await db.execute(sql`
+    update ${mcpToolIndex} as tool
+    set
+      action_phrase_present = phrase.present,
+      action_phrase_past = phrase.past,
+      updated_at = now()
+    from (values ${valueRows}) as phrase(tool_name, present, past)
+    where tool.organization_id = ${params.organizationId}
+      and tool.server_integration_id = ${params.integrationId}
+      and tool.server_tool_name = phrase.tool_name
+  `);
 }

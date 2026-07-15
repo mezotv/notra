@@ -44,13 +44,22 @@ function PendingIntegrationCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           {(integration.logoLightUrl ?? integration.logoDarkUrl) ? (
-            <Image
-              alt={`${integration.name} logo`}
-              className="size-10 shrink-0 rounded-lg border object-cover"
-              height={40}
-              src={integration.logoLightUrl ?? integration.logoDarkUrl ?? ""}
-              width={40}
-            />
+            <>
+              <Image
+                alt={`${integration.name} logo`}
+                className="size-10 shrink-0 rounded-lg border object-cover dark:hidden"
+                height={40}
+                src={integration.logoLightUrl ?? integration.logoDarkUrl ?? ""}
+                width={40}
+              />
+              <Image
+                alt={`${integration.name} logo`}
+                className="hidden size-10 shrink-0 rounded-lg border object-cover dark:block"
+                height={40}
+                src={integration.logoDarkUrl ?? integration.logoLightUrl ?? ""}
+                width={40}
+              />
+            </>
           ) : (
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
               {getIntegrationInitials(integration.name)}
@@ -151,6 +160,7 @@ function PendingIntegrationCard({
 export function ReviewQueueClient() {
   const queryClient = useQueryClient();
   const pendingQuery = useQuery(consoleOrpc.review.list.queryOptions({}));
+  const [decidingIds, setDecidingIds] = useState<Set<string>>(new Set());
 
   const decideMutation = useMutation({
     mutationFn: (input: {
@@ -158,6 +168,9 @@ export function ReviewQueueClient() {
       action: "approve" | "reject";
       note?: string;
     }) => consoleOrpc.review.decide.call(input),
+    onMutate: (variables) => {
+      setDecidingIds((ids) => new Set(ids).add(variables.serverId));
+    },
     onSuccess: async (_result, variables) => {
       await queryClient.invalidateQueries({
         queryKey: consoleOrpc.review.list.queryKey({}),
@@ -170,6 +183,13 @@ export function ReviewQueueClient() {
     },
     onError: (error) => {
       toast.error(error.message);
+    },
+    onSettled: (_result, _error, variables) => {
+      setDecidingIds((ids) => {
+        const next = new Set(ids);
+        next.delete(variables.serverId);
+        return next;
+      });
     },
   });
 
@@ -192,7 +212,7 @@ export function ReviewQueueClient() {
         </div>
       ) : null}
 
-      {pendingQuery.isError ? (
+      {pendingQuery.isError && pending.length === 0 ? (
         <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
           <p>Could not load the review queue.</p>
           <Button
@@ -214,10 +234,7 @@ export function ReviewQueueClient() {
 
       {pending.map((integration) => (
         <PendingIntegrationCard
-          deciding={
-            decideMutation.isPending &&
-            decideMutation.variables?.serverId === integration.id
-          }
+          deciding={decidingIds.has(integration.id)}
           integration={integration}
           key={integration.id}
           onApprove={() =>

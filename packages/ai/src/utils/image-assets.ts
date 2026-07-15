@@ -75,7 +75,7 @@ export async function uploadIntegrationBrandingAsset(
   params: UploadIntegrationBrandingAssetParams
 ) {
   const env = getR2Env();
-  const key = `organization/${params.organizationId}/integration-branding/${params.kind}-${Date.now()}.${params.extension}`;
+  const key = `organization/${params.organizationId}/integration-branding/${params.kind}-${crypto.randomUUID()}.${params.extension}`;
 
   await getR2Client().send(
     new PutObjectCommand({

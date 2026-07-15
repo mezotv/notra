@@ -19,6 +19,7 @@ import { PublicUrlValidationError } from "@notra/utils/url";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { findDisallowedBrandingAssetUrl } from "@/lib/integrations/branding-urls";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
   createMcpServerRequestSchema,
@@ -125,6 +126,13 @@ export const integrationsRouter = {
         const existing = await getMcpServerIntegrationById(input.serverId);
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
+        }
+
+        const disallowedUrl = findDisallowedBrandingAssetUrl(input);
+        if (disallowedUrl) {
+          throw badRequest(
+            "Branding images must be uploaded through the console"
+          );
         }
 
         const hasNewHeaders = Object.keys(input.headers).length > 0;
@@ -252,6 +260,13 @@ export const integrationsRouter = {
           updates: input.tools,
         });
 
+        if (existing.storeStatus === "live" && input.tools.length > 0) {
+          await setMcpStoreStatus({
+            integrationId: input.serverId,
+            status: "pending_review",
+          });
+        }
+
         return {
           tools: await getMcpIntegrationTools({
             organizationId: input.organizationId,
@@ -293,6 +308,12 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+
+        if (findDisallowedBrandingAssetUrl(input)) {
+          throw badRequest(
+            "Branding images must be uploaded through the console"
+          );
+        }
 
         try {
           const integration = await createMcpServerIntegration({
