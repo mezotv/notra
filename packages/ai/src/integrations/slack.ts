@@ -34,6 +34,18 @@ const getSlackBotToken = Effect.fn("getSlackBotToken")(function* () {
   return token;
 });
 
+const getSlackFounderMemberId = Effect.fn("getSlackFounderMemberId")(
+  function* () {
+    const memberId = process.env.SLACK_FOUNDER_MEMBER_ID?.trim();
+    if (!memberId) {
+      return yield* new SlackConfigurationError({
+        variable: "SLACK_FOUNDER_MEMBER_ID",
+      });
+    }
+    return memberId;
+  }
+);
+
 const resolveInviteRecipient = Effect.fn("resolveInviteRecipient")(function* (
   email: string | undefined,
   userId: string | undefined
@@ -96,7 +108,10 @@ const requestSlack = Effect.fn("requestSlack")(function* (
 });
 
 export function hasSlackConnectConfigured(): boolean {
-  return Boolean(process.env.SLACK_BOT_TOKEN?.trim());
+  return Boolean(
+    process.env.SLACK_BOT_TOKEN?.trim() &&
+      process.env.SLACK_FOUNDER_MEMBER_ID?.trim()
+  );
 }
 
 const inviteToSlackConnectEffect = Effect.fn("inviteToSlackConnect")(function* (
@@ -183,6 +198,27 @@ export function createSlackConnectChannel(
   return Effect.runPromise(createSlackConnectChannelEffect(input));
 }
 
+const inviteSlackMemberToChannelEffect = Effect.fn(
+  "inviteSlackMemberToChannel"
+)(function* (channelId: string, memberId: string) {
+  const operation = "conversations.invite";
+  const response = yield* requestSlack(operation, {
+    channel: channelId,
+    users: memberId,
+  });
+  const payload = yield* Effect.try({
+    try: () => slackOkResponseSchema.parse(response),
+    catch: (cause) => new SlackResponseError({ cause, operation }),
+  });
+
+  if (!payload.ok && payload.error !== "already_in_channel") {
+    return yield* new SlackApiError({
+      code: payload.error ?? "unknown_error",
+      operation,
+    });
+  }
+});
+
 const archiveSlackChannelEffect = Effect.fn("archiveSlackChannel")(function* (
   channelId: string
 ) {
@@ -209,17 +245,21 @@ const createSlackConnectChannelWithInviteEffect = Effect.fn(
   "createSlackConnectChannelWithInvite"
 )(function* (input: CreateSlackConnectChannelInviteInput) {
   yield* resolveInviteRecipient(input.email, input.userId);
+  const founderMemberId = yield* getSlackFounderMemberId();
 
   const channel = yield* createSlackConnectChannelEffect({
     channelName: input.channelName,
     isPrivate: input.isPrivate,
   });
 
-  const inviteEffect = inviteToSlackConnectEffect({
-    channelId: channel.channelId,
-    email: input.email,
-    userId: input.userId,
-    externalLimited: input.externalLimited,
+  const inviteEffect = Effect.gen(function* () {
+    yield* inviteSlackMemberToChannelEffect(channel.channelId, founderMemberId);
+    return yield* inviteToSlackConnectEffect({
+      channelId: channel.channelId,
+      email: input.email,
+      userId: input.userId,
+      externalLimited: input.externalLimited,
+    });
   });
 
   return yield* Effect.matchEffect(inviteEffect, {
