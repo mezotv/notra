@@ -47,7 +47,11 @@ import {
   MCP_CONNECTED_TOAST,
   MCP_OAUTH_ERROR_MESSAGES,
 } from "@/lib/integrations/constants";
-import { buildInitialPhraseDrafts, rgbaToHex } from "@/lib/integrations/form";
+import {
+  applyPhraseDraftChange,
+  buildInitialPhraseDrafts,
+  rgbaToHex,
+} from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
 import { useIntegrationForm } from "@/lib/integrations/use-integration-form";
 import { consoleOrpc } from "@/lib/orpc/query";
@@ -348,7 +352,8 @@ function IntegrationBrandingCard({
             value={bannerUrl}
           />
           <p className="text-muted-foreground text-xs">
-            A wide header image for the store listing page.
+            A wide header image for the store listing page. Recommended size:
+            1500x500px (3:1 aspect ratio).
           </p>
         </div>
       </CardContent>
@@ -735,26 +740,67 @@ function IntegrationToolsCard({
           drafts={phraseDrafts}
           oauth={isOAuth}
           onDraftChange={(serverToolName, field, value) =>
-            setPhraseDrafts((current) => ({
-              ...current,
-              [serverToolName]: {
-                serverToolName,
-                actionPhrasePresent:
-                  field === "actionPhrasePresent"
-                    ? value
-                    : (current[serverToolName]?.actionPhrasePresent ?? ""),
-                actionPhrasePast:
-                  field === "actionPhrasePast"
-                    ? value
-                    : (current[serverToolName]?.actionPhrasePast ?? ""),
-              },
-            }))
+            setPhraseDrafts((current) =>
+              applyPhraseDraftChange(current, serverToolName, field, value)
+            )
           }
           onScan={handleScan}
           saving={isSaving}
           scanning={scanMutation.isPending || beginOAuthMutation.isPending}
           tools={indexedTools}
         />
+      </CardContent>
+    </Card>
+  );
+}
+
+function DraftToolsCard({
+  drafts,
+  oauth,
+  onDraftChange,
+  onScan,
+  saving,
+  scanning,
+  tools,
+}: {
+  drafts: Record<string, ToolPhraseDraft>;
+  oauth: boolean;
+  onDraftChange: (
+    serverToolName: string,
+    field: "actionPhrasePresent" | "actionPhrasePast",
+    value: string
+  ) => void;
+  onScan: () => void;
+  saving: boolean;
+  scanning: boolean;
+  tools: McpIntegrationTool[];
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tools</CardTitle>
+        <CardDescription>
+          Give each tool an action phrase. Users see it in chat while Notra runs
+          the tool, like &quot;Searching your Linear issues&quot;.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {oauth ? (
+          <p className="rounded-lg border border-dashed p-4 text-muted-foreground text-sm">
+            OAuth servers connect after the integration exists. Create it, then
+            use Connect &amp; scan to sign in and discover its tools.
+          </p>
+        ) : (
+          <ToolsEditor
+            drafts={drafts}
+            oauth={false}
+            onDraftChange={onDraftChange}
+            onScan={onScan}
+            saving={saving}
+            scanning={scanning}
+            tools={tools}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -818,6 +864,15 @@ export function IntegrationForm({
 }) {
   const form = useIntegrationForm({ organizationId, server, slug, tools });
 
+  const handleDraftChange = (
+    serverToolName: string,
+    field: "actionPhrasePresent" | "actionPhrasePast",
+    value: string
+  ) =>
+    form.setPhraseDrafts((current) =>
+      applyPhraseDraftChange(current, serverToolName, field, value)
+    );
+
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <IntegrationFormHeader backHref={form.backHref} server={server} />
@@ -876,7 +931,17 @@ export function IntegrationForm({
             setPhraseDrafts={form.setPhraseDrafts}
             tools={tools ?? []}
           />
-        ) : null}
+        ) : (
+          <DraftToolsCard
+            drafts={form.phraseDrafts}
+            oauth={form.authChoice === "oauth"}
+            onDraftChange={handleDraftChange}
+            onScan={form.scanDraft}
+            saving={form.isSaving}
+            scanning={form.draftScanning}
+            tools={form.draftTools}
+          />
+        )}
 
         <IntegrationFormActions
           backHref={form.backHref}

@@ -139,7 +139,7 @@ function IntegrationRow({
           </div>
         </TableCell>
         <TableCell className="text-muted-foreground">
-          {server.author ?? "—"}
+          {server.author ?? "n/a"}
         </TableCell>
         <TableCell onClick={(event) => event.stopPropagation()}>
           <div className="flex items-center gap-2">

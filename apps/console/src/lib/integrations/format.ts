@@ -7,12 +7,12 @@ const createdDateFormatter = new Intl.DateTimeFormat("en-US", {
 
 export function formatIntegrationDate(iso: string | null) {
   if (!iso) {
-    return "—";
+    return "n/a";
   }
 
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
-    return "—";
+    return "n/a";
   }
 
   return createdDateFormatter.format(date);

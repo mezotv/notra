@@ -35,6 +35,28 @@ export function findDuplicateHeaderName(headerRows: HeaderRow[]) {
   return null;
 }
 
+export function applyPhraseDraftChange(
+  current: Record<string, ToolPhraseDraft>,
+  serverToolName: string,
+  field: "actionPhrasePresent" | "actionPhrasePast",
+  value: string
+): Record<string, ToolPhraseDraft> {
+  return {
+    ...current,
+    [serverToolName]: {
+      serverToolName,
+      actionPhrasePresent:
+        field === "actionPhrasePresent"
+          ? value
+          : (current[serverToolName]?.actionPhrasePresent ?? ""),
+      actionPhrasePast:
+        field === "actionPhrasePast"
+          ? value
+          : (current[serverToolName]?.actionPhrasePast ?? ""),
+    },
+  };
+}
+
 export function getChangedToolPhraseDrafts(
   drafts: Record<string, ToolPhraseDraft>,
   baseline: Record<string, ToolPhraseDraft>

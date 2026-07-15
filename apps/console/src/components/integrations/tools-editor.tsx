@@ -26,7 +26,7 @@ function getEmptyStateMessage({
   if (oauth) {
     return "Connect with OAuth to discover this server's tools.";
   }
-  return "No tools found yet. Check the server URL and credentials, then rescan.";
+  return "No tools yet. Connect & scan reads them from your server.";
 }
 
 function PhrasePreview({ past, present }: { past: string; present: string }) {
@@ -85,12 +85,16 @@ export function ToolsEditor({
           ) : (
             <HugeiconsIcon className="size-4" icon={PlugSocketIcon} />
           )}
-          {oauth ? <>Connect &amp; scan</> : <>Rescan tools</>}
+          {oauth || tools.length === 0 ? (
+            <>Connect &amp; scan</>
+          ) : (
+            <>Rescan tools</>
+          )}
         </Button>
         <p className="text-muted-foreground text-xs">
           {oauth
             ? "Signs in to the server to read its tools."
-            : "Reads the tool list from your server. Runs automatically after you create the integration."}
+            : "Reads the tool list from your server."}
         </p>
       </div>
 

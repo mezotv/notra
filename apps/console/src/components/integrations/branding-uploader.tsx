@@ -249,7 +249,7 @@ export function BannerUploader({
         <span className="flex flex-col items-center gap-1 text-muted-foreground">
           <HugeiconsIcon className="size-4" icon={Upload01Icon} />
           <span className="text-sm">Upload banner</span>
-          <span className="text-xs">Wide images work best, around 3:1</span>
+          <span className="text-xs">Recommended: 1500x500px (3:1)</span>
         </span>
       )}
     </Dropzone>

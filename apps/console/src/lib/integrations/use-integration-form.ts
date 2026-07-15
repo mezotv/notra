@@ -18,6 +18,7 @@ import {
 import { consoleOrpc } from "@/lib/orpc/query";
 import {
   createMcpServerRequestSchema,
+  testMcpServerRequestSchema,
   updateMcpServerRequestSchema,
 } from "@/schemas/integrations";
 import type {
@@ -71,6 +72,7 @@ export function useIntegrationForm({
   const [phraseBaseline, setPhraseBaseline] = useState<
     Record<string, ToolPhraseDraft>
   >(() => buildInitialPhraseDrafts(tools ?? []));
+  const [draftTools, setDraftTools] = useState<McpIntegrationTool[]>([]);
 
   const backHref = `/${slug}/integrations`;
 
@@ -143,15 +145,69 @@ export function useIntegrationForm({
     }
   }
 
-  const createMutation = useMutation({
+  const scanDraftMutation = useMutation({
     mutationFn: () => {
+      const parsed = testMcpServerRequestSchema.safeParse({
+        organizationId,
+        url,
+        headers: buildHeadersFromForm({
+          apiKeyStyle,
+          authChoice,
+          bearerToken,
+          headerRows,
+        }),
+      });
+      if (!parsed.success) {
+        throw new Error(
+          parsed.error.issues[0]?.message ?? "Enter a valid server URL first"
+        );
+      }
+      return consoleOrpc.integrations.mcp.scanDraft.call(parsed.data);
+    },
+    onSuccess: (result) => {
+      setDraftTools(result.tools);
+      setPhraseDrafts(buildInitialPhraseDrafts(result.tools));
+      setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
+      toast.success(
+        result.tools.length === 1
+          ? "Found 1 tool"
+          : `Found ${result.tools.length} tools`
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
         throw new Error(
           parsed.error.issues[0]?.message ?? "Check the integration details"
         );
       }
-      return consoleOrpc.integrations.mcp.create.call(parsed.data);
+      const created = await consoleOrpc.integrations.mcp.create.call(
+        parsed.data
+      );
+      const changedTools = getChangedToolPhraseDrafts(
+        phraseDrafts,
+        phraseBaseline
+      );
+      if (changedTools.length > 0) {
+        await consoleOrpc.integrations.mcp.updateToolPhrases
+          .call({
+            organizationId,
+            serverId: created.id,
+            tools: changedTools,
+          })
+          .catch(() => {
+            toast.error(
+              "The integration was created, but the action phrases did not save. Add them again on the edit page."
+            );
+          });
+      }
+      return created;
     },
     onSuccess: async (created) => {
       await queryClient.invalidateQueries({
@@ -257,7 +313,8 @@ export function useIntegrationForm({
     createMutation.isPending ||
     updateMutation.isPending ||
     submitReviewMutation.isPending;
-  const isBusy = isSaving || uploadingCount > 0 || scanning;
+  const isBusy =
+    isSaving || uploadingCount > 0 || scanning || scanDraftMutation.isPending;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -278,8 +335,18 @@ export function useIntegrationForm({
     submitReviewMutation.mutate();
   }
 
+  const scanDraft = () => {
+    if (!validateApiKeyInput()) {
+      return;
+    }
+    scanDraftMutation.mutate();
+  };
+
   return {
     apiKeyStyle,
+    draftScanning: scanDraftMutation.isPending,
+    draftTools,
+    scanDraft,
     author,
     backHref,
     bannerUrl,

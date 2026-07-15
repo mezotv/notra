@@ -6,6 +6,7 @@ import {
   deleteMcpServerIntegration,
   getMcpServerIntegrationById,
   getMcpServerIntegrationsByOrganization,
+  listMcpServerToolsPreview,
   serializeMcpServerIntegration,
   testMcpServerConnection,
   updateMcpServerIntegration,
@@ -465,6 +466,41 @@ export const integrationsRouter = {
 
         await deleteMcpServerIntegration(input.serverId);
         return { success: true };
+      }),
+    scanDraft: baseProcedure
+      .input(testMcpServerRequestSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
+
+        try {
+          const definitions = await listMcpServerToolsPreview({
+            url: input.url,
+            headers: input.headers,
+          });
+
+          return {
+            tools: definitions.map((definition) => ({
+              id: definition.name,
+              serverToolName: definition.name,
+              title: definition.title,
+              description: definition.description,
+              actionPhrasePresent: null,
+              actionPhrasePast: null,
+            })),
+          };
+        } catch {
+          throw badRequest(
+            "Could not read tools from this server. Check the URL and credentials."
+          );
+        }
       }),
     test: baseProcedure
       .input(testMcpServerRequestSchema)

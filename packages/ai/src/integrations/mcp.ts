@@ -284,6 +284,44 @@ export async function deleteMcpServerIntegration(integrationId: string) {
     .where(eq(mcpServerIntegrations.id, integrationId));
 }
 
+export async function listMcpServerToolsPreview(input: {
+  url: string;
+  headers?: McpHeaderMap;
+}) {
+  const timeoutMs = 8000;
+  const client = new Client({ name: "notra-console", version: "0.0.1" });
+
+  try {
+    await assertPublicHttpUrlResolution(input.url);
+    const transport = new StreamableHTTPClientTransport(new URL(input.url), {
+      fetch: publicMcpRuntimeFetch,
+      requestInit: {
+        headers: input.headers ?? {},
+        redirect: "error",
+      },
+    });
+    await client.connect(transport, {
+      signal: AbortSignal.timeout(timeoutMs),
+      timeout: timeoutMs,
+    });
+    const definitions = await client.listTools(
+      {},
+      {
+        signal: AbortSignal.timeout(timeoutMs),
+        timeout: timeoutMs,
+      }
+    );
+
+    return definitions.tools.map((tool) => ({
+      name: tool.name,
+      title: tool.title ?? null,
+      description: tool.description ?? null,
+    }));
+  } finally {
+    await client.close().catch(() => undefined);
+  }
+}
+
 export async function testMcpServerConnection(input: {
   url: string;
   headers?: McpHeaderMap;
