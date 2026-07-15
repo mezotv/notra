@@ -155,6 +155,11 @@ export const integrationsRouter = {
           );
         }
 
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
+
         const hasNewHeaders = Object.keys(input.headers).length > 0;
         const hasStoredHeaders =
           Object.keys(existing.encryptedHeaders ?? {}).length > 0;
@@ -410,6 +415,11 @@ export const integrationsRouter = {
             "Branding images must be uploaded through the console"
           );
         }
+
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
 
         try {
           const integration = await createMcpServerIntegration({

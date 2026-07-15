@@ -596,10 +596,14 @@ function IntegrationToolsCard({
         serverId: server.id,
         callbackPath: window.location.pathname,
       }),
+    onMutate: () => {
+      onScanningChange(true);
+    },
     onSuccess: ({ authorizationUrl }) => {
       window.location.assign(authorizationUrl);
     },
     onError: (error) => {
+      onScanningChange(false);
       toast.error(error.message);
     },
   });
@@ -758,13 +762,13 @@ function IntegrationToolsCard({
 
 function IntegrationFormActions({
   backHref,
-  isSaving,
+  busy,
   onSubmitReview,
   server,
   submitReviewPending,
 }: {
   backHref: string;
-  isSaving: boolean;
+  busy: boolean;
   onSubmitReview: () => void;
   server?: McpServer;
   submitReviewPending: boolean;
@@ -773,7 +777,7 @@ function IntegrationFormActions({
     <div className="flex flex-wrap items-center justify-end gap-3">
       <Button
         className="corner-squircle rounded-[1rem] supports-[corner-shape:round]:rounded-[1.25rem]"
-        disabled={isSaving}
+        disabled={busy}
         nativeButton={false}
         render={<Link href={backHref} />}
         variant="outline"
@@ -782,7 +786,7 @@ function IntegrationFormActions({
       </Button>
       {server?.storeStatus === "draft" || server?.storeStatus === "rejected" ? (
         <Button
-          disabled={isSaving || submitReviewPending}
+          disabled={busy || submitReviewPending}
           onClick={onSubmitReview}
           type="button"
           variant="outline"
@@ -793,8 +797,8 @@ function IntegrationFormActions({
           Submit for review
         </Button>
       ) : null}
-      <Button disabled={isSaving} type="submit">
-        {isSaving ? <Loader2Icon className="size-4 animate-spin" /> : null}
+      <Button disabled={busy} type="submit">
+        {busy ? <Loader2Icon className="size-4 animate-spin" /> : null}
         {server ? "Save changes" : "Create integration"}
       </Button>
     </div>
@@ -876,7 +880,7 @@ export function IntegrationForm({
 
         <IntegrationFormActions
           backHref={form.backHref}
-          isSaving={form.isBusy}
+          busy={form.isBusy}
           onSubmitReview={form.handleSubmitReview}
           server={server}
           submitReviewPending={form.submitReviewPending}

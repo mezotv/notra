@@ -7,7 +7,8 @@
     "check-types": "tsc --noEmit"
   },
   "exports": {
-    "./url": "./src/url.ts"
+    "./url": "./src/url.ts",
+    "./callback-url": "./src/callback-url.ts"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

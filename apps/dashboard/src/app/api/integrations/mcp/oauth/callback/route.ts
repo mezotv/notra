@@ -9,11 +9,11 @@ import {
   McpOAuthRefreshTokenRequiredError,
 } from "@notra/ai/integrations/mcp-oauth-errors";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
+import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { Effect } from "effect";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
 import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
-import { buildCallbackUrl } from "@/utils/build-callback-url";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   if (!parsed.success) {
     return NextResponse.redirect(
-      new URL("/?error=mcp_oauth_invalid_callback", request.url)
+      `${baseUrl}/?error=mcp_oauth_invalid_callback`
     );
   }
 

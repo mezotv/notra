@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useMemo } from "react";
 import type { DropEvent, DropzoneOptions, FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
-import { Button } from "@notra/ui/components/ui/button";
+import { buttonVariants } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
 
 type DropzoneContextType = {
@@ -84,20 +84,19 @@ export const Dropzone = ({
 
   return (
     <DropzoneContext.Provider value={contextValue}>
-      <Button
+      <div
         className={cn(
-          "relative h-auto w-full flex-col overflow-hidden p-8",
+          buttonVariants({ variant: "outline" }),
+          "relative h-auto w-full cursor-pointer flex-col overflow-hidden p-8",
           isDragActive && "outline-none ring-1 ring-ring",
+          disabled && "pointer-events-none opacity-50",
           className
         )}
-        disabled={disabled}
-        type="button"
-        variant="outline"
         {...getRootProps()}
       >
         <input {...getInputProps()} disabled={disabled} />
         {children}
-      </Button>
+      </div>
     </DropzoneContext.Provider>
   );
 };

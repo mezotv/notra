@@ -168,13 +168,15 @@ export const ColorPickerSelection = memo(
     const [isDragging, setIsDragging] = useState(false);
     const { hue, saturation, lightness, commit } = useColorPicker();
 
-    const positionX = saturation / 100;
-    const topLightnessForX =
-      positionX < 0.01 ? 100 : 50 + 50 * (1 - positionX);
-    const positionY =
-      topLightnessForX > 0
-        ? Math.max(0, Math.min(1, 1 - lightness / topLightnessForX))
-        : 1;
+    const [, hsvSaturation = 0, hsvValue = 0] = Color.hsl(
+      hue,
+      saturation,
+      lightness
+    )
+      .hsv()
+      .array();
+    const positionX = hsvSaturation / 100;
+    const positionY = 1 - hsvValue / 100;
 
     const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
       const saturationStep = 2;
@@ -203,6 +205,21 @@ export const ColorPickerSelection = memo(
       commit({ saturation: nextSaturation, lightness: nextLightness });
     };
 
+    const commitFromPosition = useCallback(
+      (x: number, y: number) => {
+        const [, nextSaturation = 0, nextLightness = 0] = Color.hsv(
+          hue,
+          x * 100,
+          (1 - y) * 100
+        )
+          .hsl()
+          .array();
+
+        commit({ saturation: nextSaturation, lightness: nextLightness });
+      },
+      [hue, commit]
+    );
+
     const backgroundGradient = useMemo(() => {
       return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
             linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0)),
@@ -223,11 +240,10 @@ export const ColorPickerSelection = memo(
           0,
           Math.min(1, (event.clientY - rect.top) / rect.height)
         );
-        const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x);
 
-        commit({ saturation: x * 100, lightness: topLightness * (1 - y) });
+        commitFromPosition(x, y);
       },
-      [commit]
+      [commitFromPosition]
     );
 
     useEffect(() => {
@@ -348,6 +364,11 @@ export const ColorPickerEyeDropper = ({
   ...props
 }: ColorPickerEyeDropperProps) => {
   const { commit } = useColorPicker();
+  const [isSupported, setIsSupported] = useState(false);
+
+  useEffect(() => {
+    setIsSupported("EyeDropper" in window);
+  }, []);
 
   const handleEyeDropper = async () => {
     try {
@@ -362,6 +383,10 @@ export const ColorPickerEyeDropper = ({
       console.error("EyeDropper failed:", error);
     }
   };
+
+  if (!isSupported) {
+    return null;
+  }
 
   return (
     <Button

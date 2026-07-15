@@ -95,6 +95,7 @@ function OrganizationSwitcher({
               >
                 <Avatar className="size-8 rounded-lg after:rounded-lg">
                   <AvatarImage
+                    alt=""
                     className="rounded-lg"
                     src={activeOrganization.logo ?? undefined}
                   />
@@ -130,6 +131,7 @@ function OrganizationSwitcher({
                 >
                   <Avatar className="size-6 rounded-md after:rounded-md">
                     <AvatarImage
+                      alt=""
                       className="rounded-md"
                       src={organization.logo ?? undefined}
                     />

@@ -116,7 +116,15 @@ function PendingIntegrationCard({
         </Button>
       </div>
 
-      <ResponsiveDialog onOpenChange={setRejectOpen} open={rejectOpen}>
+      <ResponsiveDialog
+        onOpenChange={(open) => {
+          setRejectOpen(open);
+          if (!open) {
+            setNote("");
+          }
+        }}
+        open={rejectOpen}
+      >
         <ResponsiveDialogContent>
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>
@@ -210,6 +218,19 @@ export function ReviewQueueClient() {
           {[0, 1].map((item) => (
             <Skeleton className="h-36 w-full rounded-xl" key={item} />
           ))}
+        </div>
+      ) : null}
+
+      {pendingQuery.isError && pending.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-700 text-sm dark:text-amber-400">
+          <span>This list may be out of date. The last refresh failed.</span>
+          <Button
+            onClick={() => pendingQuery.refetch()}
+            size="sm"
+            variant="outline"
+          >
+            Retry
+          </Button>
         </div>
       ) : null}
 

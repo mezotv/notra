@@ -18,6 +18,7 @@ import {
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { buttonVariants } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -255,18 +256,30 @@ export function IntegrationsPageClient({
     input: { organizationId },
   });
 
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+
   const deleteMutation = useMutation({
     mutationFn: (serverId: string) =>
       consoleOrpc.integrations.mcp.delete.call({
         organizationId,
         serverId,
       }),
+    onMutate: (serverId) => {
+      setDeletingIds((ids) => new Set(ids).add(serverId));
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: listQueryKey });
       toast.success("Integration deleted");
     },
     onError: (error) => {
       toast.error(error.message);
+    },
+    onSettled: (_result, _error, serverId) => {
+      setDeletingIds((ids) => {
+        const next = new Set(ids);
+        next.delete(serverId);
+        return next;
+      });
     },
   });
 
@@ -299,6 +312,9 @@ export function IntegrationsPageClient({
 
   const data = integrationsQuery.data;
   const servers = data?.mcpServers ?? [];
+  const dashboardConnectionCount =
+    (data?.github.length ?? 0) + (data?.linear.length ?? 0);
+  const dashboardUrl = `https://app.usenotra.com/${slug}/integrations`;
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
@@ -368,10 +384,7 @@ export function IntegrationsPageClient({
             <TableBody>
               {servers.map((server) => (
                 <IntegrationRow
-                  deleting={
-                    deleteMutation.isPending &&
-                    deleteMutation.variables === server.id
-                  }
+                  deleting={deletingIds.has(server.id)}
                   editHref={`/${slug}/integrations/${server.id}`}
                   key={server.id}
                   onDelete={() => deleteMutation.mutate(server.id)}
@@ -384,6 +397,29 @@ export function IntegrationsPageClient({
               ))}
             </TableBody>
           </Table>
+        </div>
+      ) : null}
+
+      {dashboardConnectionCount > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+          <div>
+            <p className="font-medium text-sm">
+              {dashboardConnectionCount === 1
+                ? "1 GitHub or Linear connection"
+                : `${dashboardConnectionCount} GitHub and Linear connections`}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              These are managed in the Notra dashboard.
+            </p>
+          </div>
+          <a
+            className={buttonVariants({ variant: "outline" })}
+            href={dashboardUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Open dashboard
+          </a>
         </div>
       ) : null}
     </main>

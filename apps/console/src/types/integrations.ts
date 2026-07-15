@@ -53,6 +53,7 @@ export interface McpServer {
   storeStatus: StoreStatus;
   reviewNote: string | null;
   submittedAt: string | null;
+  reviewedAt: string | null;
   authType: McpAuthType;
   enabled: boolean;
   headerNames: string[];

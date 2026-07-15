@@ -73,6 +73,7 @@ export function serializeMcpServerIntegration(
     storeStatus: getMcpStoreStatus(integration.storeStatus),
     reviewNote: integration.reviewNote ?? null,
     submittedAt: integration.submittedAt?.toISOString() ?? null,
+    reviewedAt: integration.reviewedAt?.toISOString() ?? null,
     authType: getMcpAuthType(integration.authType),
     oauthStatus:
       integration.authType === "oauth"

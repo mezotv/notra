@@ -56,6 +56,7 @@ export async function listMcpIntegrationsPendingReview() {
   return await db.query.mcpServerIntegrations.findMany({
     where: eq(mcpServerIntegrations.storeStatus, "pending_review"),
     orderBy: asc(mcpServerIntegrations.submittedAt),
+    limit: 100,
     with: {
       organization: {
         columns: {

@@ -23,9 +23,8 @@ function isWebp(bytes: Buffer) {
 function isSvg(bytes: Buffer) {
   const head = bytes
     .toString("utf8", 0, Math.min(bytes.length, SVG_SNIFF_LENGTH))
-    .trimStart()
     .toLowerCase();
-  return head.startsWith("<svg") || head.startsWith("<?xml");
+  return head.includes("<svg");
 }
 
 export function matchesDeclaredImageType(bytes: Buffer, contentType: string) {
