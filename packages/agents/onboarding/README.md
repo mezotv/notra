@@ -109,7 +109,7 @@ The 401 is the point: route auth fails closed. Only three callers get in — the
 4. Checks the website actually responds (HEAD/GET with a 5s timeout).
 5. Triggers the Upstash workflow with `{ organizationId, domain, email, organizationName }`.
 
-When the workflow starts, it creates a Slack Connect channel `ext-<company-name>-notra`, adds the configured founder, and invites the signup email with permission to post and invite. This is skipped unless both Slack variables are set. If an invite fails, the failure is caught and does not fail the workflow.
+When the workflow starts, it creates a Slack Connect channel `ext-<company-name>-notra`, adds the configured founder, and invites the signup email with permission to post and invite only when it is not from a free provider. The email and website domains do not need to match. Slack setup is skipped unless both Slack variables are set. If an invite fails, the failure is caught and does not fail the workflow.
 
 ## Local development
 
