@@ -128,8 +128,19 @@ export const integrationsRouter = {
           throw notFound("MCP server not found");
         }
 
-        const disallowedUrl = findDisallowedBrandingAssetUrl(input);
-        if (disallowedUrl) {
+        const changedAssetUrls = [
+          input.logoLightUrl !== existing.logoLightUrl
+            ? input.logoLightUrl
+            : null,
+          input.logoDarkUrl !== existing.logoDarkUrl ? input.logoDarkUrl : null,
+          input.bannerUrl !== existing.bannerUrl ? input.bannerUrl : null,
+        ];
+        if (
+          findDisallowedBrandingAssetUrl({
+            organizationId: input.organizationId,
+            urls: changedAssetUrls,
+          })
+        ) {
           throw badRequest(
             "Branding images must be uploaded through the console"
           );
@@ -309,7 +320,12 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        if (findDisallowedBrandingAssetUrl(input)) {
+        if (
+          findDisallowedBrandingAssetUrl({
+            organizationId: input.organizationId,
+            urls: [input.logoLightUrl, input.logoDarkUrl, input.bannerUrl],
+          })
+        ) {
           throw badRequest(
             "Branding images must be uploaded through the console"
           );

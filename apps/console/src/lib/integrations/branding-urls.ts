@@ -1,43 +1,35 @@
 import "server-only";
 
-const ALLOWED_HOST_SUFFIXES = [".r2.dev", ".r2.cloudflarestorage.com"];
-
-function isAllowedBrandingAssetUrl(url: string | null | undefined) {
-  if (!url) {
-    return true;
-  }
-
-  let hostname: string;
-  try {
-    hostname = new URL(url).hostname;
-  } catch {
-    return false;
-  }
-
-  if (ALLOWED_HOST_SUFFIXES.some((suffix) => hostname.endsWith(suffix))) {
-    return true;
-  }
-
+function isAllowedBrandingAssetUrl(url: string, organizationId: string) {
   const publicUrl = process.env.CLOUDFLARE_PUBLIC_URL;
   if (!publicUrl) {
     return false;
   }
 
+  let parsed: URL;
+  let allowedHost: string;
   try {
-    return hostname === new URL(publicUrl).hostname;
+    parsed = new URL(url);
+    allowedHost = new URL(publicUrl).hostname;
   } catch {
     return false;
   }
+
+  return (
+    parsed.hostname === allowedHost &&
+    parsed.pathname.startsWith(
+      `/organization/${organizationId}/integration-branding/`
+    )
+  );
 }
 
 export function findDisallowedBrandingAssetUrl(input: {
-  logoLightUrl?: string | null;
-  logoDarkUrl?: string | null;
-  bannerUrl?: string | null;
+  organizationId: string;
+  urls: Array<string | null | undefined>;
 }) {
-  for (const url of [input.logoLightUrl, input.logoDarkUrl, input.bannerUrl]) {
-    if (!isAllowedBrandingAssetUrl(url)) {
-      return url ?? null;
+  for (const url of input.urls) {
+    if (url && !isAllowedBrandingAssetUrl(url, input.organizationId)) {
+      return url;
     }
   }
   return null;

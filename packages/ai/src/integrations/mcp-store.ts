@@ -103,9 +103,13 @@ export async function updateMcpToolActionPhrases(params: {
     columns: { serverToolName: true },
   });
   const knownToolNames = new Set(existing.map((tool) => tool.serverToolName));
-  const applicable = params.updates.filter((update) =>
-    knownToolNames.has(update.serverToolName)
-  );
+  const updatesByToolName = new Map<string, McpToolActionPhraseUpdate>();
+  for (const update of params.updates) {
+    if (knownToolNames.has(update.serverToolName)) {
+      updatesByToolName.set(update.serverToolName, update);
+    }
+  }
+  const applicable = Array.from(updatesByToolName.values());
   if (applicable.length === 0) {
     return;
   }
