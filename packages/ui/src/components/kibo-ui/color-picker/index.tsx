@@ -7,6 +7,7 @@ import {
   type ComponentProps,
   createContext,
   type HTMLAttributes,
+  type KeyboardEvent,
   memo,
   useCallback,
   useContext,
@@ -66,51 +67,87 @@ export const ColorPicker = ({
   className,
   ...props
 }: ColorPickerProps) => {
-  const initialColor = Color(value ?? defaultValue);
-
-  const [hue, setHue] = useState(initialColor.hue());
-  const [saturation, setSaturation] = useState(initialColor.saturationl());
-  const [lightness, setLightness] = useState(initialColor.lightness());
-  const [alpha, setAlpha] = useState(initialColor.alpha() * 100);
+  const [hue, setHue] = useState(() => Color(value ?? defaultValue).hue());
+  const [saturation, setSaturation] = useState(() =>
+    Color(value ?? defaultValue).saturationl()
+  );
+  const [lightness, setLightness] = useState(() =>
+    Color(value ?? defaultValue).lightness()
+  );
+  const [alpha, setAlpha] = useState(
+    () => Color(value ?? defaultValue).alpha() * 100
+  );
   const [mode, setMode] = useState("hex");
+  const onChangeRef = useRef(onChange);
+  const lastNotifiedRef = useRef<[number, number, number, number] | null>(null);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Update color when controlled value changes
   useEffect(() => {
     if (value) {
       const color = Color(value);
+      const nextAlpha = color.alpha() * 100;
 
+      lastNotifiedRef.current = [
+        color.hue(),
+        color.saturationl(),
+        color.lightness(),
+        nextAlpha,
+      ];
       setHue(color.hue());
       setSaturation(color.saturationl());
       setLightness(color.lightness());
-      setAlpha(color.alpha() * 100);
+      setAlpha(nextAlpha);
     }
   }, [value]);
 
   // Notify parent of changes
   useEffect(() => {
-    if (onChange) {
+    const previous = lastNotifiedRef.current;
+    if (previous === null) {
+      lastNotifiedRef.current = [hue, saturation, lightness, alpha];
+      return;
+    }
+    if (
+      previous[0] === hue &&
+      previous[1] === saturation &&
+      previous[2] === lightness &&
+      previous[3] === alpha
+    ) {
+      return;
+    }
+
+    lastNotifiedRef.current = [hue, saturation, lightness, alpha];
+
+    if (onChangeRef.current) {
       const color = Color.hsl(hue, saturation, lightness).alpha(alpha / 100);
       const rgba = color.rgb().array();
 
-      onChange([rgba[0], rgba[1], rgba[2], alpha / 100]);
+      onChangeRef.current([rgba[0], rgba[1], rgba[2], alpha / 100]);
     }
-  }, [hue, saturation, lightness, alpha, onChange]);
+  }, [hue, saturation, lightness, alpha]);
+
+  const contextValue = useMemo(
+    () => ({
+      hue,
+      saturation,
+      lightness,
+      alpha,
+      mode,
+      setHue,
+      setSaturation,
+      setLightness,
+      setAlpha,
+      setMode,
+    }),
+    [hue, saturation, lightness, alpha, mode]
+  );
 
   return (
-    <ColorPickerContext.Provider
-      value={{
-        hue,
-        saturation,
-        lightness,
-        alpha,
-        mode,
-        setHue,
-        setSaturation,
-        setLightness,
-        setAlpha,
-        setMode,
-      }}
-    >
+    <ColorPickerContext.Provider value={contextValue}>
       <div
         className={cn("flex size-full flex-col gap-4", className)}
         {...props}
@@ -127,7 +164,47 @@ export const ColorPickerSelection = memo(
     const [isDragging, setIsDragging] = useState(false);
     const [positionX, setPositionX] = useState(0);
     const [positionY, setPositionY] = useState(0);
-    const { hue, setSaturation, setLightness } = useColorPicker();
+    const { hue, saturation, lightness, setSaturation, setLightness } =
+      useColorPicker();
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+      const saturationStep = 2;
+      const lightnessStep = 2;
+      let nextSaturation = saturation;
+      let nextLightness = lightness;
+
+      switch (event.key) {
+        case "ArrowLeft":
+          nextSaturation = Math.max(0, saturation - saturationStep);
+          break;
+        case "ArrowRight":
+          nextSaturation = Math.min(100, saturation + saturationStep);
+          break;
+        case "ArrowUp":
+          nextLightness = Math.min(100, lightness + lightnessStep);
+          break;
+        case "ArrowDown":
+          nextLightness = Math.max(0, lightness - lightnessStep);
+          break;
+        default:
+          return;
+      }
+
+      event.preventDefault();
+      setSaturation(nextSaturation);
+      setLightness(nextLightness);
+    };
+
+    useEffect(() => {
+      if (isDragging) {
+        return;
+      }
+      const x = saturation / 100;
+      const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x);
+      const y = topLightness > 0 ? 1 - lightness / topLightness : 1;
+      setPositionX(x);
+      setPositionY(Math.max(0, Math.min(1, y)));
+    }, [isDragging, saturation, lightness]);
 
     const backgroundGradient = useMemo(() => {
       return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
@@ -176,16 +253,27 @@ export const ColorPickerSelection = memo(
 
     return (
       <div
-        className={cn("relative size-full cursor-crosshair rounded", className)}
+        aria-label="Color saturation and lightness"
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={Math.round(saturation)}
+        aria-valuetext={`Saturation ${Math.round(saturation)}%, Lightness ${Math.round(lightness)}%`}
+        className={cn(
+          "relative size-full cursor-crosshair rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          className
+        )}
+        onKeyDown={handleKeyDown}
         onPointerDown={(e) => {
           e.preventDefault();
           setIsDragging(true);
           handlePointerMove(e.nativeEvent);
         }}
         ref={containerRef}
+        role="slider"
         style={{
           background: backgroundGradient,
         }}
+        tabIndex={0}
         {...props}
       >
         <div
@@ -234,7 +322,7 @@ export const ColorPickerAlpha = ({
   className,
   ...props
 }: ColorPickerAlphaProps) => {
-  const { alpha, setAlpha } = useColorPicker();
+  const { alpha, setAlpha, hue, saturation, lightness } = useColorPicker();
 
   return (
     <Slider.Root
@@ -246,7 +334,12 @@ export const ColorPickerAlpha = ({
       {...props}
     >
       <Slider.Track className="relative my-0.5 h-3 w-full grow rounded-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')] bg-center bg-repeat-x dark:bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAALklEQVR4nGP8+vWrCAMewM3N/QafPBM+SWLAqAGDwQBGQgoIpZOB98KoAVQwAADxzQcSVIRCfQAAAABJRU5ErkJggg==')]">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent to-black/50 dark:to-white/50" />
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{
+            background: `linear-gradient(90deg, transparent, hsl(${hue}, ${saturation}%, ${lightness}%))`,
+          }}
+        />
         <Slider.Range className="absolute h-full rounded-full bg-transparent" />
       </Slider.Track>
       <Slider.Thumb className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
@@ -258,6 +351,7 @@ export type ColorPickerEyeDropperProps = ComponentProps<typeof Button>;
 
 export const ColorPickerEyeDropper = ({
   className,
+  onClick,
   ...props
 }: ColorPickerEyeDropperProps) => {
   const { setHue, setSaturation, setLightness, setAlpha } = useColorPicker();
@@ -281,12 +375,16 @@ export const ColorPickerEyeDropper = ({
 
   return (
     <Button
+      aria-label="Pick a color from the screen"
       className={cn("shrink-0 text-muted-foreground", className)}
-      onClick={handleEyeDropper}
       size="icon"
       type="button"
       variant="outline"
       {...props}
+      onClick={(event) => {
+        onClick?.(event);
+        handleEyeDropper();
+      }}
     >
       <PipetteIcon size={16} />
     </Button>
@@ -296,6 +394,8 @@ export const ColorPickerEyeDropper = ({
 export type ColorPickerOutputProps = ComponentProps<typeof SelectTrigger>;
 
 const formats = ["hex", "rgb", "css", "hsl"];
+const rgbChannels = ["r", "g", "b"];
+const hslChannels = ["h", "s", "l"];
 
 export const ColorPickerOutput = ({
   className,
@@ -312,7 +412,10 @@ export const ColorPickerOutput = ({
       }}
       value={mode}
     >
-      <SelectTrigger className="h-8 w-20 shrink-0 text-xs" {...props}>
+      <SelectTrigger
+        className={cn("h-8 w-20 shrink-0 text-xs", className)}
+        {...props}
+      >
         <SelectValue placeholder="Mode" />
       </SelectTrigger>
       <SelectContent>
@@ -396,10 +499,9 @@ export const ColorPickerFormat = ({
           <Input
             className={cn(
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className
+              index && "rounded-l-none"
             )}
-            key={index}
+            key={rgbChannels[index]}
             readOnly
             type="text"
             value={value}
@@ -423,7 +525,6 @@ export const ColorPickerFormat = ({
           readOnly
           type="text"
           value={`rgba(${rgb.join(", ")}, ${alpha}%)`}
-          {...props}
         />
       </div>
     );
@@ -447,10 +548,9 @@ export const ColorPickerFormat = ({
           <Input
             className={cn(
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className
+              index && "rounded-l-none"
             )}
-            key={index}
+            key={hslChannels[index]}
             readOnly
             type="text"
             value={value}

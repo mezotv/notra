@@ -32,7 +32,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -46,22 +45,11 @@ import {
   AUTH_CHOICE_OPTIONS,
   LIVE_EDIT_WARNING,
 } from "@/lib/integrations/constants";
-import {
-  authChoiceToAuthType,
-  authTypeToAuthChoice,
-  buildHeadersFromForm,
-  getInitialApiKeyStyle,
-  hasStoredBearerHeader,
-  rgbaToHex,
-} from "@/lib/integrations/form";
+import { buildInitialPhraseDrafts, rgbaToHex } from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
+import { useIntegrationForm } from "@/lib/integrations/use-integration-form";
 import { consoleOrpc } from "@/lib/orpc/query";
-import {
-  BRAND_COLOR_REGEX,
-  createMcpServerRequestSchema,
-  MAX_MCP_HEADERS,
-  updateMcpServerRequestSchema,
-} from "@/schemas/integrations";
+import { BRAND_COLOR_REGEX, MAX_MCP_HEADERS } from "@/schemas/integrations";
 import type {
   ApiKeyStyle,
   AuthChoice,
@@ -70,18 +58,6 @@ import type {
   McpServer,
   ToolPhraseDraft,
 } from "@/types/integrations";
-
-function buildInitialPhraseDrafts(tools: McpIntegrationTool[]) {
-  const drafts: Record<string, ToolPhraseDraft> = {};
-  for (const tool of tools) {
-    drafts[tool.serverToolName] = {
-      serverToolName: tool.serverToolName,
-      actionPhrasePresent: tool.actionPhrasePresent ?? "",
-      actionPhrasePast: tool.actionPhrasePast ?? "",
-    };
-  }
-  return drafts;
-}
 
 function LiveWarningBanner() {
   return (
@@ -271,6 +247,7 @@ function IntegrationBrandingCard({
           <Label>Logo</Label>
           <div className="grid gap-3 sm:grid-cols-2">
             <LogoVariantUploader
+              disabled={isSaving}
               fallbackUrl={null}
               onChange={setLogoLightUrl}
               onUploadingChange={onUploadingChange}
@@ -279,6 +256,7 @@ function IntegrationBrandingCard({
               value={logoLightUrl}
             />
             <LogoVariantUploader
+              disabled={isSaving}
               fallbackUrl={logoLightUrl}
               onChange={setLogoDarkUrl}
               onUploadingChange={onUploadingChange}
@@ -361,6 +339,7 @@ function IntegrationBrandingCard({
             </span>
           </Label>
           <BannerUploader
+            disabled={isSaving}
             onChange={setBannerUrl}
             onUploadingChange={onUploadingChange}
             organizationId={organizationId}
@@ -584,15 +563,21 @@ interface IntegrationQueryData {
 }
 
 function IntegrationToolsCard({
+  isSaving,
+  onScanningChange,
   organizationId,
   phraseDrafts,
   server,
+  setPhraseBaseline,
   setPhraseDrafts,
   tools,
 }: {
+  isSaving: boolean;
+  onScanningChange: (scanning: boolean) => void;
   organizationId: string;
   phraseDrafts: Record<string, ToolPhraseDraft>;
   server: McpServer;
+  setPhraseBaseline: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   setPhraseDrafts: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   tools: McpIntegrationTool[];
 }) {
@@ -604,8 +589,15 @@ function IntegrationToolsCard({
         organizationId,
         serverId: server.id,
       }),
+    onMutate: () => {
+      onScanningChange(true);
+    },
+    onSettled: () => {
+      onScanningChange(false);
+    },
     onSuccess: async (result) => {
       setIndexedTools(result.tools);
+      setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
       setPhraseDrafts((current) => {
         const next = buildInitialPhraseDrafts(result.tools);
         for (const [toolName, draft] of Object.entries(current)) {
@@ -677,6 +669,7 @@ function IntegrationToolsCard({
             }))
           }
           onScan={() => scanMutation.mutate()}
+          saving={isSaving}
           scanning={scanMutation.isPending}
           tools={indexedTools}
         />
@@ -741,292 +734,74 @@ export function IntegrationForm({
   slug: string;
   tools?: McpIntegrationTool[];
 }) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const isEdit = Boolean(server);
-
-  const [name, setName] = useState(server?.name ?? "");
-  const [author, setAuthor] = useState(server?.author ?? "");
-  const [description, setDescription] = useState(server?.description ?? "");
-  const [url, setUrl] = useState(server?.url ?? "");
-  const [websiteUrl, setWebsiteUrl] = useState(server?.websiteUrl ?? "");
-  const [brandColor, setBrandColor] = useState(server?.brandColor ?? "");
-  const [logoLightUrl, setLogoLightUrl] = useState(
-    server?.logoLightUrl ?? null
-  );
-  const [logoDarkUrl, setLogoDarkUrl] = useState(server?.logoDarkUrl ?? null);
-  const [bannerUrl, setBannerUrl] = useState(server?.bannerUrl ?? null);
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const [authChoice, setAuthChoice] = useState<AuthChoice>(
-    server ? authTypeToAuthChoice(server.authType) : "none"
-  );
-  const [apiKeyStyle, setApiKeyStyle] = useState<ApiKeyStyle>(() =>
-    getInitialApiKeyStyle(server)
-  );
-  const [bearerToken, setBearerToken] = useState("");
-  const [headerRows, setHeaderRows] = useState<HeaderRow[]>([]);
-  const [phraseDrafts, setPhraseDrafts] = useState<
-    Record<string, ToolPhraseDraft>
-  >(() => buildInitialPhraseDrafts(tools ?? []));
-
-  const backHref = `/${slug}/integrations`;
-
-  function getSharedFields() {
-    return {
-      organizationId,
-      name,
-      author: author.trim() || null,
-      description: description.trim() || null,
-      url,
-      authType: authChoiceToAuthType(authChoice),
-      headers: buildHeadersFromForm({
-        apiKeyStyle,
-        authChoice,
-        bearerToken,
-        headerRows,
-      }),
-      websiteUrl: websiteUrl.trim() || null,
-      brandColor: brandColor.trim() || null,
-      logoLightUrl,
-      logoDarkUrl,
-      bannerUrl,
-    };
-  }
-
-  function validateApiKeyInput() {
-    if (authChoice !== "apikey") {
-      return true;
-    }
-    if (apiKeyStyle === "bearer") {
-      if (bearerToken.trim() || hasStoredBearerHeader(server)) {
-        return true;
-      }
-      toast.error("Bearer token is required");
-      return false;
-    }
-    const incomplete = headerRows.some(
-      (row) => !(row.name.trim() && row.value.trim())
-    );
-    if (headerRows.length > 0 && !incomplete) {
-      return true;
-    }
-    if (
-      headerRows.length === 0 &&
-      server?.hasHeaders &&
-      !hasStoredBearerHeader(server)
-    ) {
-      return true;
-    }
-    toast.error("Complete every custom header");
-    return false;
-  }
-
-  const createMutation = useMutation({
-    mutationFn: () => {
-      const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
-      if (!parsed.success) {
-        throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
-        );
-      }
-      return consoleOrpc.integrations.mcp.create.call(parsed.data);
-    },
-    onSuccess: async (created) => {
-      await queryClient.invalidateQueries({
-        queryKey: consoleOrpc.integrations.list.queryKey({
-          input: { organizationId },
-        }),
-      });
-      toast.success("Integration created as a draft");
-      router.push(`/${slug}/integrations/${created.id}`);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!server) {
-        throw new Error("Integration not loaded");
-      }
-      const parsed = updateMcpServerRequestSchema.safeParse({
-        ...getSharedFields(),
-        serverId: server.id,
-      });
-      if (!parsed.success) {
-        throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
-        );
-      }
-      const updated = await consoleOrpc.integrations.mcp.update.call(
-        parsed.data
-      );
-      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
-        organizationId,
-        serverId: server.id,
-        tools: Object.values(phraseDrafts),
-      });
-      return updated;
-    },
-    onSuccess: async (updated) => {
-      await queryClient.invalidateQueries({
-        queryKey: consoleOrpc.integrations.list.queryKey({
-          input: { organizationId },
-        }),
-      });
-      if (server) {
-        await queryClient.invalidateQueries({
-          queryKey: consoleOrpc.integrations.mcp.get.queryKey({
-            input: { organizationId, serverId: server.id },
-          }),
-        });
-      }
-      toast.success(
-        updated.storeStatus === "pending_review" &&
-          server?.storeStatus === "live"
-          ? "Saved — sent back through review"
-          : "Integration saved"
-      );
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const submitReviewMutation = useMutation({
-    mutationFn: async () => {
-      if (!server) {
-        throw new Error("Integration not loaded");
-      }
-      const parsed = updateMcpServerRequestSchema.safeParse({
-        ...getSharedFields(),
-        serverId: server.id,
-      });
-      if (!parsed.success) {
-        throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
-        );
-      }
-      await consoleOrpc.integrations.mcp.update.call(parsed.data);
-      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
-        organizationId,
-        serverId: server.id,
-        tools: Object.values(phraseDrafts),
-      });
-      return await consoleOrpc.integrations.mcp.submitForReview.call({
-        organizationId,
-        serverId: server.id,
-      });
-    },
-    onSuccess: async () => {
-      if (server) {
-        await queryClient.invalidateQueries({
-          queryKey: consoleOrpc.integrations.mcp.get.queryKey({
-            input: { organizationId, serverId: server.id },
-          }),
-        });
-      }
-      await queryClient.invalidateQueries({
-        queryKey: consoleOrpc.integrations.list.queryKey({
-          input: { organizationId },
-        }),
-      });
-      toast.success("Submitted for review");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
-
-  const isSaving =
-    createMutation.isPending ||
-    updateMutation.isPending ||
-    submitReviewMutation.isPending;
-  const isBusy = isSaving || uploadingCount > 0;
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isBusy || !validateApiKeyInput()) {
-      return;
-    }
-    if (isEdit) {
-      updateMutation.mutate();
-    } else {
-      createMutation.mutate();
-    }
-  }
-
-  function handleSubmitReview() {
-    if (isBusy || !validateApiKeyInput()) {
-      return;
-    }
-    submitReviewMutation.mutate();
-  }
+  const form = useIntegrationForm({ organizationId, server, slug, tools });
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
-      <IntegrationFormHeader backHref={backHref} server={server} />
+      <IntegrationFormHeader backHref={form.backHref} server={server} />
 
-      <form className="grid gap-6" onSubmit={handleSubmit}>
+      <form className="grid gap-6" onSubmit={form.handleSubmit}>
         <IntegrationDetailsCard
-          author={author}
-          description={description}
-          isSaving={isSaving}
-          name={name}
-          setAuthor={setAuthor}
-          setDescription={setDescription}
-          setName={setName}
-          setWebsiteUrl={setWebsiteUrl}
-          websiteUrl={websiteUrl}
+          author={form.author}
+          description={form.description}
+          isSaving={form.isSaving}
+          name={form.name}
+          setAuthor={form.setAuthor}
+          setDescription={form.setDescription}
+          setName={form.setName}
+          setWebsiteUrl={form.setWebsiteUrl}
+          websiteUrl={form.websiteUrl}
         />
         <IntegrationBrandingCard
-          bannerUrl={bannerUrl}
-          brandColor={brandColor}
-          isSaving={isSaving}
-          logoDarkUrl={logoDarkUrl}
-          logoLightUrl={logoLightUrl}
+          bannerUrl={form.bannerUrl}
+          brandColor={form.brandColor}
+          isSaving={form.isSaving}
+          logoDarkUrl={form.logoDarkUrl}
+          logoLightUrl={form.logoLightUrl}
           onUploadingChange={(uploading) =>
-            setUploadingCount((count) => count + (uploading ? 1 : -1))
+            form.setUploadingCount((count) => count + (uploading ? 1 : -1))
           }
           organizationId={organizationId}
-          setBannerUrl={setBannerUrl}
-          setBrandColor={setBrandColor}
-          setLogoDarkUrl={setLogoDarkUrl}
-          setLogoLightUrl={setLogoLightUrl}
+          setBannerUrl={form.setBannerUrl}
+          setBrandColor={form.setBrandColor}
+          setLogoDarkUrl={form.setLogoDarkUrl}
+          setLogoLightUrl={form.setLogoLightUrl}
         />
 
         <ServerAuthenticationCard
-          apiKeyStyle={apiKeyStyle}
-          authChoice={authChoice}
-          bearerToken={bearerToken}
-          headerRows={headerRows}
-          isSaving={isSaving}
+          apiKeyStyle={form.apiKeyStyle}
+          authChoice={form.authChoice}
+          bearerToken={form.bearerToken}
+          headerRows={form.headerRows}
+          isSaving={form.isSaving}
           server={server}
-          setApiKeyStyle={setApiKeyStyle}
-          setAuthChoice={setAuthChoice}
-          setBearerToken={setBearerToken}
-          setHeaderRows={setHeaderRows}
-          setUrl={setUrl}
-          url={url}
+          setApiKeyStyle={form.setApiKeyStyle}
+          setAuthChoice={form.setAuthChoice}
+          setBearerToken={form.setBearerToken}
+          setHeaderRows={form.setHeaderRows}
+          setUrl={form.setUrl}
+          url={form.url}
         />
 
         {server ? (
           <IntegrationToolsCard
+            isSaving={form.isSaving}
+            onScanningChange={form.setScanning}
             organizationId={organizationId}
-            phraseDrafts={phraseDrafts}
+            phraseDrafts={form.phraseDrafts}
             server={server}
-            setPhraseDrafts={setPhraseDrafts}
+            setPhraseBaseline={form.setPhraseBaseline}
+            setPhraseDrafts={form.setPhraseDrafts}
             tools={tools ?? []}
           />
         ) : null}
 
         <IntegrationFormActions
-          backHref={backHref}
-          isSaving={isBusy}
-          onSubmitReview={handleSubmitReview}
+          backHref={form.backHref}
+          isSaving={form.isBusy}
+          onSubmitReview={form.handleSubmitReview}
           server={server}
-          submitReviewPending={submitReviewMutation.isPending}
+          submitReviewPending={form.submitReviewPending}
         />
       </form>
     </main>

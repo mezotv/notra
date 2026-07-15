@@ -86,7 +86,7 @@ function PendingIntegrationCard({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-        <code className="rounded-md bg-muted px-2 py-1 font-mono">
+        <code className="min-w-0 break-all rounded-md bg-muted px-2 py-1 font-mono">
           {integration.url}
         </code>
         <span>auth: {integration.authType}</span>
@@ -167,6 +167,7 @@ export function ReviewQueueClient() {
       serverId: string;
       action: "approve" | "reject";
       note?: string;
+      submittedAt: string | null;
     }) => consoleOrpc.review.decide.call(input),
     onMutate: (variables) => {
       setDecidingIds((ids) => new Set(ids).add(variables.serverId));
@@ -226,7 +227,7 @@ export function ReviewQueueClient() {
         </div>
       ) : null}
 
-      {pendingQuery.data && pending.length === 0 ? (
+      {pendingQuery.data && !pendingQuery.isError && pending.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground text-sm">
           Nothing waiting for review.
         </div>
@@ -241,6 +242,7 @@ export function ReviewQueueClient() {
             decideMutation.mutate({
               serverId: integration.id,
               action: "approve",
+              submittedAt: integration.submittedAt,
             })
           }
           onReject={(note) =>
@@ -248,6 +250,7 @@ export function ReviewQueueClient() {
               serverId: integration.id,
               action: "reject",
               note,
+              submittedAt: integration.submittedAt,
             })
           }
         />

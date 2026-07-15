@@ -1,12 +1,56 @@
 import { uploadIntegrationBrandingAsset } from "@notra/ai/utils/image-assets";
+import { ORPCError } from "@orpc/server";
 import { NextResponse } from "next/server";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
+import {
+  assertAuthenticated,
+  assertOrganizationAccess,
+} from "@/lib/auth/organization";
+import { matchesDeclaredImageType } from "@/lib/integrations/validate-image";
+import {
+  assertRateLimit,
+  BRANDING_UPLOAD_RATE_LIMIT,
+} from "@/lib/orpc/utils/rate-limit";
 import {
   BRANDING_ASSET_CONTENT_TYPES,
   brandingUploadRequestSchema,
+  MAX_BRANDING_UPLOAD_REQUEST_BYTES,
 } from "@/schemas/integrations";
 
+function errorResponse(error: unknown) {
+  if (error instanceof ORPCError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.status }
+    );
+  }
+  console.error("[Branding] Upload request failed", error);
+  return NextResponse.json(
+    { error: "Could not upload the image. Try again." },
+    { status: 500 }
+  );
+}
+
 export async function POST(request: Request) {
+  const contentLengthHeader = request.headers.get("content-length");
+  const contentLength = Number(contentLengthHeader);
+  if (
+    !contentLengthHeader ||
+    !Number.isFinite(contentLength) ||
+    contentLength <= 0 ||
+    contentLength > MAX_BRANDING_UPLOAD_REQUEST_BYTES
+  ) {
+    return NextResponse.json(
+      { error: "Images must be 4MB or smaller" },
+      { status: 413 }
+    );
+  }
+
+  try {
+    await assertAuthenticated({ headers: request.headers });
+  } catch (error) {
+    return errorResponse(error);
+  }
+
   const formData = await request.formData().catch(() => null);
   if (!formData) {
     return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
@@ -25,7 +69,9 @@ export async function POST(request: Request) {
   }
 
   const { file, kind, organizationId } = parsed.data;
-  const extension = BRANDING_ASSET_CONTENT_TYPES[file.type];
+  const extension = Object.hasOwn(BRANDING_ASSET_CONTENT_TYPES, file.type)
+    ? BRANDING_ASSET_CONTENT_TYPES[file.type]
+    : undefined;
   if (!extension) {
     return NextResponse.json(
       { error: "Use a PNG, JPG, SVG, or WebP image" },
@@ -38,10 +84,20 @@ export async function POST(request: Request) {
       headers: request.headers,
       organizationId,
     });
-  } catch {
+    await assertRateLimit({
+      key: `branding-upload:${organizationId}`,
+      message: "Too many uploads. Wait a minute and try again.",
+      ...BRANDING_UPLOAD_RATE_LIMIT,
+    });
+  } catch (error) {
+    return errorResponse(error);
+  }
+
+  const body = Buffer.from(await file.arrayBuffer());
+  if (!matchesDeclaredImageType(body, file.type)) {
     return NextResponse.json(
-      { error: "You do not have access to this organization" },
-      { status: 403 }
+      { error: "The file content does not match its image type" },
+      { status: 400 }
     );
   }
 
@@ -49,7 +105,7 @@ export async function POST(request: Request) {
     const url = await uploadIntegrationBrandingAsset({
       organizationId,
       kind,
-      body: Buffer.from(await file.arrayBuffer()),
+      body,
       contentType: file.type,
       extension,
     });

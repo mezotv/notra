@@ -1,16 +1,18 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations, mcpToolIndex } from "@notra/db/schema";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
 } from "../types/integrations";
 
 export async function setMcpStoreStatus(params: {
+  organizationId: string;
   integrationId: string;
   status: McpStoreStatus;
   reviewNote?: string | null;
   expectedStatus?: McpStoreStatus;
+  expectedSubmittedAt?: Date | null;
 }) {
   const now = new Date();
   const [row] = await db
@@ -29,9 +31,20 @@ export async function setMcpStoreStatus(params: {
     .where(
       and(
         eq(mcpServerIntegrations.id, params.integrationId),
+        eq(mcpServerIntegrations.organizationId, params.organizationId),
         ...(params.expectedStatus
           ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
-          : [])
+          : []),
+        ...(params.expectedSubmittedAt === undefined
+          ? []
+          : [
+              params.expectedSubmittedAt === null
+                ? isNull(mcpServerIntegrations.submittedAt)
+                : eq(
+                    mcpServerIntegrations.submittedAt,
+                    params.expectedSubmittedAt
+                  ),
+            ])
       )
     )
     .returning();
@@ -90,7 +103,7 @@ export async function updateMcpToolActionPhrases(params: {
   updates: McpToolActionPhraseUpdate[];
 }) {
   if (params.updates.length === 0) {
-    return;
+    return 0;
   }
 
   const toolNames = params.updates.map((update) => update.serverToolName);
@@ -111,7 +124,7 @@ export async function updateMcpToolActionPhrases(params: {
   }
   const applicable = Array.from(updatesByToolName.values());
   if (applicable.length === 0) {
-    return;
+    return 0;
   }
 
   const valueRows = sql.join(
@@ -133,4 +146,6 @@ export async function updateMcpToolActionPhrases(params: {
       and tool.server_integration_id = ${params.integrationId}
       and tool.server_tool_name = phrase.tool_name
   `);
+
+  return applicable.length;
 }

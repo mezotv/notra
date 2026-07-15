@@ -2,7 +2,7 @@
 
 import { UploadIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { DropEvent, DropzoneOptions, FileRejection } from "react-dropzone";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@notra/ui/components/ui/button";
@@ -15,6 +15,8 @@ type DropzoneContextType = {
   minSize?: DropzoneOptions["minSize"];
   maxFiles?: DropzoneOptions["maxFiles"];
 };
+
+const listFormatter = new Intl.ListFormat("en");
 
 const renderBytes = (bytes: number) => {
   const units = ["B", "KB", "MB", "GB", "TB", "PB"];
@@ -68,7 +70,6 @@ export const Dropzone = ({
       if (fileRejections.length > 0) {
         const message = fileRejections.at(0)?.errors.at(0)?.message;
         onError?.(new Error(message));
-        return;
       }
 
       onDrop?.(acceptedFiles, fileRejections, event);
@@ -76,11 +77,13 @@ export const Dropzone = ({
     ...props,
   });
 
+  const contextValue = useMemo(
+    () => ({ src, accept, maxSize, minSize, maxFiles }),
+    [src, accept, maxSize, minSize, maxFiles]
+  );
+
   return (
-    <DropzoneContext.Provider
-      key={JSON.stringify(src)}
-      value={{ src, accept, maxSize, minSize, maxFiles }}
-    >
+    <DropzoneContext.Provider value={contextValue}>
       <Button
         className={cn(
           "relative h-auto w-full flex-col overflow-hidden p-8",
@@ -122,7 +125,7 @@ export const DropzoneContent = ({
 }: DropzoneContentProps) => {
   const { src } = useDropzoneContext();
 
-  if (!src) {
+  if (!src || src.length === 0) {
     return null;
   }
 
@@ -137,10 +140,10 @@ export const DropzoneContent = ({
       </div>
       <p className="my-2 w-full truncate font-medium text-sm">
         {src.length > maxLabelItems
-          ? `${new Intl.ListFormat("en").format(
+          ? `${listFormatter.format(
               src.slice(0, maxLabelItems).map((file) => file.name)
             )} and ${src.length - maxLabelItems} more`
-          : new Intl.ListFormat("en").format(src.map((file) => file.name))}
+          : listFormatter.format(src.map((file) => file.name))}
       </p>
       <p className="w-full text-wrap text-muted-foreground text-xs">
         Drag and drop or click to replace
@@ -160,7 +163,7 @@ export const DropzoneEmptyState = ({
 }: DropzoneEmptyStateProps) => {
   const { src, accept, maxSize, minSize, maxFiles } = useDropzoneContext();
 
-  if (src) {
+  if (src && src.length > 0) {
     return null;
   }
 
@@ -172,7 +175,7 @@ export const DropzoneEmptyState = ({
 
   if (accept) {
     caption += "Accepts ";
-    caption += new Intl.ListFormat("en").format(Object.keys(accept));
+    caption += listFormatter.format(Object.keys(accept));
   }
 
   if (minSize && maxSize) {

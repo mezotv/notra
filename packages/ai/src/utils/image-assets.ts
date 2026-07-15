@@ -84,6 +84,9 @@ export async function uploadIntegrationBrandingAsset(
       CacheControl: "public, max-age=31536000",
       ContentLength: params.body.byteLength,
       ContentType: params.contentType,
+      ...(params.contentType === "image/svg+xml"
+        ? { ContentDisposition: "attachment" }
+        : {}),
       Key: key,
     })
   );

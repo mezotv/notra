@@ -35,6 +35,10 @@ import {
   internalServerError,
   notFound,
 } from "../utils/errors";
+import {
+  assertRateLimit,
+  MCP_CONNECTION_RATE_LIMIT,
+} from "../utils/rate-limit";
 
 const organizationIdInputSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
@@ -177,8 +181,12 @@ export const integrationsRouter = {
             throw notFound("MCP server not found");
           }
 
-          if (existing.storeStatus === "live") {
+          if (
+            existing.storeStatus === "live" ||
+            existing.storeStatus === "pending_review"
+          ) {
             await setMcpStoreStatus({
+              organizationId: input.organizationId,
               integrationId: input.serverId,
               status: "pending_review",
             });
@@ -231,6 +239,14 @@ export const integrationsRouter = {
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
+        if (!existing.enabled) {
+          throw badRequest("Enable this integration before scanning its tools");
+        }
+
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
 
         try {
           await refreshMcpToolIndexForIntegration({
@@ -265,14 +281,19 @@ export const integrationsRouter = {
           throw notFound("MCP server not found");
         }
 
-        await updateMcpToolActionPhrases({
+        const appliedCount = await updateMcpToolActionPhrases({
           organizationId: input.organizationId,
           integrationId: input.serverId,
           updates: input.tools,
         });
 
-        if (existing.storeStatus === "live" && input.tools.length > 0) {
+        if (
+          (existing.storeStatus === "live" ||
+            existing.storeStatus === "pending_review") &&
+          appliedCount > 0
+        ) {
           await setMcpStoreStatus({
+            organizationId: input.organizationId,
             integrationId: input.serverId,
             status: "pending_review",
           });
@@ -305,6 +326,7 @@ export const integrationsRouter = {
         }
 
         await setMcpStoreStatus({
+          organizationId: input.organizationId,
           integrationId: input.serverId,
           status: "pending_review",
         });
@@ -382,6 +404,11 @@ export const integrationsRouter = {
         await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
+        });
+
+        await assertRateLimit({
+          key: `mcp-test:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
         });
 
         return testMcpServerConnection({

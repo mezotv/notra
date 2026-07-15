@@ -5,6 +5,7 @@ import { createORPCContext } from "@/lib/orpc/context";
 import { consoleRouter } from "@/lib/orpc/router";
 
 const handler = new RPCHandler(consoleRouter, {
+  strictGetMethodPluginEnabled: false,
   plugins: [new SimpleCsrfProtectionHandlerPlugin()],
   interceptors: [
     onError((error) => {

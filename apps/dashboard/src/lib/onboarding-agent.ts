@@ -80,7 +80,9 @@ async function createEveAgentClient(
     });
   }
 
-  return new Client(clientOptions);
+  throw new Error(
+    "Onboarding agent auth is not configured: no Vercel OIDC token and EVE_ONBOARDING_AGENT_PASSWORD is not set"
+  );
 }
 
 export async function reserveInitialOnboardingAgentRun(
