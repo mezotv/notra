@@ -66,12 +66,16 @@ export const ColorPicker = ({
   className,
   ...props
 }: ColorPickerProps) => {
-  const initialColor = Color(value ?? defaultValue);
-
-  const [hue, setHue] = useState(initialColor.hue());
-  const [saturation, setSaturation] = useState(initialColor.saturationl());
-  const [lightness, setLightness] = useState(initialColor.lightness());
-  const [alpha, setAlpha] = useState(initialColor.alpha() * 100);
+  const [hue, setHue] = useState(() => Color(value ?? defaultValue).hue());
+  const [saturation, setSaturation] = useState(() =>
+    Color(value ?? defaultValue).saturationl()
+  );
+  const [lightness, setLightness] = useState(() =>
+    Color(value ?? defaultValue).lightness()
+  );
+  const [alpha, setAlpha] = useState(
+    () => Color(value ?? defaultValue).alpha() * 100
+  );
   const [mode, setMode] = useState("hex");
   const onChangeRef = useRef(onChange);
   const skipNextNotifyRef = useRef(true);
@@ -108,21 +112,24 @@ export const ColorPicker = ({
     }
   }, [hue, saturation, lightness, alpha]);
 
+  const contextValue = useMemo(
+    () => ({
+      hue,
+      saturation,
+      lightness,
+      alpha,
+      mode,
+      setHue,
+      setSaturation,
+      setLightness,
+      setAlpha,
+      setMode,
+    }),
+    [hue, saturation, lightness, alpha, mode]
+  );
+
   return (
-    <ColorPickerContext.Provider
-      value={{
-        hue,
-        saturation,
-        lightness,
-        alpha,
-        mode,
-        setHue,
-        setSaturation,
-        setLightness,
-        setAlpha,
-        setMode,
-      }}
-    >
+    <ColorPickerContext.Provider value={contextValue}>
       <div
         className={cn("flex size-full flex-col gap-4", className)}
         {...props}
@@ -325,6 +332,8 @@ export const ColorPickerEyeDropper = ({
 export type ColorPickerOutputProps = ComponentProps<typeof SelectTrigger>;
 
 const formats = ["hex", "rgb", "css", "hsl"];
+const rgbChannels = ["r", "g", "b"];
+const hslChannels = ["h", "s", "l"];
 
 export const ColorPickerOutput = ({
   className,
@@ -430,7 +439,7 @@ export const ColorPickerFormat = ({
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
               index && "rounded-l-none"
             )}
-            key={index}
+            key={rgbChannels[index]}
             readOnly
             type="text"
             value={value}
@@ -479,7 +488,7 @@ export const ColorPickerFormat = ({
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
               index && "rounded-l-none"
             )}
-            key={index}
+            key={hslChannels[index]}
             readOnly
             type="text"
             value={value}

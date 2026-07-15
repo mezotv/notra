@@ -3,9 +3,22 @@ import type {
   AuthChoice,
   HeaderRow,
   McpAuthType,
+  McpIntegrationTool,
   McpServer,
   ToolPhraseDraft,
 } from "@/types/integrations";
+
+export function buildInitialPhraseDrafts(tools: McpIntegrationTool[]) {
+  const drafts: Record<string, ToolPhraseDraft> = {};
+  for (const tool of tools) {
+    drafts[tool.serverToolName] = {
+      serverToolName: tool.serverToolName,
+      actionPhrasePresent: tool.actionPhrasePresent ?? "",
+      actionPhrasePast: tool.actionPhrasePast ?? "",
+    };
+  }
+  return drafts;
+}
 
 export function findDuplicateHeaderName(headerRows: HeaderRow[]) {
   const seen = new Set<string>();
