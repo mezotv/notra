@@ -53,9 +53,16 @@ if (!authSecret) {
 }
 
 const isProduction = process.env.NODE_ENV === "production";
+const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
 const appUrl =
   process.env.CONSOLE_BETTER_AUTH_URL ??
   (isProduction ? undefined : "http://localhost:3003");
+
+if (isProduction && !(appUrl || isBuildPhase)) {
+  throw new Error(
+    "CONSOLE_BETTER_AUTH_URL must be defined in production — without it, auth requests fail better-auth's trusted-origin checks"
+  );
+}
 
 function validateAndNormalizeOrganizationSlug(org: {
   slug?: unknown;

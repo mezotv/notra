@@ -11,7 +11,6 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
 import { signupSchema } from "@/schemas/auth";
@@ -29,7 +28,7 @@ export function SignupForm() {
     }
 
     authInFlightRef.current = true;
-    flushSync(() => setAuthMethod(provider));
+    setAuthMethod(provider);
 
     try {
       const result = await authClient.signIn.social({
@@ -66,7 +65,7 @@ export function SignupForm() {
     }
 
     authInFlightRef.current = true;
-    flushSync(() => setAuthMethod("email"));
+    setAuthMethod("email");
     try {
       const result = await authClient.signUp.email(validation.data);
       if (result.error) {

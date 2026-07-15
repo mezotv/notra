@@ -4,7 +4,7 @@ import { ReviewQueueClient } from "@/components/review/review-queue-client";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 
 export const metadata: Metadata = {
-  title: "Review queue · Notra Console",
+  title: "Review Queue · Notra Console",
 };
 
 export default async function ReviewQueuePage({

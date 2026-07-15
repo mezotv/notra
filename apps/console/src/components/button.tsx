@@ -1,7 +1,4 @@
-import {
-  Button as UiButton,
-  buttonVariants as uiButtonVariants,
-} from "@notra/ui/components/ui/button";
+import { Button as UiButton } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
 import type { ComponentProps } from "react";
 
@@ -26,15 +23,4 @@ function Button({
   );
 }
 
-function buttonVariants({
-  className,
-  ...options
-}: Parameters<typeof uiButtonVariants>[0] = {}) {
-  return cn(
-    uiButtonVariants(options),
-    isDefaultVariant(options.variant) && CTA_PRIMARY,
-    className
-  );
-}
-
-export { Button, buttonVariants };
+export { Button };

@@ -195,6 +195,7 @@ export function BannerUploader({
           alt="Banner"
           className="size-full object-cover"
           fill
+          sizes="(max-width: 64rem) calc(100vw - 4rem), 59rem"
           src={value}
         />
         <RemoveAssetButton label="banner" onRemove={() => onChange(null)} />

@@ -169,7 +169,7 @@ function ConsoleNavigation({
       ? [
           {
             href: `/${slug}/review`,
-            label: "Review queue",
+            label: "Review Queue",
             icon: SecurityCheckIcon,
           },
         ]

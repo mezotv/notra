@@ -178,7 +178,7 @@ export function ReviewQueueClient() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">Review queue</h1>
+        <h1 className="font-semibold text-2xl tracking-tight">Review Queue</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Integrations waiting for approval before they appear in the store.
         </p>
