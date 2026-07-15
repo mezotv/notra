@@ -70,9 +70,7 @@ export const Dropzone = ({
         onError?.(new Error(message));
       }
 
-      if (acceptedFiles.length > 0 || fileRejections.length === 0) {
-        onDrop?.(acceptedFiles, fileRejections, event);
-      }
+      onDrop?.(acceptedFiles, fileRejections, event);
     },
     ...props,
   });

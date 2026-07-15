@@ -6,21 +6,36 @@ export const MCP_CONNECTION_RATE_LIMIT = {
   windowSeconds: 60,
 } as const;
 
+const INCREMENT_WITH_TTL_SCRIPT = `local count = redis.call("INCR", KEYS[1])
+if count == 1 then
+  redis.call("EXPIRE", KEYS[1], ARGV[1])
+end
+return count`;
+
 const memoryCounters = new Map<string, { count: number; resetAt: number }>();
+
+function evictExpiredCounters(now: number) {
+  for (const [key, entry] of memoryCounters) {
+    if (entry.resetAt <= now) {
+      memoryCounters.delete(key);
+    }
+  }
+}
 
 async function incrementCounter(key: string, windowSeconds: number) {
   if (redis) {
-    const redisKey = `console:rate-limit:${key}`;
-    const count = await redis.incr(redisKey);
-    if (count === 1) {
-      await redis.expire(redisKey, windowSeconds);
-    }
-    return count;
+    return await redis.eval<[number], number>(
+      INCREMENT_WITH_TTL_SCRIPT,
+      [`console:rate-limit:${key}`],
+      [windowSeconds]
+    );
   }
 
   const now = Date.now();
+  evictExpiredCounters(now);
+
   const entry = memoryCounters.get(key);
-  if (!entry || entry.resetAt <= now) {
+  if (!entry) {
     memoryCounters.set(key, {
       count: 1,
       resetAt: now + windowSeconds * 1000,
