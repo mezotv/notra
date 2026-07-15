@@ -15,6 +15,7 @@ import { getVercelOidcToken } from "@vercel/oidc";
 import { and, eq, isNull, lt, or } from "drizzle-orm";
 import { Effect } from "effect";
 import { Client } from "eve/client";
+import { isFreeEmail } from "free-email-domains-list";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
   EVE_CREATE_SESSION_ROUTE_PATH,
@@ -177,7 +178,7 @@ export async function sendOnboardingSlackInvite({
   email,
   organizationName,
 }: OnboardingSlackInviteInput): Promise<OnboardingSlackInviteResult> {
-  if (!hasSlackConnectConfigured()) {
+  if (!hasSlackConnectConfigured() || isFreeEmail(email.trim().toLowerCase())) {
     return { invited: false };
   }
 
