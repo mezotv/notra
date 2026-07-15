@@ -60,7 +60,7 @@ const appUrl =
 
 if (isProduction && !(appUrl || isBuildPhase)) {
   throw new Error(
-    "CONSOLE_BETTER_AUTH_URL must be defined in production — without it, auth requests fail better-auth's trusted-origin checks"
+    "CONSOLE_BETTER_AUTH_URL must be defined in production. Without it, auth requests fail better-auth's trusted-origin checks"
   );
 }
 

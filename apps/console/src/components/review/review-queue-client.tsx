@@ -178,7 +178,7 @@ export function ReviewQueueClient() {
       });
       toast.success(
         variables.action === "approve"
-          ? "Integration approved — it's live"
+          ? "Integration approved. It's live in the store."
           : "Integration rejected"
       );
     },

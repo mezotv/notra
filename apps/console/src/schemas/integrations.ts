@@ -150,10 +150,7 @@ export const MAX_TOOL_ACTION_PHRASE_LENGTH = 80;
 const toolActionPhraseSchema = z
   .string()
   .trim()
-  .max(
-    MAX_TOOL_ACTION_PHRASE_LENGTH,
-    "Keep action phrases short — 80 characters max"
-  )
+  .max(MAX_TOOL_ACTION_PHRASE_LENGTH, "Keep action phrases under 80 characters")
   .transform((value) => (value.length === 0 ? null : value))
   .nullable();
 
@@ -172,6 +169,22 @@ export const updateMcpToolPhrasesRequestSchema = mcpServerIdFieldsSchema.extend(
 );
 
 export const submitMcpServerForReviewRequestSchema = mcpServerIdFieldsSchema;
+
+const mcpOAuthCallbackPathSchema = z
+  .string()
+  .trim()
+  .startsWith("/")
+  .refine((path) => !path.startsWith("//"), "Invalid callback path");
+
+export const beginMcpOAuthScanRequestSchema = mcpServerIdFieldsSchema.extend({
+  callbackPath: mcpOAuthCallbackPathSchema,
+});
+
+export const mcpOAuthCallbackQuerySchema = z.object({
+  code: z.string().min(1).optional(),
+  error: z.string().min(1).optional(),
+  state: z.string().min(1),
+});
 
 export const reviewMcpServerRequestSchema = z.object({
   serverId: z.string().min(1, "MCP server ID is required"),

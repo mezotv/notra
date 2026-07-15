@@ -203,7 +203,7 @@ export function useIntegrationForm({
       toast.success(
         updated.storeStatus === "pending_review" &&
           server?.storeStatus === "live"
-          ? "Saved — sent back through review"
+          ? "Saved. It goes live again once it clears review."
           : "Integration saved"
       );
     },

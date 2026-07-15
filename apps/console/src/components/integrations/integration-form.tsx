@@ -33,7 +33,7 @@ import { cn } from "cnfast";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
@@ -44,6 +44,8 @@ import { ToolsEditor } from "@/components/integrations/tools-editor";
 import {
   AUTH_CHOICE_OPTIONS,
   LIVE_EDIT_WARNING,
+  MCP_CONNECTED_TOAST,
+  MCP_OAUTH_ERROR_MESSAGES,
 } from "@/lib/integrations/constants";
 import { buildInitialPhraseDrafts, rgbaToHex } from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
@@ -103,7 +105,7 @@ function IntegrationFormHeader({
         </h1>
         <p className="mt-1 text-muted-foreground text-sm">
           {server
-            ? "Change anything you like — saving sends it back through review."
+            ? "Changes to a live integration go back through review when you save."
             : "Register an MCP server for the Notra integration store."}
         </p>
       </div>
@@ -583,6 +585,57 @@ function IntegrationToolsCard({
 }) {
   const queryClient = useQueryClient();
   const [indexedTools, setIndexedTools] = useState(() => tools);
+  const autoScanTriggeredRef = useRef(false);
+  const oauthParamsHandledRef = useRef(false);
+  const isOAuth = server.authType === "oauth";
+
+  const beginOAuthMutation = useMutation({
+    mutationFn: () =>
+      consoleOrpc.integrations.mcp.beginOAuth.call({
+        organizationId,
+        serverId: server.id,
+        callbackPath: window.location.pathname,
+      }),
+    onSuccess: ({ authorizationUrl }) => {
+      window.location.assign(authorizationUrl);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  useEffect(() => {
+    if (oauthParamsHandledRef.current) {
+      return;
+    }
+    oauthParamsHandledRef.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get("mcpConnected");
+    const oauthError = params.get("error");
+    if (!(connected || oauthError)) {
+      return;
+    }
+
+    if (connected === "true") {
+      toast.success(MCP_CONNECTED_TOAST);
+    } else if (oauthError) {
+      toast.error(
+        MCP_OAUTH_ERROR_MESSAGES[oauthError] ??
+          "Could not connect to the server."
+      );
+    }
+
+    params.delete("mcpConnected");
+    params.delete("error");
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`
+    );
+  }, []);
+
   const scanMutation = useMutation({
     mutationFn: () =>
       consoleOrpc.integrations.mcp.scan.call({
@@ -639,19 +692,44 @@ function IntegrationToolsCard({
     },
   });
 
+  const { mutate: startScan } = scanMutation;
+
+  useEffect(() => {
+    if (autoScanTriggeredRef.current) {
+      return;
+    }
+    autoScanTriggeredRef.current = true;
+
+    if (
+      server.authType !== "oauth" &&
+      server.lastToolSyncAt === null &&
+      tools.length === 0
+    ) {
+      startScan();
+    }
+  }, [server.authType, server.lastToolSyncAt, tools.length, startScan]);
+
+  const handleScan = () => {
+    if (isOAuth) {
+      beginOAuthMutation.mutate();
+      return;
+    }
+    scanMutation.mutate();
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Tools</CardTitle>
         <CardDescription>
-          Scan the server, then give every tool an action phrase — it shows up
-          in the chat while Notra runs the tool, like &quot;Searching your
-          Linear issues&quot;.
+          Give each tool an action phrase. Users see it in chat while Notra runs
+          the tool, like &quot;Searching your Linear issues&quot;.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ToolsEditor
           drafts={phraseDrafts}
+          oauth={isOAuth}
           onDraftChange={(serverToolName, field, value) =>
             setPhraseDrafts((current) => ({
               ...current,
@@ -668,9 +746,9 @@ function IntegrationToolsCard({
               },
             }))
           }
-          onScan={() => scanMutation.mutate()}
+          onScan={handleScan}
           saving={isSaving}
-          scanning={scanMutation.isPending}
+          scanning={scanMutation.isPending || beginOAuthMutation.isPending}
           tools={indexedTools}
         />
       </CardContent>

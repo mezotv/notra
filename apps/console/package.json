@@ -25,6 +25,7 @@
     "better-auth": "^1.6.19",
     "cnfast": "^0.0.6",
     "drizzle-orm": "^0.45.2",
+    "effect": "4.0.0-beta.93",
     "lucide-react": "^0.562.0",
     "mailchecker": "^6.0.19",
     "next": "^16.2.9",

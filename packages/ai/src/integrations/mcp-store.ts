@@ -167,7 +167,6 @@ export async function listLiveMcpStoreIntegrations() {
       brandColor: true,
       logoLightUrl: true,
       logoDarkUrl: true,
-      bannerUrl: true,
       authType: true,
       indexedToolCount: true,
     },

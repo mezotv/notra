@@ -58,6 +58,7 @@ export interface McpServer {
   headerNames: string[];
   hasHeaders: boolean;
   indexedToolCount: number;
+  lastToolSyncAt: string | null;
   createdAt: string;
   updatedAt: string | null;
 }

@@ -13,6 +13,22 @@ import { Button } from "@/components/button";
 import { MAX_TOOL_ACTION_PHRASE_LENGTH } from "@/schemas/integrations";
 import type { McpIntegrationTool, ToolPhraseDraft } from "@/types/integrations";
 
+function getEmptyStateMessage({
+  oauth,
+  scanning,
+}: {
+  oauth: boolean;
+  scanning: boolean;
+}) {
+  if (scanning) {
+    return "Reading tools from your server...";
+  }
+  if (oauth) {
+    return "Connect with OAuth to discover this server's tools.";
+  }
+  return "No tools found yet. Check the server URL and credentials, then rescan.";
+}
+
 function PhrasePreview({ past, present }: { past: string; present: string }) {
   if (!(present.trim() || past.trim())) {
     return null;
@@ -36,6 +52,7 @@ function PhrasePreview({ past, present }: { past: string; present: string }) {
 
 export function ToolsEditor({
   drafts,
+  oauth,
   onDraftChange,
   onScan,
   saving,
@@ -43,6 +60,7 @@ export function ToolsEditor({
   tools,
 }: {
   drafts: Record<string, ToolPhraseDraft>;
+  oauth: boolean;
   onDraftChange: (
     serverToolName: string,
     field: "actionPhrasePresent" | "actionPhrasePast",
@@ -67,16 +85,18 @@ export function ToolsEditor({
           ) : (
             <HugeiconsIcon className="size-4" icon={PlugSocketIcon} />
           )}
-          Connect &amp; scan
+          {oauth ? <>Connect &amp; scan</> : <>Rescan tools</>}
         </Button>
         <p className="text-muted-foreground text-xs">
-          Connects to the server to read its tools — used for this scan only.
+          {oauth
+            ? "Signs in to the server to read its tools."
+            : "Reads the tool list from your server. Runs automatically after you create the integration."}
         </p>
       </div>
 
       {tools.length === 0 ? (
         <p className="rounded-lg border border-dashed p-4 text-muted-foreground text-sm">
-          No tools indexed yet. Scan the server to pull in its tool list.
+          {getEmptyStateMessage({ oauth, scanning })}
         </p>
       ) : null}
 
