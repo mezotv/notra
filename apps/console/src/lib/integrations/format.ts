@@ -17,3 +17,25 @@ export function formatIntegrationDate(iso: string | null) {
 
   return createdDateFormatter.format(date);
 }
+
+export function formatDashboardConnectionsLabel(
+  githubCount: number,
+  linearCount: number
+) {
+  const parts: string[] = [];
+  if (githubCount > 0) {
+    parts.push(
+      githubCount === 1
+        ? "1 GitHub connection"
+        : `${githubCount} GitHub connections`
+    );
+  }
+  if (linearCount > 0) {
+    parts.push(
+      linearCount === 1
+        ? "1 Linear connection"
+        : `${linearCount} Linear connections`
+    );
+  }
+  return parts.join(" and ");
+}

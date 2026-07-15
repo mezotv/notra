@@ -15,6 +15,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -364,11 +365,11 @@ export const ColorPickerEyeDropper = ({
   ...props
 }: ColorPickerEyeDropperProps) => {
   const { commit } = useColorPicker();
-  const [isSupported, setIsSupported] = useState(false);
-
-  useEffect(() => {
-    setIsSupported("EyeDropper" in window);
-  }, []);
+  const isSupported = useSyncExternalStore(
+    emptySubscribe,
+    () => "EyeDropper" in window,
+    () => false
+  );
 
   const handleEyeDropper = async () => {
     try {
@@ -409,6 +410,9 @@ export const ColorPickerEyeDropper = ({
 export type ColorPickerOutputProps = ComponentProps<typeof SelectTrigger>;
 
 const formats = ["hex", "rgb", "css", "hsl"];
+const emptySubscribe = () => () => {
+  return;
+};
 const rgbChannels = ["r", "g", "b"];
 const hslChannels = ["h", "s", "l"];
 

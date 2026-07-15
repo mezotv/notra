@@ -46,7 +46,10 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { STORE_STATUS_LABELS } from "@/lib/integrations/constants";
 import { getIntegrationInitials } from "@/lib/integrations/form";
-import { formatIntegrationDate } from "@/lib/integrations/format";
+import {
+  formatDashboardConnectionsLabel,
+  formatIntegrationDate,
+} from "@/lib/integrations/format";
 import { consoleOrpc } from "@/lib/orpc/query";
 import type { McpServer } from "@/types/integrations";
 
@@ -312,8 +315,9 @@ export function IntegrationsPageClient({
 
   const data = integrationsQuery.data;
   const servers = data?.mcpServers ?? [];
-  const dashboardConnectionCount =
-    (data?.github.length ?? 0) + (data?.linear.length ?? 0);
+  const githubCount = data?.github.length ?? 0;
+  const linearCount = data?.linear.length ?? 0;
+  const dashboardConnectionCount = githubCount + linearCount;
   const dashboardUrl = `https://app.usenotra.com/${slug}/integrations`;
 
   return (
@@ -404,9 +408,7 @@ export function IntegrationsPageClient({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
           <div>
             <p className="font-medium text-sm">
-              {dashboardConnectionCount === 1
-                ? "1 GitHub or Linear connection"
-                : `${dashboardConnectionCount} GitHub and Linear connections`}
+              {formatDashboardConnectionsLabel(githubCount, linearCount)}
             </p>
             <p className="text-muted-foreground text-sm">
               These are managed in the Notra dashboard.
