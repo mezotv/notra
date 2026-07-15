@@ -1,20 +1,50 @@
 import { uploadIntegrationBrandingAsset } from "@notra/ai/utils/image-assets";
 import { ORPCError } from "@orpc/server";
 import { NextResponse } from "next/server";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
+import {
+  assertAuthenticated,
+  assertOrganizationAccess,
+} from "@/lib/auth/organization";
+import {
+  assertRateLimit,
+  BRANDING_UPLOAD_RATE_LIMIT,
+} from "@/lib/orpc/utils/rate-limit";
 import {
   BRANDING_ASSET_CONTENT_TYPES,
   brandingUploadRequestSchema,
   MAX_BRANDING_UPLOAD_REQUEST_BYTES,
 } from "@/schemas/integrations";
 
+function errorResponse(error: unknown) {
+  if (error instanceof ORPCError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: error.status }
+    );
+  }
+  console.error("[Branding] Upload request failed", error);
+  return NextResponse.json(
+    { error: "Could not upload the image. Try again." },
+    { status: 500 }
+  );
+}
+
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length"));
-  if (contentLength > MAX_BRANDING_UPLOAD_REQUEST_BYTES) {
+  if (
+    !Number.isFinite(contentLength) ||
+    contentLength > MAX_BRANDING_UPLOAD_REQUEST_BYTES
+  ) {
     return NextResponse.json(
       { error: "Images must be 4MB or smaller" },
       { status: 413 }
     );
+  }
+
+  try {
+    await assertAuthenticated({ headers: request.headers });
+  } catch (error) {
+    return errorResponse(error);
   }
 
   const formData = await request.formData().catch(() => null);
@@ -50,18 +80,13 @@ export async function POST(request: Request) {
       headers: request.headers,
       organizationId,
     });
+    await assertRateLimit({
+      key: `branding-upload:${organizationId}`,
+      message: "Too many uploads. Wait a minute and try again.",
+      ...BRANDING_UPLOAD_RATE_LIMIT,
+    });
   } catch (error) {
-    if (error instanceof ORPCError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: error.status }
-      );
-    }
-    console.error("[Branding] Failed to verify organization access", error);
-    return NextResponse.json(
-      { error: "Could not upload the image. Try again." },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 
   try {

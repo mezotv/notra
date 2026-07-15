@@ -6,6 +6,11 @@ export const MCP_CONNECTION_RATE_LIMIT = {
   windowSeconds: 60,
 } as const;
 
+export const BRANDING_UPLOAD_RATE_LIMIT = {
+  limit: 20,
+  windowSeconds: 60,
+} as const;
+
 const INCREMENT_WITH_TTL_SCRIPT = `local count = redis.call("INCR", KEYS[1])
 if count == 1 then
   redis.call("EXPIRE", KEYS[1], ARGV[1])
@@ -51,11 +56,13 @@ export async function assertRateLimit(params: {
   key: string;
   limit: number;
   windowSeconds: number;
+  message?: string;
 }) {
   const count = await incrementCounter(params.key, params.windowSeconds);
   if (count > params.limit) {
     throw tooManyRequests(
-      "Too many connection attempts. Wait a minute and try again."
+      params.message ??
+        "Too many connection attempts. Wait a minute and try again."
     );
   }
 }
