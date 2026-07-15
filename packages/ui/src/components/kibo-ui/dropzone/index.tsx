@@ -68,17 +68,20 @@ export const Dropzone = ({
       if (fileRejections.length > 0) {
         const message = fileRejections.at(0)?.errors.at(0)?.message;
         onError?.(new Error(message));
-        return;
       }
 
-      onDrop?.(acceptedFiles, fileRejections, event);
+      if (acceptedFiles.length > 0 || fileRejections.length === 0) {
+        onDrop?.(acceptedFiles, fileRejections, event);
+      }
     },
     ...props,
   });
 
   return (
     <DropzoneContext.Provider
-      key={JSON.stringify(src)}
+      key={src
+        ?.map((file) => `${file.name}:${file.size}:${file.lastModified}`)
+        .join("|")}
       value={{ src, accept, maxSize, minSize, maxFiles }}
     >
       <Button
@@ -122,7 +125,7 @@ export const DropzoneContent = ({
 }: DropzoneContentProps) => {
   const { src } = useDropzoneContext();
 
-  if (!src) {
+  if (!src || src.length === 0) {
     return null;
   }
 
@@ -160,7 +163,7 @@ export const DropzoneEmptyState = ({
 }: DropzoneEmptyStateProps) => {
   const { src, accept, maxSize, minSize, maxFiles } = useDropzoneContext();
 
-  if (src) {
+  if (src && src.length > 0) {
     return null;
   }
 

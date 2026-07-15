@@ -35,6 +35,10 @@ import {
   internalServerError,
   notFound,
 } from "../utils/errors";
+import {
+  assertRateLimit,
+  MCP_CONNECTION_RATE_LIMIT,
+} from "../utils/rate-limit";
 
 const organizationIdInputSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
@@ -179,6 +183,7 @@ export const integrationsRouter = {
 
           if (existing.storeStatus === "live") {
             await setMcpStoreStatus({
+              organizationId: input.organizationId,
               integrationId: input.serverId,
               status: "pending_review",
             });
@@ -227,6 +232,11 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
+
         const existing = await getMcpServerIntegrationById(input.serverId);
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
@@ -273,6 +283,7 @@ export const integrationsRouter = {
 
         if (existing.storeStatus === "live" && input.tools.length > 0) {
           await setMcpStoreStatus({
+            organizationId: input.organizationId,
             integrationId: input.serverId,
             status: "pending_review",
           });
@@ -305,6 +316,7 @@ export const integrationsRouter = {
         }
 
         await setMcpStoreStatus({
+          organizationId: input.organizationId,
           integrationId: input.serverId,
           status: "pending_review",
         });
@@ -382,6 +394,11 @@ export const integrationsRouter = {
         await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
+        });
+
+        await assertRateLimit({
+          key: `mcp-test:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
         });
 
         return testMcpServerConnection({

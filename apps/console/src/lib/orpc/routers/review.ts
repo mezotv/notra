@@ -49,6 +49,7 @@ export const reviewRouter = {
       }
 
       const updated = await setMcpStoreStatus({
+        organizationId: existing.organizationId,
         integrationId: input.serverId,
         status: input.action === "approve" ? "live" : "rejected",
         reviewNote: input.action === "reject" ? (input.note ?? null) : null,

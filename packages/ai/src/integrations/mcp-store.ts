@@ -7,6 +7,7 @@ import type {
 } from "../types/integrations";
 
 export async function setMcpStoreStatus(params: {
+  organizationId: string;
   integrationId: string;
   status: McpStoreStatus;
   reviewNote?: string | null;
@@ -29,6 +30,7 @@ export async function setMcpStoreStatus(params: {
     .where(
       and(
         eq(mcpServerIntegrations.id, params.integrationId),
+        eq(mcpServerIntegrations.organizationId, params.organizationId),
         ...(params.expectedStatus
           ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
           : [])

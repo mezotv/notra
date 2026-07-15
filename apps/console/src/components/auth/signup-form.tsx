@@ -5,53 +5,24 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Google } from "@notra/ui/components/ui/svgs/google";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import type { FormEvent } from "react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { authClient } from "@/lib/auth/client";
+import { SIGNUP_ERROR_MESSAGE } from "@/lib/auth/constants";
+import { useAuthFlow } from "@/lib/auth/use-auth-flow";
 import { signupSchema } from "@/schemas/auth";
-import type { AuthMethod } from "@/types/auth";
 
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  const authInFlightRef = useRef(false);
-  const isAuthLoading = authMethod !== null;
-
-  async function handleSocialSignup(provider: "google" | "github") {
-    if (authInFlightRef.current) {
-      return;
-    }
-
-    authInFlightRef.current = true;
-    setAuthMethod(provider);
-
-    try {
-      const result = await authClient.signIn.social({
-        provider,
-        callbackURL: "/dashboard",
-      });
-      if (result.error) {
-        toast.error(result.error.message ?? "Failed to create account");
-        authInFlightRef.current = false;
-        setAuthMethod(null);
-      }
-    } catch {
-      toast.error("Failed to create account. Please try again.");
-      authInFlightRef.current = false;
-      setAuthMethod(null);
-    }
-  }
+  const { authMethod, isAuthLoading, begin, reset, signInWithProvider } =
+    useAuthFlow("Failed to create account. Please try again.");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (authInFlightRef.current) {
-      return;
-    }
 
     const formData = new FormData(event.currentTarget);
     const validation = signupSchema.safeParse({
@@ -64,22 +35,21 @@ export function SignupForm() {
       return;
     }
 
-    authInFlightRef.current = true;
-    setAuthMethod("email");
+    if (!begin("email")) {
+      return;
+    }
     try {
       const result = await authClient.signUp.email(validation.data);
       if (result.error) {
-        toast.error(result.error.message ?? "Failed to create account");
-        authInFlightRef.current = false;
-        setAuthMethod(null);
+        toast.error(SIGNUP_ERROR_MESSAGE);
+        reset();
         return;
       }
 
       window.location.href = "/dashboard";
     } catch {
-      toast.error("Failed to create account. Please try again.");
-      authInFlightRef.current = false;
-      setAuthMethod(null);
+      toast.error(SIGNUP_ERROR_MESSAGE);
+      reset();
     }
   }
 
@@ -93,36 +63,11 @@ export function SignupForm() {
       </div>
 
       <div className="grid gap-6">
-        <div className="grid grid-cols-2 gap-4">
-          <Button
-            className="w-full border-2 border-border bg-background hover:bg-muted"
-            disabled={isAuthLoading}
-            onClick={() => handleSocialSignup("google")}
-            type="button"
-            variant="outline"
-          >
-            {authMethod === "google" ? (
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
-            ) : (
-              <Google className="mr-2 size-4" />
-            )}
-            Google
-          </Button>
-          <Button
-            className="w-full border-2 border-border bg-background hover:bg-muted"
-            disabled={isAuthLoading}
-            onClick={() => handleSocialSignup("github")}
-            type="button"
-            variant="outline"
-          >
-            {authMethod === "github" ? (
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
-            ) : (
-              <Github className="mr-2 size-4" />
-            )}
-            GitHub
-          </Button>
-        </div>
+        <SocialAuthButtons
+          authMethod={authMethod}
+          disabled={isAuthLoading}
+          onSelect={signInWithProvider}
+        />
 
         <div className="relative flex items-center">
           <span className="inline-block h-px w-full border-t bg-border" />

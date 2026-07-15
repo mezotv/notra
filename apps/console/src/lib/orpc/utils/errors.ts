@@ -34,6 +34,12 @@ export function internalServerError(message: string, cause?: unknown) {
   });
 }
 
+export function tooManyRequests(message = "Too many requests") {
+  return new ORPCError("TOO_MANY_REQUESTS", {
+    message,
+  });
+}
+
 export function unauthorized(message = "Unauthorized") {
   return new ORPCError("UNAUTHORIZED", {
     message,
