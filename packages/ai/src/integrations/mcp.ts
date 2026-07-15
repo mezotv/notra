@@ -9,6 +9,7 @@ import type {
   CreateMcpServerIntegrationParams,
   McpHeaderMap,
   McpServerIntegrationSerializationInput,
+  McpStoreStatus,
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
 import type { McpAuthType } from "../types/mcp-oauth";
@@ -24,6 +25,17 @@ function getMcpAuthType(authType: string): McpAuthType {
     return authType;
   }
   return "none";
+}
+
+function getMcpStoreStatus(storeStatus: string | undefined): McpStoreStatus {
+  if (
+    storeStatus === "pending_review" ||
+    storeStatus === "live" ||
+    storeStatus === "rejected"
+  ) {
+    return storeStatus;
+  }
+  return "draft";
 }
 
 function getMcpOAuthStatus(status: string | undefined) {
@@ -52,6 +64,15 @@ export function serializeMcpServerIntegration(
     name: integration.name,
     url: integration.url,
     description: integration.description,
+    author: integration.author ?? null,
+    websiteUrl: integration.websiteUrl ?? null,
+    brandColor: integration.brandColor ?? null,
+    logoLightUrl: integration.logoLightUrl ?? null,
+    logoDarkUrl: integration.logoDarkUrl ?? null,
+    bannerUrl: integration.bannerUrl ?? null,
+    storeStatus: getMcpStoreStatus(integration.storeStatus),
+    reviewNote: integration.reviewNote ?? null,
+    submittedAt: integration.submittedAt?.toISOString() ?? null,
     authType: getMcpAuthType(integration.authType),
     oauthStatus:
       integration.authType === "oauth"
@@ -65,6 +86,7 @@ export function serializeMcpServerIntegration(
     toolSyncError: integration.toolSyncError ?? null,
     indexedToolCount: integration.indexedToolCount ?? 0,
     createdAt: integration.createdAt.toISOString(),
+    updatedAt: integration.updatedAt?.toISOString() ?? null,
     ...(integration.createdByUser
       ? { createdByUser: integration.createdByUser }
       : {}),
@@ -86,6 +108,12 @@ export async function createMcpServerIntegration(
       name: params.name,
       url: params.url,
       description: params.description ?? null,
+      author: params.author ?? null,
+      websiteUrl: params.websiteUrl ?? null,
+      brandColor: params.brandColor ?? null,
+      logoLightUrl: params.logoLightUrl ?? null,
+      logoDarkUrl: params.logoDarkUrl ?? null,
+      bannerUrl: params.bannerUrl ?? null,
       authType: params.authType,
       encryptedHeaders:
         params.authType === "headers" ? encryptMcpHeaders(params.headers) : {},
@@ -182,13 +210,31 @@ export async function updateMcpServerIntegration(
         ...(updates.description !== undefined
           ? { description: updates.description }
           : {}),
+        ...(updates.author !== undefined ? { author: updates.author } : {}),
+        ...(updates.websiteUrl !== undefined
+          ? { websiteUrl: updates.websiteUrl }
+          : {}),
+        ...(updates.brandColor !== undefined
+          ? { brandColor: updates.brandColor }
+          : {}),
+        ...(updates.logoLightUrl !== undefined
+          ? { logoLightUrl: updates.logoLightUrl }
+          : {}),
+        ...(updates.logoDarkUrl !== undefined
+          ? { logoDarkUrl: updates.logoDarkUrl }
+          : {}),
+        ...(updates.bannerUrl !== undefined
+          ? { bannerUrl: updates.bannerUrl }
+          : {}),
         ...(updates.headers !== undefined
           ? { encryptedHeaders: encryptMcpHeaders(updates.headers) }
           : {}),
         ...(updates.authType !== undefined
           ? {
               authType: updates.authType,
-              ...(updates.authType === "none" ? { encryptedHeaders: {} } : {}),
+              ...(updates.authType !== "headers"
+                ? { encryptedHeaders: {} }
+                : {}),
             }
           : {}),
         ...(updates.enabled !== undefined ? { enabled: updates.enabled } : {}),

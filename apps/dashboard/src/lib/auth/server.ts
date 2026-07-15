@@ -1,10 +1,14 @@
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { autumn } from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
+import { checkTeamMembersLimit } from "@notra/ai/billing/team-members";
+import {
+  TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
+  TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
+} from "@notra/ai/constants/billing-limits";
+import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
-import { members, organizations, sessions } from "@notra/db/schema";
-import type { CheckResponse } from "autumn-js";
+import { members, organizations } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
@@ -31,42 +35,23 @@ import {
   OAUTH_SUPPORTED_SCOPES,
 } from "@/constants/oauth";
 import {
-  TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
-  TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
-} from "@/lib/billing/limits";
-import {
   sendInviteEmailAction,
   sendResetPasswordAction,
   sendVerificationEmailAction,
   sendWelcomeEmailAction,
 } from "@/lib/email/actions";
-import { seedSystemSkills } from "@/lib/skills/seed";
 import { organizationSlugSchema } from "@/schemas/organization";
 
 async function enforceTeamMembersLimit(organizationId?: string | null) {
-  if (!organizationId || !autumn) {
-    return;
-  }
+  const status = await checkTeamMembersLimit(organizationId);
 
-  let data: CheckResponse | null = null;
-  try {
-    data = await autumn.check({
-      customerId: organizationId,
-      featureId: FEATURES.TEAM_MEMBERS,
-      requiredBalance: 1,
-    });
-  } catch (error) {
-    console.warn("[Autumn] Failed to check team member limits", {
-      organizationId,
-      error,
-    });
-
+  if (status === "check-unavailable") {
     throw new APIError("INTERNAL_SERVER_ERROR", {
       message: TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
     });
   }
 
-  if (data?.allowed === false) {
+  if (status === "limit-reached") {
     throw new APIError("BAD_REQUEST", {
       message: TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
     });
@@ -382,7 +367,7 @@ export const auth = betterAuth({
     enabled: true,
     window: 60,
     max: 100,
-    storage: "secondary-storage",
+    storage: redis ? "secondary-storage" : "memory",
     customRules: {
       "/sign-in/email": {
         window: 60,
@@ -427,7 +412,8 @@ export const auth = betterAuth({
     },
     resetPasswordTokenExpiresIn: 3600,
     onPasswordReset: async ({ user }) => {
-      await db.delete(sessions).where(eq(sessions.userId, user.id));
+      const { internalAdapter } = await auth.$context;
+      await internalAdapter.deleteUserSessions(user.id);
     },
   },
   account: {

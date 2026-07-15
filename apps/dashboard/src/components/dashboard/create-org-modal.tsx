@@ -15,16 +15,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
+import * as z from "zod";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
-import {
-  errorMessageOr,
-  generateOrganizationAvatar,
-  slugify,
-} from "@/lib/utils";
+import { errorMessageOr, generateOrganizationAvatar } from "@/lib/utils";
 import { createOrganizationSchema } from "@/schemas/organization";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
+
+const slugSchema = z.string().slugify();
+
+function slugify(value: string): string {
+  return slugSchema.safeParse(value).data ?? "";
+}
 
 interface CreateOrgModalProps {
   open: boolean;

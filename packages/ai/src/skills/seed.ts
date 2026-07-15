@@ -1,10 +1,10 @@
-import { getConversationalBlogPostPrompt } from "@notra/ai/prompts/blog_post/conversational";
-import { getConversationalChangelogPrompt } from "@notra/ai/prompts/changelog/conversational";
-import { getConversationalLinkedInPrompt } from "@notra/ai/prompts/linkedin/conversational";
-import { getConversationalTwitterPrompt } from "@notra/ai/prompts/twitter/conversational";
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { nanoid } from "nanoid";
+import { getConversationalBlogPostPrompt } from "../prompts/blog_post/conversational";
+import { getConversationalChangelogPrompt } from "../prompts/changelog/conversational";
+import { getConversationalLinkedInPrompt } from "../prompts/linkedin/conversational";
+import { getConversationalTwitterPrompt } from "../prompts/twitter/conversational";
 import { HUMANIZER_CONTENT } from "./humanizer-content";
 
 interface SystemSkillDefinition {

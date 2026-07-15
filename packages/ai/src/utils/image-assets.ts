@@ -1,4 +1,5 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { UploadIntegrationBrandingAssetParams } from "../types/integrations";
 
 interface R2Env {
   accessKeyId: string;
@@ -68,6 +69,26 @@ function getR2Client() {
   });
 
   return cachedClient;
+}
+
+export async function uploadIntegrationBrandingAsset(
+  params: UploadIntegrationBrandingAssetParams
+) {
+  const env = getR2Env();
+  const key = `organization/${params.organizationId}/integration-branding/${params.kind}-${Date.now()}.${params.extension}`;
+
+  await getR2Client().send(
+    new PutObjectCommand({
+      Body: params.body,
+      Bucket: env.bucketName,
+      CacheControl: "public, max-age=31536000",
+      ContentLength: params.body.byteLength,
+      ContentType: params.contentType,
+      Key: key,
+    })
+  );
+
+  return `${env.publicUrl.replace(TRAILING_SLASHES_RE, "")}/${key}`;
 }
 
 export async function uploadGeneratedImageAsset(params: {

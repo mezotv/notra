@@ -7,6 +7,11 @@ export interface ModelPricing {
 
 export type AiCreditBillingBasis = "reported_total_usd" | "tokens";
 
+export type TeamMembersLimitStatus =
+  | "allowed"
+  | "limit-reached"
+  | "check-unavailable";
+
 export interface AiCreditCostResult {
   costCents: number;
   billingBasis: AiCreditBillingBasis;

@@ -61,11 +61,23 @@ export interface McpHeaderMap {
   [key: string]: string;
 }
 
+export type McpStoreStatus = "draft" | "pending_review" | "live" | "rejected";
+
 export interface McpServerIntegrationSerializationInput {
   id: string;
   name: string;
   url: string;
   description: string | null;
+  author?: string | null;
+  websiteUrl?: string | null;
+  brandColor?: string | null;
+  logoLightUrl?: string | null;
+  logoDarkUrl?: string | null;
+  bannerUrl?: string | null;
+  storeStatus?: string;
+  reviewNote?: string | null;
+  submittedAt?: Date | null;
+  reviewedAt?: Date | null;
   authType: string;
   encryptedHeaders: McpHeaderMap;
   enabled: boolean;
@@ -77,6 +89,7 @@ export interface McpServerIntegrationSerializationInput {
     status: string;
   } | null;
   createdAt: Date;
+  updatedAt?: Date | null;
   createdByUser?: {
     id: string;
     name: string;
@@ -86,20 +99,48 @@ export interface McpServerIntegrationSerializationInput {
 }
 
 export interface CreateMcpServerIntegrationParams {
-  authType: "none" | "headers";
+  authType: "none" | "headers" | "oauth";
   organizationId: string;
   userId: string;
   name: string;
   url: string;
   description?: string | null;
+  author?: string | null;
+  websiteUrl?: string | null;
+  brandColor?: string | null;
+  logoLightUrl?: string | null;
+  logoDarkUrl?: string | null;
+  bannerUrl?: string | null;
   headers?: McpHeaderMap;
 }
 
 export interface UpdateMcpServerIntegrationParams {
-  authType?: "none" | "headers";
+  authType?: "none" | "headers" | "oauth";
   name?: string;
   url?: string;
   description?: string | null;
+  author?: string | null;
+  websiteUrl?: string | null;
+  brandColor?: string | null;
+  logoLightUrl?: string | null;
+  logoDarkUrl?: string | null;
+  bannerUrl?: string | null;
   headers?: McpHeaderMap;
   enabled?: boolean;
+}
+
+export type McpBrandingAssetKind = "logo-light" | "logo-dark" | "banner";
+
+export interface UploadIntegrationBrandingAssetParams {
+  organizationId: string;
+  kind: McpBrandingAssetKind;
+  body: Buffer;
+  contentType: string;
+  extension: string;
+}
+
+export interface McpToolActionPhraseUpdate {
+  serverToolName: string;
+  actionPhrasePresent: string | null;
+  actionPhrasePast: string | null;
 }

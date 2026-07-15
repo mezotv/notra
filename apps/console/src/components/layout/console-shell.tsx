@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  Logout01Icon,
+  PlugSocketIcon,
+  SecurityCheckIcon,
+  Tick02Icon,
+  UnfoldMoreIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -14,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Separator } from "@notra/ui/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -30,25 +39,12 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
-import { Check, ChevronsUpDown, Home, LogOut, Plug } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
-
-interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  logo: string | null;
-}
-
-interface User {
-  name: string;
-  email: string;
-  image?: string | null;
-}
+import type { Organization, User } from "@/types/organization";
 
 function OrganizationSwitcher({
   activeOrganization,
@@ -114,7 +110,7 @@ function OrganizationSwitcher({
                     Notra Console
                   </span>
                 </div>
-                <ChevronsUpDown className="ml-auto" />
+                <HugeiconsIcon className="ml-auto" icon={UnfoldMoreIcon} />
               </SidebarMenuButton>
             }
           />
@@ -143,7 +139,7 @@ function OrganizationSwitcher({
                   </Avatar>
                   <span className="truncate">{organization.name}</span>
                   {organization.id === activeOrganization.id ? (
-                    <Check className="ml-auto" />
+                    <HugeiconsIcon className="ml-auto" icon={Tick02Icon} />
                   ) : null}
                 </DropdownMenuItem>
               ))}
@@ -155,15 +151,29 @@ function OrganizationSwitcher({
   );
 }
 
-function ConsoleNavigation({ slug }: { slug: string }) {
+function ConsoleNavigation({
+  isAdmin,
+  slug,
+}: {
+  isAdmin: boolean;
+  slug: string;
+}) {
   const pathname = usePathname();
   const items = [
-    { href: `/${slug}`, label: "Overview", icon: Home },
     {
       href: `/${slug}/integrations`,
       label: "Integrations",
-      icon: Plug,
+      icon: PlugSocketIcon,
     },
+    ...(isAdmin
+      ? [
+          {
+            href: `/${slug}/review`,
+            label: "Review queue",
+            icon: SecurityCheckIcon,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -173,14 +183,10 @@ function ConsoleNavigation({ slug }: { slug: string }) {
           {items.map((item) => (
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
-                isActive={
-                  item.href === `/${slug}`
-                    ? pathname === item.href
-                    : pathname.startsWith(item.href)
-                }
+                isActive={pathname.startsWith(item.href)}
                 render={
                   <Link href={item.href}>
-                    <item.icon />
+                    <HugeiconsIcon icon={item.icon} />
                     <span>{item.label}</span>
                   </Link>
                 }
@@ -246,7 +252,7 @@ function UserMenu({ user }: { user: User }) {
                     {user.email}
                   </span>
                 </div>
-                <ChevronsUpDown className="ml-auto" />
+                <HugeiconsIcon className="ml-auto" icon={UnfoldMoreIcon} />
               </SidebarMenuButton>
             }
           />
@@ -270,7 +276,7 @@ function UserMenu({ user }: { user: User }) {
               onClick={signOut}
               variant="destructive"
             >
-              <LogOut />
+              <HugeiconsIcon icon={Logout01Icon} />
               {isSigningOut ? "Signing out..." : "Sign out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -284,34 +290,54 @@ export function ConsoleShell({
   activeOrganization,
   children,
   initialSidebarOpen,
+  isAdmin,
   user,
 }: {
   activeOrganization: Organization;
   children: React.ReactNode;
   initialSidebarOpen: boolean;
+  isAdmin: boolean;
   user: User;
 }) {
   return (
-    <SidebarProvider defaultOpen={initialSidebarOpen}>
-      <Sidebar className="border-none" collapsible="icon">
-        <SidebarHeader>
-          <OrganizationSwitcher activeOrganization={activeOrganization} />
-        </SidebarHeader>
-        <SidebarContent>
-          <ConsoleNavigation slug={activeOrganization.slug} />
-        </SidebarContent>
-        <SidebarFooter>
-          <UserMenu user={user} />
-        </SidebarFooter>
-        <SidebarRail />
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger />
-          <span className="font-medium text-sm">Notra Console</span>
-        </header>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="flex h-svh flex-col overflow-hidden overscroll-none">
+      <SidebarProvider
+        className="min-h-0! flex-1 overflow-hidden overscroll-none"
+        defaultOpen={initialSidebarOpen}
+      >
+        <Sidebar className="border-none" collapsible="icon" variant="inset">
+          <SidebarHeader>
+            <OrganizationSwitcher activeOrganization={activeOrganization} />
+          </SidebarHeader>
+          <SidebarContent>
+            <ConsoleNavigation
+              isAdmin={isAdmin}
+              slug={activeOrganization.slug}
+            />
+          </SidebarContent>
+          <SidebarFooter>
+            <UserMenu user={user} />
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
+        <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
+          <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-dashed transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+            <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
+              <div className="flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
+                <SidebarTrigger className="-ml-1" />
+                <Separator
+                  className="mx-2 border-border border-l border-dashed bg-transparent"
+                  orientation="vertical"
+                />
+                <span className="font-medium text-sm">Notra Console</span>
+              </div>
+            </div>
+          </header>
+          <div className="@container/main flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
+            {children}
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   );
 }

@@ -1,5 +1,8 @@
 import "server-only";
 
+import { autumn } from "@notra/ai/billing/autumn";
+import { seedSystemSkills } from "@notra/ai/skills/seed";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
@@ -7,18 +10,52 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
+  admin,
   haveIBeenPwned,
   lastLoginMethod,
   organization,
 } from "better-auth/plugins";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
+import { enforceTeamMembersLimit } from "@/lib/billing/team-members";
 import { organizationSlugSchema } from "@/schemas/organization";
+
+function buildSocialProviders() {
+  const providers: Record<string, { clientId: string; clientSecret: string }> =
+    {};
+
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.google = {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    };
+  }
+
+  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+    providers.github = {
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    };
+  }
+
+  if (Object.keys(providers).length === 0) {
+    return undefined;
+  }
+
+  return providers;
+}
+
+const socialProviders = buildSocialProviders();
 
 const authSecret = process.env.BETTER_AUTH_SECRET;
 if (!authSecret) {
   throw new Error("BETTER_AUTH_SECRET must be defined");
 }
+
+const isProduction = process.env.NODE_ENV === "production";
+const appUrl =
+  process.env.CONSOLE_BETTER_AUTH_URL ??
+  (isProduction ? undefined : "http://localhost:3003");
 
 function validateAndNormalizeOrganizationSlug(org: {
   slug?: unknown;
@@ -83,12 +120,73 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    onPasswordReset: async ({ user }) => {
+      const { internalAdapter } = await auth.$context;
+      await internalAdapter.deleteUserSessions(user.id);
+    },
   },
   plugins: [
+    admin(),
     organization({
       organizationHooks: {
         beforeCreateOrganization: async ({ organization: newOrganization }) =>
           validateAndNormalizeOrganizationSlug(newOrganization),
+        afterCreateOrganization: async ({
+          organization: createdOrganization,
+        }) => {
+          try {
+            await seedSystemSkills(createdOrganization.id);
+          } catch (error) {
+            console.error(
+              "[Skills] Failed to seed system skills for new org:",
+              {
+                organizationId: createdOrganization.id,
+                error,
+              }
+            );
+          }
+
+          if (!autumn) {
+            console.warn(
+              "[Autumn] Skipping customer creation - AUTUMN_SECRET_KEY not configured"
+            );
+            return;
+          }
+
+          try {
+            await autumn.customers.getOrCreate({
+              customerId: createdOrganization.id,
+              name: createdOrganization.name,
+              metadata: {
+                orgId: createdOrganization.id,
+              },
+            });
+          } catch (error) {
+            console.error("[Autumn] Failed to create customer for new org:", {
+              organizationId: createdOrganization.id,
+              error,
+            });
+          }
+        },
+        beforeCreateInvitation: async ({ invitation, organization: org }) => {
+          if (!isNotDisposableEmail(invitation.email)) {
+            throw new APIError("BAD_REQUEST", {
+              message: "Disposable email addresses are not allowed",
+            });
+          }
+
+          await enforceTeamMembersLimit(org.id);
+        },
+        beforeAddMember: async ({ organization: org }) => {
+          const [result] = await db
+            .select({ value: count() })
+            .from(members)
+            .where(eq(members.organizationId, org.id));
+
+          if (result && result.value > 0) {
+            await enforceTeamMembersLimit(org.id);
+          }
+        },
         beforeUpdateOrganization: async ({
           organization: updatedOrganization,
         }) => {
@@ -104,6 +202,21 @@ export const auth = betterAuth({
     haveIBeenPwned(),
     nextCookies(),
   ],
+  secondaryStorage: redis
+    ? {
+        get: async (key) => await redis?.get(key),
+        set: async (key, value, ttl) => {
+          if (ttl) {
+            await redis?.set(key, value, { ex: ttl });
+          } else {
+            await redis?.set(key, value);
+          }
+        },
+        delete: async (key) => {
+          await redis?.del(key);
+        },
+      }
+    : undefined,
   session: {
     storeSessionInDatabase: true,
     preserveSessionInDatabase: true,
@@ -112,6 +225,7 @@ export const auth = betterAuth({
     enabled: true,
     window: 60,
     max: 100,
+    storage: redis ? "secondary-storage" : "memory",
     customRules: {
       "/sign-in/email": {
         window: 60,
@@ -121,10 +235,26 @@ export const auth = betterAuth({
         window: 60,
         max: 5,
       },
+      "/forget-password": {
+        window: 60,
+        max: 3,
+      },
+      "/reset-password/*": {
+        window: 60,
+        max: 5,
+      },
     },
   },
-  baseURL: process.env.CONSOLE_BETTER_AUTH_URL ?? "http://localhost:3003",
+  baseURL: appUrl,
   trustedOrigins: getTrustedOrigins(),
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: Object.keys(socialProviders ?? {}),
+      allowDifferentEmails: true,
+    },
+  },
+  ...(socialProviders && { socialProviders }),
   databaseHooks: {
     user: {
       create: {
