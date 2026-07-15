@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Input } from "@notra/ui/components/ui/input";
+import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { Button } from "@/components/button";
 import { MAX_TOOL_ACTION_PHRASE_LENGTH } from "@/schemas/integrations";
@@ -87,7 +88,7 @@ export function ToolsEditor({
         return (
           <div className="grid gap-3 rounded-lg border p-4" key={tool.id}>
             <div className="flex items-center justify-between gap-2">
-              <code className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
+              <code className="min-w-0 truncate rounded-md bg-muted px-2 py-1 font-mono text-xs">
                 {tool.serverToolName}
               </code>
               {tool.description ? (
@@ -97,34 +98,50 @@ export function ToolsEditor({
               ) : null}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                aria-label={`Action phrase while ${tool.serverToolName} runs`}
-                disabled={saving}
-                maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
-                onChange={(event) =>
-                  onDraftChange(
-                    tool.serverToolName,
-                    "actionPhrasePresent",
-                    event.target.value
-                  )
-                }
-                placeholder="Searching your Linear issues"
-                value={present}
-              />
-              <Input
-                aria-label={`Action phrase after ${tool.serverToolName} ran`}
-                disabled={saving}
-                maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
-                onChange={(event) =>
-                  onDraftChange(
-                    tool.serverToolName,
-                    "actionPhrasePast",
-                    event.target.value
-                  )
-                }
-                placeholder="Searched your Linear issues"
-                value={past}
-              />
+              <div className="grid gap-1.5">
+                <Label
+                  className="text-muted-foreground text-xs"
+                  htmlFor={`phrase-present-${tool.id}`}
+                >
+                  While it runs
+                </Label>
+                <Input
+                  disabled={saving}
+                  id={`phrase-present-${tool.id}`}
+                  maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
+                  onChange={(event) =>
+                    onDraftChange(
+                      tool.serverToolName,
+                      "actionPhrasePresent",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Searching your Linear issues"
+                  value={present}
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label
+                  className="text-muted-foreground text-xs"
+                  htmlFor={`phrase-past-${tool.id}`}
+                >
+                  After it ran
+                </Label>
+                <Input
+                  disabled={saving}
+                  id={`phrase-past-${tool.id}`}
+                  maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
+                  onChange={(event) =>
+                    onDraftChange(
+                      tool.serverToolName,
+                      "actionPhrasePast",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Searched your Linear issues"
+                  value={past}
+                />
+              </div>
             </div>
             <PhrasePreview past={past} present={present} />
           </div>

@@ -564,6 +564,7 @@ interface IntegrationQueryData {
 
 function IntegrationToolsCard({
   isSaving,
+  onScanningChange,
   organizationId,
   phraseDrafts,
   server,
@@ -572,6 +573,7 @@ function IntegrationToolsCard({
   tools,
 }: {
   isSaving: boolean;
+  onScanningChange: (scanning: boolean) => void;
   organizationId: string;
   phraseDrafts: Record<string, ToolPhraseDraft>;
   server: McpServer;
@@ -587,6 +589,12 @@ function IntegrationToolsCard({
         organizationId,
         serverId: server.id,
       }),
+    onMutate: () => {
+      onScanningChange(true);
+    },
+    onSettled: () => {
+      onScanningChange(false);
+    },
     onSuccess: async (result) => {
       setIndexedTools(result.tools);
       setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
@@ -778,6 +786,7 @@ export function IntegrationForm({
         {server ? (
           <IntegrationToolsCard
             isSaving={form.isSaving}
+            onScanningChange={form.setScanning}
             organizationId={organizationId}
             phraseDrafts={form.phraseDrafts}
             server={server}

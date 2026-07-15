@@ -270,6 +270,8 @@ export function IntegrationsPageClient({
     },
   });
 
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+
   const toggleMutation = useMutation({
     mutationFn: (input: { serverId: string; enabled: boolean }) =>
       consoleOrpc.integrations.mcp.setEnabled.call({
@@ -277,11 +279,21 @@ export function IntegrationsPageClient({
         serverId: input.serverId,
         enabled: input.enabled,
       }),
+    onMutate: (variables) => {
+      setTogglingIds((ids) => new Set(ids).add(variables.serverId));
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: listQueryKey });
     },
     onError: (error) => {
       toast.error(error.message);
+    },
+    onSettled: (_result, _error, variables) => {
+      setTogglingIds((ids) => {
+        const next = new Set(ids);
+        next.delete(variables.serverId);
+        return next;
+      });
     },
   });
 
@@ -367,10 +379,7 @@ export function IntegrationsPageClient({
                     toggleMutation.mutate({ serverId: server.id, enabled })
                   }
                   server={server}
-                  toggling={
-                    toggleMutation.isPending &&
-                    toggleMutation.variables?.serverId === server.id
-                  }
+                  toggling={togglingIds.has(server.id)}
                 />
               ))}
             </TableBody>

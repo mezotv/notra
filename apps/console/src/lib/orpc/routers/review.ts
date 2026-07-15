@@ -47,10 +47,11 @@ export const reviewRouter = {
       if (input.action === "reject" && !input.note?.trim()) {
         throw badRequest("Add a note explaining the rejection");
       }
-      if (
-        (existing.submittedAt?.toISOString() ?? null) !==
-        (input.submittedAt ?? null)
-      ) {
+      const existingSubmittedAtMs = existing.submittedAt?.getTime() ?? null;
+      const inputSubmittedAtMs = input.submittedAt
+        ? new Date(input.submittedAt).getTime()
+        : null;
+      if (existingSubmittedAtMs !== inputSubmittedAtMs) {
         throw badRequest(
           "This integration was resubmitted since you loaded the queue. Refresh and review the latest version."
         );

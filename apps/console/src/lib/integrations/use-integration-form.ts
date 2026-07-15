@@ -56,6 +56,7 @@ export function useIntegrationForm({
   const [logoDarkUrl, setLogoDarkUrl] = useState(server?.logoDarkUrl ?? null);
   const [bannerUrl, setBannerUrl] = useState(server?.bannerUrl ?? null);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [scanning, setScanning] = useState(false);
   const [authChoice, setAuthChoice] = useState<AuthChoice>(
     server ? authTypeToAuthChoice(server.authType) : "none"
   );
@@ -256,7 +257,7 @@ export function useIntegrationForm({
     createMutation.isPending ||
     updateMutation.isPending ||
     submitReviewMutation.isPending;
-  const isBusy = isSaving || uploadingCount > 0;
+  const isBusy = isSaving || uploadingCount > 0 || scanning;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -307,6 +308,7 @@ export function useIntegrationForm({
     setName,
     setPhraseBaseline,
     setPhraseDrafts,
+    setScanning,
     setUploadingCount,
     setUrl,
     setWebsiteUrl,

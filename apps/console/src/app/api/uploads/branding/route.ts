@@ -5,6 +5,7 @@ import {
   assertAuthenticated,
   assertOrganizationAccess,
 } from "@/lib/auth/organization";
+import { matchesDeclaredImageType } from "@/lib/integrations/validate-image";
 import {
   assertRateLimit,
   BRANDING_UPLOAD_RATE_LIMIT,
@@ -30,9 +31,12 @@ function errorResponse(error: unknown) {
 }
 
 export async function POST(request: Request) {
-  const contentLength = Number(request.headers.get("content-length"));
+  const contentLengthHeader = request.headers.get("content-length");
+  const contentLength = Number(contentLengthHeader);
   if (
+    !contentLengthHeader ||
     !Number.isFinite(contentLength) ||
+    contentLength <= 0 ||
     contentLength > MAX_BRANDING_UPLOAD_REQUEST_BYTES
   ) {
     return NextResponse.json(
@@ -89,11 +93,19 @@ export async function POST(request: Request) {
     return errorResponse(error);
   }
 
+  const body = Buffer.from(await file.arrayBuffer());
+  if (!matchesDeclaredImageType(body, file.type)) {
+    return NextResponse.json(
+      { error: "The file content does not match its image type" },
+      { status: 400 }
+    );
+  }
+
   try {
     const url = await uploadIntegrationBrandingAsset({
       organizationId,
       kind,
-      body: Buffer.from(await file.arrayBuffer()),
+      body,
       contentType: file.type,
       extension,
     });

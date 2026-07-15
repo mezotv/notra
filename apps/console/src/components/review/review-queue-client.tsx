@@ -86,7 +86,7 @@ function PendingIntegrationCard({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-        <code className="rounded-md bg-muted px-2 py-1 font-mono">
+        <code className="min-w-0 break-all rounded-md bg-muted px-2 py-1 font-mono">
           {integration.url}
         </code>
         <span>auth: {integration.authType}</span>

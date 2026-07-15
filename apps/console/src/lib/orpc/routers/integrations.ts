@@ -181,7 +181,10 @@ export const integrationsRouter = {
             throw notFound("MCP server not found");
           }
 
-          if (existing.storeStatus === "live") {
+          if (
+            existing.storeStatus === "live" ||
+            existing.storeStatus === "pending_review"
+          ) {
             await setMcpStoreStatus({
               organizationId: input.organizationId,
               integrationId: input.serverId,
@@ -232,11 +235,6 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        await assertRateLimit({
-          key: `mcp-scan:${input.organizationId}`,
-          ...MCP_CONNECTION_RATE_LIMIT,
-        });
-
         const existing = await getMcpServerIntegrationById(input.serverId);
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
@@ -244,6 +242,11 @@ export const integrationsRouter = {
         if (!existing.enabled) {
           throw badRequest("Enable this integration before scanning its tools");
         }
+
+        await assertRateLimit({
+          key: `mcp-scan:${input.organizationId}`,
+          ...MCP_CONNECTION_RATE_LIMIT,
+        });
 
         try {
           await refreshMcpToolIndexForIntegration({
@@ -278,13 +281,17 @@ export const integrationsRouter = {
           throw notFound("MCP server not found");
         }
 
-        await updateMcpToolActionPhrases({
+        const appliedCount = await updateMcpToolActionPhrases({
           organizationId: input.organizationId,
           integrationId: input.serverId,
           updates: input.tools,
         });
 
-        if (existing.storeStatus === "live" && input.tools.length > 0) {
+        if (
+          (existing.storeStatus === "live" ||
+            existing.storeStatus === "pending_review") &&
+          appliedCount > 0
+        ) {
           await setMcpStoreStatus({
             organizationId: input.organizationId,
             integrationId: input.serverId,

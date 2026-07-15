@@ -103,7 +103,7 @@ export async function updateMcpToolActionPhrases(params: {
   updates: McpToolActionPhraseUpdate[];
 }) {
   if (params.updates.length === 0) {
-    return;
+    return 0;
   }
 
   const toolNames = params.updates.map((update) => update.serverToolName);
@@ -124,7 +124,7 @@ export async function updateMcpToolActionPhrases(params: {
   }
   const applicable = Array.from(updatesByToolName.values());
   if (applicable.length === 0) {
-    return;
+    return 0;
   }
 
   const valueRows = sql.join(
@@ -146,4 +146,6 @@ export async function updateMcpToolActionPhrases(params: {
       and tool.server_integration_id = ${params.integrationId}
       and tool.server_tool_name = phrase.tool_name
   `);
+
+  return applicable.length;
 }

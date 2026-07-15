@@ -83,12 +83,7 @@ export const Dropzone = ({
   );
 
   return (
-    <DropzoneContext.Provider
-      key={src
-        ?.map((file) => `${file.name}:${file.size}:${file.lastModified}`)
-        .join("|")}
-      value={contextValue}
-    >
+    <DropzoneContext.Provider value={contextValue}>
       <Button
         className={cn(
           "relative h-auto w-full flex-col overflow-hidden p-8",
