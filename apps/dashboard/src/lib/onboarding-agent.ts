@@ -3,7 +3,10 @@ import {
   EVE_AGENT_RESERVATION_HEADER,
   EVE_AGENT_SERVICE_USERNAME,
 } from "@notra/ai/constants/onboarding-agent";
-import { createSlackConnectChannelWithInvite } from "@notra/ai/integrations/slack";
+import {
+  createSlackConnectChannelWithInvite,
+  hasSlackConnectConfigured,
+} from "@notra/ai/integrations/slack";
 import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { buildExternalChannelName } from "@notra/ai/utils/slack";
 import { db } from "@notra/db/drizzle";
@@ -174,7 +177,7 @@ export async function sendOnboardingSlackInvite({
   email,
   organizationName,
 }: OnboardingSlackInviteInput): Promise<OnboardingSlackInviteResult> {
-  if (!process.env.SLACK_BOT_TOKEN) {
+  if (!hasSlackConnectConfigured()) {
     return { invited: false };
   }
 
@@ -183,6 +186,7 @@ export async function sendOnboardingSlackInvite({
     const result = await createSlackConnectChannelWithInvite({
       channelName,
       email,
+      externalLimited: false,
     });
     return { channelId: result.channelId, invited: true };
   } catch (error) {

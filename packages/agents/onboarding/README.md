@@ -66,6 +66,7 @@ Model access needs no key on Vercel: the agent uses gateway model ids (`openai/g
 | `EVE_ONBOARDING_AGENT_PASSWORD` | fallback | Same value as on the agent when not using OIDC |
 | `QSTASH_TOKEN` | yes | Already set; triggers the Upstash workflow |
 | `SLACK_BOT_TOKEN` | optional | Slack Connect invite when the workflow starts; skipped when unset |
+| `SLACK_FOUNDER_MEMBER_ID` | with Slack | Slack workspace member ID added to every onboarding Slack Connect channel |
 
 With OIDC federation enabled, the dashboard automatically sends its `VERCEL_OIDC_TOKEN` as a Bearer token and you can drop `EVE_ONBOARDING_AGENT_PASSWORD` on both sides entirely.
 
@@ -108,7 +109,7 @@ The 401 is the point: route auth fails closed. Only three callers get in — the
 4. Checks the website actually responds (HEAD/GET with a 5s timeout).
 5. Triggers the Upstash workflow with `{ organizationId, domain, email, organizationName }`.
 
-When the workflow starts, it creates a Slack Connect channel `ext-<company-name>-notra` and invites the signup email (skipped when `SLACK_BOT_TOKEN` is unset or the invite fails; failures never fail the workflow).
+When the workflow starts, it creates a Slack Connect channel `ext-<company-name>-notra`, adds the configured founder, and invites the signup email with permission to post and invite. This is skipped unless both Slack variables are set. If an invite fails, the failure is caught and does not fail the workflow.
 
 ## Local development
 
