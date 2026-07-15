@@ -167,6 +167,7 @@ export function ReviewQueueClient() {
       serverId: string;
       action: "approve" | "reject";
       note?: string;
+      submittedAt: string | null;
     }) => consoleOrpc.review.decide.call(input),
     onMutate: (variables) => {
       setDecidingIds((ids) => new Set(ids).add(variables.serverId));
@@ -226,7 +227,7 @@ export function ReviewQueueClient() {
         </div>
       ) : null}
 
-      {pendingQuery.data && pending.length === 0 ? (
+      {pendingQuery.data && !pendingQuery.isError && pending.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground text-sm">
           Nothing waiting for review.
         </div>
@@ -241,6 +242,7 @@ export function ReviewQueueClient() {
             decideMutation.mutate({
               serverId: integration.id,
               action: "approve",
+              submittedAt: integration.submittedAt,
             })
           }
           onReject={(note) =>
@@ -248,6 +250,7 @@ export function ReviewQueueClient() {
               serverId: integration.id,
               action: "reject",
               note,
+              submittedAt: integration.submittedAt,
             })
           }
         />

@@ -19,7 +19,7 @@ import { signupSchema } from "@/schemas/auth";
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const { authMethod, isAuthLoading, begin, reset, signInWithProvider } =
-    useAuthFlow("Failed to create account. Please try again.");
+    useAuthFlow(SIGNUP_ERROR_MESSAGE);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

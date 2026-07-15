@@ -50,6 +50,8 @@ import {
   authChoiceToAuthType,
   authTypeToAuthChoice,
   buildHeadersFromForm,
+  findDuplicateHeaderName,
+  getChangedToolPhraseDrafts,
   getInitialApiKeyStyle,
   hasStoredBearerHeader,
   rgbaToHex,
@@ -271,6 +273,7 @@ function IntegrationBrandingCard({
           <Label>Logo</Label>
           <div className="grid gap-3 sm:grid-cols-2">
             <LogoVariantUploader
+              disabled={isSaving}
               fallbackUrl={null}
               onChange={setLogoLightUrl}
               onUploadingChange={onUploadingChange}
@@ -279,6 +282,7 @@ function IntegrationBrandingCard({
               value={logoLightUrl}
             />
             <LogoVariantUploader
+              disabled={isSaving}
               fallbackUrl={logoLightUrl}
               onChange={setLogoDarkUrl}
               onUploadingChange={onUploadingChange}
@@ -361,6 +365,7 @@ function IntegrationBrandingCard({
             </span>
           </Label>
           <BannerUploader
+            disabled={isSaving}
             onChange={setBannerUrl}
             onUploadingChange={onUploadingChange}
             organizationId={organizationId}
@@ -584,15 +589,19 @@ interface IntegrationQueryData {
 }
 
 function IntegrationToolsCard({
+  isSaving,
   organizationId,
   phraseDrafts,
   server,
+  setPhraseBaseline,
   setPhraseDrafts,
   tools,
 }: {
+  isSaving: boolean;
   organizationId: string;
   phraseDrafts: Record<string, ToolPhraseDraft>;
   server: McpServer;
+  setPhraseBaseline: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   setPhraseDrafts: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   tools: McpIntegrationTool[];
 }) {
@@ -606,6 +615,7 @@ function IntegrationToolsCard({
       }),
     onSuccess: async (result) => {
       setIndexedTools(result.tools);
+      setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
       setPhraseDrafts((current) => {
         const next = buildInitialPhraseDrafts(result.tools);
         for (const [toolName, draft] of Object.entries(current)) {
@@ -677,6 +687,7 @@ function IntegrationToolsCard({
             }))
           }
           onScan={() => scanMutation.mutate()}
+          saving={isSaving}
           scanning={scanMutation.isPending}
           tools={indexedTools}
         />
@@ -768,6 +779,9 @@ export function IntegrationForm({
   const [phraseDrafts, setPhraseDrafts] = useState<
     Record<string, ToolPhraseDraft>
   >(() => buildInitialPhraseDrafts(tools ?? []));
+  const [phraseBaseline, setPhraseBaseline] = useState<
+    Record<string, ToolPhraseDraft>
+  >(() => buildInitialPhraseDrafts(tools ?? []));
 
   const backHref = `/${slug}/integrations`;
 
@@ -808,6 +822,11 @@ export function IntegrationForm({
       (row) => !(row.name.trim() && row.value.trim())
     );
     if (headerRows.length > 0 && !incomplete) {
+      const duplicateName = findDuplicateHeaderName(headerRows);
+      if (duplicateName) {
+        toast.error(`Header "${duplicateName}" is listed more than once`);
+        return false;
+      }
       return true;
     }
     if (
@@ -862,11 +881,17 @@ export function IntegrationForm({
       const updated = await consoleOrpc.integrations.mcp.update.call(
         parsed.data
       );
-      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
-        organizationId,
-        serverId: server.id,
-        tools: Object.values(phraseDrafts),
-      });
+      const changedTools = getChangedToolPhraseDrafts(
+        phraseDrafts,
+        phraseBaseline
+      );
+      if (changedTools.length > 0) {
+        await consoleOrpc.integrations.mcp.updateToolPhrases.call({
+          organizationId,
+          serverId: server.id,
+          tools: changedTools,
+        });
+      }
       return updated;
     },
     onSuccess: async (updated) => {
@@ -909,11 +934,17 @@ export function IntegrationForm({
         );
       }
       await consoleOrpc.integrations.mcp.update.call(parsed.data);
-      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
-        organizationId,
-        serverId: server.id,
-        tools: Object.values(phraseDrafts),
-      });
+      const changedTools = getChangedToolPhraseDrafts(
+        phraseDrafts,
+        phraseBaseline
+      );
+      if (changedTools.length > 0) {
+        await consoleOrpc.integrations.mcp.updateToolPhrases.call({
+          organizationId,
+          serverId: server.id,
+          tools: changedTools,
+        });
+      }
       return await consoleOrpc.integrations.mcp.submitForReview.call({
         organizationId,
         serverId: server.id,
@@ -1013,9 +1044,11 @@ export function IntegrationForm({
 
         {server ? (
           <IntegrationToolsCard
+            isSaving={isSaving}
             organizationId={organizationId}
             phraseDrafts={phraseDrafts}
             server={server}
+            setPhraseBaseline={setPhraseBaseline}
             setPhraseDrafts={setPhraseDrafts}
             tools={tools ?? []}
           />

@@ -36,7 +36,7 @@ export function IntegrationEditClient({
     return <LoadingForm />;
   }
 
-  if (integrationQuery.isError || !integrationQuery.data) {
+  if (!integrationQuery.data) {
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-3 px-4 py-8 text-center lg:px-6">
         <p className="font-medium">Could not load this integration.</p>

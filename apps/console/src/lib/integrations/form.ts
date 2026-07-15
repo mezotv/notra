@@ -4,7 +4,36 @@ import type {
   HeaderRow,
   McpAuthType,
   McpServer,
+  ToolPhraseDraft,
 } from "@/types/integrations";
+
+export function findDuplicateHeaderName(headerRows: HeaderRow[]) {
+  const seen = new Set<string>();
+  for (const row of headerRows) {
+    const name = row.name.trim().toLowerCase();
+    if (!name) {
+      continue;
+    }
+    if (seen.has(name)) {
+      return row.name.trim();
+    }
+    seen.add(name);
+  }
+  return null;
+}
+
+export function getChangedToolPhraseDrafts(
+  drafts: Record<string, ToolPhraseDraft>,
+  baseline: Record<string, ToolPhraseDraft>
+) {
+  return Object.values(drafts).filter((draft) => {
+    const base = baseline[draft.serverToolName];
+    return (
+      (draft.actionPhrasePresent ?? "") !== (base?.actionPhrasePresent ?? "") ||
+      (draft.actionPhrasePast ?? "") !== (base?.actionPhrasePast ?? "")
+    );
+  });
+}
 
 export function buildHeadersFromForm(params: {
   authChoice: AuthChoice;
@@ -21,15 +50,15 @@ export function buildHeadersFromForm(params: {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  const headers: Record<string, string> = {};
+  const entries: [string, string][] = [];
   for (const row of params.headerRows) {
     const name = row.name.trim();
     const value = row.value.trim();
     if (name && value) {
-      headers[name] = value;
+      entries.push([name, value]);
     }
   }
-  return headers;
+  return Object.fromEntries(entries);
 }
 
 export function authChoiceToAuthType(authChoice: AuthChoice): McpAuthType {
@@ -50,7 +79,7 @@ export function hasStoredBearerHeader(server?: McpServer) {
   return (
     Boolean(server?.hasHeaders) &&
     server?.headerNames.length === 1 &&
-    server.headerNames[0] === "Authorization"
+    server.headerNames[0]?.toLowerCase() === "authorization"
   );
 }
 

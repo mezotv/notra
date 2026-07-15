@@ -119,7 +119,13 @@ function IntegrationRow({
           <div className="flex items-center gap-3">
             <IntegrationLogo server={server} />
             <div className="min-w-0">
-              <p className="truncate font-medium">{server.name}</p>
+              <Link
+                className="block truncate font-medium hover:underline"
+                href={editHref}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {server.name}
+              </Link>
               {server.description ? (
                 <p className="max-w-[24rem] truncate text-muted-foreground text-sm">
                   {server.description}

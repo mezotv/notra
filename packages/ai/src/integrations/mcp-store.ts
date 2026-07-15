@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations, mcpToolIndex } from "@notra/db/schema";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
@@ -12,6 +12,7 @@ export async function setMcpStoreStatus(params: {
   status: McpStoreStatus;
   reviewNote?: string | null;
   expectedStatus?: McpStoreStatus;
+  expectedSubmittedAt?: Date | null;
 }) {
   const now = new Date();
   const [row] = await db
@@ -33,7 +34,17 @@ export async function setMcpStoreStatus(params: {
         eq(mcpServerIntegrations.organizationId, params.organizationId),
         ...(params.expectedStatus
           ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
-          : [])
+          : []),
+        ...(params.expectedSubmittedAt === undefined
+          ? []
+          : [
+              params.expectedSubmittedAt === null
+                ? isNull(mcpServerIntegrations.submittedAt)
+                : eq(
+                    mcpServerIntegrations.submittedAt,
+                    params.expectedSubmittedAt
+                  ),
+            ])
       )
     )
     .returning();

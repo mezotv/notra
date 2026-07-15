@@ -241,6 +241,9 @@ export const integrationsRouter = {
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
+        if (!existing.enabled) {
+          throw badRequest("Enable this integration before scanning its tools");
+        }
 
         try {
           await refreshMcpToolIndexForIntegration({

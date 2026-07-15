@@ -37,6 +37,7 @@ export function ToolsEditor({
   drafts,
   onDraftChange,
   onScan,
+  saving,
   scanning,
   tools,
 }: {
@@ -47,6 +48,7 @@ export function ToolsEditor({
     value: string
   ) => void;
   onScan: () => void;
+  saving: boolean;
   scanning: boolean;
   tools: McpIntegrationTool[];
 }) {
@@ -54,7 +56,7 @@ export function ToolsEditor({
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          disabled={scanning}
+          disabled={scanning || saving}
           onClick={onScan}
           type="button"
           variant="outline"
@@ -97,6 +99,7 @@ export function ToolsEditor({
             <div className="grid gap-3 sm:grid-cols-2">
               <Input
                 aria-label={`Action phrase while ${tool.serverToolName} runs`}
+                disabled={saving}
                 maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
                 onChange={(event) =>
                   onDraftChange(
@@ -110,6 +113,7 @@ export function ToolsEditor({
               />
               <Input
                 aria-label={`Action phrase after ${tool.serverToolName} ran`}
+                disabled={saving}
                 maxLength={MAX_TOOL_ACTION_PHRASE_LENGTH}
                 onChange={(event) =>
                   onDraftChange(

@@ -53,7 +53,7 @@ export const brandingUploadRequestSchema = z.object({
     .refine((file) => file.size > 0 && file.size <= MAX_BRANDING_ASSET_BYTES, {
       message: "Images must be 4MB or smaller",
     })
-    .refine((file) => file.type in BRANDING_ASSET_CONTENT_TYPES, {
+    .refine((file) => Object.hasOwn(BRANDING_ASSET_CONTENT_TYPES, file.type), {
       message: "Use a PNG, JPG, SVG, or WebP image",
     }),
 });
@@ -67,6 +67,9 @@ export const brandingUploadErrorSchema = z.object({
 });
 
 export const MAX_BRANDING_ASSET_BYTES = 4 * 1024 * 1024;
+
+export const MAX_BRANDING_UPLOAD_REQUEST_BYTES =
+  MAX_BRANDING_ASSET_BYTES + 64 * 1024;
 
 export const BRANDING_ASSET_CONTENT_TYPES: Record<string, string> = {
   "image/png": "png",
@@ -173,6 +176,7 @@ export const submitMcpServerForReviewRequestSchema = mcpServerIdFieldsSchema;
 export const reviewMcpServerRequestSchema = z.object({
   serverId: z.string().min(1, "MCP server ID is required"),
   action: z.enum(["approve", "reject"]),
+  submittedAt: z.iso.datetime().nullable(),
   note: z
     .string()
     .trim()

@@ -54,10 +54,12 @@ function useBrandingUpload({
 }
 
 function RemoveAssetButton({
+  disabled,
   label,
   onRemove,
   theme,
 }: {
+  disabled?: boolean;
   label: string;
   onRemove: () => void;
   theme?: LogoTheme;
@@ -66,11 +68,12 @@ function RemoveAssetButton({
     <button
       aria-label={`Remove ${label}`}
       className={cn(
-        "absolute top-2 right-2 flex size-5 items-center justify-center rounded-full border transition-colors",
+        "absolute top-2 right-2 flex size-5 items-center justify-center rounded-full border transition-colors disabled:pointer-events-none disabled:opacity-50",
         theme === "dark"
           ? "border-white/15 bg-white/10 text-neutral-400 hover:text-white"
           : "border-black/10 bg-black/5 text-neutral-500 hover:text-black"
       )}
+      disabled={disabled}
       onClick={onRemove}
       type="button"
     >
@@ -80,6 +83,7 @@ function RemoveAssetButton({
 }
 
 export function LogoVariantUploader({
+  disabled,
   fallbackUrl,
   onChange,
   onUploadingChange,
@@ -87,6 +91,7 @@ export function LogoVariantUploader({
   theme,
   value,
 }: {
+  disabled?: boolean;
   fallbackUrl: string | null;
   onChange: (url: string | null) => void;
   onUploadingChange?: (uploading: boolean) => void;
@@ -138,6 +143,7 @@ export function LogoVariantUploader({
             />
           </div>
           <RemoveAssetButton
+            disabled={disabled}
             label={`${label.toLowerCase()} logo`}
             onRemove={() => onChange(null)}
             theme={theme}
@@ -150,7 +156,7 @@ export function LogoVariantUploader({
             "size-full border-0 bg-transparent p-0 shadow-none transition-colors hover:bg-transparent",
             ctaText
           )}
-          disabled={uploadMutation.isPending}
+          disabled={uploadMutation.isPending || disabled}
           maxSize={MAX_BRANDING_ASSET_BYTES}
           onDrop={(files) => {
             const file = files.at(0);
@@ -185,11 +191,13 @@ export function LogoVariantUploader({
 }
 
 export function BannerUploader({
+  disabled,
   onChange,
   onUploadingChange,
   organizationId,
   value,
 }: {
+  disabled?: boolean;
   onChange: (url: string | null) => void;
   onUploadingChange?: (uploading: boolean) => void;
   organizationId: string;
@@ -212,7 +220,11 @@ export function BannerUploader({
           sizes="(max-width: 64rem) calc(100vw - 4rem), 59rem"
           src={value}
         />
-        <RemoveAssetButton label="banner" onRemove={() => onChange(null)} />
+        <RemoveAssetButton
+          disabled={disabled}
+          label="banner"
+          onRemove={() => onChange(null)}
+        />
       </div>
     );
   }
@@ -221,7 +233,7 @@ export function BannerUploader({
     <Dropzone
       accept={ACCEPTED_IMAGE_TYPES}
       className="aspect-[3/1] w-full border-dashed"
-      disabled={uploadMutation.isPending}
+      disabled={uploadMutation.isPending || disabled}
       maxSize={MAX_BRANDING_ASSET_BYTES}
       onDrop={(files) => {
         const file = files.at(0);

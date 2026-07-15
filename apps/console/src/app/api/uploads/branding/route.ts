@@ -1,12 +1,22 @@
 import { uploadIntegrationBrandingAsset } from "@notra/ai/utils/image-assets";
+import { ORPCError } from "@orpc/server";
 import { NextResponse } from "next/server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import {
   BRANDING_ASSET_CONTENT_TYPES,
   brandingUploadRequestSchema,
+  MAX_BRANDING_UPLOAD_REQUEST_BYTES,
 } from "@/schemas/integrations";
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (contentLength > MAX_BRANDING_UPLOAD_REQUEST_BYTES) {
+    return NextResponse.json(
+      { error: "Images must be 4MB or smaller" },
+      { status: 413 }
+    );
+  }
+
   const formData = await request.formData().catch(() => null);
   if (!formData) {
     return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
@@ -25,7 +35,9 @@ export async function POST(request: Request) {
   }
 
   const { file, kind, organizationId } = parsed.data;
-  const extension = BRANDING_ASSET_CONTENT_TYPES[file.type];
+  const extension = Object.hasOwn(BRANDING_ASSET_CONTENT_TYPES, file.type)
+    ? BRANDING_ASSET_CONTENT_TYPES[file.type]
+    : undefined;
   if (!extension) {
     return NextResponse.json(
       { error: "Use a PNG, JPG, SVG, or WebP image" },
@@ -38,10 +50,17 @@ export async function POST(request: Request) {
       headers: request.headers,
       organizationId,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof ORPCError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      );
+    }
+    console.error("[Branding] Failed to verify organization access", error);
     return NextResponse.json(
-      { error: "You do not have access to this organization" },
-      { status: 403 }
+      { error: "Could not upload the image. Try again." },
+      { status: 500 }
     );
   }
 

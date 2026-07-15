@@ -73,12 +73,19 @@ export const ColorPicker = ({
   const [lightness, setLightness] = useState(initialColor.lightness());
   const [alpha, setAlpha] = useState(initialColor.alpha() * 100);
   const [mode, setMode] = useState("hex");
+  const onChangeRef = useRef(onChange);
+  const skipNextNotifyRef = useRef(true);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Update color when controlled value changes
   useEffect(() => {
     if (value) {
       const color = Color(value);
 
+      skipNextNotifyRef.current = true;
       setHue(color.hue());
       setSaturation(color.saturationl());
       setLightness(color.lightness());
@@ -88,13 +95,18 @@ export const ColorPicker = ({
 
   // Notify parent of changes
   useEffect(() => {
-    if (onChange) {
+    if (skipNextNotifyRef.current) {
+      skipNextNotifyRef.current = false;
+      return;
+    }
+
+    if (onChangeRef.current) {
       const color = Color.hsl(hue, saturation, lightness).alpha(alpha / 100);
       const rgba = color.rgb().array();
 
-      onChange([rgba[0], rgba[1], rgba[2], alpha / 100]);
+      onChangeRef.current([rgba[0], rgba[1], rgba[2], alpha / 100]);
     }
-  }, [hue, saturation, lightness, alpha, onChange]);
+  }, [hue, saturation, lightness, alpha]);
 
   return (
     <ColorPickerContext.Provider
@@ -127,7 +139,19 @@ export const ColorPickerSelection = memo(
     const [isDragging, setIsDragging] = useState(false);
     const [positionX, setPositionX] = useState(0);
     const [positionY, setPositionY] = useState(0);
-    const { hue, setSaturation, setLightness } = useColorPicker();
+    const { hue, saturation, lightness, setSaturation, setLightness } =
+      useColorPicker();
+
+    useEffect(() => {
+      if (isDragging) {
+        return;
+      }
+      const x = saturation / 100;
+      const topLightness = x < 0.01 ? 100 : 50 + 50 * (1 - x);
+      const y = topLightness > 0 ? 1 - lightness / topLightness : 1;
+      setPositionX(x);
+      setPositionY(Math.max(0, Math.min(1, y)));
+    }, [isDragging, saturation, lightness]);
 
     const backgroundGradient = useMemo(() => {
       return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
@@ -317,7 +341,10 @@ export const ColorPickerOutput = ({
       }}
       value={mode}
     >
-      <SelectTrigger className="h-8 w-20 shrink-0 text-xs" {...props}>
+      <SelectTrigger
+        className={cn("h-8 w-20 shrink-0 text-xs", className)}
+        {...props}
+      >
         <SelectValue placeholder="Mode" />
       </SelectTrigger>
       <SelectContent>
@@ -401,8 +428,7 @@ export const ColorPickerFormat = ({
           <Input
             className={cn(
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className
+              index && "rounded-l-none"
             )}
             key={index}
             readOnly
@@ -428,7 +454,6 @@ export const ColorPickerFormat = ({
           readOnly
           type="text"
           value={`rgba(${rgb.join(", ")}, ${alpha}%)`}
-          {...props}
         />
       </div>
     );
@@ -452,8 +477,7 @@ export const ColorPickerFormat = ({
           <Input
             className={cn(
               "h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none",
-              index && "rounded-l-none",
-              className
+              index && "rounded-l-none"
             )}
             key={index}
             readOnly

@@ -1,5 +1,7 @@
 import "server-only";
 
+const TRAILING_SLASHES_RE = /\/+$/;
+
 function isAllowedBrandingAssetUrl(url: string, organizationId: string) {
   const publicUrl = process.env.CLOUDFLARE_PUBLIC_URL;
   if (!publicUrl) {
@@ -7,18 +9,20 @@ function isAllowedBrandingAssetUrl(url: string, organizationId: string) {
   }
 
   let parsed: URL;
-  let allowedOrigin: string;
+  let allowed: URL;
   try {
     parsed = new URL(url);
-    allowedOrigin = new URL(publicUrl).origin;
+    allowed = new URL(publicUrl);
   } catch {
     return false;
   }
 
+  const basePath = allowed.pathname.replace(TRAILING_SLASHES_RE, "");
+
   return (
-    parsed.origin === allowedOrigin &&
+    parsed.origin === allowed.origin &&
     parsed.pathname.startsWith(
-      `/organization/${organizationId}/integration-branding/`
+      `${basePath}/organization/${organizationId}/integration-branding/`
     )
   );
 }
