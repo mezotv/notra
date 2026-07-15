@@ -7,16 +7,16 @@ function isAllowedBrandingAssetUrl(url: string, organizationId: string) {
   }
 
   let parsed: URL;
-  let allowedHost: string;
+  let allowedOrigin: string;
   try {
     parsed = new URL(url);
-    allowedHost = new URL(publicUrl).hostname;
+    allowedOrigin = new URL(publicUrl).origin;
   } catch {
     return false;
   }
 
   return (
-    parsed.hostname === allowedHost &&
+    parsed.origin === allowedOrigin &&
     parsed.pathname.startsWith(
       `/organization/${organizationId}/integration-branding/`
     )
