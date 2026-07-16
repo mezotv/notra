@@ -23,6 +23,12 @@ export const ratelimit = {
     prefix: "ratelimit:import-tweets",
     limiter: Ratelimit.slidingWindow(20, "1m"),
   }),
+  mcpConnection: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:mcp-connection",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
   onboardingBrandAnalysis: new Ratelimit({
     redis,
     analytics: true,

@@ -84,11 +84,13 @@ import type {
   GitHubRepository,
   RepositoryOutput,
 } from "@/types/integrations";
+import { ratelimit } from "@/utils/ratelimit";
 import {
   badRequest,
   conflict,
   internalServerError,
   notFound,
+  tooManyRequests,
 } from "../utils/errors";
 
 const organizationIdInputSchema = z.object({
@@ -110,6 +112,15 @@ const outputInputSchema = organizationIdInputSchema.extend({
 const mcpServerInputSchema = organizationIdInputSchema.extend({
   serverId: mcpServerIdParamSchema.shape.serverId,
 });
+
+async function assertMcpConnectionRateLimit(organizationId: string) {
+  const { success } = await ratelimit.mcpConnection.limit(organizationId);
+  if (!success) {
+    throw tooManyRequests(
+      "Too many connection attempts. Wait a minute and try again."
+    );
+  }
+}
 
 function isUniqueConstraintError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) {
@@ -971,6 +982,7 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+        await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
         const storeIntegration = input.storeIntegrationId
@@ -1082,6 +1094,7 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+        await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
         const baseUrl =
@@ -1137,6 +1150,7 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+        await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
         const existing = await getMcpConnectionIntegration({
@@ -1212,6 +1226,7 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+        await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
         const existing = await getMcpConnectionIntegration({
@@ -1252,6 +1267,7 @@ export const integrationsRouter = {
           headers: context.headers,
           organizationId: input.organizationId,
         });
+        await assertMcpConnectionRateLimit(input.organizationId);
 
         return testMcpServerConnection({
           url: input.url,
