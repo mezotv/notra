@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { z } from "zod";
 import type { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";
 import type {
@@ -65,6 +65,8 @@ export interface AddMcpServerDialogProps {
   trigger?: React.ReactNode;
   initialValues?: Partial<AddMcpServerFormValues>;
   storeIntegrationId?: string;
+  logoLightUrl?: string | null;
+  logoDarkUrl?: string | null;
 }
 
 export interface McpStoreIntegration {
@@ -80,10 +82,44 @@ export interface McpStoreIntegration {
   authType: string;
   indexedToolCount: number;
   connected: boolean;
+  connection: McpServer | null;
+}
+
+export interface ConnectedMcpStoreIntegration extends McpStoreIntegration {
+  connection: McpServer;
 }
 
 export interface StoreIntegrationsSectionProps {
   organizationId: string;
+}
+
+export interface ManageStoreIntegrationDialogProps {
+  integration: ConnectedMcpStoreIntegration;
+  onDisconnected: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  organizationId: string;
+}
+
+export interface McpCredentialHeaderRow {
+  id: string;
+  name: string;
+  value: string;
+}
+
+export interface McpStoreConnectionUpdate {
+  authType?: "headers";
+  enabled?: boolean;
+  headers?: Record<string, string>;
+}
+
+export interface McpConnectionDetailProps {
+  children: ReactNode;
+  label: string;
+}
+
+export interface StoreIntegrationDialogLogoProps {
+  integration: ConnectedMcpStoreIntegration;
 }
 
 export interface McpServerCardProps {

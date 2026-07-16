@@ -500,6 +500,7 @@ export const mcpServerIntegrations = pgTable(
     name: text("name").notNull(),
     url: text("url").notNull(),
     description: text("description"),
+    resourceType: text("resource_type").default("connection").notNull(),
     author: text("author"),
     websiteUrl: text("website_url"),
     brandColor: text("brand_color"),
@@ -536,6 +537,19 @@ export const mcpServerIntegrations = pgTable(
       "mcpServerIntegrations_storeStatus_check",
       sql`${table.storeStatus} IN ('draft', 'pending_review', 'live', 'rejected')`
     ),
+    check(
+      "mcpServerIntegrations_resourceType_check",
+      sql`${table.resourceType} IN ('connection', 'store_listing')`
+    ),
+    check(
+      "mcpServerIntegrations_resourceState_check",
+      sql`(
+        (${table.resourceType} = 'store_listing' AND ${table.storeSourceIntegrationId} IS NULL)
+        OR
+        (${table.resourceType} = 'connection' AND ${table.storeStatus} = 'draft' AND ${table.reviewNote} IS NULL AND ${table.submittedAt} IS NULL AND ${table.reviewedAt} IS NULL)
+      )`
+    ),
+    index("mcpServerIntegrations_resourceType_idx").on(table.resourceType),
     index("mcpServerIntegrations_storeStatus_idx").on(table.storeStatus),
     index("mcpServerIntegrations_organizationId_idx").on(table.organizationId),
     index("mcpServerIntegrations_createdByUserId_idx").on(
@@ -548,8 +562,9 @@ export const mcpServerIntegrations = pgTable(
       table.organizationId,
       table.id
     ),
-    uniqueIndex("mcpServerIntegrations_org_name_uidx").on(
+    uniqueIndex("mcpServerIntegrations_org_resourceType_name_uidx").on(
       table.organizationId,
+      table.resourceType,
       table.name
     ),
     uniqueIndex("mcpServerIntegrations_org_storeSource_uidx")

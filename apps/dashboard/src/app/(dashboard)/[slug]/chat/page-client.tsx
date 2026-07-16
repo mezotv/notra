@@ -61,6 +61,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
+import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
 import { BrailleLoader } from "@/components/braille-loader";
 import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
@@ -84,6 +85,7 @@ import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
+import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
 import type {
@@ -425,6 +427,31 @@ function StandaloneChatPageClient({
   const organizationId = organization?.id ?? "";
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
+  const { data: mcpStoreData } = useQuery(
+    dashboardOrpc.integrations.mcp.storeList.queryOptions({
+      input: { organizationId },
+      enabled: Boolean(organizationId),
+    })
+  );
+  const mcpLogosByConnectionId = useMemo(
+    () =>
+      new Map(
+        (mcpStoreData?.integrations ?? []).flatMap((integration) =>
+          integration.connection
+            ? [
+                [
+                  integration.connection.id,
+                  {
+                    darkUrl: integration.logoDarkUrl,
+                    lightUrl: integration.logoLightUrl,
+                  },
+                ] as const,
+              ]
+            : []
+        )
+      ),
+    [mcpStoreData?.integrations]
+  );
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const isHydrated = useSyncExternalStore(
     emptySubscribe,
@@ -1797,21 +1824,24 @@ function StandaloneChatPageClient({
           toolPart.state === "output-error"
             ? { error: toolPart.errorText }
             : toolPart.output;
+        const toolMetadata =
+          toolPart.type === "dynamic-tool" ? toolPart.toolMetadata : undefined;
+        const mcpLogos = toolName.startsWith("mcp_")
+          ? mcpLogosByConnectionId.get(getMcpToolServerId(toolMetadata) ?? "")
+          : undefined;
 
         return (
           <ChatToolBlock
             input={toolPart.input}
             isMcp={toolName.startsWith("mcp_")}
             key={toolPart.toolCallId}
+            mcpLogoDarkUrl={mcpLogos?.darkUrl}
+            mcpLogoLightUrl={mcpLogos?.lightUrl}
             onApprove={handleApprove}
             onDeny={handleDeny}
             output={output}
             state={toolPart.state}
-            toolMetadata={
-              toolPart.type === "dynamic-tool"
-                ? toolPart.toolMetadata
-                : undefined
-            }
+            toolMetadata={toolMetadata}
             toolName={toolName}
           />
         );

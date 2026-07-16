@@ -28,6 +28,7 @@ import {
   PopoverTrigger,
 } from "@notra/ui/components/ui/popover";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cnfast";
 import { Loader2Icon } from "lucide-react";
@@ -624,9 +625,6 @@ function IntegrationToolsCard({
     onMutate: () => {
       onScanningChange(true);
     },
-    onSuccess: ({ authorizationUrl }) => {
-      window.location.assign(authorizationUrl);
-    },
     onError: (error) => {
       onScanningChange(false);
       toast.error(error.message);
@@ -740,7 +738,12 @@ function IntegrationToolsCard({
 
   const handleScan = () => {
     if (isOAuth) {
-      beginOAuthMutation.mutate();
+      const oauthPopup = openMcpOAuthPopup();
+      beginOAuthMutation.mutate(undefined, {
+        onError: () => oauthPopup.close(),
+        onSuccess: ({ authorizationUrl }) =>
+          oauthPopup.navigate(authorizationUrl),
+      });
       return;
     }
     scanMutation.mutate();

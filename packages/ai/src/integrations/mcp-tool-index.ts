@@ -49,7 +49,8 @@ export async function refreshMcpToolIndexForOrganization({
   const integrations = await db.query.mcpServerIntegrations.findMany({
     where: and(
       eq(mcpServerIntegrations.organizationId, organizationId),
-      eq(mcpServerIntegrations.enabled, true)
+      eq(mcpServerIntegrations.enabled, true),
+      eq(mcpServerIntegrations.resourceType, "connection")
     ),
     columns: {
       id: true,
@@ -257,10 +258,16 @@ export async function searchMcpToolIndex({
   const activeCount = await db
     .select({ value: count() })
     .from(mcpToolIndex)
+    .innerJoin(
+      mcpServerIntegrations,
+      eq(mcpToolIndex.serverIntegrationId, mcpServerIntegrations.id)
+    )
     .where(
       and(
         eq(mcpToolIndex.organizationId, organizationId),
-        eq(mcpToolIndex.status, "active")
+        eq(mcpToolIndex.status, "active"),
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     )
     .then((rows) => Number(rows[0]?.value ?? 0));
@@ -280,6 +287,7 @@ export async function searchMcpToolIndex({
     eq(mcpToolIndex.organizationId, organizationId),
     eq(mcpToolIndex.status, "active"),
     eq(mcpServerIntegrations.enabled, true),
+    eq(mcpServerIntegrations.resourceType, "connection"),
     serverIntegrationId
       ? eq(mcpToolIndex.serverIntegrationId, serverIntegrationId)
       : undefined,
@@ -299,6 +307,8 @@ export async function searchMcpToolIndex({
       serverName: mcpServerIntegrations.name,
       serverUrl: mcpServerIntegrations.url,
       serverEnabled: mcpServerIntegrations.enabled,
+      serverLogoLightUrl: mcpServerIntegrations.logoLightUrl,
+      serverLogoDarkUrl: mcpServerIntegrations.logoDarkUrl,
       rank: normalizedQuery
         ? sql<number>`ts_rank_cd(to_tsvector('english', ${mcpToolIndex.searchText}), plainto_tsquery('english', ${normalizedQuery}))`
         : sql<number>`0`,
@@ -322,6 +332,8 @@ export async function searchMcpToolIndex({
           serverName: row.serverName,
           serverUrl: row.serverUrl,
           serverEnabled: row.serverEnabled,
+          serverLogoLightUrl: row.serverLogoLightUrl,
+          serverLogoDarkUrl: row.serverLogoDarkUrl,
         })
       )
     );
@@ -340,6 +352,8 @@ export async function getIndexedMcpToolsForRuntime({
       serverName: mcpServerIntegrations.name,
       serverUrl: mcpServerIntegrations.url,
       serverEnabled: mcpServerIntegrations.enabled,
+      serverLogoLightUrl: mcpServerIntegrations.logoLightUrl,
+      serverLogoDarkUrl: mcpServerIntegrations.logoDarkUrl,
     })
     .from(mcpToolIndex)
     .innerJoin(
@@ -350,7 +364,8 @@ export async function getIndexedMcpToolsForRuntime({
       and(
         eq(mcpToolIndex.organizationId, organizationId),
         eq(mcpToolIndex.status, "active"),
-        eq(mcpServerIntegrations.enabled, true)
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     )
     .orderBy(mcpToolIndex.runtimeToolName)
@@ -361,6 +376,8 @@ export async function getIndexedMcpToolsForRuntime({
           serverName: row.serverName,
           serverUrl: row.serverUrl,
           serverEnabled: row.serverEnabled,
+          serverLogoLightUrl: row.serverLogoLightUrl,
+          serverLogoDarkUrl: row.serverLogoDarkUrl,
         })
       )
     );
@@ -382,7 +399,8 @@ export async function hasActiveIndexedMcpToolsForOrganization({
       and(
         eq(mcpToolIndex.organizationId, organizationId),
         eq(mcpToolIndex.status, "active"),
-        eq(mcpServerIntegrations.enabled, true)
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     )
     .limit(1);
@@ -407,6 +425,8 @@ export async function getSessionActivatedMcpTools({
       serverName: mcpServerIntegrations.name,
       serverUrl: mcpServerIntegrations.url,
       serverEnabled: mcpServerIntegrations.enabled,
+      serverLogoLightUrl: mcpServerIntegrations.logoLightUrl,
+      serverLogoDarkUrl: mcpServerIntegrations.logoDarkUrl,
     })
     .from(mcpSessionToolActivations)
     .innerJoin(
@@ -425,6 +445,7 @@ export async function getSessionActivatedMcpTools({
         eq(mcpToolIndex.organizationId, organizationId),
         eq(mcpToolIndex.status, "active"),
         eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection"),
         or(
           isNull(mcpSessionToolActivations.expiresAt),
           gt(mcpSessionToolActivations.expiresAt, now)
@@ -438,6 +459,8 @@ export async function getSessionActivatedMcpTools({
           serverName: row.serverName,
           serverUrl: row.serverUrl,
           serverEnabled: row.serverEnabled,
+          serverLogoLightUrl: row.serverLogoLightUrl,
+          serverLogoDarkUrl: row.serverLogoDarkUrl,
         }),
         activationId: row.activation.id,
         sourceQuery: row.activation.sourceQuery,
@@ -593,6 +616,8 @@ export async function getIndexedMcpToolByRuntimeName({
       serverName: mcpServerIntegrations.name,
       serverUrl: mcpServerIntegrations.url,
       serverEnabled: mcpServerIntegrations.enabled,
+      serverLogoLightUrl: mcpServerIntegrations.logoLightUrl,
+      serverLogoDarkUrl: mcpServerIntegrations.logoDarkUrl,
     })
     .from(mcpToolIndex)
     .innerJoin(
@@ -602,7 +627,10 @@ export async function getIndexedMcpToolByRuntimeName({
     .where(
       and(
         eq(mcpToolIndex.organizationId, organizationId),
-        eq(mcpToolIndex.runtimeToolName, runtimeToolName)
+        eq(mcpToolIndex.runtimeToolName, runtimeToolName),
+        eq(mcpToolIndex.status, "active"),
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     )
     .limit(1);
@@ -612,6 +640,8 @@ export async function getIndexedMcpToolByRuntimeName({
         serverName: row.serverName,
         serverUrl: row.serverUrl,
         serverEnabled: row.serverEnabled,
+        serverLogoLightUrl: row.serverLogoLightUrl,
+        serverLogoDarkUrl: row.serverLogoDarkUrl,
       })
     : null;
 }
@@ -703,7 +733,8 @@ export async function getEnabledMcpServerCount(organizationId: string) {
     .where(
       and(
         eq(mcpServerIntegrations.organizationId, organizationId),
-        eq(mcpServerIntegrations.enabled, true)
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     );
   return Number(row?.value ?? 0);
@@ -916,6 +947,8 @@ async function getToolsByIds(organizationId: string, toolIds: string[]) {
       serverName: mcpServerIntegrations.name,
       serverUrl: mcpServerIntegrations.url,
       serverEnabled: mcpServerIntegrations.enabled,
+      serverLogoLightUrl: mcpServerIntegrations.logoLightUrl,
+      serverLogoDarkUrl: mcpServerIntegrations.logoDarkUrl,
     })
     .from(mcpToolIndex)
     .innerJoin(
@@ -925,7 +958,9 @@ async function getToolsByIds(organizationId: string, toolIds: string[]) {
     .where(
       and(
         eq(mcpToolIndex.organizationId, organizationId),
-        inArray(mcpToolIndex.id, toolIds)
+        inArray(mcpToolIndex.id, toolIds),
+        eq(mcpServerIntegrations.enabled, true),
+        eq(mcpServerIntegrations.resourceType, "connection")
       )
     )
     .then((rows) =>
@@ -934,6 +969,8 @@ async function getToolsByIds(organizationId: string, toolIds: string[]) {
           serverName: row.serverName,
           serverUrl: row.serverUrl,
           serverEnabled: row.serverEnabled,
+          serverLogoLightUrl: row.serverLogoLightUrl,
+          serverLogoDarkUrl: row.serverLogoDarkUrl,
         })
       )
     );
@@ -945,6 +982,8 @@ function toIndexedMcpTool(
     serverName: string;
     serverUrl: string;
     serverEnabled: boolean;
+    serverLogoLightUrl: string | null;
+    serverLogoDarkUrl: string | null;
   }
 ): IndexedMcpTool {
   return {
@@ -967,6 +1006,8 @@ function toIndexedMcpTool(
     serverName: server.serverName,
     serverUrl: server.serverUrl,
     serverEnabled: server.serverEnabled,
+    serverLogoLightUrl: server.serverLogoLightUrl,
+    serverLogoDarkUrl: server.serverLogoDarkUrl,
   };
 }
 

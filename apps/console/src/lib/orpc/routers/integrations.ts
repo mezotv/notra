@@ -2,14 +2,14 @@ import { MCP_OAUTH_CALLBACK_PATH } from "@notra/ai/constants/mcp-auth";
 import { getGitHubIntegrationsByOrganization } from "@notra/ai/integrations/github";
 import { getLinearIntegrationsByOrganization } from "@notra/ai/integrations/linear";
 import {
-  createMcpServerIntegration,
-  deleteMcpServerIntegration,
-  getMcpServerIntegrationById,
-  getMcpServerIntegrationsByOrganization,
+  createMcpStoreListing,
+  deleteMcpStoreListing,
+  getMcpStoreListing,
+  getMcpStoreListingsByOrganization,
   listMcpServerToolsPreview,
   serializeMcpServerIntegration,
   testMcpServerConnection,
-  updateMcpServerIntegration,
+  updateMcpStoreListing,
 } from "@notra/ai/integrations/mcp";
 import { beginMcpOAuthAuthorization } from "@notra/ai/integrations/mcp-oauth";
 import { McpOAuthAuthorizationError } from "@notra/ai/integrations/mcp-oauth-errors";
@@ -76,7 +76,7 @@ export const integrationsRouter = {
       const [github, linear, mcpServers] = await Promise.all([
         getGitHubIntegrationsByOrganization(input.organizationId),
         getLinearIntegrationsByOrganization(input.organizationId),
-        getMcpServerIntegrationsByOrganization(input.organizationId),
+        getMcpStoreListingsByOrganization(input.organizationId),
       ]);
 
       return {
@@ -108,7 +108,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const integration = await getMcpServerIntegrationById(input.serverId);
+        const integration = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (
           !integration ||
           integration.organizationId !== input.organizationId
@@ -134,7 +137,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
@@ -173,21 +179,27 @@ export const integrationsRouter = {
         }
 
         try {
-          const updated = await updateMcpServerIntegration(input.serverId, {
-            name: input.name,
-            url: input.url,
-            description: input.description ?? null,
-            author: input.author ?? null,
-            websiteUrl: input.websiteUrl ?? null,
-            brandColor: input.brandColor ?? null,
-            logoLightUrl: input.logoLightUrl ?? null,
-            logoDarkUrl: input.logoDarkUrl ?? null,
-            bannerUrl: input.bannerUrl ?? null,
-            ...(input.authType !== existing.authType || hasNewHeaders
-              ? { authType: input.authType }
-              : {}),
-            ...(hasNewHeaders ? { headers: input.headers } : {}),
-          });
+          const updated = await updateMcpStoreListing(
+            {
+              integrationId: input.serverId,
+              organizationId: input.organizationId,
+            },
+            {
+              name: input.name,
+              url: input.url,
+              description: input.description ?? null,
+              author: input.author ?? null,
+              websiteUrl: input.websiteUrl ?? null,
+              brandColor: input.brandColor ?? null,
+              logoLightUrl: input.logoLightUrl ?? null,
+              logoDarkUrl: input.logoDarkUrl ?? null,
+              bannerUrl: input.bannerUrl ?? null,
+              ...(input.authType !== existing.authType || hasNewHeaders
+                ? { authType: input.authType }
+                : {}),
+              ...(hasNewHeaders ? { headers: input.headers } : {}),
+            }
+          );
 
           if (!updated) {
             throw notFound("MCP server not found");
@@ -204,7 +216,10 @@ export const integrationsRouter = {
             });
           }
 
-          const refreshed = await getMcpServerIntegrationById(input.serverId);
+          const refreshed = await getMcpStoreListing({
+            integrationId: input.serverId,
+            organizationId: input.organizationId,
+          });
           return serializeMcpServerIntegration(refreshed ?? updated);
         } catch (error) {
           if (isUniqueConstraintError(error)) {
@@ -225,14 +240,21 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
 
-        const updated = await updateMcpServerIntegration(input.serverId, {
-          enabled: input.enabled,
-        });
+        const updated = await updateMcpStoreListing(
+          {
+            integrationId: input.serverId,
+            organizationId: input.organizationId,
+          },
+          { enabled: input.enabled }
+        );
         if (!updated) {
           throw notFound("MCP server not found");
         }
@@ -247,7 +269,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
@@ -280,6 +305,7 @@ export const integrationsRouter = {
               description: existing.description,
               callbackPath: input.callbackPath,
               redirectUrl: `${baseUrl}${MCP_OAUTH_CALLBACK_PATH}`,
+              resourceType: "store_listing",
             })
           );
         } catch (error) {
@@ -300,7 +326,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
@@ -341,7 +370,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
@@ -379,7 +411,10 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
@@ -396,7 +431,10 @@ export const integrationsRouter = {
           status: "pending_review",
         });
 
-        const refreshed = await getMcpServerIntegrationById(input.serverId);
+        const refreshed = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         return serializeMcpServerIntegration(refreshed ?? existing);
       }),
     create: baseProcedure
@@ -424,7 +462,7 @@ export const integrationsRouter = {
         });
 
         try {
-          const integration = await createMcpServerIntegration({
+          const integration = await createMcpStoreListing({
             authType: input.authType,
             organizationId: input.organizationId,
             userId: access.user.id,
@@ -460,12 +498,21 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const existing = await getMcpServerIntegrationById(input.serverId);
+        const existing = await getMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
         if (!existing || existing.organizationId !== input.organizationId) {
           throw notFound("MCP server not found");
         }
 
-        await deleteMcpServerIntegration(input.serverId);
+        const deleted = await deleteMcpStoreListing({
+          integrationId: input.serverId,
+          organizationId: input.organizationId,
+        });
+        if (!deleted) {
+          throw notFound("MCP store listing not found");
+        }
         return { success: true };
       }),
     scanDraft: baseProcedure

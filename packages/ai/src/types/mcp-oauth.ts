@@ -5,7 +5,7 @@ import type {
 import type { z } from "zod";
 import type { MCP_AUTH_TYPES } from "../constants/mcp-auth";
 import type { mcpOAuthStoredAuthorizationServerSchema } from "../schemas/mcp-oauth";
-import type { McpHeaderMap } from "./integrations";
+import type { McpHeaderMap, McpIntegrationResourceType } from "./integrations";
 
 export type McpAuthType = (typeof MCP_AUTH_TYPES)[number];
 
@@ -24,6 +24,7 @@ export interface BeginMcpOAuthAuthorizationParams {
   name: string;
   organizationId: string;
   redirectUrl: string;
+  resourceType: McpIntegrationResourceType;
   serverIntegrationId?: string;
   storeSourceIntegrationId?: string;
   url: string;

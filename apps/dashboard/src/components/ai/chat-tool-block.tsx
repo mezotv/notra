@@ -37,13 +37,17 @@ import {
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 import {
   getMcpToolActionPhrase,
-  getMcpToolIconUrl,
+  getMcpToolIconUrls,
   getMcpToolLabel,
   isMcpToolName,
 } from "./chat-tool-block/mcp/utils";
 import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
 import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
-import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
+import type {
+  ChatToolBlockProps,
+  McpToolIconProps,
+  ToolCopy,
+} from "./chat-tool-block/types";
 
 function firstStringValue<T extends object>(
   values: T,
@@ -671,6 +675,8 @@ export function ChatToolBlock({
   onDeny,
   isMcp = false,
   iconUrl,
+  mcpLogoDarkUrl,
+  mcpLogoLightUrl,
   toolMetadata,
 }: ChatToolBlockProps) {
   const isAwaitingApproval = state === "approval-requested";
@@ -702,13 +708,18 @@ export function ChatToolBlock({
       : [];
   let toolIcon: ReactNode = null;
 
-  const resolvedIconUrl =
-    iconUrl ?? (isMcp ? getMcpToolIconUrl(toolMetadata) : undefined);
-
-  if (resolvedIconUrl || isMcp) {
+  if (isMcp) {
+    const mcpIconUrls = getMcpToolIconUrls(toolMetadata);
+    toolIcon = (
+      <McpToolIcon
+        darkUrl={iconUrl ?? mcpLogoDarkUrl ?? mcpIconUrls.darkUrl}
+        lightUrl={iconUrl ?? mcpLogoLightUrl ?? mcpIconUrls.lightUrl}
+      />
+    );
+  } else if (iconUrl) {
     toolIcon = (
       <Avatar className="size-4 shrink-0 rounded-sm after:hidden">
-        <AvatarImage className="rounded-sm" src={resolvedIconUrl} />
+        <AvatarImage className="rounded-sm" src={iconUrl} />
         <AvatarFallback className="rounded-sm bg-transparent">
           <HugeiconsIcon className="size-3" icon={CpuIcon} />
         </AvatarFallback>
@@ -783,5 +794,24 @@ export function ChatToolBlock({
         </div>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+function McpToolIcon({ darkUrl, lightUrl }: McpToolIconProps) {
+  return (
+    <span className="relative size-4 shrink-0">
+      <Avatar className="size-4 rounded-sm after:hidden dark:hidden">
+        <AvatarImage className="rounded-sm" src={lightUrl} />
+        <AvatarFallback className="rounded-sm bg-transparent">
+          <HugeiconsIcon className="size-3" icon={CpuIcon} />
+        </AvatarFallback>
+      </Avatar>
+      <Avatar className="hidden size-4 rounded-sm after:hidden dark:flex">
+        <AvatarImage className="rounded-sm" src={darkUrl} />
+        <AvatarFallback className="rounded-sm bg-transparent">
+          <HugeiconsIcon className="size-3" icon={CpuIcon} />
+        </AvatarFallback>
+      </Avatar>
+    </span>
   );
 }

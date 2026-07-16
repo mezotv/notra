@@ -8,14 +8,18 @@ import { customAlphabet } from "nanoid";
 import type {
   CreateMcpServerIntegrationParams,
   McpHeaderMap,
+  McpIntegrationResourceType,
+  McpServerIntegrationScope,
   McpServerIntegrationSerializationInput,
   McpStoreStatus,
+  McpTypedServerIntegrationScope,
   UpdateMcpServerIntegrationParams,
 } from "../types/integrations";
 import type { McpAuthType } from "../types/mcp-oauth";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { encryptMcpHeaders } from "../utils/mcp-headers";
 import { hasOrganizationAccess } from "../utils/organization-access";
+import { McpStoreListingUnavailableError } from "./mcp-store-errors";
 import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -36,6 +40,12 @@ function getMcpStoreStatus(storeStatus: string | undefined): McpStoreStatus {
     return storeStatus;
   }
   return "draft";
+}
+
+function getMcpResourceType(
+  resourceType: string | undefined
+): McpIntegrationResourceType {
+  return resourceType === "store_listing" ? "store_listing" : "connection";
 }
 
 function getMcpOAuthStatus(status: string | undefined) {
@@ -64,6 +74,7 @@ export function serializeMcpServerIntegration(
     name: integration.name,
     url: integration.url,
     description: integration.description,
+    resourceType: getMcpResourceType(integration.resourceType),
     author: integration.author ?? null,
     websiteUrl: integration.websiteUrl ?? null,
     brandColor: integration.brandColor ?? null,
@@ -95,11 +106,27 @@ export function serializeMcpServerIntegration(
   };
 }
 
-export async function createMcpServerIntegration(
-  params: CreateMcpServerIntegrationParams
+async function createMcpServerIntegration(
+  params: CreateMcpServerIntegrationParams,
+  resourceType: McpIntegrationResourceType
 ) {
   await assertOrganizationMember(params.organizationId, params.userId);
   await assertPublicHttpUrlResolution(params.url);
+
+  if (resourceType === "connection" && params.storeSourceIntegrationId) {
+    const storeSource = await db.query.mcpServerIntegrations.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(mcpServerIntegrations.id, params.storeSourceIntegrationId),
+        eq(mcpServerIntegrations.resourceType, "store_listing"),
+        eq(mcpServerIntegrations.storeStatus, "live"),
+        eq(mcpServerIntegrations.enabled, true)
+      ),
+    });
+    if (!storeSource) {
+      throw new McpStoreListingUnavailableError();
+    }
+  }
 
   const [integration] = await db
     .insert(mcpServerIntegrations)
@@ -110,13 +137,17 @@ export async function createMcpServerIntegration(
       name: params.name,
       url: params.url,
       description: params.description ?? null,
+      resourceType,
       author: params.author ?? null,
       websiteUrl: params.websiteUrl ?? null,
       brandColor: params.brandColor ?? null,
       logoLightUrl: params.logoLightUrl ?? null,
       logoDarkUrl: params.logoDarkUrl ?? null,
       bannerUrl: params.bannerUrl ?? null,
-      storeSourceIntegrationId: params.storeSourceIntegrationId ?? null,
+      storeSourceIntegrationId:
+        resourceType === "connection"
+          ? (params.storeSourceIntegrationId ?? null)
+          : null,
       authType: params.authType,
       encryptedHeaders:
         params.authType === "headers" ? encryptMcpHeaders(params.headers) : {},
@@ -132,12 +163,34 @@ export async function createMcpServerIntegration(
     integrationId: integration.id,
   }).catch(() => undefined);
 
-  return (await getMcpServerIntegrationById(integration.id)) ?? integration;
+  return (
+    (await getMcpServerIntegration({
+      integrationId: integration.id,
+      organizationId: params.organizationId,
+      resourceType,
+    })) ?? integration
+  );
 }
 
-export async function getMcpServerIntegrationById(integrationId: string) {
+export function createMcpConnectionIntegration(
+  params: CreateMcpServerIntegrationParams
+) {
+  return createMcpServerIntegration(params, "connection");
+}
+
+export function createMcpStoreListing(
+  params: CreateMcpServerIntegrationParams
+) {
+  return createMcpServerIntegration(params, "store_listing");
+}
+
+async function getMcpServerIntegration(scope: McpTypedServerIntegrationScope) {
   const integration = await db.query.mcpServerIntegrations.findFirst({
-    where: eq(mcpServerIntegrations.id, integrationId),
+    where: and(
+      eq(mcpServerIntegrations.id, scope.integrationId),
+      eq(mcpServerIntegrations.organizationId, scope.organizationId),
+      eq(mcpServerIntegrations.resourceType, scope.resourceType)
+    ),
     with: {
       createdByUser: {
         columns: {
@@ -158,11 +211,48 @@ export async function getMcpServerIntegrationById(integrationId: string) {
   return integration ?? null;
 }
 
-export async function getMcpServerIntegrationsByOrganization(
-  organizationId: string
+export function getMcpConnectionIntegration(scope: McpServerIntegrationScope) {
+  return getMcpServerIntegration({ ...scope, resourceType: "connection" });
+}
+
+export function getMcpStoreListing(scope: McpServerIntegrationScope) {
+  return getMcpServerIntegration({ ...scope, resourceType: "store_listing" });
+}
+
+export async function getMcpStoreListingById(integrationId: string) {
+  const listing = await db.query.mcpServerIntegrations.findFirst({
+    where: and(
+      eq(mcpServerIntegrations.id, integrationId),
+      eq(mcpServerIntegrations.resourceType, "store_listing")
+    ),
+    with: {
+      createdByUser: {
+        columns: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+      oauthCredential: {
+        columns: {
+          status: true,
+        },
+      },
+    },
+  });
+  return listing ?? null;
+}
+
+async function getMcpServerIntegrationsByOrganization(
+  organizationId: string,
+  resourceType: McpIntegrationResourceType
 ) {
   return db.query.mcpServerIntegrations.findMany({
-    where: eq(mcpServerIntegrations.organizationId, organizationId),
+    where: and(
+      eq(mcpServerIntegrations.organizationId, organizationId),
+      eq(mcpServerIntegrations.resourceType, resourceType)
+    ),
     with: {
       createdByUser: {
         columns: {
@@ -182,6 +272,19 @@ export async function getMcpServerIntegrationsByOrganization(
   });
 }
 
+export function getMcpConnectionIntegrationsByOrganization(
+  organizationId: string
+) {
+  return getMcpServerIntegrationsByOrganization(organizationId, "connection");
+}
+
+export function getMcpStoreListingsByOrganization(organizationId: string) {
+  return getMcpServerIntegrationsByOrganization(
+    organizationId,
+    "store_listing"
+  );
+}
+
 export async function hasEnabledMcpServerIntegrations(organizationId: string) {
   const integration = await db.query.mcpServerIntegrations.findFirst({
     columns: {
@@ -189,15 +292,17 @@ export async function hasEnabledMcpServerIntegrations(organizationId: string) {
     },
     where: and(
       eq(mcpServerIntegrations.organizationId, organizationId),
-      eq(mcpServerIntegrations.enabled, true)
+      eq(mcpServerIntegrations.enabled, true),
+      eq(mcpServerIntegrations.resourceType, "connection")
     ),
   });
 
   return Boolean(integration);
 }
 
-export async function updateMcpServerIntegration(
-  integrationId: string,
+async function updateMcpServerIntegration(
+  scope: McpServerIntegrationScope,
+  resourceType: McpIntegrationResourceType,
   updates: UpdateMcpServerIntegrationParams
 ) {
   if (updates.url !== undefined) {
@@ -243,7 +348,13 @@ export async function updateMcpServerIntegration(
         ...(updates.enabled !== undefined ? { enabled: updates.enabled } : {}),
         updatedAt: new Date(),
       })
-      .where(eq(mcpServerIntegrations.id, integrationId))
+      .where(
+        and(
+          eq(mcpServerIntegrations.id, scope.integrationId),
+          eq(mcpServerIntegrations.organizationId, scope.organizationId),
+          eq(mcpServerIntegrations.resourceType, resourceType)
+        )
+      )
       .returning();
 
     if (!row) {
@@ -252,10 +363,16 @@ export async function updateMcpServerIntegration(
     if (updates.authType) {
       await tx
         .delete(mcpOAuthCredentials)
-        .where(eq(mcpOAuthCredentials.serverIntegrationId, integrationId));
+        .where(
+          eq(mcpOAuthCredentials.serverIntegrationId, scope.integrationId)
+        );
     }
     return tx.query.mcpServerIntegrations.findFirst({
-      where: eq(mcpServerIntegrations.id, integrationId),
+      where: and(
+        eq(mcpServerIntegrations.id, scope.integrationId),
+        eq(mcpServerIntegrations.organizationId, scope.organizationId),
+        eq(mcpServerIntegrations.resourceType, resourceType)
+      ),
       with: {
         createdByUser: {
           columns: {
@@ -280,10 +397,45 @@ export async function updateMcpServerIntegration(
   return updated ?? null;
 }
 
-export async function deleteMcpServerIntegration(integrationId: string) {
-  await db
+export function updateMcpConnectionIntegration(
+  scope: McpServerIntegrationScope,
+  updates: UpdateMcpServerIntegrationParams
+) {
+  return updateMcpServerIntegration(scope, "connection", updates);
+}
+
+export function updateMcpStoreListing(
+  scope: McpServerIntegrationScope,
+  updates: UpdateMcpServerIntegrationParams
+) {
+  return updateMcpServerIntegration(scope, "store_listing", updates);
+}
+
+async function deleteMcpServerIntegration(
+  scope: McpServerIntegrationScope,
+  resourceType: McpIntegrationResourceType
+) {
+  const deleted = await db
     .delete(mcpServerIntegrations)
-    .where(eq(mcpServerIntegrations.id, integrationId));
+    .where(
+      and(
+        eq(mcpServerIntegrations.id, scope.integrationId),
+        eq(mcpServerIntegrations.organizationId, scope.organizationId),
+        eq(mcpServerIntegrations.resourceType, resourceType)
+      )
+    )
+    .returning({ id: mcpServerIntegrations.id });
+  return deleted.length > 0;
+}
+
+export function deleteMcpConnectionIntegration(
+  scope: McpServerIntegrationScope
+) {
+  return deleteMcpServerIntegration(scope, "connection");
+}
+
+export function deleteMcpStoreListing(scope: McpServerIntegrationScope) {
+  return deleteMcpServerIntegration(scope, "store_listing");
 }
 
 export async function listMcpServerToolsPreview(input: {

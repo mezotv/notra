@@ -87,6 +87,7 @@ async function beginMcpOAuthAuthorizationPromise(
             columns: { id: true },
             where: and(
               eq(mcpServerIntegrations.organizationId, params.organizationId),
+              eq(mcpServerIntegrations.resourceType, params.resourceType),
               eq(mcpServerIntegrations.name, params.name)
             ),
           }),
@@ -95,6 +96,7 @@ async function beginMcpOAuthAuthorizationPromise(
             columns: { authType: true },
             where: and(
               eq(mcpServerIntegrations.organizationId, params.organizationId),
+              eq(mcpServerIntegrations.resourceType, params.resourceType),
               eq(mcpServerIntegrations.id, params.serverIntegrationId)
             ),
           })
@@ -243,6 +245,7 @@ async function completeMcpOAuthAuthorizationPromise(
     ? await db.query.mcpServerIntegrations.findFirst({
         where: and(
           eq(mcpServerIntegrations.id, pending.storeSourceIntegrationId),
+          eq(mcpServerIntegrations.resourceType, "store_listing"),
           eq(mcpServerIntegrations.storeStatus, "live"),
           eq(mcpServerIntegrations.enabled, true)
         ),
@@ -345,6 +348,7 @@ async function completeMcpOAuthAuthorizationPromise(
         name: pending.name,
         url: pending.url,
         description: pending.description,
+        resourceType: "connection",
         author: storeSourceIntegration?.author ?? null,
         websiteUrl: storeSourceIntegration?.websiteUrl ?? null,
         brandColor: storeSourceIntegration?.brandColor ?? null,

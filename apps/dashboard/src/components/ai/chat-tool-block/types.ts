@@ -19,5 +19,17 @@ export interface ChatToolBlockProps {
   onDeny?: () => void;
   isMcp?: boolean;
   iconUrl?: string;
+  mcpLogoDarkUrl?: string | null;
+  mcpLogoLightUrl?: string | null;
   toolMetadata?: unknown;
+}
+
+export interface McpToolIconProps {
+  darkUrl?: string;
+  lightUrl?: string;
+}
+
+export interface McpToolIconUrls {
+  darkUrl?: string;
+  lightUrl?: string;
 }

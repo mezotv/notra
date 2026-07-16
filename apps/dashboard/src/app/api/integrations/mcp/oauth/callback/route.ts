@@ -10,8 +10,9 @@ import {
 } from "@notra/ai/integrations/mcp-oauth-errors";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
 import { buildCallbackUrl } from "@notra/utils/callback-url";
+import { createMcpOAuthPopupCompletionResponse } from "@notra/utils/oauth-popup";
 import { Effect } from "effect";
-import { type NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getServerSession } from "@/lib/auth/session";
 import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
 
@@ -28,14 +29,14 @@ export async function GET(request: NextRequest) {
   });
 
   if (!parsed.success) {
-    return NextResponse.redirect(
+    return createMcpOAuthPopupCompletionResponse(
       `${baseUrl}/?error=mcp_oauth_invalid_callback`
     );
   }
 
   const { session } = await getServerSession({ headers: request.headers });
   if (!session?.userId) {
-    return NextResponse.redirect(
+    return createMcpOAuthPopupCompletionResponse(
       `${baseUrl}/?error=mcp_oauth_session_required`
     );
   }
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   if (parsed.data.error || !parsed.data.code) {
     await cancelMcpOAuthAuthorization(parsed.data.state, session.userId);
-    return NextResponse.redirect(
+    return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, {
         error: "mcp_oauth_denied",
       })
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
       organizationId: completed.organizationId,
       integrationId: completed.integrationId,
     }).catch(() => undefined);
-    return NextResponse.redirect(
+    return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, {
         mcpConnected: "true",
       })
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     } else if (error instanceof McpOAuthAuthorizationError) {
       errorCode = "mcp_oauth_invalid_callback";
     }
-    return NextResponse.redirect(
+    return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, { error: errorCode })
     );
   }

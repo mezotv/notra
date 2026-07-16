@@ -1,5 +1,5 @@
 {
-  "id": "34836545-b40a-4ef3-866b-19696e7425d9",
+  "id": "7fdd3fc4-6fe7-4b29-900d-5f9f91ca224f",
   "prevId": "8e38b1e1-52c5-4aa5-a1b8-67864bd67d76",
   "version": "7",
   "dialect": "postgresql",
@@ -3567,6 +3567,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'connection'"
+        },
         "author": {
           "name": "author",
           "type": "text",
@@ -3697,6 +3704,21 @@
         }
       },
       "indexes": {
+        "mcpServerIntegrations_resourceType_idx": {
+          "name": "mcpServerIntegrations_resourceType_idx",
+          "columns": [
+            {
+              "expression": "resource_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "mcpServerIntegrations_storeStatus_idx": {
           "name": "mcpServerIntegrations_storeStatus_idx",
           "columns": [
@@ -3778,11 +3800,17 @@
           "method": "btree",
           "with": {}
         },
-        "mcpServerIntegrations_org_name_uidx": {
-          "name": "mcpServerIntegrations_org_name_uidx",
+        "mcpServerIntegrations_org_resourceType_name_uidx": {
+          "name": "mcpServerIntegrations_org_resourceType_name_uidx",
           "columns": [
             {
               "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "resource_type",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3874,6 +3902,14 @@
         "mcpServerIntegrations_storeStatus_check": {
           "name": "mcpServerIntegrations_storeStatus_check",
           "value": "\"mcp_server_integrations\".\"store_status\" IN ('draft', 'pending_review', 'live', 'rejected')"
+        },
+        "mcpServerIntegrations_resourceType_check": {
+          "name": "mcpServerIntegrations_resourceType_check",
+          "value": "\"mcp_server_integrations\".\"resource_type\" IN ('connection', 'store_listing')"
+        },
+        "mcpServerIntegrations_resourceState_check": {
+          "name": "mcpServerIntegrations_resourceState_check",
+          "value": "(\n        (\"mcp_server_integrations\".\"resource_type\" = 'store_listing' AND \"mcp_server_integrations\".\"store_source_integration_id\" IS NULL)\n        OR\n        (\"mcp_server_integrations\".\"resource_type\" = 'connection' AND \"mcp_server_integrations\".\"store_status\" = 'draft' AND \"mcp_server_integrations\".\"review_note\" IS NULL AND \"mcp_server_integrations\".\"submitted_at\" IS NULL AND \"mcp_server_integrations\".\"reviewed_at\" IS NULL)\n      )"
         }
       },
       "isRLSEnabled": false

@@ -1,4 +1,4 @@
-import { getMcpServerIntegrationById } from "@notra/ai/integrations/mcp";
+import { getMcpStoreListingById } from "@notra/ai/integrations/mcp";
 import {
   listMcpIntegrationsPendingReview,
   listMcpIntegrationToolsByIntegrationIds,
@@ -54,7 +54,7 @@ export const reviewRouter = {
     .handler(async ({ context, input }) => {
       await assertAdmin({ headers: context.headers });
 
-      const existing = await getMcpServerIntegrationById(input.serverId);
+      const existing = await getMcpStoreListingById(input.serverId);
       if (!existing) {
         throw notFound("Integration not found");
       }

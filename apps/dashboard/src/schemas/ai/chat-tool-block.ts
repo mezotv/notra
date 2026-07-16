@@ -183,6 +183,9 @@ export const mcpToolMetadataSchema = z
       z
         .object({
           label: optionalStringSchema,
+          logoDarkUrl: optionalStringSchema,
+          logoLightUrl: optionalStringSchema,
+          serverId: optionalStringSchema,
           serverName: optionalStringSchema,
           serverUrl: optionalStringSchema,
           toolName: optionalStringSchema,

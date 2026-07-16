@@ -63,11 +63,14 @@ export interface McpHeaderMap {
 
 export type McpStoreStatus = "draft" | "pending_review" | "live" | "rejected";
 
+export type McpIntegrationResourceType = "connection" | "store_listing";
+
 export interface McpServerIntegrationSerializationInput {
   id: string;
   name: string;
   url: string;
   description: string | null;
+  resourceType?: string;
   author?: string | null;
   websiteUrl?: string | null;
   brandColor?: string | null;
@@ -114,6 +117,16 @@ export interface CreateMcpServerIntegrationParams {
   bannerUrl?: string | null;
   storeSourceIntegrationId?: string | null;
   headers?: McpHeaderMap;
+}
+
+export interface McpServerIntegrationScope {
+  integrationId: string;
+  organizationId: string;
+}
+
+export interface McpTypedServerIntegrationScope
+  extends McpServerIntegrationScope {
+  resourceType: McpIntegrationResourceType;
 }
 
 export interface UpdateMcpServerIntegrationParams {

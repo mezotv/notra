@@ -16,7 +16,9 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
+import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 import type React from "react";
 import { isValidElement, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -53,6 +55,8 @@ export function AddMcpServerDialog({
   trigger,
   initialValues,
   storeIntegrationId,
+  logoLightUrl,
+  logoDarkUrl,
 }: AddMcpServerDialogProps) {
   const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -156,9 +160,6 @@ export function AddMcpServerDialog({
   const beginOAuthMutation = useMutation({
     mutationFn: async (input: BeginMcpOAuthRequest) =>
       dashboardOrpc.integrations.mcp.beginOAuth.call(input),
-    onSuccess: ({ authorizationUrl }) => {
-      window.location.assign(authorizationUrl);
-    },
     onError: (error) => {
       toast.error(error.message);
     },
@@ -181,7 +182,12 @@ export function AddMcpServerDialog({
         );
         return;
       }
-      beginOAuthMutation.mutate(oauthPayload.data);
+      const oauthPopup = openMcpOAuthPopup();
+      beginOAuthMutation.mutate(oauthPayload.data, {
+        onError: () => oauthPopup.close(),
+        onSuccess: ({ authorizationUrl }) =>
+          oauthPopup.navigate(authorizationUrl),
+      });
       return;
     }
 
@@ -242,15 +248,12 @@ export function AddMcpServerDialog({
           <div className="flex items-start gap-3">
             <form.Subscribe selector={(state) => state.values.url}>
               {(url) => (
-                <Avatar className="size-9 shrink-0 rounded-lg bg-muted after:hidden">
-                  <AvatarImage
-                    className="rounded-lg"
-                    src={getMcpFaviconUrl(buildMcpUrl(url))}
-                  />
-                  <AvatarFallback className="rounded-lg bg-transparent text-foreground">
-                    <HugeiconsIcon className="size-5" icon={CpuIcon} />
-                  </AvatarFallback>
-                </Avatar>
+                <McpDialogLogo
+                  darkUrl={logoDarkUrl}
+                  lightUrl={logoLightUrl}
+                  name={initialValues?.name ?? "MCP server"}
+                  url={buildMcpUrl(url)}
+                />
               )}
             </form.Subscribe>
             <div>
@@ -319,5 +322,50 @@ export function AddMcpServerDialog({
         </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
+  );
+}
+
+function McpDialogLogo({
+  darkUrl,
+  lightUrl,
+  name,
+  url,
+}: {
+  darkUrl?: string | null;
+  lightUrl?: string | null;
+  name: string;
+  url: string;
+}) {
+  const lightLogo = lightUrl ?? darkUrl;
+  const darkLogo = darkUrl ?? lightUrl;
+
+  if (lightLogo && darkLogo) {
+    return (
+      <div className="size-9 shrink-0 overflow-hidden rounded-lg bg-muted">
+        <Image
+          alt={`${name} logo`}
+          className="size-9 object-contain dark:hidden"
+          height={36}
+          src={lightLogo}
+          width={36}
+        />
+        <Image
+          alt={`${name} logo`}
+          className="hidden size-9 object-contain dark:block"
+          height={36}
+          src={darkLogo}
+          width={36}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <Avatar className="size-9 shrink-0 rounded-lg bg-muted after:hidden">
+      <AvatarImage className="rounded-lg" src={getMcpFaviconUrl(url)} />
+      <AvatarFallback className="rounded-lg bg-transparent text-foreground">
+        <HugeiconsIcon className="size-5" icon={CpuIcon} />
+      </AvatarFallback>
+    </Avatar>
   );
 }

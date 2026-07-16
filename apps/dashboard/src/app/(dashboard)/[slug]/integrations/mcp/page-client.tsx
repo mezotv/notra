@@ -3,6 +3,7 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
+import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -100,9 +101,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         serverId: id,
         callbackPath: window.location.pathname,
       }),
-    onSuccess: ({ authorizationUrl }) => {
-      window.location.assign(authorizationUrl);
-    },
     onError: (error) => {
       toast.error(error.message);
     },
@@ -154,7 +152,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <McpServerCard
                   key={server.id}
                   onDelete={(id) => deleteMutation.mutate(id)}
-                  onReauthorize={(id) => reauthorizeMutation.mutate(id)}
+                  onReauthorize={(id) => {
+                    const oauthPopup = openMcpOAuthPopup();
+                    reauthorizeMutation.mutate(id, {
+                      onError: () => oauthPopup.close(),
+                      onSuccess: ({ authorizationUrl }) =>
+                        oauthPopup.navigate(authorizationUrl),
+                    });
+                  }}
                   onRefreshTools={(id) => refreshMutation.mutate(id)}
                   onToggle={(id, enabled) =>
                     toggleMutation.mutate({ id, enabled })

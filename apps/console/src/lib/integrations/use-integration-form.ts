@@ -1,5 +1,6 @@
 "use client";
 
+import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
@@ -183,7 +184,7 @@ export function useIntegrationForm({
   });
 
   const connectOAuthDraftMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (oauthPopup: ReturnType<typeof openMcpOAuthPopup>) => {
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
         throw new Error(
@@ -207,6 +208,7 @@ export function useIntegrationForm({
         toast.info(
           `You already have an integration named "${parsed.data.name}". Opening it.`
         );
+        oauthPopup.close();
         router.push(`/${slug}/integrations/${existing.id}`);
         return existing;
       }
@@ -223,8 +225,9 @@ export function useIntegrationForm({
           serverId: created.id,
           callbackPath: editPath,
         });
-        window.location.assign(begun.authorizationUrl);
+        oauthPopup.navigate(begun.authorizationUrl);
       } catch (error) {
+        oauthPopup.close();
         toast.error(
           error instanceof Error
             ? error.message
@@ -234,7 +237,8 @@ export function useIntegrationForm({
       }
       return created;
     },
-    onError: (error) => {
+    onError: (error, oauthPopup) => {
+      oauthPopup.close();
       toast.error(error.message);
     },
   });
@@ -460,9 +464,11 @@ export function useIntegrationForm({
         ...draftTools.map((tool) => tool.serverToolName),
         ...(tools ?? []).map((tool) => tool.serverToolName),
       ]);
-      const additions = entries
-        .filter((entry) => !known.has(entry.serverToolName))
-        .map((entry) => createManualTool(entry.serverToolName));
+      const additions = entries.flatMap((entry) =>
+        known.has(entry.serverToolName)
+          ? []
+          : [createManualTool(entry.serverToolName)]
+      );
       return additions.length > 0 ? [...current, ...additions] : current;
     });
     toast.success(
@@ -489,7 +495,14 @@ export function useIntegrationForm({
 
   const scanDraft = () => {
     if (authChoice === "oauth") {
-      connectOAuthDraftMutation.mutate();
+      const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
+      if (!parsed.success) {
+        toast.error(
+          parsed.error.issues[0]?.message ?? "Add a server name and URL first"
+        );
+        return;
+      }
+      connectOAuthDraftMutation.mutate(openMcpOAuthPopup());
       return;
     }
     if (!validateApiKeyInput()) {

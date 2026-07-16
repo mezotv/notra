@@ -1,5 +1,6 @@
 import { getMcpFaviconUrl } from "@/lib/integrations/mcp";
 import { mcpToolMetadataSchema } from "@/schemas/ai/chat-tool-block";
+import type { McpToolIconUrls } from "../types";
 import {
   MCP_TOOL_NAME_REGEX,
   NON_ALPHANUMERIC_WORD_SEPARATOR_REGEX,
@@ -73,7 +74,18 @@ export function getMcpToolActionPhrase(
   return normalizedPhrase || undefined;
 }
 
-export function getMcpToolIconUrl(toolMetadata: unknown) {
+export function getMcpToolIconUrls(toolMetadata: unknown): McpToolIconUrls {
   const notraMetadata = getNotraMcpMetadata(toolMetadata);
-  return getMcpFaviconUrl(notraMetadata?.serverUrl);
+  const fallbackUrl = getMcpFaviconUrl(notraMetadata?.serverUrl);
+  const lightLogo = notraMetadata?.logoLightUrl?.trim() || undefined;
+  const darkLogo = notraMetadata?.logoDarkUrl?.trim() || undefined;
+
+  return {
+    lightUrl: lightLogo ?? darkLogo ?? fallbackUrl,
+    darkUrl: darkLogo ?? lightLogo ?? fallbackUrl,
+  };
+}
+
+export function getMcpToolServerId(toolMetadata: unknown) {
+  return getNotraMcpMetadata(toolMetadata)?.serverId?.trim() || undefined;
 }

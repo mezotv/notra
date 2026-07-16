@@ -31,6 +31,8 @@ export interface IndexedMcpTool {
   serverName: string;
   serverUrl: string;
   serverEnabled: boolean;
+  serverLogoLightUrl: string | null;
+  serverLogoDarkUrl: string | null;
 }
 
 export interface McpToolActionPhrases {

@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations, mcpToolIndex } from "@notra/db/schema";
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
@@ -15,47 +15,105 @@ export async function setMcpStoreStatus(params: {
   expectedSubmittedAt?: Date | null;
 }) {
   const now = new Date();
-  const [row] = await db
-    .update(mcpServerIntegrations)
-    .set({
-      storeStatus: params.status,
-      reviewNote: params.reviewNote ?? null,
-      ...(params.status === "pending_review"
-        ? { submittedAt: now, reviewedAt: null }
-        : {}),
-      ...(params.status === "live" || params.status === "rejected"
-        ? { reviewedAt: now }
-        : {}),
-      ...(params.status === "live" ? { enabled: true } : {}),
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(mcpServerIntegrations.id, params.integrationId),
-        eq(mcpServerIntegrations.organizationId, params.organizationId),
-        ...(params.expectedStatus
-          ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
-          : []),
-        ...(params.expectedSubmittedAt === undefined
-          ? []
-          : [
-              params.expectedSubmittedAt === null
-                ? isNull(mcpServerIntegrations.submittedAt)
-                : eq(
-                    mcpServerIntegrations.submittedAt,
-                    params.expectedSubmittedAt
-                  ),
-            ])
+  return await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(mcpServerIntegrations)
+      .set({
+        storeStatus: params.status,
+        reviewNote: params.reviewNote ?? null,
+        ...(params.status === "pending_review"
+          ? { submittedAt: now, reviewedAt: null }
+          : {}),
+        ...(params.status === "live" || params.status === "rejected"
+          ? { reviewedAt: now }
+          : {}),
+        ...(params.status === "live" ? { enabled: true } : {}),
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(mcpServerIntegrations.id, params.integrationId),
+          eq(mcpServerIntegrations.organizationId, params.organizationId),
+          eq(mcpServerIntegrations.resourceType, "store_listing"),
+          ...(params.expectedStatus
+            ? [eq(mcpServerIntegrations.storeStatus, params.expectedStatus)]
+            : []),
+          ...(params.expectedSubmittedAt === undefined
+            ? []
+            : [
+                params.expectedSubmittedAt === null
+                  ? isNull(mcpServerIntegrations.submittedAt)
+                  : eq(
+                      mcpServerIntegrations.submittedAt,
+                      params.expectedSubmittedAt
+                    ),
+              ])
+        )
       )
-    )
-    .returning();
+      .returning();
 
-  return row ?? null;
+    if (!row || params.status !== "live") {
+      return row ?? null;
+    }
+
+    const [sourceTools, installedConnections] = await Promise.all([
+      tx.query.mcpToolIndex.findMany({
+        where: and(
+          eq(mcpToolIndex.serverIntegrationId, params.integrationId),
+          eq(mcpToolIndex.status, "active")
+        ),
+        columns: {
+          serverToolName: true,
+          actionPhrasePresent: true,
+          actionPhrasePast: true,
+        },
+      }),
+      tx.query.mcpServerIntegrations.findMany({
+        where: and(
+          eq(mcpServerIntegrations.resourceType, "connection"),
+          eq(
+            mcpServerIntegrations.storeSourceIntegrationId,
+            params.integrationId
+          )
+        ),
+        columns: { id: true },
+      }),
+    ]);
+
+    const connectionIds = installedConnections.map(
+      (connection) => connection.id
+    );
+    if (connectionIds.length > 0 && sourceTools.length > 0) {
+      await Promise.all(
+        sourceTools.map((tool) =>
+          tx
+            .update(mcpToolIndex)
+            .set({
+              actionPhrasePresent: tool.actionPhrasePresent,
+              actionPhrasePast: tool.actionPhrasePast,
+              updatedAt: now,
+            })
+            .where(
+              and(
+                inArray(mcpToolIndex.serverIntegrationId, connectionIds),
+                eq(mcpToolIndex.serverToolName, tool.serverToolName),
+                eq(mcpToolIndex.status, "active")
+              )
+            )
+        )
+      );
+    }
+
+    return row;
+  });
 }
 
 export async function listMcpIntegrationsPendingReview() {
   return await db.query.mcpServerIntegrations.findMany({
-    where: eq(mcpServerIntegrations.storeStatus, "pending_review"),
+    where: and(
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
+      eq(mcpServerIntegrations.storeStatus, "pending_review")
+    ),
     orderBy: asc(mcpServerIntegrations.submittedAt),
     limit: 100,
     with: {
@@ -153,41 +211,34 @@ export async function updateMcpToolActionPhrases(params: {
     return 0;
   }
 
-  const valueRows = sql.join(
-    applicable.map(
-      (update) =>
-        sql`(${update.serverToolName}::text, ${update.actionPhrasePresent}::text, ${update.actionPhrasePast}::text)`
-    ),
-    sql`, `
-  );
-
-  await db.execute(sql`
-    update ${mcpToolIndex} as tool
-    set
-      action_phrase_present = phrase.present,
-      action_phrase_past = phrase.past,
-      updated_at = now()
-    from (values ${valueRows}) as phrase(tool_name, present, past)
-    where tool.organization_id = ${params.organizationId}
-      and tool.server_integration_id = ${params.integrationId}
-      and tool.server_tool_name = phrase.tool_name
-  `);
+  await db.transaction(async (tx) => {
+    await Promise.all(
+      applicable.map((update) =>
+        tx
+          .update(mcpToolIndex)
+          .set({
+            actionPhrasePresent: update.actionPhrasePresent,
+            actionPhrasePast: update.actionPhrasePast,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(mcpToolIndex.organizationId, params.organizationId),
+              eq(mcpToolIndex.serverIntegrationId, params.integrationId),
+              eq(mcpToolIndex.serverToolName, update.serverToolName)
+            )
+          )
+      )
+    );
+  });
 
   return applicable.length;
-}
-
-export function isStoreListingIntegration(integration: {
-  storeStatus: string;
-  submittedAt: Date | null;
-}) {
-  return (
-    integration.storeStatus !== "draft" || integration.submittedAt !== null
-  );
 }
 
 export async function listLiveMcpStoreIntegrations() {
   return await db.query.mcpServerIntegrations.findMany({
     where: and(
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
       eq(mcpServerIntegrations.storeStatus, "live"),
       eq(mcpServerIntegrations.enabled, true)
     ),
@@ -212,9 +263,24 @@ export async function getLiveMcpStoreIntegrationById(integrationId: string) {
   const integration = await db.query.mcpServerIntegrations.findFirst({
     where: and(
       eq(mcpServerIntegrations.id, integrationId),
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
       eq(mcpServerIntegrations.storeStatus, "live"),
       eq(mcpServerIntegrations.enabled, true)
     ),
+    columns: {
+      id: true,
+      name: true,
+      url: true,
+      description: true,
+      author: true,
+      websiteUrl: true,
+      brandColor: true,
+      logoLightUrl: true,
+      logoDarkUrl: true,
+      bannerUrl: true,
+      authType: true,
+      indexedToolCount: true,
+    },
   });
 
   return integration ?? null;

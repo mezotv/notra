@@ -373,6 +373,8 @@ function createRuntimeMcpTool({
         serverId: indexedTool.serverIntegrationId,
         serverName: indexedTool.serverName,
         serverUrl: indexedTool.serverUrl,
+        logoLightUrl: indexedTool.serverLogoLightUrl,
+        logoDarkUrl: indexedTool.serverLogoDarkUrl,
         toolName: indexedTool.serverToolName,
         runtimeToolName: indexedTool.runtimeToolName,
         actionPhrasePresent: indexedTool.actionPhrasePresent,
@@ -411,7 +413,8 @@ async function createMcpClientForIntegration({
     where: and(
       eq(mcpServerIntegrations.id, integrationId),
       eq(mcpServerIntegrations.organizationId, organizationId),
-      eq(mcpServerIntegrations.enabled, true)
+      eq(mcpServerIntegrations.enabled, true),
+      eq(mcpServerIntegrations.resourceType, "connection")
     ),
   });
 
