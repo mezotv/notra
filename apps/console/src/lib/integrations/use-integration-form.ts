@@ -16,7 +16,7 @@ import {
   getInitialApiKeyStyle,
   hasStoredBearerHeader,
 } from "@/lib/integrations/form";
-import { createManualTool } from "@/lib/integrations/tool-io";
+import { createManualTool, isManualTool } from "@/lib/integrations/tool-io";
 import { consoleOrpc } from "@/lib/orpc/query";
 import {
   createMcpServerRequestSchema,
@@ -31,6 +31,7 @@ import type {
   McpServer,
   ToolPhraseDraft,
   ToolPhraseImportEntry,
+  UpdateMcpToolPhrasesRequest,
 } from "@/types/integrations";
 
 export function useIntegrationForm({
@@ -76,7 +77,9 @@ export function useIntegrationForm({
     Record<string, ToolPhraseDraft>
   >(() => buildInitialPhraseDrafts(tools ?? []));
   const [draftTools, setDraftTools] = useState<McpIntegrationTool[]>([]);
-  const [manualTools, setManualTools] = useState<McpIntegrationTool[]>([]);
+  const [manualTools, setManualTools] = useState<McpIntegrationTool[]>(() =>
+    (tools ?? []).filter(isManualTool)
+  );
 
   const backHref = `/${slug}/integrations`;
 
@@ -135,18 +138,29 @@ export function useIntegrationForm({
     return false;
   }
 
-  async function saveChangedToolPhrases(serverId: string) {
+  async function saveToolPhrases(serverId: string) {
     const changedTools = getChangedToolPhraseDrafts(
       phraseDrafts,
       phraseBaseline
     );
-    if (changedTools.length > 0) {
-      await consoleOrpc.integrations.mcp.updateToolPhrases.call({
-        organizationId,
-        serverId,
-        tools: changedTools,
+    const updatesByName = new Map<
+      string,
+      UpdateMcpToolPhrasesRequest["tools"][number]
+    >(changedTools.map((tool) => [tool.serverToolName, tool]));
+    for (const tool of manualTools) {
+      const draft = phraseDrafts[tool.serverToolName];
+      updatesByName.set(tool.serverToolName, {
+        serverToolName: tool.serverToolName,
+        actionPhrasePresent: draft?.actionPhrasePresent.trim() || null,
+        actionPhrasePast: draft?.actionPhrasePast.trim() || null,
       });
     }
+    await consoleOrpc.integrations.mcp.updateToolPhrases.call({
+      organizationId,
+      serverId,
+      tools: Array.from(updatesByName.values()),
+      manualToolNames: manualTools.map((tool) => tool.serverToolName),
+    });
   }
 
   const scanDraftMutation = useMutation({
@@ -170,8 +184,17 @@ export function useIntegrationForm({
     },
     onSuccess: (result) => {
       setDraftTools(result.tools);
-      setPhraseDrafts(buildInitialPhraseDrafts(result.tools));
-      setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
+      const nextBaseline = buildInitialPhraseDrafts(result.tools);
+      setPhraseDrafts((current) => {
+        const next = { ...nextBaseline };
+        for (const [toolName, draft] of Object.entries(current)) {
+          if (next[toolName]) {
+            next[toolName] = draft;
+          }
+        }
+        return next;
+      });
+      setPhraseBaseline(nextBaseline);
       toast.success(
         result.tools.length === 1
           ? "Found 1 tool"
@@ -254,23 +277,11 @@ export function useIntegrationForm({
       const created = await consoleOrpc.integrations.mcp.create.call(
         parsed.data
       );
-      const changedTools = getChangedToolPhraseDrafts(
-        phraseDrafts,
-        phraseBaseline
-      );
-      if (changedTools.length > 0) {
-        await consoleOrpc.integrations.mcp.updateToolPhrases
-          .call({
-            organizationId,
-            serverId: created.id,
-            tools: changedTools,
-          })
-          .catch(() => {
-            toast.error(
-              "The integration was created, but the action phrases did not save. Add them again on the edit page."
-            );
-          });
-      }
+      await saveToolPhrases(created.id).catch(() => {
+        toast.error(
+          "The integration was created, but the action phrases did not save. Add them again on the edit page."
+        );
+      });
       return created;
     },
     onSuccess: async (created) => {
@@ -304,7 +315,7 @@ export function useIntegrationForm({
       const updated = await consoleOrpc.integrations.mcp.update.call(
         parsed.data
       );
-      await saveChangedToolPhrases(server.id);
+      await saveToolPhrases(server.id);
       return updated;
     },
     onSuccess: async (updated) => {
@@ -347,7 +358,7 @@ export function useIntegrationForm({
         );
       }
       await consoleOrpc.integrations.mcp.update.call(parsed.data);
-      await saveChangedToolPhrases(server.id);
+      await saveToolPhrases(server.id);
       return await consoleOrpc.integrations.mcp.submitForReview.call({
         organizationId,
         serverId: server.id,

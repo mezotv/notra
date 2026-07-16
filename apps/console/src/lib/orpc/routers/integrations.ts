@@ -381,6 +381,7 @@ export const integrationsRouter = {
         const appliedCount = await updateMcpToolActionPhrases({
           organizationId: input.organizationId,
           integrationId: input.serverId,
+          manualToolNames: input.manualToolNames,
           updates: input.tools,
         });
 

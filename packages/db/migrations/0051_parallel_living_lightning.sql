@@ -14,7 +14,7 @@ ALTER TABLE "mcp_server_integrations" ADD COLUMN "submitted_at" timestamp;--> st
 ALTER TABLE "mcp_server_integrations" ADD COLUMN "reviewed_at" timestamp;--> statement-breakpoint
 ALTER TABLE "mcp_tool_index" ADD COLUMN "action_phrase_present" text;--> statement-breakpoint
 ALTER TABLE "mcp_tool_index" ADD COLUMN "action_phrase_past" text;--> statement-breakpoint
-ALTER TABLE "mcp_oauth_pending_authorizations" ADD CONSTRAINT "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk" FOREIGN KEY ("store_source_integration_id") REFERENCES "public"."mcp_server_integrations"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "mcp_oauth_pending_authorizations" ADD CONSTRAINT "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk" FOREIGN KEY ("store_source_integration_id") REFERENCES "public"."mcp_server_integrations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mcp_server_integrations" ADD CONSTRAINT "mcpServerIntegrations_storeSourceIntegrationId_fk" FOREIGN KEY ("store_source_integration_id") REFERENCES "public"."mcp_server_integrations"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_idx" ON "mcp_oauth_pending_authorizations" USING btree ("store_source_integration_id");--> statement-breakpoint
 CREATE INDEX "mcpServerIntegrations_resourceType_idx" ON "mcp_server_integrations" USING btree ("resource_type");--> statement-breakpoint

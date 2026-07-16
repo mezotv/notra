@@ -28,6 +28,7 @@ export function ThemeToggle() {
       <SidebarMenuItem>
         {mounted ? (
           <SidebarMenuButton
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
             className="cursor-pointer"
             onClick={toggleTheme}
             tooltip={isDark ? "Light Mode" : "Dark Mode"}
@@ -46,7 +47,7 @@ export function ThemeToggle() {
             )}
           </SidebarMenuButton>
         ) : (
-          <SidebarMenuButton>
+          <SidebarMenuButton aria-label="Change color theme">
             <div className="size-4" />
             {!isCollapsed && (
               <span className="flex-1 text-left text-sm">Dark Mode</span>

@@ -165,6 +165,10 @@ export const updateMcpToolPhrasesRequestSchema = mcpServerIdFieldsSchema.extend(
         })
       )
       .max(200, "Too many tools"),
+    manualToolNames: z
+      .array(z.string().trim().min(1).max(256))
+      .max(200, "Too many tools")
+      .optional(),
   }
 );
 
@@ -172,21 +176,24 @@ export const toolPhraseImportFileSchema = z
   .array(
     z.object({
       serverToolName: z.string().trim().min(1).max(256),
-      actionPhrasePresent: z
-        .string()
-        .trim()
-        .max(MAX_TOOL_ACTION_PHRASE_LENGTH)
-        .nullable()
-        .optional(),
-      actionPhrasePast: z
-        .string()
-        .trim()
-        .max(MAX_TOOL_ACTION_PHRASE_LENGTH)
-        .nullable()
-        .optional(),
+      actionPhrasePresent: toolActionPhraseSchema.optional(),
+      actionPhrasePast: toolActionPhraseSchema.optional(),
     })
   )
-  .max(200, "Too many tools");
+  .max(200, "Too many tools")
+  .superRefine((entries, context) => {
+    const seen = new Set<string>();
+    for (const [index, entry] of entries.entries()) {
+      if (seen.has(entry.serverToolName)) {
+        context.addIssue({
+          code: "custom",
+          message: `Tool "${entry.serverToolName}" is listed more than once`,
+          path: [index, "serverToolName"],
+        });
+      }
+      seen.add(entry.serverToolName);
+    }
+  });
 
 export const submitMcpServerForReviewRequestSchema = mcpServerIdFieldsSchema;
 

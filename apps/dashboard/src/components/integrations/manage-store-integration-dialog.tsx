@@ -35,6 +35,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import { MAX_MCP_HEADERS } from "@/schemas/integrations";
 import type {
   ManageStoreIntegrationDialogProps,
   McpConnectionActionsProps,
@@ -62,8 +63,8 @@ export function ManageStoreIntegrationDialog({
       connection.headerNames && connection.headerNames.length > 0
         ? connection.headerNames
         : ["Authorization"];
-    return names.map((name) => ({
-      id: crypto.randomUUID(),
+    return names.map((name, index) => ({
+      id: `stored-header-${index}`,
       name,
       value: "",
     }));
@@ -313,6 +314,7 @@ function CredentialEditor({
       ))}
       <div className="flex justify-between gap-2">
         <Button
+          disabled={headerRows.length >= MAX_MCP_HEADERS}
           onClick={() =>
             setHeaderRows((rows) => [
               ...rows,

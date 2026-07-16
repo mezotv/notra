@@ -20,10 +20,7 @@ export function getMcpFaviconUrl(url: string | null | undefined) {
   }
   const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
   try {
-    const domain = new URL(normalizedUrl).hostname
-      .split(".")
-      .slice(-2)
-      .join(".");
+    const domain = new URL(normalizedUrl).hostname;
     return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
   } catch {
     return undefined;

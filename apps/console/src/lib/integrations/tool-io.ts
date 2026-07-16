@@ -128,11 +128,12 @@ export function createManualTool(serverToolName: string): McpIntegrationTool {
     description: null,
     actionPhrasePresent: null,
     actionPhrasePast: null,
+    isManual: true,
   };
 }
 
 export function isManualTool(tool: McpIntegrationTool) {
-  return tool.id.startsWith(MANUAL_TOOL_ID_PREFIX);
+  return tool.isManual === true || tool.id.startsWith(MANUAL_TOOL_ID_PREFIX);
 }
 
 export function mergeManualTools(

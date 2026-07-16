@@ -712,8 +712,12 @@ export function ChatToolBlock({
     const mcpIconUrls = getMcpToolIconUrls(toolMetadata);
     toolIcon = (
       <McpToolIcon
-        darkUrl={iconUrl ?? mcpLogoDarkUrl ?? mcpIconUrls.darkUrl}
-        lightUrl={iconUrl ?? mcpLogoLightUrl ?? mcpIconUrls.lightUrl}
+        darkUrl={
+          iconUrl ?? mcpLogoDarkUrl ?? mcpLogoLightUrl ?? mcpIconUrls.darkUrl
+        }
+        lightUrl={
+          iconUrl ?? mcpLogoLightUrl ?? mcpLogoDarkUrl ?? mcpIconUrls.lightUrl
+        }
       />
     );
   } else if (iconUrl) {

@@ -71,6 +71,7 @@ export interface McpIntegrationTool {
   description: string | null;
   actionPhrasePresent: string | null;
   actionPhrasePast: string | null;
+  isManual?: boolean;
 }
 
 export interface ToolPhraseDraft {

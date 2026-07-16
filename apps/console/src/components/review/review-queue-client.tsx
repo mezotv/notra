@@ -43,6 +43,7 @@ function ReviewIntegrationLogo({
 }: {
   integration: PendingReviewIntegration;
 }) {
+  const [faviconFailed, setFaviconFailed] = useState(false);
   const lightLogo = integration.logoLightUrl ?? integration.logoDarkUrl;
   const darkLogo = integration.logoDarkUrl ?? integration.logoLightUrl;
 
@@ -68,12 +69,13 @@ function ReviewIntegrationLogo({
   }
 
   const faviconUrl = getMcpFaviconUrl(integration.url);
-  if (faviconUrl) {
+  if (faviconUrl && !faviconFailed) {
     return (
       <Image
         alt={`${integration.name} logo`}
         className="size-10 shrink-0 rounded-lg border bg-muted object-contain p-1.5"
         height={40}
+        onError={() => setFaviconFailed(true)}
         src={faviconUrl}
         unoptimized
         width={40}

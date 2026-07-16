@@ -24,12 +24,9 @@ export interface ChatToolBlockProps {
   toolMetadata?: unknown;
 }
 
-export interface McpToolIconProps {
-  darkUrl?: string;
-  lightUrl?: string;
-}
-
 export interface McpToolIconUrls {
   darkUrl?: string;
   lightUrl?: string;
 }
+
+export type McpToolIconProps = McpToolIconUrls;

@@ -500,7 +500,10 @@ export const mcpServerIntegrations = pgTable(
     name: text("name").notNull(),
     url: text("url").notNull(),
     description: text("description"),
-    resourceType: text("resource_type").default("connection").notNull(),
+    resourceType: text("resource_type")
+      .$type<"connection" | "store_listing">()
+      .default("connection")
+      .notNull(),
     author: text("author"),
     websiteUrl: text("website_url"),
     brandColor: text("brand_color"),
@@ -686,7 +689,7 @@ export const mcpOAuthPendingAuthorizations = pgTable(
       columns: [table.storeSourceIntegrationId],
       foreignColumns: [mcpServerIntegrations.id],
       name: "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk",
-    }).onDelete("set null"),
+    }).onDelete("cascade"),
   ]
 );
 

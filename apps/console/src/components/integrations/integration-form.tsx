@@ -54,7 +54,7 @@ import {
   rgbaToHex,
 } from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
-import { mergeManualTools } from "@/lib/integrations/tool-io";
+import { isManualTool, mergeManualTools } from "@/lib/integrations/tool-io";
 import { useIntegrationForm } from "@/lib/integrations/use-integration-form";
 import { consoleOrpc } from "@/lib/orpc/query";
 import { BRAND_COLOR_REGEX, MAX_MCP_HEADERS } from "@/schemas/integrations";
@@ -610,7 +610,9 @@ function IntegrationToolsCard({
   tools: McpIntegrationTool[];
 }) {
   const queryClient = useQueryClient();
-  const [indexedTools, setIndexedTools] = useState(() => tools);
+  const [indexedTools, setIndexedTools] = useState(() =>
+    tools.filter((tool) => !isManualTool(tool))
+  );
   const autoScanTriggeredRef = useRef(false);
   const oauthParamsHandledRef = useRef(false);
   const isOAuth = server.authType === "oauth";
@@ -676,7 +678,7 @@ function IntegrationToolsCard({
       onScanningChange(false);
     },
     onSuccess: async (result) => {
-      setIndexedTools(result.tools);
+      setIndexedTools(result.tools.filter((tool) => !isManualTool(tool)));
       setPhraseBaseline(buildInitialPhraseDrafts(result.tools));
       setPhraseDrafts((current) => {
         const next = buildInitialPhraseDrafts(result.tools);
@@ -730,11 +732,11 @@ function IntegrationToolsCard({
     if (
       server.authType !== "oauth" &&
       server.lastToolSyncAt === null &&
-      tools.length === 0
+      indexedTools.length === 0
     ) {
       startScan();
     }
-  }, [server.authType, server.lastToolSyncAt, tools.length, startScan]);
+  }, [server.authType, server.lastToolSyncAt, indexedTools.length, startScan]);
 
   const handleScan = () => {
     if (isOAuth) {

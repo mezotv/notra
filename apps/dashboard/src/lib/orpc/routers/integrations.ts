@@ -901,11 +901,17 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
 
-        const integrations = await getMcpConnectionIntegrationsByOrganization(
-          input.organizationId
+        const [integrations, storeIntegrations] = await Promise.all([
+          getMcpConnectionIntegrationsByOrganization(input.organizationId),
+          listLiveMcpStoreIntegrations(),
+        ]);
+        const liveStoreIntegrationIds = new Set(
+          storeIntegrations.map((integration) => integration.id)
         );
         const customIntegrations = integrations.filter(
-          (integration) => !integration.storeSourceIntegrationId
+          (integration) =>
+            !integration.storeSourceIntegrationId ||
+            !liveStoreIntegrationIds.has(integration.storeSourceIntegrationId)
         );
         return {
           servers: customIntegrations.map(serializeMcpServerIntegration),

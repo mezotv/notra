@@ -167,7 +167,7 @@ export async function refreshMcpToolIndexForIntegration({
       seenToolNames.add(definition.name);
     }
 
-    await db.transaction(async (tx) => {
+    const indexedToolCount = await db.transaction(async (tx) => {
       for (const definition of listing.definitions) {
         await upsertIndexedTool({
           database: tx,
@@ -192,7 +192,11 @@ export async function refreshMcpToolIndexForIntegration({
           .where(
             and(
               eq(mcpToolIndex.serverIntegrationId, integrationId),
-              notInArray(mcpToolIndex.serverToolName, Array.from(seenToolNames))
+              notInArray(
+                mcpToolIndex.serverToolName,
+                Array.from(seenToolNames)
+              ),
+              sql`coalesce(${mcpToolIndex.meta} ->> 'notraManual', 'false') <> 'true'`
             )
           );
       } else {
@@ -202,8 +206,24 @@ export async function refreshMcpToolIndexForIntegration({
             status: "stale",
             updatedAt: new Date(),
           })
-          .where(eq(mcpToolIndex.serverIntegrationId, integrationId));
+          .where(
+            and(
+              eq(mcpToolIndex.serverIntegrationId, integrationId),
+              sql`coalesce(${mcpToolIndex.meta} ->> 'notraManual', 'false') <> 'true'`
+            )
+          );
       }
+
+      const [toolCount] = await tx
+        .select({ value: count() })
+        .from(mcpToolIndex)
+        .where(
+          and(
+            eq(mcpToolIndex.serverIntegrationId, integrationId),
+            eq(mcpToolIndex.status, "active")
+          )
+        );
+      const activeToolCount = toolCount?.value ?? 0;
 
       await tx
         .update(mcpServerIntegrations)
@@ -211,13 +231,15 @@ export async function refreshMcpToolIndexForIntegration({
           lastToolSyncAt: new Date(),
           toolSyncStatus: "synced",
           toolSyncError: null,
-          indexedToolCount: seenToolNames.size,
+          indexedToolCount: activeToolCount,
           updatedAt: new Date(),
         })
         .where(eq(mcpServerIntegrations.id, integrationId));
+
+      return activeToolCount;
     });
 
-    return { integrationId, indexedToolCount: seenToolNames.size };
+    return { integrationId, indexedToolCount };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     await db

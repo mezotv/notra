@@ -23,6 +23,7 @@ import { McpStoreListingUnavailableError } from "./mcp-store-errors";
 import { refreshMcpToolIndexForIntegration } from "./mcp-tool-index";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+type McpPreviewTool = Awaited<ReturnType<Client["listTools"]>>["tools"][number];
 
 function getMcpAuthType(authType: string): McpAuthType {
   if (authType === "headers" || authType === "oauth") {
@@ -458,15 +459,18 @@ export async function listMcpServerToolsPreview(input: {
       signal: AbortSignal.timeout(timeoutMs),
       timeout: timeoutMs,
     });
-    const definitions = await client.listTools(
-      {},
-      {
+    const tools: McpPreviewTool[] = [];
+    let cursor: string | undefined;
+    do {
+      const result = await client.listTools(cursor ? { cursor } : {}, {
         signal: AbortSignal.timeout(timeoutMs),
         timeout: timeoutMs,
-      }
-    );
+      });
+      tools.push(...result.tools);
+      cursor = result.nextCursor;
+    } while (cursor);
 
-    return definitions.tools.map((tool) => ({
+    return tools.map((tool) => ({
       name: tool.name,
       title: tool.title ?? null,
       description: tool.description ?? null,

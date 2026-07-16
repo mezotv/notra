@@ -1,10 +1,25 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations, mcpToolIndex } from "@notra/db/schema";
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  inArray,
+  isNull,
+  notInArray,
+  sql,
+} from "drizzle-orm";
+import { customAlphabet } from "nanoid";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
 } from "../types/integrations";
+import { createMcpToolFingerprint } from "../utils/mcp-tool-fingerprint";
+import { createMcpRuntimeToolName } from "./mcp-tool-name";
+
+const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+const MANUAL_TOOL_META = { notraManual: true };
 
 export async function setMcpStoreStatus(params: {
   organizationId: string;
@@ -84,24 +99,28 @@ export async function setMcpStoreStatus(params: {
       (connection) => connection.id
     );
     if (connectionIds.length > 0 && sourceTools.length > 0) {
-      await Promise.all(
-        sourceTools.map((tool) =>
-          tx
-            .update(mcpToolIndex)
-            .set({
-              actionPhrasePresent: tool.actionPhrasePresent,
-              actionPhrasePast: tool.actionPhrasePast,
-              updatedAt: now,
-            })
-            .where(
-              and(
-                inArray(mcpToolIndex.serverIntegrationId, connectionIds),
-                eq(mcpToolIndex.serverToolName, tool.serverToolName),
-                eq(mcpToolIndex.status, "active")
-              )
-            )
-        )
+      const valueRows = sql.join(
+        sourceTools.map(
+          (tool) =>
+            sql`(${tool.serverToolName}::text, ${tool.actionPhrasePresent}::text, ${tool.actionPhrasePast}::text)`
+        ),
+        sql`, `
       );
+      const connectionIdValues = sql.join(
+        connectionIds.map((connectionId) => sql`${connectionId}::text`),
+        sql`, `
+      );
+      await tx.execute(sql`
+        update ${mcpToolIndex} as tool
+        set
+          action_phrase_present = phrase.present,
+          action_phrase_past = phrase.past,
+          updated_at = ${now}
+        from (values ${valueRows}) as phrase(tool_name, present, past)
+        where tool.server_integration_id in (${connectionIdValues})
+          and tool.server_tool_name = phrase.tool_name
+          and tool.status = 'active'
+      `);
     }
 
     return row;
@@ -139,7 +158,7 @@ export async function getMcpIntegrationTools(params: {
   organizationId: string;
   integrationId: string;
 }) {
-  return await db.query.mcpToolIndex.findMany({
+  const tools = await db.query.mcpToolIndex.findMany({
     where: and(
       eq(mcpToolIndex.organizationId, params.organizationId),
       eq(mcpToolIndex.serverIntegrationId, params.integrationId),
@@ -153,8 +172,13 @@ export async function getMcpIntegrationTools(params: {
       description: true,
       actionPhrasePresent: true,
       actionPhrasePast: true,
+      meta: true,
     },
   });
+  return tools.map(({ meta, ...tool }) => ({
+    ...tool,
+    ...(isManualToolMeta(meta) ? { isManual: true } : {}),
+  }));
 }
 
 export async function listMcpIntegrationToolsByIntegrationIds(
@@ -184,55 +208,140 @@ export async function listMcpIntegrationToolsByIntegrationIds(
 export async function updateMcpToolActionPhrases(params: {
   organizationId: string;
   integrationId: string;
+  manualToolNames?: string[];
   updates: McpToolActionPhraseUpdate[];
 }) {
-  if (params.updates.length === 0) {
+  if (params.updates.length === 0 && params.manualToolNames === undefined) {
     return 0;
   }
 
-  const toolNames = params.updates.map((update) => update.serverToolName);
-  const existing = await db.query.mcpToolIndex.findMany({
+  const integration = await db.query.mcpServerIntegrations.findFirst({
     where: and(
-      eq(mcpToolIndex.organizationId, params.organizationId),
-      eq(mcpToolIndex.serverIntegrationId, params.integrationId),
-      inArray(mcpToolIndex.serverToolName, toolNames)
+      eq(mcpServerIntegrations.organizationId, params.organizationId),
+      eq(mcpServerIntegrations.id, params.integrationId),
+      eq(mcpServerIntegrations.resourceType, "store_listing")
     ),
-    columns: { serverToolName: true },
+    columns: { description: true, id: true, name: true },
   });
-  const knownToolNames = new Set(existing.map((tool) => tool.serverToolName));
+  if (!integration) {
+    return 0;
+  }
+
   const updatesByToolName = new Map<string, McpToolActionPhraseUpdate>();
   for (const update of params.updates) {
-    if (knownToolNames.has(update.serverToolName)) {
-      updatesByToolName.set(update.serverToolName, update);
-    }
+    updatesByToolName.set(update.serverToolName, update);
   }
   const applicable = Array.from(updatesByToolName.values());
-  if (applicable.length === 0) {
-    return 0;
-  }
+  const manualToolNames = params.manualToolNames
+    ? Array.from(new Set(params.manualToolNames))
+    : undefined;
+  const now = new Date();
 
-  await db.transaction(async (tx) => {
-    await Promise.all(
-      applicable.map((update) =>
-        tx
-          .update(mcpToolIndex)
-          .set({
-            actionPhrasePresent: update.actionPhrasePresent,
-            actionPhrasePast: update.actionPhrasePast,
-            updatedAt: new Date(),
+  const removedCount = await db.transaction(async (tx) => {
+    if (applicable.length > 0) {
+      await tx
+        .insert(mcpToolIndex)
+        .values(
+          applicable.map((update) => {
+            const inputSchema = {
+              additionalProperties: true,
+              properties: {},
+              type: "object",
+            };
+            const runtimeToolName = createMcpRuntimeToolName({
+              integrationId: integration.id,
+              serverName: integration.name,
+              serverToolName: update.serverToolName,
+              withHash: true,
+            });
+            return {
+              actionPhrasePast: update.actionPhrasePast,
+              actionPhrasePresent: update.actionPhrasePresent,
+              id: `mcpt_${nanoid()}`,
+              inputSchema,
+              lastIndexedAt: now,
+              meta: MANUAL_TOOL_META,
+              organizationId: params.organizationId,
+              runtimeToolName,
+              schemaHash: createMcpToolFingerprint({
+                inputSchema,
+                name: update.serverToolName,
+              }),
+              searchText: [
+                integration.name,
+                integration.description,
+                update.serverToolName,
+                runtimeToolName,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              serverIntegrationId: params.integrationId,
+              serverToolName: update.serverToolName,
+              status: "active",
+              updatedAt: now,
+            };
           })
-          .where(
-            and(
-              eq(mcpToolIndex.organizationId, params.organizationId),
-              eq(mcpToolIndex.serverIntegrationId, params.integrationId),
-              eq(mcpToolIndex.serverToolName, update.serverToolName)
-            )
+        )
+        .onConflictDoUpdate({
+          target: [
+            mcpToolIndex.serverIntegrationId,
+            mcpToolIndex.serverToolName,
+          ],
+          set: {
+            actionPhrasePast: sql`excluded.action_phrase_past`,
+            actionPhrasePresent: sql`excluded.action_phrase_present`,
+            errorMessage: null,
+            status: "active",
+            updatedAt: now,
+          },
+        });
+    }
+
+    let removedManualTools: { id: string }[] = [];
+    if (manualToolNames !== undefined) {
+      removedManualTools = await tx
+        .delete(mcpToolIndex)
+        .where(
+          and(
+            eq(mcpToolIndex.organizationId, params.organizationId),
+            eq(mcpToolIndex.serverIntegrationId, params.integrationId),
+            sql`${mcpToolIndex.meta} ->> 'notraManual' = 'true'`,
+            ...(manualToolNames.length > 0
+              ? [notInArray(mcpToolIndex.serverToolName, manualToolNames)]
+              : [])
           )
-      )
-    );
+        )
+        .returning({ id: mcpToolIndex.id });
+    }
+
+    const [toolCount] = await tx
+      .select({ value: count() })
+      .from(mcpToolIndex)
+      .where(
+        and(
+          eq(mcpToolIndex.organizationId, params.organizationId),
+          eq(mcpToolIndex.serverIntegrationId, params.integrationId),
+          eq(mcpToolIndex.status, "active")
+        )
+      );
+    await tx
+      .update(mcpServerIntegrations)
+      .set({ indexedToolCount: toolCount?.value ?? 0, updatedAt: now })
+      .where(eq(mcpServerIntegrations.id, params.integrationId));
+
+    return removedManualTools.length;
   });
 
-  return applicable.length;
+  return applicable.length + removedCount;
+}
+
+function isManualToolMeta(meta: unknown) {
+  return (
+    typeof meta === "object" &&
+    meta !== null &&
+    "notraManual" in meta &&
+    meta.notraManual === true
+  );
 }
 
 export async function listLiveMcpStoreIntegrations() {

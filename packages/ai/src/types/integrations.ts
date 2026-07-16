@@ -70,7 +70,7 @@ export interface McpServerIntegrationSerializationInput {
   name: string;
   url: string;
   description: string | null;
-  resourceType?: string;
+  resourceType?: McpIntegrationResourceType;
   author?: string | null;
   websiteUrl?: string | null;
   brandColor?: string | null;

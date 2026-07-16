@@ -4,7 +4,7 @@ const MCP_OAUTH_POPUP_NAME_PREFIX = "notra-mcp-oauth";
 const MCP_OAUTH_POPUP_WIDTH = 600;
 const MCP_OAUTH_POPUP_HEIGHT = 720;
 
-function getCompletionUrl(value: unknown) {
+function getCompletionUrl(value: unknown, popupId: string) {
   if (!(value && typeof value === "object")) {
     return undefined;
   }
@@ -14,11 +14,15 @@ function getCompletionUrl(value: unknown) {
   if (!("url" in value && typeof value.url === "string")) {
     return undefined;
   }
+  if (!("popupId" in value && value.popupId === popupId)) {
+    return undefined;
+  }
   return value.url;
 }
 
 export function openMcpOAuthPopup() {
-  const popupName = `${MCP_OAUTH_POPUP_NAME_PREFIX}-${crypto.randomUUID()}`;
+  const popupId = crypto.randomUUID();
+  const popupName = `${MCP_OAUTH_POPUP_NAME_PREFIX}-${popupId}`;
   const left = Math.max(
     0,
     window.screenLeft + (window.outerWidth - MCP_OAUTH_POPUP_WIDTH) / 2
@@ -57,7 +61,7 @@ export function openMcpOAuthPopup() {
     channel?.close();
   };
   const complete = (value: unknown) => {
-    const url = getCompletionUrl(value);
+    const url = getCompletionUrl(value, popupId);
     if (!url) {
       return;
     }
@@ -69,7 +73,7 @@ export function openMcpOAuthPopup() {
     window.location.assign(destination.href);
   };
   const handleWindowMessage = (event: MessageEvent) => {
-    if (event.origin === window.location.origin) {
+    if (event.origin === window.location.origin && event.source === popup) {
       complete(event.data);
     }
   };
@@ -102,16 +106,14 @@ export function openMcpOAuthPopup() {
 }
 
 export function createMcpOAuthPopupCompletionResponse(url: string) {
-  const payload = JSON.stringify({
-    type: MCP_OAUTH_POPUP_MESSAGE,
-    url,
-  }).replaceAll("<", "\\u003c");
+  const messageType = JSON.stringify(MCP_OAUTH_POPUP_MESSAGE);
+  const completionUrl = JSON.stringify(url).replaceAll("<", "\\u003c");
   const fallbackUrl = JSON.stringify(url).replaceAll("<", "\\u003c");
   const popupNamePrefix = JSON.stringify(MCP_OAUTH_POPUP_NAME_PREFIX);
   const channelName = JSON.stringify(MCP_OAUTH_POPUP_CHANNEL);
 
   return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Authorization complete</title></head><body><p>Authorization complete. You can close this window.</p><script>const payload=${payload};if(window.opener&&!window.opener.closed){window.opener.postMessage(payload,window.location.origin);window.close()}else if(window.name.startsWith(${popupNamePrefix})){const channel=new BroadcastChannel(${channelName});channel.postMessage(payload);channel.close();window.close()}else{window.location.replace(${fallbackUrl})}</script></body></html>`,
+    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Authorization complete</title></head><body><p>Authorization complete. You can close this window.</p><script>const prefix=${popupNamePrefix}+"-";const popupId=window.name.startsWith(prefix)?window.name.slice(prefix.length):null;const payload={type:${messageType},url:${completionUrl},popupId};if(popupId&&window.opener&&!window.opener.closed){window.opener.postMessage(payload,window.location.origin);window.close()}else if(popupId&&typeof BroadcastChannel!=="undefined"){const channel=new BroadcastChannel(${channelName});channel.postMessage(payload);channel.close();window.close()}else{window.location.replace(${fallbackUrl})}</script></body></html>`,
     {
       headers: {
         "cache-control": "no-store",
