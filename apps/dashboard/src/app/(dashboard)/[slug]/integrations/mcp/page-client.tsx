@@ -27,6 +27,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organizationId = organization?.id ?? "";
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reauthorizingServerId, setReauthorizingServerId] = useState<
+    string | null
+  >(null);
   useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
   const queryInput = { organizationId };
@@ -94,17 +97,26 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
-  const reauthorizeMutation = useMutation({
-    mutationFn: async (id: string) =>
-      dashboardOrpc.integrations.mcp.reauthorizeOAuth.call({
-        organizationId,
-        serverId: id,
-        callbackPath: window.location.pathname,
-      }),
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  async function reauthorize(id: string) {
+    const oauthPopup = openMcpOAuthPopup();
+    setReauthorizingServerId(id);
+    try {
+      const { authorizationUrl } =
+        await dashboardOrpc.integrations.mcp.reauthorizeOAuth.call({
+          organizationId,
+          serverId: id,
+          callbackPath: window.location.pathname,
+        });
+      setReauthorizingServerId((current) => (current === id ? null : current));
+      oauthPopup.navigate(authorizationUrl);
+    } catch (error) {
+      oauthPopup.close();
+      setReauthorizingServerId((current) => (current === id ? null : current));
+      toast.error(
+        error instanceof Error ? error.message : "Could not restart OAuth"
+      );
+    }
+  }
 
   const servers = data?.servers ?? [];
   const showLoading = Boolean(organizationId) && isLoading && !data;
@@ -152,22 +164,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 <McpServerCard
                   key={server.id}
                   onDelete={(id) => deleteMutation.mutate(id)}
-                  onReauthorize={(id) => {
-                    const oauthPopup = openMcpOAuthPopup();
-                    reauthorizeMutation.mutate(id, {
-                      onError: () => oauthPopup.close(),
-                      onSuccess: ({ authorizationUrl }) =>
-                        oauthPopup.navigate(authorizationUrl),
-                    });
-                  }}
+                  onReauthorize={reauthorize}
                   onRefreshTools={(id) => refreshMutation.mutate(id)}
                   onToggle={(id, enabled) =>
                     toggleMutation.mutate({ id, enabled })
                   }
-                  reauthorizing={
-                    reauthorizeMutation.isPending &&
-                    reauthorizeMutation.variables === server.id
-                  }
+                  reauthorizing={reauthorizingServerId === server.id}
                   refreshing={
                     refreshMutation.isPending &&
                     refreshMutation.variables === server.id

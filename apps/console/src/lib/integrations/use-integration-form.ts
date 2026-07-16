@@ -77,6 +77,7 @@ export function useIntegrationForm({
     Record<string, ToolPhraseDraft>
   >(() => buildInitialPhraseDrafts(tools ?? []));
   const [draftTools, setDraftTools] = useState<McpIntegrationTool[]>([]);
+  const [draftScanPending, setDraftScanPending] = useState(false);
   const [manualTools, setManualTools] = useState<McpIntegrationTool[]>(() =>
     (tools ?? []).filter(isManualTool)
   );
@@ -163,8 +164,9 @@ export function useIntegrationForm({
     });
   }
 
-  const scanDraftMutation = useMutation({
-    mutationFn: () => {
+  async function scanDraftTools() {
+    setDraftScanPending(true);
+    try {
       const parsed = testMcpServerRequestSchema.safeParse({
         organizationId,
         url,
@@ -180,9 +182,9 @@ export function useIntegrationForm({
           parsed.error.issues[0]?.message ?? "Enter a valid server URL first"
         );
       }
-      return consoleOrpc.integrations.mcp.scanDraft.call(parsed.data);
-    },
-    onSuccess: (result) => {
+      const result = await consoleOrpc.integrations.mcp.scanDraft.call(
+        parsed.data
+      );
       setDraftTools(result.tools);
       const nextBaseline = buildInitialPhraseDrafts(result.tools);
       setPhraseDrafts((current) => {
@@ -200,11 +202,14 @@ export function useIntegrationForm({
           ? "Found 1 tool"
           : `Found ${result.tools.length} tools`
       );
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not scan this server"
+      );
+    } finally {
+      setDraftScanPending(false);
+    }
+  }
 
   const connectOAuthDraftMutation = useMutation({
     mutationFn: async (oauthPopup: ReturnType<typeof openMcpOAuthPopup>) => {
@@ -393,7 +398,7 @@ export function useIntegrationForm({
     isSaving ||
     uploadingCount > 0 ||
     scanning ||
-    scanDraftMutation.isPending ||
+    draftScanPending ||
     connectOAuthDraftMutation.isPending;
 
   const canSubmitForReview =
@@ -504,7 +509,7 @@ export function useIntegrationForm({
     return list?.mcpServers.find((mcpServer) => mcpServer.name === name);
   }
 
-  const scanDraft = () => {
+  const scanDraft = async () => {
     if (authChoice === "oauth") {
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
@@ -519,14 +524,13 @@ export function useIntegrationForm({
     if (!validateApiKeyInput()) {
       return;
     }
-    scanDraftMutation.mutate();
+    await scanDraftTools();
   };
 
   return {
     apiKeyStyle,
     addManualTool,
-    draftScanning:
-      scanDraftMutation.isPending || connectOAuthDraftMutation.isPending,
+    draftScanning: draftScanPending || connectOAuthDraftMutation.isPending,
     draftTools,
     importToolPhrases,
     manualTools,

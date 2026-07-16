@@ -58,6 +58,7 @@ export function ManageStoreIntegrationDialog({
   const connection = integration.connection;
   const queryClient = useQueryClient();
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false);
+  const [reauthorizing, setReauthorizing] = useState(false);
   const [headerRows, setHeaderRows] = useState<McpCredentialHeaderRow[]>(() => {
     const names =
       connection.headerNames && connection.headerNames.length > 0
@@ -110,15 +111,26 @@ export function ManageStoreIntegrationDialog({
     onError: (error) => toast.error(error.message),
   });
 
-  const reauthorizeMutation = useMutation({
-    mutationFn: async () =>
-      dashboardOrpc.integrations.mcp.reauthorizeOAuth.call({
-        organizationId,
-        serverId: connection.id,
-        callbackPath: window.location.pathname,
-      }),
-    onError: (error) => toast.error(error.message),
-  });
+  async function reauthorize() {
+    const oauthPopup = openMcpOAuthPopup();
+    setReauthorizing(true);
+    try {
+      const { authorizationUrl } =
+        await dashboardOrpc.integrations.mcp.reauthorizeOAuth.call({
+          organizationId,
+          serverId: connection.id,
+          callbackPath: window.location.pathname,
+        });
+      setReauthorizing(false);
+      oauthPopup.navigate(authorizationUrl);
+    } catch (error) {
+      oauthPopup.close();
+      setReauthorizing(false);
+      toast.error(
+        error instanceof Error ? error.message : "Could not restart OAuth"
+      );
+    }
+  }
 
   const disconnectMutation = useMutation({
     mutationFn: async () =>
@@ -152,15 +164,6 @@ export function ManageStoreIntegrationDialog({
       return;
     }
     updateMutation.mutate({ authType: "headers", headers });
-  };
-
-  const reauthorize = () => {
-    const oauthPopup = openMcpOAuthPopup();
-    reauthorizeMutation.mutate(undefined, {
-      onError: () => oauthPopup.close(),
-      onSuccess: ({ authorizationUrl }) =>
-        oauthPopup.navigate(authorizationUrl),
-    });
   };
 
   return (
@@ -202,7 +205,7 @@ export function ManageStoreIntegrationDialog({
             onToggle={() =>
               updateMutation.mutate({ enabled: !connection.enabled })
             }
-            reauthorizing={reauthorizeMutation.isPending}
+            reauthorizing={reauthorizing}
             refreshing={refreshMutation.isPending}
             updating={updateMutation.isPending}
           />
