@@ -1,6 +1,10 @@
 "use client";
 
-import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  Cancel01Icon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
@@ -20,10 +24,122 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { getMcpFaviconUrl } from "@/lib/integrations/chat-preview";
 import { getIntegrationInitials } from "@/lib/integrations/form";
-import { formatIntegrationDate } from "@/lib/integrations/format";
+import {
+  formatIntegrationDate,
+  getAuthTypeLabel,
+} from "@/lib/integrations/format";
 import { consoleOrpc } from "@/lib/orpc/query";
-import type { PendingReviewIntegration } from "@/types/integrations";
+import type {
+  PendingReviewIntegration,
+  PendingToolListProps,
+} from "@/types/integrations";
+
+const COLLAPSED_TOOL_COUNT = 5;
+
+function ReviewIntegrationLogo({
+  integration,
+}: {
+  integration: PendingReviewIntegration;
+}) {
+  const lightLogo = integration.logoLightUrl ?? integration.logoDarkUrl;
+  const darkLogo = integration.logoDarkUrl ?? integration.logoLightUrl;
+
+  if (lightLogo && darkLogo) {
+    return (
+      <>
+        <Image
+          alt={`${integration.name} logo`}
+          className="size-10 shrink-0 rounded-lg border object-cover dark:hidden"
+          height={40}
+          src={lightLogo}
+          width={40}
+        />
+        <Image
+          alt={`${integration.name} logo`}
+          className="hidden size-10 shrink-0 rounded-lg border object-cover dark:block"
+          height={40}
+          src={darkLogo}
+          width={40}
+        />
+      </>
+    );
+  }
+
+  const faviconUrl = getMcpFaviconUrl(integration.url);
+  if (faviconUrl) {
+    return (
+      <Image
+        alt={`${integration.name} logo`}
+        className="size-10 shrink-0 rounded-lg border bg-muted object-contain p-1.5"
+        height={40}
+        src={faviconUrl}
+        unoptimized
+        width={40}
+      />
+    );
+  }
+
+  return (
+    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
+      {getIntegrationInitials(integration.name)}
+    </div>
+  );
+}
+
+function PendingToolList({ tools }: PendingToolListProps) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleTools = expanded ? tools : tools.slice(0, COLLAPSED_TOOL_COUNT);
+  const hiddenCount = tools.length - visibleTools.length;
+
+  if (tools.length === 0) {
+    return (
+      <p className="px-4 py-3 text-muted-foreground text-sm">
+        No tools indexed yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="divide-y">
+      {visibleTools.map((tool) => (
+        <div className="grid min-w-0 gap-1 px-4 py-2.5" key={tool.id}>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <code className="w-fit max-w-full truncate rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs">
+              {tool.serverToolName}
+            </code>
+            {tool.actionPhrasePresent || tool.actionPhrasePast ? (
+              <span className="min-w-0 truncate text-muted-foreground text-xs">
+                {tool.actionPhrasePresent || "Running tool"} →{" "}
+                {tool.actionPhrasePast || "Ran tool"}
+              </span>
+            ) : (
+              <span className="text-muted-foreground/60 text-xs italic">
+                No action phrases set
+              </span>
+            )}
+          </div>
+          {tool.description ? (
+            <p className="line-clamp-1 break-all text-muted-foreground/70 text-xs">
+              {tool.description}
+            </p>
+          ) : null}
+        </div>
+      ))}
+      {hiddenCount > 0 ? (
+        <button
+          className="flex w-full cursor-pointer items-center gap-1.5 px-4 py-2.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
+          onClick={() => setExpanded(true)}
+          type="button"
+        >
+          <HugeiconsIcon className="size-3.5" icon={ArrowDown01Icon} />
+          Show {hiddenCount} more {hiddenCount === 1 ? "tool" : "tools"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function PendingIntegrationCard({
   deciding,
@@ -40,63 +156,55 @@ function PendingIntegrationCard({
   const [note, setNote] = useState("");
 
   return (
-    <div className="grid gap-4 rounded-xl border p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          {(integration.logoLightUrl ?? integration.logoDarkUrl) ? (
-            <>
-              <Image
-                alt={`${integration.name} logo`}
-                className="size-10 shrink-0 rounded-lg border object-cover dark:hidden"
-                height={40}
-                src={integration.logoLightUrl ?? integration.logoDarkUrl ?? ""}
-                width={40}
-              />
-              <Image
-                alt={`${integration.name} logo`}
-                className="hidden size-10 shrink-0 rounded-lg border object-cover dark:block"
-                height={40}
-                src={integration.logoDarkUrl ?? integration.logoLightUrl ?? ""}
-                width={40}
-              />
-            </>
-          ) : (
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
-              {getIntegrationInitials(integration.name)}
+    <div className="overflow-hidden rounded-xl border">
+      <div className="grid gap-3 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <ReviewIntegrationLogo integration={integration} />
+            <div className="min-w-0">
+              <p className="truncate font-medium">{integration.name}</p>
+              <p className="truncate text-muted-foreground text-sm">
+                {integration.author ?? integration.organization.name} ·
+                submitted {formatIntegrationDate(integration.submittedAt)}
+              </p>
             </div>
-          )}
-          <div className="min-w-0">
-            <p className="truncate font-medium">{integration.name}</p>
-            <p className="truncate text-muted-foreground text-sm">
-              {integration.author ?? integration.organization.name} · submitted{" "}
-              {formatIntegrationDate(integration.submittedAt)}
-            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Badge className="font-normal" variant="outline">
+              {getAuthTypeLabel(integration.authType)}
+            </Badge>
+            <Badge variant="secondary">
+              {integration.tools.length}{" "}
+              {integration.tools.length === 1 ? "tool" : "tools"}
+            </Badge>
           </div>
         </div>
-        <Badge variant="secondary">
-          {integration.indexedToolCount}{" "}
-          {integration.indexedToolCount === 1 ? "tool" : "tools"}
-        </Badge>
+
+        {integration.description ? (
+          <p className="text-muted-foreground text-sm">
+            {integration.description}
+          </p>
+        ) : null}
+
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-xs">
+          <code className="min-w-0 break-all rounded-md bg-muted px-2 py-1 font-mono">
+            {integration.url}
+          </code>
+          <span className="truncate">
+            by {integration.createdByUser.name} (
+            {integration.createdByUser.email})
+          </span>
+        </div>
       </div>
 
-      {integration.description ? (
-        <p className="text-muted-foreground text-sm">
-          {integration.description}
+      <div className="border-t">
+        <p className="px-4 pt-3 font-medium text-[0.65rem] text-muted-foreground/70 uppercase tracking-wider">
+          Tools
         </p>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
-        <code className="min-w-0 break-all rounded-md bg-muted px-2 py-1 font-mono">
-          {integration.url}
-        </code>
-        <span>auth: {integration.authType}</span>
-        <span>
-          by {integration.createdByUser.name} ({integration.createdByUser.email}
-          )
-        </span>
+        <PendingToolList tools={integration.tools} />
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2 border-t bg-muted/30 px-4 py-3">
         <Button
           disabled={deciding}
           onClick={() => setRejectOpen(true)}

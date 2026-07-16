@@ -186,6 +186,8 @@ export const mcpToolMetadataSchema = z
           serverName: optionalStringSchema,
           serverUrl: optionalStringSchema,
           toolName: optionalStringSchema,
+          actionPhrasePresent: optionalStringSchema,
+          actionPhrasePast: optionalStringSchema,
         })
         .passthrough()
         .optional()

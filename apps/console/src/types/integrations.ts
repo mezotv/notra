@@ -91,7 +91,7 @@ export interface PendingReviewIntegration {
   logoDarkUrl: string | null;
   bannerUrl: string | null;
   authType: string;
-  indexedToolCount: number;
+  tools: McpIntegrationTool[];
   submittedAt: string | null;
   organization: { id: string; name: string; slug: string };
   createdByUser: { id: string; name: string; email: string };
@@ -100,3 +100,56 @@ export interface PendingReviewIntegration {
 export type BrandingAssetKind = "logo-light" | "logo-dark" | "banner";
 
 export type LogoTheme = "light" | "dark";
+
+export interface ToolPhraseImportEntry {
+  serverToolName: string;
+  actionPhrasePresent?: string | null;
+  actionPhrasePast?: string | null;
+}
+
+export type ToolPhraseField = "actionPhrasePresent" | "actionPhrasePast";
+
+export interface StoreStatusBadge {
+  label: string;
+  variant: "default" | "secondary" | "destructive";
+}
+
+export interface PendingToolListProps {
+  tools: McpIntegrationTool[];
+}
+
+export interface ToolChatPreviewProps {
+  logoDarkUrl: string | null;
+  logoLightUrl: string | null;
+  past: string;
+  present: string;
+  serverName: string;
+  serverUrl: string;
+  toolName: string;
+}
+
+export interface ToolChatPreviewIconProps {
+  candidates: string[];
+  className?: string;
+}
+
+export interface ToolsEditorProps {
+  drafts: Record<string, ToolPhraseDraft>;
+  oauth: boolean;
+  onAddTool: (serverToolName: string) => void;
+  onDraftChange: (
+    serverToolName: string,
+    field: ToolPhraseField,
+    value: string
+  ) => void;
+  onImportTools: (entries: ToolPhraseImportEntry[]) => void;
+  onRemoveTool: (serverToolName: string) => void;
+  onScan: () => void;
+  saving: boolean;
+  scanning: boolean;
+  serverLogoDarkUrl: string | null;
+  serverLogoLightUrl: string | null;
+  serverName: string;
+  serverUrl: string;
+  tools: McpIntegrationTool[];
+}

@@ -70,6 +70,7 @@ export function serializeMcpServerIntegration(
     logoLightUrl: integration.logoLightUrl ?? null,
     logoDarkUrl: integration.logoDarkUrl ?? null,
     bannerUrl: integration.bannerUrl ?? null,
+    storeSourceIntegrationId: integration.storeSourceIntegrationId ?? null,
     storeStatus: getMcpStoreStatus(integration.storeStatus),
     reviewNote: integration.reviewNote ?? null,
     submittedAt: integration.submittedAt?.toISOString() ?? null,
@@ -115,6 +116,7 @@ export async function createMcpServerIntegration(
       logoLightUrl: params.logoLightUrl ?? null,
       logoDarkUrl: params.logoDarkUrl ?? null,
       bannerUrl: params.bannerUrl ?? null,
+      storeSourceIntegrationId: params.storeSourceIntegrationId ?? null,
       authType: params.authType,
       encryptedHeaders:
         params.authType === "headers" ? encryptMcpHeaders(params.headers) : {},

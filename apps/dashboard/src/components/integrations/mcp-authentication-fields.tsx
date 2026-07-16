@@ -24,6 +24,7 @@ export function McpAuthenticationFields({
   form,
   headerRowIds,
   invalidateTestResult,
+  lockAuthType = false,
   setHeaderRowIds,
 }: McpAuthenticationFieldsProps) {
   return (
@@ -33,6 +34,9 @@ export function McpAuthenticationFields({
           <FieldLabel>Authentication</FieldLabel>
           <Tabs
             onValueChange={(value) => {
+              if (lockAuthType) {
+                return;
+              }
               const option = MCP_AUTH_OPTIONS.find(
                 (candidate) => candidate.value === value
               );
@@ -45,7 +49,13 @@ export function McpAuthenticationFields({
           >
             <TabsList className="grid h-9 w-full grid-cols-3">
               {MCP_AUTH_OPTIONS.map((option) => (
-                <TabsTrigger key={option.value} value={option.value}>
+                <TabsTrigger
+                  disabled={
+                    lockAuthType && option.value !== authTypeField.state.value
+                  }
+                  key={option.value}
+                  value={option.value}
+                >
                   {option.label}
                 </TabsTrigger>
               ))}

@@ -10,6 +10,10 @@ export function buildMcpUrl(raw: string) {
   return host ? `https://${host}` : "";
 }
 
+export function toMcpFormUrl(url: string) {
+  return url.trim().replace(MCP_URL_PROTOCOL_REGEX, "");
+}
+
 export function getMcpFaviconUrl(url: string | null | undefined) {
   if (!url) {
     return undefined;

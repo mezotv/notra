@@ -53,6 +53,7 @@ import {
   rgbaToHex,
 } from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
+import { mergeManualTools } from "@/lib/integrations/tool-io";
 import { useIntegrationForm } from "@/lib/integrations/use-integration-form";
 import { consoleOrpc } from "@/lib/orpc/query";
 import { BRAND_COLOR_REGEX, MAX_MCP_HEADERS } from "@/schemas/integrations";
@@ -63,6 +64,9 @@ import type {
   McpIntegrationTool,
   McpServer,
   ToolPhraseDraft,
+  ToolPhraseField,
+  ToolPhraseImportEntry,
+  ToolsEditorProps,
 } from "@/types/integrations";
 
 function LiveWarningBanner() {
@@ -76,12 +80,16 @@ function LiveWarningBanner() {
 
 function RejectedBanner({ note }: { note: string | null }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-destructive text-sm">
-      <HugeiconsIcon className="mt-0.5 size-4 shrink-0" icon={Alert02Icon} />
+    <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+      <HugeiconsIcon
+        className="mt-0.5 size-4 shrink-0 text-destructive"
+        icon={Alert02Icon}
+      />
       <p>
-        This integration was rejected in review.
-        {note ? ` Note from the reviewer: ${note}` : ""} Update it and submit
-        again.
+        <span className="font-medium text-destructive">
+          Rejected in review:
+        </span>{" "}
+        {note ?? "Update the integration and submit it again."}
       </p>
     </div>
   );
@@ -571,19 +579,31 @@ interface IntegrationQueryData {
 
 function IntegrationToolsCard({
   isSaving,
+  manualTools,
+  onAddTool,
+  onImportTools,
+  onRemoveTool,
   onScanningChange,
   organizationId,
   phraseDrafts,
   server,
+  serverLogoDarkUrl,
+  serverLogoLightUrl,
   setPhraseBaseline,
   setPhraseDrafts,
   tools,
 }: {
   isSaving: boolean;
+  manualTools: McpIntegrationTool[];
+  onAddTool: (serverToolName: string) => void;
+  onImportTools: (entries: ToolPhraseImportEntry[]) => void;
+  onRemoveTool: (serverToolName: string) => void;
   onScanningChange: (scanning: boolean) => void;
   organizationId: string;
   phraseDrafts: Record<string, ToolPhraseDraft>;
   server: McpServer;
+  serverLogoDarkUrl: string | null;
+  serverLogoLightUrl: string | null;
   setPhraseBaseline: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   setPhraseDrafts: Dispatch<SetStateAction<Record<string, ToolPhraseDraft>>>;
   tools: McpIntegrationTool[];
@@ -739,42 +759,29 @@ function IntegrationToolsCard({
         <ToolsEditor
           drafts={phraseDrafts}
           oauth={isOAuth}
+          onAddTool={onAddTool}
           onDraftChange={(serverToolName, field, value) =>
             setPhraseDrafts((current) =>
               applyPhraseDraftChange(current, serverToolName, field, value)
             )
           }
+          onImportTools={onImportTools}
+          onRemoveTool={onRemoveTool}
           onScan={handleScan}
           saving={isSaving}
           scanning={scanMutation.isPending || beginOAuthMutation.isPending}
-          tools={indexedTools}
+          serverLogoDarkUrl={serverLogoDarkUrl}
+          serverLogoLightUrl={serverLogoLightUrl}
+          serverName={server.name}
+          serverUrl={server.url}
+          tools={mergeManualTools(indexedTools, manualTools)}
         />
       </CardContent>
     </Card>
   );
 }
 
-function DraftToolsCard({
-  drafts,
-  oauth,
-  onDraftChange,
-  onScan,
-  saving,
-  scanning,
-  tools,
-}: {
-  drafts: Record<string, ToolPhraseDraft>;
-  oauth: boolean;
-  onDraftChange: (
-    serverToolName: string,
-    field: "actionPhrasePresent" | "actionPhrasePast",
-    value: string
-  ) => void;
-  onScan: () => void;
-  saving: boolean;
-  scanning: boolean;
-  tools: McpIntegrationTool[];
-}) {
+function DraftToolsCard(props: ToolsEditorProps) {
   return (
     <Card>
       <CardHeader>
@@ -785,37 +792,39 @@ function DraftToolsCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {oauth ? (
-          <p className="rounded-lg border border-dashed p-4 text-muted-foreground text-sm">
-            OAuth servers connect after the integration exists. Create it, then
-            use Connect &amp; scan to sign in and discover its tools.
-          </p>
-        ) : (
-          <ToolsEditor
-            drafts={drafts}
-            oauth={false}
-            onDraftChange={onDraftChange}
-            onScan={onScan}
-            saving={saving}
-            scanning={scanning}
-            tools={tools}
-          />
-        )}
+        <ToolsEditor {...props} />
       </CardContent>
     </Card>
   );
 }
 
+function getPrimaryActionLabel({
+  canSubmitForReview,
+  server,
+}: {
+  canSubmitForReview: boolean;
+  server?: McpServer;
+}) {
+  if (canSubmitForReview) {
+    return "Submit for review";
+  }
+  return server ? "Save changes" : "Create integration";
+}
+
 function IntegrationFormActions({
   backHref,
   busy,
-  onSubmitReview,
+  canSubmitForReview,
+  onSaveDraft,
+  saveDraftPending,
   server,
   submitReviewPending,
 }: {
   backHref: string;
   busy: boolean;
-  onSubmitReview: () => void;
+  canSubmitForReview: boolean;
+  onSaveDraft: () => void;
+  saveDraftPending: boolean;
   server?: McpServer;
   submitReviewPending: boolean;
 }) {
@@ -830,22 +839,24 @@ function IntegrationFormActions({
       >
         Cancel
       </Button>
-      {server?.storeStatus === "draft" || server?.storeStatus === "rejected" ? (
+      {canSubmitForReview ? (
         <Button
-          disabled={busy || submitReviewPending}
-          onClick={onSubmitReview}
+          disabled={busy}
+          onClick={onSaveDraft}
           type="button"
           variant="outline"
         >
-          {submitReviewPending ? (
+          {saveDraftPending ? (
             <Loader2Icon className="size-4 animate-spin" />
           ) : null}
-          Submit for review
+          Save as draft
         </Button>
       ) : null}
       <Button disabled={busy} type="submit">
-        {busy ? <Loader2Icon className="size-4 animate-spin" /> : null}
-        {server ? "Save changes" : "Create integration"}
+        {(canSubmitForReview ? submitReviewPending : busy) ? (
+          <Loader2Icon className="size-4 animate-spin" />
+        ) : null}
+        {getPrimaryActionLabel({ canSubmitForReview, server })}
       </Button>
     </div>
   );
@@ -866,7 +877,7 @@ export function IntegrationForm({
 
   const handleDraftChange = (
     serverToolName: string,
-    field: "actionPhrasePresent" | "actionPhrasePast",
+    field: ToolPhraseField,
     value: string
   ) =>
     form.setPhraseDrafts((current) =>
@@ -923,10 +934,16 @@ export function IntegrationForm({
         {server ? (
           <IntegrationToolsCard
             isSaving={form.isSaving}
+            manualTools={form.manualTools}
+            onAddTool={form.addManualTool}
+            onImportTools={form.importToolPhrases}
+            onRemoveTool={form.removeManualTool}
             onScanningChange={form.setScanning}
             organizationId={organizationId}
             phraseDrafts={form.phraseDrafts}
             server={server}
+            serverLogoDarkUrl={form.logoDarkUrl}
+            serverLogoLightUrl={form.logoLightUrl}
             setPhraseBaseline={form.setPhraseBaseline}
             setPhraseDrafts={form.setPhraseDrafts}
             tools={tools ?? []}
@@ -935,18 +952,27 @@ export function IntegrationForm({
           <DraftToolsCard
             drafts={form.phraseDrafts}
             oauth={form.authChoice === "oauth"}
+            onAddTool={form.addManualTool}
             onDraftChange={handleDraftChange}
+            onImportTools={form.importToolPhrases}
+            onRemoveTool={form.removeManualTool}
             onScan={form.scanDraft}
             saving={form.isSaving}
             scanning={form.draftScanning}
-            tools={form.draftTools}
+            serverLogoDarkUrl={form.logoDarkUrl}
+            serverLogoLightUrl={form.logoLightUrl}
+            serverName={form.name}
+            serverUrl={form.url}
+            tools={mergeManualTools(form.draftTools, form.manualTools)}
           />
         )}
 
         <IntegrationFormActions
           backHref={form.backHref}
           busy={form.isBusy}
-          onSubmitReview={form.handleSubmitReview}
+          canSubmitForReview={form.canSubmitForReview}
+          onSaveDraft={form.handleSaveDraft}
+          saveDraftPending={form.saveDraftPending}
           server={server}
           submitReviewPending={form.submitReviewPending}
         />

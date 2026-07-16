@@ -43,6 +43,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { authClient } from "@/lib/auth/client";
 import type { Organization, User } from "@/types/organization";
 
@@ -318,6 +319,7 @@ export function ConsoleShell({
             />
           </SidebarContent>
           <SidebarFooter>
+            <ThemeToggle />
             <UserMenu user={user} />
           </SidebarFooter>
           <SidebarRail />

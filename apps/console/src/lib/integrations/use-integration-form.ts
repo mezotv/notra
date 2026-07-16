@@ -15,6 +15,7 @@ import {
   getInitialApiKeyStyle,
   hasStoredBearerHeader,
 } from "@/lib/integrations/form";
+import { createManualTool } from "@/lib/integrations/tool-io";
 import { consoleOrpc } from "@/lib/orpc/query";
 import {
   createMcpServerRequestSchema,
@@ -28,6 +29,7 @@ import type {
   McpIntegrationTool,
   McpServer,
   ToolPhraseDraft,
+  ToolPhraseImportEntry,
 } from "@/types/integrations";
 
 export function useIntegrationForm({
@@ -73,6 +75,7 @@ export function useIntegrationForm({
     Record<string, ToolPhraseDraft>
   >(() => buildInitialPhraseDrafts(tools ?? []));
   const [draftTools, setDraftTools] = useState<McpIntegrationTool[]>([]);
+  const [manualTools, setManualTools] = useState<McpIntegrationTool[]>([]);
 
   const backHref = `/${slug}/integrations`;
 
@@ -173,6 +176,63 @@ export function useIntegrationForm({
           ? "Found 1 tool"
           : `Found ${result.tools.length} tools`
       );
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const connectOAuthDraftMutation = useMutation({
+    mutationFn: async () => {
+      const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
+      if (!parsed.success) {
+        throw new Error(
+          parsed.error.issues[0]?.message ?? "Check the integration details"
+        );
+      }
+
+      let created: Awaited<
+        ReturnType<typeof consoleOrpc.integrations.mcp.create.call>
+      >;
+      try {
+        created = await consoleOrpc.integrations.mcp.create.call(parsed.data);
+      } catch (error) {
+        const existing = await findExistingIntegrationByName(
+          parsed.data.name,
+          error
+        );
+        if (!existing) {
+          throw error;
+        }
+        toast.info(
+          `You already have an integration named "${parsed.data.name}". Opening it.`
+        );
+        router.push(`/${slug}/integrations/${existing.id}`);
+        return existing;
+      }
+      await queryClient.invalidateQueries({
+        queryKey: consoleOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        }),
+      });
+
+      const editPath = `/${slug}/integrations/${created.id}`;
+      try {
+        const begun = await consoleOrpc.integrations.mcp.beginOAuth.call({
+          organizationId,
+          serverId: created.id,
+          callbackPath: editPath,
+        });
+        window.location.assign(begun.authorizationUrl);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Could not start the OAuth sign-in"
+        );
+        router.push(editPath);
+      }
+      return created;
     },
     onError: (error) => {
       toast.error(error.message);
@@ -303,6 +363,7 @@ export function useIntegrationForm({
         }),
       });
       toast.success("Submitted for review");
+      router.push(`${backHref}?submitted=true`);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -314,11 +375,22 @@ export function useIntegrationForm({
     updateMutation.isPending ||
     submitReviewMutation.isPending;
   const isBusy =
-    isSaving || uploadingCount > 0 || scanning || scanDraftMutation.isPending;
+    isSaving ||
+    uploadingCount > 0 ||
+    scanning ||
+    scanDraftMutation.isPending ||
+    connectOAuthDraftMutation.isPending;
+
+  const canSubmitForReview =
+    server?.storeStatus === "draft" || server?.storeStatus === "rejected";
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isBusy || !validateApiKeyInput()) {
+      return;
+    }
+    if (canSubmitForReview) {
+      submitReviewMutation.mutate();
       return;
     }
     if (isEdit) {
@@ -328,14 +400,98 @@ export function useIntegrationForm({
     }
   }
 
-  function handleSubmitReview() {
+  function handleSaveDraft() {
     if (isBusy || !validateApiKeyInput()) {
       return;
     }
-    submitReviewMutation.mutate();
+    updateMutation.mutate();
+  }
+
+  const addManualTool = (serverToolName: string) => {
+    const name = serverToolName.trim();
+    if (!name) {
+      return;
+    }
+    setManualTools((current) =>
+      current.some((tool) => tool.serverToolName === name)
+        ? current
+        : [...current, createManualTool(name)]
+    );
+    setPhraseDrafts((current) =>
+      current[name]
+        ? current
+        : {
+            ...current,
+            [name]: {
+              serverToolName: name,
+              actionPhrasePresent: "",
+              actionPhrasePast: "",
+            },
+          }
+    );
+  };
+
+  const removeManualTool = (serverToolName: string) => {
+    setManualTools((current) =>
+      current.filter((tool) => tool.serverToolName !== serverToolName)
+    );
+    setPhraseDrafts((current) => {
+      const next = { ...current };
+      delete next[serverToolName];
+      return next;
+    });
+  };
+
+  const importToolPhrases = (entries: ToolPhraseImportEntry[]) => {
+    setPhraseDrafts((current) => {
+      const next = { ...current };
+      for (const entry of entries) {
+        next[entry.serverToolName] = {
+          serverToolName: entry.serverToolName,
+          actionPhrasePresent: entry.actionPhrasePresent ?? "",
+          actionPhrasePast: entry.actionPhrasePast ?? "",
+        };
+      }
+      return next;
+    });
+    setManualTools((current) => {
+      const known = new Set([
+        ...current.map((tool) => tool.serverToolName),
+        ...draftTools.map((tool) => tool.serverToolName),
+        ...(tools ?? []).map((tool) => tool.serverToolName),
+      ]);
+      const additions = entries
+        .filter((entry) => !known.has(entry.serverToolName))
+        .map((entry) => createManualTool(entry.serverToolName));
+      return additions.length > 0 ? [...current, ...additions] : current;
+    });
+    toast.success(
+      entries.length === 1
+        ? "Imported 1 tool phrase"
+        : `Imported ${entries.length} tool phrases`
+    );
+  };
+
+  async function findExistingIntegrationByName(name: string, error: unknown) {
+    const isConflict =
+      typeof error === "object" &&
+      error !== null &&
+      (("code" in error && error.code === "CONFLICT") ||
+        ("status" in error && error.status === 409));
+    if (!isConflict) {
+      return null;
+    }
+    const list = await consoleOrpc.integrations.list
+      .call({ organizationId })
+      .catch(() => null);
+    return list?.mcpServers.find((mcpServer) => mcpServer.name === name);
   }
 
   const scanDraft = () => {
+    if (authChoice === "oauth") {
+      connectOAuthDraftMutation.mutate();
+      return;
+    }
     if (!validateApiKeyInput()) {
       return;
     }
@@ -344,17 +500,23 @@ export function useIntegrationForm({
 
   return {
     apiKeyStyle,
-    draftScanning: scanDraftMutation.isPending,
+    addManualTool,
+    draftScanning:
+      scanDraftMutation.isPending || connectOAuthDraftMutation.isPending,
     draftTools,
+    importToolPhrases,
+    manualTools,
+    removeManualTool,
     scanDraft,
     author,
     backHref,
     bannerUrl,
     bearerToken,
     brandColor,
+    canSubmitForReview,
     description,
+    handleSaveDraft,
     handleSubmit,
-    handleSubmitReview,
     headerRows,
     isBusy,
     isSaving,
@@ -379,6 +541,7 @@ export function useIntegrationForm({
     setUploadingCount,
     setUrl,
     setWebsiteUrl,
+    saveDraftPending: updateMutation.isPending,
     submitReviewPending: submitReviewMutation.isPending,
     url,
     websiteUrl,

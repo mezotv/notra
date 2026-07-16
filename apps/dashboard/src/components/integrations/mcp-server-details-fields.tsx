@@ -17,6 +17,7 @@ import type { McpServerDetailsFieldsProps } from "@/types/integrations/mcp";
 export function McpServerDetailsFields({
   form,
   invalidateTestResult,
+  readOnly = false,
 }: McpServerDetailsFieldsProps) {
   return (
     <>
@@ -35,6 +36,7 @@ export function McpServerDetailsFields({
             </FieldLabel>
             <Input
               autoComplete="off"
+              disabled={readOnly}
               id="mcp-name"
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
@@ -75,6 +77,7 @@ export function McpServerDetailsFields({
               <input
                 autoComplete="off"
                 className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={readOnly}
                 id="mcp-url"
                 onBlur={field.handleBlur}
                 onChange={(event) => {
@@ -113,6 +116,7 @@ export function McpServerDetailsFields({
             </FieldLabel>
             <Textarea
               className="max-h-[10rem] overflow-y-auto"
+              disabled={readOnly}
               id="mcp-description"
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}

@@ -36,6 +36,7 @@ import {
 } from "@/schemas/ai/chat-tool-block";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 import {
+  getMcpToolActionPhrase,
   getMcpToolIconUrl,
   getMcpToolLabel,
   isMcpToolName,
@@ -537,6 +538,10 @@ function getSubtitle({
       }
       if (failurePrefix) {
         return `${failurePrefix} ${label}`;
+      }
+      const actionPhrase = getMcpToolActionPhrase(toolMetadata, isStreaming);
+      if (actionPhrase) {
+        return actionPhrase;
       }
       return isStreaming ? `Calling ${label}` : `Called ${label}`;
     }

@@ -23,12 +23,14 @@ export interface McpAuthenticationFieldsProps {
   form: McpServerFormApi;
   headerRowIds: string[];
   invalidateTestResult: () => void;
+  lockAuthType?: boolean;
   setHeaderRowIds: Dispatch<SetStateAction<string[]>>;
 }
 
 export interface McpServerDetailsFieldsProps {
   form: McpServerFormApi;
   invalidateTestResult: () => void;
+  readOnly?: boolean;
 }
 
 export interface McpDialogFooterProps {
@@ -62,6 +64,7 @@ export interface AddMcpServerDialogProps {
   onSuccess?: () => void;
   trigger?: React.ReactNode;
   initialValues?: Partial<AddMcpServerFormValues>;
+  storeIntegrationId?: string;
 }
 
 export interface McpStoreIntegration {

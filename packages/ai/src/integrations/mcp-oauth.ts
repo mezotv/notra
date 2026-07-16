@@ -73,34 +73,49 @@ async function assertOrganizationMember(
 async function beginMcpOAuthAuthorizationPromise(
   params: BeginMcpOAuthAuthorizationParams
 ) {
-  const [existingCredential, existingName] = await Promise.all([
-    params.serverIntegrationId
-      ? getStoredMcpOAuthCredential(
-          params.organizationId,
-          params.serverIntegrationId
-        )
-      : Promise.resolve(undefined),
-    params.serverIntegrationId
-      ? Promise.resolve(undefined)
-      : db.query.mcpServerIntegrations.findFirst({
-          columns: { id: true },
-          where: and(
-            eq(mcpServerIntegrations.organizationId, params.organizationId),
-            eq(mcpServerIntegrations.name, params.name)
-          ),
-        }),
-    assertOrganizationMember(params.organizationId, params.userId),
-    assertPublicHttpUrlResolution(params.url),
-    deleteExpiredMcpOAuthAuthorizations(params.organizationId, params.userId),
-  ]);
+  const [existingCredential, existingName, existingIntegration] =
+    await Promise.all([
+      params.serverIntegrationId
+        ? getStoredMcpOAuthCredential(
+            params.organizationId,
+            params.serverIntegrationId
+          )
+        : Promise.resolve(undefined),
+      params.serverIntegrationId
+        ? Promise.resolve(undefined)
+        : db.query.mcpServerIntegrations.findFirst({
+            columns: { id: true },
+            where: and(
+              eq(mcpServerIntegrations.organizationId, params.organizationId),
+              eq(mcpServerIntegrations.name, params.name)
+            ),
+          }),
+      params.serverIntegrationId
+        ? db.query.mcpServerIntegrations.findFirst({
+            columns: { authType: true },
+            where: and(
+              eq(mcpServerIntegrations.organizationId, params.organizationId),
+              eq(mcpServerIntegrations.id, params.serverIntegrationId)
+            ),
+          })
+        : Promise.resolve(undefined),
+      assertOrganizationMember(params.organizationId, params.userId),
+      assertPublicHttpUrlResolution(params.url),
+      deleteExpiredMcpOAuthAuthorizations(params.organizationId, params.userId),
+    ]);
 
   const id = `mcpoauth_${nanoid()}`;
   const state = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + MCP_OAUTH_PENDING_TTL_MS);
 
-  if (params.serverIntegrationId && !existingCredential) {
+  if (params.serverIntegrationId && !existingIntegration) {
     throw new McpOAuthAuthorizationError(
       "The MCP OAuth connection could not be found."
+    );
+  }
+  if (params.serverIntegrationId && existingIntegration?.authType !== "oauth") {
+    throw new McpOAuthAuthorizationError(
+      "This MCP integration does not use OAuth."
     );
   }
   if (existingName) {
@@ -112,6 +127,7 @@ async function beginMcpOAuthAuthorizationPromise(
     organizationId: params.organizationId,
     userId: params.userId,
     serverIntegrationId: params.serverIntegrationId ?? null,
+    storeSourceIntegrationId: params.storeSourceIntegrationId ?? null,
     name: params.name,
     url: params.url,
     description: params.description ?? null,
@@ -223,6 +239,21 @@ async function completeMcpOAuthAuthorizationPromise(
 
   await assertOrganizationMember(pending.organizationId, params.userId);
 
+  const storeSourceIntegration = pending.storeSourceIntegrationId
+    ? await db.query.mcpServerIntegrations.findFirst({
+        where: and(
+          eq(mcpServerIntegrations.id, pending.storeSourceIntegrationId),
+          eq(mcpServerIntegrations.storeStatus, "live"),
+          eq(mcpServerIntegrations.enabled, true)
+        ),
+      })
+    : null;
+  if (pending.storeSourceIntegrationId && !storeSourceIntegration) {
+    throw new McpOAuthAuthorizationError(
+      "This MCP store integration is no longer available."
+    );
+  }
+
   const codeVerifier = decryptMcpOAuthSecret(
     pending.encryptedCodeVerifier,
     mcpOAuthSecretStringSchema
@@ -269,9 +300,11 @@ async function completeMcpOAuthAuthorizationPromise(
   const integrationId = pending.serverIntegrationId ?? `mcp_${nanoid()}`;
   await db.transaction(async (tx) => {
     if (pending.serverIntegrationId) {
-      const [updatedCredential] = await tx
-        .update(mcpOAuthCredentials)
-        .set({
+      await tx
+        .insert(mcpOAuthCredentials)
+        .values({
+          serverIntegrationId: pending.serverIntegrationId,
+          organizationId: pending.organizationId,
           connectedByUserId: pending.userId,
           encryptedTokens,
           encryptedClientInformation: pending.encryptedClientInformation,
@@ -281,26 +314,29 @@ async function completeMcpOAuthAuthorizationPromise(
           accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
           accessTokenRefreshAt: getMcpAccessTokenRefreshAt(tokens),
           status: "connected",
-          tokenVersion: sql`${mcpOAuthCredentials.tokenVersion} + 1`,
           refreshLeaseId: null,
           refreshLeaseExpiresAt: null,
           lastError: null,
-          updatedAt: new Date(),
         })
-        .where(
-          eq(
-            mcpOAuthCredentials.serverIntegrationId,
-            pending.serverIntegrationId
-          )
-        )
-        .returning({
-          serverIntegrationId: mcpOAuthCredentials.serverIntegrationId,
+        .onConflictDoUpdate({
+          target: mcpOAuthCredentials.serverIntegrationId,
+          set: {
+            connectedByUserId: pending.userId,
+            encryptedTokens,
+            encryptedClientInformation: pending.encryptedClientInformation,
+            encryptedAuthorizationServerInformation: encryptMcpOAuthSecret(
+              configuration.authorizationServerMetadata
+            ),
+            accessTokenExpiresAt: getMcpAccessTokenExpiresAt(tokens),
+            accessTokenRefreshAt: getMcpAccessTokenRefreshAt(tokens),
+            status: "connected",
+            tokenVersion: sql`${mcpOAuthCredentials.tokenVersion} + 1`,
+            refreshLeaseId: null,
+            refreshLeaseExpiresAt: null,
+            lastError: null,
+            updatedAt: new Date(),
+          },
         });
-      if (!updatedCredential) {
-        throw new McpOAuthAuthorizationError(
-          "The MCP OAuth connection changed during authorization."
-        );
-      }
     } else {
       await tx.insert(mcpServerIntegrations).values({
         id: integrationId,
@@ -309,6 +345,13 @@ async function completeMcpOAuthAuthorizationPromise(
         name: pending.name,
         url: pending.url,
         description: pending.description,
+        author: storeSourceIntegration?.author ?? null,
+        websiteUrl: storeSourceIntegration?.websiteUrl ?? null,
+        brandColor: storeSourceIntegration?.brandColor ?? null,
+        logoLightUrl: storeSourceIntegration?.logoLightUrl ?? null,
+        logoDarkUrl: storeSourceIntegration?.logoDarkUrl ?? null,
+        bannerUrl: storeSourceIntegration?.bannerUrl ?? null,
+        storeSourceIntegrationId: pending.storeSourceIntegrationId,
         authType: "oauth",
         encryptedHeaders: {},
       });
@@ -418,6 +461,20 @@ export async function deleteExpiredMcpOAuthAuthorizations(
         eq(mcpOAuthPendingAuthorizations.organizationId, organizationId),
         eq(mcpOAuthPendingAuthorizations.userId, userId),
         lt(mcpOAuthPendingAuthorizations.expiresAt, new Date())
+      )
+    );
+}
+
+export async function deleteMcpOAuthCredentials(params: {
+  organizationId: string;
+  serverIntegrationId: string;
+}) {
+  await db
+    .delete(mcpOAuthCredentials)
+    .where(
+      and(
+        eq(mcpOAuthCredentials.organizationId, params.organizationId),
+        eq(mcpOAuthCredentials.serverIntegrationId, params.serverIntegrationId)
       )
     );
 }

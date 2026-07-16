@@ -1,3 +1,34 @@
+import { STORE_STATUS_LABELS } from "@/lib/integrations/constants";
+import type { McpServer, StoreStatusBadge } from "@/types/integrations";
+
+export function getStoreStatusBadge(server: McpServer): StoreStatusBadge {
+  if (server.storeStatus === "live") {
+    return server.enabled
+      ? { label: "Live", variant: "default" }
+      : { label: "Hidden", variant: "secondary" };
+  }
+  if (server.storeStatus === "rejected") {
+    return {
+      label: STORE_STATUS_LABELS.rejected,
+      variant: "destructive",
+    };
+  }
+  return {
+    label: STORE_STATUS_LABELS[server.storeStatus],
+    variant: "secondary",
+  };
+}
+
+export function getAuthTypeLabel(authType: string) {
+  if (authType === "oauth") {
+    return "OAuth";
+  }
+  if (authType === "none") {
+    return "No auth";
+  }
+  return "API key";
+}
+
 const createdDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",

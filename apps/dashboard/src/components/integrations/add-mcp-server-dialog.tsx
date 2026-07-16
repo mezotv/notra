@@ -52,6 +52,7 @@ export function AddMcpServerDialog({
   onSuccess,
   trigger,
   initialValues,
+  storeIntegrationId,
 }: AddMcpServerDialogProps) {
   const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -167,6 +168,7 @@ export function AddMcpServerDialog({
     if (value.authType === "oauth") {
       const oauthPayload = beginMcpOAuthRequestSchema.safeParse({
         organizationId,
+        storeIntegrationId,
         name: value.name,
         url: buildMcpUrl(value.url),
         description: value.description.trim() || null,
@@ -186,6 +188,7 @@ export function AddMcpServerDialog({
     const payload = createMcpServerRequestSchema.safeParse({
       authType: value.authType,
       organizationId,
+      storeIntegrationId,
       name: value.name,
       url: buildMcpUrl(value.url),
       description: value.description.trim() || null,
@@ -267,12 +270,14 @@ export function AddMcpServerDialog({
             <McpServerDetailsFields
               form={form}
               invalidateTestResult={invalidateTestResult}
+              readOnly={Boolean(storeIntegrationId)}
             />
 
             <McpAuthenticationFields
               form={form}
               headerRowIds={headerRowIds}
               invalidateTestResult={invalidateTestResult}
+              lockAuthType={Boolean(storeIntegrationId)}
               setHeaderRowIds={setHeaderRowIds}
             />
 

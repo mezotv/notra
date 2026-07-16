@@ -1,6 +1,7 @@
 import { getMcpServerIntegrationById } from "@notra/ai/integrations/mcp";
 import {
   listMcpIntegrationsPendingReview,
+  listMcpIntegrationToolsByIntegrationIds,
   setMcpStoreStatus,
 } from "@notra/ai/integrations/mcp-store";
 import { assertAdmin } from "@/lib/auth/admin";
@@ -13,6 +14,15 @@ export const reviewRouter = {
     await assertAdmin({ headers: context.headers });
 
     const pending = await listMcpIntegrationsPendingReview();
+    const tools = await listMcpIntegrationToolsByIntegrationIds(
+      pending.map((integration) => integration.id)
+    );
+    const toolsByIntegrationId = new Map<string, typeof tools>();
+    for (const tool of tools) {
+      const group = toolsByIntegrationId.get(tool.serverIntegrationId) ?? [];
+      group.push(tool);
+      toolsByIntegrationId.set(tool.serverIntegrationId, group);
+    }
 
     return pending.map((integration) => ({
       id: integration.id,
@@ -26,7 +36,14 @@ export const reviewRouter = {
       logoDarkUrl: integration.logoDarkUrl,
       bannerUrl: integration.bannerUrl,
       authType: integration.authType,
-      indexedToolCount: integration.indexedToolCount,
+      tools: (toolsByIntegrationId.get(integration.id) ?? []).map((tool) => ({
+        id: tool.id,
+        serverToolName: tool.serverToolName,
+        title: tool.title,
+        description: tool.description,
+        actionPhrasePresent: tool.actionPhrasePresent,
+        actionPhrasePast: tool.actionPhrasePast,
+      })),
       submittedAt: integration.submittedAt?.toISOString() ?? null,
       organization: integration.organization,
       createdByUser: integration.createdByUser,

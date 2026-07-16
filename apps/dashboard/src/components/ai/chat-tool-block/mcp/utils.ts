@@ -61,6 +61,18 @@ export function getMcpToolLabel(toolName: string, toolMetadata: unknown) {
   return formatMcpToolName(toolName);
 }
 
+export function getMcpToolActionPhrase(
+  toolMetadata: unknown,
+  isStreaming: boolean
+) {
+  const notraMetadata = getNotraMcpMetadata(toolMetadata);
+  const phrase = isStreaming
+    ? notraMetadata?.actionPhrasePresent
+    : notraMetadata?.actionPhrasePast;
+  const normalizedPhrase = phrase?.trim();
+  return normalizedPhrase || undefined;
+}
+
 export function getMcpToolIconUrl(toolMetadata: unknown) {
   const notraMetadata = getNotraMcpMetadata(toolMetadata);
   return getMcpFaviconUrl(notraMetadata?.serverUrl);

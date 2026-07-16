@@ -8,7 +8,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dialog";
-import { MCP_ACCENT_COLOR, toMcpFormAuthType } from "@/lib/integrations/mcp";
+import {
+  MCP_ACCENT_COLOR,
+  toMcpFormAuthType,
+  toMcpFormUrl,
+} from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   McpStoreIntegration,
@@ -129,7 +133,7 @@ export function StoreIntegrationsSection({
         <AddMcpServerDialog
           initialValues={{
             name: connectingIntegration.name,
-            url: connectingIntegration.url,
+            url: toMcpFormUrl(connectingIntegration.url),
             description: connectingIntegration.description ?? "",
             authType: toMcpFormAuthType(connectingIntegration.authType),
           }}
@@ -148,6 +152,7 @@ export function StoreIntegrationsSection({
           }}
           open
           organizationId={organizationId}
+          storeIntegrationId={connectingIntegration.id}
         />
       ) : null}
     </section>

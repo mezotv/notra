@@ -168,6 +168,26 @@ export const updateMcpToolPhrasesRequestSchema = mcpServerIdFieldsSchema.extend(
   }
 );
 
+export const toolPhraseImportFileSchema = z
+  .array(
+    z.object({
+      serverToolName: z.string().trim().min(1).max(256),
+      actionPhrasePresent: z
+        .string()
+        .trim()
+        .max(MAX_TOOL_ACTION_PHRASE_LENGTH)
+        .nullable()
+        .optional(),
+      actionPhrasePast: z
+        .string()
+        .trim()
+        .max(MAX_TOOL_ACTION_PHRASE_LENGTH)
+        .nullable()
+        .optional(),
+    })
+  )
+  .max(200, "Too many tools");
+
 export const submitMcpServerForReviewRequestSchema = mcpServerIdFieldsSchema;
 
 const mcpOAuthCallbackPathSchema = z

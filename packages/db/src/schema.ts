@@ -506,6 +506,7 @@ export const mcpServerIntegrations = pgTable(
     logoLightUrl: text("logo_light_url"),
     logoDarkUrl: text("logo_dark_url"),
     bannerUrl: text("banner_url"),
+    storeSourceIntegrationId: text("store_source_integration_id"),
     storeStatus: text("store_status").default("draft").notNull(),
     reviewNote: text("review_note"),
     submittedAt: timestamp("submitted_at"),
@@ -540,6 +541,9 @@ export const mcpServerIntegrations = pgTable(
     index("mcpServerIntegrations_createdByUserId_idx").on(
       table.createdByUserId
     ),
+    index("mcpServerIntegrations_storeSourceIntegrationId_idx").on(
+      table.storeSourceIntegrationId
+    ),
     uniqueIndex("mcpServerIntegrations_org_id_uidx").on(
       table.organizationId,
       table.id
@@ -548,6 +552,14 @@ export const mcpServerIntegrations = pgTable(
       table.organizationId,
       table.name
     ),
+    uniqueIndex("mcpServerIntegrations_org_storeSource_uidx")
+      .on(table.organizationId, table.storeSourceIntegrationId)
+      .where(sql`${table.storeSourceIntegrationId} IS NOT NULL`),
+    foreignKey({
+      columns: [table.storeSourceIntegrationId],
+      foreignColumns: [table.id],
+      name: "mcpServerIntegrations_storeSourceIntegrationId_fk",
+    }).onDelete("set null"),
   ]
 );
 
@@ -616,6 +628,7 @@ export const mcpOAuthPendingAuthorizations = pgTable(
       () => mcpServerIntegrations.id,
       { onDelete: "cascade" }
     ),
+    storeSourceIntegrationId: text("store_source_integration_id"),
     name: text("name").notNull(),
     url: text("url").notNull(),
     description: text("description"),
@@ -642,6 +655,9 @@ export const mcpOAuthPendingAuthorizations = pgTable(
     index("mcpOAuthPendingAuthorizations_serverIntegrationId_idx").on(
       table.serverIntegrationId
     ),
+    index("mcpOAuthPendingAuthorizations_storeSourceIntegrationId_idx").on(
+      table.storeSourceIntegrationId
+    ),
     index("mcpOAuthPendingAuthorizations_expiresAt_idx").on(table.expiresAt),
     foreignKey({
       columns: [table.organizationId, table.serverIntegrationId],
@@ -651,6 +667,11 @@ export const mcpOAuthPendingAuthorizations = pgTable(
       ],
       name: "mcpOAuthPendingAuthorizations_org_server_fk",
     }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.storeSourceIntegrationId],
+      foreignColumns: [mcpServerIntegrations.id],
+      name: "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk",
+    }).onDelete("set null"),
   ]
 );
 

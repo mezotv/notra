@@ -25,6 +25,7 @@ export interface BeginMcpOAuthAuthorizationParams {
   organizationId: string;
   redirectUrl: string;
   serverIntegrationId?: string;
+  storeSourceIntegrationId?: string;
   url: string;
   userId: string;
 }

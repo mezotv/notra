@@ -1,5 +1,5 @@
 {
-  "id": "3ae24420-eac4-4d7d-b937-35dce2af747d",
+  "id": "34836545-b40a-4ef3-866b-19696e7425d9",
   "prevId": "8e38b1e1-52c5-4aa5-a1b8-67864bd67d76",
   "version": "7",
   "dialect": "postgresql",
@@ -3286,6 +3286,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "store_source_integration_id": {
+          "name": "store_source_integration_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -3407,6 +3413,21 @@
           "method": "btree",
           "with": {}
         },
+        "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_idx": {
+          "name": "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_idx",
+          "columns": [
+            {
+              "expression": "store_source_integration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "mcpOAuthPendingAuthorizations_expiresAt_idx": {
           "name": "mcpOAuthPendingAuthorizations_expiresAt_idx",
           "columns": [
@@ -3476,6 +3497,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk": {
+          "name": "mcpOAuthPendingAuthorizations_storeSourceIntegrationId_fk",
+          "tableFrom": "mcp_oauth_pending_authorizations",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "store_source_integration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -3565,6 +3599,12 @@
         },
         "banner_url": {
           "name": "banner_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "store_source_integration_id": {
+          "name": "store_source_integration_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3702,6 +3742,21 @@
           "method": "btree",
           "with": {}
         },
+        "mcpServerIntegrations_storeSourceIntegrationId_idx": {
+          "name": "mcpServerIntegrations_storeSourceIntegrationId_idx",
+          "columns": [
+            {
+              "expression": "store_source_integration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "mcpServerIntegrations_org_id_uidx": {
           "name": "mcpServerIntegrations_org_id_uidx",
           "columns": [
@@ -3743,6 +3798,28 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "mcpServerIntegrations_org_storeSource_uidx": {
+          "name": "mcpServerIntegrations_org_storeSource_uidx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "store_source_integration_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"mcp_server_integrations\".\"store_source_integration_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -3770,6 +3847,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mcpServerIntegrations_storeSourceIntegrationId_fk": {
+          "name": "mcpServerIntegrations_storeSourceIntegrationId_fk",
+          "tableFrom": "mcp_server_integrations",
+          "tableTo": "mcp_server_integrations",
+          "columnsFrom": [
+            "store_source_integration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

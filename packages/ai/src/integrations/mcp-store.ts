@@ -26,6 +26,7 @@ export async function setMcpStoreStatus(params: {
       ...(params.status === "live" || params.status === "rejected"
         ? { reviewedAt: now }
         : {}),
+      ...(params.status === "live" ? { enabled: true } : {}),
       updatedAt: now,
     })
     .where(
@@ -98,6 +99,30 @@ export async function getMcpIntegrationTools(params: {
   });
 }
 
+export async function listMcpIntegrationToolsByIntegrationIds(
+  integrationIds: string[]
+) {
+  if (integrationIds.length === 0) {
+    return [];
+  }
+  return await db.query.mcpToolIndex.findMany({
+    where: and(
+      inArray(mcpToolIndex.serverIntegrationId, integrationIds),
+      eq(mcpToolIndex.status, "active")
+    ),
+    orderBy: asc(mcpToolIndex.serverToolName),
+    columns: {
+      id: true,
+      serverIntegrationId: true,
+      serverToolName: true,
+      title: true,
+      description: true,
+      actionPhrasePresent: true,
+      actionPhrasePast: true,
+    },
+  });
+}
+
 export async function updateMcpToolActionPhrases(params: {
   organizationId: string;
   integrationId: string;
@@ -151,6 +176,15 @@ export async function updateMcpToolActionPhrases(params: {
   return applicable.length;
 }
 
+export function isStoreListingIntegration(integration: {
+  storeStatus: string;
+  submittedAt: Date | null;
+}) {
+  return (
+    integration.storeStatus !== "draft" || integration.submittedAt !== null
+  );
+}
+
 export async function listLiveMcpStoreIntegrations() {
   return await db.query.mcpServerIntegrations.findMany({
     where: and(
@@ -172,4 +206,16 @@ export async function listLiveMcpStoreIntegrations() {
       indexedToolCount: true,
     },
   });
+}
+
+export async function getLiveMcpStoreIntegrationById(integrationId: string) {
+  const integration = await db.query.mcpServerIntegrations.findFirst({
+    where: and(
+      eq(mcpServerIntegrations.id, integrationId),
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+  });
+
+  return integration ?? null;
 }

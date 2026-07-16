@@ -375,6 +375,8 @@ function createRuntimeMcpTool({
         serverUrl: indexedTool.serverUrl,
         toolName: indexedTool.serverToolName,
         runtimeToolName: indexedTool.runtimeToolName,
+        actionPhrasePresent: indexedTool.actionPhrasePresent,
+        actionPhrasePast: indexedTool.actionPhrasePast,
       },
     },
   });

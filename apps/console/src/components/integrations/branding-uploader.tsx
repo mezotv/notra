@@ -153,7 +153,7 @@ export function LogoVariantUploader({
         <Dropzone
           accept={ACCEPTED_IMAGE_TYPES}
           className={cn(
-            "size-full border-0 bg-transparent p-0 shadow-none transition-colors hover:bg-transparent",
+            "size-full border-0 bg-transparent p-0 shadow-none transition-colors hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent",
             ctaText
           )}
           disabled={uploadMutation.isPending || disabled}

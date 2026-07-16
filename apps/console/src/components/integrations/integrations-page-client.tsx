@@ -7,6 +7,7 @@ import {
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Confetti } from "@neoconfetti/react";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -36,19 +37,25 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { STORE_STATUS_LABELS } from "@/lib/integrations/constants";
+import { SUBMITTED_CONFETTI_COLORS } from "@/lib/integrations/constants";
 import { getIntegrationInitials } from "@/lib/integrations/form";
 import {
   formatDashboardConnectionsLabel,
   formatIntegrationDate,
+  getStoreStatusBadge,
 } from "@/lib/integrations/format";
 import { consoleOrpc } from "@/lib/orpc/query";
 import type { McpServer } from "@/types/integrations";
@@ -85,16 +92,6 @@ function IntegrationLogo({ server }: { server: McpServer }) {
   );
 }
 
-function getStatusBadgeVariant(server: McpServer) {
-  if (server.storeStatus === "live" && server.enabled) {
-    return "default";
-  }
-  if (server.storeStatus === "rejected") {
-    return "destructive";
-  }
-  return "secondary";
-}
-
 function IntegrationRow({
   deleting,
   editHref,
@@ -112,6 +109,7 @@ function IntegrationRow({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const router = useRouter();
+  const statusBadge = getStoreStatusBadge(server);
 
   return (
     <>
@@ -143,15 +141,32 @@ function IntegrationRow({
         </TableCell>
         <TableCell onClick={(event) => event.stopPropagation()}>
           <div className="flex items-center gap-2">
-            <Switch
-              aria-label={`Toggle ${server.name}`}
-              checked={server.enabled}
-              disabled={toggling}
-              onCheckedChange={onToggleEnabled}
-            />
-            <Badge variant={getStatusBadgeVariant(server)}>
-              {STORE_STATUS_LABELS[server.storeStatus]}
-            </Badge>
+            <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+            {server.storeStatus === "live" ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span className="inline-flex">
+                      <Switch
+                        aria-label={
+                          server.enabled
+                            ? `Hide ${server.name} from the store`
+                            : `Show ${server.name} in the store`
+                        }
+                        checked={server.enabled}
+                        disabled={toggling}
+                        onCheckedChange={onToggleEnabled}
+                      />
+                    </span>
+                  }
+                />
+                <TooltipContent>
+                  {server.enabled
+                    ? "Shown in the integration store"
+                    : "Hidden from the integration store"}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
         </TableCell>
         <TableCell className="text-muted-foreground">
@@ -246,6 +261,28 @@ export function IntegrationsPageClient({
   const queryClient = useQueryClient();
   const router = useRouter();
   const newIntegrationHref = `/${slug}/integrations/new`;
+  const [celebrating, setCelebrating] = useState(false);
+  const submittedParamHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (submittedParamHandledRef.current) {
+      return;
+    }
+    submittedParamHandledRef.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("submitted") !== "true") {
+      return;
+    }
+    params.delete("submitted");
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`
+    );
+    setCelebrating(true);
+  }, []);
 
   useHotkey("C", () => router.push(newIntegrationHref));
 
@@ -322,6 +359,20 @@ export function IntegrationsPageClient({
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+      {celebrating ? (
+        <div className="-translate-x-1/2 pointer-events-none fixed top-0 left-1/2 z-50">
+          <Confetti
+            colors={SUBMITTED_CONFETTI_COLORS}
+            duration={4000}
+            force={0.6}
+            particleCount={200}
+            particleShape="mix"
+            particleSize={10}
+            stageHeight={1000}
+            stageWidth={1600}
+          />
+        </div>
+      ) : null}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <h1 className="font-semibold text-2xl tracking-tight">

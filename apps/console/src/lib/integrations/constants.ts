@@ -43,3 +43,16 @@ export const MCP_OAUTH_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export const MCP_CONNECTED_TOAST = "Connected. Reading tools from the server.";
+
+export const SUBMITTED_CONFETTI_COLORS = [
+  "var(--primary)",
+  "#FFC700",
+  "#FF6B6B",
+  "#41BBC7",
+  "#A78BFA",
+  "#34D399",
+];
+
+export const MCP_TOOL_WORD_SEPARATOR_REGEX = /[^a-zA-Z0-9]+/g;
+
+export const MCP_TOOL_TITLE_CASE_REGEX = /\b\w/g;

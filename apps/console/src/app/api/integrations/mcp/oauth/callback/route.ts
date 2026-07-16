@@ -2,6 +2,7 @@ import { MCP_OAUTH_CALLBACK_PATH } from "@notra/ai/constants/mcp-auth";
 import {
   cancelMcpOAuthAuthorization,
   completeMcpOAuthAuthorization,
+  deleteMcpOAuthCredentials,
   getMcpOAuthCallbackPath,
 } from "@notra/ai/integrations/mcp-oauth";
 import {
@@ -64,6 +65,10 @@ export async function GET(request: NextRequest) {
     await refreshMcpToolIndexForIntegration({
       organizationId: completed.organizationId,
       integrationId: completed.integrationId,
+    }).catch(() => undefined);
+    await deleteMcpOAuthCredentials({
+      organizationId: completed.organizationId,
+      serverIntegrationId: completed.integrationId,
     }).catch(() => undefined);
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, callbackPath, {

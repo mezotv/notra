@@ -19,6 +19,8 @@ export interface IndexedMcpTool {
   runtimeToolName: string;
   title: string | null;
   description: string | null;
+  actionPhrasePresent: string | null;
+  actionPhrasePast: string | null;
   inputSchema: unknown;
   outputSchema: unknown;
   annotations: unknown;
@@ -29,6 +31,11 @@ export interface IndexedMcpTool {
   serverName: string;
   serverUrl: string;
   serverEnabled: boolean;
+}
+
+export interface McpToolActionPhrases {
+  present: string | null;
+  past: string | null;
 }
 
 export interface ActivatedMcpTool extends IndexedMcpTool {

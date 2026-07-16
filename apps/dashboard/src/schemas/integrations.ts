@@ -467,6 +467,7 @@ const createMcpServerRequestFieldsSchema = z.object({
     .max(1000, "Description is too long")
     .optional()
     .nullable(),
+  storeIntegrationId: z.string().min(1).optional(),
   headers: mcpHeadersSchema,
 });
 
@@ -495,6 +496,7 @@ export type CreateMcpServerRequest = z.infer<
 
 export const beginMcpOAuthRequestSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
+  storeIntegrationId: z.string().min(1).optional(),
   name: addMcpServerFormFieldsSchema.shape.name,
   url: mcpUrlSchema,
   description: createMcpServerRequestFieldsSchema.shape.description,

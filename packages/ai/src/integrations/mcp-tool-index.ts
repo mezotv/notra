@@ -31,6 +31,7 @@ import type { McpRequestAuth } from "../types/mcp-oauth";
 import type {
   IndexedMcpTool,
   McpSessionSurface,
+  McpToolActionPhrases,
   McpToolDefinition,
   McpToolIndexTransaction,
 } from "../types/mcp-tool-index";
@@ -95,6 +96,32 @@ export async function refreshMcpToolIndexForIntegration({
     throw new Error("MCP server integration not found.");
   }
 
+  const sourceToolPhrases = integration.storeSourceIntegrationId
+    ? await db.query.mcpToolIndex.findMany({
+        where: and(
+          eq(
+            mcpToolIndex.serverIntegrationId,
+            integration.storeSourceIntegrationId
+          ),
+          eq(mcpToolIndex.status, "active")
+        ),
+        columns: {
+          serverToolName: true,
+          actionPhrasePresent: true,
+          actionPhrasePast: true,
+        },
+      })
+    : [];
+  const sourceToolPhrasesByName = new Map(
+    sourceToolPhrases.map((tool) => [
+      tool.serverToolName,
+      {
+        present: tool.actionPhrasePresent,
+        past: tool.actionPhrasePast,
+      },
+    ])
+  );
+
   if (!integration.enabled) {
     await db
       .update(mcpServerIntegrations)
@@ -150,6 +177,7 @@ export async function refreshMcpToolIndexForIntegration({
             description: integration.description,
           },
           definition,
+          actionPhrases: sourceToolPhrasesByName.get(definition.name),
         });
       }
 
@@ -731,6 +759,7 @@ async function upsertIndexedTool({
   organizationId,
   integration,
   definition,
+  actionPhrases,
 }: {
   database: McpToolIndexTransaction;
   organizationId: string;
@@ -740,6 +769,7 @@ async function upsertIndexedTool({
     description: string | null;
   };
   definition: McpToolDefinition;
+  actionPhrases?: McpToolActionPhrases;
 }) {
   const runtimeToolName = await createUniqueRuntimeToolName({
     database,
@@ -774,6 +804,7 @@ async function upsertIndexedTool({
         runtimeToolName,
         searchText,
         schemaHash,
+        actionPhrases,
       })
     );
   } catch (error) {
@@ -800,6 +831,7 @@ async function upsertIndexedTool({
         runtimeToolName: collisionRuntimeToolName,
       }),
       schemaHash,
+      actionPhrases,
     });
   }
 }
@@ -812,6 +844,7 @@ async function upsertIndexedToolWithRuntimeName({
   runtimeToolName,
   searchText,
   schemaHash,
+  actionPhrases,
 }: {
   database: McpToolIndexTransaction;
   organizationId: string;
@@ -820,6 +853,7 @@ async function upsertIndexedToolWithRuntimeName({
   runtimeToolName: string;
   searchText: string;
   schemaHash: string;
+  actionPhrases?: McpToolActionPhrases;
 }) {
   await database
     .insert(mcpToolIndex)
@@ -831,6 +865,8 @@ async function upsertIndexedToolWithRuntimeName({
       runtimeToolName,
       title: definition.title ?? definition.annotations?.title ?? null,
       description: definition.description ?? null,
+      actionPhrasePresent: actionPhrases?.present ?? null,
+      actionPhrasePast: actionPhrases?.past ?? null,
       inputSchema: definition.inputSchema,
       outputSchema: definition.outputSchema ?? null,
       annotations: definition.annotations ?? null,
@@ -848,6 +884,12 @@ async function upsertIndexedToolWithRuntimeName({
         runtimeToolName,
         title: definition.title ?? definition.annotations?.title ?? null,
         description: definition.description ?? null,
+        ...(actionPhrases
+          ? {
+              actionPhrasePresent: actionPhrases.present,
+              actionPhrasePast: actionPhrases.past,
+            }
+          : {}),
         inputSchema: definition.inputSchema,
         outputSchema: definition.outputSchema ?? null,
         annotations: definition.annotations ?? null,
@@ -913,6 +955,8 @@ function toIndexedMcpTool(
     runtimeToolName: row.runtimeToolName,
     title: row.title,
     description: row.description,
+    actionPhrasePresent: row.actionPhrasePresent,
+    actionPhrasePast: row.actionPhrasePast,
     inputSchema: row.inputSchema,
     outputSchema: row.outputSchema,
     annotations: row.annotations,
