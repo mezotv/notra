@@ -1268,6 +1268,7 @@ export const integrationsRouter = {
           organizationId: input.organizationId,
         });
         await assertMcpConnectionRateLimit(input.organizationId);
+        await assertActiveSubscription(input.organizationId);
 
         return testMcpServerConnection({
           url: input.url,

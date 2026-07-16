@@ -50,9 +50,12 @@ export const ratelimit = {
 };
 
 export function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
+  // Vercel injects this header at its trusted network boundary. Do not fall
+  // back to generic forwarding headers: outside Vercel they are supplied by
+  // the client unless the deployment configures its own trusted proxy.
+  if (process.env.VERCEL !== "1") {
+    return "unknown";
+  }
+
+  return request.headers.get("x-vercel-forwarded-for")?.trim() || "unknown";
 }
