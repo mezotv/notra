@@ -118,6 +118,36 @@ export interface McpConnectionDetailProps {
   label: string;
 }
 
+export interface McpConnectionSummaryProps {
+  connection: McpServer;
+}
+
+export interface McpCredentialEditorProps {
+  headerRows: McpCredentialHeaderRow[];
+  onUpdate: () => void;
+  setHeaderRows: Dispatch<SetStateAction<McpCredentialHeaderRow[]>>;
+  updating: boolean;
+}
+
+export interface McpConnectionActionsProps {
+  connection: McpServer;
+  onDisconnect: () => void;
+  onReauthorize: () => void;
+  onRefresh: () => void;
+  onToggle: () => void;
+  reauthorizing: boolean;
+  refreshing: boolean;
+  updating: boolean;
+}
+
+export interface McpDisconnectDialogProps {
+  disconnecting: boolean;
+  integrationName: string;
+  onDisconnect: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
+
 export interface StoreIntegrationDialogLogoProps {
   integration: ConnectedMcpStoreIntegration;
 }

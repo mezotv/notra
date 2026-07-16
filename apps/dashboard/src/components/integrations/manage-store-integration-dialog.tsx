@@ -37,8 +37,12 @@ import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ManageStoreIntegrationDialogProps,
+  McpConnectionActionsProps,
   McpConnectionDetailProps,
+  McpConnectionSummaryProps,
+  McpCredentialEditorProps,
   McpCredentialHeaderRow,
+  McpDisconnectDialogProps,
   McpStoreConnectionUpdate,
   StoreIntegrationDialogLogoProps,
 } from "@/types/integrations/mcp";
@@ -149,6 +153,15 @@ export function ManageStoreIntegrationDialog({
     updateMutation.mutate({ authType: "headers", headers });
   };
 
+  const reauthorize = () => {
+    const oauthPopup = openMcpOAuthPopup();
+    reauthorizeMutation.mutate(undefined, {
+      onError: () => oauthPopup.close(),
+      onSuccess: ({ authorizationUrl }) =>
+        oauthPopup.navigate(authorizationUrl),
+    });
+  };
+
   return (
     <>
       <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
@@ -168,199 +181,239 @@ export function ManageStoreIntegrationDialog({
           </ResponsiveDialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="divide-y rounded-lg border">
-              <ConnectionDetail label="Status">
-                <Badge variant={connection.enabled ? "default" : "secondary"}>
-                  {connection.enabled ? "Enabled" : "Disabled"}
-                </Badge>
-              </ConnectionDetail>
-              <ConnectionDetail label="Authentication">
-                {getAuthenticationLabel(connection.authType)}
-              </ConnectionDetail>
-              <ConnectionDetail label="Tools">
-                {connection.indexedToolCount ?? 0}
-              </ConnectionDetail>
-              <ConnectionDetail label="Endpoint">
-                <span className="max-w-64 truncate font-mono text-xs">
-                  {connection.url}
-                </span>
-              </ConnectionDetail>
-            </div>
+            <ConnectionSummary connection={connection} />
 
             {connection.authType === "headers" ? (
-              <div className="space-y-3 rounded-lg border p-4">
-                <div>
-                  <h3 className="font-medium text-sm">API credentials</h3>
-                  <p className="text-muted-foreground text-xs">
-                    Stored values stay hidden. Enter replacements to update
-                    them.
-                  </p>
-                </div>
-                {headerRows.map((row, index) => (
-                  <div className="flex items-end gap-2" key={row.id}>
-                    <Field className="flex-1">
-                      <FieldLabel htmlFor={`store-header-name-${row.id}`}>
-                        Header
-                      </FieldLabel>
-                      <Input
-                        id={`store-header-name-${row.id}`}
-                        onChange={(event) =>
-                          setHeaderRows((rows) =>
-                            rows.map((candidate, rowIndex) =>
-                              rowIndex === index
-                                ? { ...candidate, name: event.target.value }
-                                : candidate
-                            )
-                          )
-                        }
-                        value={row.name}
-                      />
-                    </Field>
-                    <Field className="flex-[1.3]">
-                      <FieldLabel htmlFor={`store-header-value-${row.id}`}>
-                        New value
-                      </FieldLabel>
-                      <Input
-                        autoComplete="off"
-                        id={`store-header-value-${row.id}`}
-                        onChange={(event) =>
-                          setHeaderRows((rows) =>
-                            rows.map((candidate, rowIndex) =>
-                              rowIndex === index
-                                ? { ...candidate, value: event.target.value }
-                                : candidate
-                            )
-                          )
-                        }
-                        type="password"
-                        value={row.value}
-                      />
-                    </Field>
-                    <Button
-                      aria-label="Remove authentication header"
-                      onClick={() =>
-                        setHeaderRows((rows) =>
-                          rows.filter((candidate) => candidate.id !== row.id)
-                        )
-                      }
-                      size="icon-sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      <HugeiconsIcon icon={MinusSignIcon} />
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex justify-between gap-2">
-                  <Button
-                    onClick={() =>
-                      setHeaderRows((rows) => [
-                        ...rows,
-                        { id: crypto.randomUUID(), name: "", value: "" },
-                      ])
-                    }
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <HugeiconsIcon icon={PlusSignIcon} />
-                    Add header
-                  </Button>
-                  <Button
-                    disabled={updateMutation.isPending}
-                    onClick={updateCredentials}
-                    size="sm"
-                    type="button"
-                  >
-                    {updateMutation.isPending
-                      ? "Updating..."
-                      : "Update credentials"}
-                  </Button>
-                </div>
-              </div>
+              <CredentialEditor
+                headerRows={headerRows}
+                onUpdate={updateCredentials}
+                setHeaderRows={setHeaderRows}
+                updating={updateMutation.isPending}
+              />
             ) : null}
           </div>
 
-          <ResponsiveDialogFooter className="flex-wrap sm:justify-between">
-            <Button
-              onClick={() => setShowDisconnectDialog(true)}
-              type="button"
-              variant="destructive"
-            >
-              <HugeiconsIcon icon={Delete02Icon} />
-              Disconnect
-            </Button>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                disabled={refreshMutation.isPending || !connection.enabled}
-                onClick={() => refreshMutation.mutate()}
-                type="button"
-                variant="outline"
-              >
-                <RefreshCcwIcon
-                  className={refreshMutation.isPending ? "animate-spin" : ""}
-                />
-                Refresh tools
-              </Button>
-              {connection.authType === "oauth" ? (
-                <Button
-                  disabled={reauthorizeMutation.isPending}
-                  onClick={() => {
-                    const oauthPopup = openMcpOAuthPopup();
-                    reauthorizeMutation.mutate(undefined, {
-                      onError: () => oauthPopup.close(),
-                      onSuccess: ({ authorizationUrl }) =>
-                        oauthPopup.navigate(authorizationUrl),
-                    });
-                  }}
-                  type="button"
-                  variant="outline"
-                >
-                  Reauthorize
-                </Button>
-              ) : null}
-              <Button
-                disabled={updateMutation.isPending}
-                onClick={() =>
-                  updateMutation.mutate({ enabled: !connection.enabled })
-                }
-                type="button"
-                variant="outline"
-              >
-                {connection.enabled ? "Disable" : "Enable"}
-              </Button>
-            </div>
-          </ResponsiveDialogFooter>
+          <ConnectionActions
+            connection={connection}
+            onDisconnect={() => setShowDisconnectDialog(true)}
+            onReauthorize={reauthorize}
+            onRefresh={() => refreshMutation.mutate()}
+            onToggle={() =>
+              updateMutation.mutate({ enabled: !connection.enabled })
+            }
+            reauthorizing={reauthorizeMutation.isPending}
+            refreshing={refreshMutation.isPending}
+            updating={updateMutation.isPending}
+          />
         </ResponsiveDialogContent>
       </ResponsiveDialog>
 
-      <ResponsiveAlertDialog
+      <DisconnectDialog
+        disconnecting={disconnectMutation.isPending}
+        integrationName={integration.name}
+        onDisconnect={() => disconnectMutation.mutate()}
         onOpenChange={setShowDisconnectDialog}
         open={showDisconnectDialog}
-      >
-        <ResponsiveAlertDialogContent>
-          <ResponsiveAlertDialogHeader>
-            <ResponsiveAlertDialogTitle>
-              Disconnect {integration.name}?
-            </ResponsiveAlertDialogTitle>
-            <ResponsiveAlertDialogDescription>
-              Its tools will no longer be available to this organization. You
-              can reconnect it later.
-            </ResponsiveAlertDialogDescription>
-          </ResponsiveAlertDialogHeader>
-          <ResponsiveAlertDialogFooter>
-            <ResponsiveAlertDialogCancel>Cancel</ResponsiveAlertDialogCancel>
-            <ResponsiveAlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={disconnectMutation.isPending}
-              onClick={() => disconnectMutation.mutate()}
-            >
-              {disconnectMutation.isPending ? "Disconnecting..." : "Disconnect"}
-            </ResponsiveAlertDialogAction>
-          </ResponsiveAlertDialogFooter>
-        </ResponsiveAlertDialogContent>
-      </ResponsiveAlertDialog>
+      />
     </>
+  );
+}
+
+function ConnectionSummary({ connection }: McpConnectionSummaryProps) {
+  return (
+    <div className="divide-y rounded-lg border">
+      <ConnectionDetail label="Status">
+        <Badge variant={connection.enabled ? "default" : "secondary"}>
+          {connection.enabled ? "Enabled" : "Disabled"}
+        </Badge>
+      </ConnectionDetail>
+      <ConnectionDetail label="Authentication">
+        {getAuthenticationLabel(connection.authType)}
+      </ConnectionDetail>
+      <ConnectionDetail label="Tools">
+        {connection.indexedToolCount ?? 0}
+      </ConnectionDetail>
+      <ConnectionDetail label="Endpoint">
+        <span className="max-w-64 truncate font-mono text-xs">
+          {connection.url}
+        </span>
+      </ConnectionDetail>
+    </div>
+  );
+}
+
+function CredentialEditor({
+  headerRows,
+  onUpdate,
+  setHeaderRows,
+  updating,
+}: McpCredentialEditorProps) {
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <div>
+        <h3 className="font-medium text-sm">API credentials</h3>
+        <p className="text-muted-foreground text-xs">
+          Stored values stay hidden. Enter replacements to update them.
+        </p>
+      </div>
+      {headerRows.map((row, index) => (
+        <div className="flex items-end gap-2" key={row.id}>
+          <Field className="flex-1">
+            <FieldLabel htmlFor={`store-header-name-${row.id}`}>
+              Header
+            </FieldLabel>
+            <Input
+              id={`store-header-name-${row.id}`}
+              onChange={(event) =>
+                setHeaderRows((rows) =>
+                  rows.map((candidate, rowIndex) =>
+                    rowIndex === index
+                      ? { ...candidate, name: event.target.value }
+                      : candidate
+                  )
+                )
+              }
+              value={row.name}
+            />
+          </Field>
+          <Field className="flex-[1.3]">
+            <FieldLabel htmlFor={`store-header-value-${row.id}`}>
+              New value
+            </FieldLabel>
+            <Input
+              autoComplete="off"
+              id={`store-header-value-${row.id}`}
+              onChange={(event) =>
+                setHeaderRows((rows) =>
+                  rows.map((candidate, rowIndex) =>
+                    rowIndex === index
+                      ? { ...candidate, value: event.target.value }
+                      : candidate
+                  )
+                )
+              }
+              type="password"
+              value={row.value}
+            />
+          </Field>
+          <Button
+            aria-label="Remove authentication header"
+            onClick={() =>
+              setHeaderRows((rows) =>
+                rows.filter((candidate) => candidate.id !== row.id)
+              )
+            }
+            size="icon-sm"
+            type="button"
+            variant="outline"
+          >
+            <HugeiconsIcon icon={MinusSignIcon} />
+          </Button>
+        </div>
+      ))}
+      <div className="flex justify-between gap-2">
+        <Button
+          onClick={() =>
+            setHeaderRows((rows) => [
+              ...rows,
+              { id: crypto.randomUUID(), name: "", value: "" },
+            ])
+          }
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} />
+          Add header
+        </Button>
+        <Button disabled={updating} onClick={onUpdate} size="sm" type="button">
+          {updating ? "Updating..." : "Update credentials"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ConnectionActions({
+  connection,
+  onDisconnect,
+  onReauthorize,
+  onRefresh,
+  onToggle,
+  reauthorizing,
+  refreshing,
+  updating,
+}: McpConnectionActionsProps) {
+  return (
+    <ResponsiveDialogFooter className="flex-wrap sm:justify-between">
+      <Button onClick={onDisconnect} type="button" variant="destructive">
+        <HugeiconsIcon icon={Delete02Icon} />
+        Disconnect
+      </Button>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          disabled={refreshing || !connection.enabled}
+          onClick={onRefresh}
+          type="button"
+          variant="outline"
+        >
+          <RefreshCcwIcon className={refreshing ? "animate-spin" : ""} />
+          Refresh tools
+        </Button>
+        {connection.authType === "oauth" ? (
+          <Button
+            disabled={reauthorizing}
+            onClick={onReauthorize}
+            type="button"
+            variant="outline"
+          >
+            Reauthorize
+          </Button>
+        ) : null}
+        <Button
+          disabled={updating}
+          onClick={onToggle}
+          type="button"
+          variant="outline"
+        >
+          {connection.enabled ? "Disable" : "Enable"}
+        </Button>
+      </div>
+    </ResponsiveDialogFooter>
+  );
+}
+
+function DisconnectDialog({
+  disconnecting,
+  integrationName,
+  onDisconnect,
+  onOpenChange,
+  open,
+}: McpDisconnectDialogProps) {
+  return (
+    <ResponsiveAlertDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveAlertDialogContent>
+        <ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogTitle>
+            Disconnect {integrationName}?
+          </ResponsiveAlertDialogTitle>
+          <ResponsiveAlertDialogDescription>
+            Its tools will no longer be available to this organization. You can
+            reconnect it later.
+          </ResponsiveAlertDialogDescription>
+        </ResponsiveAlertDialogHeader>
+        <ResponsiveAlertDialogFooter>
+          <ResponsiveAlertDialogCancel>Cancel</ResponsiveAlertDialogCancel>
+          <ResponsiveAlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={disconnecting}
+            onClick={onDisconnect}
+          >
+            {disconnecting ? "Disconnecting..." : "Disconnect"}
+          </ResponsiveAlertDialogAction>
+        </ResponsiveAlertDialogFooter>
+      </ResponsiveAlertDialogContent>
+    </ResponsiveAlertDialog>
   );
 }
 
