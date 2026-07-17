@@ -3,6 +3,7 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
+  claimChatWorkflowRequest,
   clearActiveChatStream,
   clearChatAbortFlag,
   getChatStreamChannelName,
@@ -72,29 +73,16 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
       timezone,
     } = parseResult.data;
 
-    const hasAiCredits = await context.run(
-      "recheck-ai-credit-balance",
-      async () => {
-        if (!autumn) {
-          return true;
-        }
-
-        const result = await autumn.check({
-          customerId: organizationId,
-          featureId: FEATURES.AI_CREDITS,
-          requiredBalance: 1,
-        });
-        return Boolean(result?.allowed);
-      }
+    const requestClaimed = await context.run(
+      "claim-chat-workflow-request",
+      () => claimChatWorkflowRequest(requestId)
     );
-
-    if (!hasAiCredits) {
-      console.warn("[Chat Workflow] AI credit balance exhausted", {
+    if (!requestClaimed) {
+      console.error("[Chat Workflow] Duplicate or unclaimable request", {
         requestId,
         organizationId,
         chatId,
       });
-      await clearActiveChatStream(organizationId, chatId);
       await context.cancel();
       return;
     }
@@ -104,14 +92,12 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
     );
 
     if (messages.length === 0) {
-      await clearActiveChatStream(organizationId, chatId);
       await context.cancel();
       return;
     }
 
     const latestMessage = messages.at(-1);
     if (!latestMessage?.id) {
-      await clearActiveChatStream(organizationId, chatId);
       await context.cancel();
       return;
     }
@@ -131,7 +117,65 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
         chatId,
         channelName,
       });
-      await clearActiveChatStream(organizationId, chatId);
+      await clearActiveChatStream(organizationId, chatId, latestMessage.id);
+      await context.cancel();
+      return;
+    }
+
+    const creditCheck = await context.run(
+      "recheck-ai-credit-balance",
+      async () => {
+        if (!autumn) {
+          return { allowed: true, unavailable: false };
+        }
+
+        try {
+          const result = await autumn.check({
+            customerId: organizationId,
+            featureId: FEATURES.AI_CREDITS,
+            requiredBalance: 1,
+          });
+          return { allowed: Boolean(result?.allowed), unavailable: false };
+        } catch (error) {
+          console.error("[Chat Workflow] AI credit check failed", {
+            requestId,
+            organizationId,
+            chatId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return { allowed: false, unavailable: true };
+        }
+      }
+    );
+
+    if (!creditCheck.allowed) {
+      console.warn("[Chat Workflow] AI credit check rejected generation", {
+        requestId,
+        organizationId,
+        chatId,
+        unavailable: creditCheck.unavailable,
+      });
+      try {
+        await channel.emit("ai.chunk", {
+          type: "error",
+          errorText: creditCheck.unavailable
+            ? "Unable to verify usage limits. Please try again."
+            : "Usage limit reached.",
+        });
+        await channel.emit("ai.chunk", {
+          type: "finish",
+          finishReason: "error",
+        });
+      } catch (error) {
+        console.error("[Chat Workflow] Failed to emit billing error", {
+          requestId,
+          organizationId,
+          chatId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      } finally {
+        await clearActiveChatStream(organizationId, chatId, latestMessage.id);
+      }
       await context.cancel();
       return;
     }
@@ -307,7 +351,9 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
             const saved = await replaceChatHistory(
               organizationId,
               chatId,
-              responseMessages
+              responseMessages,
+              undefined,
+              latestMessage.id
             );
             if (!saved) {
               console.warn(
@@ -316,7 +362,11 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
               );
             }
           } finally {
-            await clearActiveChatStream(organizationId, chatId);
+            await clearActiveChatStream(
+              organizationId,
+              chatId,
+              latestMessage.id
+            );
           }
         },
         onError: (error) => {
@@ -377,14 +427,10 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
           });
         }
       }
-
-      if (!isAbort) {
-        throw error;
-      }
     } finally {
       stopAbortPolling?.();
       await Promise.allSettled([
-        clearActiveChatStream(organizationId, chatId),
+        clearActiveChatStream(organizationId, chatId, latestMessage.id),
         clearChatAbortFlag(organizationId, chatId, latestMessage.id),
       ]);
     }

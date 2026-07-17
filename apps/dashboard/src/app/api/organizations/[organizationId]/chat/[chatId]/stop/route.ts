@@ -11,6 +11,7 @@ import { chatIdSchema } from "@notra/ai/schemas/chat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { ratelimit } from "@/utils/ratelimit";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;
@@ -29,6 +30,23 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(
       { error: "Invalid chat ID", details: chatIdParse.error.issues },
       { status: 400 }
+    );
+  }
+
+  const rateLimitResult = await ratelimit.chatStop.limit(
+    `${organizationId}:${auth.context.user.id}`
+  );
+  if (!rateLimitResult.success) {
+    const retryAfter = Math.max(
+      0,
+      Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
+    );
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfter) },
+      }
     );
   }
 
@@ -71,7 +89,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
   }
 
-  await clearActiveChatStream(organizationId, safeChatId);
+  await clearActiveChatStream(organizationId, safeChatId, activeStreamId);
 
   return NextResponse.json({ ok: true, aborted: true });
 }

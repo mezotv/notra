@@ -4,6 +4,7 @@ import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import {
   claimChatSessionForExternalChannel,
+  clearActiveChatStream,
   clearLastResponseStopped,
   generateAndSetChatTitle,
   generateChatId,
@@ -113,66 +114,84 @@ export async function runChatMessage({
   const chatId = resolvedChatId ?? generateChatId();
   const auth = c.get("auth") as { keyId?: string } | undefined;
 
-  const existingMessages = isNewChat
-    ? []
-    : await loadChatHistory(organizationId, chatId);
-
   const userMessage: UIMessage = {
     id: nanoid(),
     role: "user",
     parts: [{ type: "text", text: message }],
   };
 
-  const messages = [...existingMessages, userMessage];
+  const streamAcquired = await setActiveChatStream(
+    organizationId,
+    chatId,
+    userMessage.id
+  );
+  if (!streamAcquired) {
+    return c.json(
+      { error: "A response is already being generated for this chat" },
+      409
+    );
+  }
 
-  const validatedIntegrations =
-    await getStandaloneChatIntegrations(organizationId);
-  const context = inputContext ?? [];
+  try {
+    const existingMessages = isNewChat
+      ? []
+      : await loadChatHistory(organizationId, chatId);
+    const messages = [...existingMessages, userMessage];
 
-  const externalChannelIdForInsert =
-    isNewChat && !externalChannelClaimed ? externalChannelId : undefined;
+    const validatedIntegrations =
+      await getStandaloneChatIntegrations(organizationId);
+    const context = inputContext ?? [];
 
-  const [historySaved] = await Promise.all([
-    replaceChatHistory(
+    const externalChannelIdForInsert =
+      isNewChat && !externalChannelClaimed ? externalChannelId : undefined;
+
+    const [historySaved] = await Promise.all([
+      replaceChatHistory(
+        organizationId,
+        chatId,
+        messages,
+        externalChannelIdForInsert
+      ),
+      clearLastResponseStopped(organizationId, chatId),
+    ]);
+
+    if (!historySaved) {
+      await clearActiveChatStream(organizationId, chatId, userMessage.id);
+      return c.json({ error: "Chat not found" }, 404);
+    }
+
+    if (existingMessages.length === 0) {
+      await generateAndSetChatTitle(organizationId, chatId, userMessage);
+    }
+
+    return await createDirectStandaloneChatResponse({
       organizationId,
       chatId,
       messages,
-      externalChannelIdForInsert
-    ),
-    setActiveChatStream(organizationId, chatId, userMessage.id),
-    clearLastResponseStopped(organizationId, chatId),
-  ]);
-
-  if (!historySaved) {
-    return c.json({ error: "Chat not found" }, 404);
+      context,
+      validatedIntegrations,
+      useMarkup,
+      requestId,
+      log,
+      model,
+      enableThinking,
+      thinkingLevel,
+      timezone,
+      abortSignal: c.req.raw.signal,
+      externalChannelId,
+      telemetryMetadata: buildApiChatTelemetryMetadata({
+        apiKeyId: auth?.keyId,
+        chatId,
+        externalChannelId: externalChannelId?.id,
+        externalChannelSource: externalChannelId?.source,
+        existingChatId,
+        organizationId,
+      }),
+    });
+  } catch (error) {
+    await clearActiveChatStream(organizationId, chatId, userMessage.id).catch(
+      () => undefined
+    );
+    throw error;
   }
-
-  if (existingMessages.length === 0) {
-    await generateAndSetChatTitle(organizationId, chatId, userMessage);
-  }
-
-  return await createDirectStandaloneChatResponse({
-    organizationId,
-    chatId,
-    messages,
-    context,
-    validatedIntegrations,
-    useMarkup,
-    requestId,
-    log,
-    model,
-    enableThinking,
-    thinkingLevel,
-    timezone,
-    abortSignal: c.req.raw.signal,
-    externalChannelId,
-    telemetryMetadata: buildApiChatTelemetryMetadata({
-      apiKeyId: auth?.keyId,
-      chatId,
-      externalChannelId: externalChannelId?.id,
-      externalChannelSource: externalChannelId?.source,
-      existingChatId,
-      organizationId,
-    }),
-  });
 }

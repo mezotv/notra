@@ -51,6 +51,7 @@ export const POST = withEvlog(async function POST(
   const log = useLogger();
   let cleanupOrganizationId: string | null = null;
   let cleanupChatId: string | null = null;
+  let cleanupStreamId: string | null = null;
 
   try {
     const { organizationId } = await params;
@@ -141,13 +142,26 @@ export const POST = withEvlog(async function POST(
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
 
+    const streamAcquired = await setActiveChatStream(
+      organizationId,
+      chatId,
+      latestMessage.id
+    );
+    if (!streamAcquired) {
+      return NextResponse.json(
+        { error: "A response is already being generated for this chat" },
+        { status: 409 }
+      );
+    }
+    cleanupStreamId = latestMessage.id;
+
     const [historySaved] = await Promise.all([
       replaceChatHistory(organizationId, chatId, messages),
-      setActiveChatStream(organizationId, chatId, latestMessage.id),
       clearLastResponseStopped(organizationId, chatId),
     ]);
 
     if (!historySaved) {
+      await clearActiveChatStream(organizationId, chatId, latestMessage.id);
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
 
@@ -217,10 +231,12 @@ export const POST = withEvlog(async function POST(
       { status: 202, headers: { "X-Chat-Id": chatId } }
     );
   } catch (e) {
-    if (cleanupOrganizationId && cleanupChatId) {
-      await clearActiveChatStream(cleanupOrganizationId, cleanupChatId).catch(
-        () => undefined
-      );
+    if (cleanupOrganizationId && cleanupChatId && cleanupStreamId) {
+      await clearActiveChatStream(
+        cleanupOrganizationId,
+        cleanupChatId,
+        cleanupStreamId
+      ).catch(() => undefined);
     }
     const errorMessage = e instanceof Error ? e.message : String(e);
     console.error("[Standalone Chat] Error:", {
@@ -340,7 +356,7 @@ async function createDirectStandaloneChatResponse({
     abortSignal?.removeEventListener("abort", onRequestAbort);
     await Promise.allSettled([
       clearChatAbortFlag(organizationId, chatId, streamId),
-      clearActiveChatStream(organizationId, chatId),
+      clearActiveChatStream(organizationId, chatId, streamId),
     ]);
   };
 
@@ -477,7 +493,9 @@ async function createDirectStandaloneChatResponse({
           const saved = await replaceChatHistory(
             organizationId,
             chatId,
-            responseMessages
+            responseMessages,
+            undefined,
+            streamId
           );
           if (!saved) {
             console.warn(

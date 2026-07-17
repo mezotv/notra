@@ -53,6 +53,12 @@ export const ratelimit = {
     prefix: "ratelimit:chat-stream",
     limiter: Ratelimit.slidingWindow(30, "1m"),
   }),
+  chatStop: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:chat-stop",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
 };
 
 export function getClientIp(request: NextRequest): string {

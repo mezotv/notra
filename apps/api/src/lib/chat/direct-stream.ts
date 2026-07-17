@@ -64,7 +64,7 @@ export async function createDirectStandaloneChatResponse({
     abortSignal?.removeEventListener("abort", onRequestAbort);
     await Promise.allSettled([
       clearChatAbortFlag(organizationId, chatId, streamId),
-      clearActiveChatStream(organizationId, chatId),
+      clearActiveChatStream(organizationId, chatId, streamId),
     ]);
   };
 
@@ -194,7 +194,9 @@ export async function createDirectStandaloneChatResponse({
           const saved = await replaceChatHistory(
             organizationId,
             chatId,
-            responseMessages
+            responseMessages,
+            undefined,
+            streamId
           );
           if (!saved) {
             console.warn(

@@ -77,7 +77,7 @@ export const uiMessageSchema = z.object({
 }) as unknown as z.ZodType<UIMessage>;
 
 export const standaloneChatRequestSchema = z.object({
-  chatId: z.string().min(1).optional(),
+  chatId: chatIdSchema.optional(),
   messages: z.array(uiMessageSchema).min(1).max(UI_MESSAGES_MAX),
   context: z.array(standaloneChatContextSchema).optional(),
   model: chatModelSchema.optional(),
