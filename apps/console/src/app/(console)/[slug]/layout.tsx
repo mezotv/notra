@@ -5,6 +5,7 @@ import {
 import { cookies } from "next/headers";
 import { ConsoleShell } from "@/components/layout/console-shell";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+import { hasAdminRole } from "@/lib/auth/role";
 
 export default async function OrganizationLayout({
   children,
@@ -29,7 +30,7 @@ export default async function OrganizationLayout({
         logo: organization.logo,
       }}
       initialSidebarOpen={initialSidebarOpen}
-      isAdmin={user.role === "admin"}
+      isAdmin={hasAdminRole(user.role)}
       user={{
         name: user.name,
         email: user.email,
