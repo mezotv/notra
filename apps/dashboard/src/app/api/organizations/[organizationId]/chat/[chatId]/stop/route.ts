@@ -7,16 +7,14 @@ import {
   setLastResponseStopped,
 } from "@notra/ai/chat/history";
 import { realtime } from "@notra/ai/realtime";
+import { chatIdSchema } from "@notra/ai/schemas/chat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;
 }
-
-const chatIdParamSchema = z.string().uuid();
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const { organizationId, chatId } = await params;
@@ -26,7 +24,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     return auth.response;
   }
 
-  const chatIdParse = chatIdParamSchema.safeParse(chatId);
+  const chatIdParse = chatIdSchema.safeParse(chatId);
   if (!chatIdParse.success) {
     return NextResponse.json(
       { error: "Invalid chat ID", details: chatIdParse.error.issues },

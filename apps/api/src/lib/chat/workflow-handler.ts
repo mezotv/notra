@@ -72,17 +72,46 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
       timezone,
     } = parseResult.data;
 
+    const hasAiCredits = await context.run(
+      "recheck-ai-credit-balance",
+      async () => {
+        if (!autumn) {
+          return true;
+        }
+
+        const result = await autumn.check({
+          customerId: organizationId,
+          featureId: FEATURES.AI_CREDITS,
+          requiredBalance: 1,
+        });
+        return Boolean(result?.allowed);
+      }
+    );
+
+    if (!hasAiCredits) {
+      console.warn("[Chat Workflow] AI credit balance exhausted", {
+        requestId,
+        organizationId,
+        chatId,
+      });
+      await clearActiveChatStream(organizationId, chatId);
+      await context.cancel();
+      return;
+    }
+
     const messages = await context.run("load-chat-history", () =>
       loadChatHistory(organizationId, chatId)
     );
 
     if (messages.length === 0) {
+      await clearActiveChatStream(organizationId, chatId);
       await context.cancel();
       return;
     }
 
     const latestMessage = messages.at(-1);
     if (!latestMessage?.id) {
+      await clearActiveChatStream(organizationId, chatId);
       await context.cancel();
       return;
     }

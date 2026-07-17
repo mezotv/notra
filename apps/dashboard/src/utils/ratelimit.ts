@@ -47,6 +47,12 @@ export const ratelimit = {
     prefix: "ratelimit:cmdk-navigate",
     limiter: Ratelimit.slidingWindow(15, "1m"),
   }),
+  chatStream: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:chat-stream",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
 };
 
 export function getClientIp(request: NextRequest): string {

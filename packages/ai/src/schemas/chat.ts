@@ -16,6 +16,8 @@ export const chatModelSchema = z.enum([
 
 export const thinkingLevelSchema = z.enum(["off", "low", "medium", "high"]);
 
+export const chatIdSchema = z.uuid();
+
 export const externalChannelSourceSchema = z.enum([
   "discord",
   "slack",

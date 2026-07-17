@@ -4,6 +4,7 @@ import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import {
   CHAT_ABORT_FLAG_TTL_SECONDS,
+  CHAT_ACTIVE_STREAM_TTL_SECONDS,
   CHAT_LAST_STOPPED_TTL_SECONDS,
 } from "../constants/chat";
 import { gateway } from "../gateway";
@@ -428,7 +429,9 @@ export async function setActiveChatStream(
   if (!redis) {
     return;
   }
-  await redis.set(activeStreamKey(organizationId, chatId), streamId);
+  await redis.set(activeStreamKey(organizationId, chatId), streamId, {
+    ex: CHAT_ACTIVE_STREAM_TTL_SECONDS,
+  });
 }
 
 export async function clearActiveChatStream(
