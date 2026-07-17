@@ -9,14 +9,12 @@ import {
 import { realtime } from "@notra/ai/realtime";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { chatIdParamSchema } from "@/schemas/chat";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;
 }
-
-const chatIdParamSchema = z.string().uuid();
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const { organizationId, chatId } = await params;
