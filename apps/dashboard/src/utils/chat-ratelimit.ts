@@ -1,4 +1,7 @@
-import { CHAT_GENERATION_RATE_LIMIT } from "@notra/ai/constants/rate-limits";
+import {
+  CHAT_GENERATION_RATE_LIMIT,
+  CHAT_GENERATION_USER_RATE_LIMIT,
+} from "@notra/ai/constants/rate-limits";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
@@ -13,18 +16,25 @@ const chatGenerationRatelimit = new Ratelimit({
   ),
 });
 
-export async function enforceChatGenerationRatelimit(
-  organizationId: string
-): Promise<NextResponse | null> {
-  const result = await chatGenerationRatelimit.limit(organizationId);
+const userChatGenerationRatelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  analytics: true,
+  prefix: "ratelimit:dashboard-chat-generation-user",
+  limiter: Ratelimit.slidingWindow(
+    CHAT_GENERATION_USER_RATE_LIMIT.requests,
+    CHAT_GENERATION_USER_RATE_LIMIT.window
+  ),
+});
+
+function rateLimitedResponse(result: {
+  limit: number;
+  remaining: number;
+  reset: number;
+}) {
   const resetSeconds = Math.max(
     0,
     Math.ceil((result.reset - Date.now()) / 1000)
   );
-
-  if (result.success) {
-    return null;
-  }
 
   return NextResponse.json(
     {
@@ -46,4 +56,24 @@ export async function enforceChatGenerationRatelimit(
       },
     }
   );
+}
+
+export async function enforceChatGenerationRatelimit(
+  organizationId: string,
+  userId: string
+): Promise<NextResponse | null> {
+  const userResult = await userChatGenerationRatelimit.limit(
+    `${organizationId}:${userId}`
+  );
+  if (!userResult.success) {
+    return rateLimitedResponse(userResult);
+  }
+
+  const organizationResult =
+    await chatGenerationRatelimit.limit(organizationId);
+  if (!organizationResult.success) {
+    return rateLimitedResponse(organizationResult);
+  }
+
+  return null;
 }

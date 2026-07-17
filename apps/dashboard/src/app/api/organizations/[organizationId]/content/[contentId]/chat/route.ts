@@ -1,5 +1,8 @@
 import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { useLogger, withEvlog } from "@notra/ai/evlog";
@@ -59,7 +62,10 @@ export const POST = withEvlog(async function POST(
       );
     }
 
-    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    const rateLimited = await enforceChatGenerationRatelimit(
+      organizationId,
+      auth.context.user.id
+    );
     if (rateLimited) {
       return rateLimited;
     }
@@ -108,7 +114,7 @@ export const POST = withEvlog(async function POST(
 
       useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
     } else {
-      if (process.env.NODE_ENV === "production") {
+      if (!allowUnmeteredAiInDevelopment) {
         return NextResponse.json(
           { error: "Billing service is unavailable", code: "BILLING_ERROR" },
           { status: 503 }

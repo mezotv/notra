@@ -59,10 +59,21 @@ export const ratelimit = {
   }),
 };
 
-function getRatelimitKey(c: Context): string {
-  const organizationId = c.get("auth") ? getOrganizationId(c) : null;
-  if (organizationId) {
-    return organizationId;
+type RatelimitScope = "credential" | "organization";
+
+function getRatelimitKey(c: Context, scope: RatelimitScope): string {
+  const auth = c.get("auth");
+  if (auth) {
+    if (scope === "organization") {
+      const organizationId = getOrganizationId(c);
+      if (organizationId) {
+        return organizationId;
+      }
+    }
+
+    if (auth.keyId) {
+      return auth.keyId;
+    }
   }
 
   const forwardedFor = c.req.header("x-forwarded-for");
@@ -89,8 +100,12 @@ function setRatelimitHeaders(
   return resetSeconds;
 }
 
-export async function enforceRatelimit(c: Context, limiter: Ratelimit) {
-  const result = await limiter.limit(getRatelimitKey(c));
+export async function enforceRatelimit(
+  c: Context,
+  limiter: Ratelimit,
+  scope: RatelimitScope = "credential"
+) {
+  const result = await limiter.limit(getRatelimitKey(c, scope));
   const resetSeconds = setRatelimitHeaders(c, result);
 
   if (result.success) {

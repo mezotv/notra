@@ -163,7 +163,11 @@ async function handleSend(
       return c.json({ error: formatValidationError(parseResult.error) }, 400);
     }
 
-    const rateLimited = await enforceRatelimit(c, ratelimit.chatGeneration);
+    const rateLimited = await enforceRatelimit(
+      c,
+      ratelimit.chatGeneration,
+      "organization"
+    );
     if (rateLimited) {
       return rateLimited;
     }
