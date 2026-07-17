@@ -62,6 +62,12 @@ export async function enforceChatGenerationRatelimit(
   organizationId: string,
   userId: string
 ): Promise<NextResponse | null> {
+  const organizationAvailability =
+    await chatGenerationRatelimit.getRemaining(organizationId);
+  if (organizationAvailability.remaining <= 0) {
+    return rateLimitedResponse(organizationAvailability);
+  }
+
   const userResult = await userChatGenerationRatelimit.limit(
     `${organizationId}:${userId}`
   );

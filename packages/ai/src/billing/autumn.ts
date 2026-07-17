@@ -7,5 +7,5 @@ export const autumn = AUTUMN_SECRET_KEY
   : null;
 
 export const allowUnmeteredAiInDevelopment =
-  process.env.NODE_ENV !== "production" &&
+  process.env.NODE_ENV === "development" &&
   process.env.ALLOW_UNMETERED_AI_IN_DEVELOPMENT === "true";
