@@ -11,7 +11,10 @@ import {
   CLI_API_KEY_SOURCE_TAG,
   CLI_API_KEY_TTL_MS,
 } from "@/lib/cli-auth/constants";
-import { storeCliSessionKey } from "@/lib/cli-auth/storage";
+import {
+  getCliSessionPollSecretHash,
+  storeCliSessionKey,
+} from "@/lib/cli-auth/storage";
 import {
   authorizeCliSessionSchema,
   cliSessionIdSchema,
@@ -42,6 +45,11 @@ export async function POST(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const pollSecretHash = await getCliSessionPollSecretHash(sessionIdParse.data);
+  if (!pollSecretHash) {
+    return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
   }
 
   const bodyParse = authorizeCliSessionSchema.safeParse(body);
@@ -108,7 +116,14 @@ export async function POST(
     );
   }
 
-  await storeCliSessionKey(sessionIdParse.data, fullKey);
+  const stored = await storeCliSessionKey(sessionIdParse.data, fullKey);
+  if (!stored) {
+    const keyId = created.data?.keyId;
+    if (keyId) {
+      await unkey.keys.deleteKey({ keyId });
+    }
+    return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
+  }
 
   return NextResponse.json({ status: "ok" });
 }

@@ -5,6 +5,8 @@ export type CliPollResponse =
 
 export type CliAuthorizeResponse = { status: "ok" } | { error: string };
 
+export type CliInitializeResponse = { status: "pending" } | { error: string };
+
 export interface CliAuthOrganization {
   id: string;
   name: string;

@@ -7,6 +7,20 @@ export const cliSessionIdSchema = z
   .max(128)
   .regex(/^[A-Za-z0-9_-]+$/);
 
+export const cliPollSecretSchema = z
+  .string()
+  .length(43)
+  .regex(/^[A-Za-z0-9_-]+$/);
+
+export const cliPollSecretHashSchema = z
+  .string()
+  .length(43)
+  .regex(/^[A-Za-z0-9_-]+$/);
+
+export const initializeCliSessionSchema = z.object({
+  pollSecretHash: cliPollSecretHashSchema,
+});
+
 export const authorizeCliSessionSchema = z.object({
   organizationId: z.string().min(1),
   name: z.string().trim().min(1).max(100),
