@@ -11,6 +11,7 @@ import {
   CLI_API_KEY_SOURCE_TAG,
   CLI_API_KEY_TTL_MS,
 } from "@/lib/cli-auth/constants";
+import { revokeCreatedCliApiKey } from "@/lib/cli-auth/revoke-created-key";
 import {
   getCliSessionPollSecretHash,
   storeCliSessionKey,
@@ -131,25 +132,33 @@ export async function POST(
   });
 
   const fullKey = created.data?.key;
-  if (!fullKey) {
+  const keyId = created.data?.keyId;
+  if (!(fullKey && keyId)) {
     return NextResponse.json(
       { error: "Failed to create API key" },
       { status: 500 }
     );
   }
 
-  const stored = await storeCliSessionKey(sessionIdParse.data, fullKey);
+  let stored = false;
+  let storageFailed = false;
+  try {
+    stored = await storeCliSessionKey(sessionIdParse.data, fullKey);
+  } catch (storageError) {
+    storageFailed = true;
+    console.error("[CLI Auth] Failed to store API key handoff:", {
+      keyId,
+      error: storageError,
+    });
+  }
+
   if (!stored) {
-    const keyId = created.data?.keyId;
-    if (keyId) {
-      try {
-        await unkey.keys.deleteKey({ keyId });
-      } catch (deleteError) {
-        console.error("[CLI Auth] Failed to revoke unstored API key:", {
-          keyId,
-          error: deleteError,
-        });
-      }
+    const revoked = await revokeCreatedCliApiKey(keyId);
+    if (!revoked || storageFailed) {
+      return NextResponse.json(
+        { error: "Failed to complete CLI authorization safely" },
+        { status: 500 }
+      );
     }
     return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
   }

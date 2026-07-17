@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { verifications } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+import { decryptCliApiKey, encryptCliApiKey } from "@/lib/cli-auth/encryption";
 import { CLI_SESSION_TTL_MS } from "@/schemas/cli-auth";
 import { hashCliPollSecret } from "@/utils/cli-auth";
 
@@ -61,6 +62,7 @@ export async function storeCliSessionKey(
   apiKey: string
 ): Promise<boolean> {
   const initIdentifier = initIdentifierFor(sessionId);
+  const encryptedApiKey = encryptCliApiKey(apiKey);
   return db.transaction(async (tx) => {
     const [session] = await tx
       .select({
@@ -88,7 +90,7 @@ export async function storeCliSessionKey(
       .values({
         id: identifier,
         identifier,
-        value: apiKey,
+        value: encryptedApiKey,
         expiresAt,
       })
       .onConflictDoNothing({ target: verifications.id })
@@ -130,7 +132,12 @@ export async function consumeCliSessionKey(
       .limit(1)
       .for("update");
 
-    if (!session || session.expiresAt.getTime() < Date.now()) {
+    if (!session) {
+      return { status: "expired" } as const;
+    }
+
+    if (session.expiresAt.getTime() < Date.now()) {
+      await tx.delete(verifications).where(eq(verifications.id, identifier));
       await tx
         .delete(verifications)
         .where(eq(verifications.id, initIdentifier));
@@ -139,19 +146,30 @@ export async function consumeCliSessionKey(
     }
 
     const [row] = await tx
-      .delete(verifications)
+      .select({
+        value: verifications.value,
+        expiresAt: verifications.expiresAt,
+      })
+      .from(verifications)
       .where(eq(verifications.id, identifier))
-      .returning();
+      .limit(1)
+      .for("update");
 
     if (!row) {
       return { status: "pending" } as const;
     }
 
-    await tx.delete(verifications).where(eq(verifications.id, initIdentifier));
-
     if (row.expiresAt.getTime() < Date.now()) {
+      await tx.delete(verifications).where(eq(verifications.id, identifier));
+      await tx
+        .delete(verifications)
+        .where(eq(verifications.id, initIdentifier));
       return { status: "expired" } as const;
     }
-    return { status: "ready", apiKey: row.value } as const;
+
+    const apiKey = decryptCliApiKey(row.value);
+    await tx.delete(verifications).where(eq(verifications.id, identifier));
+    await tx.delete(verifications).where(eq(verifications.id, initIdentifier));
+    return { status: "ready", apiKey } as const;
   });
 }
