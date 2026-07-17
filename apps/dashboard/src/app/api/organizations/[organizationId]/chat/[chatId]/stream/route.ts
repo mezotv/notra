@@ -1,5 +1,6 @@
 import {
   getActiveChatStream,
+  getChatSession,
   getChatStreamChannelName,
 } from "@notra/ai/chat/history";
 import { realtime } from "@notra/ai/realtime";
@@ -22,6 +23,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   if (!auth.success) {
     return auth.response;
+  }
+
+  const session = await getChatSession(organizationId, chatId);
+  if (!session) {
+    return Response.json({ error: "Chat not found" }, { status: 404 });
   }
 
   const activeStreamId = await getActiveChatStream(organizationId, chatId);
