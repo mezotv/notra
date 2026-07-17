@@ -1,8 +1,6 @@
-import {
-  OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
-  OAUTH_OFFLINE_ACCESS_SCOPE,
-} from "@/constants/oauth";
+import { OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES } from "@/constants/oauth";
 import { auth } from "@/lib/auth/server";
+import { hasOnlyLoopbackRedirectUris } from "@/utils/oauth-client-registration";
 
 const AUTH_ROUTE_PREFIX = "/api/auth";
 const INTERNAL_AUTH_ORIGIN = "http://notra.internal";
@@ -45,42 +43,29 @@ export function buildOAuthForwardedHeaders(
   return headers;
 }
 
-const REGISTRATION_SCOPE_SEPARATOR = " ";
-const REGISTRATION_SCOPE_SPLIT_REGEX = /\s+/;
-
-function ensureOfflineAccessScope(scope: string) {
-  const scopes = scope.split(REGISTRATION_SCOPE_SPLIT_REGEX).filter(Boolean);
-
-  if (!scopes.includes(OAUTH_OFFLINE_ACCESS_SCOPE)) {
-    scopes.push(OAUTH_OFFLINE_ACCESS_SCOPE);
-  }
-
-  return scopes.join(REGISTRATION_SCOPE_SEPARATOR);
-}
-
-function withDefaultRegistrationScopes(body: ArrayBuffer) {
+function secureRegistrationBody(body: ArrayBuffer) {
   try {
     const payload = JSON.parse(new TextDecoder().decode(body));
 
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return body;
+      return null;
     }
 
-    const requestedScope =
-      "scope" in payload && typeof payload.scope === "string"
-        ? payload.scope
-        : OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(
-            REGISTRATION_SCOPE_SEPARATOR
-          );
+    if (!hasOnlyLoopbackRedirectUris(payload)) {
+      return null;
+    }
 
     return new TextEncoder().encode(
       JSON.stringify({
         ...payload,
-        scope: ensureOfflineAccessScope(requestedScope),
+        scope:
+          "scope" in payload && typeof payload.scope === "string"
+            ? payload.scope
+            : OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(" "),
       })
     ).buffer;
   } catch {
-    return body;
+    return null;
   }
 }
 
@@ -101,8 +86,19 @@ export async function proxyOAuthRequest(request: Request, pathname: string) {
       : await request.arrayBuffer();
   const body =
     rawBody && pathname === REGISTER_PATH
-      ? withDefaultRegistrationScopes(rawBody)
+      ? secureRegistrationBody(rawBody)
       : rawBody;
+
+  if (rawBody && pathname === REGISTER_PATH && !body) {
+    return Response.json(
+      {
+        error: "invalid_redirect_uri",
+        error_description:
+          "Dynamic clients must use an HTTP loopback redirect URI",
+      },
+      { status: 400 }
+    );
+  }
 
   const response = await auth.handler(
     new Request(targetUrl, {

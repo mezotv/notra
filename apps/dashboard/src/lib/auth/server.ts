@@ -327,7 +327,7 @@ export const auth = betterAuth({
       refreshTokenExpiresIn: OAUTH_REFRESH_TOKEN_TTL_MS / 1000,
       allowPublicClientPrelogin: true,
       allowDynamicClientRegistration: true,
-      allowUnauthenticatedClientRegistration: true,
+      allowUnauthenticatedClientRegistration: false,
       clientRegistrationDefaultScopes: [
         ...OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
       ],

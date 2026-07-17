@@ -1,6 +1,6 @@
 export const OAUTH_AUTH_CODE_TTL_MS = 5 * 60 * 1000;
 export const OAUTH_ACCESS_TOKEN_TTL_SECONDS = 60 * 60;
-export const OAUTH_REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+export const OAUTH_REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export const OAUTH_OFFLINE_ACCESS_SCOPE = "offline_access";
 
@@ -44,21 +44,7 @@ export const OAUTH_DEFAULT_SCOPES = [
 ] as const;
 
 export const OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES = [
-  "offline_access",
-  "posts.read",
-  "posts.write",
-  "brand-identities.read",
-  "brand-identities.write",
-  "integrations.read",
-  "integrations.write",
-  "schedules.read",
-  "schedules.write",
-  "event-triggers.read",
-  "event-triggers.write",
-  "chats.read",
-  "chats.write",
-  "skills.read",
-  "skills.write",
+  ...OAUTH_DEFAULT_SCOPES,
 ] as const;
 
 export const OAUTH_GRANT_QUERY_PARAM = "grant";
