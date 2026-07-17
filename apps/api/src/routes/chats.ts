@@ -21,6 +21,7 @@ import {
 import { getOrganizationId } from "../utils/auth";
 import { createOpenApiApp, formatValidationError } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
+import { enforceRatelimit, ratelimit } from "../utils/ratelimit";
 
 export const chatsRoutes = createOpenApiApp();
 
@@ -154,6 +155,11 @@ async function handleSend(
       organizationId,
       requestId,
     });
+
+    const rateLimited = await enforceRatelimit(c, ratelimit.chatGeneration);
+    if (rateLimited) {
+      return rateLimited;
+    }
 
     const body = await c.req.json().catch(() => null);
     const parseResult = sendChatMessageRequestSchema.safeParse(body);

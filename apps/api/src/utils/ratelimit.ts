@@ -1,12 +1,18 @@
+import { CHAT_GENERATION_RATE_LIMIT } from "@notra/ai/constants/rate-limits";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { Context } from "hono";
+import { getOrganizationId } from "./auth";
 
 const redis = Redis.fromEnv();
 
 export const RATE_LIMITS = {
   postGeneration: { requests: 10, window: "1 minute" },
   brandGeneration: { requests: 5, window: "1 minute" },
+  chatGeneration: {
+    requests: CHAT_GENERATION_RATE_LIMIT.requests,
+    window: CHAT_GENERATION_RATE_LIMIT.windowLabel,
+  },
   integrationCreate: { requests: 20, window: "1 minute" },
   postUpdate: { requests: 60, window: "1 minute" },
 } as const;
@@ -27,6 +33,15 @@ export const ratelimit = {
       "1m"
     ),
   }),
+  chatGeneration: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:chat-generation",
+    limiter: Ratelimit.slidingWindow(
+      CHAT_GENERATION_RATE_LIMIT.requests,
+      CHAT_GENERATION_RATE_LIMIT.window
+    ),
+  }),
   integrationCreate: new Ratelimit({
     redis,
     analytics: true,
@@ -45,9 +60,9 @@ export const ratelimit = {
 };
 
 function getRatelimitKey(c: Context): string {
-  const auth = c.get("auth") as { keyId?: string } | undefined;
-  if (auth?.keyId) {
-    return auth.keyId;
+  const organizationId = c.get("auth") ? getOrganizationId(c) : null;
+  if (organizationId) {
+    return organizationId;
   }
 
   const forwardedFor = c.req.header("x-forwarded-for");

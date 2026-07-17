@@ -22,6 +22,7 @@ import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { chatRequestSchema } from "@/schemas/content";
 import type { RouteContext } from "@/types/api/routes";
+import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
 export const maxDuration = 60;
 
@@ -46,6 +47,11 @@ export const POST = withEvlog(async function POST(
 
     if (!auth.success) {
       return auth.response;
+    }
+
+    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     let useMarkup = false;
