@@ -82,18 +82,26 @@ export async function storeCliSessionKey(
     }
 
     const identifier = resultIdentifierFor(sessionId, session.value);
+    const expiresAt = new Date(Date.now() + CLI_SESSION_TTL_MS);
     const [created] = await tx
       .insert(verifications)
       .values({
         id: identifier,
         identifier,
         value: apiKey,
-        expiresAt: new Date(Date.now() + CLI_SESSION_TTL_MS),
+        expiresAt,
       })
       .onConflictDoNothing({ target: verifications.id })
       .returning({
         id: verifications.id,
       });
+
+    if (created) {
+      await tx
+        .update(verifications)
+        .set({ expiresAt })
+        .where(eq(verifications.id, initIdentifier));
+    }
 
     return Boolean(created);
   });
@@ -123,11 +131,10 @@ export async function consumeCliSessionKey(
       .for("update");
 
     if (!session || session.expiresAt.getTime() < Date.now()) {
-      if (session) {
-        await tx
-          .delete(verifications)
-          .where(eq(verifications.id, initIdentifier));
-      }
+      await tx
+        .delete(verifications)
+        .where(eq(verifications.id, initIdentifier));
+      await tx.delete(verifications).where(eq(verifications.id, identifier));
       return { status: "expired" } as const;
     }
 
