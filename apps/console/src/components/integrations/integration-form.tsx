@@ -50,6 +50,7 @@ import {
 } from "@/lib/integrations/constants";
 import {
   applyPhraseDraftChange,
+  authChoiceToAuthType,
   buildInitialPhraseDrafts,
   rgbaToHex,
 } from "@/lib/integrations/form";
@@ -579,6 +580,7 @@ interface IntegrationQueryData {
 }
 
 function IntegrationToolsCard({
+  authChoice,
   isSaving,
   manualTools,
   onAddTool,
@@ -594,6 +596,7 @@ function IntegrationToolsCard({
   setPhraseDrafts,
   tools,
 }: {
+  authChoice: AuthChoice;
   isSaving: boolean;
   manualTools: McpIntegrationTool[];
   onAddTool: (serverToolName: string) => void;
@@ -615,7 +618,8 @@ function IntegrationToolsCard({
   );
   const autoScanTriggeredRef = useRef(false);
   const oauthParamsHandledRef = useRef(false);
-  const isOAuth = server.authType === "oauth";
+  const isOAuth = authChoice === "oauth";
+  const authTypeChanged = authChoiceToAuthType(authChoice) !== server.authType;
 
   const beginOAuthMutation = useMutation({
     mutationFn: () =>
@@ -739,6 +743,10 @@ function IntegrationToolsCard({
   }, [server.authType, server.lastToolSyncAt, indexedTools.length, startScan]);
 
   const handleScan = () => {
+    if (authTypeChanged) {
+      toast.info("Save the authentication change before scanning tools.");
+      return;
+    }
     if (isOAuth) {
       const oauthPopup = openMcpOAuthPopup();
       beginOAuthMutation.mutate(undefined, {
@@ -985,6 +993,7 @@ export function IntegrationForm({
 
         {server ? (
           <IntegrationToolsCard
+            authChoice={form.authChoice}
             isSaving={form.isSaving}
             manualTools={form.manualTools}
             onAddTool={form.addManualTool}
