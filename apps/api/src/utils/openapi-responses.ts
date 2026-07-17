@@ -42,7 +42,7 @@ const rateLimitHeaderDescriptors = {
 
 export function rateLimitResponse(limit: number, window: string) {
   return {
-    description: `Rate limit exceeded. This endpoint allows ${limit} requests per ${window} per API key.`,
+    description: `Rate limit exceeded. This endpoint allows ${limit} requests per ${window} per organization.`,
     headers: rateLimitHeaderDescriptors,
     content: {
       "application/json": {

@@ -64,11 +64,6 @@ export const POST = withEvlog(async function POST(
       return auth.response;
     }
 
-    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     let useMarkup = false;
     if (autumn) {
       let checkData: CheckResponse | null = null;
@@ -101,6 +96,11 @@ export const POST = withEvlog(async function POST(
       }
 
       useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
+    } else if (process.env.NODE_ENV === "production") {
+      return NextResponse.json(
+        { error: "Billing service is unavailable", code: "BILLING_ERROR" },
+        { status: 503 }
+      );
     }
 
     const body = await request.json();
@@ -114,6 +114,11 @@ export const POST = withEvlog(async function POST(
     }
 
     const { messages } = parseResult.data;
+    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     const chatId = parseResult.data.chatId ?? generateChatId();
     cleanupOrganizationId = organizationId;
     cleanupChatId = chatId;

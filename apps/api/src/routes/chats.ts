@@ -20,8 +20,8 @@ import {
 } from "../schemas/chats";
 import { getOrganizationId } from "../utils/auth";
 import { createOpenApiApp, formatValidationError } from "../utils/openapi-app";
-import { errorResponse } from "../utils/openapi-responses";
-import { enforceRatelimit, ratelimit } from "../utils/ratelimit";
+import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
+import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
 
 export const chatsRoutes = createOpenApiApp();
 
@@ -156,16 +156,16 @@ async function handleSend(
       requestId,
     });
 
-    const rateLimited = await enforceRatelimit(c, ratelimit.chatGeneration);
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     const body = await c.req.json().catch(() => null);
     const parseResult = sendChatMessageRequestSchema.safeParse(body);
 
     if (!parseResult.success) {
       return c.json({ error: formatValidationError(parseResult.error) }, 400);
+    }
+
+    const rateLimited = await enforceRatelimit(c, ratelimit.chatGeneration);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     return await runChatMessage({
@@ -219,6 +219,10 @@ const streamingChatResponses = {
   401: errorResponse("Missing or invalid API key"),
   403: errorResponse("Forbidden, or usage limit reached"),
   404: errorResponse("Chat not found"),
+  429: rateLimitResponse(
+    RATE_LIMITS.chatGeneration.requests,
+    RATE_LIMITS.chatGeneration.window
+  ),
   500: errorResponse("Failed to process chat request"),
   503: errorResponse("Authentication service unavailable"),
 };

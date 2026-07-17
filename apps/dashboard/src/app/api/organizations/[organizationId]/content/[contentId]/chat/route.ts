@@ -49,11 +49,6 @@ export const POST = withEvlog(async function POST(
       return auth.response;
     }
 
-    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     let useMarkup = false;
     if (autumn) {
       console.log("[Autumn] Checking feature access:", {
@@ -98,6 +93,12 @@ export const POST = withEvlog(async function POST(
 
       useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
     } else {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Billing service is unavailable", code: "BILLING_ERROR" },
+          { status: 503 }
+        );
+      }
       console.log(
         "[Autumn] Skipping billing check - AUTUMN_SECRET_KEY not configured",
         { requestId }
@@ -112,6 +113,11 @@ export const POST = withEvlog(async function POST(
         { error: "Invalid request body", details: parseResult.error.issues },
         { status: 400 }
       );
+    }
+
+    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     const {
