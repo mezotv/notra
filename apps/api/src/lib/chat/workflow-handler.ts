@@ -31,6 +31,7 @@ import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { serve } from "@upstash/workflow/hono";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
+import { WORKFLOW_SERVE_ENV } from "../../constants/workflow";
 
 export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
   async (context) => {
@@ -353,5 +354,6 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
         clearChatAbortFlag(organizationId, chatId, latestMessage.id),
       ]);
     }
-  }
+  },
+  { env: WORKFLOW_SERVE_ENV }
 );
