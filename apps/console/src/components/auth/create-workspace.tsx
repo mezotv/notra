@@ -74,7 +74,7 @@ export function CreateWorkspace() {
   }
 
   return (
-    <main className="flex min-h-svh items-center justify-center p-4">
+    <main className="flex min-h-full items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Create your workspace</CardTitle>

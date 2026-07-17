@@ -18,7 +18,7 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="flex min-h-svh w-full flex-col items-center justify-center gap-8 p-4">
+    <div className="flex min-h-full w-full flex-col items-center justify-center gap-8 p-4">
       <div className="flex flex-col items-center gap-3 text-center">
         <Image
           alt=""

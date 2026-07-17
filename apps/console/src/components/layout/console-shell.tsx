@@ -6,6 +6,7 @@ import {
   SecurityCheckIcon,
   Tick02Icon,
   UnfoldMoreIcon,
+  UserSwitchIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -43,9 +44,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { UserImpersonationDialog } from "@/components/auth/user-impersonation-dialog";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { authClient } from "@/lib/auth/client";
-import type { Organization, User } from "@/types/organization";
+import type { ConsoleUser, UserMenuProps } from "@/types/auth";
+import type { Organization } from "@/types/organization";
 
 function OrganizationSwitcher({
   activeOrganization,
@@ -203,10 +206,11 @@ function ConsoleNavigation({
   );
 }
 
-function UserMenu({ user }: { user: User }) {
+function UserMenu({ isAdmin, user }: UserMenuProps) {
   const router = useRouter();
   const { isMobile, state } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [impersonationOpen, setImpersonationOpen] = useState(false);
   let side: "bottom" | "right" | "top" = "top";
   if (isMobile) {
     side = "bottom";
@@ -228,64 +232,87 @@ function UserMenu({ user }: { user: User }) {
   }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                className="cursor-pointer"
-                disabled={isSigningOut}
-                size="lg"
-                tooltip="Account"
-              >
-                <Avatar className="size-8 rounded-lg after:rounded-lg">
-                  <AvatarImage
-                    alt={user.name}
-                    className="rounded-lg"
-                    src={user.image ?? undefined}
-                  />
-                  <AvatarFallback className="rounded-lg">
-                    {user.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-muted-foreground text-xs">
+    <>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <SidebarMenuButton
+                  className="cursor-pointer"
+                  disabled={isSigningOut}
+                  size="lg"
+                  tooltip="Account"
+                >
+                  <Avatar className="size-8 rounded-lg after:rounded-lg">
+                    <AvatarImage
+                      alt={user.name}
+                      className="rounded-lg"
+                      src={user.image ?? undefined}
+                    />
+                    <AvatarFallback className="rounded-lg">
+                      {user.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{user.name}</span>
+                    <span className="truncate text-muted-foreground text-xs">
+                      {user.email}
+                    </span>
+                  </div>
+                  <HugeiconsIcon className="ml-auto" icon={UnfoldMoreIcon} />
+                </SidebarMenuButton>
+              }
+            />
+            <DropdownMenuContent
+              align="end"
+              className="min-w-56"
+              side={side}
+              sideOffset={4}
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>
+                  <span className="block truncate text-foreground">
+                    {user.name}
+                  </span>
+                  <span className="block truncate font-normal">
                     {user.email}
                   </span>
-                </div>
-                <HugeiconsIcon className="ml-auto" icon={UnfoldMoreIcon} />
-              </SidebarMenuButton>
-            }
-          />
-          <DropdownMenuContent
-            align="end"
-            className="min-w-56"
-            side={side}
-            sideOffset={4}
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>
-                <span className="block truncate text-foreground">
-                  {user.name}
-                </span>
-                <span className="block truncate font-normal">{user.email}</span>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              disabled={isSigningOut}
-              onClick={signOut}
-              variant="destructive"
-            >
-              <HugeiconsIcon icon={Logout01Icon} />
-              {isSigningOut ? "Signing out..." : "Sign out"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+                </DropdownMenuLabel>
+              </DropdownMenuGroup>
+              {isAdmin ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={isSigningOut}
+                    onClick={() => setImpersonationOpen(true)}
+                  >
+                    <HugeiconsIcon icon={UserSwitchIcon} />
+                    Impersonate user
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={isSigningOut}
+                onClick={signOut}
+                variant="destructive"
+              >
+                <HugeiconsIcon icon={Logout01Icon} />
+                {isSigningOut ? "Signing out..." : "Sign out"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+      {isAdmin ? (
+        <UserImpersonationDialog
+          currentUserId={user.id}
+          onOpenChange={setImpersonationOpen}
+          open={impersonationOpen}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -300,10 +327,10 @@ export function ConsoleShell({
   children: React.ReactNode;
   initialSidebarOpen: boolean;
   isAdmin: boolean;
-  user: User;
+  user: ConsoleUser;
 }) {
   return (
-    <div className="flex h-svh flex-col overflow-hidden overscroll-none">
+    <div className="flex h-full flex-col overflow-hidden overscroll-none">
       <SidebarProvider
         className="min-h-0! flex-1 overflow-hidden overscroll-none"
         defaultOpen={initialSidebarOpen}
@@ -320,7 +347,7 @@ export function ConsoleShell({
           </SidebarContent>
           <SidebarFooter>
             <ThemeToggle />
-            <UserMenu user={user} />
+            <UserMenu isAdmin={isAdmin} user={user} />
           </SidebarFooter>
           <SidebarRail />
         </Sidebar>

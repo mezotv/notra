@@ -32,6 +32,7 @@ export default async function OrganizationLayout({
       initialSidebarOpen={initialSidebarOpen}
       isAdmin={hasAdminRole(user.role)}
       user={{
+        id: user.id,
         name: user.name,
         email: user.email,
         image: user.image,
