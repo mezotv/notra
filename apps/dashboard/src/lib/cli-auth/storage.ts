@@ -141,7 +141,6 @@ export async function consumeCliSessionKey(
       await tx
         .delete(verifications)
         .where(eq(verifications.id, initIdentifier));
-      await tx.delete(verifications).where(eq(verifications.id, identifier));
       return { status: "expired" } as const;
     }
 
