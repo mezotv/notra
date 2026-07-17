@@ -14,15 +14,20 @@ export function ImpersonationBanner({ email, name }: ImpersonationBannerProps) {
 
   async function stopImpersonating() {
     setIsStopping(true);
-    const result = await authClient.admin.stopImpersonating();
+    try {
+      const result = await authClient.admin.stopImpersonating();
 
-    if (result.error) {
-      toast.error(result.error.message ?? "Failed to return to admin");
+      if (result.error) {
+        toast.error(result.error.message ?? "Failed to return to admin");
+        setIsStopping(false);
+        return;
+      }
+
+      window.location.assign("/dashboard");
+    } catch {
+      toast.error("Failed to return to admin");
       setIsStopping(false);
-      return;
     }
-
-    window.location.assign("/dashboard");
   }
 
   return (

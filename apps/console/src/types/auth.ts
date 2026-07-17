@@ -20,6 +20,21 @@ export interface ImpersonationUser extends ConsoleUser {
   banned: boolean | null;
 }
 
+export interface ImpersonationTarget {
+  id: string;
+  role: string | null;
+  banned: boolean | null;
+}
+
+export interface AssertImpersonationTargetAllowedParams {
+  actorUserId: string;
+  target: ImpersonationTarget;
+}
+
+export interface GetServerSessionParams {
+  headers: Headers;
+}
+
 export interface UserImpersonationDialogProps {
   currentUserId: string;
   onOpenChange: (open: boolean) => void;

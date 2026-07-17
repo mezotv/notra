@@ -113,7 +113,12 @@ export function UserImpersonationDialog({
           ]) {
             uniqueUsers.set(user.id, user);
           }
-          setUsers(Array.from(uniqueUsers.values()));
+          setUsers(
+            Array.from(uniqueUsers.values()).slice(
+              0,
+              IMPERSONATION_USER_RESULT_LIMIT
+            )
+          );
         }
         setIsLoading(false);
       }
@@ -133,17 +138,33 @@ export function UserImpersonationDialog({
   }, [debouncedSearch, open]);
 
   async function impersonateUser(user: ImpersonationUser) {
-    setImpersonatingUserId(user.id);
-    const result = await authClient.admin.impersonateUser({ userId: user.id });
-
-    if (result.error) {
-      toast.error(result.error.message ?? "Failed to impersonate user");
-      setImpersonatingUserId(undefined);
+    if (
+      user.id === currentUserId ||
+      user.banned === true ||
+      hasAdminRole(user.role)
+    ) {
+      toast.error("This user cannot be impersonated");
       return;
     }
 
-    onOpenChange(false);
-    window.location.assign("/dashboard");
+    setImpersonatingUserId(user.id);
+    try {
+      const result = await authClient.admin.impersonateUser({
+        userId: user.id,
+      });
+
+      if (result.error) {
+        toast.error(result.error.message ?? "Failed to impersonate user");
+        setImpersonatingUserId(undefined);
+        return;
+      }
+
+      onOpenChange(false);
+      window.location.assign("/dashboard");
+    } catch {
+      toast.error("Failed to impersonate user");
+      setImpersonatingUserId(undefined);
+    }
   }
 
   return (

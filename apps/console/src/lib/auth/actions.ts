@@ -1,23 +1,20 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { auth } from "@/lib/auth/server";
+import { getRequestSession } from "@/lib/auth/session";
 
 export async function requireAuth() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session, user } = await getRequestSession();
 
-  if (!session?.user) {
+  if (!(session && user)) {
     redirect("/login");
   }
 
   return {
-    session: session.session,
-    user: session.user,
+    session,
+    user,
   };
 }
 
@@ -46,11 +43,9 @@ export async function getOrganizationsForUser(userId: string) {
 }
 
 export const validateOrganizationAccess = cache(async (slug: string) => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { user } = await getRequestSession();
 
-  if (!session?.user) {
+  if (!user) {
     redirect("/login");
   }
 
@@ -58,7 +53,7 @@ export const validateOrganizationAccess = cache(async (slug: string) => {
     where: eq(organizations.slug, slug),
     with: {
       members: {
-        where: eq(members.userId, session.user.id),
+        where: eq(members.userId, user.id),
       },
     },
   });
@@ -69,7 +64,7 @@ export const validateOrganizationAccess = cache(async (slug: string) => {
 
   return {
     organization,
-    user: session.user,
+    user,
     member: organization.members[0],
   };
 });

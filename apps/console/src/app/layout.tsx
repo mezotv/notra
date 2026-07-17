@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
-import { headers } from "next/headers";
 import "@/styles/globals.css";
 
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { Providers } from "@/components/providers";
-import { getServerSession } from "@/lib/auth/session";
+import { getRequestSession } from "@/lib/auth/session";
 
 const notoSans = Noto_Sans({
   subsets: ["latin"],
@@ -38,9 +37,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { session, user } = await getServerSession({
-    headers: await headers(),
-  });
+  const { session, user } = await getRequestSession();
   const isImpersonating = Boolean(session?.impersonatedBy);
 
   return (

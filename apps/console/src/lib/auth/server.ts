@@ -4,10 +4,14 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
-import { members } from "@notra/db/schema";
+import { members, users } from "@notra/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import {
   admin,
@@ -17,6 +21,8 @@ import {
 } from "better-auth/plugins";
 import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
+import { assertImpersonationTargetAllowed } from "@/lib/auth/impersonation";
+import { hasAdminRole } from "@/lib/auth/role";
 import { enforceTeamMembersLimit } from "@/lib/billing/team-members";
 import { organizationSlugSchema } from "@/schemas/organization";
 
@@ -131,6 +137,40 @@ export const auth = betterAuth({
       const { internalAdapter } = await auth.$context;
       await internalAdapter.deleteUserSessions(user.id);
     },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/admin/impersonate-user") {
+        return;
+      }
+
+      const userId = ctx.body?.userId;
+      if (typeof userId !== "string") {
+        return;
+      }
+
+      const session = await getSessionFromCtx(ctx);
+      const actorRole = session?.user.role;
+      if (!(session && hasAdminRole(actorRole))) {
+        return;
+      }
+
+      const target = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: {
+          id: true,
+          role: true,
+          banned: true,
+        },
+      });
+
+      if (target) {
+        assertImpersonationTargetAllowed({
+          actorUserId: session.user.id,
+          target,
+        });
+      }
+    }),
   },
   plugins: [
     admin(),
