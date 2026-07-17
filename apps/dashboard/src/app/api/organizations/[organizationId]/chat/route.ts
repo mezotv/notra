@@ -64,6 +64,21 @@ export const POST = withEvlog(async function POST(
       return auth.response;
     }
 
+    const body = await request.json().catch(() => null);
+    const parseResult = standaloneChatRequestSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parseResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     let useMarkup = false;
     if (autumn) {
       let checkData: CheckResponse | null = null;
@@ -103,22 +118,7 @@ export const POST = withEvlog(async function POST(
       );
     }
 
-    const body = await request.json();
-    const parseResult = standaloneChatRequestSchema.safeParse(body);
-
-    if (!parseResult.success) {
-      return NextResponse.json(
-        { error: "Invalid request body", details: parseResult.error.issues },
-        { status: 400 }
-      );
-    }
-
     const { messages } = parseResult.data;
-    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     const chatId = parseResult.data.chatId ?? generateChatId();
     cleanupOrganizationId = organizationId;
     cleanupChatId = chatId;
@@ -503,9 +503,6 @@ async function createDirectStandaloneChatResponse({
         }
         if (InvalidToolInputError.isInstance(error)) {
           return "The assistant called a tool with invalid inputs and couldn't recover. Please try sending your message again.";
-        }
-        if (error instanceof Error) {
-          return error.message;
         }
         return "An error occurred while processing your request.";
       },

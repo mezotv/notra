@@ -49,6 +49,21 @@ export const POST = withEvlog(async function POST(
       return auth.response;
     }
 
+    const body = await request.json().catch(() => null);
+    const parseResult = chatRequestSchema.safeParse(body);
+
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request body", details: parseResult.error.issues },
+        { status: 400 }
+      );
+    }
+
+    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
+    if (rateLimited) {
+      return rateLimited;
+    }
+
     let useMarkup = false;
     if (autumn) {
       console.log("[Autumn] Checking feature access:", {
@@ -103,21 +118,6 @@ export const POST = withEvlog(async function POST(
         "[Autumn] Skipping billing check - AUTUMN_SECRET_KEY not configured",
         { requestId }
       );
-    }
-
-    const body = await request.json();
-    const parseResult = chatRequestSchema.safeParse(body);
-
-    if (!parseResult.success) {
-      return NextResponse.json(
-        { error: "Invalid request body", details: parseResult.error.issues },
-        { status: 400 }
-      );
-    }
-
-    const rateLimited = await enforceChatGenerationRatelimit(organizationId);
-    if (rateLimited) {
-      return rateLimited;
     }
 
     const {
@@ -236,9 +236,6 @@ export const POST = withEvlog(async function POST(
     return stream.toUIMessageStreamResponse({
       onError: (error) => {
         console.error("[Content Chat] Stream error:", { requestId, error });
-        if (error instanceof Error) {
-          return error.message;
-        }
         return "An error occurred while processing your request.";
       },
     });
