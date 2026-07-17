@@ -61,33 +61,35 @@ export async function storeCliSessionKey(
   apiKey: string
 ): Promise<boolean> {
   const initIdentifier = initIdentifierFor(sessionId);
-  const [session] = await db
-    .delete(verifications)
-    .where(eq(verifications.id, initIdentifier))
-    .returning({
-      value: verifications.value,
-      expiresAt: verifications.expiresAt,
-    });
+  return db.transaction(async (tx) => {
+    const [session] = await tx
+      .delete(verifications)
+      .where(eq(verifications.id, initIdentifier))
+      .returning({
+        value: verifications.value,
+        expiresAt: verifications.expiresAt,
+      });
 
-  if (!session || session.expiresAt.getTime() < Date.now()) {
-    return false;
-  }
+    if (!session || session.expiresAt.getTime() < Date.now()) {
+      return false;
+    }
 
-  const identifier = resultIdentifierFor(sessionId, session.value);
-  const [created] = await db
-    .insert(verifications)
-    .values({
-      id: identifier,
-      identifier,
-      value: apiKey,
-      expiresAt: new Date(Date.now() + CLI_SESSION_TTL_MS),
-    })
-    .onConflictDoNothing({ target: verifications.id })
-    .returning({
-      id: verifications.id,
-    });
+    const identifier = resultIdentifierFor(sessionId, session.value);
+    const [created] = await tx
+      .insert(verifications)
+      .values({
+        id: identifier,
+        identifier,
+        value: apiKey,
+        expiresAt: new Date(Date.now() + CLI_SESSION_TTL_MS),
+      })
+      .onConflictDoNothing({ target: verifications.id })
+      .returning({
+        id: verifications.id,
+      });
 
-  return Boolean(created);
+    return Boolean(created);
+  });
 }
 
 export async function consumeCliSessionKey(

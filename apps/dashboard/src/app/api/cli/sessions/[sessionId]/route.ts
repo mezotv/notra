@@ -1,5 +1,4 @@
-import type { Ratelimit } from "@upstash/ratelimit";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   consumeCliSessionKey,
   initializeCliSession,
@@ -13,34 +12,15 @@ import type {
   CliInitializeResponse,
   CliPollResponse,
 } from "@/types/cli-auth/poll";
+import { hashCliPollSecret } from "@/utils/cli-auth";
 import {
   cliSessionInitializeRatelimit,
   cliSessionPollRatelimit,
+  enforceCliSessionRatelimit,
 } from "@/utils/cli-auth-ratelimit";
+import { getClientIp } from "@/utils/ratelimit";
 
 const BEARER_SECRET_REGEX = /^Bearer\s+(.+)$/i;
-
-async function rateLimitResponse(limiter: Ratelimit, identifier: string) {
-  const result = await limiter.limit(identifier);
-  if (result.success) {
-    return null;
-  }
-
-  const retryAfter = Math.max(0, Math.ceil((result.reset - Date.now()) / 1000));
-  return NextResponse.json(
-    { error: "Rate limit exceeded" },
-    { status: 429, headers: { "Retry-After": String(retryAfter) } }
-  );
-}
-
-function getClientIp(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  return (
-    forwardedFor?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
 
 export async function GET(
   request: Request,
@@ -67,9 +47,9 @@ export async function GET(
     );
   }
 
-  const rateLimited = await rateLimitResponse(
+  const rateLimited = await enforceCliSessionRatelimit(
     cliSessionPollRatelimit,
-    sessionIdParse.data
+    `${sessionIdParse.data}:${hashCliPollSecret(pollSecretParse.data)}`
   );
   if (rateLimited) {
     return rateLimited;
@@ -89,7 +69,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
@@ -110,7 +90,7 @@ export async function POST(
     );
   }
 
-  const rateLimited = await rateLimitResponse(
+  const rateLimited = await enforceCliSessionRatelimit(
     cliSessionInitializeRatelimit,
     getClientIp(request)
   );

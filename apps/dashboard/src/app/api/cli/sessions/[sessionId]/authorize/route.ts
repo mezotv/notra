@@ -19,6 +19,11 @@ import {
   authorizeCliSessionSchema,
   cliSessionIdSchema,
 } from "@/schemas/cli-auth";
+import { verifyCliVerificationCode } from "@/utils/cli-auth";
+import {
+  cliSessionAuthorizeRatelimit,
+  enforceCliSessionRatelimit,
+} from "@/utils/cli-auth-ratelimit";
 
 export async function POST(
   request: Request,
@@ -47,11 +52,6 @@ export async function POST(
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const pollSecretHash = await getCliSessionPollSecretHash(sessionIdParse.data);
-  if (!pollSecretHash) {
-    return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
-  }
-
   const bodyParse = authorizeCliSessionSchema.safeParse(body);
   if (!bodyParse.success) {
     return NextResponse.json(
@@ -59,6 +59,28 @@ export async function POST(
         error: "Invalid request body",
         details: bodyParse.error.issues,
       },
+      { status: 400 }
+    );
+  }
+
+  const rateLimited = await enforceCliSessionRatelimit(
+    cliSessionAuthorizeRatelimit,
+    session.user.id
+  );
+  if (rateLimited) {
+    return rateLimited;
+  }
+
+  const pollSecretHash = await getCliSessionPollSecretHash(sessionIdParse.data);
+  if (!pollSecretHash) {
+    return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
+  }
+
+  if (
+    !verifyCliVerificationCode(pollSecretHash, bodyParse.data.verificationCode)
+  ) {
+    return NextResponse.json(
+      { error: "Verification code does not match the CLI session" },
       { status: 400 }
     );
   }

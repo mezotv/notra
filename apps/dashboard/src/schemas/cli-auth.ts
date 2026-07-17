@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { CLI_VERIFICATION_CODE_PATTERN } from "@/lib/cli-auth/constants";
 
 export const cliSessionIdSchema = z
   .string()
@@ -24,6 +25,11 @@ export const initializeCliSessionSchema = z.object({
 export const authorizeCliSessionSchema = z.object({
   organizationId: z.string().min(1),
   name: z.string().trim().min(1).max(100),
+  verificationCode: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(CLI_VERIFICATION_CODE_PATTERN),
 });
 
 export type AuthorizeCliSessionInput = z.infer<
