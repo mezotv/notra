@@ -64,8 +64,14 @@ export async function enforceChatGenerationRatelimit(
 ): Promise<NextResponse | null> {
   const organizationAvailability =
     await chatGenerationRatelimit.getRemaining(organizationId);
+  let organizationReservationMade = false;
   if (organizationAvailability.remaining <= 0) {
-    return rateLimitedResponse(organizationAvailability);
+    const organizationResult =
+      await chatGenerationRatelimit.limit(organizationId);
+    if (!organizationResult.success) {
+      return rateLimitedResponse(organizationResult);
+    }
+    organizationReservationMade = true;
   }
 
   const userResult = await userChatGenerationRatelimit.limit(
@@ -73,6 +79,10 @@ export async function enforceChatGenerationRatelimit(
   );
   if (!userResult.success) {
     return rateLimitedResponse(userResult);
+  }
+
+  if (organizationReservationMade) {
+    return null;
   }
 
   const organizationResult =
