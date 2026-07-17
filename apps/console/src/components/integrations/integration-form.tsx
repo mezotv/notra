@@ -867,6 +867,53 @@ function IntegrationFormActions({
   );
 }
 
+function IntegrationOwnershipConsent({
+  checked,
+  disabled,
+  error,
+  onCheckedChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  error: string | null;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  const errorId = "integration-ownership-consent-error";
+  const labelId = "integration-ownership-consent-label";
+
+  return (
+    <div className="grid gap-2 rounded-lg border p-4">
+      <div className="flex items-start gap-3">
+        <input
+          aria-describedby={error ? errorId : undefined}
+          aria-invalid={Boolean(error)}
+          aria-labelledby={labelId}
+          checked={checked}
+          className="mt-0.5 size-4 shrink-0 accent-primary"
+          disabled={disabled}
+          id="integration-ownership-consent"
+          onChange={(event) => onCheckedChange(event.target.checked)}
+          type="checkbox"
+        />
+        <Label
+          className="font-normal leading-relaxed"
+          htmlFor="integration-ownership-consent"
+          id={labelId}
+        >
+          I confirm that I own this MCP server or am authorized to represent it,
+          and I allow Notra to use its name, logo, and banner in the integration
+          store.
+        </Label>
+      </div>
+      {error ? (
+        <p className="ml-7 text-destructive text-xs" id={errorId} role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function IntegrationForm({
   organizationId,
   server,
@@ -971,6 +1018,13 @@ export function IntegrationForm({
             tools={mergeManualTools(form.draftTools, form.manualTools)}
           />
         )}
+
+        <IntegrationOwnershipConsent
+          checked={form.ownershipConsent}
+          disabled={form.isBusy}
+          error={form.ownershipConsentError}
+          onCheckedChange={form.setOwnershipConsent}
+        />
 
         <IntegrationFormActions
           backHref={form.backHref}

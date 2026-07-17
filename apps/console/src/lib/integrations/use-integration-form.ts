@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import type { ZodError } from "zod";
 import {
   authChoiceToAuthType,
   authTypeToAuthChoice,
@@ -60,6 +61,10 @@ export function useIntegrationForm({
   );
   const [logoDarkUrl, setLogoDarkUrl] = useState(server?.logoDarkUrl ?? null);
   const [bannerUrl, setBannerUrl] = useState(server?.bannerUrl ?? null);
+  const [ownershipConsent, setOwnershipConsent] = useState(false);
+  const [ownershipConsentError, setOwnershipConsentError] = useState<
+    string | null
+  >(null);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [authChoice, setAuthChoice] = useState<AuthChoice>(
@@ -87,6 +92,7 @@ export function useIntegrationForm({
   function getSharedFields() {
     return {
       organizationId,
+      ownershipConsent,
       name,
       author: author.trim() || null,
       description: description.trim() || null,
@@ -104,6 +110,14 @@ export function useIntegrationForm({
       logoDarkUrl,
       bannerUrl,
     };
+  }
+
+  function getValidationMessage(error: ZodError, fallback: string) {
+    const ownershipIssue = error.issues.find(
+      (issue) => issue.path[0] === "ownershipConsent"
+    );
+    setOwnershipConsentError(ownershipIssue?.message ?? null);
+    return ownershipIssue?.message ?? error.issues[0]?.message ?? fallback;
   }
 
   function validateApiKeyInput() {
@@ -216,7 +230,7 @@ export function useIntegrationForm({
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
+          getValidationMessage(parsed.error, "Check the integration details")
         );
       }
 
@@ -276,7 +290,7 @@ export function useIntegrationForm({
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
+          getValidationMessage(parsed.error, "Check the integration details")
         );
       }
       const created = await consoleOrpc.integrations.mcp.create.call(
@@ -314,7 +328,7 @@ export function useIntegrationForm({
       });
       if (!parsed.success) {
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
+          getValidationMessage(parsed.error, "Check the integration details")
         );
       }
       const updated = await consoleOrpc.integrations.mcp.update.call(
@@ -359,7 +373,7 @@ export function useIntegrationForm({
       });
       if (!parsed.success) {
         throw new Error(
-          parsed.error.issues[0]?.message ?? "Check the integration details"
+          getValidationMessage(parsed.error, "Check the integration details")
         );
       }
       await consoleOrpc.integrations.mcp.update.call(parsed.data);
@@ -514,7 +528,7 @@ export function useIntegrationForm({
       const parsed = createMcpServerRequestSchema.safeParse(getSharedFields());
       if (!parsed.success) {
         toast.error(
-          parsed.error.issues[0]?.message ?? "Add a server name and URL first"
+          getValidationMessage(parsed.error, "Add a server name and URL first")
         );
         return;
       }
@@ -551,6 +565,8 @@ export function useIntegrationForm({
     logoDarkUrl,
     logoLightUrl,
     name,
+    ownershipConsent,
+    ownershipConsentError,
     phraseDrafts,
     setApiKeyStyle,
     setAuthChoice,
@@ -563,6 +579,12 @@ export function useIntegrationForm({
     setLogoDarkUrl,
     setLogoLightUrl,
     setName,
+    setOwnershipConsent: (checked: boolean) => {
+      setOwnershipConsent(checked);
+      if (checked) {
+        setOwnershipConsentError(null);
+      }
+    },
     setPhraseBaseline,
     setPhraseDrafts,
     setScanning,

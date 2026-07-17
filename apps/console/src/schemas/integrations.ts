@@ -80,6 +80,10 @@ export const BRANDING_ASSET_CONTENT_TYPES: Record<string, string> = {
 
 const createMcpServerRequestFieldsSchema = z.object({
   authType: z.enum(["none", "headers", "oauth"]),
+  ownershipConsent: z.literal(true, {
+    error:
+      "Confirm that you own or represent this MCP server and allow Notra to use its branding",
+  }),
   organizationId: z.string().min(1, "Organization ID is required"),
   name: z.string().trim().min(1, "Name is required").max(120),
   url: mcpUrlSchema,
