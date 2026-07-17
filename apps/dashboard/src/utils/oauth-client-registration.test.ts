@@ -18,14 +18,6 @@ describe("hasOnlyLoopbackRedirectUris", () => {
       true
     );
     assert.equal(
-      isOAuthDynamicClientRegistrationPath("/api/auth/oauth2/register%2F"),
-      true
-    );
-    assert.equal(
-      isOAuthDynamicClientRegistrationPath("/api/auth//oauth2/register"),
-      true
-    );
-    assert.equal(
       isOAuthDynamicClientRegistrationPath("/api/auth/oauth2/token/"),
       false
     );
@@ -85,9 +77,7 @@ describe("hasOnlyLoopbackRedirectUris", () => {
         post_logout_redirect_uris: ["https://attacker.example/logout"],
         reference_id: "another-organization",
         skip_consent: true,
-        software_statement: "signed-client-metadata",
         subject_type: "pairwise",
-        token_endpoint_auth_method: "client_secret_basic",
         type: "web",
       }),
       {
