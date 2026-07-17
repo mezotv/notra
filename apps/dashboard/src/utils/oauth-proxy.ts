@@ -1,6 +1,9 @@
-import { OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES } from "@/constants/oauth";
 import { auth } from "@/lib/auth/server";
-import { hasOnlyLoopbackRedirectUris } from "@/utils/oauth-client-registration";
+import {
+  getDynamicClientRegistrationScope,
+  hasOnlyLoopbackRedirectUris,
+  pickDynamicClientMetadata,
+} from "@/utils/oauth-client-registration";
 
 const AUTH_ROUTE_PREFIX = "/api/auth";
 const INTERNAL_AUTH_ORIGIN = "http://notra.internal";
@@ -55,13 +58,15 @@ function secureRegistrationBody(body: ArrayBuffer) {
       return null;
     }
 
+    const scope = getDynamicClientRegistrationScope(payload);
+    if (!scope) {
+      return null;
+    }
+
     return new TextEncoder().encode(
       JSON.stringify({
-        ...payload,
-        scope:
-          "scope" in payload && typeof payload.scope === "string"
-            ? payload.scope
-            : OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES.join(" "),
+        ...pickDynamicClientMetadata(payload),
+        scope,
       })
     ).buffer;
   } catch {
@@ -92,9 +97,9 @@ export async function proxyOAuthRequest(request: Request, pathname: string) {
   if (rawBody && pathname === REGISTER_PATH && !body) {
     return Response.json(
       {
-        error: "invalid_redirect_uri",
+        error: "invalid_client_metadata",
         error_description:
-          "Dynamic clients must use an HTTP loopback redirect URI",
+          "Dynamic clients must use HTTP loopback redirect URIs and supported scopes",
       },
       { status: 400 }
     );

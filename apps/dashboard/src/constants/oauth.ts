@@ -47,6 +47,23 @@ export const OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES = [
   ...OAUTH_DEFAULT_SCOPES,
 ] as const;
 
+export const OAUTH_DYNAMIC_CLIENT_METADATA_FIELDS = [
+  "redirect_uris",
+  "scope",
+  "client_name",
+  "client_uri",
+  "logo_uri",
+  "contacts",
+  "tos_uri",
+  "policy_uri",
+  "software_id",
+  "software_version",
+  "software_statement",
+  "token_endpoint_auth_method",
+  "grant_types",
+  "response_types",
+] as const;
+
 export const OAUTH_GRANT_QUERY_PARAM = "grant";
 
 export const OAUTH_SCOPE_LEVEL = {
