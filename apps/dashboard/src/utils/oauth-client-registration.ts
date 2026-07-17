@@ -5,13 +5,22 @@ import {
 } from "@/constants/oauth";
 
 const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "[::1]", "localhost"]);
+const REPEATED_SLASHES_PATTERN = /\/{2,}/g;
 const TRAILING_SLASHES_PATTERN = /\/+$/;
 const WHITESPACE_PATTERN = /\s+/;
 
 export function isOAuthDynamicClientRegistrationPath(pathname: string) {
+  let decodedPathname: string;
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+
   return (
-    pathname.replace(TRAILING_SLASHES_PATTERN, "") ===
-    "/api/auth/oauth2/register"
+    decodedPathname
+      .replace(REPEATED_SLASHES_PATTERN, "/")
+      .replace(TRAILING_SLASHES_PATTERN, "") === "/api/auth/oauth2/register"
   );
 }
 

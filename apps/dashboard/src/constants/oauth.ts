@@ -58,8 +58,6 @@ export const OAUTH_DYNAMIC_CLIENT_METADATA_FIELDS = [
   "policy_uri",
   "software_id",
   "software_version",
-  "software_statement",
-  "token_endpoint_auth_method",
   "grant_types",
   "response_types",
 ] as const;

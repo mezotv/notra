@@ -67,6 +67,7 @@ function secureRegistrationBody(body: ArrayBuffer) {
       JSON.stringify({
         ...pickDynamicClientMetadata(payload),
         scope,
+        token_endpoint_auth_method: "none",
       })
     ).buffer;
   } catch {
