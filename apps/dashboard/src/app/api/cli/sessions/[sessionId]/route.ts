@@ -15,7 +15,8 @@ import type {
 import { hashCliPollSecret } from "@/utils/cli-auth";
 import {
   cliSessionInitializeRatelimit,
-  cliSessionPollRatelimit,
+  cliSessionPollSecretRatelimit,
+  cliSessionPollSessionRatelimit,
   enforceCliSessionRatelimit,
 } from "@/utils/cli-auth-ratelimit";
 import { getClientIp } from "@/utils/ratelimit";
@@ -47,12 +48,20 @@ export async function GET(
     );
   }
 
-  const rateLimited = await enforceCliSessionRatelimit(
-    cliSessionPollRatelimit,
+  const sessionRateLimited = await enforceCliSessionRatelimit(
+    cliSessionPollSessionRatelimit,
+    sessionIdParse.data
+  );
+  if (sessionRateLimited) {
+    return sessionRateLimited;
+  }
+
+  const secretRateLimited = await enforceCliSessionRatelimit(
+    cliSessionPollSecretRatelimit,
     `${sessionIdParse.data}:${hashCliPollSecret(pollSecretParse.data)}`
   );
-  if (rateLimited) {
-    return rateLimited;
+  if (secretRateLimited) {
+    return secretRateLimited;
   }
 
   const result = await consumeCliSessionKey(

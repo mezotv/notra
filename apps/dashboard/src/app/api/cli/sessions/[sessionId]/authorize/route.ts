@@ -142,7 +142,14 @@ export async function POST(
   if (!stored) {
     const keyId = created.data?.keyId;
     if (keyId) {
-      await unkey.keys.deleteKey({ keyId });
+      try {
+        await unkey.keys.deleteKey({ keyId });
+      } catch (deleteError) {
+        console.error("[CLI Auth] Failed to revoke unstored API key:", {
+          keyId,
+          error: deleteError,
+        });
+      }
     }
     return NextResponse.json({ error: "CLI session expired" }, { status: 410 });
   }

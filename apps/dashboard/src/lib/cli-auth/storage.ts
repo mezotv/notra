@@ -63,14 +63,21 @@ export async function storeCliSessionKey(
   const initIdentifier = initIdentifierFor(sessionId);
   return db.transaction(async (tx) => {
     const [session] = await tx
-      .delete(verifications)
-      .where(eq(verifications.id, initIdentifier))
-      .returning({
+      .select({
         value: verifications.value,
         expiresAt: verifications.expiresAt,
-      });
+      })
+      .from(verifications)
+      .where(eq(verifications.id, initIdentifier))
+      .limit(1)
+      .for("update");
 
     if (!session || session.expiresAt.getTime() < Date.now()) {
+      if (session) {
+        await tx
+          .delete(verifications)
+          .where(eq(verifications.id, initIdentifier));
+      }
       return false;
     }
 
@@ -102,20 +109,42 @@ export async function consumeCliSessionKey(
 > {
   const pollSecretHash = hashCliPollSecret(pollSecret);
   const identifier = resultIdentifierFor(sessionId, pollSecretHash);
-  const [row] = await db
-    .delete(verifications)
-    .where(eq(verifications.id, identifier))
-    .returning();
+  const initIdentifier = initIdentifierFor(sessionId);
 
-  if (!row) {
-    const pendingPollSecretHash = await getCliSessionPollSecretHash(sessionId);
-    return pendingPollSecretHash
-      ? { status: "pending" }
-      : { status: "expired" };
-  }
+  return db.transaction(async (tx) => {
+    const [session] = await tx
+      .select({
+        value: verifications.value,
+        expiresAt: verifications.expiresAt,
+      })
+      .from(verifications)
+      .where(eq(verifications.id, initIdentifier))
+      .limit(1)
+      .for("update");
 
-  if (row.expiresAt.getTime() < Date.now()) {
-    return { status: "expired" };
-  }
-  return { status: "ready", apiKey: row.value };
+    if (!session || session.expiresAt.getTime() < Date.now()) {
+      if (session) {
+        await tx
+          .delete(verifications)
+          .where(eq(verifications.id, initIdentifier));
+      }
+      return { status: "expired" } as const;
+    }
+
+    const [row] = await tx
+      .delete(verifications)
+      .where(eq(verifications.id, identifier))
+      .returning();
+
+    if (!row) {
+      return { status: "pending" } as const;
+    }
+
+    await tx.delete(verifications).where(eq(verifications.id, initIdentifier));
+
+    if (row.expiresAt.getTime() < Date.now()) {
+      return { status: "expired" } as const;
+    }
+    return { status: "ready", apiKey: row.value } as const;
+  });
 }

@@ -25,7 +25,10 @@ import { Loader2Icon } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { CLI_VERIFICATION_CODE_PATTERN } from "@/lib/cli-auth/constants";
+import {
+  CLI_API_KEY_TTL_DAYS,
+  CLI_VERIFICATION_CODE_PATTERN,
+} from "@/lib/cli-auth/constants";
 import { detectPlatform } from "@/lib/cli-auth/platform";
 import type { CliAuthFormProps } from "@/types/cli-auth/form";
 
@@ -275,7 +278,8 @@ export function CliAuthForm({ sessionId, organizations }: CliAuthFormProps) {
       </Button>
 
       <p className="text-center text-muted-foreground text-xs">
-        The key expires in 90 days. You can revoke it at any time from Settings.
+        The key expires in {CLI_API_KEY_TTL_DAYS} days. You can revoke it at any
+        time from Settings.
       </p>
     </form>
   );
