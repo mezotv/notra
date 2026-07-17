@@ -21,6 +21,8 @@ import { getChatRedis } from "./config";
 
 const CLEAR_ACTIVE_STREAM_IF_MATCHES_SCRIPT =
   'if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) end return 0';
+const REFRESH_ACTIVE_STREAM_IF_MATCHES_SCRIPT =
+  'if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("EXPIRE", KEYS[1], ARGV[2]) end return 0';
 
 function activeStreamKey(organizationId: string, chatId: string) {
   return `chat:stream:${organizationId}:${chatId}`;
@@ -494,6 +496,24 @@ export async function clearActiveChatStream(
   }
 
   return (await redis.del(key)) > 0;
+}
+
+export async function refreshActiveChatStream(
+  organizationId: string,
+  chatId: string,
+  streamId: string
+): Promise<boolean> {
+  const redis = getChatRedis();
+  if (!redis) {
+    return true;
+  }
+
+  const result = await redis.eval<[string, number], number>(
+    REFRESH_ACTIVE_STREAM_IF_MATCHES_SCRIPT,
+    [activeStreamKey(organizationId, chatId)],
+    [streamId, CHAT_ACTIVE_STREAM_TTL_SECONDS]
+  );
+  return result === 1;
 }
 
 export async function setChatAbortFlag(

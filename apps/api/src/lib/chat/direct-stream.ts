@@ -220,9 +220,6 @@ export async function createDirectStandaloneChatResponse({
         ) {
           return "Generation stopped.";
         }
-        if (error instanceof Error) {
-          return error.message;
-        }
         return "An error occurred while processing your request.";
       },
     });

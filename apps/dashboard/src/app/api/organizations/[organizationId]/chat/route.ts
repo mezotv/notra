@@ -3,6 +3,7 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
+import { getChatRedis } from "@notra/ai/chat/config";
 import {
   clearActiveChatStream,
   clearChatAbortFlag,
@@ -264,7 +265,7 @@ function canUseUpstashWorkflowStreaming() {
     return false;
   }
 
-  if (!(realtime && process.env.QSTASH_TOKEN)) {
+  if (!(realtime && process.env.QSTASH_TOKEN && getChatRedis())) {
     return false;
   }
 
@@ -526,9 +527,6 @@ async function createDirectStandaloneChatResponse({
         }
         if (InvalidToolInputError.isInstance(error)) {
           return "The assistant called a tool with invalid inputs and couldn't recover. Please try sending your message again.";
-        }
-        if (error instanceof Error) {
-          return error.message;
         }
         return "An error occurred while processing your request.";
       },

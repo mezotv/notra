@@ -1,6 +1,9 @@
-import { CHAT_ABORT_POLL_INTERVAL_MS } from "../constants/chat";
+import {
+  CHAT_ABORT_POLL_INTERVAL_MS,
+  CHAT_ACTIVE_STREAM_REFRESH_INTERVAL_MS,
+} from "../constants/chat";
 import type { StartChatAbortPollingArgs } from "../types/chat";
-import { isChatAborted } from "./history";
+import { isChatAborted, refreshActiveChatStream } from "./history";
 
 export function startChatAbortPolling({
   organizationId,
@@ -10,12 +13,29 @@ export function startChatAbortPolling({
   intervalMs = CHAT_ABORT_POLL_INTERVAL_MS,
 }: StartChatAbortPollingArgs): () => void {
   let stopped = false;
+  let nextLeaseRefreshAt = Date.now();
 
   const timer = setInterval(async () => {
     if (stopped) {
       return;
     }
     try {
+      if (Date.now() >= nextLeaseRefreshAt) {
+        const leaseRefreshed = await refreshActiveChatStream(
+          organizationId,
+          chatId,
+          streamId
+        );
+        if (!leaseRefreshed) {
+          stopped = true;
+          clearInterval(timer);
+          onAbort();
+          return;
+        }
+        nextLeaseRefreshAt =
+          Date.now() + CHAT_ACTIVE_STREAM_REFRESH_INTERVAL_MS;
+      }
+
       if (await isChatAborted(organizationId, chatId, streamId)) {
         stopped = true;
         clearInterval(timer);
