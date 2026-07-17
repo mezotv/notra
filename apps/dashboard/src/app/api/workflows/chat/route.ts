@@ -28,6 +28,7 @@ import type {
 } from "@notra/ai/types/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { verifyChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { serve } from "@upstash/workflow/nextjs";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
@@ -44,6 +45,16 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       "[Chat Workflow] Invalid payload:",
       parseResult.error.flatten()
     );
+    await context.cancel();
+    return;
+  }
+
+  const workflowSecret = process.env.QSTASH_TOKEN;
+  if (
+    !workflowSecret ||
+    !verifyChatWorkflowPayload(parseResult.data, workflowSecret)
+  ) {
+    console.error("[Chat Workflow] Payload authorization failed");
     await context.cancel();
     return;
   }
@@ -293,9 +304,6 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       },
       onError: (error) => {
         console.error("[Chat Workflow] Stream error:", { requestId, error });
-        if (error instanceof Error) {
-          return error.message;
-        }
         return "An error occurred while processing your request.";
       },
     });
@@ -344,10 +352,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       if (channel) {
         await channel.emit("ai.chunk", {
           type: "error",
-          errorText:
-            error instanceof Error
-              ? error.message
-              : "An error occurred while processing your request.",
+          errorText: "An error occurred while processing your request.",
         });
         await channel.emit("ai.chunk", {
           type: "finish",

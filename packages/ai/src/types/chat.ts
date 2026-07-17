@@ -35,6 +35,10 @@ export type ExternalChannelLookupSource = z.infer<
 export type ExternalChannelId = z.infer<typeof externalChannelIdSchema>;
 export type UpdateChatSessionInput = z.infer<typeof updateChatSessionSchema>;
 export type ChatWorkflowPayload = z.infer<typeof chatWorkflowPayloadSchema>;
+export type UnsignedChatWorkflowPayload = Omit<
+  ChatWorkflowPayload,
+  "workflowSignature"
+>;
 export type ChatTransportRequestInput = z.infer<
   typeof chatTransportRequestInputSchema
 >;

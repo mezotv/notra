@@ -24,10 +24,14 @@ import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import { realtime } from "@notra/ai/realtime";
 import { standaloneChatRequestSchema } from "@notra/ai/schemas/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
-import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
+import type {
+  ChatUsageSnapshot,
+  UnsignedChatWorkflowPayload,
+} from "@notra/ai/types/chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { signChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
@@ -179,20 +183,32 @@ export const POST = withEvlog(async function POST(
       });
     }
 
+    const workflowPayload: UnsignedChatWorkflowPayload = {
+      requestId,
+      organizationId,
+      chatId,
+      userId: auth.context.user.id,
+      userEmail: auth.context.user.email,
+      context,
+      useMarkup,
+      model: parseResult.data.model,
+      enableThinking: parseResult.data.enableThinking,
+      thinkingLevel: parseResult.data.thinkingLevel,
+      timezone: parseResult.data.timezone,
+    };
+    const workflowSecret = process.env.QSTASH_TOKEN;
+    if (!workflowSecret) {
+      throw new Error("QSTASH_TOKEN is not defined");
+    }
+
     await getWorkflowClient().trigger({
       url: `${getBaseUrl()}/api/workflows/chat`,
       body: {
-        requestId,
-        organizationId,
-        chatId,
-        userId: auth.context.user.id,
-        userEmail: auth.context.user.email,
-        context,
-        useMarkup,
-        model: parseResult.data.model,
-        enableThinking: parseResult.data.enableThinking,
-        thinkingLevel: parseResult.data.thinkingLevel,
-        timezone: parseResult.data.timezone,
+        ...workflowPayload,
+        workflowSignature: signChatWorkflowPayload(
+          workflowPayload,
+          workflowSecret
+        ),
       },
     });
 
