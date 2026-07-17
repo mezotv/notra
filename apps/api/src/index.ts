@@ -96,6 +96,8 @@ interface Bindings {
   UPSTASH_REDIS_REST_URL?: string;
   UPSTASH_REDIS_REST_TOKEN?: string;
   QSTASH_TOKEN?: string;
+  QSTASH_CURRENT_SIGNING_KEY?: string;
+  QSTASH_NEXT_SIGNING_KEY?: string;
   WORKFLOW_BASE_URL?: string;
   INTEGRATION_ENCRYPTION_KEY?: string;
   NEXT_PUBLIC_APP_URL?: string;
