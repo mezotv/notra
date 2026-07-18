@@ -79,7 +79,7 @@ function useResumeGitHubInstall(params: {
 
     resumedInstallRef.current = true;
     const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.delete("githubReauthorized");
+    nextUrl.searchParams.delete("githubAccountConnected");
     nextUrl.searchParams.delete("githubReauthorizeInstallationId");
     nextUrl.searchParams.delete("githubReauthorizeState");
     window.history.replaceState(null, "", nextUrl);
@@ -139,7 +139,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       "githubReauthorizeInstallationId"
     ),
     reauthorizationState: searchParams.get("githubReauthorizeState"),
-    shouldResume: searchParams.get("githubReauthorized") === "true",
+    shouldResume: searchParams.get("githubAccountConnected") === "true",
   });
 
   const githubAppQuery = useQuery(

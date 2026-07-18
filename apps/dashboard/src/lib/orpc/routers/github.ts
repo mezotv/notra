@@ -134,7 +134,7 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
   });
 
   if (requiresAccountConnection) {
-    return { requiresReauthorization: true as const };
+    return { requiresAccountConnection: true as const };
   }
 
   const redisClient = redis;
@@ -177,7 +177,7 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
       }),
   });
 
-  return { requiresReauthorization: false as const, url };
+  return { requiresAccountConnection: false as const, url };
 });
 
 export const githubRouter = {

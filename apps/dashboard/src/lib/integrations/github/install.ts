@@ -50,12 +50,12 @@ export function startGitHubInstall(params: {
       catch: (cause) => new GitHubInstallStartError({ cause }),
     }).pipe(
       Effect.flatMap((preparedInstall) => {
-        if (preparedInstall.requiresReauthorization) {
+        if (preparedInstall.requiresAccountConnection) {
           const callbackUrl = new URL(
             params.callbackPath,
             window.location.origin
           );
-          callbackUrl.searchParams.set("githubReauthorized", "true");
+          callbackUrl.searchParams.set("githubAccountConnected", "true");
 
           return authorizeGitHub(
             `${callbackUrl.pathname}${callbackUrl.search}`

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { TOOL_TIMER_STORAGE_PREFIX } from "@/constants/chat-tool-timer";
 
 const ELAPSED_TICK_MS = 1000;
+const MAX_PERSISTED_TIMER_AGE_MS = 30 * 60 * 1000;
 
 export function useElapsedSeconds(
   isRunning: boolean,
@@ -24,9 +25,12 @@ export function useElapsedSeconds(
 
     const now = Date.now();
     const storedStartedAt = Number(window.localStorage.getItem(storageKey));
+    const clampedStoredStartedAt = Math.min(storedStartedAt, now);
     const validStoredStartedAt =
-      Number.isFinite(storedStartedAt) && storedStartedAt > 0
-        ? Math.min(storedStartedAt, now)
+      Number.isFinite(storedStartedAt) &&
+      storedStartedAt > 0 &&
+      now - clampedStoredStartedAt <= MAX_PERSISTED_TIMER_AGE_MS
+        ? clampedStoredStartedAt
         : null;
     startedAtRef.current = validStoredStartedAt ?? startedAtRef.current ?? now;
     window.localStorage.setItem(storageKey, String(startedAtRef.current));
@@ -43,6 +47,7 @@ export function useElapsedSeconds(
 
     return () => {
       window.clearInterval(interval);
+      startedAtRef.current = null;
     };
   }, [isRunning, toolCallId]);
 
