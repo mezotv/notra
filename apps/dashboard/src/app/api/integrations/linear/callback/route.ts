@@ -7,6 +7,7 @@ import { redis } from "@notra/ai/utils/redis";
 import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { LINEAR_OAUTH_STATE_TTL_SECONDS } from "@/constants/linear";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
 import { linearOAuthErrorParam } from "@/lib/integrations/linear/oauth-errors";
@@ -19,6 +20,8 @@ import type {
 export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+
+  let restoreOAuthState: (() => Promise<void>) | null = null;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -36,16 +39,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
     }
 
-    const raw = await redis.get<string>(`linear_oauth:${state}`);
+    const stateKey = `linear_oauth:${state}`;
+    const raw = await redis.getdel<string>(stateKey);
     if (!raw) {
       return NextResponse.redirect(`${baseUrl}/?error=expired_state`);
     }
+
+    const activeRedis = redis;
+    restoreOAuthState = async () => {
+      try {
+        await activeRedis.set(
+          stateKey,
+          typeof raw === "string" ? raw : JSON.stringify(raw),
+          { ex: LINEAR_OAUTH_STATE_TTL_SECONDS }
+        );
+      } catch (restoreError) {
+        console.error(
+          "Failed to restore Linear OAuth state for retry:",
+          restoreError
+        );
+      }
+    };
 
     const oauthState: LinearOAuthState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
 
     const { session } = await getServerSession({ headers: request.headers });
     if (!session?.userId || session.userId !== oauthState.userId) {
+      await restoreOAuthState();
       return NextResponse.redirect(`${baseUrl}/?error=session_mismatch`);
     }
 
@@ -56,6 +77,7 @@ export async function GET(request: NextRequest) {
       });
     } catch (error) {
       if (error instanceof ORPCError) {
+        await restoreOAuthState();
         return NextResponse.redirect(
           `${baseUrl}/?error=${linearOAuthErrorParam(error.status, "forbidden")}`
         );
@@ -63,11 +85,10 @@ export async function GET(request: NextRequest) {
       throw error;
     }
 
-    await redis.del(`linear_oauth:${state}`);
-
     const clientId = process.env.LINEAR_CLIENT_ID;
     const clientSecret = process.env.LINEAR_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
+      await restoreOAuthState();
       return NextResponse.redirect(`${baseUrl}/?error=linear_not_configured`);
     }
 
@@ -90,6 +111,7 @@ export async function GET(request: NextRequest) {
     if (!tokenRes.ok) {
       const tokenError = await tokenRes.text();
       console.error("Linear token exchange failed:", tokenError);
+      await restoreOAuthState();
       return NextResponse.redirect(`${baseUrl}/?error=token_exchange_failed`);
     }
 
@@ -113,6 +135,7 @@ export async function GET(request: NextRequest) {
 
     if (!orgRes.ok) {
       console.error("Linear organization fetch failed:", await orgRes.text());
+      await restoreOAuthState();
       return NextResponse.redirect(`${baseUrl}/?error=org_fetch_failed`);
     }
 
@@ -154,6 +177,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error in Linear OAuth callback:", error);
+    await restoreOAuthState?.();
     return NextResponse.redirect(`${baseUrl}/?error=callback_failed`);
   }
 }
