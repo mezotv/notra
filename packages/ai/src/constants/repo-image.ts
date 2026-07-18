@@ -2,7 +2,9 @@ import type { FontSpec } from "@notra/ai/types/repo-image";
 
 export const AGENT_TIMEOUT_MS = 960_000;
 export const RECOVERY_AGENT_TIMEOUT_MS = 180_000;
+export const REPO_IMAGE_BOX_REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
 export const REPO_IMAGE_OUTPUT_HTML_PATH = "output.html";
+export const MIN_REPO_IMAGE_HTML_BYTES = 1500;
 export const IMAGE_GEN_AGENT_SKILLS_INSTALL_COMMAND =
   "npx skills add usenotra/skills --skill brand-logos --skill satori --skill marketing-image-generation --yes";
 export const IMAGE_GEN_MODEL_ID = "vercel/anthropic/claude-opus-4.8";

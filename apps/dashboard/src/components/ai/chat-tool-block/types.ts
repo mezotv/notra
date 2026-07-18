@@ -22,6 +22,7 @@ export interface ChatToolBlockProps {
   mcpLogoDarkUrl?: string | null;
   mcpLogoLightUrl?: string | null;
   toolMetadata?: unknown;
+  startedAt?: number;
 }
 
 export interface McpToolIconUrls {

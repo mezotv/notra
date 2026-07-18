@@ -10,6 +10,7 @@ export type RepoImageMode = z.infer<typeof repoImageModeSchema>;
 export type RepoImageErrorCode =
   | "missing_config"
   | "agent_failed"
+  | "clone_failed"
   | "invalid_source"
   | "not_found";
 

@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 const ELAPSED_TICK_MS = 1000;
 
-export function useElapsedSeconds(isRunning: boolean): number {
+export function useElapsedSeconds(
+  isRunning: boolean,
+  persistedStartedAt?: number
+): number {
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -15,19 +18,30 @@ export function useElapsedSeconds(isRunning: boolean): number {
       return;
     }
 
-    startedAtRef.current ??= Date.now();
+    const now = Date.now();
+    const validPersistedStartedAt =
+      typeof persistedStartedAt === "number" &&
+      Number.isFinite(persistedStartedAt) &&
+      persistedStartedAt > 0
+        ? Math.min(persistedStartedAt, now)
+        : null;
+    startedAtRef.current =
+      validPersistedStartedAt ?? startedAtRef.current ?? now;
 
-    const interval = window.setInterval(() => {
+    const updateElapsedSeconds = () => {
       const startedAt = startedAtRef.current;
       if (startedAt !== null) {
         setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
       }
-    }, ELAPSED_TICK_MS);
+    };
+
+    updateElapsedSeconds();
+    const interval = window.setInterval(updateElapsedSeconds, ELAPSED_TICK_MS);
 
     return () => {
       window.clearInterval(interval);
     };
-  }, [isRunning]);
+  }, [isRunning, persistedStartedAt]);
 
   return elapsedSeconds;
 }

@@ -15,6 +15,10 @@ export async function withLongFetchTimeouts<T>(callback: () => Promise<T>) {
     return await callback();
   } finally {
     setGlobalDispatcher(previousDispatcher);
-    await dispatcher.close();
+    if (typeof dispatcher.close === "function") {
+      await dispatcher.close().catch((error: unknown) => {
+        console.warn("Failed to close long-timeout fetch dispatcher", error);
+      });
+    }
   }
 }

@@ -1,5 +1,8 @@
 import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
@@ -34,7 +37,7 @@ import { serve } from "@upstash/workflow/nextjs";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
 
-export const maxDuration = 300;
+export const maxDuration = 1800;
 
 export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const parseResult = chatWorkflowPayloadSchema.safeParse(
@@ -124,7 +127,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
   const creditCheck = await context.run(
     "recheck-ai-credit-balance",
     async () => {
-      if (!autumn) {
+      if (!autumn || allowUnmeteredAiInDevelopment) {
         return { allowed: true, unavailable: false };
       }
 
@@ -268,7 +271,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
           usageSnapshot.cacheWriteTokens =
             usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          if (!autumn) {
+          if (!autumn || allowUnmeteredAiInDevelopment) {
             return;
           }
 

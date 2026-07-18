@@ -1,4 +1,7 @@
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
@@ -1402,7 +1405,7 @@ export const contentRouter = {
       let aiCreditChecked = false;
       let aiCreditMarkup = false;
 
-      if (autumn) {
+      if (autumn && !allowUnmeteredAiInDevelopment) {
         let data: CheckResponse | null = null;
 
         try {

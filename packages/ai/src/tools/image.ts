@@ -4,7 +4,10 @@ import {
   RepoImageError,
 } from "@notra/ai/agents/repo-image";
 import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { IMAGE_GEN_MODEL_ID } from "@notra/ai/constants/repo-image";
 import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
@@ -37,7 +40,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
       whenToUse:
         "When the user asks to create, generate, revise, or continue a marketing image, visual, or social card from repository context.",
       usageNotes:
-        "Requires integrationId and branch. For revisions, pass sourcePostId when the user refers to a prior generated image so the sandbox can be restored from its snapshot.",
+        "Requires integrationId and branch. Generation is a long-running operation that usually takes 3–8 minutes; the tool UI shows a persistent elapsed timer. For revisions, pass sourcePostId when the user refers to a prior generated image so the sandbox can be restored from its snapshot.",
     }),
     inputSchema: imageToolInputSchema,
     execute: async ({ sourcePostId, title, ...input }) => {
@@ -63,7 +66,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
         userId: config.userId,
       });
 
-      const postId = await saveGeneratedImagePost({
+      const { imageUrl, postId } = await saveGeneratedImagePost({
         chatId: config.chatId,
         organizationId: config.organizationId,
         title,
@@ -95,6 +98,7 @@ export function createImageTool(config: ImageToolConfig): Tool {
       return {
         postId,
         title,
+        imageUrl,
         status: "created",
         contentType: "image",
         sandbox: result.sandbox,
@@ -113,7 +117,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
       whenToUse:
         "When editing or revising the current image content item. Use this instead of markdown editing.",
       usageNotes:
-        "Describe the requested visual change in prompt. The current image post ID, repository integration, branch, and sandbox snapshot are supplied automatically.",
+        "Describe the requested visual change in prompt. Revisions are long-running operations that usually take 3–8 minutes; the tool UI shows a persistent elapsed timer. The current image post ID, repository integration, branch, and sandbox snapshot are supplied automatically.",
     }),
     inputSchema: imageRevisionToolInputSchema,
     execute: async ({ prompt, title }) => {
@@ -191,6 +195,7 @@ export function createImageRevisionTool(config: ImageRevisionToolConfig): Tool {
       return {
         postId: config.postId,
         title: nextTitle,
+        imageUrl,
         status: "updated",
         contentType: "image",
         sandbox: result.sandbox,
@@ -242,7 +247,7 @@ async function trackImageGenerationUsage(params: {
   usage: Awaited<ReturnType<typeof generateRepoImage>>["usage"];
   useMarkup?: boolean;
 }) {
-  if (!autumn || !params.usage) {
+  if (!autumn || allowUnmeteredAiInDevelopment || !params.usage) {
     return;
   }
 
@@ -432,5 +437,5 @@ async function saveGeneratedImagePost(params: {
     organizationId: params.organizationId,
   });
 
-  return postId;
+  return { imageUrl, postId };
 }

@@ -791,6 +791,38 @@ export async function getDecryptedToken(integrationId: string, userId: string) {
   return decryptToken(integration.encryptedToken);
 }
 
+export async function getGitHubCloneToken(
+  integrationId: string,
+  userId: string
+) {
+  const integration = await getGitHubIntegrationById(integrationId);
+
+  if (!integration) {
+    throw new Error("Integration not found");
+  }
+
+  const hasAccess = await hasOrganizationAccess(
+    userId,
+    integration.organizationId
+  );
+
+  if (!hasAccess) {
+    throw new Error("User does not have access to this integration");
+  }
+
+  if (integration.githubAppInstallationId) {
+    return createGitHubAppInstallationTokenForRecord(
+      integration.githubAppInstallationId
+    );
+  }
+
+  if (!integration.encryptedToken) {
+    return null;
+  }
+
+  return decryptToken(integration.encryptedToken);
+}
+
 export async function addRepository(
   _params: AddRepositoryParams & { userId: string }
 ) {

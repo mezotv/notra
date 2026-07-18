@@ -6,6 +6,15 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
+function isExplicitlyNonRetryable(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "retryable" in error &&
+    error.retryable === false
+  );
+}
+
 function toErrorPayload(toolName: string, error: unknown) {
   const rawMessage = error instanceof Error ? error.message : String(error);
   const message =
@@ -13,10 +22,14 @@ function toErrorPayload(toolName: string, error: unknown) {
       ? `${rawMessage.slice(0, MAX_ERROR_MESSAGE_LENGTH)}…`
       : rawMessage;
   console.error("[Tool Error]", { toolName, error: rawMessage });
+  const retryable = !isExplicitlyNonRetryable(error);
   return {
     isError: true,
     error: message,
-    hint: "The tool call failed. Review the error, adjust the inputs or approach, and retry. If the failure persists, tell the user what went wrong instead of silently stopping.",
+    retryable,
+    hint: retryable
+      ? "The tool call failed. Review the error, adjust the inputs or approach, and retry. If the failure persists, tell the user what went wrong instead of silently stopping."
+      : "This failure is not retryable. Do not call this tool again in this response. Tell the user what went wrong and what they need to fix.",
   };
 }
 

@@ -4,13 +4,15 @@ import {
   IMAGE_GEN_AGENT_SKILLS_INSTALL_COMMAND,
   IMAGE_GEN_MODEL_ID,
   IMAGE_REVIEW_MODEL_ID,
+  MIN_REPO_IMAGE_HTML_BYTES,
   RECOVERY_AGENT_TIMEOUT_MS,
+  REPO_IMAGE_BOX_REQUEST_TIMEOUT_MS,
   REPO_IMAGE_OUTPUT_HTML_PATH,
   TRAILING_SLASH_RE,
 } from "@notra/ai/constants/repo-image";
 import { gateway } from "@notra/ai/gateway";
 import {
-  getDecryptedToken,
+  getGitHubCloneToken,
   getGitHubIntegrationById,
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
@@ -45,11 +47,17 @@ import { z } from "zod";
 
 export class RepoImageError extends Error {
   readonly code: RepoImageErrorCode;
+  readonly retryable: boolean;
 
-  constructor(code: RepoImageErrorCode, message: string) {
+  constructor(
+    code: RepoImageErrorCode,
+    message: string,
+    options?: { retryable?: boolean }
+  ) {
     super(message);
     this.name = "RepoImageError";
     this.code = code;
+    this.retryable = options?.retryable ?? true;
   }
 }
 
@@ -60,6 +68,86 @@ function getErrorStatus(error: unknown) {
     typeof error.status === "number"
     ? error.status
     : undefined;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function shellQuote(value: string) {
+  return `'${value.replaceAll("'", `'\\''`)}'`;
+}
+
+const REPO_CLONE_TOKEN_PATH = "/tmp/notra-github-token";
+
+async function cloneRepositoryToBox(params: {
+  box: Awaited<ReturnType<typeof Box.create>>;
+  owner: string;
+  repo: string;
+  branch: string;
+  token: string | null;
+}) {
+  const repositoryUrl = `https://github.com/${params.owner}/${params.repo}.git`;
+  const credentialConfig = params.token
+    ? `-c ${shellQuote(
+        `credential.helper=!f() { echo username=x-access-token; printf "password=%s\\n" "$(cat ${REPO_CLONE_TOKEN_PATH})"; }; f`
+      )}`
+    : "";
+  const command = [
+    "GIT_TERMINAL_PROMPT=0",
+    "git",
+    credentialConfig,
+    "clone",
+    "--depth=1",
+    "--filter=blob:none",
+    "--single-branch",
+    "--no-tags",
+    "--branch",
+    shellQuote(params.branch),
+    shellQuote(repositoryUrl),
+    shellQuote(params.repo),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  try {
+    if (params.token) {
+      await params.box.files.write({
+        path: REPO_CLONE_TOKEN_PATH,
+        content: params.token,
+      });
+      await params.box.exec.command(
+        `chmod 600 ${shellQuote(REPO_CLONE_TOKEN_PATH)}`
+      );
+    }
+    const cloneRun = await params.box.exec.command(command);
+    if (cloneRun.exitCode !== 0) {
+      throw new Error(`git clone exited with code ${cloneRun.exitCode ?? 1}`);
+    }
+    await params.box.cd(params.repo);
+  } catch (error) {
+    console.error("[repo-image] repository clone failed", {
+      owner: params.owner,
+      repo: params.repo,
+      branch: params.branch,
+      error: getErrorMessage(error),
+    });
+    throw new RepoImageError(
+      "clone_failed",
+      `Failed to clone ${params.owner}/${params.repo}@${params.branch}. Check that the GitHub integration can read this repository.`,
+      { retryable: false }
+    );
+  } finally {
+    if (params.token) {
+      await params.box.exec
+        .command(`rm -f ${shellQuote(REPO_CLONE_TOKEN_PATH)}`)
+        .catch((error: unknown) => {
+          console.warn("[repo-image] failed to remove temporary clone token", {
+            error: getErrorMessage(error),
+          });
+        });
+    }
+  }
 }
 
 async function runRepoImageAgentStream(params: {
@@ -115,7 +203,7 @@ async function runRepoImageAgentStreamAllowTimeout(
 async function hasRepoImageOutput(box: Awaited<ReturnType<typeof Box.create>>) {
   const existsRun = await withBoxRetry(() =>
     box.exec.command(
-      `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && echo ok || echo missing`
+      `test -f ${REPO_IMAGE_OUTPUT_HTML_PATH} && test "$(wc -c < ${REPO_IMAGE_OUTPUT_HTML_PATH})" -ge ${MIN_REPO_IMAGE_HTML_BYTES} && echo ok || echo incomplete`
     )
   );
   return existsRun.result.trim() === "ok";
@@ -140,7 +228,7 @@ function isAgentTimeoutError(error: unknown) {
   );
 }
 
-const MISSING_OUTPUT_RECOVERY_ATTEMPTS = 3;
+const MISSING_OUTPUT_RECOVERY_ATTEMPTS = 1;
 
 const repoImageLogoReviewSchema = z.object({
   needsRevision: z.boolean(),
@@ -333,7 +421,7 @@ export async function generateRepoImage(params: {
     );
   }
 
-  const token = await getDecryptedToken(input.integrationId, userId);
+  const token = await getGitHubCloneToken(input.integrationId, userId);
 
   await validateRepositoryBranchExists({
     owner: repository.owner,
@@ -367,7 +455,7 @@ export async function generateRepoImage(params: {
         model: IMAGE_GEN_MODEL_ID as VercelModel,
         apiKey: agentApiKey,
       },
-      timeout: AGENT_TIMEOUT_MS,
+      timeout: REPO_IMAGE_BOX_REQUEST_TIMEOUT_MS,
     } satisfies BoxConfig;
     const box = restoreSnapshotId
       ? await withBoxRetry(() => Box.fromSnapshot(restoreSnapshotId, boxConfig))
@@ -380,13 +468,17 @@ export async function generateRepoImage(params: {
     let injectedBrandIdentityId: string | undefined;
 
     try {
-      if (!restoreSnapshotId) {
-        await box.git.clone({
-          repo: `https://github.com/${repository.owner}/${repository.repo}.git`,
+      if (restoreSnapshotId) {
+        await withBoxRetry(() => box.cd(repository.repo));
+      } else {
+        await cloneRepositoryToBox({
+          box,
+          owner: repository.owner,
+          repo: repository.repo,
           branch: input.branch,
+          token,
         });
       }
-      await withBoxRetry(() => box.cd(repository.repo));
 
       try {
         await cleanupRepoImageSandbox({ box });
@@ -541,7 +633,7 @@ export async function generateRepoImage(params: {
       brandIdentityId: injectedBrandIdentityId,
       sandbox: snapshot
         ? {
-            boxId: readSnapshotString(snapshot, "boxId"),
+            boxId: readSnapshotString(snapshot, "boxId") ?? box.id,
             snapshotId: readSnapshotString(snapshot, "id"),
             snapshotName: readSnapshotString(snapshot, "name"),
             snapshotSizeBytes: readSnapshotNumber(snapshot, "sizeBytes"),
@@ -557,7 +649,7 @@ export async function deleteRepoImageSnapshot(params: {
   boxId?: string;
   snapshotId?: string;
 }) {
-  if (!(params.boxId && params.snapshotId)) {
+  if (!params.snapshotId) {
     return;
   }
   if (!process.env.UPSTASH_BOX_API_KEY) {
@@ -569,15 +661,20 @@ export async function deleteRepoImageSnapshot(params: {
 
   await withLongFetchTimeouts(async () =>
     withBoxRetry(async () => {
+      const baseUrl = BOX_BASE_URL.replace(TRAILING_SLASH_RE, "");
       const response = await fetch(
-        `${BOX_BASE_URL.replace(TRAILING_SLASH_RE, "")}/v2/box/${
-          params.boxId
-        }/snapshots/${params.snapshotId}`,
+        params.boxId
+          ? `${baseUrl}/v2/box/${params.boxId}/snapshots/${params.snapshotId}`
+          : `${baseUrl}/v2/box/snapshots`,
         {
           method: "DELETE",
           headers: {
+            "Content-Type": "application/json",
             "X-Box-Api-Key": process.env.UPSTASH_BOX_API_KEY ?? "",
           },
+          ...(params.boxId
+            ? {}
+            : { body: JSON.stringify({ ids: [params.snapshotId] }) }),
         }
       );
 

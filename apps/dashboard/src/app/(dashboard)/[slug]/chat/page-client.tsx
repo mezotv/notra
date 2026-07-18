@@ -1523,7 +1523,8 @@ function StandaloneChatPageClient({
   function renderPart(
     part: ChatUIMessage["parts"][number],
     messageId: string,
-    index: number
+    index: number,
+    messageStartedAt?: number
   ) {
     if (part.type === "text") {
       const text = part.text as string;
@@ -1840,6 +1841,7 @@ function StandaloneChatPageClient({
             onApprove={handleApprove}
             onDeny={handleDeny}
             output={output}
+            startedAt={messageStartedAt}
             state={toolPart.state}
             toolMetadata={toolMetadata}
             toolName={toolName}
@@ -2063,7 +2065,12 @@ function StandaloneChatPageClient({
                                   ) : (
                                     <MessageContent>
                                       {message.parts.map((part, index) =>
-                                        renderPart(part, message.id, index)
+                                        renderPart(
+                                          part,
+                                          message.id,
+                                          index,
+                                          message.metadata?.createdAt
+                                        )
                                       )}
                                     </MessageContent>
                                   )}
@@ -2071,7 +2078,12 @@ function StandaloneChatPageClient({
                               ) : (
                                 <MessageContent>
                                   {message.parts.map((part, index) =>
-                                    renderPart(part, message.id, index)
+                                    renderPart(
+                                      part,
+                                      message.id,
+                                      index,
+                                      message.metadata?.createdAt
+                                    )
                                   )}
                                 </MessageContent>
                               )}

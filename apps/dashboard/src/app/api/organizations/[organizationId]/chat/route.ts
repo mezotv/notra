@@ -46,7 +46,7 @@ import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 import type { RouteContext } from "@/types/api/routes";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
-export const maxDuration = 300;
+export const maxDuration = 1800;
 
 export const POST = withEvlog(async function POST(
   request: NextRequest,
@@ -92,7 +92,7 @@ export const POST = withEvlog(async function POST(
     }
 
     let useMarkup = false;
-    if (autumn) {
+    if (autumn && !allowUnmeteredAiInDevelopment) {
       let checkData: CheckResponse | null = null;
       try {
         checkData = await autumn.check({
@@ -421,7 +421,7 @@ async function createDirectStandaloneChatResponse({
           usageSnapshot.cacheWriteTokens =
             usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          if (!autumnClient) {
+          if (!autumnClient || allowUnmeteredAiInDevelopment) {
             return;
           }
 

@@ -71,7 +71,7 @@ export const POST = withEvlog(async function POST(
     }
 
     let useMarkup = false;
-    if (autumn) {
+    if (autumn && !allowUnmeteredAiInDevelopment) {
       console.log("[Autumn] Checking feature access:", {
         requestId,
         customerId: organizationId,
@@ -121,7 +121,9 @@ export const POST = withEvlog(async function POST(
         );
       }
       console.log(
-        "[Autumn] Skipping billing check - AUTUMN_SECRET_KEY not configured",
+        allowUnmeteredAiInDevelopment
+          ? "[Autumn] Skipping billing check - development bypass enabled"
+          : "[Autumn] Skipping billing check - AUTUMN_SECRET_KEY not configured",
         { requestId }
       );
     }
@@ -185,7 +187,7 @@ export const POST = withEvlog(async function POST(
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
         async onUsage(usage, modelId) {
-          if (!autumnClient) {
+          if (!autumnClient || allowUnmeteredAiInDevelopment) {
             return;
           }
 

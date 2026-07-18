@@ -415,6 +415,20 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     noun: "post",
     suffix: (input) => idSuffix(input, ["id", "postId", "identifier"]),
   },
+  createImage: {
+    verbs: ["Generating", "Generated"],
+    noun: "image",
+    subtitle: ({ isStreaming }) =>
+      isStreaming ? "Generating image — usually 3–8 minutes" : undefined,
+    suffix: (input) => quotedSuffix(input, ["title"]),
+  },
+  reviseImage: {
+    verbs: ["Revising", "Revised"],
+    noun: "image",
+    subtitle: ({ isStreaming }) =>
+      isStreaming ? "Revising image — usually 3–8 minutes" : undefined,
+    suffix: (input) => quotedSuffix(input, ["title"]),
+  },
   listBrandIdentities: {
     verbs: ["Listing", "Listed"],
     noun: "brand identities",
@@ -678,6 +692,7 @@ export function ChatToolBlock({
   mcpLogoDarkUrl,
   mcpLogoLightUrl,
   toolMetadata,
+  startedAt,
 }: ChatToolBlockProps) {
   const isAwaitingApproval = state === "approval-requested";
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -685,11 +700,11 @@ export function ChatToolBlock({
   const isError = state === "output-error" || isErrorOutputPayload(output);
   const isStreaming =
     state === "input-streaming" || state === "input-available";
-  const elapsedSeconds = useElapsedSeconds(isStreaming);
+  const elapsedSeconds = useElapsedSeconds(isStreaming, startedAt);
   const showElapsedTimer =
     isStreaming && elapsedSeconds >= TOOL_TIMER_THRESHOLD_SECONDS;
 
-  const subtitle = getSubtitle({
+  const defaultSubtitle = getSubtitle({
     toolName,
     input,
     output,
@@ -698,6 +713,13 @@ export function ChatToolBlock({
     isAwaitingApproval,
     toolMetadata,
   });
+  const isLongRunningImage =
+    isStreaming &&
+    elapsedSeconds >= 8 * 60 &&
+    (toolName === "createImage" || toolName === "reviseImage");
+  const subtitle = isLongRunningImage
+    ? `${toolName === "reviseImage" ? "Revising" : "Generating"} image — still working; large repos can take longer`
+    : defaultSubtitle;
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);

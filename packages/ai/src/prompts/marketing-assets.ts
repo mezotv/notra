@@ -57,7 +57,9 @@ Your task ends ONLY after this exact file exists:
 
   ${REPO_IMAGE_OUTPUT_HTML_PATH}
 
-Use the Write tool to create it. After the file exists, stop. No other output is needed.
+Reliability checkpoint: after loading the required skills, your first file mutation MUST be to create a complete, valid draft at ${REPO_IMAGE_OUTPUT_HTML_PATH}. Do this before spawning a subagent or starting extended repository research. The draft may improve later, but it must already be renderable, use the exact 1200x630 dimensions, and reflect the subject. Keep the file present for the rest of the run and overwrite it as research improves the design.
+
+Use the Write tool to create it. Before stopping, verify the final file exists. No other output is needed.
 </deliverable>
 
 <subject>
@@ -69,7 +71,7 @@ The image is about this subject only. Use the wider repository for visual style,
 <research>
 Gather source material before designing. Skipping this step produces generic output.
 
-1. Component discovery: Spawn a subagent to find the real routes, components, and design-system files that match the subject. Ask it for design tokens, brand assets, screenshots or examples if present, and the exact file paths it used. Do not design from memory while the subagent runs. After it returns, personally inspect the most relevant files before writing HTML.
+1. Component discovery: Use targeted searches to find the real routes, components, and design-system files that match the subject. For a large monorepo, stay within likely app/package paths and cap broad searches with \`head\`; do not inventory the whole repository. You may spawn one focused subagent if it will materially speed this up, but do not wait on a subagent before creating the required draft. Personally inspect the most relevant files before finalizing the HTML.
 
 2. Brand guidelines: If .agents/skills/brand-identity/brand-guidelines.md exists, read it before choosing colors, fonts, tokens, logos, screenshots, or image style. Run \`find .agents/skills/brand-identity/assets -maxdepth 1 -type f 2>/dev/null\` and inspect the downloaded files. Prefer these injected brand assets over repo assets when they represent the publishing brand.
 
@@ -133,15 +135,15 @@ The HTML follows this shape (this is structure only; replace the content with ma
 </output-format>
 
 <the-ask>
-1. Read the diff of the commit, PR, or release this image is about and run the research steps to gather tokens, brand assets, and the real component to translate.
-2. Write the <image-plan> for this specific change.
-3. Execute the plan: design the 1200x630 image as inline-styled HTML following the plan and every rule in <html-contract>.
-4. Run the <quality-loop> on a draft until it would pass at Fortune 500 standards and still matches the plan.
-5. Use the Write tool to create ${REPO_IMAGE_OUTPUT_HTML_PATH} with the final HTML. Stop after the file exists.
+1. Load the required skills, then immediately use the Write tool to create a valid first draft at ${REPO_IMAGE_OUTPUT_HTML_PATH}. Verify it exists before doing extended research.
+2. Read the diff of the commit, PR, or release this image is about and run focused research to gather tokens, brand assets, and the real component to translate.
+3. Write the <image-plan> for this specific change.
+4. Execute the plan by overwriting ${REPO_IMAGE_OUTPUT_HTML_PATH} with the polished 1200x630 inline-styled HTML following the plan and every rule in <html-contract>.
+5. Run the <quality-loop>, verify ${REPO_IMAGE_OUTPUT_HTML_PATH} still exists, and stop.
 </the-ask>
 
 <thinking-instructions>
-First read what the named commit, PR, or release actually changed and what it does for the user, and classify it as a product change or an announcement / milestone. For a product change, decide which real component or page in this repo best matches the subject. For an announcement / milestone, decide whether a typographic, brand-color, or logo-led composition sells it better than product UI. Either way pick the globals.css tokens you will use, choose a layout that fits this subject from the marketing-image-generation examples (or design a unique one) rather than defaulting to a 50/50 split, and commit to that in the <image-plan>. Plan the layout math (widths + padding + gaps for each row and column) so you know the design will fit 1200x630 with safe margins. Only then draft the HTML and run the quality loop.
+After loading the required skills, create the renderable first draft immediately so the deliverable cannot be lost to a timeout. Then read what the named commit, PR, or release actually changed and what it does for the user, and classify it as a product change or an announcement / milestone. For a product change, decide which real component or page in this repo best matches the subject. For an announcement / milestone, decide whether a typographic, brand-color, or logo-led composition sells it better than product UI. Either way pick the globals.css tokens you will use, choose a layout that fits this subject from the marketing-image-generation examples (or design a unique one) rather than defaulting to a 50/50 split, and commit to that in the <image-plan>. Plan the layout math (widths + padding + gaps for each row and column) so you know the design will fit 1200x630 with safe margins. Overwrite the draft with the researched design, then run the quality loop.
 </thinking-instructions>`;
 }
 
@@ -217,9 +219,9 @@ If it fails, produce a concise revision prompt for the sandbox agent. The prompt
 }
 
 export function buildMarketingAssetMissingOutputPrompt() {
-  return dedent`The required file is still missing: ${REPO_IMAGE_OUTPUT_HTML_PATH}
+  return dedent`The required final file is missing or incomplete: ${REPO_IMAGE_OUTPUT_HTML_PATH}
 
-Continue from the previous instructions and create that exact file now. If you already drafted the HTML somewhere else, copy it to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Otherwise generate the final 1200x630 inline-styled Satori-compatible HTML from the repo context you already inspected.
+Continue from the previous instructions and create that exact file now. If a minimal placeholder or early draft already exists, it is only a starting point: overwrite it with the fully researched, polished design. If you drafted the finished HTML somewhere else, copy it to ${REPO_IMAGE_OUTPUT_HTML_PATH}. Otherwise generate the final 1200x630 inline-styled Satori-compatible HTML from the repo context you already inspected.
 
-After writing it, verify the file exists and stop.`;
+The final HTML must contain the complete visual composition, not only a background and headline. After writing it, verify the file exists and stop.`;
 }
