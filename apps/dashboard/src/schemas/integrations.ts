@@ -54,6 +54,7 @@ export const githubPersonalAccessTokenSchema = z
   .string()
   .trim()
   .min(1, "Personal access token is required")
+  .max(255, "Personal access token is too long")
   .refine(
     (value) => GITHUB_PAT_PREFIXES.some((prefix) => value.startsWith(prefix)),
     "Enter a valid GitHub personal access token"

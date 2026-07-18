@@ -29,6 +29,18 @@ export const ratelimit = {
     prefix: "ratelimit:mcp-connection",
     limiter: Ratelimit.slidingWindow(10, "1m"),
   }),
+  githubProbe: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:github-probe",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
+  githubAppRepositories: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:github-app-repositories",
+    limiter: Ratelimit.slidingWindow(60, "1m"),
+  }),
   onboardingBrandAnalysis: new Ratelimit({
     redis,
     analytics: true,
