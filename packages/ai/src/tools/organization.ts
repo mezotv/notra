@@ -5,8 +5,10 @@ import type {
 import { toolDescription } from "@notra/ai/utils/description";
 import {
   isAvailableGitHubIntegration,
+  isAvailableGranolaIntegration,
   isAvailableLinearIntegration,
   serializeAvailableGitHubIntegration,
+  serializeAvailableGranolaIntegration,
   serializeAvailableLinearIntegration,
   serializeBrandIdentity,
   toAvailableGitHubIntegration,
@@ -15,6 +17,7 @@ import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
   githubIntegrations,
+  granolaIntegrations,
   linearIntegrations,
 } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
@@ -142,13 +145,13 @@ export function createGetAvailableIntegrationsTool(
         intro:
           "Lists the organization's available integrations, including only enabled integrations and enabled repositories.",
         whenToUse:
-          "Use when the user asks what integrations are connected, whether GitHub or Linear is available, or which repositories are enabled.",
+          "Use when the user asks what integrations are connected, whether GitHub, Linear, or Granola is available, or which repositories are enabled.",
         usageNotes:
-          "Returns only enabled GitHub and Linear integrations. GitHub results include only enabled repositories.",
+          "Returns only enabled GitHub, Linear, and Granola integrations. GitHub results include only enabled repositories.",
       }),
       inputSchema: z.object({}),
       execute: async () => {
-        const [github, linear] = await Promise.all([
+        const [github, linear, granola] = await Promise.all([
           db.query.githubIntegrations.findMany({
             where: eq(githubIntegrations.organizationId, config.organizationId),
             orderBy: [desc(githubIntegrations.createdAt)],
@@ -156,6 +159,13 @@ export function createGetAvailableIntegrationsTool(
           db.query.linearIntegrations.findMany({
             where: eq(linearIntegrations.organizationId, config.organizationId),
             orderBy: [desc(linearIntegrations.createdAt)],
+          }),
+          db.query.granolaIntegrations.findMany({
+            where: eq(
+              granolaIntegrations.organizationId,
+              config.organizationId
+            ),
+            orderBy: [desc(granolaIntegrations.createdAt)],
           }),
         ]);
 
@@ -167,16 +177,22 @@ export function createGetAvailableIntegrationsTool(
               integration !== null
           );
         const availableLinear = linear.filter(isAvailableLinearIntegration);
+        const availableGranola = granola.filter(isAvailableGranolaIntegration);
 
         return {
           integrations: {
             github: availableGithub.map(serializeAvailableGitHubIntegration),
             linear: availableLinear.map(serializeAvailableLinearIntegration),
+            granola: availableGranola.map(serializeAvailableGranolaIntegration),
           },
           counts: {
             github: availableGithub.length,
             linear: availableLinear.length,
-            total: availableGithub.length + availableLinear.length,
+            granola: availableGranola.length,
+            total:
+              availableGithub.length +
+              availableLinear.length +
+              availableGranola.length,
           },
         };
       },

@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { granolaIntegrations } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { GRANOLA_API_BASE_URL } from "../constants/granola";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
@@ -9,6 +9,7 @@ import type {
   GranolaKeyVerificationResult,
   UpdateGranolaIntegrationParams,
 } from "../types/integrations";
+import type { GranolaToolContext } from "../types/tools";
 import { hasOrganizationAccess } from "../utils/organization-access";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
@@ -146,4 +147,47 @@ export async function getDecryptedGranolaApiKey(
   }
 
   return decryptToken(integration.encryptedApiKey);
+}
+
+export async function getGranolaToolContextByIntegrationId(
+  integrationId: string,
+  options?: { organizationId?: string }
+): Promise<GranolaToolContext> {
+  const whereClause = options?.organizationId
+    ? and(
+        eq(granolaIntegrations.id, integrationId),
+        eq(granolaIntegrations.organizationId, options.organizationId)
+      )
+    : eq(granolaIntegrations.id, integrationId);
+
+  const [integration] = await db
+    .select({
+      id: granolaIntegrations.id,
+      organizationId: granolaIntegrations.organizationId,
+      encryptedApiKey: granolaIntegrations.encryptedApiKey,
+      workspaceName: granolaIntegrations.workspaceName,
+      enabled: granolaIntegrations.enabled,
+    })
+    .from(granolaIntegrations)
+    .where(whereClause)
+    .limit(1);
+
+  if (!integration) {
+    throw new Error(
+      `Granola integration access denied. Unknown integrationId ${integrationId}.`
+    );
+  }
+
+  if (!integration.enabled) {
+    throw new Error(
+      `Granola integration access denied for integrationId ${integrationId}. Integration is disabled.`
+    );
+  }
+
+  return {
+    integrationId: integration.id,
+    organizationId: integration.organizationId,
+    apiKey: decryptToken(integration.encryptedApiKey),
+    workspaceName: integration.workspaceName,
+  };
 }

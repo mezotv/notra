@@ -21,6 +21,7 @@ import {
 import { getStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import { useLogger, withEvlog } from "@notra/ai/evlog";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
+import { getGranolaToolContextByIntegrationId } from "@notra/ai/integrations/granola";
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
 import { getWorkflowClient } from "@notra/ai/qstash/client";
@@ -407,6 +408,7 @@ async function createDirectStandaloneChatResponse({
         preValidatedIntegrations: validatedIntegrations,
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
+        resolveGranolaContext: getGranolaToolContextByIntegrationId,
         onFirstChunk() {
           if (firstChunkAt === null) {
             firstChunkAt = Date.now();

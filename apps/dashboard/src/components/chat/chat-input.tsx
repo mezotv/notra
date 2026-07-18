@@ -716,6 +716,19 @@ export function ChatInputAdvanced({
     return result;
   }, [integrationsData?.integrations]);
 
+  const enabledGranolaIntegrations = useMemo(() => {
+    const result: Array<{ id: string; displayName: string }> = [];
+    for (const integration of integrationsData?.integrations ?? []) {
+      if (integration.type === "granola" && integration.enabled) {
+        result.push({
+          id: integration.id,
+          displayName: integration.displayName,
+        });
+      }
+    }
+    return result;
+  }, [integrationsData?.integrations]);
+
   type MentionItem =
     | { kind: "github"; data: GitHubRepository & { integrationId: string } }
     | {
@@ -1955,6 +1968,7 @@ export function ChatInputAdvanced({
                     {INPUT_SOURCES.map((integration) => {
                       const isGitHub = integration.id === "github";
                       const isLinear = integration.id === "linear";
+                      const isGranola = integration.id === "granola";
                       const isAvailable = integration.available;
 
                       if (isGitHub && isAvailable && enabledRepos.length > 0) {
@@ -2101,7 +2115,40 @@ export function ChatInputAdvanced({
                       }
 
                       if (
-                        (isGitHub || isLinear) &&
+                        isGranola &&
+                        isAvailable &&
+                        enabledGranolaIntegrations.length > 0 &&
+                        organizationSlug
+                      ) {
+                        return (
+                          <DropdownMenuItem
+                            key={integration.id}
+                            render={
+                              <Link
+                                href={`/${organizationSlug}/integrations/granola`}
+                              />
+                            }
+                          >
+                            <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
+                              {integration.icon}
+                            </span>
+                            <span className="text-foreground">
+                              {integration.name}
+                            </span>
+                            <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
+                              {enabledGranolaIntegrations.length}
+                            </span>
+                            <HugeiconsIcon
+                              className="size-4 text-muted-foreground"
+                              icon={ArrowRight01Icon}
+                              strokeWidth={2}
+                            />
+                          </DropdownMenuItem>
+                        );
+                      }
+
+                      if (
+                        (isGitHub || isLinear || isGranola) &&
                         isAvailable &&
                         organizationSlug
                       ) {

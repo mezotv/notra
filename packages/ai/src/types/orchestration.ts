@@ -1,5 +1,6 @@
 import type { AILogTarget } from "@notra/ai/observability";
 import type {
+  ResolveGranolaIntegrationContext,
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
@@ -32,9 +33,19 @@ export interface ValidatedLinearIntegration {
   linearTeamName?: string | null;
 }
 
+export interface ValidatedGranolaIntegration {
+  id: string;
+  type: "granola";
+  enabled: boolean;
+  displayName: string;
+  organizationId: string;
+  workspaceName?: string | null;
+}
+
 export type ValidatedIntegration =
   | ValidatedGitHubIntegration
-  | ValidatedLinearIntegration;
+  | ValidatedLinearIntegration
+  | ValidatedGranolaIntegration;
 
 export interface EnabledCapabilities {
   github: boolean;
@@ -179,6 +190,7 @@ export interface BuildStandaloneToolSetParams {
 export interface BuildStandaloneToolSetDeps {
   resolveContext?: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  resolveGranolaContext?: ResolveGranolaIntegrationContext;
 }
 
 export interface GitHubIntegrationData {

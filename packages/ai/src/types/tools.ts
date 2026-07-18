@@ -51,6 +51,18 @@ export interface LinearToolsAccessConfig {
   allowedIntegrationIds?: string[];
 }
 
+export interface GranolaToolContext {
+  integrationId: string;
+  organizationId: string;
+  apiKey: string;
+  workspaceName?: string | null;
+}
+
+export interface GranolaToolsAccessConfig {
+  organizationId?: string;
+  allowedIntegrationIds?: string[];
+}
+
 export interface ErrorWithStatus {
   status?: number;
   message?: string;
