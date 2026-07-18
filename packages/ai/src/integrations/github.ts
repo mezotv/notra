@@ -884,26 +884,7 @@ export async function getOutputById(outputId: string) {
 export async function configureOutput(params: ConfigureOutputParams) {
   const { repositoryId, outputType, enabled, config } = params;
 
-  const existing = await db.query.repositoryOutputs.findFirst({
-    where: and(
-      eq(repositoryOutputs.repositoryId, repositoryId),
-      eq(repositoryOutputs.outputType, outputType)
-    ),
-  });
-
-  if (existing) {
-    const [updated] = await db
-      .update(repositoryOutputs)
-      .set({
-        enabled,
-        config,
-      })
-      .where(eq(repositoryOutputs.id, existing.id))
-      .returning();
-    return updated;
-  }
-
-  const [created] = await db
+  const [output] = await db
     .insert(repositoryOutputs)
     .values({
       id: nanoid(),
@@ -912,9 +893,16 @@ export async function configureOutput(params: ConfigureOutputParams) {
       enabled,
       config,
     })
+    .onConflictDoUpdate({
+      target: [repositoryOutputs.repositoryId, repositoryOutputs.outputType],
+      set: {
+        enabled,
+        config,
+      },
+    })
     .returning();
 
-  return created;
+  return output;
 }
 
 export async function toggleGitHubIntegration(
