@@ -40,18 +40,27 @@ export async function GET(request: NextRequest) {
     }
 
     const stateKey = `linear_oauth:${state}`;
+    const remainingTtlSeconds = await redis.ttl(stateKey);
     const raw = await redis.getdel<string>(stateKey);
     if (!raw) {
       return NextResponse.redirect(`${baseUrl}/?error=expired_state`);
     }
 
+    const restoreTtlSeconds = Math.min(
+      remainingTtlSeconds,
+      LINEAR_OAUTH_STATE_TTL_SECONDS
+    );
+
     const activeRedis = redis;
     restoreOAuthState = async () => {
+      if (restoreTtlSeconds <= 0) {
+        return;
+      }
       try {
         await activeRedis.set(
           stateKey,
           typeof raw === "string" ? raw : JSON.stringify(raw),
-          { ex: LINEAR_OAUTH_STATE_TTL_SECONDS }
+          { ex: restoreTtlSeconds }
         );
       } catch (restoreError) {
         console.error(
