@@ -195,6 +195,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const {
     data: response,
     isLoading: isLoadingIntegrations,
+    isError,
     refetch,
   } = useQuery(
     dashboardOrpc.integrations.granola.list.queryOptions({
@@ -228,7 +229,20 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <div>
           {showLoading ? <GranolaIntegrationsPageSkeleton /> : null}
 
-          {!showLoading && (!integrations || integrations.length === 0) ? (
+          {!showLoading && isError ? (
+            <EmptyState
+              action={
+                <Button onClick={() => refetch()} size="sm" variant="outline">
+                  Retry
+                </Button>
+              }
+              description="Something went wrong while loading your Granola integrations."
+              title="Failed to load integrations"
+            />
+          ) : null}
+
+          {!(showLoading || isError) &&
+          (!integrations || integrations.length === 0) ? (
             <EmptyState
               action={
                 <Button

@@ -1035,7 +1035,17 @@ export const integrationsRouter = {
           workspaceName: input.workspaceName,
         });
 
-        return updated;
+        if (!updated) {
+          throw internalServerError("Failed to update Granola integration");
+        }
+
+        return {
+          id: updated.id,
+          displayName: updated.displayName,
+          enabled: updated.enabled,
+          createdAt: updated.createdAt.toISOString(),
+          workspaceName: updated.workspaceName,
+        };
       }),
     delete: baseProcedure
       .input(integrationInputSchema)

@@ -42,6 +42,12 @@ export function AddGranolaIntegrationDialog({
   const open = controlledOpen ?? internalOpen;
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
 
+  const resetForm = () => {
+    setDisplayName("");
+    setApiKey("");
+    setValidationError(null);
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       return dashboardOrpc.integrations.granola.create.call({
@@ -57,9 +63,7 @@ export function AddGranolaIntegrationDialog({
         }),
       });
       toast.success("Granola connected");
-      setDisplayName("");
-      setApiKey("");
-      setValidationError(null);
+      resetForm();
       setOpen(false);
       onSuccess?.();
     },
@@ -69,6 +73,16 @@ export function AddGranolaIntegrationDialog({
       );
     },
   });
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      if (createMutation.isPending) {
+        return;
+      }
+      resetForm();
+    }
+    setOpen(nextOpen);
+  };
 
   const handleSubmit = () => {
     const parsed = addGranolaIntegrationFormSchema.safeParse({
@@ -93,7 +107,7 @@ export function AddGranolaIntegrationDialog({
     ) : null;
 
   return (
-    <ResponsiveDialog onOpenChange={setOpen} open={open}>
+    <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
       {triggerElement}
       <ResponsiveDialogContent className="sm:max-w-[520px]">
         <ResponsiveDialogHeader>
@@ -148,7 +162,11 @@ export function AddGranolaIntegrationDialog({
           ) : null}
         </div>
         <ResponsiveDialogFooter>
-          <ResponsiveDialogClose render={<Button variant="outline" />}>
+          <ResponsiveDialogClose
+            render={
+              <Button disabled={createMutation.isPending} variant="outline" />
+            }
+          >
             Cancel
           </ResponsiveDialogClose>
           <Button disabled={createMutation.isPending} onClick={handleSubmit}>

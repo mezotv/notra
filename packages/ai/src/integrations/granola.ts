@@ -17,7 +17,7 @@ export async function verifyGranolaApiKey(
   apiKey: string
 ): Promise<GranolaKeyVerificationResult> {
   try {
-    const response = await fetch(`${GRANOLA_API_BASE_URL}/notes?limit=1`, {
+    const response = await fetch(`${GRANOLA_API_BASE_URL}/notes?page_size=1`, {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
