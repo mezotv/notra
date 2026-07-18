@@ -6,7 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -53,6 +53,38 @@ function getGitHubInstallStorageKey(organizationId: string) {
   return `${GITHUB_INSTALL_CHANNEL}:${organizationId}`;
 }
 
+function useResumeGitHubInstall(params: {
+  callbackPath: string;
+  organizationId: string;
+  shouldResume: boolean;
+}) {
+  const resumedInstallRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !params.shouldResume ||
+      !params.organizationId ||
+      resumedInstallRef.current
+    ) {
+      return;
+    }
+
+    resumedInstallRef.current = true;
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("githubReauthorized");
+    window.history.replaceState(null, "", nextUrl);
+
+    startGitHubInstall({
+      organizationId: params.organizationId,
+      callbackPath: params.callbackPath,
+    }).then((started) => {
+      if (!started) {
+        toast.error("Failed to resume GitHub installation");
+      }
+    });
+  }, [params.callbackPath, params.organizationId, params.shouldResume]);
+}
+
 export default function PageClient({ organizationSlug }: PageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
@@ -63,6 +95,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [reposOpen, setReposOpen] = useState(false);
   const [legacyOpen, setLegacyOpen] = useState(false);
+  useResumeGitHubInstall({
+    callbackPath: pathname,
+    organizationId,
+    shouldResume: searchParams.get("githubReauthorized") === "true",
+  });
 
   const githubAppQuery = useQuery(
     dashboardOrpc.github.app.get.queryOptions({

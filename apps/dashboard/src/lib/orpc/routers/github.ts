@@ -4,6 +4,7 @@ import {
   getGitHubAppInstallationByOrganization,
   getGitHubAppInstallUrl,
   getSelectedGitHubAppRepositoryIds,
+  isGitHubAppReauthorizationRequired,
   listGitHubAppRepositories,
   setSelectedGitHubAppRepositories,
 } from "@notra/ai/integrations/github";
@@ -123,6 +124,19 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
     userId: string;
   }
 ) {
+  const requiresReauthorization = yield* Effect.tryPromise({
+    try: () => isGitHubAppReauthorizationRequired(input.userId),
+    catch: (cause) =>
+      new GitHubAppInstallPreparationError({
+        message: "Failed to verify GitHub account authorization",
+        cause,
+      }),
+  });
+
+  if (requiresReauthorization) {
+    return { requiresReauthorization: true as const };
+  }
+
   const redisClient = redis;
 
   if (!redisClient) {
@@ -163,7 +177,7 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
       }),
   });
 
-  return { url };
+  return { requiresReauthorization: false as const, url };
 });
 
 export const githubRouter = {

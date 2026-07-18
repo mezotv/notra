@@ -33,6 +33,7 @@ import { redis } from "../utils/redis";
 import { getConfiguredAppUrl } from "../utils/url";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
+const GITHUB_SCOPE_SEPARATOR_PATTERN = /[,\s]+/;
 
 export class GitHubBranchNotFoundError extends Error {
   constructor(owner: string, repo: string, branch: string) {
@@ -55,11 +56,39 @@ export class GitHubAccountRequiredError extends Error {
   }
 }
 
+export class GitHubReauthorizationRequiredError extends Error {
+  constructor() {
+    super("Reconnect GitHub to authorize organization access");
+    this.name = "GitHubReauthorizationRequiredError";
+  }
+}
+
 export class GitHubInstallationAccessDeniedError extends Error {
   constructor() {
     super("You must administer the GitHub account that owns this installation");
     this.name = "GitHubInstallationAccessDeniedError";
   }
+}
+
+function hasGitHubScope(scope: string | null, requiredScope: string) {
+  return Boolean(
+    scope
+      ?.split(GITHUB_SCOPE_SEPARATOR_PATTERN)
+      .filter(Boolean)
+      .includes(requiredScope)
+  );
+}
+
+function getErrorStatus(error: unknown) {
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !("status" in error) ||
+    typeof error.status !== "number"
+  ) {
+    return null;
+  }
+  return error.status;
 }
 
 function generateWebhookSecret(): string {
@@ -169,6 +198,7 @@ async function assertGitHubInstallationAdmin(params: {
     columns: {
       accountId: true,
       accessToken: true,
+      scope: true,
     },
   });
 
@@ -177,11 +207,19 @@ async function assertGitHubInstallationAdmin(params: {
   }
 
   const octokit = createOctokit(githubAccount.accessToken);
-  const { data: githubUser } = await octokit.request("GET /user", {
-    headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
+  const githubUser = await octokit
+    .request("GET /user", {
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    })
+    .then(({ data }) => data)
+    .catch((error: unknown) => {
+      if (getErrorStatus(error) === 401) {
+        throw new GitHubReauthorizationRequiredError();
+      }
+      throw error;
+    });
 
   if (String(githubUser.id) !== githubAccount.accountId) {
     throw new GitHubInstallationAccessDeniedError();
@@ -192,6 +230,10 @@ async function assertGitHubInstallationAdmin(params: {
       throw new GitHubInstallationAccessDeniedError();
     }
     return;
+  }
+
+  if (!hasGitHubScope(githubAccount.scope, "read:org")) {
+    throw new GitHubReauthorizationRequiredError();
   }
 
   try {
@@ -209,11 +251,30 @@ async function assertGitHubInstallationAdmin(params: {
       throw new GitHubInstallationAccessDeniedError();
     }
   } catch (error) {
+    const status = getErrorStatus(error);
     if (error instanceof GitHubInstallationAccessDeniedError) {
       throw error;
     }
+    if (status === 401 || status === 403) {
+      throw new GitHubReauthorizationRequiredError();
+    }
     throw new GitHubInstallationAccessDeniedError();
   }
+}
+
+export async function isGitHubAppReauthorizationRequired(userId: string) {
+  const githubAccount = await db.query.accounts.findFirst({
+    where: and(eq(accounts.userId, userId), eq(accounts.providerId, "github")),
+    columns: {
+      accessToken: true,
+      scope: true,
+    },
+  });
+
+  return (
+    !githubAccount?.accessToken ||
+    !hasGitHubScope(githubAccount.scope, "read:org")
+  );
 }
 
 async function insertDefaultRepositoryOutputs(repositoryId: string) {

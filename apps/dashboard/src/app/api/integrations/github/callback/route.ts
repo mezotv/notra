@@ -1,6 +1,7 @@
 import {
   GitHubAccountRequiredError,
   GitHubInstallationAccessDeniedError,
+  GitHubReauthorizationRequiredError,
   upsertGitHubAppInstallation,
 } from "@notra/ai/integrations/github";
 import { redis } from "@notra/ai/utils/redis";
@@ -19,6 +20,7 @@ interface GitHubAppInstallState {
 export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  let callbackPath: string | null = null;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -43,6 +45,7 @@ export async function GET(request: NextRequest) {
 
     const installState: GitHubAppInstallState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
+    callbackPath = installState.callbackPath;
 
     const { session } = await getServerSession({ headers: request.headers });
     if (!session?.userId || session.userId !== installState.userId) {
@@ -75,8 +78,20 @@ export async function GET(request: NextRequest) {
       })
     );
   } catch (error) {
-    if (error instanceof GitHubAccountRequiredError) {
-      return NextResponse.redirect(`${baseUrl}/?error=github_account_required`);
+    if (
+      error instanceof GitHubAccountRequiredError ||
+      error instanceof GitHubReauthorizationRequiredError
+    ) {
+      if (callbackPath) {
+        return NextResponse.redirect(
+          buildCallbackUrl(baseUrl, callbackPath, {
+            githubReauthorized: "true",
+          })
+        );
+      }
+      return NextResponse.redirect(
+        `${baseUrl}/?error=github_reauthorization_required`
+      );
     }
     if (error instanceof GitHubInstallationAccessDeniedError) {
       return NextResponse.redirect(
