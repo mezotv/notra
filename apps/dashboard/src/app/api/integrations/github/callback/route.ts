@@ -21,11 +21,13 @@ export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
   let callbackPath: string | null = null;
+  let installationId: string | null = null;
+  let state: string | null = null;
 
   try {
     const { searchParams } = new URL(request.url);
-    const installationId = searchParams.get("installation_id");
-    const state = searchParams.get("state");
+    installationId = searchParams.get("installation_id");
+    state = searchParams.get("state");
     const error = searchParams.get("error");
 
     if (error) {
@@ -82,10 +84,11 @@ export async function GET(request: NextRequest) {
       error instanceof GitHubAccountRequiredError ||
       error instanceof GitHubReauthorizationRequiredError
     ) {
-      if (callbackPath) {
+      if (callbackPath && installationId && state) {
         return NextResponse.redirect(
           buildCallbackUrl(baseUrl, callbackPath, {
-            githubReauthorized: "true",
+            githubReauthorizeInstallationId: installationId,
+            githubReauthorizeState: state,
           })
         );
       }

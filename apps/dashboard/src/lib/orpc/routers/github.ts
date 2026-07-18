@@ -4,7 +4,7 @@ import {
   getGitHubAppInstallationByOrganization,
   getGitHubAppInstallUrl,
   getSelectedGitHubAppRepositoryIds,
-  isGitHubAppReauthorizationRequired,
+  isGitHubAccountConnectionRequired,
   listGitHubAppRepositories,
   setSelectedGitHubAppRepositories,
 } from "@notra/ai/integrations/github";
@@ -124,8 +124,8 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
     userId: string;
   }
 ) {
-  const requiresReauthorization = yield* Effect.tryPromise({
-    try: () => isGitHubAppReauthorizationRequired(input.userId),
+  const requiresAccountConnection = yield* Effect.tryPromise({
+    try: () => isGitHubAccountConnectionRequired(input.userId),
     catch: (cause) =>
       new GitHubAppInstallPreparationError({
         message: "Failed to verify GitHub account authorization",
@@ -133,7 +133,7 @@ const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
       }),
   });
 
-  if (requiresReauthorization) {
+  if (requiresAccountConnection) {
     return { requiresReauthorization: true as const };
   }
 

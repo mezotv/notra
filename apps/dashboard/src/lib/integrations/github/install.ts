@@ -11,6 +11,35 @@ class GitHubInstallStartError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
+function authorizeGitHub(callbackURL: string, scopes?: string[]) {
+  return Effect.tryPromise({
+    try: () =>
+      authClient.linkSocial({
+        provider: "github",
+        callbackURL,
+        ...(scopes ? { scopes } : {}),
+      }),
+    catch: (cause) => new GitHubInstallStartError({ cause }),
+  }).pipe(
+    Effect.flatMap((result) =>
+      result.error
+        ? Effect.fail(new GitHubInstallStartError({ cause: result.error }))
+        : Effect.succeed(true)
+    )
+  );
+}
+
+export function reauthorizeGitHub(callbackURL: string) {
+  return Effect.runPromise(
+    authorizeGitHub(callbackURL, ["read:org"]).pipe(
+      Effect.match({
+        onFailure: () => false,
+        onSuccess: () => true,
+      })
+    )
+  );
+}
+
 export function startGitHubInstall(params: {
   organizationId: string;
   callbackPath: string;
@@ -28,15 +57,9 @@ export function startGitHubInstall(params: {
           );
           callbackUrl.searchParams.set("githubReauthorized", "true");
 
-          return Effect.tryPromise({
-            try: () =>
-              authClient.linkSocial({
-                provider: "github",
-                scopes: ["read:org"],
-                callbackURL: `${callbackUrl.pathname}${callbackUrl.search}`,
-              }),
-            catch: (cause) => new GitHubInstallStartError({ cause }),
-          }).pipe(Effect.as(true));
+          return authorizeGitHub(
+            `${callbackUrl.pathname}${callbackUrl.search}`
+          );
         }
 
         return Effect.sync(() => {

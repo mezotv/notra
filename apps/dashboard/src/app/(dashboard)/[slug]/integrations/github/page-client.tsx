@@ -21,7 +21,10 @@ import {
   GITHUB_INSTALL_CHANNEL,
   GITHUB_INSTALL_MESSAGE,
 } from "@/constants/github";
-import { startGitHubInstall } from "@/lib/integrations/github/install";
+import {
+  reauthorizeGitHub,
+  startGitHubInstall,
+} from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface PageClientProps {
@@ -56,13 +59,18 @@ function getGitHubInstallStorageKey(organizationId: string) {
 function useResumeGitHubInstall(params: {
   callbackPath: string;
   organizationId: string;
+  reauthorizationInstallationId: string | null;
+  reauthorizationState: string | null;
   shouldResume: boolean;
 }) {
   const resumedInstallRef = useRef(false);
 
   useEffect(() => {
     if (
-      !params.shouldResume ||
+      (!params.shouldResume &&
+        !(
+          params.reauthorizationInstallationId && params.reauthorizationState
+        )) ||
       !params.organizationId ||
       resumedInstallRef.current
     ) {
@@ -72,7 +80,30 @@ function useResumeGitHubInstall(params: {
     resumedInstallRef.current = true;
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.delete("githubReauthorized");
+    nextUrl.searchParams.delete("githubReauthorizeInstallationId");
+    nextUrl.searchParams.delete("githubReauthorizeState");
     window.history.replaceState(null, "", nextUrl);
+
+    if (params.reauthorizationInstallationId && params.reauthorizationState) {
+      const callbackUrl = new URL(
+        "/api/integrations/github/callback",
+        window.location.origin
+      );
+      callbackUrl.searchParams.set(
+        "installation_id",
+        params.reauthorizationInstallationId
+      );
+      callbackUrl.searchParams.set("state", params.reauthorizationState);
+
+      reauthorizeGitHub(`${callbackUrl.pathname}${callbackUrl.search}`).then(
+        (started) => {
+          if (!started) {
+            toast.error("Failed to reconnect GitHub");
+          }
+        }
+      );
+      return;
+    }
 
     startGitHubInstall({
       organizationId: params.organizationId,
@@ -82,7 +113,13 @@ function useResumeGitHubInstall(params: {
         toast.error("Failed to resume GitHub installation");
       }
     });
-  }, [params.callbackPath, params.organizationId, params.shouldResume]);
+  }, [
+    params.callbackPath,
+    params.organizationId,
+    params.reauthorizationInstallationId,
+    params.reauthorizationState,
+    params.shouldResume,
+  ]);
 }
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
@@ -98,6 +135,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   useResumeGitHubInstall({
     callbackPath: pathname,
     organizationId,
+    reauthorizationInstallationId: searchParams.get(
+      "githubReauthorizeInstallationId"
+    ),
+    reauthorizationState: searchParams.get("githubReauthorizeState"),
     shouldResume: searchParams.get("githubReauthorized") === "true",
   });
 

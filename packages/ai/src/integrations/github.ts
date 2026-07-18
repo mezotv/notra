@@ -262,19 +262,15 @@ async function assertGitHubInstallationAdmin(params: {
   }
 }
 
-export async function isGitHubAppReauthorizationRequired(userId: string) {
+export async function isGitHubAccountConnectionRequired(userId: string) {
   const githubAccount = await db.query.accounts.findFirst({
     where: and(eq(accounts.userId, userId), eq(accounts.providerId, "github")),
     columns: {
       accessToken: true,
-      scope: true,
     },
   });
 
-  return (
-    !githubAccount?.accessToken ||
-    !hasGitHubScope(githubAccount.scope, "read:org")
-  );
+  return !githubAccount?.accessToken;
 }
 
 async function insertDefaultRepositoryOutputs(repositoryId: string) {
