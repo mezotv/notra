@@ -335,7 +335,11 @@ export function ConsoleShell({
         className="min-h-0! flex-1 overflow-hidden overscroll-none"
         defaultOpen={initialSidebarOpen}
       >
-        <Sidebar className="border-none" collapsible="icon" variant="inset">
+        <Sidebar
+          className="border-none md:top-(--impersonation-banner-height) md:h-[calc(100svh-var(--impersonation-banner-height))]"
+          collapsible="icon"
+          variant="inset"
+        >
           <SidebarHeader>
             <OrganizationSwitcher activeOrganization={activeOrganization} />
           </SidebarHeader>

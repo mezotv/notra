@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 export type AuthMethod = "email" | "google" | "github";
 
 export type SocialProvider = "google" | "github";
@@ -44,6 +46,10 @@ export interface UserImpersonationDialogProps {
 export interface ImpersonationBannerProps {
   email: string;
   name: string;
+}
+
+export interface ImpersonationBannerStyle extends CSSProperties {
+  "--impersonation-banner-height": string;
 }
 
 export interface UserMenuProps {

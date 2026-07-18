@@ -4,7 +4,9 @@ import "@/styles/globals.css";
 
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";
 import { Providers } from "@/components/providers";
+import { IMPERSONATION_BANNER_HEIGHT } from "@/constants/auth";
 import { getRequestSession } from "@/lib/auth/session";
+import type { ImpersonationBannerStyle } from "@/types/auth";
 
 const notoSans = Noto_Sans({
   subsets: ["latin"],
@@ -39,6 +41,11 @@ export default async function RootLayout({
 }>) {
   const { session, user } = await getRequestSession();
   const isImpersonating = Boolean(session?.impersonatedBy);
+  const shellStyle: ImpersonationBannerStyle = {
+    "--impersonation-banner-height": isImpersonating
+      ? IMPERSONATION_BANNER_HEIGHT
+      : "0rem",
+  };
 
   return (
     <html
@@ -50,7 +57,10 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <div className="flex h-svh flex-col overflow-hidden">
+          <div
+            className="flex h-svh flex-col overflow-hidden"
+            style={shellStyle}
+          >
             {isImpersonating && user ? (
               <ImpersonationBanner email={user.email} name={user.name} />
             ) : null}
