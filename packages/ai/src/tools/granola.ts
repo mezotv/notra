@@ -25,6 +25,13 @@ function createGranolaIntegrationContextResolver(
       );
     }
 
+    const organizationId = config?.organizationId;
+    if (!organizationId) {
+      throw new Error(
+        "Granola tools require an organizationId for integration resolution."
+      );
+    }
+
     let cached = cache.get(integrationId);
     if (!cached) {
       if (!resolveContext) {
@@ -32,9 +39,7 @@ function createGranolaIntegrationContextResolver(
           "No resolveContext callback provided for Granola tool integration resolution."
         );
       }
-      cached = resolveContext(integrationId, {
-        organizationId: config?.organizationId,
-      });
+      cached = resolveContext(integrationId, { organizationId });
       cache.set(integrationId, cached);
       cached.catch(() => {
         cache.delete(integrationId);

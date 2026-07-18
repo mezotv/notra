@@ -32,7 +32,7 @@ export type ResolveLinearIntegrationContext = (
 
 export type ResolveGranolaIntegrationContext = (
   integrationId: string,
-  options?: { organizationId?: string }
+  options: { organizationId: string }
 ) => Promise<GranolaToolContext>;
 
 export type { AILogTarget } from "@notra/ai/observability";

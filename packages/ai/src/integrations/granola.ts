@@ -151,14 +151,12 @@ export async function getDecryptedGranolaApiKey(
 
 export async function getGranolaToolContextByIntegrationId(
   integrationId: string,
-  options?: { organizationId?: string }
+  options: { organizationId: string }
 ): Promise<GranolaToolContext> {
-  const whereClause = options?.organizationId
-    ? and(
-        eq(granolaIntegrations.id, integrationId),
-        eq(granolaIntegrations.organizationId, options.organizationId)
-      )
-    : eq(granolaIntegrations.id, integrationId);
+  const whereClause = and(
+    eq(granolaIntegrations.id, integrationId),
+    eq(granolaIntegrations.organizationId, options.organizationId)
+  );
 
   const [integration] = await db
     .select({
