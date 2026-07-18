@@ -1,32 +1,35 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TOOL_TIMER_STORAGE_PREFIX } from "@/constants/chat-tool-timer";
 
 const ELAPSED_TICK_MS = 1000;
 
 export function useElapsedSeconds(
   isRunning: boolean,
-  persistedStartedAt?: number
+  toolCallId: string
 ): number {
   const startedAtRef = useRef<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
+    const storageKey = `${TOOL_TIMER_STORAGE_PREFIX}${toolCallId}`;
+
     if (!isRunning) {
       startedAtRef.current = null;
       setElapsedSeconds(0);
+      window.localStorage.removeItem(storageKey);
       return;
     }
 
     const now = Date.now();
-    const validPersistedStartedAt =
-      typeof persistedStartedAt === "number" &&
-      Number.isFinite(persistedStartedAt) &&
-      persistedStartedAt > 0
-        ? Math.min(persistedStartedAt, now)
+    const storedStartedAt = Number(window.localStorage.getItem(storageKey));
+    const validStoredStartedAt =
+      Number.isFinite(storedStartedAt) && storedStartedAt > 0
+        ? Math.min(storedStartedAt, now)
         : null;
-    startedAtRef.current =
-      validPersistedStartedAt ?? startedAtRef.current ?? now;
+    startedAtRef.current = validStoredStartedAt ?? startedAtRef.current ?? now;
+    window.localStorage.setItem(storageKey, String(startedAtRef.current));
 
     const updateElapsedSeconds = () => {
       const startedAt = startedAtRef.current;
@@ -41,7 +44,7 @@ export function useElapsedSeconds(
     return () => {
       window.clearInterval(interval);
     };
-  }, [isRunning, persistedStartedAt]);
+  }, [isRunning, toolCallId]);
 
   return elapsedSeconds;
 }

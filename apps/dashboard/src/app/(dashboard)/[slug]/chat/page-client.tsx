@@ -237,8 +237,10 @@ function ChatReasoningBlock({
   );
 }
 
-function CreateToolPendingIndicator() {
-  const elapsedSeconds = useElapsedSeconds(true);
+function CreateToolPendingIndicator({
+  toolCallId,
+}: Pick<RenderableToolPart, "toolCallId">) {
+  const elapsedSeconds = useElapsedSeconds(true, toolCallId);
 
   return (
     <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -1523,8 +1525,7 @@ function StandaloneChatPageClient({
   function renderPart(
     part: ChatUIMessage["parts"][number],
     messageId: string,
-    index: number,
-    messageStartedAt?: number
+    index: number
   ) {
     if (part.type === "text") {
       const text = part.text as string;
@@ -1633,7 +1634,12 @@ function StandaloneChatPageClient({
           toolPart.state === "input-streaming" ||
           toolPart.state === "input-available"
         ) {
-          return <CreateToolPendingIndicator key={toolPart.toolCallId} />;
+          return (
+            <CreateToolPendingIndicator
+              key={toolPart.toolCallId}
+              toolCallId={toolPart.toolCallId}
+            />
+          );
         }
 
         if (toolPart.state === "output-error") {
@@ -1841,8 +1847,8 @@ function StandaloneChatPageClient({
             onApprove={handleApprove}
             onDeny={handleDeny}
             output={output}
-            startedAt={messageStartedAt}
             state={toolPart.state}
+            toolCallId={toolPart.toolCallId}
             toolMetadata={toolMetadata}
             toolName={toolName}
           />
@@ -2065,12 +2071,7 @@ function StandaloneChatPageClient({
                                   ) : (
                                     <MessageContent>
                                       {message.parts.map((part, index) =>
-                                        renderPart(
-                                          part,
-                                          message.id,
-                                          index,
-                                          message.metadata?.createdAt
-                                        )
+                                        renderPart(part, message.id, index)
                                       )}
                                     </MessageContent>
                                   )}
@@ -2078,12 +2079,7 @@ function StandaloneChatPageClient({
                               ) : (
                                 <MessageContent>
                                   {message.parts.map((part, index) =>
-                                    renderPart(
-                                      part,
-                                      message.id,
-                                      index,
-                                      message.metadata?.createdAt
-                                    )
+                                    renderPart(part, message.id, index)
                                   )}
                                 </MessageContent>
                               )}

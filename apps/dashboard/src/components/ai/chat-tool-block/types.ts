@@ -11,6 +11,7 @@ export interface ToolCopy {
 }
 
 export interface ChatToolBlockProps {
+  toolCallId: string;
   toolName: string;
   state: string;
   input?: unknown;
@@ -22,7 +23,6 @@ export interface ChatToolBlockProps {
   mcpLogoDarkUrl?: string | null;
   mcpLogoLightUrl?: string | null;
   toolMetadata?: unknown;
-  startedAt?: number;
 }
 
 export interface McpToolIconUrls {

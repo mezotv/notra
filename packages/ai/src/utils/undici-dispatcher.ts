@@ -1,20 +1,39 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { LONG_FETCH_TIMEOUT_MS } from "@notra/ai/constants/repo-image";
-import { Agent, getGlobalDispatcher, setGlobalDispatcher } from "undici";
+import {
+  Agent,
+  Dispatcher,
+  getGlobalDispatcher,
+  setGlobalDispatcher,
+} from "undici";
+
+const dispatcherStorage = new AsyncLocalStorage<Dispatcher>();
+const fallbackDispatcher = getGlobalDispatcher();
+
+class ContextDispatcher extends Dispatcher {
+  dispatch(
+    options: Dispatcher.DispatchOptions,
+    handler: Dispatcher.DispatchHandler
+  ) {
+    return (dispatcherStorage.getStore() ?? fallbackDispatcher).dispatch(
+      options,
+      handler
+    );
+  }
+}
+
+setGlobalDispatcher(new ContextDispatcher());
 
 export async function withLongFetchTimeouts<T>(callback: () => Promise<T>) {
-  const previousDispatcher = getGlobalDispatcher();
   const dispatcher = new Agent({
     headersTimeout: LONG_FETCH_TIMEOUT_MS,
     bodyTimeout: LONG_FETCH_TIMEOUT_MS,
     keepAliveTimeout: 60_000,
   });
 
-  setGlobalDispatcher(dispatcher);
-
   try {
-    return await callback();
+    return await dispatcherStorage.run(dispatcher, callback);
   } finally {
-    setGlobalDispatcher(previousDispatcher);
     if (typeof dispatcher.close === "function") {
       await dispatcher.close().catch((error: unknown) => {
         console.warn("Failed to close long-timeout fetch dispatcher", error);

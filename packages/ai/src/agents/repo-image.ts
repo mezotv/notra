@@ -6,7 +6,6 @@ import {
   IMAGE_REVIEW_MODEL_ID,
   MIN_REPO_IMAGE_HTML_BYTES,
   RECOVERY_AGENT_TIMEOUT_MS,
-  REPO_IMAGE_BOX_REQUEST_TIMEOUT_MS,
   REPO_IMAGE_OUTPUT_HTML_PATH,
   TRAILING_SLASH_RE,
 } from "@notra/ai/constants/repo-image";
@@ -455,7 +454,7 @@ export async function generateRepoImage(params: {
         model: IMAGE_GEN_MODEL_ID as VercelModel,
         apiKey: agentApiKey,
       },
-      timeout: REPO_IMAGE_BOX_REQUEST_TIMEOUT_MS,
+      timeout: AGENT_TIMEOUT_MS,
     } satisfies BoxConfig;
     const box = restoreSnapshotId
       ? await withBoxRetry(() => Box.fromSnapshot(restoreSnapshotId, boxConfig))

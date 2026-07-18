@@ -681,6 +681,7 @@ function isErrorOutputPayload(output: unknown): boolean {
 }
 
 export function ChatToolBlock({
+  toolCallId,
   toolName,
   state,
   input,
@@ -692,7 +693,6 @@ export function ChatToolBlock({
   mcpLogoDarkUrl,
   mcpLogoLightUrl,
   toolMetadata,
-  startedAt,
 }: ChatToolBlockProps) {
   const isAwaitingApproval = state === "approval-requested";
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -700,7 +700,7 @@ export function ChatToolBlock({
   const isError = state === "output-error" || isErrorOutputPayload(output);
   const isStreaming =
     state === "input-streaming" || state === "input-available";
-  const elapsedSeconds = useElapsedSeconds(isStreaming, startedAt);
+  const elapsedSeconds = useElapsedSeconds(isStreaming, toolCallId);
   const showElapsedTimer =
     isStreaming && elapsedSeconds >= TOOL_TIMER_THRESHOLD_SECONDS;
 
