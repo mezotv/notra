@@ -28,6 +28,7 @@ import { EmptyState } from "@/components/empty-state";
 import { AddGranolaIntegrationDialog } from "@/components/integrations/add-granola-integration-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { formatGranolaIntegrationDate } from "@/lib/granola/format";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GranolaIntegrationCardProps } from "@/types/integrations";
 import { GranolaIntegrationsPageSkeleton } from "./skeleton";
@@ -107,12 +108,11 @@ function GranolaIntegrationCard({
             {integration.createdByUser ? (
               <>
                 Added by {integration.createdByUser.name} on{" "}
-                {new Date(integration.createdAt).toLocaleDateString()}
+                {formatGranolaIntegrationDate(integration.createdAt)}
               </>
             ) : (
               <>
-                Created on{" "}
-                {new Date(integration.createdAt).toLocaleDateString()}
+                Created on {formatGranolaIntegrationDate(integration.createdAt)}
               </>
             )}
           </CardDescription>

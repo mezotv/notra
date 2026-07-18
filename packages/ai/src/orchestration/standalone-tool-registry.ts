@@ -203,13 +203,13 @@ export function buildStandaloneToolSet(
   const hasGranola = validatedIntegrations.some((i) => i.type === "granola");
 
   if (hasGranola) {
-    const allowedGranolaIntegrationIds = Array.from(
-      new Set(
-        validatedIntegrations
-          .filter((integration) => integration.type === "granola")
-          .map((integration) => integration.id)
-      )
-    );
+    const granolaIntegrationIds = new Set<string>();
+    for (const integration of validatedIntegrations) {
+      if (integration.type === "granola") {
+        granolaIntegrationIds.add(integration.id);
+      }
+    }
+    const allowedGranolaIntegrationIds = Array.from(granolaIntegrationIds);
 
     tools.getGranolaNotes = createGetGranolaNotesTool(
       { organizationId, allowedIntegrationIds: allowedGranolaIntegrationIds },

@@ -112,18 +112,19 @@ async function loadStandaloneChatIntegrations(
       })
     );
 
-  const granola = granolaIntegrations
-    .filter((integration) => integration.enabled)
-    .map(
-      (integration): ValidatedIntegration => ({
+  const granola: ValidatedIntegration[] = [];
+  for (const integration of granolaIntegrations) {
+    if (integration.enabled) {
+      granola.push({
         id: integration.id,
         type: "granola" as const,
         enabled: integration.enabled,
         displayName: integration.displayName,
         organizationId: integration.organizationId,
         workspaceName: integration.workspaceName,
-      })
-    );
+      });
+    }
+  }
 
   return [...github, ...linear, ...granola];
 }
