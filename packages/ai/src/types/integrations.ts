@@ -57,6 +57,25 @@ export interface CreateLinearIntegrationParams {
   linearTeamName?: string;
 }
 
+export interface CreateGranolaIntegrationParams {
+  organizationId: string;
+  userId: string;
+  displayName: string;
+  apiKey: string;
+  workspaceName?: string;
+}
+
+export interface UpdateGranolaIntegrationParams {
+  displayName?: string;
+  enabled?: boolean;
+  workspaceName?: string | null;
+}
+
+export interface GranolaKeyVerificationResult {
+  valid: boolean;
+  error?: string;
+}
+
 export interface McpHeaderMap {
   [key: string]: string;
 }

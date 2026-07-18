@@ -50,6 +50,34 @@ export interface LinearIntegration {
   };
 }
 
+export interface GranolaIntegration {
+  id: string;
+  displayName: string;
+  enabled: boolean;
+  createdAt: string;
+  workspaceName?: string | null;
+  createdByUser?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+}
+
+export interface AddGranolaIntegrationDialogProps {
+  organizationId: string;
+  onSuccess?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
+}
+
+export interface GranolaIntegrationCardProps {
+  integration: GranolaIntegration;
+  organizationId: string;
+  onUpdate?: () => void;
+}
+
 export type WebhookLogType = "release" | "push" | "ping";
 
 export interface IntegrationWebhookLog {

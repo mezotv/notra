@@ -5,7 +5,12 @@ import { GITHUB_URL_PATTERNS } from "@/constants/github";
 export const INTEGRATION_CATEGORIES = ["input", "output"] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
 
-export const INPUT_INTEGRATION_TYPES = ["github", "slack", "linear"] as const;
+export const INPUT_INTEGRATION_TYPES = [
+  "github",
+  "slack",
+  "linear",
+  "granola",
+] as const;
 export type InputIntegrationType = (typeof INPUT_INTEGRATION_TYPES)[number];
 
 export const OUTPUT_INTEGRATION_TYPES = [

@@ -365,6 +365,13 @@
       "when": 1784215822728,
       "tag": "0051_parallel_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1784354287455,
+      "tag": "0052_woozy_prowler",
+      "breakpoints": true
     }
   ]
 }

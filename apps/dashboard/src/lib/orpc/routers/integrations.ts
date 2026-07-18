@@ -22,6 +22,14 @@ import {
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
 import {
+  createGranolaIntegration,
+  deleteGranolaIntegration,
+  getGranolaIntegrationById,
+  getGranolaIntegrationsByOrganization,
+  updateGranolaIntegration,
+  verifyGranolaApiKey,
+} from "@notra/ai/integrations/granola";
+import {
   deleteLinearIntegration,
   getLinearIntegrationById,
   getLinearIntegrationsByOrganization,
@@ -59,6 +67,10 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
+import {
+  createGranolaIntegrationRequestSchema,
+  updateGranolaIntegrationBodySchema,
+} from "@/schemas/granola";
 import {
   addRepositoryRequestSchema,
   beginMcpOAuthRequestSchema,
@@ -899,6 +911,146 @@ export const integrationsRouter = {
         }
 
         await deleteLinearIntegration(input.integrationId);
+
+        return { success: true };
+      }),
+  },
+  granola: {
+    list: baseProcedure
+      .input(organizationIdInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integrations = await getGranolaIntegrationsByOrganization(
+          input.organizationId
+        );
+
+        return {
+          integrations: integrations.map((integration) => ({
+            id: integration.id,
+            displayName: integration.displayName,
+            enabled: integration.enabled,
+            createdAt: integration.createdAt.toISOString(),
+            workspaceName: integration.workspaceName,
+            createdByUser: integration.createdByUser
+              ? {
+                  id: integration.createdByUser.id,
+                  name: integration.createdByUser.name,
+                  email: integration.createdByUser.email,
+                  image: integration.createdByUser.image,
+                }
+              : undefined,
+          })),
+        };
+      }),
+    get: baseProcedure
+      .input(integrationInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integration = await getGranolaIntegrationById(
+          input.integrationId
+        );
+
+        if (
+          !integration ||
+          integration.organizationId !== input.organizationId
+        ) {
+          throw notFound("Granola integration not found");
+        }
+
+        return {
+          id: integration.id,
+          displayName: integration.displayName,
+          enabled: integration.enabled,
+          createdAt: integration.createdAt.toISOString(),
+          workspaceName: integration.workspaceName,
+          createdByUser: integration.createdByUser
+            ? {
+                id: integration.createdByUser.id,
+                name: integration.createdByUser.name,
+                email: integration.createdByUser.email,
+                image: integration.createdByUser.image,
+              }
+            : undefined,
+        };
+      }),
+    create: baseProcedure
+      .input(createGranolaIntegrationRequestSchema)
+      .handler(async ({ context, input }) => {
+        const { user } = await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const verification = await verifyGranolaApiKey(input.apiKey);
+        if (!verification.valid) {
+          throw badRequest(verification.error ?? "Invalid Granola API key");
+        }
+
+        const integration = await createGranolaIntegration({
+          organizationId: input.organizationId,
+          userId: user.id,
+          displayName: input.displayName,
+          apiKey: input.apiKey,
+          workspaceName: input.workspaceName,
+        });
+
+        if (!integration) {
+          throw internalServerError("Failed to create Granola integration");
+        }
+
+        return {
+          id: integration.id,
+          displayName: integration.displayName,
+          enabled: integration.enabled,
+          createdAt: integration.createdAt.toISOString(),
+          workspaceName: integration.workspaceName,
+        };
+      }),
+    update: baseProcedure
+      .input(integrationInputSchema.and(updateGranolaIntegrationBodySchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const existing = await getGranolaIntegrationById(input.integrationId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("Granola integration not found");
+        }
+
+        const updated = await updateGranolaIntegration(input.integrationId, {
+          enabled: input.enabled,
+          displayName: input.displayName,
+          workspaceName: input.workspaceName,
+        });
+
+        return updated;
+      }),
+    delete: baseProcedure
+      .input(integrationInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const existing = await getGranolaIntegrationById(input.integrationId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("Granola integration not found");
+        }
+
+        await deleteGranolaIntegration(input.integrationId);
 
         return { success: true };
       }),

@@ -1,4 +1,5 @@
 import { getGitHubIntegrationsByOrganization } from "@notra/ai/integrations/github";
+import { getGranolaIntegrationsByOrganization } from "@notra/ai/integrations/granola";
 import { getLinearIntegrationsByOrganization } from "@notra/ai/integrations/linear";
 import type { IntegrationType } from "@/schemas/integrations";
 import type {
@@ -47,6 +48,19 @@ const integrationFetchers: Partial<
       id: integration.id,
       displayName: integration.displayName,
       type: "linear" as const,
+      enabled: integration.enabled,
+      createdAt: integration.createdAt,
+      repositories: [],
+    }));
+  },
+  granola: async (organizationId) => {
+    const integrations =
+      await getGranolaIntegrationsByOrganization(organizationId);
+
+    return integrations.map((integration) => ({
+      id: integration.id,
+      displayName: integration.displayName,
+      type: "granola" as const,
       enabled: integration.enabled,
       createdAt: integration.createdAt,
       repositories: [],

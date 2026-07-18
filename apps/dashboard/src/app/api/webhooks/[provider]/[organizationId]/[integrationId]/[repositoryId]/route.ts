@@ -23,6 +23,7 @@ const WEBHOOK_HANDLERS: Record<InputIntegrationType, WebhookHandler | null> = {
   github: handleGitHubWebhook,
   linear: handleLinearWebhook,
   slack: null,
+  granola: null,
 };
 
 type IntegrationFetcher = (
@@ -54,6 +55,7 @@ const INTEGRATION_FETCHERS: Record<
     };
   },
   slack: null,
+  granola: null,
 };
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
