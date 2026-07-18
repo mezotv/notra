@@ -35,7 +35,7 @@ export const INPUT_SOURCES: readonly IntegrationConfig[] = [
     description:
       "Pull meeting notes, transcripts, and AI summaries from Granola for automated content",
     icon: <Granola />,
-    accentColor: "#F7B733",
+    accentColor: "#B2C248",
     href: "granola",
     available: true,
     category: "input",
