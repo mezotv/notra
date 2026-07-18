@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
+  accounts,
   githubAppInstallations,
   githubIntegrations,
   repositoryOutputs,
@@ -44,6 +45,20 @@ export class GitHubAppNotConfiguredError extends Error {
   constructor() {
     super("GitHub App is not configured");
     this.name = "GitHubAppNotConfiguredError";
+  }
+}
+
+export class GitHubAccountRequiredError extends Error {
+  constructor() {
+    super("Connect your GitHub account before installing the GitHub App");
+    this.name = "GitHubAccountRequiredError";
+  }
+}
+
+export class GitHubInstallationAccessDeniedError extends Error {
+  constructor() {
+    super("You must administer the GitHub account that owns this installation");
+    this.name = "GitHubInstallationAccessDeniedError";
   }
 }
 
@@ -136,6 +151,69 @@ async function getGitHubAppInstallation(installationId: string) {
   );
 
   return Effect.runPromise(decodeGitHubAppInstallationResponse(data));
+}
+
+async function assertGitHubInstallationAdmin(params: {
+  userId: string;
+  installationAccount: {
+    id: number;
+    login: string;
+    type: "User" | "Organization";
+  };
+}) {
+  const githubAccount = await db.query.accounts.findFirst({
+    where: and(
+      eq(accounts.userId, params.userId),
+      eq(accounts.providerId, "github")
+    ),
+    columns: {
+      accountId: true,
+      accessToken: true,
+    },
+  });
+
+  if (!githubAccount?.accessToken) {
+    throw new GitHubAccountRequiredError();
+  }
+
+  const octokit = createOctokit(githubAccount.accessToken);
+  const { data: githubUser } = await octokit.request("GET /user", {
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+
+  if (String(githubUser.id) !== githubAccount.accountId) {
+    throw new GitHubInstallationAccessDeniedError();
+  }
+
+  if (params.installationAccount.type === "User") {
+    if (githubAccount.accountId !== String(params.installationAccount.id)) {
+      throw new GitHubInstallationAccessDeniedError();
+    }
+    return;
+  }
+
+  try {
+    const { data: membership } = await octokit.request(
+      "GET /user/memberships/orgs/{org}",
+      {
+        org: params.installationAccount.login,
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+
+    if (membership.state !== "active" || membership.role !== "admin") {
+      throw new GitHubInstallationAccessDeniedError();
+    }
+  } catch (error) {
+    if (error instanceof GitHubInstallationAccessDeniedError) {
+      throw error;
+    }
+    throw new GitHubInstallationAccessDeniedError();
+  }
 }
 
 async function insertDefaultRepositoryOutputs(repositoryId: string) {
@@ -433,6 +511,11 @@ export async function upsertGitHubAppInstallation(params: {
     throw new Error("GitHub installation account is missing");
   }
 
+  await assertGitHubInstallationAdmin({
+    userId: params.userId,
+    installationAccount: installation.account,
+  });
+
   const values = {
     id: nanoid(),
     organizationId: params.organizationId,
@@ -623,6 +706,26 @@ export async function setSelectedGitHubAppRepositories(params: {
         repo.githubRepositoryId && !selectedIds.has(repo.githubRepositoryId)
     )
     .map((repo) => repo.id);
+
+  await Promise.all(
+    selectedRepositories.map(async (repository) => {
+      const existingIntegrationId = existingByRepositoryId.get(repository.id);
+      const conflictingRepository = await findRepositoryInOrganization(
+        params.organizationId,
+        repository.owner,
+        repository.name
+      );
+
+      if (
+        conflictingRepository &&
+        conflictingRepository.id !== existingIntegrationId
+      ) {
+        throw new Error(
+          `Repository ${repository.fullName} is already connected`
+        );
+      }
+    })
+  );
 
   if (deselectedIds.length > 0) {
     await db

@@ -1,4 +1,8 @@
-import { upsertGitHubAppInstallation } from "@notra/ai/integrations/github";
+import {
+  GitHubAccountRequiredError,
+  GitHubInstallationAccessDeniedError,
+  upsertGitHubAppInstallation,
+} from "@notra/ai/integrations/github";
 import { redis } from "@notra/ai/utils/redis";
 import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
@@ -71,6 +75,14 @@ export async function GET(request: NextRequest) {
       })
     );
   } catch (error) {
+    if (error instanceof GitHubAccountRequiredError) {
+      return NextResponse.redirect(`${baseUrl}/?error=github_account_required`);
+    }
+    if (error instanceof GitHubInstallationAccessDeniedError) {
+      return NextResponse.redirect(
+        `${baseUrl}/?error=github_installation_forbidden`
+      );
+    }
     console.error("Error in GitHub App callback:", error);
     return NextResponse.redirect(`${baseUrl}/?error=github_callback_failed`);
   }

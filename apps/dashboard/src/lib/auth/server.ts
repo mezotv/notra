@@ -86,8 +86,10 @@ function validateAndNormalizeOrganizationSlug(org: {
 }
 
 function buildSocialProviders() {
-  const providers: Record<string, { clientId: string; clientSecret: string }> =
-    {};
+  const providers: Record<
+    string,
+    { clientId: string; clientSecret: string; scope?: string[] }
+  > = {};
 
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     providers.google = {
@@ -100,6 +102,7 @@ function buildSocialProviders() {
     providers.github = {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      scope: ["read:org"],
     };
   }
 

@@ -52,6 +52,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import {
+  type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -252,6 +253,14 @@ function CreateToolPendingIndicator({
       )}
     </div>
   );
+}
+
+function CompletedToolTimer({
+  children,
+  toolCallId,
+}: Pick<RenderableToolPart, "toolCallId"> & { children?: ReactNode }) {
+  useElapsedSeconds(false, toolCallId);
+  return children ?? null;
 }
 
 const CREATE_TOOL_TYPES = {
@@ -1644,22 +1653,34 @@ function StandaloneChatPageClient({
 
         if (toolPart.state === "output-error") {
           return (
-            <div
-              className="flex w-fit items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs"
+            <CompletedToolTimer
               key={toolPart.toolCallId}
+              toolCallId={toolPart.toolCallId}
             >
-              <HugeiconsIcon className="size-3.5" icon={X} />
-              <span>Draft generation failed. The assistant will retry.</span>
-            </div>
+              <div className="flex w-fit items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
+                <HugeiconsIcon className="size-3.5" icon={X} />
+                <span>Draft generation failed. The assistant will retry.</span>
+              </div>
+            </CompletedToolTimer>
           );
         }
 
         if (toolPart.state === "output-denied") {
-          return null;
+          return (
+            <CompletedToolTimer
+              key={toolPart.toolCallId}
+              toolCallId={toolPart.toolCallId}
+            />
+          );
         }
 
         if (toolPart.approval?.reason === "discard") {
-          return null;
+          return (
+            <CompletedToolTimer
+              key={toolPart.toolCallId}
+              toolCallId={toolPart.toolCallId}
+            />
+          );
         }
 
         const previewState: "draft" | "finished" =
@@ -1748,57 +1769,69 @@ function StandaloneChatPageClient({
 
         if (contentType === "twitter_post") {
           return (
-            <TwitterPreview
+            <CompletedToolTimer
               key={toolPart.toolCallId}
-              markdown={markdown}
-              onApprove={handleApprove}
-              onDeny={handleDeny}
-              onPersist={handlePersist}
-              onRegenerate={handleRegenerate}
-              organization={{
-                name: organization?.name ?? "Your Name",
-                logo: organization?.logo ?? null,
-              }}
-              persistedStatus={persistedStatus}
-              state={previewState}
-              title={title}
-            />
+              toolCallId={toolPart.toolCallId}
+            >
+              <TwitterPreview
+                markdown={markdown}
+                onApprove={handleApprove}
+                onDeny={handleDeny}
+                onPersist={handlePersist}
+                onRegenerate={handleRegenerate}
+                organization={{
+                  name: organization?.name ?? "Your Name",
+                  logo: organization?.logo ?? null,
+                }}
+                persistedStatus={persistedStatus}
+                state={previewState}
+                title={title}
+              />
+            </CompletedToolTimer>
           );
         }
 
         if (contentType === "linkedin_post") {
           return (
-            <LinkedInPreview
+            <CompletedToolTimer
               key={toolPart.toolCallId}
+              toolCallId={toolPart.toolCallId}
+            >
+              <LinkedInPreview
+                markdown={markdown}
+                onApprove={handleApprove}
+                onDeny={handleDeny}
+                onPersist={handlePersist}
+                onRegenerate={handleRegenerate}
+                organization={{
+                  name: organization?.name ?? "Your Name",
+                  logo: organization?.logo ?? null,
+                }}
+                persistedStatus={persistedStatus}
+                state={previewState}
+                title={title}
+              />
+            </CompletedToolTimer>
+          );
+        }
+
+        return (
+          <CompletedToolTimer
+            key={toolPart.toolCallId}
+            toolCallId={toolPart.toolCallId}
+          >
+            <BlogChangelogPreview
+              contentType={contentType}
               markdown={markdown}
               onApprove={handleApprove}
               onDeny={handleDeny}
               onPersist={handlePersist}
               onRegenerate={handleRegenerate}
-              organization={{
-                name: organization?.name ?? "Your Name",
-                logo: organization?.logo ?? null,
-              }}
               persistedStatus={persistedStatus}
               state={previewState}
               title={title}
             />
-          );
-        }
-
-        return (
-          <BlogChangelogPreview
-            contentType={contentType}
-            key={toolPart.toolCallId}
-            markdown={markdown}
-            onApprove={handleApprove}
-            onDeny={handleDeny}
-            onPersist={handlePersist}
-            onRegenerate={handleRegenerate}
-            persistedStatus={persistedStatus}
-            state={previewState}
-            title={title}
-          />
+          </CompletedToolTimer>
         );
       }
 
@@ -1855,7 +1888,12 @@ function StandaloneChatPageClient({
         );
       }
 
-      return null;
+      return (
+        <CompletedToolTimer
+          key={toolPart.toolCallId}
+          toolCallId={toolPart.toolCallId}
+        />
+      );
     }
 
     return null;

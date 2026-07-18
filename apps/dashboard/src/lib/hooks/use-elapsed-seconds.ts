@@ -4,27 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { TOOL_TIMER_STORAGE_PREFIX } from "@/constants/chat-tool-timer";
 
 const ELAPSED_TICK_MS = 1000;
-const UNMOUNT_CLEANUP_DELAY_MS = 1000;
-const pendingStorageCleanup = new Map<string, number>();
-
-function cancelPendingStorageCleanup(storageKey: string) {
-  const cleanupTimer = pendingStorageCleanup.get(storageKey);
-  if (cleanupTimer === undefined) {
-    return;
-  }
-
-  window.clearTimeout(cleanupTimer);
-  pendingStorageCleanup.delete(storageKey);
-}
-
-function scheduleStorageCleanup(storageKey: string) {
-  cancelPendingStorageCleanup(storageKey);
-  const cleanupTimer = window.setTimeout(() => {
-    window.localStorage.removeItem(storageKey);
-    pendingStorageCleanup.delete(storageKey);
-  }, UNMOUNT_CLEANUP_DELAY_MS);
-  pendingStorageCleanup.set(storageKey, cleanupTimer);
-}
 
 export function useElapsedSeconds(
   isRunning: boolean,
@@ -35,7 +14,6 @@ export function useElapsedSeconds(
 
   useEffect(() => {
     const storageKey = `${TOOL_TIMER_STORAGE_PREFIX}${toolCallId}`;
-    cancelPendingStorageCleanup(storageKey);
 
     if (!isRunning) {
       startedAtRef.current = null;
@@ -65,7 +43,6 @@ export function useElapsedSeconds(
 
     return () => {
       window.clearInterval(interval);
-      scheduleStorageCleanup(storageKey);
     };
   }, [isRunning, toolCallId]);
 
