@@ -1,3 +1,4 @@
+import { invalidateStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import { MCP_OAUTH_CALLBACK_PATH } from "@notra/ai/constants/mcp-auth";
 import {
   addRepository,
@@ -373,7 +374,7 @@ export const integrationsRouter = {
       try {
         const displayName = `${input.owner}/${input.repo}`;
 
-        return await createGitHubIntegration({
+        const integration = await createGitHubIntegration({
           organizationId: input.organizationId,
           userId: auth.user.id,
           token: input.token || null,
@@ -381,7 +382,11 @@ export const integrationsRouter = {
           owner: input.owner,
           repo: input.repo,
           defaultBranch: input.branch || null,
-        }).then(serializeIntegration);
+        });
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return serializeIntegration(integration);
       } catch (error) {
         mapKnownIntegrationError(error);
       }
@@ -498,6 +503,8 @@ export const integrationsRouter = {
           input.integrationId
         );
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return serializeIntegration(updated);
       } catch (error) {
         mapKnownIntegrationError(error);
@@ -544,6 +551,8 @@ export const integrationsRouter = {
       }
 
       await deleteGitHubIntegration(input.integrationId);
+
+      await invalidateStandaloneChatIntegrations(input.organizationId);
 
       return {
         success: true,
@@ -617,13 +626,17 @@ export const integrationsRouter = {
         );
 
         try {
-          return await addRepository({
+          const repository = await addRepository({
             integrationId: input.integrationId,
             owner: input.owner,
             repo: input.repo,
             outputs: input.outputs,
             userId: auth.user.id,
           });
+
+          await invalidateStandaloneChatIntegrations(input.organizationId);
+
+          return repository;
         } catch (error) {
           mapKnownIntegrationError(error);
         }
@@ -687,6 +700,8 @@ export const integrationsRouter = {
             input.repositoryId
           );
 
+          await invalidateStandaloneChatIntegrations(input.organizationId);
+
           return serializeRepository(refreshed);
         } catch (error) {
           mapKnownIntegrationError(error);
@@ -705,6 +720,8 @@ export const integrationsRouter = {
           input.repositoryId
         );
         await deleteRepository(input.repositoryId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
 
         return { success: true };
       }),
@@ -895,6 +912,8 @@ export const integrationsRouter = {
           linearTeamName: input.linearTeamName,
         });
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return updated;
       }),
     delete: baseProcedure
@@ -911,6 +930,8 @@ export const integrationsRouter = {
         }
 
         await deleteLinearIntegration(input.integrationId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
 
         return { success: true };
       }),
@@ -1016,6 +1037,8 @@ export const integrationsRouter = {
           throw internalServerError("Failed to create Granola integration");
         }
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return {
           id: integration.id,
           displayName: integration.displayName,
@@ -1048,6 +1071,8 @@ export const integrationsRouter = {
           throw internalServerError("Failed to update Granola integration");
         }
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return {
           id: updated.id,
           displayName: updated.displayName,
@@ -1070,6 +1095,8 @@ export const integrationsRouter = {
         }
 
         await deleteGranolaIntegration(input.integrationId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
 
         return { success: true };
       }),

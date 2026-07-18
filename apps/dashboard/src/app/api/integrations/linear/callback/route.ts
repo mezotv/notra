@@ -1,3 +1,4 @@
+import { invalidateStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import {
   createLinearIntegration,
   getLinearIntegrationsByOrganization,
@@ -143,6 +144,8 @@ export async function GET(request: NextRequest) {
       linearOrganizationId: linearOrg.id,
       linearOrganizationName: linearOrg.name,
     });
+
+    await invalidateStandaloneChatIntegrations(oauthState.organizationId);
 
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, oauthState.callbackPath, {
