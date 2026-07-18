@@ -57,7 +57,7 @@ export async function createGranolaIntegration(
 
   const encryptedApiKey = encryptToken(apiKey);
 
-  const id = `grn_${nanoid()}`;
+  const id = `gra_${nanoid()}`;
 
   const [integration] = await db
     .insert(granolaIntegrations)

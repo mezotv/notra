@@ -990,6 +990,15 @@ export const integrationsRouter = {
         });
         await assertActiveSubscription(input.organizationId);
 
+        const { success } = await ratelimit.granolaConnection.limit(
+          input.organizationId
+        );
+        if (!success) {
+          throw tooManyRequests(
+            "Too many connection attempts. Wait a minute and try again."
+          );
+        }
+
         const verification = await verifyGranolaApiKey(input.apiKey);
         if (!verification.valid) {
           throw badRequest(verification.error ?? "Invalid Granola API key");

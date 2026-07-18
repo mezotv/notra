@@ -29,6 +29,12 @@ export const ratelimit = {
     prefix: "ratelimit:mcp-connection",
     limiter: Ratelimit.slidingWindow(10, "1m"),
   }),
+  granolaConnection: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:granola-connection",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
   onboardingBrandAnalysis: new Ratelimit({
     redis,
     analytics: true,
