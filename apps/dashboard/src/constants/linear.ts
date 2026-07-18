@@ -1,0 +1,1 @@
+export const LINEAR_OAUTH_STATE_TTL_SECONDS = 600;

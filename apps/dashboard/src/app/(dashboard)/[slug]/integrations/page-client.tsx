@@ -16,6 +16,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { memo, useState } from "react";
 import { Button } from "@/components/button";
+import { AddGranolaIntegrationDialog } from "@/components/integrations/add-granola-integration-dialog";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
 import { McpIntegrationCard } from "@/components/integrations/mcp-integration-card";
 import { StoreIntegrationsSection } from "@/components/integrations/store-integrations-section";
@@ -70,6 +71,8 @@ const IntegrationCard = memo(function IntegrationCard({
   const showConnectButton = integration.available;
   const showGitHubDialog = integration.available && integration.id === "github";
   const showLinearDialog = integration.available && integration.id === "linear";
+  const showGranolaDialog =
+    integration.available && integration.id === "granola";
 
   if (!(organizationId && organizationSlug)) {
     return null;
@@ -91,7 +94,7 @@ const IntegrationCard = memo(function IntegrationCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (showGitHubDialog || showLinearDialog) {
+                if (showGitHubDialog || showLinearDialog || showGranolaDialog) {
                   setDialogOpen(true);
                 } else {
                   router.push(
@@ -147,6 +150,13 @@ const IntegrationCard = memo(function IntegrationCard({
           authorizeUrl={`/api/integrations/linear/authorize?organizationId=${organizationId}&callbackPath=${encodeURIComponent(pathname)}`}
           onOpenChange={setDialogOpen}
           open={dialogOpen}
+        />
+      ) : null}
+      {showGranolaDialog ? (
+        <AddGranolaIntegrationDialog
+          onOpenChange={setDialogOpen}
+          open={dialogOpen}
+          organizationId={organizationId}
         />
       ) : null}
     </>

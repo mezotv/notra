@@ -4,6 +4,10 @@ import {
   getGitHubToolRepositoryContextByIntegrationId,
 } from "../integrations/github";
 import {
+  getGranolaIntegrationsByOrganization,
+  getGranolaToolContextByIntegrationId,
+} from "../integrations/granola";
+import {
   getLinearIntegrationsByOrganization,
   getLinearToolContextByIntegrationId,
 } from "../integrations/linear";
@@ -61,10 +65,12 @@ export async function invalidateStandaloneChatIntegrations(
 async function loadStandaloneChatIntegrations(
   organizationId: string
 ): Promise<ValidatedIntegration[]> {
-  const [githubIntegrations, linearIntegrations] = await Promise.all([
-    getGitHubIntegrationsByOrganization(organizationId),
-    getLinearIntegrationsByOrganization(organizationId),
-  ]);
+  const [githubIntegrations, linearIntegrations, granolaIntegrations] =
+    await Promise.all([
+      getGitHubIntegrationsByOrganization(organizationId),
+      getLinearIntegrationsByOrganization(organizationId),
+      getGranolaIntegrationsByOrganization(organizationId),
+    ]);
 
   const github = githubIntegrations
     .filter((integration) => integration.enabled)
@@ -106,10 +112,25 @@ async function loadStandaloneChatIntegrations(
       })
     );
 
-  return [...github, ...linear];
+  const granola: ValidatedIntegration[] = [];
+  for (const integration of granolaIntegrations) {
+    if (integration.enabled) {
+      granola.push({
+        id: integration.id,
+        type: "granola" as const,
+        enabled: integration.enabled,
+        displayName: integration.displayName,
+        organizationId: integration.organizationId,
+        workspaceName: integration.workspaceName,
+      });
+    }
+  }
+
+  return [...github, ...linear, ...granola];
 }
 
 export const standaloneChatResolvers = {
   resolveContext: getGitHubToolRepositoryContextByIntegrationId,
   resolveLinearContext: getLinearToolContextByIntegrationId,
+  resolveGranolaContext: getGranolaToolContextByIntegrationId,
 };

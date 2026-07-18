@@ -1,6 +1,7 @@
 import type {
   AvailableGitHubIntegration,
   AvailableGitHubIntegrationRecord,
+  AvailableGranolaIntegrationRecord,
   AvailableLinearIntegrationRecord,
   BrandIdentityRecord,
   BrandIdentitySummary,
@@ -86,5 +87,22 @@ export function serializeAvailableLinearIntegration(
     linearTeamName: integration.linearTeamName,
     linearOrganizationId: integration.linearOrganizationId,
     linearOrganizationName: integration.linearOrganizationName,
+  };
+}
+
+export function isAvailableGranolaIntegration(
+  integration: AvailableGranolaIntegrationRecord
+): integration is AvailableGranolaIntegrationRecord {
+  return integration.enabled;
+}
+
+export function serializeAvailableGranolaIntegration(
+  integration: AvailableGranolaIntegrationRecord
+) {
+  return {
+    id: integration.id,
+    type: "granola" as const,
+    displayName: integration.displayName,
+    workspaceName: integration.workspaceName,
   };
 }

@@ -6,6 +6,11 @@ import {
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
 } from "@notra/ai/tools/github";
+import {
+  createGetGranolaFoldersTool,
+  createGetGranolaNotesTool,
+  createGetGranolaNoteTool,
+} from "@notra/ai/tools/granola";
 import { createImageTool } from "@notra/ai/tools/image";
 import {
   createGetLinearCyclesTool,
@@ -195,6 +200,36 @@ export function buildStandaloneToolSet(
     );
   }
 
+  const hasGranola = validatedIntegrations.some((i) => i.type === "granola");
+
+  if (hasGranola) {
+    const granolaIntegrationIds = new Set<string>();
+    for (const integration of validatedIntegrations) {
+      if (integration.type === "granola") {
+        granolaIntegrationIds.add(integration.id);
+      }
+    }
+    const allowedGranolaIntegrationIds = Array.from(granolaIntegrationIds);
+
+    tools.getGranolaNotes = createGetGranolaNotesTool(
+      { organizationId, allowedIntegrationIds: allowedGranolaIntegrationIds },
+      deps?.resolveGranolaContext
+    );
+    tools.getGranolaNote = createGetGranolaNoteTool(
+      { organizationId, allowedIntegrationIds: allowedGranolaIntegrationIds },
+      deps?.resolveGranolaContext
+    );
+    tools.getGranolaFolders = createGetGranolaFoldersTool(
+      { organizationId, allowedIntegrationIds: allowedGranolaIntegrationIds },
+      deps?.resolveGranolaContext
+    );
+
+    const workspaces = getGranolaWorkspaceList(validatedIntegrations);
+    descriptions.push(
+      `**Granola Integration**: Fetch meeting notes, transcripts, and AI summaries${workspaces ? ` from: ${workspaces}` : ""}`
+    );
+  }
+
   return { tools, descriptions };
 }
 
@@ -218,6 +253,16 @@ function getLinearTeamList(integrations: ValidatedIntegration[]): string {
     }
   }
   return teams.join(", ");
+}
+
+function getGranolaWorkspaceList(integrations: ValidatedIntegration[]): string {
+  const workspaces: string[] = [];
+  for (const integration of integrations) {
+    if (integration.type === "granola") {
+      workspaces.push(integration.workspaceName ?? integration.displayName);
+    }
+  }
+  return workspaces.join(", ");
 }
 
 export function getRepoContextFromIntegrations(

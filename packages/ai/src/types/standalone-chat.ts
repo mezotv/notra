@@ -3,6 +3,7 @@ import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-cha
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { LanguageModelUsage, UIMessage } from "ai";
 import type {
+  ResolveGranolaIntegrationContext,
   ResolveIntegrationContext,
   ResolveLinearIntegrationContext,
 } from "./agents";
@@ -34,6 +35,7 @@ export interface StandaloneChatDeps {
   integrationFetchers?: IntegrationFetchers;
   resolveContext?: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
+  resolveGranolaContext?: ResolveGranolaIntegrationContext;
   onUsage?: (
     usage: LanguageModelUsage,
     modelId: string

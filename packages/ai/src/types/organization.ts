@@ -59,3 +59,10 @@ export interface AvailableLinearIntegrationRecord {
   linearOrganizationId: string;
   linearOrganizationName: string | null;
 }
+
+export interface AvailableGranolaIntegrationRecord {
+  id: string;
+  displayName: string;
+  enabled: boolean;
+  workspaceName: string | null;
+}

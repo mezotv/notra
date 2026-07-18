@@ -1,6 +1,7 @@
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+import { LINEAR_OAUTH_STATE_TTL_SECONDS } from "@/constants/linear";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { linearOAuthErrorParam } from "@/lib/integrations/linear/oauth-errors";
 import { linearAuthorizeQuerySchema } from "@/schemas/linear";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
         userId,
         callbackPath,
       }),
-      { ex: 600 }
+      { ex: LINEAR_OAUTH_STATE_TTL_SECONDS }
     );
 
     const authUrl = new URL("https://linear.app/oauth/authorize");

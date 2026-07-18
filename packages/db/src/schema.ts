@@ -487,6 +487,32 @@ export const linearIntegrations = pgTable(
   ]
 );
 
+export const granolaIntegrations = pgTable(
+  "granola_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    displayName: text("display_name").notNull(),
+    encryptedApiKey: text("encrypted_api_key").notNull(),
+    workspaceName: text("workspace_name"),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("granolaIntegrations_organizationId_idx").on(table.organizationId),
+    index("granolaIntegrations_createdByUserId_idx").on(table.createdByUserId),
+  ]
+);
+
 export const mcpServerIntegrations = pgTable(
   "mcp_server_integrations",
   {
@@ -1501,6 +1527,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   githubIntegrations: many(githubIntegrations),
   githubAppInstallations: many(githubAppInstallations),
   linearIntegrations: many(linearIntegrations),
+  granolaIntegrations: many(granolaIntegrations),
   mcpServerIntegrations: many(mcpServerIntegrations),
   chatAttachments: many(chatAttachments),
 }));
@@ -1548,6 +1575,7 @@ export const organizationsRelations = relations(
     githubIntegrations: many(githubIntegrations),
     githubAppInstallations: many(githubAppInstallations),
     linearIntegrations: many(linearIntegrations),
+    granolaIntegrations: many(granolaIntegrations),
     mcpServerIntegrations: many(mcpServerIntegrations),
     mcpToolIndex: many(mcpToolIndex),
     mcpSessionToolActivations: many(mcpSessionToolActivations),
@@ -1633,6 +1661,20 @@ export const linearIntegrationsRelations = relations(
     }),
     createdByUser: one(users, {
       fields: [linearIntegrations.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const granolaIntegrationsRelations = relations(
+  granolaIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [granolaIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [granolaIntegrations.createdByUserId],
       references: [users.id],
     }),
   })

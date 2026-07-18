@@ -1,3 +1,4 @@
+import { invalidateStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import { MCP_OAUTH_CALLBACK_PATH } from "@notra/ai/constants/mcp-auth";
 import {
   addRepository,
@@ -21,6 +22,14 @@ import {
   validateRepositoryAccess,
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
+import {
+  createGranolaIntegration,
+  deleteGranolaIntegration,
+  getGranolaIntegrationById,
+  getGranolaIntegrationsByOrganization,
+  updateGranolaIntegration,
+  verifyGranolaApiKey,
+} from "@notra/ai/integrations/granola";
 import {
   deleteLinearIntegration,
   getLinearIntegrationById,
@@ -59,6 +68,10 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
+import {
+  createGranolaIntegrationRequestSchema,
+  updateGranolaIntegrationBodySchema,
+} from "@/schemas/granola";
 import {
   addRepositoryRequestSchema,
   beginMcpOAuthRequestSchema,
@@ -361,7 +374,7 @@ export const integrationsRouter = {
       try {
         const displayName = `${input.owner}/${input.repo}`;
 
-        return await createGitHubIntegration({
+        const integration = await createGitHubIntegration({
           organizationId: input.organizationId,
           userId: auth.user.id,
           token: input.token || null,
@@ -369,7 +382,11 @@ export const integrationsRouter = {
           owner: input.owner,
           repo: input.repo,
           defaultBranch: input.branch || null,
-        }).then(serializeIntegration);
+        });
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return serializeIntegration(integration);
       } catch (error) {
         mapKnownIntegrationError(error);
       }
@@ -486,6 +503,8 @@ export const integrationsRouter = {
           input.integrationId
         );
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return serializeIntegration(updated);
       } catch (error) {
         mapKnownIntegrationError(error);
@@ -532,6 +551,8 @@ export const integrationsRouter = {
       }
 
       await deleteGitHubIntegration(input.integrationId);
+
+      await invalidateStandaloneChatIntegrations(input.organizationId);
 
       return {
         success: true,
@@ -605,13 +626,17 @@ export const integrationsRouter = {
         );
 
         try {
-          return await addRepository({
+          const repository = await addRepository({
             integrationId: input.integrationId,
             owner: input.owner,
             repo: input.repo,
             outputs: input.outputs,
             userId: auth.user.id,
           });
+
+          await invalidateStandaloneChatIntegrations(input.organizationId);
+
+          return repository;
         } catch (error) {
           mapKnownIntegrationError(error);
         }
@@ -675,6 +700,8 @@ export const integrationsRouter = {
             input.repositoryId
           );
 
+          await invalidateStandaloneChatIntegrations(input.organizationId);
+
           return serializeRepository(refreshed);
         } catch (error) {
           mapKnownIntegrationError(error);
@@ -693,6 +720,8 @@ export const integrationsRouter = {
           input.repositoryId
         );
         await deleteRepository(input.repositoryId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
 
         return { success: true };
       }),
@@ -883,6 +912,8 @@ export const integrationsRouter = {
           linearTeamName: input.linearTeamName,
         });
 
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
         return updated;
       }),
     delete: baseProcedure
@@ -899,6 +930,173 @@ export const integrationsRouter = {
         }
 
         await deleteLinearIntegration(input.integrationId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return { success: true };
+      }),
+  },
+  granola: {
+    list: baseProcedure
+      .input(organizationIdInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integrations = await getGranolaIntegrationsByOrganization(
+          input.organizationId
+        );
+
+        return {
+          integrations: integrations.map((integration) => ({
+            id: integration.id,
+            displayName: integration.displayName,
+            enabled: integration.enabled,
+            createdAt: integration.createdAt.toISOString(),
+            workspaceName: integration.workspaceName,
+            createdByUser: integration.createdByUser
+              ? {
+                  id: integration.createdByUser.id,
+                  name: integration.createdByUser.name,
+                  email: integration.createdByUser.email,
+                  image: integration.createdByUser.image,
+                }
+              : undefined,
+          })),
+        };
+      }),
+    get: baseProcedure
+      .input(integrationInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integration = await getGranolaIntegrationById(
+          input.integrationId
+        );
+
+        if (
+          !integration ||
+          integration.organizationId !== input.organizationId
+        ) {
+          throw notFound("Granola integration not found");
+        }
+
+        return {
+          id: integration.id,
+          displayName: integration.displayName,
+          enabled: integration.enabled,
+          createdAt: integration.createdAt.toISOString(),
+          workspaceName: integration.workspaceName,
+          createdByUser: integration.createdByUser
+            ? {
+                id: integration.createdByUser.id,
+                name: integration.createdByUser.name,
+                email: integration.createdByUser.email,
+                image: integration.createdByUser.image,
+              }
+            : undefined,
+        };
+      }),
+    create: baseProcedure
+      .input(createGranolaIntegrationRequestSchema)
+      .handler(async ({ context, input }) => {
+        const { user } = await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const { success } = await ratelimit.granolaConnection.limit(
+          input.organizationId
+        );
+        if (!success) {
+          throw tooManyRequests(
+            "Too many connection attempts. Wait a minute and try again."
+          );
+        }
+
+        const verification = await verifyGranolaApiKey(input.apiKey);
+        if (!verification.valid) {
+          throw badRequest(verification.error ?? "Invalid Granola API key");
+        }
+
+        const integration = await createGranolaIntegration({
+          organizationId: input.organizationId,
+          userId: user.id,
+          displayName: input.displayName,
+          apiKey: input.apiKey,
+          workspaceName: input.workspaceName,
+        });
+
+        if (!integration) {
+          throw internalServerError("Failed to create Granola integration");
+        }
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return {
+          id: integration.id,
+          displayName: integration.displayName,
+          enabled: integration.enabled,
+          createdAt: integration.createdAt.toISOString(),
+          workspaceName: integration.workspaceName,
+        };
+      }),
+    update: baseProcedure
+      .input(integrationInputSchema.and(updateGranolaIntegrationBodySchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const existing = await getGranolaIntegrationById(input.integrationId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("Granola integration not found");
+        }
+
+        const updated = await updateGranolaIntegration(input.integrationId, {
+          enabled: input.enabled,
+          displayName: input.displayName,
+          workspaceName: input.workspaceName,
+        });
+
+        if (!updated) {
+          throw internalServerError("Failed to update Granola integration");
+        }
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return {
+          id: updated.id,
+          displayName: updated.displayName,
+          enabled: updated.enabled,
+          createdAt: updated.createdAt.toISOString(),
+          workspaceName: updated.workspaceName,
+        };
+      }),
+    delete: baseProcedure
+      .input(integrationInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const existing = await getGranolaIntegrationById(input.integrationId);
+        if (!existing || existing.organizationId !== input.organizationId) {
+          throw notFound("Granola integration not found");
+        }
+
+        await deleteGranolaIntegration(input.integrationId);
+
+        await invalidateStandaloneChatIntegrations(input.organizationId);
 
         return { success: true };
       }),

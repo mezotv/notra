@@ -2,6 +2,7 @@
 
 import { Framer } from "@notra/ui/components/ui/svgs/framer";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { Granola } from "@notra/ui/components/ui/svgs/granola";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
@@ -25,6 +26,17 @@ export const INPUT_SOURCES: readonly IntegrationConfig[] = [
     icon: <Linear />,
     accentColor: "#5E6AD2",
     href: "linear",
+    available: true,
+    category: "input",
+  },
+  {
+    id: "granola",
+    name: "Granola",
+    description:
+      "Pull meeting notes, transcripts, and AI summaries from Granola for automated content",
+    icon: <Granola />,
+    accentColor: "#B2C248",
+    href: "granola",
     available: true,
     category: "input",
   },

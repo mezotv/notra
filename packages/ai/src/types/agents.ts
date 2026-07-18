@@ -16,6 +16,7 @@ import type {
   CommitWindow,
   GitHubSelectionFilters,
   GitHubToolRepositoryContext,
+  GranolaToolContext,
   LinearToolContext,
 } from "./tools";
 
@@ -28,6 +29,11 @@ export type ResolveLinearIntegrationContext = (
   integrationId: string,
   options?: { organizationId?: string }
 ) => Promise<LinearToolContext>;
+
+export type ResolveGranolaIntegrationContext = (
+  integrationId: string,
+  options: { organizationId: string }
+) => Promise<GranolaToolContext>;
 
 export type { AILogTarget } from "@notra/ai/observability";
 
