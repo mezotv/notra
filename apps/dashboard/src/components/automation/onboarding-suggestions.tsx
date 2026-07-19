@@ -43,7 +43,7 @@ export function OnboardingSuggestions({
           className="size-4 text-muted-foreground"
           icon={SparklesIcon}
         />
-        <h2 className="font-medium text-sm">Suggested by Eve</h2>
+        <h2 className="font-medium text-sm">Suggestions</h2>
         {agentRunning && <BrailleLoader className="text-xs" />}
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -83,7 +83,7 @@ export function OnboardingSuggestions({
             >
               <div className="space-y-1.5">
                 <Badge className="font-normal text-xs" variant="secondary">
-                  Suggested by Eve
+                  Suggestion
                 </Badge>
                 {suggestion.description ? (
                   <p className="line-clamp-3 text-muted-foreground text-sm">
