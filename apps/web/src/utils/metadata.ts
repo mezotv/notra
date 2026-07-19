@@ -12,4 +12,46 @@ export const DEFAULT_SOCIAL_IMAGE = {
   alt: "Notra social preview image",
 } as const;
 
+const SOCIAL_IMAGE_WIDTH = 1200;
+const SOCIAL_IMAGE_HEIGHT = 630;
+
+export const PAGE_SOCIAL_IMAGES = {
+  features: {
+    url: "/og/features.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra features social preview image",
+  },
+  pricing: {
+    url: "/og/pricing.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra pricing social preview image",
+  },
+  changelog: {
+    url: "/og/changelog.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra changelog social preview image",
+  },
+  contact: {
+    url: "/og/contact.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra contact social preview image",
+  },
+  brand: {
+    url: "/og/brand.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra brand assets social preview image",
+  },
+  ossProgram: {
+    url: "/og/oss-program.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra OSS program social preview image",
+  },
+} as const;
+
 export const TWITTER_HANDLE = "@usenotra";

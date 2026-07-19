@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ShowcaseOverviewGrid } from "@/components/showcase-overview-grid";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SHOWCASE_COMPANIES } from "@/utils/showcase";
 import { SHOWCASE_COMPANY_ICONS } from "@/utils/showcase-icons";
 import { SITE_URL } from "@/utils/urls";
@@ -23,13 +23,13 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/changelog`,
     type: "website",
     siteName: "Notra",
-    images: [DEFAULT_SOCIAL_IMAGE],
+    images: [PAGE_SOCIAL_IMAGES.changelog],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [DEFAULT_SOCIAL_IMAGE.url],
+    images: [PAGE_SOCIAL_IMAGES.changelog.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,
   },

@@ -2,7 +2,7 @@ import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
 import { OssApplicationForm } from "@/components/oss-program/oss-application-form";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
 const title = "Notra for Open Source";
@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     url,
     type: "website",
     siteName: "Notra",
-    images: [DEFAULT_SOCIAL_IMAGE],
+    images: [PAGE_SOCIAL_IMAGES.ossProgram],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [DEFAULT_SOCIAL_IMAGE.url],
+    images: [PAGE_SOCIAL_IMAGES.ossProgram.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,
   },

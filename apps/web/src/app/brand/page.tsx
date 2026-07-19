@@ -10,7 +10,7 @@ import {
   FONT_SAMPLE,
 } from "@/lib/brand/constants";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
 const title = "Brand Guidelines";
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
     url,
     type: "website",
     siteName: "Notra",
-    images: [DEFAULT_SOCIAL_IMAGE],
+    images: [PAGE_SOCIAL_IMAGES.brand],
   },
   twitter: {
     card: "summary_large_image",
     title,
     description,
-    images: [DEFAULT_SOCIAL_IMAGE.url],
+    images: [PAGE_SOCIAL_IMAGES.brand.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,
   },

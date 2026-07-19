@@ -29,6 +29,7 @@ const dualmarkProxy = createDualmarkMiddleware({
       "/manifest.json",
       "/marketing",
       "/notra-mark.svg",
+      "/og",
       "/og-image.png",
       "/robots.txt",
       "/rss.xml",
