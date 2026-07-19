@@ -15,6 +15,7 @@ import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { toast } from "sonner";
 import { PostHogIdentity } from "@/components/providers/posthog-identity";
+import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
 import { useMcpConnectionToast } from "@/lib/hooks/use-mcp-connection-toast";
 import {
   DATABUDDY_DASHBOARD_MASK_PATTERNS,
@@ -94,7 +95,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               >
                 {children}
               </RealtimeProvider>
-              <PostHogIdentity />
+              {POSTHOG_PROJECT_TOKEN ? <PostHogIdentity /> : null}
               <DatabuddyAnalytics />
             </NuqsAdapter>
             <Toaster position="top-center" />
