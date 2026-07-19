@@ -14,12 +14,17 @@ export function PostHogIdentity() {
       return;
     }
 
+    const identifiedUserId = posthog.get_property("$user_id");
+
     if (userId) {
+      if (identifiedUserId && identifiedUserId !== userId) {
+        posthog.reset();
+      }
       posthog.identify(userId);
       return;
     }
 
-    if (posthog.get_property("$user_id")) {
+    if (identifiedUserId) {
       posthog.reset();
     }
   }, [isPending, userId]);
