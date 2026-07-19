@@ -3,7 +3,6 @@ import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["peers-zoning-swap-arrivals.trycloudflare.com"],
   reactCompiler: true,
   outputFileTracingIncludes: {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
