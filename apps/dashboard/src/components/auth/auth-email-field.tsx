@@ -18,6 +18,7 @@ export function AuthEmailField({
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input
+        aria-describedby={`${id}-error`}
         aria-invalid={Boolean(error)}
         autoComplete="email"
         className="h-11 rounded-xl px-4"
@@ -30,7 +31,11 @@ export function AuthEmailField({
         type="email"
         value={value}
       />
-      <p aria-live="polite" className="min-h-5 text-destructive text-sm">
+      <p
+        aria-live="polite"
+        className="min-h-5 text-destructive text-sm"
+        id={`${id}-error`}
+      >
         {error}
       </p>
     </div>

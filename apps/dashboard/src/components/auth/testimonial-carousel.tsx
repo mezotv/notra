@@ -10,9 +10,11 @@ import {
 
 export function TestimonialCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const testimonial = AUTH_TESTIMONIALS[activeIndex];
+  const isPaused = isHovered || isFocused;
 
   useEffect(() => {
     if (shouldReduceMotion || isPaused) {
@@ -34,10 +36,10 @@ export function TestimonialCarousel() {
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: hover and focus only pause the carousel timer, this is not an interactive control
     // biome-ignore lint/a11y/noStaticElementInteractions: hover and focus only pause the carousel timer, this is not an interactive control
     <div
-      onBlur={() => setIsPaused(false)}
-      onFocus={() => setIsPaused(true)}
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onBlur={() => setIsFocused(false)}
+      onFocus={() => setIsFocused(true)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <section
         aria-label="Customer testimonials"

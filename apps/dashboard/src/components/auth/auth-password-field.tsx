@@ -24,6 +24,7 @@ export function AuthPasswordField({
       <Label htmlFor={id}>Password</Label>
       <div className="relative">
         <Input
+          aria-describedby={`${id}-error`}
           aria-invalid={Boolean(error)}
           autoComplete={autoComplete}
           className="h-11 rounded-xl px-4 pr-10"
@@ -50,7 +51,11 @@ export function AuthPasswordField({
           )}
         </button>
       </div>
-      <p aria-live="polite" className="min-h-5 text-destructive text-sm">
+      <p
+        aria-live="polite"
+        className="min-h-5 text-destructive text-sm"
+        id={`${id}-error`}
+      >
         {error}
       </p>
     </div>
