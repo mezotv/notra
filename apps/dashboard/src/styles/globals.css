@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "../../../../packages/ui/src/styles/cta-button.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 

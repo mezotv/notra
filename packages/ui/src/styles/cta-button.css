@@ -1,0 +1,62 @@
+@property --cta-gradient-from {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: oklab(100% 0 0);
+}
+
+@property --cta-gradient-to {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: oklab(100% 0 0);
+}
+
+@utility cta-gradient-primary {
+  --cta-gradient-from: oklab(69.9% 0.067 -0.16);
+  --cta-gradient-to: oklab(52.6% 0.113 -0.27);
+  background-image: linear-gradient(
+    180deg in oklab,
+    var(--cta-gradient-from) 0%,
+    var(--cta-gradient-to) 100%
+  );
+  box-shadow:
+    #8b5cf640 0 0 0 0.5rem,
+    #28282814 0 0.0625rem 0.125rem,
+    #1e1e1e40 0 0 0 0.0625rem;
+  transition:
+    --cta-gradient-from 200ms ease-out,
+    --cta-gradient-to 200ms ease-out;
+
+  &:hover {
+    --cta-gradient-to: oklab(33.9% 0.073 -0.174);
+  }
+
+  &:active {
+    --cta-gradient-from: oklab(52.6% 0.113 -0.27);
+    --cta-gradient-to: oklab(24.8% 0.053 -0.127);
+  }
+}
+
+@utility cta-gradient-light {
+  --cta-gradient-from: oklab(100% 0 0);
+  --cta-gradient-to: oklab(95.5% 0 0);
+  background-image: linear-gradient(
+    180deg in oklab,
+    var(--cta-gradient-from) 0%,
+    var(--cta-gradient-to) 100%
+  );
+  box-shadow:
+    #ececec 0 0 0 0.0625rem,
+    #28282814 0 0.0625rem 0.125rem;
+  transition:
+    --cta-gradient-from 200ms ease-out,
+    --cta-gradient-to 200ms ease-out;
+
+  &:hover {
+    --cta-gradient-to: oklab(89% 0 0);
+  }
+
+  &:active {
+    --cta-gradient-from: oklab(95.5% 0 0);
+    --cta-gradient-to: oklab(85% 0 0);
+  }
+}

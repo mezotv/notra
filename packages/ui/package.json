@@ -7,6 +7,7 @@
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",
+    "./cta-button.css": "./src/styles/cta-button.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
