@@ -14,23 +14,14 @@ export function PostHogIdentity() {
       return;
     }
 
-    const identifiedUserId = posthog.get_property("$user_id");
-
-    if (!userId) {
-      if (typeof identifiedUserId === "string") {
-        posthog.reset();
-      }
+    if (userId) {
+      posthog.identify(userId);
       return;
     }
 
-    if (identifiedUserId === userId) {
-      return;
-    }
-
-    if (typeof identifiedUserId === "string") {
+    if (posthog.get_property("$user_id")) {
       posthog.reset();
     }
-    posthog.identify(userId);
   }, [isPending, userId]);
 
   return null;
