@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@c15t/nextjs/styles.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 

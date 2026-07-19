@@ -2,8 +2,6 @@ import path from "node:path";
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
-const C15T_BACKEND_URL = "https://notra-prod-notra.inth.app";
-
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["peers-zoning-swap-arrivals.trycloudflare.com"],
   reactCompiler: true,
@@ -33,23 +31,18 @@ const nextConfig: NextConfig = {
   ],
   serverExternalPackages: ["@resvg/resvg-js"],
   async rewrites() {
-    const rewrites = [
-      {
-        source: "/api/c15t/:path*",
-        destination: `${C15T_BACKEND_URL}/:path*`,
-      },
-    ];
-
-    if (process.env.NODE_ENV !== "production") {
-      const agentUrl =
-        process.env.EVE_ONBOARDING_AGENT_URL ?? "http://127.0.0.1:3100";
-      rewrites.push({
-        source: "/eve/v1/:path*",
-        destination: `${agentUrl}/eve/v1/:path*`,
-      });
+    if (process.env.NODE_ENV === "production") {
+      return [];
     }
 
-    return rewrites;
+    const agentUrl =
+      process.env.EVE_ONBOARDING_AGENT_URL ?? "http://127.0.0.1:3100";
+    return [
+      {
+        source: "/eve/v1/:path*",
+        destination: `${agentUrl}/eve/v1/:path*`,
+      },
+    ];
   },
   async redirects() {
     return [
