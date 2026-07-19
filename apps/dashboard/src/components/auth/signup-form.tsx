@@ -1,24 +1,24 @@
 "use client";
 
-import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
-import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
 import { Separator } from "@notra/ui/components/ui/separator";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Google } from "@notra/ui/components/ui/svgs/google";
 import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { AuthEmailField } from "@/components/auth/auth-email-field";
+import { AuthFormHeader } from "@/components/auth/auth-form-header";
+import { AuthOrDivider } from "@/components/auth/auth-or-divider";
+import { AuthPasswordField } from "@/components/auth/auth-password-field";
+import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
 import { authClient } from "@/lib/auth/client";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
+import type { SocialProvider } from "@/types/auth/form-ui";
 import type { AuthMethod } from "@/types/auth/method";
 import {
   marketingAttributionSearchParams,
@@ -28,8 +28,6 @@ import {
 import { marketingAttributionUrlKeys } from "@/utils/marketing-attribution-keys";
 
 const SIGNUP_ERROR_FALLBACK = "Failed to sign up. Please try again.";
-
-const fieldErrorClass = "min-h-5 text-destructive text-sm";
 
 export interface SignupFormProps {
   title?: string;
@@ -48,7 +46,6 @@ export function SignupForm({
   showLoginLink = true,
   showForgotPasswordLink = false,
 }: SignupFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const authInFlightRef = useRef(false);
@@ -65,7 +62,7 @@ export function SignupForm({
     signupMethod: attributionParams.signupMethod,
   });
 
-  function buildCallbackUrl(signupMethod: "email" | "google" | "github") {
+  function buildCallbackUrl(signupMethod: "email" | SocialProvider) {
     const params = new URLSearchParams();
 
     if (returnTo) {
@@ -92,7 +89,7 @@ export function SignupForm({
     return query ? `/callback?${query}` : "/callback";
   }
 
-  async function handleSocialSignup(provider: "google" | "github") {
+  async function handleSocialSignup(provider: SocialProvider) {
     if (authInFlightRef.current) {
       return;
     }
@@ -171,68 +168,26 @@ export function SignupForm({
 
   return (
     <div className="flex w-full flex-col gap-5">
-      {(title || description) && (
-        <div className="text-center">
-          {title && (
-            <h1 className="font-semibold text-2xl tracking-tight lg:text-[1.75rem]">
-              {title}
-            </h1>
-          )}
-          {description && (
-            <p className="mt-1.5 text-muted-foreground text-sm">
-              {description}
-            </p>
-          )}
-        </div>
-      )}
+      <AuthFormHeader description={description} title={title} />
 
       {SHOW_SIGNUP_CREDITS_BANNER && <SignupCreditsBanner />}
 
       <div className="grid gap-4">
-        <div className="grid grid-cols-2 gap-3">
-          <CtaButton
-            className="w-full"
-            disabled={isAuthLoading}
-            onClick={() => handleSocialSignup("google")}
-            type="button"
-            variant="light"
-          >
-            {authMethod === "google" ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              <Google className="size-4" />
-            )}
-            Google
-          </CtaButton>
-          <CtaButton
-            className="w-full"
-            disabled={isAuthLoading}
-            onClick={() => handleSocialSignup("github")}
-            type="button"
-            variant="light"
-          >
-            {authMethod === "github" ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              <Github className="size-4" />
-            )}
-            GitHub
-          </CtaButton>
-        </div>
+        <AuthSocialButtons
+          authMethod={authMethod}
+          disabled={isAuthLoading}
+          onSelect={handleSocialSignup}
+        />
 
-        <div className="relative flex items-center">
-          <span className="inline-block h-px w-full border-t bg-border" />
-          <span className="shrink-0 px-2 text-muted-foreground text-xs uppercase">
-            Or
-          </span>
-          <span className="inline-block h-px w-full border-t bg-border" />
-        </div>
+        <AuthOrDivider />
 
         <form
           aria-busy={isAuthLoading}
+          noValidate
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
+            setFormError(null);
             form.handleSubmit();
           }}
         >
@@ -249,25 +204,16 @@ export function SignupForm({
               }}
             >
               {(field) => (
-                <div className="grid gap-1.5">
-                  <Label htmlFor={field.name}>Email</Label>
-                  <Input
-                    aria-invalid={field.state.meta.errors.length > 0}
-                    autoComplete="email"
-                    className="h-11 rounded-xl px-4"
-                    disabled={isAuthLoading}
-                    id={field.name}
-                    name={field.name}
-                    onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.value)}
-                    placeholder="jane@company.com"
-                    type="email"
-                    value={field.state.value}
-                  />
-                  <p aria-live="polite" className={fieldErrorClass}>
-                    {field.state.meta.errors[0]}
-                  </p>
-                </div>
+                <AuthEmailField
+                  disabled={isAuthLoading}
+                  error={field.state.meta.errors[0]}
+                  id={field.name}
+                  label="Email"
+                  onBlur={field.handleBlur}
+                  onChange={field.handleChange}
+                  placeholder="jane@company.com"
+                  value={field.state.value}
+                />
               )}
             </form.Field>
             <form.Field
@@ -282,52 +228,24 @@ export function SignupForm({
               }}
             >
               {(field) => (
-                <div className="grid gap-1.5">
-                  <Label htmlFor={field.name}>Password</Label>
-                  <div className="relative">
-                    <Input
-                      aria-invalid={field.state.meta.errors.length > 0}
-                      autoComplete="new-password"
-                      className="h-11 rounded-xl px-4 pr-10"
-                      disabled={isAuthLoading}
-                      id={field.name}
-                      name={field.name}
-                      onBlur={field.handleBlur}
-                      onChange={(event) =>
-                        field.handleChange(event.target.value)
-                      }
-                      placeholder="At least 8 characters"
-                      type={showPassword ? "text" : "password"}
-                      value={field.state.value}
-                    />
-                    <button
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                      className="-translate-y-1/2 absolute top-1/2 right-4 cursor-pointer text-muted-foreground hover:text-foreground disabled:opacity-50"
-                      disabled={isAuthLoading}
-                      onClick={() => setShowPassword(!showPassword)}
-                      type="button"
-                    >
-                      {showPassword ? (
-                        <HugeiconsIcon
-                          className="size-4"
-                          icon={ViewOffSlashIcon}
-                        />
-                      ) : (
-                        <HugeiconsIcon className="size-4" icon={ViewIcon} />
-                      )}
-                    </button>
-                  </div>
-                  <p aria-live="polite" className={fieldErrorClass}>
-                    {field.state.meta.errors[0]}
-                  </p>
-                </div>
+                <AuthPasswordField
+                  autoComplete="new-password"
+                  disabled={isAuthLoading}
+                  error={field.state.meta.errors[0]}
+                  id={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={field.handleChange}
+                  placeholder="At least 8 characters"
+                  value={field.state.value}
+                />
               )}
             </form.Field>
           </div>
 
-          <p aria-live="polite" className={`mt-1 ${fieldErrorClass}`}>
+          <p
+            aria-live="polite"
+            className="mt-1 min-h-5 text-destructive text-sm"
+          >
             {formError}
           </p>
 

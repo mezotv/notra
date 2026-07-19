@@ -1,11 +1,17 @@
 "use client";
 
+import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 import { Dithering } from "@paper-design/shaders-react";
 import { useReducedMotion } from "motion/react";
 import { TestimonialCarousel } from "@/components/auth/testimonial-carousel";
 
 export function AuthBrandPanel() {
   const shouldReduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[linear-gradient(200deg,#a78bfa_0%,#7c3aed_55%,#5b21b6_100%)] p-14">

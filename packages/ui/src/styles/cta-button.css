@@ -14,6 +14,11 @@
   --cta-gradient-from: oklab(69.9% 0.067 -0.16);
   --cta-gradient-to: oklab(52.6% 0.113 -0.27);
   background-image: linear-gradient(
+    180deg,
+    var(--cta-gradient-from) 0%,
+    var(--cta-gradient-to) 100%
+  );
+  background-image: linear-gradient(
     180deg in oklab,
     var(--cta-gradient-from) 0%,
     var(--cta-gradient-to) 100%
@@ -39,6 +44,11 @@
 @utility cta-gradient-light {
   --cta-gradient-from: oklab(100% 0 0);
   --cta-gradient-to: oklab(95.5% 0 0);
+  background-image: linear-gradient(
+    180deg,
+    var(--cta-gradient-from) 0%,
+    var(--cta-gradient-to) 100%
+  );
   background-image: linear-gradient(
     180deg in oklab,
     var(--cta-gradient-from) 0%,

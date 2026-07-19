@@ -29,6 +29,20 @@ function CtaButton({
   size = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof ctaButtonVariants>) {
+  if (typeof className === "function") {
+    const resolveClassName = className;
+
+    return (
+      <ButtonPrimitive
+        className={(state) =>
+          cn(ctaButtonVariants({ variant, size }), resolveClassName(state))
+        }
+        data-slot="cta-button"
+        {...props}
+      />
+    );
+  }
+
   return (
     <ButtonPrimitive
       className={cn(ctaButtonVariants({ variant, size, className }))}
@@ -38,4 +52,4 @@ function CtaButton({
   );
 }
 
-export { CtaButton, ctaButtonVariants };
+export { CtaButton };
