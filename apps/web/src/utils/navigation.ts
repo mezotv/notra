@@ -8,6 +8,7 @@ import {
   PaintBoardIcon,
   QuillWrite01Icon,
   SparklesIcon,
+  StarIcon,
   StickyNote02Icon,
   TwitterIcon,
   UserGroupIcon,
@@ -81,6 +82,12 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
         label: "HTML to Paper",
         description: "Free tool to paste HTML into Paper",
         icon: StickyNote02Icon,
+      },
+      {
+        href: "/repo-star-video",
+        label: "Repo Star Video",
+        description: "Free tool to celebrate your GitHub stars",
+        icon: StarIcon,
       },
     ],
     railHeading: "Developers",
@@ -181,6 +188,10 @@ export const FOOTER_FREE_TOOL_LINKS = [
   {
     href: "/html-to-paper",
     label: "HTML to Paper",
+  },
+  {
+    href: "/repo-star-video",
+    label: "Repo Star Video",
   },
 ] as const;
 

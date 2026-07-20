@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/remotion/index.ts", "remotion.config.ts"],
   "ignoreIssues": {
     "mdx-components.tsx": ["exports"],
     "source.config.ts": ["files", "exports"],

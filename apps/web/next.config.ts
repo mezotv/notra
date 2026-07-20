@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
     viewTransition: true,
   },
   transpilePackages: ["@notra/ui", "@notra/email", "@notra/kiwi"],
+  serverExternalPackages: [
+    "@remotion/bundler",
+    "@remotion/renderer",
+    "@remotion/compositor-darwin-arm64",
+  ],
   rewrites: async () => {
     return [
       {
