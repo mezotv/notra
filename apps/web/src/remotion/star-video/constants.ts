@@ -14,10 +14,10 @@ export const COUNT_DURATION_IN_FRAMES = 130;
 
 const CONFETTI_COUNT = 90;
 const AVATAR_COUNT = 44;
-const AVATAR_SIZE = 76;
+const AVATAR_SIZE = 64;
 export const AVATAR_VERT_FACTOR = 0.64;
 
-const RING_RADII = [300, 420, 487];
+const RING_RADII = [270, 383, 496];
 const AVATAR_SPACING = AVATAR_SIZE + 20;
 
 function ellipsePerimeter(radius: number): number {
