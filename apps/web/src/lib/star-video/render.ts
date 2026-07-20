@@ -17,6 +17,9 @@ function getServeUrl(): Promise<string> {
       entryPoint: join(process.cwd(), "src/remotion/index.ts"),
       publicDir: join(process.cwd(), "public"),
     });
+    serveUrlPromise.catch(() => {
+      serveUrlPromise = null;
+    });
   }
   return serveUrlPromise;
 }

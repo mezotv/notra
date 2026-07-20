@@ -5,13 +5,13 @@ import {
   getCachedRepoStarData,
   setCachedRepoStarData,
 } from "@/lib/star-video/cache";
+import { loadRepoStarData } from "@/lib/star-video/load-repo";
 import { enforceStarVideoRateLimit } from "@/lib/star-video/ratelimit";
-import { fetchRepoStarData } from "@/lib/star-video/stargazers";
 import { repoQuerySchema } from "@/schemas/star-video";
 
 export const runtime = "nodejs";
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const parsed = repoQuerySchema.safeParse({
     owner: searchParams.get("owner") ?? "",
@@ -25,38 +25,40 @@ export function GET(request: NextRequest) {
     );
   }
 
+  const rateLimited = await Effect.runPromise(
+    enforceStarVideoRateLimit(request, "lookup").pipe(
+      Effect.match({ onSuccess: () => false, onFailure: () => true })
+    )
+  );
+  if (rateLimited) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429 }
+    );
+  }
+
   const { owner, repo } = parsed.data;
   const id = `${owner}/${repo}`.toLowerCase();
 
-  return Effect.runPromise(
-    Effect.gen(function* () {
-      yield* enforceStarVideoRateLimit(request, "lookup");
+  const cached = await Effect.runPromise(getCachedRepoStarData(id));
+  if (cached) {
+    return NextResponse.json(cached);
+  }
 
-      const cached = yield* getCachedRepoStarData(id);
-      if (cached) {
-        return NextResponse.json(cached);
-      }
+  const result = await loadRepoStarData(owner, repo, id);
+  if (!result.ok) {
+    if (result.kind === "unavailable") {
+      return NextResponse.json(
+        { error: "GitHub is unavailable right now. Please try again." },
+        { status: 503 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Repository not found." },
+      { status: 404 }
+    );
+  }
 
-      const data = yield* fetchRepoStarData(owner, repo);
-      yield* setCachedRepoStarData(data.id, data);
-
-      return NextResponse.json(data);
-    }).pipe(
-      Effect.match({
-        onFailure: (error) => {
-          if (error._tag === "StarVideoRateLimitExceeded") {
-            return NextResponse.json(
-              { error: "Too many requests. Please try again shortly." },
-              { status: 429 }
-            );
-          }
-          return NextResponse.json(
-            { error: "Repository not found or GitHub is unavailable." },
-            { status: 404 }
-          );
-        },
-        onSuccess: (response) => response,
-      })
-    )
-  );
+  await Effect.runPromise(setCachedRepoStarData(result.data.id, result.data));
+  return NextResponse.json(result.data);
 }

@@ -29,6 +29,21 @@ import type { RepoStarData, StarVideoInputProps } from "@/types/star-video";
 
 const DEFAULT_INPUT = "usenotra/notra";
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function normalizeHex(input: string): string | null {
+  if (!HEX_COLOR.test(input)) {
+    return null;
+  }
+  const hex = input.slice(1);
+  if (hex.length === 3) {
+    return `#${hex
+      .split("")
+      .map((char) => char + char)
+      .join("")}`.toLowerCase();
+  }
+  return `#${hex}`.toLowerCase();
+}
+
 const BACKGROUND_PRESETS = [
   DEFAULT_BACKGROUND_COLOR,
   "#8b5cf6",
@@ -46,7 +61,7 @@ export default function StarVideoTool() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
   const [backgroundColor, setBackgroundColor] = useState(
-    bgParam && HEX_COLOR.test(bgParam) ? bgParam : DEFAULT_BACKGROUND_COLOR
+    (bgParam && normalizeHex(bgParam)) || DEFAULT_BACKGROUND_COLOR
   );
   const [data, setData] = useState<RepoStarData | null>(null);
 
@@ -92,8 +107,12 @@ export default function StarVideoTool() {
 
   const applyBackground = useCallback(
     (color: string) => {
-      setBackgroundColor(color);
-      setBgParam(color);
+      const normalized = normalizeHex(color);
+      if (!normalized) {
+        return;
+      }
+      setBackgroundColor(normalized);
+      setBgParam(normalized);
     },
     [setBgParam]
   );
@@ -241,6 +260,7 @@ export default function StarVideoTool() {
           style={{ backgroundColor }}
         >
           <input
+            aria-label="Custom background color"
             className="sr-only"
             id="bg-color-input"
             onChange={(event) => applyBackground(event.target.value)}

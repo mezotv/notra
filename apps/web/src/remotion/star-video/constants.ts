@@ -17,7 +17,7 @@ const AVATAR_COUNT = 44;
 const AVATAR_SIZE = 76;
 export const AVATAR_VERT_FACTOR = 0.64;
 
-const RING_RADII = [300, 440, 580];
+const RING_RADII = [300, 420, 487];
 const AVATAR_SPACING = AVATAR_SIZE + 20;
 
 function ellipsePerimeter(radius: number): number {

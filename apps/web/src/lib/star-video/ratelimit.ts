@@ -52,6 +52,10 @@ function getClientIp(request: NextRequest): string {
     return vercelForwardedFor;
   }
 
+  if (process.env.VERCEL) {
+    return "unknown";
+  }
+
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip")?.trim() ||

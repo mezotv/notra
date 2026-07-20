@@ -54,11 +54,9 @@ export async function POST(request: NextRequest) {
               { status: 429 }
             );
           }
+          console.error("Failed to render star video", error);
           return NextResponse.json(
-            {
-              error:
-                error instanceof Error ? error.message : "Failed to render",
-            },
+            { error: "Failed to render the video. Please try again." },
             { status: 500 }
           );
         },

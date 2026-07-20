@@ -1,7 +1,31 @@
-const GITHUB_HOST = /github\.com/i;
+const GITHUB_HOSTS = new Set(["github.com", "www.github.com"]);
 const SLUG_PART = /^[\w.-]+$/;
-const PROTOCOL = /^https?:\/\//i;
 const GIT_SUFFIX = /\.git$/i;
+const HAS_SCHEME = /^https?:\/\//i;
+const CONTAINS_GITHUB_PATH = /(^|\.)github\.com\//i;
+
+function extractOwnerRepo(raw: string): string | null {
+  if (!(HAS_SCHEME.test(raw) || CONTAINS_GITHUB_PATH.test(raw))) {
+    return raw;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(HAS_SCHEME.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return null;
+  }
+
+  if (!GITHUB_HOSTS.has(url.hostname.toLowerCase())) {
+    return null;
+  }
+
+  const segments = url.pathname.split("/").filter(Boolean);
+  if (segments.length < 2) {
+    return null;
+  }
+  return `${segments[0]}/${segments[1]}`;
+}
 
 export function parseRepoInput(
   raw: string
@@ -11,13 +35,9 @@ export function parseRepoInput(
     return null;
   }
 
-  let ownerRepo = trimmed;
-
-  if (GITHUB_HOST.test(trimmed)) {
-    const withoutProtocol = trimmed.replace(PROTOCOL, "");
-    const segments = withoutProtocol.split("/").filter(Boolean);
-    const hostIndex = segments.findIndex((part) => GITHUB_HOST.test(part));
-    ownerRepo = segments.slice(hostIndex + 1, hostIndex + 3).join("/");
+  const ownerRepo = extractOwnerRepo(trimmed);
+  if (!ownerRepo) {
+    return null;
   }
 
   const [owner, repo] = ownerRepo.split("/");

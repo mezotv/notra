@@ -10,6 +10,11 @@ class RepoNotFound extends Data.TaggedError("RepoNotFound")<{
   readonly repo: string;
 }> {}
 
+class RepoUnavailable extends Data.TaggedError("RepoUnavailable")<{
+  readonly owner: string;
+  readonly repo: string;
+}> {}
+
 function buildHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
@@ -34,6 +39,25 @@ async function fetchJson<T>(url: string): Promise<T | null> {
     return (await res.json()) as T;
   } catch {
     return null;
+  }
+}
+
+const HTTP_NOT_FOUND = 404;
+
+async function fetchRepoMeta(
+  base: string
+): Promise<{ status: number; data: GitHubRepo | null }> {
+  try {
+    const res = await fetch(base, {
+      headers: buildHeaders(),
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+    if (!res.ok) {
+      return { status: res.status, data: null };
+    }
+    return { status: res.status, data: (await res.json()) as GitHubRepo };
+  } catch {
+    return { status: 0, data: null };
   }
 }
 
@@ -92,9 +116,19 @@ export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
 ) {
   const base = `https://api.github.com/repos/${owner}/${repo}`;
 
-  const repoData = yield* Effect.promise(() => fetchJson<GitHubRepo>(base));
+  const meta = yield* Effect.promise(() => fetchRepoMeta(base));
+
+  if (meta.status === HTTP_NOT_FOUND) {
+    return yield* Effect.fail(new RepoNotFound({ owner, repo }));
+  }
+
+  const repoData = meta.data;
 
   if (!repoData) {
+    return yield* Effect.fail(new RepoUnavailable({ owner, repo }));
+  }
+
+  if (repoData.private) {
     return yield* Effect.fail(new RepoNotFound({ owner, repo }));
   }
 
