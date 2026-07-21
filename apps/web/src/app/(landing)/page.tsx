@@ -1,22 +1,22 @@
 import type { Metadata } from "next";
-import { CtaBanner } from "../components/landing/cta-banner";
-import { FaqSection } from "../components/landing/faq-section";
-import { FeaturesSection } from "../components/landing/features-section";
-import { FounderQuote } from "../components/landing/founder-quote";
-import { HeroSection } from "../components/landing/hero-section";
-import { LogoMarquee } from "../components/landing/logo-marquee";
-import { LandingPricingSection } from "../components/landing/pricing-section";
-import { TestimonialsSection } from "../components/landing/testimonials-section";
-import { FAQ_CONTENT } from "../constants/landing/faq";
+import { CtaBanner } from "@/components/landing/cta-banner";
+import { FaqSection } from "@/components/landing/faq-section";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { FounderQuote } from "@/components/landing/founder-quote";
+import { HeroSection } from "@/components/landing/hero-section";
+import { LogoMarquee } from "@/components/landing/logo-marquee";
+import { LandingPricingSection } from "@/components/landing/pricing-section";
+import { TestimonialsSection } from "@/components/landing/testimonials-section";
+import { FAQ_CONTENT } from "@/constants/landing/faq";
 import {
   NOTRA_CONTACT_EMAIL,
   NOTRA_SAME_AS,
   NOTRA_SUPPORT_EMAIL,
   siteUrl,
-} from "../utils/agent-metadata";
-import { serializeJsonLd } from "../utils/jsonld";
-import { SITE_DESCRIPTION, SITE_TITLE } from "../utils/metadata";
-import { SITE_URL } from "../utils/urls";
+} from "@/utils/agent-metadata";
+import { serializeJsonLd } from "@/utils/jsonld";
+import { SITE_DESCRIPTION, SITE_TITLE } from "@/utils/metadata";
+import { SITE_URL } from "@/utils/urls";
 
 export const metadata: Metadata = {
   title: SITE_TITLE,

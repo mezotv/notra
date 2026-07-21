@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import PrivacyContent from "../../../content/legal/privacy.mdx";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "../../../utils/metadata";
-import { SITE_URL } from "../../../utils/urls";
+import PrivacyContent from "@/content/legal/privacy.mdx";
+import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { SITE_URL } from "@/utils/urls";
 
 const title = "Privacy Policy";
 const description =

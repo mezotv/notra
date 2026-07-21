@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import type { OfferLike } from "~types/jsonld";
-import PricingComparisonTable from "../../components/pricing-comparison-table";
-import { PricingCards } from "../../components/pricing-section";
-import { PRICING_PLANS } from "../../utils/constants";
+import PricingComparisonTable from "@/components/pricing-comparison-table";
+import { PricingCards } from "@/components/pricing-section";
+import { PRICING_PLANS } from "@/utils/constants";
 import {
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
   serializeJsonLd,
-} from "../../utils/jsonld";
+} from "@/utils/jsonld";
 import {
   DEFAULT_SOCIAL_IMAGE,
   PAGE_SOCIAL_IMAGES,
   TWITTER_HANDLE,
-} from "../../utils/metadata";
-import { SITE_URL } from "../../utils/urls";
+} from "@/utils/metadata";
+import { SITE_URL } from "@/utils/urls";
+import type { OfferLike } from "~types/jsonld";
 
 const title = "Pricing";
 const description =

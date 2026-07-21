@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "../../utils/metadata";
-import { SITE_URL } from "../../utils/urls";
+import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { SITE_URL } from "@/utils/urls";
 
 const title = "Subprocessors";
 const description =

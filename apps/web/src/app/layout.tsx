@@ -5,7 +5,6 @@ import { Instrument_Serif, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import { ConsentManager } from "../components/consent-manager";
-import { SiteShell } from "../components/site-shell";
 import { ThemeProvider } from "../components/theme-provider";
 import { RSS_FEED_PATH, RSS_FEED_TITLE } from "../utils/constants";
 import {
@@ -137,9 +136,7 @@ export default function RootLayout({
                 trackHashChanges={true}
               />
             )}
-            <ConsentManager>
-              <SiteShell>{children}</SiteShell>
-            </ConsentManager>
+            <ConsentManager>{children}</ConsentManager>
           </FlagsProvider>
           <Toaster position="bottom-right" />
         </ThemeProvider>

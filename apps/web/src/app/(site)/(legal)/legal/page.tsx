@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import TermsContent from "../../../content/legal/terms.mdx";
-import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "../../../utils/metadata";
-import { SITE_URL } from "../../../utils/urls";
+import LegalContent from "@/content/legal/legal.mdx";
+import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
+import { SITE_URL } from "@/utils/urls";
 
-const title = "Terms of Service";
+const title = "Legal Notice";
 const description =
-  "Terms of Service for using Notra, the content automation platform.";
-const url = `${SITE_URL}/terms`;
+  "Legal notice and imprint for Notra in accordance with German Telemedia Act (TMG).";
+const url = `${SITE_URL}/legal`;
 
 export const metadata: Metadata = {
   title,
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function TermsPage() {
+export default function LegalPage() {
   return (
     <>
       <h1 className="mb-8 font-sans font-semibold text-3xl tracking-tight sm:text-4xl">
-        Terms of Service
+        Legal Notice
       </h1>
-      <TermsContent />
+      <LegalContent />
     </>
   );
 }
