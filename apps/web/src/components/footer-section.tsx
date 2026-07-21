@@ -1,232 +1,151 @@
-import { buttonVariants } from "@notra/ui/components/ui/button";
-import { Discord } from "@notra/ui/components/ui/svgs/discord";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
-import { Reddit } from "@notra/ui/components/ui/svgs/reddit";
-import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
-import { Youtube } from "@notra/ui/components/ui/svgs/youtube";
+"use client";
+
 import { cn } from "@notra/ui/lib/utils";
+import { Dithering } from "@paper-design/shaders-react";
+import { useReducedMotion } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
-import { AI_SUMMARY_LINKS } from "@/utils/ai-summary-links";
 import {
-  FOOTER_FREE_TOOL_LINKS,
-  FOOTER_INTEGRATION_LINKS,
-  FOOTER_PRODUCT_LINKS,
-  FOOTER_TOOL_LINKS,
-} from "@/utils/navigation";
-import { SOCIAL_LINKS } from "../utils/social-links";
+  FOOTER_DITHERING,
+  FOOTER_LEGAL_LINKS,
+  FOOTER_LINK_COLUMNS,
+  FOOTER_SOCIAL_LINKS,
+  FOOTER_TAGLINE,
+} from "@/constants/landing/footer";
+import type { FooterLink } from "@/types/landing/footer";
 import { NotraMark } from "./notra-mark";
-import { TrackedAiSummaryLink } from "./tracked-ai-summary-link";
+
+const LINK_CLASS =
+  "font-medium font-sans text-[#1e1e1e99] text-base leading-6 tracking-[-0.01em] transition-colors hover:text-[#8b5cf6] dark:text-foreground/60 dark:hover:text-[#a78bfa]";
+
+function FooterColumnLink({ link }: { link: FooterLink }) {
+  if (!link.href) {
+    return (
+      <span
+        className={cn(
+          "font-medium font-sans text-[#1e1e1e99] text-base leading-6 tracking-[-0.01em] dark:text-foreground/60"
+        )}
+      >
+        {link.label}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      className={LINK_CLASS}
+      href={link.href}
+      rel={link.external ? "noopener noreferrer" : undefined}
+      target={link.external ? "_blank" : undefined}
+    >
+      {link.label}
+    </Link>
+  );
+}
 
 export default function FooterSection() {
+  const shouldReduceMotion = useReducedMotion();
   const year = new Date().getFullYear();
 
   return (
-    <div className="flex w-full flex-col items-start justify-start pt-10">
-      <div className="flex h-auto flex-col items-stretch justify-between self-stretch pt-0 pr-0 pb-8 md:flex-row">
-        <div className="flex h-auto flex-col items-start justify-start gap-8 p-4 md:p-8">
-          <div className="flex items-center justify-start gap-3 self-stretch">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-transparent dark:bg-[#F6F3F1]">
-              <NotraMark className="size-6.5 shrink-0" />
-            </div>
-            <div className="font-sans font-semibold text-foreground text-xl leading-4">
-              Notra
-            </div>
-          </div>
-          <div className="font-medium font-sans text-foreground/90 text-sm leading-4.5">
-            Ship more. Write less. Reach more.
-          </div>
-          <div className="font-normal font-sans text-foreground/60 text-xs leading-5">
-            {`© ${year} Notra, Inc. All rights reserved.`}
-          </div>
+    <footer className="relative isolate overflow-hidden rounded-t-3xl bg-[linear-gradient(in_oklab_180deg,oklab(80.3%_0.045_-0.074/15%)_0%,oklab(71.8%_0.066_-0.109/50%)_100%)] pt-6 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ececec] dark:bg-[#141019] dark:bg-none dark:shadow-none">
+      <div className="-z-10 pointer-events-none absolute inset-0 overflow-hidden">
+        <Dithering
+          className="absolute top-[8.8125rem] left-[-5.40625rem] h-[66.125rem] w-[calc(100%+10.8125rem)] min-w-[100.8125rem]"
+          colorBack={FOOTER_DITHERING.colorBack}
+          colorFront={FOOTER_DITHERING.colorFront}
+          scale={FOOTER_DITHERING.scale}
+          shape={FOOTER_DITHERING.shape}
+          size={FOOTER_DITHERING.size}
+          speed={shouldReduceMotion ? 0 : FOOTER_DITHERING.speed}
+          type={FOOTER_DITHERING.type}
+        />
+      </div>
 
-          <div className="flex items-start justify-start gap-2 text-foreground">
-            <Link
-              aria-label="Visit Notra on X"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.x}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <XTwitter className="size-5" />
-            </Link>
-            <Link
-              aria-label="Visit Notra on LinkedIn"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.linkedin}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Linkedin className="size-5" />
-            </Link>
-            <Link
-              aria-label="Visit Notra on GitHub"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.github}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Github className="size-5" />
-            </Link>
-            <Link
-              aria-label="Visit Notra on Discord"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.discord}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Discord className="size-5" />
-            </Link>
-            <Link
-              aria-label="Visit Notra on Reddit"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.reddit}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Reddit className="size-5" />
-            </Link>
-            <Link
-              aria-label="Visit Notra on YouTube"
-              className={buttonVariants({ size: "icon", variant: "ghost" })}
-              href={SOCIAL_LINKS.youtube}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Youtube className="size-5" />
-            </Link>
-          </div>
-        </div>
+      <div className="-z-10 pointer-events-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden">
+        <Image
+          alt=""
+          aria-hidden="true"
+          className="h-auto w-[135%] min-w-[60rem] max-w-none translate-y-[20%] dark:opacity-40"
+          height={536}
+          src="/marketing/landing/footer-wordmark.svg"
+          width={1748}
+        />
+      </div>
 
-        <div className="grid grid-cols-2 gap-6 self-stretch p-4 sm:flex sm:flex-row sm:flex-wrap sm:items-start sm:justify-between md:gap-8 md:p-8">
-          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
-            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
-              Product
+      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-36 md:px-8 md:pb-52">
+        <div className="flex flex-col gap-12 py-7 lg:flex-row lg:items-start lg:justify-between lg:gap-24">
+          <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-1">
+                <NotraMark className="size-10.5 shrink-0" />
+                <span className="font-display font-semibold text-[1.25rem] text-foreground leading-[1.14] tracking-[-0.015em]">
+                  Notra
+                </span>
+              </div>
+              <p className="font-medium font-sans text-[#1e1e1e99] text-base leading-6 tracking-[-0.01em] dark:text-foreground/70">
+                {FOOTER_TAGLINE}
+              </p>
             </div>
-            <div className="flex flex-col items-start justify-end gap-2">
-              {FOOTER_PRODUCT_LINKS.map((link) => (
+
+            <div className="flex items-center gap-4">
+              {FOOTER_SOCIAL_LINKS.map((social) => (
                 <Link
-                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                  href={link.href}
-                  key={link.href}
-                  rel={"rel" in link ? link.rel : undefined}
-                  target={"target" in link ? link.target : undefined}
+                  aria-label={`Visit Notra on ${social.label}`}
+                  className="text-[#1e1e1e80] transition-colors hover:text-[#1e1e1e] dark:text-foreground/50 dark:hover:text-foreground"
+                  href={social.href}
+                  key={social.label}
+                  rel="noopener noreferrer"
+                  target="_blank"
                 >
-                  {link.label}
+                  <social.Icon className="size-5" />
                 </Link>
               ))}
             </div>
-          </div>
 
-          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
-            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
-              Tools
-            </div>
-            <div className="flex flex-col items-start justify-end gap-2">
-              {FOOTER_TOOL_LINKS.map((link) => (
-                <Link
-                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                  href={link.href}
-                  key={link.href}
-                  rel={link.rel}
-                  target={link.target}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
-            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
-              Free Tools
-            </div>
-            <div className="flex flex-col items-start justify-end gap-2">
-              {FOOTER_FREE_TOOL_LINKS.map((link) => (
-                <Link
-                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                  href={link.href}
-                  key={link.href}
-                >
-                  {link.label}
-                </Link>
-              ))}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {FOOTER_LEGAL_LINKS.map((link) => (
+                  <Link
+                    className="font-medium font-sans text-[#1e1e1e66] text-[0.8125rem] leading-[1.125rem] transition-colors hover:text-[#1e1e1e] dark:text-foreground/50 dark:hover:text-foreground"
+                    href={link.href ?? "/"}
+                    key={link.label}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+              <p className="font-medium font-sans text-[#1e1e1e66] text-[0.8125rem] leading-[1.125rem] dark:text-foreground/50">
+                {`© ${year} Notra, Inc.`}
+              </p>
             </div>
           </div>
 
-          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
-            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
-              Integrations
-            </div>
-            <div className="flex flex-col items-start justify-end gap-2">
-              {FOOTER_INTEGRATION_LINKS.map((link) => (
-                <Link
-                  className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                  href={link.href}
-                  key={link.href}
-                  rel={link.rel}
-                  target={link.target}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex min-w-30 flex-1 flex-col items-start justify-start gap-3">
-            <div className="font-medium font-sans text-foreground/50 text-sm leading-5">
-              Legal
-            </div>
-            <div className="flex flex-col items-start justify-center gap-2">
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/privacy"
+          <div className="grid w-full grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:w-auto lg:flex-1 lg:justify-items-end">
+            {FOOTER_LINK_COLUMNS.map((column) => (
+              <div
+                className="flex flex-col gap-8"
+                key={column.groups[0]?.title}
               >
-                Privacy Policy
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/terms"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/legal"
-              >
-                Legal Notice
-              </Link>
-              <Link
-                className="font-normal font-sans text-foreground text-sm leading-5 transition-colors hover:text-primary"
-                href="/subprocessors"
-              >
-                Subprocessors
-              </Link>
-            </div>
+                {column.groups.map((group) => (
+                  <div className="flex flex-col gap-4" key={group.title}>
+                    <h3 className="font-medium font-sans text-[#8b5cf6] text-base leading-6 tracking-[-0.01em] dark:text-[#a78bfa]">
+                      {group.title}
+                    </h3>
+                    <ul className="flex flex-col gap-4.5">
+                      {group.links.map((link) => (
+                        <li key={link.label}>
+                          <FooterColumnLink link={link} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>
-
-      <div className="flex flex-col items-start gap-4 self-stretch border-foreground/10 border-t px-4 py-6 md:px-8">
-        <div className="font-medium font-sans text-foreground/50 text-xs uppercase tracking-wider">
-          Summarize with AI
-        </div>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          {AI_SUMMARY_LINKS.map(({ name, slug, Icon, href, iconClassName }) => (
-            <TrackedAiSummaryLink
-              href={href}
-              key={name}
-              name={name}
-              slug={slug}
-            >
-              <Icon className={cn("size-5 shrink-0", iconClassName)} />
-              <span className="font-normal font-sans text-sm leading-5">
-                {name}
-              </span>
-            </TrackedAiSummaryLink>
-          ))}
-        </div>
-      </div>
-    </div>
+    </footer>
   );
 }

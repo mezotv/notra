@@ -1,4 +1,4 @@
-export type NavbarVariant = "island" | "pinned" | "static";
+export type NavbarVariant = "island" | "landing" | "pinned" | "static";
 
 export interface NavbarProps {
   variant?: NavbarVariant;

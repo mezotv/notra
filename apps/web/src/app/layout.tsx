@@ -2,6 +2,7 @@ import { C15tPrefetch } from "@c15t/nextjs";
 import { Databuddy, FlagsProvider } from "@databuddy/sdk/react";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import { ConsentManager } from "../components/consent-manager";
 import { SiteShell } from "../components/site-shell";
@@ -20,6 +21,13 @@ import "@/styles/globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+  preload: true,
+});
+
+const satoshi = localFont({
+  src: [{ path: "../fonts/Satoshi-Variable.woff2", weight: "300 900" }],
+  variable: "--font-satoshi",
   display: "swap",
   preload: true,
 });
@@ -109,7 +117,7 @@ export default function RootLayout({
         <C15tPrefetch backendURL="/api/c15t" />
       </head>
       <body
-        className={`${inter.variable} ${instrumentSerif.variable} antialiased`}
+        className={`${inter.variable} ${satoshi.variable} ${instrumentSerif.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

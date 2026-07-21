@@ -15,7 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { LiquidGlass } from "@notra/ui/components/ui/glasscn/liquid-glass";
 import {
   AnimatePresence,
   domAnimation,
@@ -39,6 +38,7 @@ import {
   type MarketingNavGroup,
   type MarketingNavRailItem,
 } from "@/utils/navigation";
+import { MEGA_NAV_ICONS } from "./navbar-mega-icons";
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";
@@ -78,7 +78,7 @@ const SHELL_TRANSITION = {
 };
 const SCROLL_THRESHOLD = 64;
 const ISLAND_CHROME =
-  "inset-shadow-lg inset-shadow-white bg-white shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10";
+  "bg-white shadow-[0_0.125rem_1.25rem_#1E1E1E14,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E14] dark:bg-neutral-950 dark:shadow-black/50 dark:ring-white/10";
 const SWAP_TRANSITION = {
   duration: 0.15,
   ease: SWAP_EASE,
@@ -100,9 +100,6 @@ interface PanelSize {
   height: number;
 }
 
-const SECTION_HEADING_CLASS =
-  "px-2 pb-1 font-medium text-neutral-400 text-xs uppercase tracking-wider dark:text-neutral-500";
-
 function MegaCard({
   card,
   onSelect,
@@ -110,18 +107,17 @@ function MegaCard({
   card: MarketingNavCard;
   onSelect: () => void;
 }) {
+  const Icon = MEGA_NAV_ICONS[card.href];
   const className =
-    "flex h-40 w-44 flex-col justify-between rounded-xl border border-neutral-200/70 bg-neutral-50/70 p-4 transition-colors hover:border-neutral-300 hover:bg-neutral-100/80 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
+    "flex h-52.5 w-48.5 shrink-0 cursor-pointer flex-col items-start justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
   const body = (
     <>
-      <span className="inset-shadow-sm inset-shadow-white flex size-9 items-center justify-center rounded-lg bg-white text-neutral-700 shadow-black/5 shadow-sm ring-1 ring-black/5 dark:inset-shadow-white/8 dark:bg-white/10 dark:text-neutral-200 dark:ring-white/10">
-        <HugeiconsIcon className="size-5" icon={card.icon} />
-      </span>
-      <span className="block">
-        <span className="block font-medium text-neutral-950 text-sm dark:text-white">
+      {Icon ? <Icon className="size-8 text-[#1E1E1E] dark:text-white" /> : null}
+      <span className="flex flex-col items-start gap-0.75 self-stretch">
+        <span className="font-sans font-semibold text-[#1E1E1E] text-base leading-5 dark:text-white">
           {card.label}
         </span>
-        <span className="mt-1 block text-neutral-500 text-xs leading-relaxed dark:text-neutral-400">
+        <span className="self-stretch font-sans font-semibold text-[#1E1E1EBF] text-sm leading-[1.125rem] dark:text-neutral-400">
           {card.description}
         </span>
       </span>
@@ -162,14 +158,15 @@ function RailItem({
   item: MarketingNavRailItem;
   onSelect: () => void;
 }) {
+  const Icon = MEGA_NAV_ICONS[item.href];
   const className =
-    "flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100 focus-visible:outline-none dark:hover:bg-white/6 dark:focus-visible:bg-white/6";
+    "-mx-2 -my-1.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#C8B2EE26] focus-visible:bg-[#C8B2EE26] focus-visible:outline-none dark:hover:bg-white/6 dark:focus-visible:bg-white/6";
   const body = (
     <>
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-700 dark:border-white/10 dark:bg-white/5 dark:text-neutral-200">
-        <HugeiconsIcon className="size-4" icon={item.icon} />
-      </span>
-      <span className="font-medium text-neutral-800 text-sm dark:text-neutral-200">
+      {Icon ? (
+        <Icon className="size-6 shrink-0 text-[#1E1E1E] dark:text-neutral-200" />
+      ) : null}
+      <span className="font-medium font-sans text-[#1E1E1E] text-base leading-[1.5625rem] tracking-[-0.02em] dark:text-neutral-200">
         {item.label}
       </span>
     </>
@@ -210,23 +207,21 @@ function MegaPanel({
   onSelect: () => void;
 }) {
   return (
-    <div className="flex">
-      <div className="flex flex-col gap-2 p-3">
-        <p className={SECTION_HEADING_CLASS}>{group.cardsHeading}</p>
-        <div className="flex gap-2">
-          {group.cards.map((card) => (
-            <MegaCard card={card} key={card.href} onSelect={onSelect} />
-          ))}
-        </div>
+    <div className="flex items-stretch justify-end gap-8">
+      <div className="flex items-center gap-4 py-8 pl-8">
+        {group.cards.map((card) => (
+          <MegaCard card={card} key={card.href} onSelect={onSelect} />
+        ))}
       </div>
-      <div className="flex w-52 flex-col gap-2 border-neutral-200/70 border-l p-3 dark:border-white/10">
-        <p className={SECTION_HEADING_CLASS}>{group.railHeading}</p>
-        <div className="flex flex-col gap-0.5">
-          {group.rail.map((item) => (
-            <RailItem item={item} key={item.href} onSelect={onSelect} />
-          ))}
+      {group.rail.length > 0 && (
+        <div className="flex flex-col items-start self-stretch border-[#1E1E1E1A] border-l p-8 dark:border-white/10">
+          <div className="flex flex-col gap-3">
+            {group.rail.map((item) => (
+              <RailItem item={item} key={item.href} onSelect={onSelect} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -234,7 +229,8 @@ function MegaPanel({
 export function Navbar({ variant }: NavbarProps = {}) {
   const pathname = usePathname();
   const resolvedVariant = variant ?? getNavbarVariantForPath(pathname);
-  const tracksScroll = resolvedVariant === "island";
+  const isLanding = resolvedVariant === "landing";
+  const tracksScroll = resolvedVariant === "island" || isLanding;
   const isStatic = resolvedVariant === "static";
 
   const [isOpen, setIsOpen] = useState(false);
@@ -368,15 +364,29 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const contentTransition = reduceMotion ? { duration: 0 } : SWAP_TRANSITION;
   const shellTransition = reduceMotion ? { duration: 0 } : SHELL_TRANSITION;
   const chrome = resolvedVariant === "pinned" || (tracksScroll && scrolled);
-  const mutedNavClass = chrome
-    ? "text-neutral-500 dark:text-neutral-400"
-    : "text-neutral-700 dark:text-neutral-200";
+  const isLandingTop = isLanding && !chrome;
+  const mutedNavClass =
+    "text-[#1E1E1EA6] hover:text-[#1E1E1E] dark:text-neutral-400 dark:hover:text-white";
+  let positionClass = "sticky top-4";
+  if (isLanding) {
+    positionClass = "fixed inset-x-0";
+  } else if (isStatic) {
+    positionClass = "";
+  }
+  const shellAnimate = isLanding
+    ? {
+        maxWidth: chrome ? "64rem" : "80.9375rem",
+        top: chrome ? "1rem" : "2.5rem",
+      }
+    : { maxWidth: chrome ? "64rem" : "80rem" };
+  const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";
+  const innerPaddingClass = isLandingTop ? "px-11 lg:px-0" : "px-4 sm:px-6";
 
   return (
     <LazyMotion features={domAnimation} strict>
       <m.div
-        animate={{ maxWidth: chrome ? "64rem" : "80rem" }}
-        className={`z-50 mx-auto w-full ${isStatic ? "" : "sticky top-4"}`}
+        animate={shellAnimate}
+        className={`z-50 mx-auto w-full ${positionClass}`}
         initial={false}
         transition={shellTransition}
       >
@@ -388,11 +398,11 @@ export function Navbar({ variant }: NavbarProps = {}) {
           initial={false}
           transition={shellTransition}
         >
-          <div className="px-4 sm:px-6">
+          <div className={innerPaddingClass}>
             {/* biome-ignore lint/a11y/noStaticElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
             {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: see above */}
             <div
-              className="flex h-16 items-center justify-between gap-4"
+              className={`relative flex items-center justify-between gap-4 ${rowHeightClass}`}
               onMouseLeave={scheduleClose}
             >
               <DropdownMenu
@@ -470,12 +480,12 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <nav className="relative hidden items-center gap-1 lg:flex">
+              <nav className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden items-center gap-8 lg:flex">
                 {MARKETING_NAV.map((entry) => {
                   if (entry.type === "link") {
                     return (
                       <Link
-                        className={`rounded-md px-3 py-2 text-sm transition-[transform,background-color,color] duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-950 active:scale-95 dark:hover:bg-white/6 dark:hover:text-white ${mutedNavClass}`}
+                        className={`font-sans text-base leading-5 tracking-[-0.02em] transition-colors duration-150 ease-out ${mutedNavClass}`}
                         href={entry.href}
                         key={entry.href}
                         onFocus={() => setActiveGroup(null)}
@@ -493,7 +503,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     <button
                       aria-expanded={isActive}
                       aria-haspopup="menu"
-                      className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm transition-[transform,background-color,color] duration-150 ease-out hover:bg-neutral-100 hover:text-neutral-950 active:scale-95 aria-expanded:bg-neutral-100 aria-expanded:text-neutral-950 dark:aria-expanded:bg-white/6 dark:aria-expanded:text-white dark:hover:bg-white/6 dark:hover:text-white ${mutedNavClass}`}
+                      className={`inline-flex items-center gap-1 font-sans text-base leading-5 tracking-[-0.02em] transition-colors duration-150 ease-out aria-expanded:text-[#1E1E1E] dark:aria-expanded:text-white ${mutedNavClass}`}
                       key={entry.label}
                       onClick={() =>
                         setActiveGroup(isActive ? null : entry.label)
@@ -565,31 +575,26 @@ export function Navbar({ variant }: NavbarProps = {}) {
                           height: morphTransition,
                         }}
                       >
-                        <LiquidGlass
-                          blur={5}
-                          className="h-full w-full rounded-2xl border-0 bg-transparent shadow-none"
-                        >
-                          <div className="relative inset-shadow-lg inset-shadow-white h-full w-full overflow-hidden rounded-2xl bg-white/85 shadow-black/8 shadow-lg ring-1 ring-black/5 dark:inset-shadow-white/3 dark:bg-neutral-950/85 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10">
-                            <AnimatePresence custom={direction} initial={false}>
-                              <m.div
-                                animate="center"
-                                className="absolute top-0 left-0 w-max"
-                                custom={direction}
-                                exit="exit"
-                                initial="enter"
-                                key={activeGroupData.label}
-                                role="menu"
-                                transition={contentTransition}
-                                variants={contentVariants}
-                              >
-                                <MegaPanel
-                                  group={activeGroupData}
-                                  onSelect={closePanel}
-                                />
-                              </m.div>
-                            </AnimatePresence>
-                          </div>
-                        </LiquidGlass>
+                        <div className="relative h-full w-full overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#FFFFFF_0%,#F3F3F3_100%)] shadow-[0_0.125rem_2.0625rem_#1E1E1E1A,0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E0D] dark:bg-neutral-950 dark:bg-none dark:shadow-black/50 dark:ring-white/10">
+                          <AnimatePresence custom={direction} initial={false}>
+                            <m.div
+                              animate="center"
+                              className="absolute top-0 left-0 w-max"
+                              custom={direction}
+                              exit="exit"
+                              initial="enter"
+                              key={activeGroupData.label}
+                              role="menu"
+                              transition={contentTransition}
+                              variants={contentVariants}
+                            >
+                              <MegaPanel
+                                group={activeGroupData}
+                                onSelect={closePanel}
+                              />
+                            </m.div>
+                          </AnimatePresence>
+                        </div>
                       </m.div>
                     </m.div>
                   )}
@@ -597,26 +602,29 @@ export function Navbar({ variant }: NavbarProps = {}) {
               </nav>
 
               <div className="flex flex-1 items-center justify-end gap-2">
-                <div className="hidden items-center gap-1 lg:flex">
+                <div className="lg:hidden">
+                  <ThemeToggle />
+                </div>
+                <div className="hidden items-center gap-3 lg:flex">
                   <ThemeToggle />
                   <Link
-                    className={`rounded-lg px-3 py-1.5 text-sm transition-[transform,background-color,color] duration-150 ease-out hover:bg-accent hover:text-accent-foreground active:scale-95 ${mutedNavClass}`}
+                    className="font-display text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
                     href={SIGNIN_URL}
                   >
-                    Sign in
+                    Sign In
                   </Link>
                   <TrackedSignupLink
-                    className="corner-squircle overflow-hidden rounded-2xl border-transparent bg-primary px-4 py-1.5 font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2 active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
+                    className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
                     source="navbar_desktop_signup"
                   >
-                    Sign up
+                    Sign Up
                   </TrackedSignupLink>
                 </div>
                 <button
                   aria-controls="mobile-navigation"
                   aria-expanded={isOpen}
                   aria-label={isOpen ? "Close menu" : "Open menu"}
-                  className="relative inline-flex size-9 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 lg:hidden dark:text-neutral-400 dark:hover:bg-white/6 dark:hover:text-white"
+                  className="relative inline-flex size-9 items-center justify-center rounded-md text-[#1E1E1E] hover:bg-[#C8B2EE26] lg:hidden dark:text-white dark:hover:bg-white/6"
                   onClick={() => setIsOpen((prev) => !prev)}
                   type="button"
                 >
@@ -634,7 +642,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
           {isOpen && (
             <m.div
               animate={{ opacity: 1, y: 0 }}
-              className="absolute inset-shadow-lg inset-shadow-white inset-x-0 top-[calc(100%+0.5rem)] z-40 rounded-2xl bg-white p-3 shadow-black/8 shadow-lg ring-1 ring-black/5 lg:hidden dark:inset-shadow-white/3 dark:bg-neutral-950 dark:shadow-black/50 dark:shadow-xl dark:ring-white/10"
+              className={`absolute top-[calc(100%+0.5rem)] z-40 rounded-2xl bg-white p-3 shadow-[0_0.125rem_2.0625rem_#1E1E1E1A,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E14] lg:hidden dark:bg-neutral-950 dark:shadow-black/50 dark:ring-white/10 ${isLandingTop ? "inset-x-6" : "inset-x-4"}`}
               exit={{ opacity: 0, y: -6 }}
               id="mobile-navigation"
               initial={{ opacity: 0, y: -6 }}
@@ -674,7 +682,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
               {[...entry.cards, ...entry.rail].map((item) =>
                 item.external ? (
                   <a
-                    className="rounded-md px-3 py-2 text-neutral-600 text-sm hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/6 dark:hover:text-white"
+                    className="rounded-md px-3 py-2 font-sans text-[#1E1E1E] text-sm hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
                     href={item.href}
                     key={item.href}
                     onClick={onNavigate}
@@ -685,7 +693,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
                   </a>
                 ) : (
                   <Link
-                    className="rounded-md px-3 py-2 text-neutral-600 text-sm hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/6 dark:hover:text-white"
+                    className="rounded-md px-3 py-2 font-sans text-[#1E1E1E] text-sm hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
                     href={item.href}
                     key={item.href}
                     onClick={onNavigate}
@@ -698,24 +706,21 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           );
         })}
       </nav>
-      <div className="flex flex-col gap-2 border-neutral-200 border-t pt-3 dark:border-white/10">
+      <div className="flex flex-col gap-2 border-[#1E1E1E14] border-t pt-3 dark:border-white/10">
         <Link
-          className="rounded-md px-3 py-2 text-center text-neutral-600 text-sm hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/6 dark:hover:text-white"
+          className="rounded-md px-3 py-2 text-center font-display text-[#1E1E1E] text-sm tracking-[-0.015em] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
           href={SIGNIN_URL}
           onClick={onNavigate}
         >
-          Sign in
+          Sign In
         </Link>
         <TrackedSignupLink
-          className="corner-squircle overflow-hidden rounded-2xl border-transparent bg-primary px-3 py-2 text-center font-medium text-primary-foreground text-sm shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] transition-[transform,background-color] duration-150 ease-out hover:bg-primary-hover active:scale-95 supports-[corner-shape:round]:rounded-[1.25rem]"
+          className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
           onClick={onNavigate}
           source="navbar_mobile_signup"
         >
-          Get started
+          Sign Up
         </TrackedSignupLink>
-        <div className="flex justify-center pt-1">
-          <ThemeToggle />
-        </div>
       </div>
     </div>
   );
