@@ -1,6 +1,21 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
+function toSafeHttpUrl(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return value;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 const integrationToolSchema = z.object({
   name: z.string(),
   title: z
@@ -27,7 +42,7 @@ const integrationSchema = z.object({
   websiteUrl: z
     .string()
     .nullish()
-    .transform((value) => value ?? null),
+    .transform((value) => toSafeHttpUrl(value)),
   brandColor: z
     .string()
     .nullish()

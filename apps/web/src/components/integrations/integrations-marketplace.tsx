@@ -3,7 +3,7 @@
 import { Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { parseAsString, useQueryState } from "nuqs";
-import { useMemo } from "react";
+
 import { HeroDither } from "@/components/landing/hero-dither";
 import { ALL_CATEGORY_ID } from "@/constants/integrations";
 import {
@@ -35,14 +35,8 @@ export function IntegrationsMarketplace({
       .withOptions({ clearOnDefault: true })
   );
 
-  const featured = useMemo(
-    () => getFeaturedIntegrations(integrations),
-    [integrations]
-  );
-  const filtered = useMemo(
-    () => filterIntegrations(integrations, query, activeCategory),
-    [integrations, query, activeCategory]
-  );
+  const featured = getFeaturedIntegrations(integrations);
+  const filtered = filterIntegrations(integrations, query, activeCategory);
 
   const isBrowsing =
     query.trim().length > 0 || activeCategory !== ALL_CATEGORY_ID;
