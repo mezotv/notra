@@ -107,7 +107,7 @@ export const HERO_COLLAGE_PROFILE = {
   languageFlag: "🇺🇸",
   customInstructionsLabel: "Custom Instructions",
   customInstructionsPlaceholder:
-    "Add any specific instructions for AI-generated conte",
+    "Add any specific instructions for AI-generated content",
 };
 
 export const HERO_COLLAGE_EVENTS = {
