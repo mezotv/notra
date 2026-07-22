@@ -3,7 +3,6 @@ import {
   EmdashLogo,
   InthLogo,
   StackAuthLogo,
-  StagewiseLogo,
 } from "@/components/landing/marquee-logos";
 import type {
   FounderQuoteData,
@@ -20,7 +19,6 @@ export const MARQUEE_LOGOS: MarqueeLogo[] = [
   { name: "inth", label: "Inth", Logo: InthLogo },
   { name: "databuddy", label: "Databuddy", Logo: DatabuddyLogo },
   { name: "emdash", label: "Emdash", Logo: EmdashLogo },
-  { name: "stagewise", label: "Stagewise", Logo: StagewiseLogo },
   { name: "stack-auth", label: "Stack Auth", Logo: StackAuthLogo },
 ];
 
