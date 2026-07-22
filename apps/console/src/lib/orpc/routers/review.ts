@@ -2,11 +2,17 @@ import { getMcpStoreListingById } from "@notra/ai/integrations/mcp";
 import {
   listMcpIntegrationsPendingReview,
   listMcpIntegrationToolsByIntegrationIds,
+  listMcpStoreListingsForCuration,
+  setMcpStoreCuration,
   setMcpStoreStatus,
 } from "@notra/ai/integrations/mcp-store";
 import { assertAdmin } from "@/lib/auth/admin";
 import { baseProcedure } from "@/lib/orpc/base";
-import { reviewMcpServerRequestSchema } from "@/schemas/integrations";
+import {
+  reviewMcpServerRequestSchema,
+  setStoreListingCategoryRequestSchema,
+  setStoreListingFeaturedRequestSchema,
+} from "@/schemas/integrations";
 import { badRequest, notFound } from "../utils/errors";
 
 export const reviewRouter = {
@@ -89,5 +95,51 @@ export const reviewRouter = {
       }
 
       return { success: true };
+    }),
+  listings: baseProcedure.handler(async ({ context }) => {
+    await assertAdmin({ headers: context.headers });
+
+    const listings = await listMcpStoreListingsForCuration();
+
+    return listings.map((listing) => ({
+      id: listing.id,
+      name: listing.name,
+      author: listing.author,
+      brandColor: listing.brandColor,
+      logoLightUrl: listing.logoLightUrl,
+      logoDarkUrl: listing.logoDarkUrl,
+      category: listing.category,
+      featured: listing.storeFeaturedAt !== null,
+    }));
+  }),
+  setCategory: baseProcedure
+    .input(setStoreListingCategoryRequestSchema)
+    .handler(async ({ context, input }) => {
+      await assertAdmin({ headers: context.headers });
+
+      const updated = await setMcpStoreCuration({
+        integrationId: input.serverId,
+        category: input.category,
+      });
+      if (!updated) {
+        throw notFound("Integration not found");
+      }
+
+      return { category: updated.category };
+    }),
+  setFeatured: baseProcedure
+    .input(setStoreListingFeaturedRequestSchema)
+    .handler(async ({ context, input }) => {
+      await assertAdmin({ headers: context.headers });
+
+      const updated = await setMcpStoreCuration({
+        integrationId: input.serverId,
+        featured: input.featured,
+      });
+      if (!updated) {
+        throw notFound("Integration not found");
+      }
+
+      return { featured: updated.storeFeaturedAt !== null };
     }),
 };

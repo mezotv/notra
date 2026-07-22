@@ -1,5 +1,16 @@
+import { MCP_STORE_CATEGORIES } from "@notra/ai/constants/mcp-store-categories";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
+export const setStoreListingCategoryRequestSchema = z.object({
+  serverId: z.string().min(1, "MCP server ID is required"),
+  category: z.enum(MCP_STORE_CATEGORIES).nullable(),
+});
+
+export const setStoreListingFeaturedRequestSchema = z.object({
+  serverId: z.string().min(1, "MCP server ID is required"),
+  featured: z.boolean(),
+});
 
 export const mcpUrlSchema = z
   .string()

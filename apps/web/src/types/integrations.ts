@@ -17,6 +17,8 @@ export interface Integration {
   logoDarkUrl: string | null;
   bannerUrl: string | null;
   slug: string | null;
+  category: string | null;
+  featuredAt: string | null;
   authType: string;
   indexedToolCount: number;
   tools: IntegrationTool[];

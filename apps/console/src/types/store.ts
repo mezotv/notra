@@ -22,11 +22,15 @@ export interface StoreListingRow {
   logoDarkUrl: string | null;
   bannerUrl: string | null;
   slug: string | null;
+  category: string | null;
+  storeFeaturedAt: Date | null;
   authType: string;
   indexedToolCount: number;
 }
 
-export interface PublicStoreIntegration extends StoreListingRow {
+export interface PublicStoreIntegration
+  extends Omit<StoreListingRow, "storeFeaturedAt"> {
+  featuredAt: string | null;
   tools: PublicStoreTool[];
 }
 

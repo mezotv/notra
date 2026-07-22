@@ -19,10 +19,6 @@ const R2_ASSET_PREFIX = "https://pub-006cb776ab3047f59b502d72fca0f223.r2.dev";
 
 const FALLBACK_INTEGRATION_ID = "brew-store-listing";
 
-export const INTEGRATION_CATEGORY_MAP: Record<string, string> = {
-  Brew: "Productivity",
-};
-
 export const FALLBACK_INTEGRATIONS: Integration[] = [
   {
     id: FALLBACK_INTEGRATION_ID,
@@ -35,6 +31,8 @@ export const FALLBACK_INTEGRATIONS: Integration[] = [
     logoDarkUrl: `${R2_ASSET_PREFIX}/organization/Z2zWjF9rtxltZopse25PQlGLyjIMspkP/integration-branding/logo-dark-6f8c0ac4-8a8b-499d-9114-b0ddcf876728.svg`,
     bannerUrl: `${R2_ASSET_PREFIX}/organization/Z2zWjF9rtxltZopse25PQlGLyjIMspkP/integration-branding/banner-8e004074-d488-49f8-827d-9a1492faaaad.png`,
     slug: "brew",
+    category: "Productivity",
+    featuredAt: "2026-01-01T00:00:00.000Z",
     authType: "oauth",
     indexedToolCount: 67,
     tools: [],

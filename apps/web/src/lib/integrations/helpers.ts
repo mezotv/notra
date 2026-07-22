@@ -1,7 +1,6 @@
 import {
   ALL_CATEGORY_ID,
   FEATURED_INTEGRATIONS_LIMIT,
-  INTEGRATION_CATEGORY_MAP,
 } from "@/constants/integrations";
 import type {
   Integration,
@@ -9,10 +8,6 @@ import type {
 } from "@/types/integrations";
 
 const WHITESPACE_REGEX = /\s+/g;
-
-function getIntegrationCategory(name: string): string | null {
-  return INTEGRATION_CATEGORY_MAP[name] ?? null;
-}
 
 export function getIntegrationHref(integration: Integration): string {
   return `/integrations/${integration.slug ?? integration.id}`;
@@ -51,10 +46,9 @@ function formatToolCount(count: number): string {
 }
 
 export function buildAuthorCategoryLine(integration: Integration): string {
-  const category = getIntegrationCategory(integration.name);
   const parts = [integration.author ? `by ${integration.author}` : null];
-  if (category) {
-    parts.push(category);
+  if (integration.category) {
+    parts.push(integration.category);
   }
   return parts.filter(Boolean).join(" · ");
 }
@@ -76,7 +70,7 @@ export function buildFeaturedMeta(integration: Integration): string {
 
 export function buildQuickViewMetaTail(integration: Integration): string {
   return [
-    getIntegrationCategory(integration.name),
+    integration.category,
     formatToolCount(integration.indexedToolCount),
     formatAuthType(integration.authType),
   ]
@@ -92,7 +86,7 @@ export function buildCategoryFilters(
   ];
   const seen = new Set<string>();
   for (const integration of integrations) {
-    const category = getIntegrationCategory(integration.name);
+    const category = integration.category;
     if (category && !seen.has(category)) {
       seen.add(category);
       categories.push({ id: category, label: category });
@@ -105,12 +99,15 @@ export function getFeaturedIntegrations(
   integrations: Integration[]
 ): Integration[] {
   return integrations
-    .filter((integration) => Boolean(integration.bannerUrl))
+    .filter((integration) => integration.featuredAt !== null)
+    .sort((first, second) =>
+      (second.featuredAt ?? "").localeCompare(first.featuredAt ?? "")
+    )
     .slice(0, FEATURED_INTEGRATIONS_LIMIT);
 }
 
 export function buildDetailMetaTail(integration: Integration): string {
-  return [getIntegrationCategory(integration.name), "Verified publisher"]
+  return [integration.category, "Verified publisher"]
     .filter(Boolean)
     .join(" · ");
 }
@@ -131,10 +128,7 @@ export function filterIntegrations(
 ): Integration[] {
   const normalizedQuery = query.trim().toLowerCase();
   return integrations.filter((integration) => {
-    if (
-      categoryId !== ALL_CATEGORY_ID &&
-      getIntegrationCategory(integration.name) !== categoryId
-    ) {
+    if (categoryId !== ALL_CATEGORY_ID && integration.category !== categoryId) {
       return false;
     }
     if (normalizedQuery.length === 0) {

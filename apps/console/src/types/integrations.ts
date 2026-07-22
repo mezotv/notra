@@ -155,3 +155,18 @@ export interface ToolsEditorProps {
   serverUrl: string;
   tools: McpIntegrationTool[];
 }
+
+export interface StoreListingCurationItem {
+  id: string;
+  name: string;
+  author: string | null;
+  brandColor: string | null;
+  logoLightUrl: string | null;
+  logoDarkUrl: string | null;
+  category: string | null;
+  featured: boolean;
+}
+
+export interface CurationRowProps {
+  listing: StoreListingCurationItem;
+}

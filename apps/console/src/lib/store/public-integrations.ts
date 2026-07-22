@@ -35,6 +35,8 @@ function toPublicIntegration(
     logoDarkUrl: integration.logoDarkUrl ?? null,
     bannerUrl: integration.bannerUrl ?? null,
     slug: integration.slug ?? null,
+    category: integration.category ?? null,
+    featuredAt: integration.storeFeaturedAt?.toISOString() ?? null,
     authType: integration.authType,
     indexedToolCount: integration.indexedToolCount,
     tools,

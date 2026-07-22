@@ -63,6 +63,14 @@ const integrationSchema = z.object({
     .string()
     .nullish()
     .transform((value) => value ?? null),
+  category: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
+  featuredAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
   authType: z.string(),
   indexedToolCount: z.number(),
   tools: z.array(integrationToolSchema).default([]),

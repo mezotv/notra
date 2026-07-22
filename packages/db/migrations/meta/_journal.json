@@ -386,6 +386,20 @@
       "when": 1784734559957,
       "tag": "0054_backfill_store_listing_slugs",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1784746583077,
+      "tag": "0055_red_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1784746588490,
+      "tag": "0056_feature_brew_store_listing",
+      "breakpoints": true
     }
   ]
 }
