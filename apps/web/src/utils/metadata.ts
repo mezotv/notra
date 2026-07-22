@@ -46,6 +46,12 @@ export const PAGE_SOCIAL_IMAGES = {
     height: SOCIAL_IMAGE_HEIGHT,
     alt: "Notra brand assets social preview image",
   },
+  mcpServer: {
+    url: "/og/mcp-server.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra MCP server social preview image",
+  },
   ossProgram: {
     url: "/og/oss-program.png",
     width: SOCIAL_IMAGE_WIDTH,
