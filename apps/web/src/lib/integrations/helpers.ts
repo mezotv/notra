@@ -26,7 +26,11 @@ export function getToolDescription(tool: {
   description: string | null;
   title: string | null;
 }): string {
-  return collapseWhitespace(tool.description ?? tool.title ?? "");
+  const description = collapseWhitespace(tool.description ?? "");
+  if (description) {
+    return description;
+  }
+  return collapseWhitespace(tool.title ?? "");
 }
 
 function formatAuthType(authType: string): string {

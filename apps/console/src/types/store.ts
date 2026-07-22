@@ -11,7 +11,7 @@ export interface PublicStoreTool {
   description: string | null;
 }
 
-export interface PublicStoreIntegration {
+export interface StoreListingRow {
   id: string;
   name: string;
   description: string | null;
@@ -24,6 +24,9 @@ export interface PublicStoreIntegration {
   slug: string | null;
   authType: string;
   indexedToolCount: number;
+}
+
+export interface PublicStoreIntegration extends StoreListingRow {
   tools: PublicStoreTool[];
 }
 

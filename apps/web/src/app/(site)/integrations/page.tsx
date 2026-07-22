@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ConsoleCallout } from "@/components/integrations/console-callout";
 import { IntegrationsMarketplace } from "@/components/integrations/integrations-marketplace";
+import { IntegrationsMarketplaceFallback } from "@/components/integrations/integrations-marketplace-fallback";
 import { fetchIntegrations } from "@/lib/integrations/fetch";
 import { buildCategoryFilters } from "@/lib/integrations/helpers";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
@@ -51,7 +52,14 @@ export default async function IntegrationsPage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
-      <Suspense fallback={null}>
+      <Suspense
+        fallback={
+          <IntegrationsMarketplaceFallback
+            categories={categories}
+            integrations={integrations}
+          />
+        }
+      >
         <IntegrationsMarketplace
           categories={categories}
           integrations={integrations}

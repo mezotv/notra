@@ -34,6 +34,7 @@ export function IntegrationDetailView({
         <IntegrationBanner
           className="h-[15rem] w-full rounded-[1.25rem] sm:h-[21.25rem]"
           integration={integration}
+          priority
         />
 
         <div className="flex flex-col gap-7">

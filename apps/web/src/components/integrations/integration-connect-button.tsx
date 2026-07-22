@@ -18,7 +18,6 @@ export function IntegrationConnectButton({
         className
       )}
       href={INTEGRATIONS_CONNECT_URL}
-      rel="noopener"
     >
       {label}
     </a>

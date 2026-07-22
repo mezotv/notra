@@ -19,7 +19,7 @@ export function IntegrationAuthorMeta({
         <a
           className="underline-offset-2 transition-colors hover:text-[#1E1E1E] hover:underline dark:hover:text-white"
           href={websiteUrl}
-          rel="noopener"
+          rel="noopener noreferrer"
           target="_blank"
         >
           {author}

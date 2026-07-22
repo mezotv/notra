@@ -6,6 +6,7 @@ import { IntegrationLogo } from "./integration-logo";
 export function IntegrationBanner({
   integration,
   className,
+  priority = false,
 }: IntegrationBannerProps) {
   if (integration.bannerUrl) {
     return (
@@ -14,6 +15,7 @@ export function IntegrationBanner({
           alt={`${integration.name} banner`}
           className="object-cover"
           fill
+          priority={priority}
           sizes="(max-width: 48rem) 100vw, 40rem"
           src={integration.bannerUrl}
           unoptimized

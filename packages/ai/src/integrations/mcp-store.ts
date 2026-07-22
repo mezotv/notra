@@ -344,32 +344,6 @@ function isManualToolMeta(meta: unknown) {
   );
 }
 
-export async function listLiveMcpStoreIntegrations() {
-  return await db.query.mcpServerIntegrations.findMany({
-    where: and(
-      eq(mcpServerIntegrations.resourceType, "store_listing"),
-      eq(mcpServerIntegrations.storeStatus, "live"),
-      eq(mcpServerIntegrations.enabled, true)
-    ),
-    orderBy: asc(mcpServerIntegrations.name),
-    columns: {
-      id: true,
-      name: true,
-      url: true,
-      description: true,
-      author: true,
-      websiteUrl: true,
-      brandColor: true,
-      logoLightUrl: true,
-      logoDarkUrl: true,
-      bannerUrl: true,
-      slug: true,
-      authType: true,
-      indexedToolCount: true,
-    },
-  });
-}
-
 const LIVE_STORE_LISTING_DETAIL_COLUMNS = {
   id: true,
   name: true,
@@ -385,6 +359,18 @@ const LIVE_STORE_LISTING_DETAIL_COLUMNS = {
   authType: true,
   indexedToolCount: true,
 } as const;
+
+export async function listLiveMcpStoreIntegrations() {
+  return await db.query.mcpServerIntegrations.findMany({
+    where: and(
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+    orderBy: asc(mcpServerIntegrations.name),
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
+  });
+}
 
 export async function getLiveMcpStoreIntegrationById(integrationId: string) {
   const integration = await db.query.mcpServerIntegrations.findFirst({

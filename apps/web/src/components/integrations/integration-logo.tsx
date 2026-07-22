@@ -30,6 +30,21 @@ export function IntegrationLogo({
     );
   }
 
+  if (light === dark) {
+    return (
+      <span className={cn(boxClass, className)} style={boxStyle}>
+        <Image
+          alt={alt}
+          className={`block h-full w-full ${fit}`}
+          height={size}
+          src={light}
+          unoptimized
+          width={size}
+        />
+      </span>
+    );
+  }
+
   return (
     <span className={cn(boxClass, className)} style={boxStyle}>
       <Image

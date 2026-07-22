@@ -32,6 +32,18 @@ export interface IntegrationsMarketplaceProps {
   categories: IntegrationCategoryFilter[];
 }
 
+export interface IntegrationsViewProps {
+  integrations: Integration[];
+  categories: IntegrationCategoryFilter[];
+  query: string;
+  activeCategory: string;
+  filtered: Integration[];
+  featured: Integration[];
+  showFeatured: boolean;
+  onQueryChange?: (value: string) => void;
+  onCategoryChange?: (id: string) => void;
+}
+
 export interface IntegrationCardProps {
   integration: Integration;
 }
@@ -52,7 +64,7 @@ export interface IntegrationsLayoutProps {
 export interface IntegrationBannerProps {
   integration: Integration;
   className?: string;
-  label?: string;
+  priority?: boolean;
 }
 
 export interface IntegrationAuthorMetaProps {
