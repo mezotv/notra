@@ -39,7 +39,7 @@ export default async function BlogPage() {
   return (
     <div className="flex w-full flex-col items-center gap-12 md:gap-16">
       <MarketingHeroWash
-        subtitle="Insights, guides, and stories from the Notra team."
+        subtitle={description}
         title={
           <>
             The Notra <span className="text-primary">Blog</span>
