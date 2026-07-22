@@ -30,7 +30,9 @@ export function HeroCollageProfilePanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>{HERO_COLLAGE_PROFILE.websiteLabel}</Label>
+              <Label htmlFor="hero-profile-website">
+                {HERO_COLLAGE_PROFILE.websiteLabel}
+              </Label>
               <div className="flex w-full flex-row items-center overflow-hidden rounded-lg border border-input transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
                 <span className="border-input border-r px-2.5 py-1.5 text-muted-foreground text-sm">
                   {HERO_COLLAGE_PROFILE.websitePrefix}
@@ -38,6 +40,7 @@ export function HeroCollageProfilePanel() {
                 <input
                   className="w-full min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
                   defaultValue={HERO_COLLAGE_PROFILE.websiteValue}
+                  id="hero-profile-website"
                   inputMode="url"
                 />
               </div>
