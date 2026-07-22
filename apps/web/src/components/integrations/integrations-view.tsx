@@ -1,4 +1,4 @@
-import { Search01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight02Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { HeroDither } from "@/components/landing/hero-dither";
 import type { IntegrationsViewProps } from "@/types/integrations";
@@ -102,10 +102,11 @@ export function IntegrationsView({
                 </h2>
               </div>
               <a
-                className="shrink-0 cursor-pointer font-medium font-sans text-[1rem] text-primary leading-[1.25]"
+                className="flex shrink-0 cursor-pointer items-center gap-1 font-medium font-sans text-[1rem] text-primary leading-[1.25]"
                 href="#all-integrations"
               >
-                View all {integrations.length} →
+                View all {integrations.length}
+                <HugeiconsIcon className="size-4" icon={ArrowRight02Icon} />
               </a>
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

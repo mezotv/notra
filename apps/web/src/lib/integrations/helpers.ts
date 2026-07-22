@@ -64,7 +64,6 @@ export function buildFeaturedMeta(integration: Integration): string {
   return [
     formatToolCount(integration.indexedToolCount),
     formatAuthType(integration.authType),
-    "Verified",
   ].join(" · ");
 }
 

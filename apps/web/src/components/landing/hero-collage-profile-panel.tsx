@@ -6,14 +6,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { HERO_COLLAGE_PROFILE } from "@/constants/landing/hero-collage";
 
 function FieldValue({ value }: { value: string }) {
-  return (
-    <Input
-      className="pointer-events-none"
-      defaultValue={value}
-      readOnly
-      tabIndex={-1}
-    />
-  );
+  return <Input defaultValue={value} />;
 }
 
 export function HeroCollageProfilePanel() {
@@ -38,13 +31,15 @@ export function HeroCollageProfilePanel() {
 
             <div className="space-y-2">
               <Label>{HERO_COLLAGE_PROFILE.websiteLabel}</Label>
-              <div className="flex w-full flex-row items-center rounded-lg border border-input transition-colors">
+              <div className="flex w-full flex-row items-center overflow-hidden rounded-lg border border-input transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
                 <span className="border-input border-r px-2.5 py-1.5 text-muted-foreground text-sm">
                   {HERO_COLLAGE_PROFILE.websitePrefix}
                 </span>
-                <span className="flex-1 bg-transparent px-2.5 py-1.5 text-sm">
-                  {HERO_COLLAGE_PROFILE.websiteValue}
-                </span>
+                <input
+                  className="w-full min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+                  defaultValue={HERO_COLLAGE_PROFILE.websiteValue}
+                  inputMode="url"
+                />
               </div>
             </div>
 
@@ -86,7 +81,7 @@ export function HeroCollageProfilePanel() {
                   {HERO_COLLAGE_PROFILE.toneProfileLabel}
                 </span>
               </div>
-              <div className="flex h-8 w-fit select-none items-center justify-between gap-1.5 whitespace-nowrap rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm">
+              <div className="flex h-8 w-fit items-center justify-between gap-1.5 whitespace-nowrap rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm">
                 {HERO_COLLAGE_PROFILE.toneProfileValue}
                 <HugeiconsIcon
                   className="size-4 text-muted-foreground"
@@ -103,16 +98,14 @@ export function HeroCollageProfilePanel() {
                 </span>
               </div>
               <Input
-                className="pointer-events-none opacity-50"
+                className="opacity-50"
                 placeholder={HERO_COLLAGE_PROFILE.customTonePlaceholder}
-                readOnly
-                tabIndex={-1}
               />
             </div>
 
             <div className="space-y-2 pt-4">
               <Label>{HERO_COLLAGE_PROFILE.languageLabel}</Label>
-              <div className="flex h-8 select-none items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent px-3 text-sm">
+              <div className="flex h-8 items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent px-3 text-sm">
                 <span className="flex items-center gap-2">
                   <span className="text-base leading-none">
                     {HERO_COLLAGE_PROFILE.languageFlag}
@@ -129,10 +122,7 @@ export function HeroCollageProfilePanel() {
             <div className="space-y-2 pt-4">
               <Label>{HERO_COLLAGE_PROFILE.customInstructionsLabel}</Label>
               <Input
-                className="pointer-events-none text-muted-foreground"
                 placeholder={HERO_COLLAGE_PROFILE.customInstructionsPlaceholder}
-                readOnly
-                tabIndex={-1}
               />
             </div>
           </div>

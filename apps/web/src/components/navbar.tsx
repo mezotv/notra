@@ -27,7 +27,6 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MEGA_NAV_ICONS } from "@/constants/navbar-mega-icons";
 import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
 import type { NavbarProps } from "@/types/navbar";
@@ -107,12 +106,14 @@ function MegaCard({
   card: MarketingNavCard;
   onSelect: () => void;
 }) {
-  const Icon = MEGA_NAV_ICONS[card.href];
   const className =
     "flex h-52.5 w-48.5 shrink-0 cursor-pointer flex-col items-start justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:hover:bg-white/10";
   const body = (
     <>
-      {Icon ? <Icon className="size-8 text-[#1E1E1E] dark:text-white" /> : null}
+      <HugeiconsIcon
+        className="size-8 text-[#1E1E1E] dark:text-white"
+        icon={card.icon}
+      />
       <span className="flex flex-col items-start gap-0.75 self-stretch">
         <span className="font-sans font-semibold text-[#1E1E1E] text-base leading-5 dark:text-white">
           {card.label}
@@ -158,14 +159,14 @@ function RailItem({
   item: MarketingNavRailItem;
   onSelect: () => void;
 }) {
-  const Icon = MEGA_NAV_ICONS[item.href];
   const className =
     "-mx-2 -my-1.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-[#C8B2EE26] focus-visible:bg-[#C8B2EE26] focus-visible:outline-none dark:hover:bg-white/6 dark:focus-visible:bg-white/6";
   const body = (
     <>
-      {Icon ? (
-        <Icon className="size-6 shrink-0 text-[#1E1E1E] dark:text-neutral-200" />
-      ) : null}
+      <HugeiconsIcon
+        className="size-6 shrink-0 text-[#1E1E1E] dark:text-neutral-200"
+        icon={item.icon}
+      />
       <span className="font-medium font-sans text-[#1E1E1E] text-base leading-[1.5625rem] tracking-[-0.02em] dark:text-neutral-200">
         {item.label}
       </span>

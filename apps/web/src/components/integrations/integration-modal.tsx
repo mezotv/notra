@@ -107,7 +107,7 @@ function ModalBody({ integration }: IntegrationModalProps) {
       </div>
       <div className="flex w-full min-w-0 shrink-0 items-center bg-[#FAFAFA] px-7 py-4 [box-shadow:#F0F0F0_0_0.0625rem_0_inset] dark:bg-white/[0.03] dark:[box-shadow:#FFFFFF12_0_0.0625rem_0_inset]">
         <span className="min-w-0 truncate font-sans text-[#1E1E1E80] text-[0.8125rem] leading-[1.31] dark:text-white/50">
-          Reviewed by Notra · Verified publisher
+          Reviewed by Notra
         </span>
       </div>
     </div>
