@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { HeroVideoCarousel } from "@/components/marketing-assets/hero-video-carousel";
 import { LoopVideo } from "@/components/marketing-assets/loop-video";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
 import { ASSET_HERO } from "@/lib/marketing-assets/constants/hero";
 import { ASSET_SHOWCASE_SECTIONS } from "@/lib/marketing-assets/constants/showcase";
@@ -80,7 +81,7 @@ function PasteReadyLogos() {
 
 export default function MarketingAssetsPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden antialiased [font-synthesis:none]">
+    <div className="flex w-full flex-col items-center justify-start antialiased [font-synthesis:none]">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(assetsJsonLd) }}
@@ -92,91 +93,89 @@ export default function MarketingAssetsPage() {
         type="application/ld+json"
       />
 
-      <section className="w-full pt-14 sm:pt-16 lg:pt-18">
-        <div className="-translate-y-6 md:-translate-y-10 lg:-translate-y-20 mx-auto grid min-h-[calc(100svh-5rem)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 py-8 md:px-12 md:py-10 lg:grid-cols-[9fr_11fr] lg:gap-16 lg:px-16 lg:py-12">
-          <div className="flex flex-col items-start gap-7">
-            <div className="flex flex-col gap-5">
-              <h1 className="max-w-3xl text-balance font-display font-medium text-[2.25rem] text-black leading-[1.1] tracking-[-0.02em] md:text-[2.75rem] lg:text-[3.5rem] dark:text-white">
-                {ASSET_HERO.title}
-                <span className="text-primary"> {ASSET_HERO.accent}</span>
-              </h1>
-              <p className="max-w-2xl font-medium font-sans text-[#1E1E1EBF] text-lg leading-8 dark:text-white/70">
-                {ASSET_HERO.description}
-              </p>
-            </div>
+      <MarketingHeroWash
+        subtitle={ASSET_HERO.description}
+        title={
+          <>
+            {ASSET_HERO.title}
+            <span className="text-primary"> {ASSET_HERO.accent}</span>
+          </>
+        }
+      >
+        <CtaButton
+          nativeButton={false}
+          render={<TrackedSignupLink source="marketing_assets_hero_cta" />}
+          size="lg"
+          variant="primary"
+        >
+          {ASSET_HERO.primaryCta}
+        </CtaButton>
+        <CtaButton
+          nativeButton={false}
+          render={<Link href="#generate" />}
+          size="lg"
+          variant="light"
+        >
+          {ASSET_HERO.secondaryCta}
+        </CtaButton>
+      </MarketingHeroWash>
 
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <CtaButton
-                nativeButton={false}
-                render={
-                  <TrackedSignupLink source="marketing_assets_hero_cta" />
-                }
-                size="lg"
-                variant="primary"
-              >
-                {ASSET_HERO.primaryCta}
-              </CtaButton>
-              <CtaButton
-                nativeButton={false}
-                render={<Link href="#generate" />}
-                size="lg"
-                variant="light"
-              >
-                {ASSET_HERO.secondaryCta}
-              </CtaButton>
-            </div>
-          </div>
-
-          <div className="relative">
+      <div className="flex w-full flex-col items-center overflow-hidden">
+        <section className="w-full px-6 pt-12 md:px-12 md:pt-16 lg:px-16">
+          <div className="mx-auto w-full max-w-4xl">
             <HeroVideoCarousel videos={ASSET_HERO.videos} />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {ASSET_SHOWCASE_SECTIONS.map((section) => {
-        const Heading = "h2";
-        return (
-          <section
-            className="w-full scroll-mt-24 border-[#1E1E1E14] border-t dark:border-white/10"
-            id={section.id}
-            key={section.id}
-          >
-            <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 py-12 md:px-12 md:py-20 lg:grid-cols-[2fr_3fr] lg:gap-16 lg:px-16">
-              <div
-                className={`flex flex-col gap-6 ${section.mediaSide === "left" ? "lg:order-2" : ""}`}
-              >
-                <Heading className="text-balance font-display font-medium text-[2rem] text-black leading-[1.12] tracking-[-0.02em] md:text-[2.75rem] dark:text-white">
-                  {section.headingPre}
-                  <span className="text-primary">{section.headingAccent}</span>
-                  {section.headingPost}
-                </Heading>
-                <div className="flex flex-col gap-4">
-                  {section.paragraphs.map((paragraph) => (
-                    <p
-                      className="font-medium font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70"
-                      key={paragraph}
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
+        {ASSET_SHOWCASE_SECTIONS.map((section) => {
+          const Heading = "h2";
+          return (
+            <section
+              className="w-full scroll-mt-24 border-[#1E1E1E14] border-t dark:border-white/10"
+              id={section.id}
+              key={section.id}
+            >
+              <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 py-12 md:px-12 md:py-20 lg:grid-cols-[2fr_3fr] lg:gap-16 lg:px-16">
+                <div
+                  className={`flex flex-col gap-6 ${section.mediaSide === "left" ? "lg:order-2" : ""}`}
+                >
+                  <Heading className="text-balance font-display font-medium text-[2rem] text-black leading-[1.12] tracking-[-0.02em] md:text-[2.75rem] dark:text-white">
+                    {section.headingPre}
+                    <span className="text-primary">
+                      {section.headingAccent}
+                    </span>
+                    {section.headingPost}
+                  </Heading>
+                  <div className="flex flex-col gap-4">
+                    {section.paragraphs.map((paragraph) => (
+                      <p
+                        className="font-medium font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70"
+                        key={paragraph}
+                      >
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                  {section.id === "generate" ? <PasteReadyLogos /> : null}
                 </div>
-                {section.id === "generate" ? <PasteReadyLogos /> : null}
+                <div
+                  className={section.mediaSide === "left" ? "lg:order-1" : ""}
+                >
+                  <LoopVideo
+                    label={section.videoLabel}
+                    poster={section.posterSrc}
+                    src={section.videoSrc}
+                  />
+                </div>
               </div>
-              <div className={section.mediaSide === "left" ? "lg:order-1" : ""}>
-                <LoopVideo
-                  label={section.videoLabel}
-                  poster={section.posterSrc}
-                  src={section.videoSrc}
-                />
-              </div>
-            </div>
-          </section>
-        );
-      })}
+            </section>
+          );
+        })}
 
-      <section className="w-full px-6 pt-16 pb-20 lg:px-20 lg:pt-24 lg:pb-28">
-        <CtaBanner />
-      </section>
+        <section className="w-full px-6 pt-16 pb-20 lg:px-20 lg:pt-24 lg:pb-28">
+          <CtaBanner />
+        </section>
+      </div>
     </div>
   );
 }

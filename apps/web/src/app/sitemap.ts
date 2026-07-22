@@ -138,10 +138,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
-      url: `${SITE_URL}/subprocessors`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
-    },
-    {
       url: `${SITE_URL}/blog`,
       lastModified: latestBlog,
     },

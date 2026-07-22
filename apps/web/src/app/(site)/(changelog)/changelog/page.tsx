@@ -79,7 +79,9 @@ export default async function ChangelogHubPage() {
         }
       />
 
-      <ShowcaseOverviewGrid companies={companies} />
+      <div className="mx-auto mt-14 w-full max-w-220 px-4 sm:px-6 md:px-8 lg:px-0">
+        <ShowcaseOverviewGrid companies={companies} />
+      </div>
 
       <p className="mt-8 text-center font-sans text-muted-foreground text-xs">
         Notra is not affiliated with any of the companies listed above. These

@@ -96,22 +96,16 @@ const ELIGIBILITY = [
 
 export default function OssProgramPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
+    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <MarketingHeroWash
         className="mb-4"
-        innerClassName="flex flex-col items-center gap-4 px-6 py-16 text-center md:px-24 md:py-24"
-      >
-        <div className="flex w-full max-w-[40rem] flex-col items-center gap-4">
-          <h1 className="text-balance text-center font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
+        subtitle="Notra is free for open source builders. Get the Pro plan at no cost in exchange for honest feedback, and let your shipped work do the marketing."
+        title={
+          <>
             Notra for <span className="text-primary">Open Source</span>
-          </h1>
-          <p className="text-pretty text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
-            Notra is free for open source builders. Get the Pro plan at no cost
-            in exchange for honest feedback, and let your shipped work do the
-            marketing.
-          </p>
-        </div>
-      </MarketingHeroWash>
+          </>
+        }
+      />
 
       <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">

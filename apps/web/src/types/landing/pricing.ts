@@ -55,3 +55,7 @@ export interface PricingBillingToggleProps {
   value: BillingPeriod;
   onValueChange: (value: BillingPeriod) => void;
 }
+
+export interface LandingPricingSectionProps {
+  showHeader?: boolean;
+}

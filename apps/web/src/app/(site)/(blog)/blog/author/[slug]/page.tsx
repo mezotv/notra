@@ -85,7 +85,7 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
   const postLabel = authorPosts.length === 1 ? "post" : "posts";
 
   return (
-    <div className="mx-auto w-full max-w-220">
+    <div className="mx-auto w-full max-w-220 px-4 pt-24 sm:px-6 sm:pt-28 md:px-8 md:pt-32 lg:px-0">
       <div className="flex flex-col items-start gap-5">
         <ViewTransition name={blogAuthorAvatarTransitionName(author.slug)}>
           <Avatar className="size-20" size="default">

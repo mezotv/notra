@@ -51,31 +51,30 @@ export const metadata: Metadata = {
 
 export default function BrandPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
+    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
 
-      <div className="w-full max-w-5xl px-6 pt-4 pb-12 md:pb-16">
-        <MarketingHeroWash innerClassName="flex w-full flex-col items-start gap-5 px-6 py-12 md:px-14 md:py-16">
-          <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
+      <MarketingHeroWash
+        className="mb-12 md:mb-16"
+        subtitle="Official assets and guidelines to help you reference the Notra brand, including our logo, colors and typography."
+        title={
+          <>
             Brand <span className="text-primary">Guidelines</span>
-          </h1>
-          <div className="max-w-146.5 text-balance font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
-            Official assets and guidelines to help you reference the Notra
-            brand, including our logo, colors and typography.
-          </div>
-          <CtaButton
-            nativeButton={false}
-            render={<Link download href={BRAND_ASSETS.zip} />}
-            variant="primary"
-          >
-            Download brand assets
-          </CtaButton>
-        </MarketingHeroWash>
-      </div>
+          </>
+        }
+      >
+        <CtaButton
+          nativeButton={false}
+          render={<Link download href={BRAND_ASSETS.zip} />}
+          variant="primary"
+        >
+          Download brand assets
+        </CtaButton>
+      </MarketingHeroWash>
 
       <div className="flex w-full max-w-5xl flex-col gap-16 px-6 pb-20 md:pb-24">
         <section className="flex flex-col gap-6">

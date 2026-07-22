@@ -32,8 +32,8 @@ export function ChangelogTimeline({
       <ChangelogFeaturedEntry item={featured} label={featuredLabel} />
       {rest.length > 0 ? (
         <div className="flex flex-col gap-10">
-          {rest.map((item, index) => (
-            <ChangelogRow index={index} item={item} key={item.id} />
+          {rest.map((item) => (
+            <ChangelogRow item={item} key={item.id} />
           ))}
         </div>
       ) : null}

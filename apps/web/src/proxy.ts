@@ -34,7 +34,6 @@ const dualmarkProxy = createDualmarkMiddleware({
       "/robots.txt",
       "/rss.xml",
       "/sitemap.xml",
-      "/subprocessors",
       "/testimonials",
       "/web-app-manifest-192x192.png",
       "/web-app-manifest-512x512.png",

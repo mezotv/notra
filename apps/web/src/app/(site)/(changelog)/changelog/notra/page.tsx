@@ -56,7 +56,7 @@ export default async function NotraChangelogPage() {
         }
       />
 
-      <div className="mt-14 w-full self-center">
+      <div className="mx-auto mt-14 w-full max-w-220 px-4 sm:px-6 md:px-8 lg:px-0">
         <ChangelogTimeline
           emptyDescription="We'll share new releases and product improvements here soon."
           emptyTitle="No changelog entries yet"

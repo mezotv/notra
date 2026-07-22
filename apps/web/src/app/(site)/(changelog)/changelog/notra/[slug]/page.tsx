@@ -80,7 +80,7 @@ export default async function ChangelogEntryPage({
   ]);
 
   return (
-    <>
+    <div className="mx-auto w-full max-w-[760px] px-4 pt-24 sm:px-6 sm:pt-28 md:px-8 md:pt-32 lg:px-0">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
@@ -115,6 +115,6 @@ export default async function ChangelogEntryPage({
       </div>
 
       <ChangelogHtmlArticle html={post.content} />
-    </>
+    </div>
   );
 }

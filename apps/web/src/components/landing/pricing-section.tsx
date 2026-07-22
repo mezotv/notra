@@ -23,6 +23,7 @@ import {
 } from "@/constants/landing/pricing";
 import type {
   BillingPeriod,
+  LandingPricingSectionProps,
   PricingBillingToggleProps,
   PricingCardProps,
 } from "@/types/landing/pricing";
@@ -237,7 +238,9 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
   );
 }
 
-export function LandingPricingSection() {
+export function LandingPricingSection({
+  showHeader = true,
+}: LandingPricingSectionProps) {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(
     PRICING_DEFAULT_BILLING
   );
@@ -247,14 +250,16 @@ export function LandingPricingSection() {
       className="flex w-full flex-col items-center gap-13.5 px-6 py-24"
       id="pricing"
     >
-      <div className="flex flex-col items-center gap-6">
-        <h2 className="max-w-[59rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.12] tracking-[-0.02em] sm:text-[2.875rem] sm:leading-13 dark:text-white">
-          {PRICING_HEADING}
-        </h2>
-        <p className="max-w-[43rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 sm:text-xl dark:text-white/70">
-          {PRICING_SUBHEADING}
-        </p>
-      </div>
+      {showHeader ? (
+        <div className="flex flex-col items-center gap-6">
+          <h2 className="max-w-[59rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.12] tracking-[-0.02em] sm:text-[2.875rem] sm:leading-13 dark:text-white">
+            {PRICING_HEADING}
+          </h2>
+          <p className="max-w-[43rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 sm:text-xl dark:text-white/70">
+            {PRICING_SUBHEADING}
+          </p>
+        </div>
+      ) : null}
 
       <div className="flex w-full flex-col items-center gap-6">
         <PricingBillingToggle

@@ -98,7 +98,7 @@ export default function FooterSection() {
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  <social.Icon className="size-5" />
+                  <social.Icon className="size-5 [&_path.fill-foreground]:fill-current" />
                 </Link>
               ))}
             </div>

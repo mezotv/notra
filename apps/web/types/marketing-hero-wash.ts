@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 
 export interface MarketingHeroWashProps {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
-  innerClassName?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
 }

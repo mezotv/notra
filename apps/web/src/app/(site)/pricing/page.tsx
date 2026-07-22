@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { LandingPricingSection } from "@/components/landing/pricing-section";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import PricingComparisonTable from "@/components/pricing-comparison-table";
+import { PRICING_SUBHEADING } from "@/constants/landing/pricing";
 import { PRICING_PLANS } from "@/utils/constants";
 import {
   buildBreadcrumbJsonLd,
@@ -91,7 +93,7 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="flex w-full flex-col items-stretch justify-start overflow-x-clip">
+    <>
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
@@ -103,15 +105,25 @@ export default function PricingPage() {
         type="application/ld+json"
       />
 
-      <h1 className="sr-only">Pricing that scales with what you ship</h1>
+      <MarketingHeroWash
+        subtitle={PRICING_SUBHEADING}
+        title={
+          <>
+            Simple pricing that scales with what you{" "}
+            <span className="text-primary">ship</span>
+          </>
+        }
+      />
 
-      <LandingPricingSection />
+      <div className="flex w-full flex-col items-stretch justify-start overflow-x-clip">
+        <LandingPricingSection showHeader={false} />
 
-      <PricingComparisonTable />
+        <PricingComparisonTable />
 
-      <div className="pt-8 pb-24">
-        <CtaBanner />
+        <div className="pt-8 pb-24">
+          <CtaBanner />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

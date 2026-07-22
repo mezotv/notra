@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { ActivityFeed } from "@/components/activity-feed";
 import BrandVoicePreview from "@/components/brand-voice-preview";
 import { CtaBanner } from "@/components/landing/cta-banner";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import ReferencesPreview from "@/components/references-preview";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
@@ -142,7 +143,7 @@ function FeatureVisual({
 
 export default function FeaturesPage() {
   return (
-    <div className="flex w-full flex-col items-center gap-20 overflow-hidden pt-20 pb-20 antialiased [font-synthesis:none] sm:pt-24 md:pt-28 lg:gap-28 lg:pt-32 lg:pb-28">
+    <div className="flex w-full flex-col items-center gap-20 pb-20 antialiased [font-synthesis:none] lg:gap-28 lg:pb-28">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(featuresJsonLd) }}
@@ -154,18 +155,17 @@ export default function FeaturesPage() {
         type="application/ld+json"
       />
 
-      <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 lg:px-20">
-        <header className="flex flex-col items-center gap-4 pb-12 text-center md:pb-16">
-          <h1 className="text-balance font-display font-medium text-[2.25rem] text-black leading-[1.15] tracking-[-0.02em] md:text-[3.0625rem]/14 dark:text-white">
+      <MarketingHeroWash
+        subtitle="No new dashboards to babysit. Notra fits the workflow you already have."
+        title={
+          <>
             Built around how your team{" "}
             <span className="text-primary">actually ships</span>
-          </h1>
-          <p className="max-w-206.25 text-balance font-display font-medium text-[#1E1E1EBF] text-xl/7.5 tracking-[-0.01em] dark:text-white/70">
-            No new dashboards to babysit. Notra fits the workflow you already
-            have.
-          </p>
-        </header>
+          </>
+        }
+      />
 
+      <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 lg:px-20">
         <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
           {CORE_FEATURES.map((feature) => (
             <div className={CARD_SHELL_CLASS} key={feature.title}>

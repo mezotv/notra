@@ -30,6 +30,8 @@ export const FOOTER_SOCIAL_LINKS: readonly FooterSocialLink[] = [
   { label: "YouTube", href: SOCIAL_LINKS.youtube, Icon: Youtube },
   { label: "LinkedIn", href: SOCIAL_LINKS.linkedin, Icon: Linkedin },
   { label: "Discord", href: SOCIAL_LINKS.discord, Icon: Discord },
+  { label: "GitHub", href: SOCIAL_LINKS.github, Icon: Github },
+  { label: "Reddit", href: SOCIAL_LINKS.reddit, Icon: Reddit },
 ];
 
 export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
@@ -130,5 +132,4 @@ export const FOOTER_LEGAL_LINKS: readonly FooterLink[] = [
   { label: "Privacy", href: "/privacy" },
   { label: "Legal", href: "/legal" },
   { label: "Terms", href: "/terms" },
-  { label: "Subprocessors", href: "/subprocessors" },
 ];

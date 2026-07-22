@@ -82,41 +82,41 @@ export default async function ShowcaseCompanyPage({
 
   return (
     <>
-      <Link
-        className="inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
-        href="/changelog"
-      >
-        &larr; All changelogs
-      </Link>
+      <ChangelogPageHeader
+        description={
+          <>
+            Changelog entries generated from GitHub activity,
+            <br className="hidden sm:block" />
+            powered by Notra.
+          </>
+        }
+        meta={
+          <a
+            className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
+            href={`${company.url}?utm_source=usenotra.com`}
+            target="_blank"
+          >
+            {company.domain}
+            <HugeiconsIcon className="size-3.5" icon={ArrowUpRight01Icon} />
+          </a>
+        }
+        title={
+          <>
+            {company.name} <span className="text-primary">Changelog</span>
+          </>
+        }
+      />
 
-      <div className="mt-8 flex flex-col items-center">
-        <ChangelogPageHeader
-          description={
-            <>
-              Changelog entries generated from GitHub activity,
-              <br className="hidden sm:block" />
-              powered by Notra.
-            </>
-          }
-          meta={
-            <a
-              className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
-              href={`${company.url}?utm_source=usenotra.com`}
-              target="_blank"
-            >
-              {company.domain}
-              <HugeiconsIcon className="size-3.5" icon={ArrowUpRight01Icon} />
-            </a>
-          }
-          title={
-            <>
-              {company.name} <span className="text-primary">Changelog</span>
-            </>
-          }
-        />
+      <div className="mx-auto mt-8 w-full max-w-220 px-4 sm:px-6 md:px-8 lg:px-0">
+        <Link
+          className="inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
+          href="/changelog"
+        >
+          &larr; All changelogs
+        </Link>
       </div>
 
-      <div className="mt-14 w-full self-center">
+      <div className="mx-auto mt-8 w-full max-w-220 px-4 sm:px-6 md:px-8 lg:px-0">
         <ChangelogTimeline items={items} />
       </div>
     </>

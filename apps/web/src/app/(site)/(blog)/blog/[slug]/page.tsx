@@ -95,7 +95,7 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
   ]);
 
   return (
-    <>
+    <div className="mx-auto flex w-full max-w-7xl flex-col items-stretch px-4 pt-24 sm:px-6 sm:pt-28 md:px-8 md:pt-32">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD payload is server-built and script-close-escaped
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleJsonLd) }}
@@ -159,6 +159,6 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
 
         <BlogPostSidebar authors={post.authors} toc={toc} />
       </div>
-    </>
+    </div>
   );
 }

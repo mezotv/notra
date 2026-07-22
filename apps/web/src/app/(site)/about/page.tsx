@@ -10,19 +10,15 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="flex w-full flex-col items-center gap-12 pt-20 pb-20 sm:pt-24 md:gap-16 md:pt-28 md:pb-24 lg:pt-32">
+    <main className="flex w-full flex-col items-center gap-12 pb-20 md:gap-16 md:pb-24">
       <MarketingHeroWash
-        className="max-w-360"
-        innerClassName="flex flex-col items-center gap-5 px-6 py-16 text-center md:px-24 md:py-24"
-      >
-        <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
-          About <span className="text-primary">Notra</span>
-        </h1>
-        <p className="max-w-2xl text-balance font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
-          The AI content platform that turns shipped work into changelogs,
-          launch posts, and marketing assets in your team's own voice.
-        </p>
-      </MarketingHeroWash>
+        subtitle="The AI content platform that turns shipped work into changelogs, launch posts, and marketing assets in your team's own voice."
+        title={
+          <>
+            About <span className="text-primary">Notra</span>
+          </>
+        }
+      />
 
       <div className="flex w-full max-w-3xl flex-col gap-6 px-6">
         <p className="font-sans text-[#1E1E1EBF] text-base leading-8 dark:text-white/70">

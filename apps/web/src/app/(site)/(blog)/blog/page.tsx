@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BlogPostCard } from "@/components/blog-post-card";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { buildBlogCardItems, listNotraBlogPosts } from "@/utils/blog";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -36,18 +37,18 @@ export default async function BlogPage() {
   const cardItems = buildBlogCardItems(posts);
 
   return (
-    <div className="mx-auto w-full max-w-220">
-      <div className="flex w-full flex-col items-start gap-4">
-        <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.1] tracking-[-0.02em] md:text-6xl dark:text-white">
-          The Notra <span className="text-primary">Blog</span>
-        </h1>
-        <div className="text-balance font-sans text-[#1E1E1E99] text-base leading-7 dark:text-white/70">
-          Insights, guides, and stories from the Notra team.
-        </div>
-      </div>
+    <div className="flex w-full flex-col items-center gap-12 md:gap-16">
+      <MarketingHeroWash
+        subtitle="Insights, guides, and stories from the Notra team."
+        title={
+          <>
+            The Notra <span className="text-primary">Blog</span>
+          </>
+        }
+      />
 
       {cardItems.length === 0 ? (
-        <div className="mt-14 w-full">
+        <div className="w-full max-w-220 px-4 sm:px-6 md:px-0">
           <div className="rounded-3xl border border-[#1E1E1E1A] bg-[#C8B2EE26] px-6 py-16 text-center dark:border-white/10 dark:bg-white/[0.02]">
             <h2 className="font-display font-medium text-[#1E1E1E] text-xl tracking-[-0.015em] dark:text-white">
               No posts yet
@@ -58,7 +59,7 @@ export default async function BlogPage() {
           </div>
         </div>
       ) : (
-        <ul className="mt-14 grid w-full grid-cols-1 gap-6 sm:grid-cols-2">
+        <ul className="grid w-full max-w-220 grid-cols-1 gap-6 px-4 sm:grid-cols-2 sm:px-6 md:px-0">
           {cardItems.map((item) => (
             <li className="h-full" key={item.id}>
               <BlogPostCard item={item} />
