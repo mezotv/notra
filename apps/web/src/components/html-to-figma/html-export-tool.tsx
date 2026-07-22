@@ -19,7 +19,7 @@ import { copyHtmlAsFigma, copyHtmlAsPaper } from "@/lib/html-to-figma/export";
 import type { HtmlExportToolProps } from "@/types/html-to-figma";
 
 const PANEL_CLASS =
-  "h-[60vh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-background dark:border-white/10";
+  "h-[60svh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-background dark:border-white/10";
 
 export default function HtmlExportTool({ target }: HtmlExportToolProps) {
   const [html, setHtml] = useState("");
