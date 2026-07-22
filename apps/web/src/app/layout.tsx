@@ -3,6 +3,7 @@ import { Databuddy, FlagsProvider } from "@databuddy/sdk/react";
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter } from "next/font/google";
 import localFont from "next/font/local";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
 import { ConsentManager } from "../components/consent-manager";
 import { ThemeProvider } from "../components/theme-provider";
@@ -136,7 +137,9 @@ export default function RootLayout({
                 trackHashChanges={true}
               />
             )}
-            <ConsentManager>{children}</ConsentManager>
+            <ConsentManager>
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </ConsentManager>
           </FlagsProvider>
           <Toaster position="bottom-right" />
         </ThemeProvider>

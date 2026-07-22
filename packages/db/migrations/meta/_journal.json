@@ -372,6 +372,20 @@
       "when": 1784354287455,
       "tag": "0052_woozy_prowler",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1784734545122,
+      "tag": "0053_numerous_morlun",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1784734559957,
+      "tag": "0054_backfill_store_listing_slugs",
+      "breakpoints": true
     }
   ]
 }

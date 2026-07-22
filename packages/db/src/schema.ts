@@ -536,6 +536,7 @@ export const mcpServerIntegrations = pgTable(
     logoLightUrl: text("logo_light_url"),
     logoDarkUrl: text("logo_dark_url"),
     bannerUrl: text("banner_url"),
+    slug: text("slug"),
     storeSourceIntegrationId: text("store_source_integration_id"),
     storeStatus: text("store_status").default("draft").notNull(),
     reviewNote: text("review_note"),
@@ -599,6 +600,9 @@ export const mcpServerIntegrations = pgTable(
     uniqueIndex("mcpServerIntegrations_org_storeSource_uidx")
       .on(table.organizationId, table.storeSourceIntegrationId)
       .where(sql`${table.storeSourceIntegrationId} IS NOT NULL`),
+    uniqueIndex("mcpServerIntegrations_storeListing_slug_uidx")
+      .on(table.slug)
+      .where(sql`${table.resourceType} = 'store_listing'`),
     foreignKey({
       columns: [table.storeSourceIntegrationId],
       foreignColumns: [table.id],

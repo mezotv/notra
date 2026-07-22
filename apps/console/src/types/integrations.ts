@@ -50,6 +50,7 @@ export interface McpServer {
   logoLightUrl: string | null;
   logoDarkUrl: string | null;
   bannerUrl: string | null;
+  slug: string | null;
   storeStatus: StoreStatus;
   reviewNote: string | null;
   submittedAt: string | null;

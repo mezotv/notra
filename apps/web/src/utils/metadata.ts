@@ -58,6 +58,12 @@ export const PAGE_SOCIAL_IMAGES = {
     height: SOCIAL_IMAGE_HEIGHT,
     alt: "Notra OSS program social preview image",
   },
+  integrations: {
+    url: DEFAULT_SOCIAL_IMAGE.url,
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra integrations marketplace social preview image",
+  },
 } as const;
 
 export const TWITTER_HANDLE = "@usenotra";

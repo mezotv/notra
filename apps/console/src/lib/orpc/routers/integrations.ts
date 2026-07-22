@@ -64,6 +64,27 @@ function isUniqueConstraintError(error: unknown): boolean {
   return "cause" in error && isUniqueConstraintError(error.cause);
 }
 
+function getConstraintName(error: unknown): string | null {
+  if (typeof error !== "object" || error === null) {
+    return null;
+  }
+  if ("constraint" in error && typeof error.constraint === "string") {
+    return error.constraint;
+  }
+  if ("cause" in error) {
+    return getConstraintName(error.cause);
+  }
+  return null;
+}
+
+function throwUniqueConstraintConflict(error: unknown): never {
+  const constraint = getConstraintName(error);
+  if (constraint?.includes("slug")) {
+    throw conflict("This slug is already taken");
+  }
+  throw conflict("An MCP server with this name already exists");
+}
+
 export const integrationsRouter = {
   list: baseProcedure
     .input(organizationIdInputSchema)
@@ -186,6 +207,7 @@ export const integrationsRouter = {
             },
             {
               name: input.name,
+              slug: input.slug,
               url: input.url,
               description: input.description ?? null,
               author: input.author ?? null,
@@ -223,7 +245,7 @@ export const integrationsRouter = {
           return serializeMcpServerIntegration(refreshed ?? updated);
         } catch (error) {
           if (isUniqueConstraintError(error)) {
-            throw conflict("An MCP server with this name already exists");
+            throwUniqueConstraintConflict(error);
           }
           if (error instanceof PublicUrlValidationError) {
             throw badRequest(error.message);
@@ -468,6 +490,7 @@ export const integrationsRouter = {
             organizationId: input.organizationId,
             userId: access.user.id,
             name: input.name,
+            slug: input.slug,
             url: input.url,
             description: input.description ?? null,
             author: input.author ?? null,
@@ -482,7 +505,7 @@ export const integrationsRouter = {
           return serializeMcpServerIntegration(integration);
         } catch (error) {
           if (isUniqueConstraintError(error)) {
-            throw conflict("An MCP server with this name already exists");
+            throwUniqueConstraintConflict(error);
           }
           if (error instanceof PublicUrlValidationError) {
             throw badRequest(error.message);

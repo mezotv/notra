@@ -5,41 +5,42 @@ import {
   FavouriteIcon,
   Megaphone01Icon,
   PaintBoardIcon,
+  PuzzleIcon,
   QuillWrite01Icon,
   SparklesIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
 
-export type MarketingNavCard = {
+export interface MarketingNavCard {
   href: string;
   label: string;
   description: string;
   icon: IconSvgElement;
   external?: boolean;
-};
+}
 
-export type MarketingNavRailItem = {
+export interface MarketingNavRailItem {
   href: string;
   label: string;
   icon: IconSvgElement;
   external?: boolean;
-};
+}
 
-export type MarketingNavGroup = {
+export interface MarketingNavGroup {
   type: "group";
   label: string;
   cardsHeading: string;
   cards: readonly MarketingNavCard[];
   railHeading: string;
   rail: readonly MarketingNavRailItem[];
-};
+}
 
-type MarketingNavLink = {
+interface MarketingNavLink {
   type: "link";
   href: string;
   label: string;
-};
+}
 
 export type MarketingNavEntry = MarketingNavGroup | MarketingNavLink;
 
@@ -60,6 +61,12 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
         label: "Marketing Assets",
         description: "Generate assets from shipped work",
         icon: PaintBoardIcon,
+      },
+      {
+        href: "/integrations",
+        label: "Integrations",
+        description: "Connect the tools you ship with",
+        icon: PuzzleIcon,
       },
     ],
     railHeading: "Developers",

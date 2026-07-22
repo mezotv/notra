@@ -82,6 +82,7 @@ export function serializeMcpServerIntegration(
     logoLightUrl: integration.logoLightUrl ?? null,
     logoDarkUrl: integration.logoDarkUrl ?? null,
     bannerUrl: integration.bannerUrl ?? null,
+    slug: integration.slug ?? null,
     storeSourceIntegrationId: integration.storeSourceIntegrationId ?? null,
     storeStatus: getMcpStoreStatus(integration.storeStatus),
     reviewNote: integration.reviewNote ?? null,
@@ -145,6 +146,7 @@ async function createMcpServerIntegration(
       logoLightUrl: params.logoLightUrl ?? null,
       logoDarkUrl: params.logoDarkUrl ?? null,
       bannerUrl: params.bannerUrl ?? null,
+      slug: resourceType === "store_listing" ? (params.slug ?? null) : null,
       storeSourceIntegrationId:
         resourceType === "connection"
           ? (params.storeSourceIntegrationId ?? null)
@@ -335,6 +337,7 @@ async function updateMcpServerIntegration(
         ...(updates.bannerUrl !== undefined
           ? { bannerUrl: updates.bannerUrl }
           : {}),
+        ...(updates.slug !== undefined ? { slug: updates.slug } : {}),
         ...(updates.headers !== undefined
           ? { encryptedHeaders: encryptMcpHeaders(updates.headers) }
           : {}),

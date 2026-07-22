@@ -1,0 +1,2 @@
+ALTER TABLE "mcp_server_integrations" ADD COLUMN "slug" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "mcpServerIntegrations_storeListing_slug_uidx" ON "mcp_server_integrations" USING btree ("slug") WHERE "mcp_server_integrations"."resource_type" = 'store_listing';

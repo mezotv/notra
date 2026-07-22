@@ -96,6 +96,7 @@ export interface McpServerIntegrationSerializationInput {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   storeSourceIntegrationId?: string | null;
   storeStatus?: string;
   reviewNote?: string | null;
@@ -134,6 +135,7 @@ export interface CreateMcpServerIntegrationParams {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   storeSourceIntegrationId?: string | null;
   headers?: McpHeaderMap;
 }
@@ -159,6 +161,7 @@ export interface UpdateMcpServerIntegrationParams {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   headers?: McpHeaderMap;
   enabled?: boolean;
 }

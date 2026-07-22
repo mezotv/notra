@@ -49,6 +49,7 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
       {
         title: "Integrations",
         links: [
+          { label: "Marketplace", href: "/integrations" },
           {
             label: "Framer",
             href: "https://www.framer.com/marketplace/plugins/notra/",

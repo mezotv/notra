@@ -1,0 +1,5 @@
+export const STORE_TOOL_PREVIEW_LIMIT = 8;
+
+export const STORE_CACHE_REVALIDATE_SECONDS = 300;
+
+export const STORE_CACHE_CONTROL_HEADER = `public, s-maxage=${STORE_CACHE_REVALIDATE_SECONDS}, stale-while-revalidate=${STORE_CACHE_REVALIDATE_SECONDS}`;

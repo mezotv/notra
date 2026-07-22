@@ -362,11 +362,29 @@ export async function listLiveMcpStoreIntegrations() {
       brandColor: true,
       logoLightUrl: true,
       logoDarkUrl: true,
+      bannerUrl: true,
+      slug: true,
       authType: true,
       indexedToolCount: true,
     },
   });
 }
+
+const LIVE_STORE_LISTING_DETAIL_COLUMNS = {
+  id: true,
+  name: true,
+  url: true,
+  description: true,
+  author: true,
+  websiteUrl: true,
+  brandColor: true,
+  logoLightUrl: true,
+  logoDarkUrl: true,
+  bannerUrl: true,
+  slug: true,
+  authType: true,
+  indexedToolCount: true,
+} as const;
 
 export async function getLiveMcpStoreIntegrationById(integrationId: string) {
   const integration = await db.query.mcpServerIntegrations.findFirst({
@@ -376,20 +394,21 @@ export async function getLiveMcpStoreIntegrationById(integrationId: string) {
       eq(mcpServerIntegrations.storeStatus, "live"),
       eq(mcpServerIntegrations.enabled, true)
     ),
-    columns: {
-      id: true,
-      name: true,
-      url: true,
-      description: true,
-      author: true,
-      websiteUrl: true,
-      brandColor: true,
-      logoLightUrl: true,
-      logoDarkUrl: true,
-      bannerUrl: true,
-      authType: true,
-      indexedToolCount: true,
-    },
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
+  });
+
+  return integration ?? null;
+}
+
+export async function getLiveMcpStoreIntegrationBySlug(slug: string) {
+  const integration = await db.query.mcpServerIntegrations.findFirst({
+    where: and(
+      eq(mcpServerIntegrations.slug, slug),
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
   });
 
   return integration ?? null;

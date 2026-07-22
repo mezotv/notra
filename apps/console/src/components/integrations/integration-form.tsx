@@ -134,21 +134,25 @@ function IntegrationFormHeader({
 function IntegrationDetailsCard({
   author,
   description,
+  handleNameChange,
+  handleSlugChange,
+  integrationSlug,
   isSaving,
   name,
   setAuthor,
   setDescription,
-  setName,
   setWebsiteUrl,
   websiteUrl,
 }: {
   author: string;
   description: string;
+  handleNameChange: (value: string) => void;
+  handleSlugChange: (value: string) => void;
+  integrationSlug: string;
   isSaving: boolean;
   name: string;
   setAuthor: Dispatch<SetStateAction<string>>;
   setDescription: Dispatch<SetStateAction<string>>;
-  setName: Dispatch<SetStateAction<string>>;
   setWebsiteUrl: Dispatch<SetStateAction<string>>;
   websiteUrl: string;
 }) {
@@ -165,7 +169,7 @@ function IntegrationDetailsCard({
             <Input
               disabled={isSaving}
               id="integration-name"
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => handleNameChange(event.target.value)}
               placeholder="Neon"
               required
               value={name}
@@ -181,6 +185,21 @@ function IntegrationDetailsCard({
               value={author}
             />
           </div>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="integration-slug">Slug</Label>
+          <Input
+            disabled={isSaving}
+            id="integration-slug"
+            onChange={(event) => handleSlugChange(event.target.value)}
+            placeholder="neon"
+            required
+            value={integrationSlug}
+          />
+          <p className="text-muted-foreground text-xs">
+            Used in the public store URL. Lowercase letters, numbers, and
+            hyphens.
+          </p>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="integration-website">
@@ -952,11 +971,13 @@ export function IntegrationForm({
         <IntegrationDetailsCard
           author={form.author}
           description={form.description}
+          handleNameChange={form.handleNameChange}
+          handleSlugChange={form.handleSlugChange}
+          integrationSlug={form.integrationSlug}
           isSaving={form.isSaving}
           name={form.name}
           setAuthor={form.setAuthor}
           setDescription={form.setDescription}
-          setName={form.setName}
           setWebsiteUrl={form.setWebsiteUrl}
           websiteUrl={form.websiteUrl}
         />
