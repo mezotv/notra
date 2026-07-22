@@ -17,7 +17,7 @@ export function BlogPaginationCard({
   const isPrevious = direction === "previous";
   const isRight = align === "right";
   const label = isPrevious ? "Previous" : "Next";
-  const icon = isRight ? ArrowRight02Icon : ArrowLeft02Icon;
+  const icon = isPrevious ? ArrowLeft02Icon : ArrowRight02Icon;
   const containerAlignment = isRight
     ? "items-end text-right"
     : "items-start text-left";
@@ -29,16 +29,7 @@ export function BlogPaginationCard({
         className={`h-full gap-3 p-5 transition-colors hover:bg-[#C8B2EE26] hover:ring-primary/40 dark:hover:bg-white/[0.04] ${containerAlignment}`}
       >
         <span className="flex items-center gap-1 font-mono text-neutral-500 text-xs dark:text-neutral-400">
-          {isRight ? (
-            <>
-              {label}
-              <HugeiconsIcon
-                className="size-3.5 transition-transform group-hover:translate-x-0.5"
-                icon={icon}
-                strokeWidth={2}
-              />
-            </>
-          ) : (
+          {isPrevious ? (
             <>
               <HugeiconsIcon
                 className="group-hover:-translate-x-0.5 size-3.5 transition-transform"
@@ -46,6 +37,15 @@ export function BlogPaginationCard({
                 strokeWidth={2}
               />
               {label}
+            </>
+          ) : (
+            <>
+              {label}
+              <HugeiconsIcon
+                className="size-3.5 transition-transform group-hover:translate-x-0.5"
+                icon={icon}
+                strokeWidth={2}
+              />
             </>
           )}
         </span>
