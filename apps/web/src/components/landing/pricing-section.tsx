@@ -6,7 +6,7 @@ import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
-  domAnimation,
+  domMax,
   LazyMotion,
   m,
   useReducedMotion,
@@ -58,6 +58,10 @@ function PricingBillingToggle({
               <m.span
                 className="cta-gradient-primary absolute inset-0 rounded-full"
                 layoutId="pricing-billing-thumb"
+                style={{
+                  boxShadow:
+                    "0 0.0625rem 0.125rem #28282814, 0 0 0 0.0625rem #1E1E1E40",
+                }}
                 transition={
                   shouldReduceMotion
                     ? { duration: 0 }
@@ -259,7 +263,7 @@ export function LandingPricingSection({
   );
 
   return (
-    <LazyMotion features={domAnimation}>
+    <LazyMotion features={domMax}>
       <section
         className="flex w-full flex-col items-center gap-13.5 px-6 py-24"
         id="pricing"
