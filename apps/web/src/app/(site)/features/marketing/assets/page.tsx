@@ -1,11 +1,9 @@
-import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Figma } from "@notra/ui/components/ui/svgs/figma";
 import { Paper } from "@notra/ui/components/ui/svgs/paper";
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import Link from "next/link";
+import { CtaBanner } from "@/components/landing/cta-banner";
 import { HeroVideoCarousel } from "@/components/marketing-assets/hero-video-carousel";
 import { LoopVideo } from "@/components/marketing-assets/loop-video";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
@@ -18,8 +16,6 @@ import {
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-
-const CTASection = dynamic(() => import("@/components/cta-section"));
 
 const title = "Marketing Assets";
 const description =
@@ -67,14 +63,14 @@ const breadcrumbJsonLd = buildBreadcrumbJsonLd([
 
 function PasteReadyLogos() {
   return (
-    <div className="flex flex-wrap items-center gap-2 font-sans text-muted-foreground text-sm">
+    <div className="flex flex-wrap items-center gap-2 font-sans text-[#1E1E1E99] text-sm dark:text-white/60">
       <span>Paste-ready for</span>
-      <span className="inline-flex h-8 items-center gap-2 rounded-full border border-border/70 bg-muted/30 px-3 text-foreground">
+      <span className="inline-flex h-8 items-center gap-2 rounded-full border border-[#1E1E1E1A] bg-[#C8B2EE40] px-3 text-[#1E1E1E] dark:border-white/10 dark:bg-white/[0.06] dark:text-white">
         <Paper aria-hidden="true" className="size-4" />
         Paper
       </span>
       <span>or</span>
-      <span className="inline-flex h-8 items-center gap-2 rounded-full border border-border/70 bg-muted/30 px-3 text-foreground">
+      <span className="inline-flex h-8 items-center gap-2 rounded-full border border-[#1E1E1E1A] bg-[#C8B2EE40] px-3 text-[#1E1E1E] dark:border-white/10 dark:bg-white/[0.06] dark:text-white">
         <Figma aria-hidden="true" className="h-4 w-3" />
         Figma
       </span>
@@ -84,7 +80,7 @@ function PasteReadyLogos() {
 
 export default function MarketingAssetsPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+    <div className="flex w-full flex-col items-center justify-start overflow-hidden antialiased [font-synthesis:none]">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(assetsJsonLd) }}
@@ -96,38 +92,38 @@ export default function MarketingAssetsPage() {
         type="application/ld+json"
       />
 
-      <section className="w-full border-border border-b pt-14 sm:pt-16 lg:pt-18">
+      <section className="w-full pt-14 sm:pt-16 lg:pt-18">
         <div className="-translate-y-6 md:-translate-y-10 lg:-translate-y-20 mx-auto grid min-h-[calc(100svh-5rem)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 py-8 md:px-12 md:py-10 lg:grid-cols-[9fr_11fr] lg:gap-16 lg:px-16 lg:py-12">
           <div className="flex flex-col items-start gap-7">
             <div className="flex flex-col gap-5">
-              <h1 className="max-w-3xl text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-5xl lg:text-6xl">
+              <h1 className="max-w-3xl text-balance font-display font-medium text-[2.25rem] text-black leading-[1.1] tracking-[-0.02em] md:text-[2.75rem] lg:text-[3.5rem] dark:text-white">
                 {ASSET_HERO.title}
                 <span className="text-primary"> {ASSET_HERO.accent}</span>
               </h1>
-              <p className="max-w-2xl font-normal font-sans text-lg text-muted-foreground leading-8">
+              <p className="max-w-2xl font-medium font-sans text-[#1E1E1EBF] text-lg leading-8 dark:text-white/70">
                 {ASSET_HERO.description}
               </p>
             </div>
 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <TrackedSignupLink source="marketing_assets_hero_cta">
-                <Button className="corner-squircle h-12 rounded-[1rem] px-8 supports-[corner-shape:round]:rounded-[1.25rem]">
-                  <span className="flex items-center gap-2 font-medium font-sans text-base">
-                    {ASSET_HERO.primaryCta}
-                    <HugeiconsIcon className="size-4" icon={ArrowRight02Icon} />
-                  </span>
-                </Button>
-              </TrackedSignupLink>
-              <Button
-                className="corner-squircle h-12 rounded-[1rem] px-8 supports-[corner-shape:round]:rounded-[1.25rem]"
+              <CtaButton
+                nativeButton={false}
+                render={
+                  <TrackedSignupLink source="marketing_assets_hero_cta" />
+                }
+                size="lg"
+                variant="primary"
+              >
+                {ASSET_HERO.primaryCta}
+              </CtaButton>
+              <CtaButton
                 nativeButton={false}
                 render={<Link href="#generate" />}
-                variant="outline"
+                size="lg"
+                variant="light"
               >
-                <span className="font-medium font-sans text-base">
-                  {ASSET_HERO.secondaryCta}
-                </span>
-              </Button>
+                {ASSET_HERO.secondaryCta}
+              </CtaButton>
             </div>
           </div>
 
@@ -141,7 +137,7 @@ export default function MarketingAssetsPage() {
         const Heading = "h2";
         return (
           <section
-            className="w-full scroll-mt-24 border-border border-b"
+            className="w-full scroll-mt-24 border-[#1E1E1E14] border-t dark:border-white/10"
             id={section.id}
             key={section.id}
           >
@@ -149,7 +145,7 @@ export default function MarketingAssetsPage() {
               <div
                 className={`flex flex-col gap-6 ${section.mediaSide === "left" ? "lg:order-2" : ""}`}
               >
-                <Heading className="text-balance font-sans font-semibold text-3xl text-foreground leading-tight tracking-tight md:text-5xl">
+                <Heading className="text-balance font-display font-medium text-[2rem] text-black leading-[1.12] tracking-[-0.02em] md:text-[2.75rem] dark:text-white">
                   {section.headingPre}
                   <span className="text-primary">{section.headingAccent}</span>
                   {section.headingPost}
@@ -157,7 +153,7 @@ export default function MarketingAssetsPage() {
                 <div className="flex flex-col gap-4">
                   {section.paragraphs.map((paragraph) => (
                     <p
-                      className="font-normal font-sans text-base text-muted-foreground leading-7"
+                      className="font-medium font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70"
                       key={paragraph}
                     >
                       {paragraph}
@@ -178,8 +174,8 @@ export default function MarketingAssetsPage() {
         );
       })}
 
-      <section className="w-full">
-        <CTASection />
+      <section className="w-full px-6 pt-16 pb-20 lg:px-20 lg:pt-24 lg:pb-28">
+        <CtaBanner />
       </section>
     </div>
   );

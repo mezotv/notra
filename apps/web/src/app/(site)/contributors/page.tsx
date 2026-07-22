@@ -1,10 +1,11 @@
-import { Button } from "@notra/ui/components/ui/button";
+import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ContributorsContent } from "@/components/contributors/contributors-content";
 import { ContributorsPageSkeleton } from "@/components/contributors/skeleton";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
 import { GITHUB_REPO_URL } from "@/utils/github";
 import { TWITTER_HANDLE } from "@/utils/metadata";
@@ -40,37 +41,43 @@ export const metadata: Metadata = {
 export default function ContributorsPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
-      <section className="flex w-full items-center justify-center px-6 py-12 md:px-24 md:py-16">
-        <div className="flex w-full max-w-[586px] flex-col items-center gap-4">
-          <h1 className="text-balance text-center font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
-            Contributors & Community
+      <MarketingHeroWash
+        className="mb-12 md:mb-16"
+        innerClassName="flex flex-col items-center gap-6 px-6 py-16 text-center md:px-24 md:py-24"
+      >
+        <div className="flex w-full max-w-[36.625rem] flex-col items-center gap-4">
+          <h1 className="text-balance text-center font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
+            Contributors & <span className="text-primary">Community</span>
           </h1>
-          <p className="text-center font-normal font-sans text-base text-muted-foreground leading-7">
+          <p className="text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
             Meet the developers who build Notra and the sponsors who back it.
             Browse open issues, check in on pull requests, and jump in anytime.
           </p>
-          <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row">
-            <Button
-              className="h-10 overflow-hidden rounded-lg border-transparent bg-primary px-6 py-2 hover:bg-primary-hover"
-              nativeButton={false}
-              render={<TrackedSignupLink source="contributors_cta" />}
-            >
-              <span className="font-medium font-sans text-primary-foreground text-sm">
-                Try Notra for free
-              </span>
-            </Button>
-            <Link
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-card px-5 font-medium font-sans text-foreground text-sm transition-colors hover:bg-muted"
-              href={GITHUB_REPO_URL}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Github className="size-4" />
-              View on GitHub
-            </Link>
-          </div>
         </div>
-      </section>
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
+          <CtaButton
+            nativeButton={false}
+            render={<TrackedSignupLink source="contributors_cta" />}
+            variant="primary"
+          >
+            Try Notra for free
+          </CtaButton>
+          <CtaButton
+            nativeButton={false}
+            render={
+              <Link
+                href={GITHUB_REPO_URL}
+                rel="noopener noreferrer"
+                target="_blank"
+              />
+            }
+            variant="light"
+          >
+            <Github className="size-4" />
+            View on GitHub
+          </CtaButton>
+        </div>
+      </MarketingHeroWash>
 
       <Suspense fallback={<ContributorsPageSkeleton />}>
         <ContributorsContent />

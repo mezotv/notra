@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { CtaBanner } from "@/components/landing/cta-banner";
+import { LandingPricingSection } from "@/components/landing/pricing-section";
 import PricingComparisonTable from "@/components/pricing-comparison-table";
-import { PricingCards } from "@/components/pricing-section";
 import { PRICING_PLANS } from "@/utils/constants";
 import {
   buildBreadcrumbJsonLd,
@@ -90,7 +91,7 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
+    <div className="flex w-full flex-col items-stretch justify-start overflow-x-clip">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd) }}
@@ -101,27 +102,15 @@ export default function PricingPage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
         type="application/ld+json"
       />
-      <div className="flex w-full flex-col items-center justify-center gap-2">
-        <div className="flex items-center justify-center gap-6 self-stretch px-6 py-12 md:px-24 md:py-16">
-          <div className="flex w-full max-w-[586px] flex-col items-center justify-start gap-4">
-            <h1 className="self-stretch text-balance text-center font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
-              Pricing that scales with{" "}
-              <span className="text-primary">what you ship</span>
-            </h1>
 
-            <div className="self-stretch text-center font-normal font-sans text-base text-muted-foreground leading-7">
-              Start with a 3-day free trial. Upgrade when you
-              <br />
-              need more integrations, posts, or team seats.
-            </div>
-          </div>
-        </div>
+      <h1 className="sr-only">Pricing that scales with what you ship</h1>
 
-        <PricingCards />
-      </div>
+      <LandingPricingSection />
 
-      <div className="w-full border-border border-t">
-        <PricingComparisonTable />
+      <PricingComparisonTable />
+
+      <div className="pt-8 pb-24">
+        <CtaBanner />
       </div>
     </div>
   );

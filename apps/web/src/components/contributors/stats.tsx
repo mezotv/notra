@@ -3,7 +3,7 @@ import type { ContributorsStats } from "~types/github";
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-6">
-      <div className="font-sans font-semibold text-3xl text-foreground leading-tight md:text-4xl">
+      <div className="font-display font-medium text-3xl text-foreground leading-tight tracking-[-0.02em] md:text-4xl">
         {value.toLocaleString()}
       </div>
       <div className="font-medium font-sans text-muted-foreground text-sm">

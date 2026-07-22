@@ -135,7 +135,7 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
           </time>
 
           <ViewTransition name={blogPostTitleTransitionName(slug)}>
-            <h1 className="mt-6 max-w-3xl text-balance font-sans font-semibold text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+            <h1 className="mt-6 max-w-3xl text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] sm:text-5xl dark:text-white">
               {post.title}
             </h1>
           </ViewTransition>

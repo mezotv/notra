@@ -38,27 +38,27 @@ export default async function BlogPage() {
   return (
     <div className="mx-auto w-full max-w-220">
       <div className="flex w-full flex-col items-start gap-4">
-        <h1 className="text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
+        <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.1] tracking-[-0.02em] md:text-6xl dark:text-white">
           The Notra <span className="text-primary">Blog</span>
         </h1>
-        <div className="text-balance font-sans text-base text-muted-foreground leading-7">
+        <div className="text-balance font-sans text-[#1E1E1E99] text-base leading-7 dark:text-white/70">
           Insights, guides, and stories from the Notra team.
         </div>
       </div>
 
       {cardItems.length === 0 ? (
         <div className="mt-14 w-full">
-          <div className="rounded-2xl border border-border border-dashed bg-muted/30 px-6 py-12 text-center">
-            <h2 className="font-sans font-semibold text-foreground text-xl">
+          <div className="rounded-3xl border border-[#1E1E1E1A] bg-[#C8B2EE26] px-6 py-16 text-center dark:border-white/10 dark:bg-white/[0.02]">
+            <h2 className="font-display font-medium text-[#1E1E1E] text-xl tracking-[-0.015em] dark:text-white">
               No posts yet
             </h2>
-            <p className="mt-2 font-sans text-muted-foreground text-sm leading-6">
+            <p className="mt-2 font-sans text-[#1E1E1E99] text-sm leading-6 dark:text-white/60">
               We&apos;ll share new articles and insights here soon.
             </p>
           </div>
         </div>
       ) : (
-        <ul className="mt-14 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
+        <ul className="mt-14 grid w-full grid-cols-1 gap-6 sm:grid-cols-2">
           {cardItems.map((item) => (
             <li className="h-full" key={item.id}>
               <BlogPostCard item={item} />

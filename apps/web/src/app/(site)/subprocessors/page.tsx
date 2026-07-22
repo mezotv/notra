@@ -145,55 +145,55 @@ export const metadata: Metadata = {
 
 export default function SubprocessorsPage() {
   return (
-    <main className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
+    <main className="flex w-full flex-col items-center justify-start overflow-hidden border-[#1E1E1E1A] border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32 dark:border-white/10">
       <section className="flex w-full flex-col items-center justify-center">
-        <div className="flex items-center justify-center gap-6 self-stretch border-border border-b px-6 py-12 md:px-24 md:py-16">
+        <div className="flex items-center justify-center gap-6 self-stretch border-[#1E1E1E1A] border-b px-6 py-12 md:px-24 md:py-16 dark:border-white/10">
           <div className="flex w-full max-w-[680px] flex-col items-center justify-start gap-4">
-            <h1 className="self-stretch text-balance text-center font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
+            <h1 className="self-stretch text-balance text-center font-display font-medium text-4xl text-[#1E1E1E] leading-[1.1] tracking-[-0.02em] md:text-6xl dark:text-white">
               Notra <span className="text-primary">Subprocessors</span>
             </h1>
-            <p className="self-stretch text-balance text-center font-normal font-sans text-base text-muted-foreground leading-7">
+            <p className="self-stretch text-balance text-center font-normal font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70">
               Know where your data may be processed. These providers help us run
               Notra securely across hosting, authentication, billing, analytics,
               email, AI, and connected integrations.
             </p>
-            <p className="font-medium font-sans text-muted-foreground text-sm leading-6">
+            <p className="font-medium font-sans text-[#1E1E1E99] text-sm leading-6 dark:text-white/60">
               Current as of {currentAsOf}
             </p>
           </div>
         </div>
       </section>
 
-      <section className="w-full border-border border-b">
+      <section className="w-full">
         <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-12 sm:px-6 md:px-8 md:py-16 lg:px-0">
-          <div className="overflow-x-auto border-border border-y">
+          <div className="overflow-x-auto rounded-2xl border border-[#1E1E1E1A] dark:border-white/10">
             <table className="w-full min-w-[820px] border-collapse text-left">
               <caption className="sr-only">
                 Notra subprocessors, their purposes, processing locations, and
                 websites
               </caption>
               <thead>
-                <tr className="border-border border-b">
+                <tr className="border-[#1E1E1E1A] border-b bg-[#C8B2EE40] dark:border-white/10 dark:bg-primary/10">
                   <th
-                    className="px-5 py-4 font-medium font-sans text-muted-foreground text-xs uppercase tracking-wider"
+                    className="px-5 py-4 font-medium font-sans text-[#1E1E1E99] text-xs uppercase tracking-wider dark:text-white/60"
                     scope="col"
                   >
                     Name
                   </th>
                   <th
-                    className="px-5 py-4 font-medium font-sans text-muted-foreground text-xs uppercase tracking-wider"
+                    className="px-5 py-4 font-medium font-sans text-[#1E1E1E99] text-xs uppercase tracking-wider dark:text-white/60"
                     scope="col"
                   >
                     Purpose
                   </th>
                   <th
-                    className="px-5 py-4 font-medium font-sans text-muted-foreground text-xs uppercase tracking-wider"
+                    className="px-5 py-4 font-medium font-sans text-[#1E1E1E99] text-xs uppercase tracking-wider dark:text-white/60"
                     scope="col"
                   >
                     Location
                   </th>
                   <th
-                    className="px-5 py-4 font-medium font-sans text-muted-foreground text-xs uppercase tracking-wider"
+                    className="px-5 py-4 font-medium font-sans text-[#1E1E1E99] text-xs uppercase tracking-wider dark:text-white/60"
                     scope="col"
                   >
                     Website
@@ -203,19 +203,19 @@ export default function SubprocessorsPage() {
               <tbody>
                 {subprocessors.map((subprocessor) => (
                   <tr
-                    className="border-border/70 border-b last:border-b-0"
+                    className="border-[#1E1E1E0D] border-b transition-colors last:border-b-0 hover:bg-[#C8B2EE1A] dark:border-white/[0.06] dark:hover:bg-white/[0.03]"
                     key={subprocessor.name}
                   >
                     <th
-                      className="whitespace-nowrap px-5 py-4 font-medium font-sans text-foreground text-sm leading-6"
+                      className="whitespace-nowrap px-5 py-4 font-medium font-sans text-[#1E1E1E] text-sm leading-6 dark:text-white"
                       scope="row"
                     >
                       {subprocessor.name}
                     </th>
-                    <td className="px-5 py-4 font-normal font-sans text-muted-foreground text-sm leading-6">
+                    <td className="px-5 py-4 font-normal font-sans text-[#1E1E1EBF] text-sm leading-6 dark:text-white/70">
                       {subprocessor.purpose}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 font-normal font-sans text-muted-foreground text-sm leading-6">
+                    <td className="whitespace-nowrap px-5 py-4 font-normal font-sans text-[#1E1E1EBF] text-sm leading-6 dark:text-white/70">
                       {subprocessor.location}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-normal font-sans text-sm leading-6">
@@ -234,7 +234,7 @@ export default function SubprocessorsPage() {
             </table>
           </div>
 
-          <p className="mt-6 max-w-3xl text-pretty font-normal font-sans text-muted-foreground text-sm leading-6">
+          <p className="mt-6 max-w-3xl text-pretty font-normal font-sans text-[#1E1E1E99] text-sm leading-6 dark:text-white/60">
             This page is updated when we add or remove subprocessors that may
             process customer data. Provider locations can vary by product,
             configuration, and infrastructure changes; review each provider's

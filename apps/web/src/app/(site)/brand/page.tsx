@@ -1,7 +1,9 @@
-import { Button } from "@notra/ui/components/ui/button";
+import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BrandAssetCard } from "@/components/brand-asset-card";
 import { BrandColorSwatch } from "@/components/brand-color-swatch";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { NotraMark } from "@/components/notra-mark";
 import {
   BRAND_ASSETS,
@@ -57,32 +59,28 @@ export default function BrandPage() {
       />
 
       <div className="w-full max-w-5xl px-6 pt-4 pb-12 md:pb-16">
-        <div className="flex w-full flex-col items-start gap-4">
-          <h1 className="text-balance font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
+        <MarketingHeroWash innerClassName="flex w-full flex-col items-start gap-5 px-6 py-12 md:px-14 md:py-16">
+          <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
             Brand <span className="text-primary">Guidelines</span>
           </h1>
-          <div className="max-w-146.5 text-balance font-sans text-base text-muted-foreground leading-7">
+          <div className="max-w-146.5 text-balance font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
             Official assets and guidelines to help you reference the Notra
             brand, including our logo, colors and typography.
           </div>
-          <Button
-            className="corner-squircle h-10 overflow-hidden rounded-[1rem] border-transparent bg-primary px-6 py-2 shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary-hover supports-[corner-shape:round]:rounded-[1.25rem] sm:h-11 sm:px-8 sm:py-1.5 md:h-12 md:px-10 lg:px-12"
+          <CtaButton
             nativeButton={false}
-            render={
-              <a download href={BRAND_ASSETS.zip}>
-                <span className="flex flex-col justify-center font-medium font-sans text-primary-foreground text-sm leading-5 sm:text-base md:text-[0.9375rem]">
-                  Download brand assets
-                </span>
-              </a>
-            }
-          />
-        </div>
+            render={<Link download href={BRAND_ASSETS.zip} />}
+            variant="primary"
+          >
+            Download brand assets
+          </CtaButton>
+        </MarketingHeroWash>
       </div>
 
       <div className="flex w-full max-w-5xl flex-col gap-16 px-6 pb-20 md:pb-24">
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-foreground tracking-tight">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
               Logo
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -114,7 +112,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-foreground tracking-tight">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
               Wordmark
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -155,7 +153,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-foreground tracking-tight">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
               Colors
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -172,7 +170,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-foreground tracking-tight">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
               Typography
             </h2>
             <p className="text-muted-foreground text-sm leading-6">

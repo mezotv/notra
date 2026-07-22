@@ -1,6 +1,7 @@
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { OssApplicationForm } from "@/components/oss-program/oss-application-form";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -96,23 +97,26 @@ const ELIGIBILITY = [
 export default function OssProgramPage() {
   return (
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
-      <section className="flex w-full items-center justify-center px-6 py-12 md:px-24 md:py-16">
-        <div className="flex w-full max-w-[640px] flex-col items-center gap-4">
-          <h1 className="text-balance text-center font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
+      <MarketingHeroWash
+        className="mb-4"
+        innerClassName="flex flex-col items-center gap-4 px-6 py-16 text-center md:px-24 md:py-24"
+      >
+        <div className="flex w-full max-w-[40rem] flex-col items-center gap-4">
+          <h1 className="text-balance text-center font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
             Notra for <span className="text-primary">Open Source</span>
           </h1>
-          <p className="text-pretty text-center font-normal font-sans text-base text-muted-foreground leading-7">
+          <p className="text-pretty text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
             Notra is free for open source builders. Get the Pro plan at no cost
             in exchange for honest feedback, and let your shipped work do the
             marketing.
           </p>
         </div>
-      </section>
+      </MarketingHeroWash>
 
       <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
           <div className="flex flex-col gap-2">
-            <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
               What you get
             </h2>
             <p className="max-w-2xl font-normal font-sans text-muted-foreground text-sm leading-6">
@@ -120,10 +124,10 @@ export default function OssProgramPage() {
               what works and what doesn't.
             </p>
           </div>
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
+          <div className="grid gap-px overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-[#1E1E1E14] sm:grid-cols-2 dark:border-white/10 dark:bg-white/10">
             {BENEFITS.map((benefit) => (
               <div
-                className="flex flex-col gap-1.5 bg-card p-6"
+                className="flex flex-col gap-1.5 bg-[#FAF8FD] p-6 dark:bg-[#17131f]"
                 key={benefit.label}
               >
                 <div className="flex items-center gap-2.5">
@@ -170,7 +174,7 @@ export default function OssProgramPage() {
       <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
               Apply
             </h2>
             <p className="font-normal font-sans text-muted-foreground text-sm leading-6">

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 
 export const metadata: Metadata = {
   title: "About Notra",
@@ -9,10 +10,22 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6 py-28">
-      <div className="flex flex-col gap-4">
-        <h1 className="font-semibold text-4xl tracking-tight">About Notra</h1>
-        <p className="text-muted-foreground leading-7">
+    <main className="flex w-full flex-col items-center gap-12 pt-20 pb-20 sm:pt-24 md:gap-16 md:pt-28 md:pb-24 lg:pt-32">
+      <MarketingHeroWash
+        className="max-w-360"
+        innerClassName="flex flex-col items-center gap-5 px-6 py-16 text-center md:px-24 md:py-24"
+      >
+        <h1 className="text-balance font-display font-medium text-4xl text-[#1E1E1E] leading-[1.05] tracking-[-0.02em] md:text-6xl dark:text-white">
+          About <span className="text-primary">Notra</span>
+        </h1>
+        <p className="max-w-2xl text-balance font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 dark:text-white/70">
+          The AI content platform that turns shipped work into changelogs,
+          launch posts, and marketing assets in your team's own voice.
+        </p>
+      </MarketingHeroWash>
+
+      <div className="flex w-full max-w-3xl flex-col gap-6 px-6">
+        <p className="font-sans text-[#1E1E1EBF] text-base leading-8 dark:text-white/70">
           Notra is an AI content-generation platform for product and engineering
           teams. It turns shipped work into changelogs, launch posts, blog
           drafts, marketing assets, and social updates that match a team's own
@@ -20,24 +33,36 @@ export default function AboutPage() {
           lose time collecting context, asking engineers what changed, and
           rewriting rough notes into publishable updates.
         </p>
-        <p className="text-muted-foreground leading-7">
+        <p className="font-sans text-[#1E1E1EBF] text-base leading-8 dark:text-white/70">
           Notra connects to the systems where product work happens, including
           GitHub today and additional workflow tools over time. It uses those
           signals to assemble a timeline of changes, draft content from the
           facts, and preserve brand voice through reusable references and
           writing skills. Teams can review every draft before publishing.
         </p>
-        <p className="text-muted-foreground leading-7">
-          Agents can discover Notra through{" "}
-          <Link className="underline" href="/llms.txt">
-            llms.txt
-          </Link>
-          ,{" "}
-          <Link className="underline" href="/.well-known/agent.json">
-            agent.json
-          </Link>
-          , the public OpenAPI schema, and MCP documentation.
-        </p>
+
+        <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-[#1E1E1E14] bg-[#C8B2EE1F] p-6 dark:border-white/10 dark:bg-white/[0.03]">
+          <h2 className="font-display font-medium text-[#1E1E1E] text-lg tracking-[-0.01em] dark:text-white">
+            Built for agents, too
+          </h2>
+          <p className="font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70">
+            Agents can discover Notra through{" "}
+            <Link
+              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
+              href="/llms.txt"
+            >
+              llms.txt
+            </Link>
+            ,{" "}
+            <Link
+              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
+              href="/.well-known/agent.json"
+            >
+              agent.json
+            </Link>
+            , the public OpenAPI schema, and MCP documentation.
+          </p>
+        </div>
       </div>
     </main>
   );

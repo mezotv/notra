@@ -35,9 +35,15 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <>
-      <h1 className="mb-8 font-sans font-semibold text-3xl tracking-tight sm:text-4xl">
-        Terms of Service
-      </h1>
+      <header className="not-prose mb-10 border-[#1E1E1E1A] border-b pb-8 dark:border-white/10">
+        <h1 className="font-display font-medium text-4xl text-[#1E1E1E] leading-[1.1] tracking-[-0.02em] sm:text-5xl dark:text-white">
+          Terms of <span className="text-primary">Service</span>
+        </h1>
+        <p className="mt-4 font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70">
+          The terms that govern your use of Notra, the content automation
+          platform.
+        </p>
+      </header>
       <TermsContent />
     </>
   );

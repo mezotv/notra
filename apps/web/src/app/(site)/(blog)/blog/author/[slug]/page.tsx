@@ -100,7 +100,7 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
 
         <div className="flex flex-col gap-1">
           <ViewTransition name={blogAuthorNameTransitionName(author.slug)}>
-            <h1 className="font-sans font-semibold text-4xl tracking-tight">
+            <h1 className="font-display font-medium text-4xl text-[#1E1E1E] tracking-[-0.02em] dark:text-white">
               {author.name}
             </h1>
           </ViewTransition>
@@ -143,7 +143,7 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
         </h2>
 
         {cardItems.length > 0 ? (
-          <ul className="mt-6 grid w-full grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2">
+          <ul className="mt-6 grid w-full grid-cols-1 gap-6 sm:grid-cols-2">
             {cardItems.map((item) => (
               <li className="h-full" key={item.id}>
                 <BlogPostCard item={item} />

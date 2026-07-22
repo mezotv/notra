@@ -116,7 +116,7 @@ export default async function ShowcaseCompanyPage({
         />
       </div>
 
-      <div className="mt-14 w-full max-w-[720px] self-center">
+      <div className="mt-14 w-full self-center">
         <ChangelogTimeline items={items} />
       </div>
     </>

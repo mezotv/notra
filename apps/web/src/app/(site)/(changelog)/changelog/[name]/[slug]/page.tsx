@@ -123,7 +123,7 @@ export default async function ShowcaseEntryPage({
         &larr; {company.name}
       </Link>
 
-      <h1 className="font-sans font-semibold text-3xl tracking-tight sm:text-4xl">
+      <h1 className="font-display font-semibold text-3xl text-[#1E1E1E] tracking-[-0.02em] sm:text-4xl dark:text-white">
         {entry.title}
       </h1>
       <time className="mt-2 block font-sans text-foreground/40 text-sm">

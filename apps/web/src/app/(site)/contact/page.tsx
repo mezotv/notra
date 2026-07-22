@@ -1,13 +1,10 @@
-import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ContactDeveloperNote } from "@/components/contact/contact-developer-note";
 import { ContactEmail } from "@/components/contact/contact-email";
 import { ContactForm } from "@/components/contact/contact-form";
-import {
-  CONTACT_RESOURCE_LINKS,
-  CONTACT_RESPONSE_TIME,
-} from "@/constants/contact";
+import { ContactResources } from "@/components/contact/contact-resources";
+import { HeroDither } from "@/components/landing/hero-dither";
+import { CONTACT_RESPONSE_TIME } from "@/constants/contact";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
@@ -40,102 +37,26 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b pt-20 sm:pt-24 md:pt-28 lg:pt-32">
-      <section className="flex w-full items-center justify-center px-6 py-12 md:px-24 md:py-16">
-        <div className="flex w-full max-w-[640px] flex-col items-center gap-4">
-          <h1 className="text-balance text-center font-sans font-semibold text-4xl text-foreground leading-tight tracking-tight md:text-6xl">
-            We read every message.{" "}
-            <span className="text-primary">Let's talk.</span>
+    <div className="flex w-full flex-col items-center gap-8 pt-6 pb-2">
+      <section className="relative flex w-full flex-col items-center overflow-clip rounded-3xl bg-white pt-16 pb-20 antialiased sm:pt-20 lg:pt-24 dark:bg-transparent">
+        <HeroDither className="-top-14 -translate-x-1/2 pointer-events-none absolute left-1/2 h-264.5 w-403.25" />
+        <div className="relative flex flex-col items-center gap-6 px-6">
+          <h1 className="max-w-[51.25rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2.5rem] leading-[1.12] tracking-[-0.015em] sm:text-[3.25rem] lg:text-[4.25rem] dark:text-white">
+            We read every message. Let's talk.
           </h1>
-          <p className="text-pretty text-center font-normal font-sans text-base text-muted-foreground leading-7">
-            Tell us what you're working on and a real human will write back.
-            Typical response time: {CONTACT_RESPONSE_TIME}
+          <p className="max-w-[37.5rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-[1.28] tracking-[-0.005em] sm:text-xl dark:text-white/70">
+            Tell us what you're working on and a real human will write back.{" "}
+            {CONTACT_RESPONSE_TIME}
           </p>
         </div>
       </section>
 
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+      <section className="grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_32.5rem]">
+        <ContactForm />
+        <div className="flex flex-col gap-6">
           <ContactEmail />
-          <ContactForm />
-        </div>
-      </section>
-
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-          <div className="flex flex-col gap-2">
-            <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
-              Looking for something specific?
-            </h2>
-            <p className="max-w-2xl font-normal font-sans text-muted-foreground text-sm leading-6">
-              You might find a faster answer in one of these.
-            </p>
-          </div>
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2">
-            {CONTACT_RESOURCE_LINKS.map((resource) => (
-              <Link
-                className="group flex flex-col gap-1.5 bg-card p-6 transition-colors hover:bg-muted/40"
-                href={resource.href}
-                key={resource.href}
-                rel={resource.external ? "noopener noreferrer" : undefined}
-                target={resource.external ? "_blank" : undefined}
-              >
-                <div className="flex items-center gap-2.5">
-                  <HugeiconsIcon
-                    className="size-4 text-primary"
-                    icon={resource.icon}
-                    strokeWidth={2}
-                  />
-                  <h3 className="flex items-center gap-1 font-medium font-sans text-base text-foreground">
-                    {resource.label}
-                    {resource.external ? (
-                      <HugeiconsIcon
-                        className="group-hover:-translate-y-0.5 size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                        icon={ArrowUpRight01Icon}
-                        strokeWidth={2}
-                      />
-                    ) : null}
-                  </h3>
-                </div>
-                <p className="font-normal font-sans text-muted-foreground text-sm leading-6">
-                  {resource.description}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
-            For developers and AI agents
-          </h2>
-          <p className="font-normal font-sans text-muted-foreground text-sm leading-7">
-            Start with the{" "}
-            <Link
-              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
-              href="/auth.md"
-            >
-              agent authentication guide
-            </Link>
-            , the{" "}
-            <Link
-              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
-              href="/.well-known/api-catalog"
-            >
-              API catalog
-            </Link>
-            , and the scoped{" "}
-            <Link
-              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
-              href="/developers/llms.txt"
-            >
-              developer llms.txt
-            </Link>
-            . These describe API authentication, OpenAPI discovery, MCP usage,
-            sandbox reachability, and retry guidance.
-          </p>
+          <ContactResources />
+          <ContactDeveloperNote />
         </div>
       </section>
     </div>
