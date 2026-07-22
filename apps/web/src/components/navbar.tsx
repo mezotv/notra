@@ -109,7 +109,7 @@ function MegaCard({
 }) {
   const Icon = MEGA_NAV_ICONS[card.href];
   const className =
-    "flex h-52.5 w-48.5 shrink-0 cursor-pointer flex-col items-start justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10";
+    "flex h-52.5 w-48.5 shrink-0 cursor-pointer flex-col items-start justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:hover:bg-white/10";
   const body = (
     <>
       {Icon ? <Icon className="size-8 text-[#1E1E1E] dark:text-white" /> : null}
