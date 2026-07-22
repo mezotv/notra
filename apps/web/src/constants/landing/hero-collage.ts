@@ -43,7 +43,7 @@ export const HERO_COLLAGE_CONTENT_ROWS: HeroCollageContentRow[] = [
   },
   {
     id: "row-7",
-    name: "Customer story spotlight",
+    name: "Customer story: stagewise",
     type: "image",
   },
   {
