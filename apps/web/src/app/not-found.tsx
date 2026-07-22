@@ -4,7 +4,7 @@ import { Navbar } from "@/components/navbar";
 
 export default function NotFound() {
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-start bg-background">
+    <div className="relative flex min-h-dvh w-full flex-col items-center justify-start bg-background">
       <div className="relative isolate flex w-full flex-col items-stretch justify-start">
         <Navbar />
         <div className="flex min-h-[80svh] w-full flex-col items-center justify-center gap-8 px-6">

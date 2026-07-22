@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
 
-type MegaIconProps = {
+export type MegaIconProps = {
   className?: string;
 };
 
-function FeaturesIcon({ className }: MegaIconProps): ReactElement {
+export function FeaturesIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -27,7 +27,9 @@ function FeaturesIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function MarketingAssetsIcon({ className }: MegaIconProps): ReactElement {
+export function MarketingAssetsIcon({
+  className,
+}: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -47,7 +49,7 @@ function MarketingAssetsIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function McpServerIcon({ className }: MegaIconProps): ReactElement {
+export function McpServerIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -66,7 +68,7 @@ function McpServerIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function CliIcon({ className }: MegaIconProps): ReactElement {
+export function CliIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -85,7 +87,7 @@ function CliIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function BlogIcon({ className }: MegaIconProps): ReactElement {
+export function BlogIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -105,7 +107,7 @@ function BlogIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function ChangelogIcon({ className }: MegaIconProps): ReactElement {
+export function ChangelogIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -126,7 +128,7 @@ function ChangelogIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function ContributorsIcon({ className }: MegaIconProps): ReactElement {
+export function ContributorsIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -149,7 +151,7 @@ function ContributorsIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function DocsIcon({ className }: MegaIconProps): ReactElement {
+export function DocsIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -168,7 +170,7 @@ function DocsIcon({ className }: MegaIconProps): ReactElement {
   );
 }
 
-function ReviewsIcon({ className }: MegaIconProps): ReactElement {
+export function ReviewsIcon({ className }: MegaIconProps): ReactElement {
   return (
     <svg
       aria-hidden="true"
@@ -188,18 +190,3 @@ function ReviewsIcon({ className }: MegaIconProps): ReactElement {
     </svg>
   );
 }
-
-export const MEGA_NAV_ICONS: Record<
-  string,
-  (props: MegaIconProps) => ReactElement
-> = {
-  "/features": FeaturesIcon,
-  "/features/marketing/assets": MarketingAssetsIcon,
-  "https://docs.usenotra.com/devtools/mcp": McpServerIcon,
-  "https://docs.usenotra.com/devtools/cli": CliIcon,
-  "/blog": BlogIcon,
-  "/changelog/notra": ChangelogIcon,
-  "/contributors": ContributorsIcon,
-  "https://docs.usenotra.com": DocsIcon,
-  "https://www.notrareviews.com/": ReviewsIcon,
-};

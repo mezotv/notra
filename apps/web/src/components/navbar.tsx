@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MEGA_NAV_ICONS } from "@/constants/navbar-mega-icons";
 import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
 import type { NavbarProps } from "@/types/navbar";
@@ -38,7 +39,6 @@ import {
   type MarketingNavGroup,
   type MarketingNavRailItem,
 } from "@/utils/navigation";
-import { MEGA_NAV_ICONS } from "./navbar-mega-icons";
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";

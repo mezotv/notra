@@ -4,13 +4,16 @@ import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { cn } from "@notra/ui/lib/utils";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
-import {
-  PRICING_ICONS,
-  PricingGiftIcon,
-} from "@/components/landing/pricing-icons";
+import { PricingGiftIcon } from "@/components/landing/pricing-icons";
 import { PricingProShader } from "@/components/landing/pricing-pro-shader";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
 import {
@@ -21,6 +24,7 @@ import {
   PRICING_PLANS,
   PRICING_SUBHEADING,
 } from "@/constants/landing/pricing";
+import { PRICING_ICONS } from "@/constants/landing/pricing-icons";
 import type {
   BillingPeriod,
   LandingPricingSectionProps,
@@ -51,7 +55,7 @@ function PricingBillingToggle({
             type="button"
           >
             {isActive ? (
-              <motion.span
+              <m.span
                 className="cta-gradient-primary absolute inset-0 rounded-full"
                 layoutId="pricing-billing-thumb"
                 transition={
@@ -115,7 +119,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
             </h3>
             <AnimatePresence initial={false}>
               {showBadge ? (
-                <motion.span
+                <m.span
                   animate={{ y: 0, opacity: 1 }}
                   className={cn(
                     "-outline-offset-1 flex items-center gap-0.75 overflow-clip rounded-full py-1 pr-2 pl-1.25 font-medium font-sans text-[0.8125rem] leading-[1.125rem] outline [backdrop-filter:blur(0.15rem)]",
@@ -129,7 +133,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
                 >
                   <PricingGiftIcon className="size-4 shrink-0" />
                   {PRICING_ANNUAL_BADGE}
-                </motion.span>
+                </m.span>
               ) : null}
             </AnimatePresence>
           </div>
@@ -246,37 +250,39 @@ export function LandingPricingSection({
   );
 
   return (
-    <section
-      className="flex w-full flex-col items-center gap-13.5 px-6 py-24"
-      id="pricing"
-    >
-      {showHeader ? (
-        <div className="flex flex-col items-center gap-6">
-          <h2 className="max-w-[59rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.12] tracking-[-0.02em] sm:text-[2.875rem] sm:leading-13 dark:text-white">
-            {PRICING_HEADING}
-          </h2>
-          <p className="max-w-[43rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 sm:text-xl dark:text-white/70">
-            {PRICING_SUBHEADING}
-          </p>
-        </div>
-      ) : null}
+    <LazyMotion features={domAnimation}>
+      <section
+        className="flex w-full flex-col items-center gap-13.5 px-6 py-24"
+        id="pricing"
+      >
+        {showHeader ? (
+          <div className="flex flex-col items-center gap-6">
+            <h2 className="max-w-[59rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.12] tracking-[-0.02em] sm:text-[2.875rem] sm:leading-13 dark:text-white">
+              {PRICING_HEADING}
+            </h2>
+            <p className="max-w-[43rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 sm:text-xl dark:text-white/70">
+              {PRICING_SUBHEADING}
+            </p>
+          </div>
+        ) : null}
 
-      <div className="flex w-full flex-col items-center gap-6">
-        <PricingBillingToggle
-          onValueChange={setBillingPeriod}
-          value={billingPeriod}
-        />
+        <div className="flex w-full flex-col items-center gap-6">
+          <PricingBillingToggle
+            onValueChange={setBillingPeriod}
+            value={billingPeriod}
+          />
 
-        <div className="flex w-full max-w-[69rem] flex-col items-center gap-6 lg:flex-row lg:items-stretch lg:justify-center">
-          {PRICING_PLANS.map((plan) => (
-            <PricingCard
-              billingPeriod={billingPeriod}
-              key={plan.id}
-              plan={plan}
-            />
-          ))}
+          <div className="flex w-full max-w-[69rem] flex-col items-center gap-6 lg:flex-row lg:items-stretch lg:justify-center">
+            {PRICING_PLANS.map((plan) => (
+              <PricingCard
+                billingPeriod={billingPeriod}
+                key={plan.id}
+                plan={plan}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </LazyMotion>
   );
 }

@@ -6,7 +6,7 @@ export function ShowcaseOverviewGrid({ companies }: ShowcaseOverviewGridProps) {
     <div className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2">
       {companies.map((company) => (
         <Link
-          className="group flex h-full flex-col gap-3 rounded-[1.25rem] bg-white p-6 ring-1 ring-[#ECECEC] transition-shadow hover:ring-[#1E1E1E1A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:bg-white/[0.03] dark:ring-white/10"
+          className="group flex h-full flex-col gap-3 rounded-[1.25rem] bg-white p-6 ring-1 ring-[#ECECEC] transition-shadow hover:ring-[#1E1E1E1A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:transition-none dark:bg-white/[0.03] dark:ring-white/10"
           href={`/changelog/${company.slug}`}
           key={company.slug}
         >

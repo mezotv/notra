@@ -21,7 +21,7 @@ function IconBase({ children, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
-function TeamIcon(props: SVGProps<SVGSVGElement>) {
+export function TeamIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -52,7 +52,7 @@ function TeamIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function CreditsIcon(props: SVGProps<SVGSVGElement>) {
+export function CreditsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -87,7 +87,7 @@ function CreditsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function WorkflowsIcon(props: SVGProps<SVGSVGElement>) {
+export function WorkflowsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -114,7 +114,7 @@ function WorkflowsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function IntegrationsIcon(props: SVGProps<SVGSVGElement>) {
+export function IntegrationsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -133,7 +133,7 @@ function IntegrationsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function ReferencesIcon(props: SVGProps<SVGSVGElement>) {
+export function ReferencesIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -152,7 +152,7 @@ function ReferencesIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function RetentionIcon(props: SVGProps<SVGSVGElement>) {
+export function RetentionIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -183,7 +183,7 @@ function RetentionIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function SupportIcon(props: SVGProps<SVGSVGElement>) {
+export function SupportIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
       <path
@@ -226,13 +226,3 @@ export function PricingGiftIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
-export const PRICING_ICONS: Record<PricingIconKey, PricingIcon> = {
-  team: TeamIcon,
-  credits: CreditsIcon,
-  workflows: WorkflowsIcon,
-  integrations: IntegrationsIcon,
-  references: ReferencesIcon,
-  retention: RetentionIcon,
-  support: SupportIcon,
-};
