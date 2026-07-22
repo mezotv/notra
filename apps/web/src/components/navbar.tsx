@@ -368,11 +368,11 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const isLandingTop = isLanding && !chrome;
   const mutedNavClass =
     "text-[#1E1E1EA6] hover:text-[#1E1E1E] dark:text-neutral-400 dark:hover:text-white";
-  let positionClass = "sticky top-4";
+  let positionClass = "w-full sticky top-4";
   if (isLanding) {
-    positionClass = "fixed inset-x-0";
+    positionClass = "fixed inset-x-4 sm:inset-x-6";
   } else if (isStatic) {
-    positionClass = "";
+    positionClass = "w-full";
   }
   const shellAnimate = isLanding
     ? {
@@ -381,13 +381,15 @@ export function Navbar({ variant }: NavbarProps = {}) {
       }
     : { maxWidth: chrome ? "64rem" : "80rem" };
   const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";
-  const innerPaddingClass = isLandingTop ? "px-11 lg:px-0" : "px-4 sm:px-6";
+  const innerPaddingClass = isLandingTop
+    ? "px-7 sm:px-5 lg:px-0"
+    : "px-4 sm:px-6";
 
   return (
     <LazyMotion features={domAnimation} strict>
       <m.div
         animate={shellAnimate}
-        className={`z-50 mx-auto w-full ${positionClass}`}
+        className={`z-50 mx-auto ${positionClass}`}
         initial={false}
         transition={shellTransition}
       >
