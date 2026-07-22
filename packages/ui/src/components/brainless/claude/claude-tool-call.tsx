@@ -74,7 +74,7 @@ export function ClaudeToolCall({
               {result}
               {expandable ? (
                 <span className="ml-2 text-[#565f89] group-open:hidden">
-                  (ctrl+o to expand)
+                  (click to expand)
                 </span>
               ) : null}
             </span>

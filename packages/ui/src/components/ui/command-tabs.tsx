@@ -218,7 +218,7 @@ function useFloatingScrollbar(activeCommand: string | undefined) {
     return () => observer.disconnect();
   }, [measure]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = scrollRef.current;
     if (el && activeCommand !== undefined) {
       el.scrollLeft = 0;
@@ -494,8 +494,11 @@ export function CommandTabs({
           {pill && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-1.5 rounded-[calc(var(--radius-xl)-6px)] bg-primary shadow-sm transition-[left,width] duration-300 ease-out"
-              style={{ left: pill.left, width: pill.width }}
+              className="pointer-events-none absolute inset-y-1.5 left-0 rounded-[calc(var(--radius-xl)-6px)] bg-primary shadow-sm transition-[transform,width] duration-300 ease-out"
+              style={{
+                transform: `translateX(${pill.left}px)`,
+                width: pill.width,
+              }}
             />
           )}
           {items.map((item) => (

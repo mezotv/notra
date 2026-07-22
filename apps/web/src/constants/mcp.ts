@@ -2,9 +2,6 @@ import type { ClaudeTodo } from "@notra/ui/components/brainless/claude/claude-to
 import type { McpClient, McpTerminalToolCall, McpToolCard } from "@/types/mcp";
 import { MCP_URL } from "@/utils/urls";
 
-export const MCP_HERO_SUBHEAD =
-  "Twelve tools over MCP. Your agent drafts changelogs, launch posts, and social updates from the editor it already lives in.";
-
 export const MCP_CLIENTS: McpClient[] = [
   {
     id: "claude-code",
@@ -32,18 +29,26 @@ export const MCP_CLIENTS: McpClient[] = [
     label: "Hermes",
     iconSrc: "/mcp/hermes.svg",
     invertInDark: true,
-    command: `npx add-mcp ${MCP_URL}`,
+    command: `hermes mcp add notra --url ${MCP_URL}`,
   },
   {
-    id: "crush",
-    label: "Crush",
-    iconSrc: "/mcp/crush.svg",
+    id: "openclaw",
+    label: "OpenClaw",
+    iconSrc: "/mcp/openclaw.svg",
+    invertInDark: false,
+    command: `mcporter config add notra ${MCP_URL}`,
+  },
+  {
+    id: "other",
+    label: "Other",
     invertInDark: false,
     command: `npx add-mcp ${MCP_URL}`,
   },
 ];
 
-export const MCP_TOOL_CARDS: McpToolCard[] = [
+export const MCP_VISIBLE_TOOL_COUNT = 5;
+
+export const MCP_FALLBACK_TOOL_CARDS: McpToolCard[] = [
   {
     name: "list_events",
     description: "Everything your team shipped this week, in one call.",
@@ -64,9 +69,6 @@ export const MCP_TOOL_CARDS: McpToolCard[] = [
     name: "get_brand_voice",
     description: "Your tone, cadence, and vocabulary as context.",
   },
-];
-
-export const MCP_MORE_TOOL_CARDS: McpToolCard[] = [
   {
     name: "list_posts",
     description: "Browse every draft and published post in your workspace.",
@@ -97,10 +99,6 @@ export const MCP_MORE_TOOL_CARDS: McpToolCard[] = [
   },
 ];
 
-export const MCP_TOOL_COUNT_LABEL = "12 tools";
-
-export const MCP_MORE_TOOLS_LABEL = "+ 7 more tools";
-
 export const MCP_TERMINAL_TITLE = "claude — ~/acme/web";
 
 export const MCP_TERMINAL_HEADER = {
@@ -110,11 +108,10 @@ export const MCP_TERMINAL_HEADER = {
   org: "dominik@usenotra.com's Organization",
   cwd: "~/acme/web",
   tips: ["Ask Claude to draft this week's changelog"],
-  whatsNew: [
-    "notra MCP · 12 tools discovered automatically",
-    "MCP tool calls now stream progress",
-  ],
 };
+
+export const MCP_TERMINAL_WHATS_NEW_STATIC =
+  "MCP tool calls now stream progress";
 
 export const MCP_TERMINAL_USER_MESSAGE =
   "draft a changelog from this week's merged PRs and post it";

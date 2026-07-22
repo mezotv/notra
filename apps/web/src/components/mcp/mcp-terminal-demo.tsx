@@ -12,9 +12,12 @@ import {
   MCP_TERMINAL_TODOS,
   MCP_TERMINAL_TOOL_CALLS,
   MCP_TERMINAL_USER_MESSAGE,
+  MCP_TERMINAL_WHATS_NEW_STATIC,
 } from "@/constants/mcp";
+import type { McpTerminalDemoProps } from "@/types/mcp";
+import { formatMcpWhatsNewDiscovery } from "@/utils/mcp";
 
-export function McpTerminalDemo() {
+export function McpTerminalDemo({ toolCount }: McpTerminalDemoProps) {
   return (
     <div className="flex w-full flex-col overflow-clip rounded-[1.25rem] bg-[#1E1E1E] [box-shadow:#28282833_0rem_1.5rem_3.5rem_-1rem]">
       <div className="flex items-center gap-3 bg-[#282828] px-4.5 py-3">
@@ -35,7 +38,10 @@ export function McpTerminalDemo() {
           tips={MCP_TERMINAL_HEADER.tips}
           user={MCP_TERMINAL_HEADER.user}
           version={MCP_TERMINAL_HEADER.version}
-          whatsNew={MCP_TERMINAL_HEADER.whatsNew}
+          whatsNew={[
+            formatMcpWhatsNewDiscovery(toolCount),
+            MCP_TERMINAL_WHATS_NEW_STATIC,
+          ]}
         />
         <ClaudeMessage className="mt-1 rounded-sm px-2.5 py-1.5" from="user">
           {MCP_TERMINAL_USER_MESSAGE}

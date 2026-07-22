@@ -83,6 +83,7 @@ export function ClaudePrompt({
   effort = "xhigh",
   className,
   inputClassName,
+  ref,
 }: {
   value?: string;
   defaultValue?: string;
@@ -93,6 +94,7 @@ export function ClaudePrompt({
   effort?: ClaudeEffort | false;
   className?: string;
   inputClassName?: string;
+  ref?: React.Ref<HTMLInputElement>;
 }) {
   const m = MODES[mode];
   const e = effort === false ? null : EFFORTS[effort];
@@ -136,6 +138,7 @@ export function ClaudePrompt({
           aria-label="Prompt"
           onKeyDown={onKeyDown}
           placeholder={placeholder}
+          ref={ref}
           type="text"
           {...(controlled ? { value, onChange } : { defaultValue, onChange })}
           className={cn(

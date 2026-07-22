@@ -1,8 +1,8 @@
 import { HeroDither } from "@/components/landing/hero-dither";
 import { McpCommandTabs } from "@/components/mcp/mcp-command-tabs";
-import { MCP_HERO_SUBHEAD } from "@/constants/mcp";
+import type { McpHeroProps } from "@/types/mcp";
 
-export function McpHero() {
+export function McpHero({ subhead }: McpHeroProps) {
   return (
     <section className="w-full px-6 pt-6 antialiased [font-synthesis:none]">
       <div className="relative isolate overflow-clip rounded-3xl bg-[#EFEAFA] dark:bg-[#2a2140]">
@@ -16,7 +16,7 @@ export function McpHero() {
               Notra, for your <span className="text-primary">agent</span>.
             </h1>
             <p className="max-w-[38.75rem] text-center font-medium font-sans text-[#1E1E1EBF] text-[1.0625rem] leading-[1.42] tracking-[-0.005em] sm:text-[1.1875rem] dark:text-white/70">
-              {MCP_HERO_SUBHEAD}
+              {subhead}
             </p>
           </div>
           <McpCommandTabs className="max-w-[45rem]" />

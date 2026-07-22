@@ -44,7 +44,7 @@ export function ClaudeTodoList({
         }
 
         return (
-          <li className="whitespace-pre" key={t.label}>
+          <li className="whitespace-pre" key={`${t.label}-${t.status}`}>
             <span aria-hidden style={{ color: DIM }}>
               {i === 0 ? "  ⎿ " : "    "}
             </span>

@@ -1,7 +1,7 @@
 export interface McpClient {
-  id: "claude-code" | "codex" | "cursor" | "hermes" | "crush";
+  id: "claude-code" | "codex" | "cursor" | "hermes" | "openclaw" | "other";
   label: string;
-  iconSrc: string;
+  iconSrc?: string;
   invertInDark: boolean;
   command: string;
 }
@@ -19,4 +19,25 @@ export interface McpTerminalToolCall {
 
 export interface McpCommandTabsProps {
   className?: string;
+}
+
+export interface McpHeroProps {
+  subhead: string;
+}
+
+export interface McpTerminalDemoProps {
+  toolCount: number;
+}
+
+export interface McpToolsGridProps {
+  tools: McpToolCard[];
+}
+
+export interface McpJsonRpcToolsListResponse {
+  result?: {
+    tools?: {
+      name?: string;
+      description?: string;
+    }[];
+  };
 }

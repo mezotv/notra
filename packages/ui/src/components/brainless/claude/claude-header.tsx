@@ -87,16 +87,19 @@ export function ClaudeHeader({
   className?: string;
 }) {
   return (
-    <fieldset
+    <div
       className={cn(
-        "min-w-0 rounded-[6px] border px-3 pt-1 pb-3.5 font-mono text-[#c0caf5] text-[13px] leading-[1.5] sm:px-4",
+        "relative min-w-0 rounded-[6px] border px-3 pt-4 pb-3.5 font-mono text-[#c0caf5] text-[13px] leading-[1.5] sm:px-4",
         className
       )}
       style={{ borderColor: ROSE }}
     >
-      <legend className="max-w-full truncate px-2" style={{ color: ROSE }}>
+      <div
+        className="-top-2.5 absolute left-3 max-w-[calc(100%-1.5rem)] truncate bg-[#1E1E1E] px-2"
+        style={{ color: ROSE }}
+      >
         Claude Code <span style={{ color: GRAY }}>{version}</span>
-      </legend>
+      </div>
 
       <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_1px_minmax(0,1.1fr)]">
         <div className="flex min-w-0 flex-col items-center gap-2 py-1 text-center">
@@ -141,6 +144,6 @@ export function ClaudeHeader({
           </div>
         </div>
       </div>
-    </fieldset>
+    </div>
   );
 }
