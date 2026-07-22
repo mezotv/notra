@@ -382,7 +382,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
     : { maxWidth: chrome ? "64rem" : "80rem" };
   const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";
   const innerPaddingClass = isLandingTop
-    ? "px-7 sm:px-5 lg:px-0"
+    ? "px-7 sm:px-5 lg:px-6 min-[87rem]:px-0"
     : "px-4 sm:px-6";
 
   return (
