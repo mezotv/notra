@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { STORE_CACHE_CONTROL_HEADER } from "@/constants/store";
 import { listPublicStoreIntegrations } from "@/lib/store/public-integrations";
 
-export const revalidate = 300;
-
 export async function GET() {
   try {
     const integrations = await listPublicStoreIntegrations();

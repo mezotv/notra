@@ -31,7 +31,7 @@ export const FALLBACK_INTEGRATIONS: Integration[] = [
     logoDarkUrl: `${R2_ASSET_PREFIX}/organization/Z2zWjF9rtxltZopse25PQlGLyjIMspkP/integration-branding/logo-dark-6f8c0ac4-8a8b-499d-9114-b0ddcf876728.svg`,
     bannerUrl: `${R2_ASSET_PREFIX}/organization/Z2zWjF9rtxltZopse25PQlGLyjIMspkP/integration-branding/banner-8e004074-d488-49f8-827d-9a1492faaaad.png`,
     slug: "brew",
-    category: "Productivity",
+    category: "Marketing",
     featuredAt: "2026-01-01T00:00:00.000Z",
     authType: "oauth",
     indexedToolCount: 67,

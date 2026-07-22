@@ -1,0 +1,2 @@
+ALTER TABLE "mcp_server_integrations" DROP CONSTRAINT "mcpServerIntegrations_category_check";--> statement-breakpoint
+ALTER TABLE "mcp_server_integrations" ADD CONSTRAINT "mcpServerIntegrations_category_check" CHECK ("mcp_server_integrations"."category" IS NULL OR "mcp_server_integrations"."category" IN ('AI', 'Source control', 'Project management', 'Communication', 'Design', 'Notes', 'Deploys', 'Productivity', 'Marketing', 'Publishing'));

@@ -7,6 +7,8 @@ export const MCP_STORE_CATEGORIES = [
   "Notes",
   "Deploys",
   "Productivity",
+  "Marketing",
+  "Publishing",
 ] as const;
 
 export type McpStoreCategory = (typeof MCP_STORE_CATEGORIES)[number];

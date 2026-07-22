@@ -83,7 +83,7 @@ function CurationRow({ listing }: CurationRowProps) {
   const isBusy = categoryMutation.isPending || featuredMutation.isPending;
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         <CurationLogo listing={listing} />
         <div className="flex min-w-0 flex-col">
@@ -95,7 +95,7 @@ function CurationRow({ listing }: CurationRowProps) {
           ) : null}
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-4">
         <Select
           onValueChange={(next) => {
             const category =
@@ -107,7 +107,7 @@ function CurationRow({ listing }: CurationRowProps) {
           }}
           value={listing.category ?? NONE_CATEGORY_VALUE}
         >
-          <SelectTrigger className="w-52" disabled={isBusy}>
+          <SelectTrigger className="w-48" disabled={isBusy}>
             <SelectValue placeholder="No category" />
           </SelectTrigger>
           <SelectContent>
@@ -139,7 +139,7 @@ export function CurationClient() {
   const listingsQuery = useQuery(consoleOrpc.review.listings.queryOptions({}));
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-6 lg:px-6">
       <div className="flex flex-col gap-1">
         <h2 className="font-semibold text-lg">Marketplace curation</h2>
         <p className="text-muted-foreground text-sm">

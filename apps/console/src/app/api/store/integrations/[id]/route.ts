@@ -3,8 +3,6 @@ import { STORE_CACHE_CONTROL_HEADER } from "@/constants/store";
 import { getPublicStoreIntegration } from "@/lib/store/public-integrations";
 import { storeIntegrationIdParamSchema } from "@/schemas/store";
 
-export const revalidate = 300;
-
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }

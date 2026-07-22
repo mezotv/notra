@@ -575,7 +575,7 @@ export const mcpServerIntegrations = pgTable(
     ),
     check(
       "mcpServerIntegrations_category_check",
-      sql`${table.category} IS NULL OR ${table.category} IN ('AI', 'Source control', 'Project management', 'Communication', 'Design', 'Notes', 'Deploys', 'Productivity')`
+      sql`${table.category} IS NULL OR ${table.category} IN ('AI', 'Source control', 'Project management', 'Communication', 'Design', 'Notes', 'Deploys', 'Productivity', 'Marketing', 'Publishing')`
     ),
     check(
       "mcpServerIntegrations_resourceState_check",
