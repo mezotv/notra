@@ -83,12 +83,12 @@ export async function fetchMcpTools(): Promise<McpToolCard[] | null> {
       return null;
     }
 
-    const tools = (list.body.result?.tools ?? [])
-      .filter((tool) => typeof tool.name === "string" && tool.name.length > 0)
-      .map((tool) => ({
-        name: tool.name ?? "",
-        description: tool.description ?? "",
-      }));
+    const tools: McpToolCard[] = [];
+    for (const tool of list.body.result?.tools ?? []) {
+      if (typeof tool.name === "string" && tool.name.length > 0) {
+        tools.push({ name: tool.name, description: tool.description ?? "" });
+      }
+    }
 
     return tools.length > 0 ? tools : null;
   } catch {

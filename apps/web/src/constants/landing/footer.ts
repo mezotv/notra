@@ -80,8 +80,7 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
           },
           {
             label: "MCP Server",
-            href: "https://docs.usenotra.com/devtools/mcp",
-            external: true,
+            href: "/mcp",
           },
         ],
       },

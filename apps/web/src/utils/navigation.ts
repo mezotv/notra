@@ -65,10 +65,9 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
     railHeading: "Developers",
     rail: [
       {
-        href: "https://docs.usenotra.com/devtools/mcp",
+        href: "/mcp",
         label: "MCP Server",
         icon: AiBrain01Icon,
-        external: true,
       },
       {
         href: "https://docs.usenotra.com/devtools/cli",

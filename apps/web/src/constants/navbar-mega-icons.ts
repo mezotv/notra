@@ -18,7 +18,7 @@ export const MEGA_NAV_ICONS: Record<
 > = {
   "/features": FeaturesIcon,
   "/features/marketing/assets": MarketingAssetsIcon,
-  "https://docs.usenotra.com/devtools/mcp": McpServerIcon,
+  "/mcp": McpServerIcon,
   "https://docs.usenotra.com/devtools/cli": CliIcon,
   "/blog": BlogIcon,
   "/changelog/notra": ChangelogIcon,
