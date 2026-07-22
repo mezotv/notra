@@ -43,7 +43,7 @@ function PricingBillingToggle({
           <button
             aria-pressed={isActive}
             className={cn(
-              "relative flex h-8 items-center justify-center rounded-full px-3.5 py-1.75 font-sans text-base leading-6 tracking-[-0.01em]",
+              "relative flex h-8 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.75 font-sans text-base leading-6 tracking-[-0.01em]",
               isActive ? "text-white" : "text-[#1E1E1E] dark:text-white"
             )}
             key={option.value}
