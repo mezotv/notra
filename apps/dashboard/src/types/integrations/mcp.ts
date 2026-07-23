@@ -71,6 +71,7 @@ export interface AddMcpServerDialogProps {
 
 export interface McpStoreIntegration {
   id: string;
+  slug: string | null;
   name: string;
   url: string;
   description: string | null;
@@ -91,6 +92,20 @@ export interface ConnectedMcpStoreIntegration extends McpStoreIntegration {
 
 export interface StoreIntegrationsSectionProps {
   organizationId: string;
+  organizationSlug: string;
+  connectSlug?: string;
+}
+
+export interface StoreIntegrationLogoProps {
+  integration: McpStoreIntegration;
+}
+
+export interface ConnectStoreIntegrationDialogProps {
+  connecting: boolean;
+  integration: McpStoreIntegration;
+  onConnect: () => void;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
 export interface ManageStoreIntegrationDialogProps {

@@ -50,6 +50,12 @@ export interface IntegrationCardProps {
   integration: Integration;
 }
 
+export interface IntegrationConnectButtonProps {
+  integration: Integration;
+  className?: string;
+  label?: string;
+}
+
 export interface FeaturedIntegrationCardProps {
   integration: Integration;
 }

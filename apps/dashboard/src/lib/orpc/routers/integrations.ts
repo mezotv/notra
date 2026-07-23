@@ -1155,6 +1155,7 @@ export const integrationsRouter = {
             );
             return {
               id: integration.id,
+              slug: integration.slug,
               name: integration.name,
               url: integration.url,
               description: integration.description,

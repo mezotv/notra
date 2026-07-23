@@ -71,7 +71,10 @@ function ModalBody({ integration }: IntegrationModalProps) {
             tail={buildQuickViewMetaTail(integration)}
           />
         </div>
-        <IntegrationConnectButton className="px-6 py-2.5 text-[0.875rem] leading-[1.29]" />
+        <IntegrationConnectButton
+          className="px-6 py-2.5 text-[0.875rem] leading-[1.29]"
+          integration={integration}
+        />
       </div>
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto pb-6">
         {integration.description ? (

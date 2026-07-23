@@ -1,15 +1,14 @@
 import { cn } from "@notra/ui/lib/utils";
-import { INTEGRATIONS_CONNECT_URL } from "@/constants/integrations";
+import { getIntegrationConnectUrl } from "@/lib/integrations/helpers";
+import type { IntegrationConnectButtonProps } from "@/types/integrations";
 
 const PRIMARY_CLASSNAME = "cta-gradient-primary-flat text-white";
 
 export function IntegrationConnectButton({
+  integration,
   className,
   label = "Connect",
-}: {
-  className?: string;
-  label?: string;
-}) {
+}: IntegrationConnectButtonProps) {
   return (
     <a
       className={cn(
@@ -17,7 +16,7 @@ export function IntegrationConnectButton({
         PRIMARY_CLASSNAME,
         className
       )}
-      href={INTEGRATIONS_CONNECT_URL}
+      href={getIntegrationConnectUrl(integration)}
     >
       {label}
     </a>

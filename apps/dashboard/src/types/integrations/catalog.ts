@@ -11,3 +11,8 @@ export interface IntegrationConfig {
   category: "input" | "output" | "extension";
   connectLabel?: string;
 }
+
+export interface IntegrationsPageClientProps {
+  organizationSlug: string;
+  connectSlug?: string;
+}

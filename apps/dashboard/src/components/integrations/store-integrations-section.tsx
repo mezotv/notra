@@ -7,12 +7,15 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dialog";
+import { ConnectStoreIntegrationDialog } from "@/components/integrations/connect-store-integration-dialog";
 import { ManageStoreIntegrationDialog } from "@/components/integrations/manage-store-integration-dialog";
+import { StoreIntegrationLogo } from "@/components/integrations/store-integration-logo";
+import { buildOrganizationIntegrationsPath } from "@/lib/integrations/deeplink";
 import {
   MCP_ACCENT_COLOR,
   toMcpFormAuthType,
@@ -24,51 +27,21 @@ import type {
   StoreIntegrationsSectionProps,
 } from "@/types/integrations/mcp";
 
-function StoreIntegrationLogo({
-  integration,
-}: {
-  integration: McpStoreIntegration;
-}) {
-  const lightLogo = integration.logoLightUrl ?? integration.logoDarkUrl;
-  const darkLogo = integration.logoDarkUrl ?? integration.logoLightUrl;
-
-  if (lightLogo && darkLogo) {
-    return (
-      <>
-        <Image
-          alt={`${integration.name} logo`}
-          className="size-6 rounded object-contain dark:hidden"
-          height={24}
-          src={lightLogo}
-          width={24}
-        />
-        <Image
-          alt={`${integration.name} logo`}
-          className="hidden size-6 rounded object-contain dark:block"
-          height={24}
-          src={darkLogo}
-          width={24}
-        />
-      </>
-    );
-  }
-
-  return (
-    <span className="flex size-6 items-center justify-center rounded bg-muted font-medium text-muted-foreground text-xs">
-      {integration.name.trim().slice(0, 2).toUpperCase() || "?"}
-    </span>
-  );
-}
-
 export function StoreIntegrationsSection({
   organizationId,
+  organizationSlug,
+  connectSlug,
 }: StoreIntegrationsSectionProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [connectingIntegration, setConnectingIntegration] =
+    useState<McpStoreIntegration | null>(null);
+  const [confirmingIntegration, setConfirmingIntegration] =
     useState<McpStoreIntegration | null>(null);
   const [managingIntegrationId, setManagingIntegrationId] = useState<
     string | null
   >(null);
+  const connectDeeplinkHandledRef = useRef(false);
 
   const { data, isPending } = useQuery(
     dashboardOrpc.integrations.mcp.storeList.queryOptions({
@@ -90,6 +63,14 @@ export function StoreIntegrationsSection({
     });
   };
 
+  const clearConnectDeeplink = () => {
+    if (connectSlug) {
+      router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
+        scroll: false,
+      });
+    }
+  };
+
   const connectPublicMutation = useMutation({
     mutationFn: async (integration: McpStoreIntegration) =>
       dashboardOrpc.integrations.mcp.create.call({
@@ -103,6 +84,8 @@ export function StoreIntegrationsSection({
       }),
     onSuccess: () => {
       invalidateIntegrations();
+      setConfirmingIntegration(null);
+      clearConnectDeeplink();
       toast.success("Integration connected");
     },
     onError: (error) => {
@@ -118,7 +101,7 @@ export function StoreIntegrationsSection({
         name: integration.name,
         url: integration.url,
         description: integration.description,
-        callbackPath: window.location.pathname,
+        callbackPath: buildOrganizationIntegrationsPath(organizationSlug),
       }),
     onError: (error) => {
       toast.error(error.message);
@@ -135,8 +118,11 @@ export function StoreIntegrationsSection({
       const oauthPopup = openMcpOAuthPopup();
       beginOAuthMutation.mutate(integration, {
         onError: () => oauthPopup.close(),
-        onSuccess: ({ authorizationUrl }) =>
-          oauthPopup.navigate(authorizationUrl),
+        onSuccess: ({ authorizationUrl }) => {
+          oauthPopup.navigate(authorizationUrl);
+          setConfirmingIntegration(null);
+          clearConnectDeeplink();
+        },
       });
       return;
     }
@@ -149,7 +135,45 @@ export function StoreIntegrationsSection({
     (integration) => integration.id === managingIntegrationId
   );
 
-  if (!isPending && integrations.length === 0) {
+  useEffect(() => {
+    if (!connectSlug || isPending || connectDeeplinkHandledRef.current) {
+      return;
+    }
+    connectDeeplinkHandledRef.current = true;
+
+    const match = integrations.find(
+      (integration) =>
+        integration.slug === connectSlug || integration.id === connectSlug
+    );
+
+    if (!match) {
+      toast.error("This integration is no longer available in the store");
+      router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
+        scroll: false,
+      });
+      return;
+    }
+
+    if (match.connected) {
+      setManagingIntegrationId(match.id);
+      return;
+    }
+
+    if (match.authType === "headers") {
+      setConnectingIntegration(match);
+      return;
+    }
+
+    setConfirmingIntegration(match);
+  }, [connectSlug, isPending, integrations, organizationSlug, router]);
+
+  const isConnectPending = (integration: McpStoreIntegration) =>
+    (connectPublicMutation.isPending &&
+      connectPublicMutation.variables?.id === integration.id) ||
+    (beginOAuthMutation.isPending &&
+      beginOAuthMutation.variables?.id === integration.id);
+
+  if (!(isPending || connectSlug) && integrations.length === 0) {
     return null;
   }
 
@@ -193,21 +217,12 @@ export function StoreIntegrationsSection({
                   </div>
                 ) : (
                   <Button
-                    disabled={
-                      (connectPublicMutation.isPending &&
-                        connectPublicMutation.variables?.id ===
-                          integration.id) ||
-                      (beginOAuthMutation.isPending &&
-                        beginOAuthMutation.variables?.id === integration.id)
-                    }
+                    disabled={isConnectPending(integration)}
                     onClick={() => connectIntegration(integration)}
                     size="sm"
                     variant="outline"
                   >
-                    {(connectPublicMutation.isPending &&
-                      connectPublicMutation.variables?.id === integration.id) ||
-                    (beginOAuthMutation.isPending &&
-                      beginOAuthMutation.variables?.id === integration.id)
+                    {isConnectPending(integration)
                       ? "Connecting..."
                       : "Connect"}
                   </Button>
@@ -249,6 +264,22 @@ export function StoreIntegrationsSection({
         </div>
       )}
 
+      {confirmingIntegration ? (
+        <ConnectStoreIntegrationDialog
+          connecting={isConnectPending(confirmingIntegration)}
+          integration={confirmingIntegration}
+          key={confirmingIntegration.id}
+          onConnect={() => connectIntegration(confirmingIntegration)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setConfirmingIntegration(null);
+              clearConnectDeeplink();
+            }
+          }}
+          open
+        />
+      ) : null}
+
       {connectingIntegration ? (
         <AddMcpServerDialog
           initialValues={{
@@ -263,6 +294,7 @@ export function StoreIntegrationsSection({
           onOpenChange={(open) => {
             if (!open) {
               setConnectingIntegration(null);
+              clearConnectDeeplink();
             }
           }}
           onSuccess={() => {
@@ -285,10 +317,14 @@ export function StoreIntegrationsSection({
             connection: managingIntegration.connection,
           }}
           key={managingIntegration.connection.id}
-          onDisconnected={() => setManagingIntegrationId(null)}
+          onDisconnected={() => {
+            setManagingIntegrationId(null);
+            clearConnectDeeplink();
+          }}
           onOpenChange={(open) => {
             if (!open) {
               setManagingIntegrationId(null);
+              clearConnectDeeplink();
             }
           }}
           open
