@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 import { startGitHubInstall } from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -15,6 +16,9 @@ export function GitHubIntegrationDialog({
   onOpenChange,
 }: GitHubIntegrationDialogProps) {
   const queryClient = useQueryClient();
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+    null
+  );
 
   const githubAppQuery = useQuery(
     dashboardOrpc.github.app.get.queryOptions({
@@ -25,9 +29,20 @@ export function GitHubIntegrationDialog({
   );
 
   const data = githubAppQuery.data;
-  const isConnected = Boolean(data?.account);
+  const accounts = data?.accounts ?? [];
+  const isConnected = accounts.length > 0;
   const repositories = data?.repositories ? [...data.repositories] : [];
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
+  const dialogAccountId = selectedAccountId ?? accounts[0]?.id;
+  const dialogAccount = accounts.find(
+    (account) => account.id === dialogAccountId
+  );
+  const dialogRepositories = dialogAccount
+    ? repositories.filter(
+        (repository) =>
+          repository.owner.toLowerCase() === dialogAccount.login.toLowerCase()
+      )
+    : repositories;
 
   const invalidateGithubApp = () =>
     queryClient.invalidateQueries({
@@ -65,10 +80,10 @@ export function GitHubIntegrationDialog({
     }
   };
 
-  if (isConnected && data?.account) {
+  if (isConnected) {
     return (
       <SelectRepositoriesDialog
-        accounts={[data.account]}
+        accounts={accounts}
         initialSelected={selectedRepositoryIds}
         isLoading={githubAppQuery.isLoading}
         isSaving={saveRepositoriesMutation.isPending}
@@ -77,9 +92,10 @@ export function GitHubIntegrationDialog({
         onSave={(repositoryIds) =>
           saveRepositoriesMutation.mutate(repositoryIds)
         }
+        onSelectAccount={setSelectedAccountId}
         open={open}
-        repositories={repositories}
-        selectedAccountId={data.account.id}
+        repositories={dialogRepositories}
+        selectedAccountId={dialogAccountId}
       />
     );
   }

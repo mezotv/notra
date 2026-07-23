@@ -693,15 +693,22 @@ export async function getGitHubAppInstallationByOrganization(
   });
 }
 
-export async function listGitHubAppRepositories(organizationId: string) {
-  const installation =
-    await getGitHubAppInstallationByOrganization(organizationId);
+export async function listGitHubAppInstallationsByOrganization(
+  organizationId: string
+) {
+  return db.query.githubAppInstallations.findMany({
+    where: and(
+      eq(githubAppInstallations.organizationId, organizationId),
+      eq(githubAppInstallations.enabled, true)
+    ),
+  });
+}
 
-  if (!installation) {
-    return [];
-  }
-
-  const cacheKey = `github_app_repositories:${organizationId}:${installation.installationId}`;
+async function listRepositoriesForInstallation(installation: {
+  organizationId: string;
+  installationId: string;
+}) {
+  const cacheKey = `github_app_repositories:${installation.organizationId}:${installation.installationId}`;
   if (redis) {
     const cached = await redis.get(cacheKey);
     const decodedCached = await Effect.runPromise(
@@ -763,14 +770,45 @@ export async function listGitHubAppRepositories(organizationId: string) {
   return mappedRepositories;
 }
 
+export async function listGitHubAppRepositories(organizationId: string) {
+  const installations =
+    await listGitHubAppInstallationsByOrganization(organizationId);
+
+  if (installations.length === 0) {
+    return [];
+  }
+
+  const repositoryLists = await Promise.all(
+    installations.map((installation) =>
+      listRepositoriesForInstallation(installation)
+    )
+  );
+
+  const repositoriesById = new Map<string, GitHubAppRepository>();
+  for (const repositories of repositoryLists) {
+    for (const repository of repositories) {
+      repositoriesById.set(repository.id, repository);
+    }
+  }
+
+  return [...repositoriesById.values()];
+}
+
 export async function getSelectedGitHubAppRepositoryIds(
   organizationId: string,
-  githubAppInstallationId: string
+  githubAppInstallationIds: string[]
 ) {
+  if (githubAppInstallationIds.length === 0) {
+    return [];
+  }
+
   const selected = await db.query.githubIntegrations.findMany({
     where: and(
       eq(githubIntegrations.organizationId, organizationId),
-      eq(githubIntegrations.githubAppInstallationId, githubAppInstallationId),
+      inArray(
+        githubIntegrations.githubAppInstallationId,
+        githubAppInstallationIds
+      ),
       eq(githubIntegrations.enabled, true)
     ),
     columns: {
@@ -788,16 +826,30 @@ export async function setSelectedGitHubAppRepositories(params: {
   userId: string;
   repositoryIds: string[];
 }) {
-  const installation = await getGitHubAppInstallationByOrganization(
+  const installations = await listGitHubAppInstallationsByOrganization(
     params.organizationId
   );
 
-  if (!installation) {
+  if (installations.length === 0) {
     throw new Error("GitHub App installation not found");
   }
 
-  const repositories = await listGitHubAppRepositories(params.organizationId);
-  const repositoryById = new Map(repositories.map((repo) => [repo.id, repo]));
+  const repositoryLists = await Promise.all(
+    installations.map(async (installation) => ({
+      installation,
+      repositories: await listRepositoriesForInstallation(installation),
+    }))
+  );
+
+  const repositoryById = new Map<string, GitHubAppRepository>();
+  const installationRecordIdByRepositoryId = new Map<string, string>();
+  for (const { installation, repositories } of repositoryLists) {
+    for (const repository of repositories) {
+      repositoryById.set(repository.id, repository);
+      installationRecordIdByRepositoryId.set(repository.id, installation.id);
+    }
+  }
+
   const selectedRepositories = params.repositoryIds.map((repositoryId) => {
     const repository = repositoryById.get(repositoryId);
     if (!repository) {
@@ -811,7 +863,10 @@ export async function setSelectedGitHubAppRepositories(params: {
   const existing = await db.query.githubIntegrations.findMany({
     where: and(
       eq(githubIntegrations.organizationId, params.organizationId),
-      eq(githubIntegrations.githubAppInstallationId, installation.id)
+      inArray(
+        githubIntegrations.githubAppInstallationId,
+        installations.map((installation) => installation.id)
+      )
     ),
     columns: {
       id: true,
@@ -882,6 +937,15 @@ export async function setSelectedGitHubAppRepositories(params: {
     }
 
     const webhookSecret = generateWebhookSecret();
+    const owningInstallationRecordId = installationRecordIdByRepositoryId.get(
+      repository.id
+    );
+    if (!owningInstallationRecordId) {
+      throw new Error(
+        "Selected repository is not available to this installation"
+      );
+    }
+
     const [created] = await db
       .insert(githubIntegrations)
       .values({
@@ -890,7 +954,7 @@ export async function setSelectedGitHubAppRepositories(params: {
         createdByUserId: params.userId,
         displayName: repository.fullName,
         encryptedToken: null,
-        githubAppInstallationId: installation.id,
+        githubAppInstallationId: owningInstallationRecordId,
         githubRepositoryId: repository.id,
         githubRepositoryPrivate: repository.private,
         owner: repository.owner,
@@ -907,8 +971,14 @@ export async function setSelectedGitHubAppRepositories(params: {
     }
   }
 
-  await redis?.del(
-    `github_app_repositories:${params.organizationId}:${installation.installationId}`
+  await Promise.all(
+    installations.map((installation) =>
+      Promise.resolve(
+        redis?.del(
+          `github_app_repositories:${params.organizationId}:${installation.installationId}`
+        )
+      )
+    )
   );
 
   return {
@@ -917,14 +987,22 @@ export async function setSelectedGitHubAppRepositories(params: {
 }
 
 export async function deleteGitHubAppInstallationForOrganization(
-  organizationId: string
+  organizationId: string,
+  accountId?: string
 ) {
-  const installation =
-    await getGitHubAppInstallationByOrganization(organizationId);
+  const installations =
+    await listGitHubAppInstallationsByOrganization(organizationId);
+  const targets = accountId
+    ? installations.filter(
+        (installation) => installation.accountId === accountId
+      )
+    : installations;
 
-  if (!installation) {
+  if (targets.length === 0) {
     return;
   }
+
+  const targetRecordIds = targets.map((installation) => installation.id);
 
   await db
     .update(githubIntegrations)
@@ -935,17 +1013,23 @@ export async function deleteGitHubAppInstallationForOrganization(
     .where(
       and(
         eq(githubIntegrations.organizationId, organizationId),
-        eq(githubIntegrations.githubAppInstallationId, installation.id)
+        inArray(githubIntegrations.githubAppInstallationId, targetRecordIds)
       )
     );
 
   await db
     .update(githubAppInstallations)
     .set({ enabled: false })
-    .where(eq(githubAppInstallations.id, installation.id));
+    .where(inArray(githubAppInstallations.id, targetRecordIds));
 
-  await redis?.del(
-    `github_app_repositories:${organizationId}:${installation.installationId}`
+  await Promise.all(
+    targets.map((installation) =>
+      Promise.resolve(
+        redis?.del(
+          `github_app_repositories:${organizationId}:${installation.installationId}`
+        )
+      )
+    )
   );
 }
 

@@ -192,6 +192,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     () => searchParams.get("githubConnected") === "true"
   );
   const [legacyOpen, setLegacyOpen] = useState(false);
+  const [selectedDialogAccountId, setSelectedDialogAccountId] = useState<
+    string | null
+  >(null);
   useResumeGitHubInstall({
     callbackPath: pathname,
     organizationId,
@@ -224,7 +227,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         integration.connectionMethod === "personal-access-token"
     ) ?? [];
   const data = githubAppQuery.data;
-  const isConnected = Boolean(data?.account);
+  const accounts = data?.accounts ?? [];
+  const isConnected = accounts.length > 0;
   const isLoading =
     isLoadingOrganizations ||
     (!!organizationId && githubAppQuery.isLoading && !data);
@@ -233,6 +237,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     (!!organizationId && legacyQuery.isLoading && !legacyQuery.data);
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
   const repositories = data?.repositories ? [...data.repositories] : [];
+  const dialogAccountId = selectedDialogAccountId ?? accounts[0]?.id;
+  const dialogAccount = accounts.find(
+    (account) => account.id === dialogAccountId
+  );
+  const dialogRepositories = dialogAccount
+    ? repositories.filter(
+        (repository) =>
+          repository.owner.toLowerCase() === dialogAccount.login.toLowerCase()
+      )
+    : repositories;
 
   useEffect(() => {
     if (searchParams.get("githubConnected") !== "true" || !organization?.id) {
@@ -272,8 +286,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: async () => {
-      return dashboardOrpc.github.app.disconnect.call({ organizationId });
+    mutationFn: async (accountId: string) => {
+      return dashboardOrpc.github.app.disconnect.call({
+        organizationId,
+        accountId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -303,7 +320,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const handleOpenConnect = () => setConnectOpen(true);
 
-  const handleOpenRepositories = () => setReposOpen(true);
+  const handleOpenRepositories = (accountId?: string) => {
+    setSelectedDialogAccountId(accountId ?? null);
+    setReposOpen(true);
+  };
 
   useHotkey(
     "C",
@@ -312,10 +332,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       enabled: !!organizationId,
     }
   );
-
-  const handleDisconnect = () => {
-    disconnectMutation.mutate();
-  };
 
   const handleSaveRepositories = (repositoryIds: string[]) => {
     saveRepositoriesMutation.mutate(repositoryIds);
@@ -330,15 +346,23 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   if (isLoading) {
     githubAppContent = <GitHubIntegrationSkeleton />;
-  } else if (isConnected && data?.account) {
+  } else if (isConnected) {
     githubAppContent = (
-      <GitHubAccountCard
-        account={data.account}
-        onAddRepositories={() => setReposOpen(true)}
-        onDisconnect={handleDisconnect}
-        repositories={repositories}
-        selectedRepositoryIds={selectedRepositoryIds}
-      />
+      <div className="grid gap-4">
+        {accounts.map((account) => (
+          <GitHubAccountCard
+            account={account}
+            key={account.id}
+            onAddRepositories={() => handleOpenRepositories(account.id)}
+            onDisconnect={() => disconnectMutation.mutate(account.id)}
+            repositories={repositories.filter(
+              (repository) =>
+                repository.owner.toLowerCase() === account.login.toLowerCase()
+            )}
+            selectedRepositoryIds={selectedRepositoryIds}
+          />
+        ))}
+      </div>
     );
   }
 
@@ -355,7 +379,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <Button
             className="gap-1.5"
-            onClick={isConnected ? handleOpenRepositories : handleOpenConnect}
+            onClick={
+              isConnected ? () => handleOpenRepositories() : handleOpenConnect
+            }
           >
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
             {isConnected ? "Add repositories" : "Connect GitHub"}
@@ -393,16 +419,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         open={connectOpen}
       />
       <SelectRepositoriesDialog
-        accounts={data?.account ? [data.account] : []}
+        accounts={accounts}
         initialSelected={selectedRepositoryIds}
         isLoading={githubAppQuery.isLoading && !data}
         isSaving={saveRepositoriesMutation.isPending}
         onAddAccount={startInstall}
         onOpenChange={setReposOpen}
         onSave={handleSaveRepositories}
+        onSelectAccount={setSelectedDialogAccountId}
         open={reposOpen}
-        repositories={repositories}
-        selectedAccountId={data?.account?.id}
+        repositories={dialogRepositories}
+        selectedAccountId={dialogAccountId}
       />
       <LegacyAddIntegrationDialog
         onOpenChange={setLegacyOpen}
