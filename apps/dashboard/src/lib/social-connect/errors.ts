@@ -1,0 +1,21 @@
+import { Data } from "effect";
+
+export class SocialConnectConfigError extends Data.TaggedError(
+  "SocialConnectConfigError"
+)<{
+  readonly message: string;
+}> {}
+
+export class SocialConnectRequestError extends Data.TaggedError(
+  "SocialConnectRequestError"
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class SocialConnectCallbackError extends Data.TaggedError(
+  "SocialConnectCallbackError"
+)<{
+  readonly code: string;
+  readonly cause?: unknown;
+}> {}

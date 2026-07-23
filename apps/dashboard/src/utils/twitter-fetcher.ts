@@ -1,4 +1,14 @@
+import { Data, Effect } from "effect";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
+import type {
+  TwitterUserLookup,
+  TwitterUserLookupResponse,
+} from "@/types/services/twitter";
+
+export class TwitterApiError extends Data.TaggedError("TwitterApiError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
 
 export interface TweetData {
   tweetId: string;
@@ -20,6 +30,62 @@ export function parseTweetId(url: string): string | null {
   const match = url.match(TWEET_URL_REGEX);
   return match?.[2] ?? null;
 }
+
+export async function twitterAppFetch(url: string): Promise<Response> {
+  const bearerToken = process.env.TWITTER_BEARER_TOKEN;
+  if (!bearerToken) {
+    throw new Error("Twitter API is not configured");
+  }
+
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${bearerToken}`,
+    },
+  });
+}
+
+export const fetchTwitterUserWithPinnedTweet = Effect.fn(
+  "fetchTwitterUserWithPinnedTweet"
+)(function* (username: string) {
+  const params = new URLSearchParams({
+    "user.fields": "pinned_tweet_id",
+    expansions: "pinned_tweet_id",
+    "tweet.fields":
+      "text,created_at,public_metrics,author_id,referenced_tweets",
+  });
+
+  const response = yield* Effect.tryPromise({
+    try: () =>
+      twitterAppFetch(
+        `https://api.x.com/2/users/by/username/${username}?${params.toString()}`
+      ),
+    catch: (cause) =>
+      new TwitterApiError({ message: "Failed to fetch X profile", cause }),
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const json = yield* Effect.tryPromise({
+    try: (): Promise<TwitterUserLookupResponse> => response.json(),
+    catch: (cause) =>
+      new TwitterApiError({
+        message: "Failed to parse X profile response",
+        cause,
+      }),
+  });
+
+  if (!json.data?.id) {
+    return null;
+  }
+
+  const lookup: TwitterUserLookup = {
+    userId: json.data.id,
+    pinnedTweet: json.includes?.tweets?.[0] ?? null,
+  };
+  return lookup;
+});
 
 export async function fetchTweet(tweetUrl: string): Promise<TweetData> {
   const tweetId = parseTweetId(tweetUrl);

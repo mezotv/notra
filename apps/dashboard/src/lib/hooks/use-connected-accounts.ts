@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
+import type { SocialConnectPlatform } from "@/schemas/social-accounts";
 import { dashboardOrpc } from "../orpc/query";
 
 export interface ConnectedAccount {
@@ -25,34 +27,43 @@ export function useConnectedAccounts(organizationId: string) {
   );
 }
 
-export function useConnectTwitter(organizationId: string) {
+export function useConnectSocialAccount(
+  organizationId: string,
+  platform: SocialConnectPlatform
+) {
   return useMutation({
     mutationFn: async (callbackPath: string): Promise<{ url: string }> => {
-      return dashboardOrpc.socialAccounts.twitter.beginAuth.call({
+      return dashboardOrpc.socialAccounts.beginConnect.call({
         organizationId,
+        platform,
         callbackPath,
       });
     },
   });
 }
 
-export function useHandleConnectTwitter(organizationId: string) {
-  const connectTwitter = useConnectTwitter(organizationId);
+export function useHandleConnectSocialAccount(
+  organizationId: string,
+  platform: SocialConnectPlatform
+) {
+  const connectAccount = useConnectSocialAccount(organizationId, platform);
 
   const handleConnect = useCallback(async () => {
     try {
-      const result = await connectTwitter.mutateAsync(
+      const result = await connectAccount.mutateAsync(
         window.location.pathname + window.location.search
       );
       window.location.href = result.url;
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to connect X account"
+        error instanceof Error
+          ? error.message
+          : `Failed to connect ${SOCIAL_PLATFORM_LABELS[platform]} account`
       );
     }
-  }, [connectTwitter]);
+  }, [connectAccount, platform]);
 
-  return { handleConnect, isPending: connectTwitter.isPending };
+  return { handleConnect, isPending: connectAccount.isPending };
 }
 
 export function useDisconnectAccount(organizationId: string) {

@@ -3,6 +3,7 @@
 import {
   Add01Icon,
   Cancel01Icon,
+  Linkedin02Icon,
   NewTwitterIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -27,14 +28,17 @@ import { authClient } from "@/lib/auth/client";
 import {
   useConnectedAccounts,
   useDisconnectAccount,
-  useHandleConnectTwitter,
+  useHandleConnectSocialAccount,
 } from "@/lib/hooks/use-connected-accounts";
 import {
   getOrganizationMembershipActionLabel,
   type OrganizationMembershipAction,
 } from "@/lib/organizations/membership-action";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { GeneralSettingsPageProps } from "@/types/settings/general";
+import type {
+  ConnectedAccountsGroupProps,
+  GeneralSettingsPageProps,
+} from "@/types/settings/general";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { OrganizationDetailsCard } from "./organization-details-card";
@@ -224,33 +228,24 @@ function ConnectedAccountsSection({
   organizationId: string;
 }) {
   const { data, isLoading, isError } = useConnectedAccounts(organizationId);
-  const { handleConnect, isPending: isConnecting } =
-    useHandleConnectTwitter(organizationId);
-  const disconnectMutation = useDisconnectAccount(organizationId);
-
-  const twitterAccounts = (data?.accounts ?? []).filter(
-    (a) => a.provider === "twitter"
+  const twitterConnect = useHandleConnectSocialAccount(
+    organizationId,
+    "twitter"
+  );
+  const linkedinConnect = useHandleConnectSocialAccount(
+    organizationId,
+    "linkedin"
   );
 
+  const accounts = data?.accounts ?? [];
+  const twitterAccounts = accounts.filter((a) => a.provider === "twitter");
+  const linkedinAccounts = accounts.filter((a) => a.provider === "linkedin");
+
   return (
-    <TitleCard
-      action={
-        twitterAccounts.length > 0 ? (
-          <Button disabled={isConnecting} onClick={handleConnect} size="sm">
-            {isConnecting ? (
-              <Loader2Icon className="size-3.5 animate-spin" />
-            ) : (
-              <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
-            )}
-            Connect
-          </Button>
-        ) : undefined
-      }
-      heading="Connected Accounts"
-    >
-      <div className="space-y-3">
+    <TitleCard heading="Connected Accounts">
+      <div className="space-y-6">
         <p className="text-muted-foreground text-sm">
-          X accounts connected to this organization
+          X and LinkedIn accounts connected to this organization
         </p>
 
         {isLoading && (
@@ -268,98 +263,152 @@ function ConnectedAccountsSection({
           </div>
         )}
 
-        {!isLoading && !isError && twitterAccounts.length === 0 && (
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-8">
-            <div className="flex size-10 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon className="size-5" icon={NewTwitterIcon} />
-            </div>
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">
-                No X accounts connected
+        {!isLoading && !isError && (
+          <>
+            <ConnectedAccountsGroup
+              accounts={twitterAccounts}
+              connectLabel="Connect X Account"
+              emptyLabel="No X accounts connected"
+              icon={NewTwitterIcon}
+              isConnecting={twitterConnect.isPending}
+              label="X"
+              onConnect={twitterConnect.handleConnect}
+              organizationId={organizationId}
+            />
+            <ConnectedAccountsGroup
+              accounts={linkedinAccounts}
+              connectLabel="Connect LinkedIn Account"
+              emptyLabel="No LinkedIn accounts connected"
+              icon={Linkedin02Icon}
+              isConnecting={linkedinConnect.isPending}
+              label="LinkedIn"
+              onConnect={linkedinConnect.handleConnect}
+              organizationId={organizationId}
+            />
+          </>
+        )}
+      </div>
+    </TitleCard>
+  );
+}
+
+function ConnectedAccountsGroup({
+  organizationId,
+  label,
+  icon,
+  accounts,
+  emptyLabel,
+  connectLabel,
+  onConnect,
+  isConnecting,
+}: ConnectedAccountsGroupProps) {
+  const disconnectMutation = useDisconnectAccount(organizationId);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <HugeiconsIcon className="size-4" icon={icon} />
+          <p className="font-medium text-sm">{label}</p>
+        </div>
+        {accounts.length > 0 && (
+          <Button disabled={isConnecting} onClick={onConnect} size="sm">
+            {isConnecting ? (
+              <Loader2Icon className="size-3.5 animate-spin" />
+            ) : (
+              <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+            )}
+            Connect
+          </Button>
+        )}
+      </div>
+
+      {accounts.length === 0 && (
+        <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-8">
+          <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+            <HugeiconsIcon className="size-5" icon={icon} />
+          </div>
+          <div className="text-center">
+            <p className="text-muted-foreground text-sm">{emptyLabel}</p>
+          </div>
+          <Button disabled={isConnecting} onClick={onConnect} size="sm">
+            {isConnecting ? (
+              <>
+                <Loader2Icon className="size-3.5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
+                {connectLabel}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {accounts.map((account) => {
+        const isDisconnecting =
+          disconnectMutation.isPending &&
+          disconnectMutation.variables === account.id;
+
+        return (
+          <div
+            className="flex items-center gap-3 rounded-lg border p-3"
+            key={account.id}
+          >
+            <Avatar
+              className="size-9 rounded-full after:rounded-full"
+              size="sm"
+            >
+              {account.profileImageUrl && (
+                <AvatarImage
+                  alt={account.displayName}
+                  src={account.profileImageUrl}
+                />
+              )}
+              <AvatarFallback>
+                {account.username.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1 truncate font-medium text-sm">
+                {account.displayName}
+                {account.verified && (
+                  <XVerifiedBadge className="size-4 shrink-0" />
+                )}
+              </p>
+              <p className="truncate text-muted-foreground text-xs">
+                @{account.username}
               </p>
             </div>
-            <Button disabled={isConnecting} onClick={handleConnect} size="sm">
-              {isConnecting ? (
+            <Button
+              aria-label={`Disconnect @${account.username}`}
+              disabled={disconnectMutation.isPending}
+              onClick={() => {
+                disconnectMutation.mutate(account.id, {
+                  onSuccess: () => toast.success("Account disconnected"),
+                  onError: () => toast.error("Failed to disconnect account"),
+                });
+              }}
+              size="sm"
+              variant="outline"
+            >
+              {isDisconnecting ? (
                 <>
                   <Loader2Icon className="size-3.5 animate-spin" />
-                  Connecting...
+                  Disconnecting...
                 </>
               ) : (
                 <>
-                  <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
-                  Connect X Account
+                  <HugeiconsIcon className="size-3.5" icon={Cancel01Icon} />
+                  Disconnect
                 </>
               )}
             </Button>
           </div>
-        )}
-
-        {!isLoading &&
-          !isError &&
-          twitterAccounts.map((account) => {
-            const isDisconnecting =
-              disconnectMutation.isPending &&
-              disconnectMutation.variables === account.id;
-
-            return (
-              <div
-                className="flex items-center gap-3 rounded-lg border p-3"
-                key={account.id}
-              >
-                <Avatar
-                  className="size-9 rounded-full after:rounded-full"
-                  size="sm"
-                >
-                  {account.profileImageUrl && (
-                    <AvatarImage
-                      alt={account.displayName}
-                      src={account.profileImageUrl}
-                    />
-                  )}
-                  <AvatarFallback>
-                    {account.username.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 truncate font-medium text-sm">
-                    {account.displayName}
-                    {account.verified && (
-                      <XVerifiedBadge className="size-4 shrink-0" />
-                    )}
-                  </p>
-                  <p className="truncate text-muted-foreground text-xs">
-                    @{account.username}
-                  </p>
-                </div>
-                <Button
-                  aria-label={`Disconnect @${account.username}`}
-                  disabled={disconnectMutation.isPending}
-                  onClick={() => {
-                    disconnectMutation.mutate(account.id, {
-                      onSuccess: () => toast.success("Account disconnected"),
-                      onError: () =>
-                        toast.error("Failed to disconnect account"),
-                    });
-                  }}
-                  size="sm"
-                  variant="outline"
-                >
-                  {isDisconnecting ? (
-                    <>
-                      <Loader2Icon className="size-3.5 animate-spin" />
-                      Disconnecting...
-                    </>
-                  ) : (
-                    <>
-                      <HugeiconsIcon className="size-3.5" icon={Cancel01Icon} />
-                      Disconnect
-                    </>
-                  )}
-                </Button>
-              </div>
-            );
-          })}
-      </div>
-    </TitleCard>
+        );
+      })}
+    </div>
   );
 }

@@ -42,7 +42,7 @@ import {
   type ConnectedAccount,
   useConnectedAccounts,
   useDisconnectAccount,
-  useHandleConnectTwitter,
+  useHandleConnectSocialAccount,
 } from "@/lib/hooks/use-connected-accounts";
 import type {
   AddReferenceDialogProps,
@@ -372,7 +372,7 @@ function ImportXStep({
 }) {
   const { data, isLoading } = useConnectedAccounts(organizationId);
   const { handleConnect, isPending: isConnecting } =
-    useHandleConnectTwitter(organizationId);
+    useHandleConnectSocialAccount(organizationId, "twitter");
   const disconnectAccount = useDisconnectAccount(organizationId);
   const importTweets = useImportTweets(organizationId, voiceId);
   const [selectedAccount, setSelectedAccount] =

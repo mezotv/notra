@@ -23,3 +23,13 @@ export interface TwitterTimelineResponse {
   includes?: { users?: TwitterUser[] };
   meta?: { next_token?: string };
 }
+
+export interface TwitterUserLookupResponse {
+  data?: { id: string; pinned_tweet_id?: string };
+  includes?: { tweets?: TwitterTweet[] };
+}
+
+export interface TwitterUserLookup {
+  userId: string;
+  pinnedTweet: TwitterTweet | null;
+}

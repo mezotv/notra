@@ -1,12 +1,17 @@
-import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import {
+  beginSocialConnect,
+  disconnectProviderAccount,
+} from "@/lib/social-connect/connect";
 import { organizationIdSchema } from "@/schemas/auth/organization";
+import { socialConnectPlatformSchema } from "@/schemas/social-accounts";
 import {
   badRequest,
   internalServerError,
@@ -24,30 +29,10 @@ const disconnectSocialAccountInputSchema = organizationScopedInputSchema.extend(
   }
 );
 
-const beginTwitterAuthInputSchema = organizationScopedInputSchema.extend({
+const beginConnectInputSchema = organizationScopedInputSchema.extend({
+  platform: socialConnectPlatformSchema,
   callbackPath: z.string().default("/"),
 });
-
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return base64UrlEncode(array);
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncode(new Uint8Array(digest));
-}
-
-function base64UrlEncode(buffer: Uint8Array): string {
-  let binary = "";
-  for (const byte of buffer) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
 
 export const socialAccountsRouter = {
   list: authorizedProcedure
@@ -90,7 +75,7 @@ export const socialAccountsRouter = {
       });
 
       const existing = await db.query.connectedSocialAccounts.findFirst({
-        columns: { id: true },
+        columns: { id: true, providerAccountId: true },
         where: and(
           eq(connectedSocialAccounts.id, input.accountId),
           eq(connectedSocialAccounts.organizationId, input.organizationId)
@@ -105,61 +90,55 @@ export const socialAccountsRouter = {
         .delete(connectedSocialAccounts)
         .where(eq(connectedSocialAccounts.id, input.accountId));
 
+      await Effect.runPromise(
+        disconnectProviderAccount(existing.providerAccountId)
+      );
+
       return { success: true };
     }),
-  twitter: {
-    beginAuth: authorizedProcedure
-      .input(beginTwitterAuthInputSchema)
-      .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
-          headers: context.headers,
+  beginConnect: authorizedProcedure
+    .input(beginConnectInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const baseUrl =
+        process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+      if (!baseUrl) {
+        throw badRequest("Application base URL is not configured");
+      }
+
+      const result = await Effect.runPromise(
+        beginSocialConnect({
           organizationId: input.organizationId,
-          user: context.user,
-        });
+          platform: input.platform,
+          callbackPath: input.callbackPath,
+          baseUrl,
+        }).pipe(
+          Effect.map((value) => ({
+            status: "created" as const,
+            url: value.url,
+          })),
+          Effect.catch((error) =>
+            Effect.succeed(
+              error._tag === "SocialConnectConfigError"
+                ? { status: "config_error" as const, message: error.message }
+                : { status: "failed" as const }
+            )
+          )
+        )
+      );
 
-        const clientId = process.env.TWITTER_CLIENT_ID;
-        if (!clientId) {
-          throw internalServerError("Twitter OAuth is not configured");
-        }
+      if (result.status === "config_error") {
+        throw serviceUnavailable(result.message);
+      }
+      if (result.status === "failed") {
+        throw internalServerError("Failed to create account connect link");
+      }
 
-        if (!redis) {
-          throw serviceUnavailable("Redis is not configured");
-        }
-
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
-        if (!baseUrl) {
-          throw badRequest("Application base URL is not configured");
-        }
-
-        const state = crypto.randomUUID();
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const redirectUri = `${baseUrl}/api/social-accounts/twitter/callback`;
-
-        await redis.set(
-          `twitter_oauth:${state}`,
-          JSON.stringify({
-            callbackPath: input.callbackPath,
-            codeVerifier,
-            organizationId: input.organizationId,
-          }),
-          { ex: 600 }
-        );
-
-        const authUrl = new URL("https://x.com/i/oauth2/authorize");
-        authUrl.searchParams.set("response_type", "code");
-        authUrl.searchParams.set("client_id", clientId);
-        authUrl.searchParams.set("redirect_uri", redirectUri);
-        authUrl.searchParams.set(
-          "scope",
-          "tweet.read tweet.write users.read offline.access"
-        );
-        authUrl.searchParams.set("state", state);
-        authUrl.searchParams.set("code_challenge", codeChallenge);
-        authUrl.searchParams.set("code_challenge_method", "S256");
-
-        return { url: authUrl.toString() };
-      }),
-  },
+      return { url: result.url };
+    }),
 };

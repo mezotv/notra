@@ -23,6 +23,7 @@ import {
 } from "@notra/db/schema";
 import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
@@ -71,8 +72,11 @@ import {
   syncBrandReferenceMemory,
 } from "@/utils/brand-reference-memory";
 import { ratelimit } from "@/utils/ratelimit";
-import { twitterFetch } from "@/utils/twitter-auth";
-import { fetchTweet } from "@/utils/twitter-fetcher";
+import {
+  fetchTweet,
+  fetchTwitterUserWithPinnedTweet,
+  twitterAppFetch,
+} from "@/utils/twitter-fetcher";
 import {
   badRequest,
   conflict,
@@ -199,36 +203,6 @@ function normalizeBrandVoiceWebsiteUrl(rawUrl: string) {
   }
 
   return new URL(parseResult.data).href;
-}
-
-async function fetchPinnedTweet(
-  userId: string,
-  account: {
-    id: string;
-    accessToken: string;
-    refreshToken: string | null;
-    tokenExpiresAt: Date | null;
-  }
-): Promise<TwitterTweet | null> {
-  const params = new URLSearchParams({
-    "user.fields": "pinned_tweet_id",
-    expansions: "pinned_tweet_id",
-    "tweet.fields":
-      "text,created_at,public_metrics,author_id,referenced_tweets",
-  });
-
-  const response = await twitterFetch(
-    `https://api.x.com/2/users/${userId}?${params.toString()}`,
-    account
-  );
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const data = await response.json();
-
-  return (data.includes?.tweets?.[0] as TwitterTweet | undefined) ?? null;
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -1324,10 +1298,15 @@ export const brandRouter = {
           throw notFound("Connected X account not found");
         }
 
-        const pinnedTweet = await fetchPinnedTweet(
-          socialAccount.providerAccountId,
-          socialAccount
+        const profileLookup = await Effect.runPromise(
+          fetchTwitterUserWithPinnedTweet(socialAccount.username)
         );
+
+        if (!profileLookup) {
+          throw badRequest("Failed to fetch the X profile for this account");
+        }
+
+        const { userId: twitterUserId, pinnedTweet } = profileLookup;
 
         const originalTweets: TwitterTweet[] = [];
         let author: TwitterUser | undefined;
@@ -1351,9 +1330,8 @@ export const brandRouter = {
             tweetParams.set("pagination_token", paginationToken);
           }
 
-          const tweetsResponse = await twitterFetch(
-            `https://api.x.com/2/users/${socialAccount.providerAccountId}/tweets?${tweetParams.toString()}`,
-            socialAccount
+          const tweetsResponse = await twitterAppFetch(
+            `https://api.x.com/2/users/${twitterUserId}/tweets?${tweetParams.toString()}`
           );
 
           if (!tweetsResponse.ok) {
@@ -1375,7 +1353,7 @@ export const brandRouter = {
           if (!author && timeline.includes?.users) {
             author =
               timeline.includes.users.find(
-                (user) => user.id === socialAccount.providerAccountId
+                (user) => user.id === twitterUserId
               ) ?? timeline.includes.users[0];
           }
 

@@ -25,7 +25,7 @@ import {
   useDeleteReference,
   useImportTweets,
 } from "@/lib/hooks/use-brand-references";
-import { useConnectTwitter } from "@/lib/hooks/use-connected-accounts";
+import { useConnectSocialAccount } from "@/lib/hooks/use-connected-accounts";
 import type { SocialsClientProps } from "@/types/components/socials-onboarding";
 import type { BrandReference } from "@/types/hooks/brand-references";
 
@@ -36,7 +36,7 @@ export function SocialsClient({
 }: SocialsClientProps) {
   const router = useRouter();
 
-  const connectTwitter = useConnectTwitter(organizationId);
+  const connectTwitter = useConnectSocialAccount(organizationId, "twitter");
   const importTweets = useImportTweets(organizationId, voiceId ?? "");
   const deleteReference = useDeleteReference(organizationId, voiceId ?? "");
   const [importedReferences, setImportedReferences] = useState<

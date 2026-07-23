@@ -327,6 +327,7 @@ export const organizations = pgTable(
       .default(false)
       .notNull(),
     onboardingAgentStartedAt: timestamp("onboarding_agent_started_at"),
+    socialConnectProfileId: text("social_connect_profile_id"),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );
@@ -1311,10 +1312,6 @@ export const connectedSocialAccounts = pgTable(
     displayName: text("display_name").notNull(),
     profileImageUrl: text("profile_image_url"),
     verified: boolean("verified").default(false).notNull(),
-    accessToken: text("access_token").notNull(),
-    refreshToken: text("refresh_token"),
-    scope: text("scope"),
-    tokenExpiresAt: timestamp("token_expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

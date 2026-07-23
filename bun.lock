@@ -147,6 +147,7 @@
         "@upstash/workflow": "^1.1.0",
         "@vercel/oidc": "^3.8.0",
         "@vercel/otel": "^2.1.2",
+        "@zernio/node": "^0.2.376",
         "ai": "6.0.206",
         "autumn-js": "^1.2.7",
         "better-auth": "^1.5.5",
@@ -2141,6 +2142,8 @@
     "@xyflow/react": ["@xyflow/react@12.11.0", "", { "dependencies": { "@xyflow/system": "0.0.77", "classcat": "^5.0.3", "zustand": "^4.4.0" }, "peerDependencies": { "@types/react": ">=17", "@types/react-dom": ">=17", "react": ">=17", "react-dom": ">=17" }, "optionalPeers": ["@types/react", "@types/react-dom"] }, "sha512-na4IO33FSs2OS72hASgZDmTYwFAkef7Z74uBUVrong3ARmQQHfnRUVaCFn1kTt5LbS6pK03TbYjCPGLjLFfziA=="],
 
     "@xyflow/system": ["@xyflow/system@0.0.77", "", { "dependencies": { "@types/d3-drag": "^3.0.7", "@types/d3-interpolate": "^3.0.4", "@types/d3-selection": "^3.0.10", "@types/d3-transition": "^3.0.8", "@types/d3-zoom": "^3.0.8", "d3-drag": "^3.0.0", "d3-interpolate": "^3.0.1", "d3-selection": "^3.0.0", "d3-zoom": "^3.0.0" } }, "sha512-qCDCMCQAAgUu8yHnhloHG9F5mwPX5E+Wl8McpYIOPSSXfzFJJoZcwOcsDiAjitVKIg2de1WmJbCHfpcvxprsgg=="],
+
+    "@zernio/node": ["@zernio/node@0.2.376", "", {}, "sha512-HcwBAJZrLplq0pgOp6Pjs7Pdc3grcAtqeztjjL48zICOKQiEhTUu5gCf/ZiECAHj9mYccqGAet1QhOji0JmMOA=="],
 
     "abort-controller": ["abort-controller@3.0.0", "", { "dependencies": { "event-target-shim": "^5.0.0" } }, "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="],
 
