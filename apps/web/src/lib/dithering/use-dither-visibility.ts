@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { DitherVisibilityState } from "@/types/dithering";
+import {
+  getReducedMotionServerSnapshot,
+  getReducedMotionSnapshot,
+  subscribeToReducedMotion,
+} from "@/utils/reduced-motion";
 
 const VIEWPORT_MARGIN = "200px";
 const IDLE_FALLBACK_MS = 1500;
@@ -11,7 +16,11 @@ export function useDitherVisibility(): DitherVisibilityState {
   const [isIdle, setIsIdle] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotionSnapshot,
+    getReducedMotionServerSnapshot
+  );
 
   useEffect(() => {
     if (typeof window.requestIdleCallback === "function") {
@@ -42,16 +51,6 @@ export function useDitherVisibility(): DitherVisibilityState {
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReducedMotion(query.matches);
-    const handleChange = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-    query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
   }, []);
 
   return {
