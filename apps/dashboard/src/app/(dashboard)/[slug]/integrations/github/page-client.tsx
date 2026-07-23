@@ -6,7 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -115,7 +115,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [connectOpen, setConnectOpen] = useState(false);
-  const [reposOpen, setReposOpen] = useState(false);
+  const [reposOpen, setReposOpen] = useState(
+    () => searchParams.get("githubConnected") === "true"
+  );
   const [legacyOpen, setLegacyOpen] = useState(false);
   useResumeGitHubInstall({
     callbackPath: pathname,
@@ -149,16 +151,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
   const repositories = data?.repositories ? [...data.repositories] : [];
 
-  const handleGitHubInstalled = useEffectEvent(() => {
-    queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.github.app.get.queryKey({
-        input: { organizationId },
-      }),
-    });
-    setConnectOpen(false);
-    setReposOpen(true);
-  });
-
   useEffect(() => {
     if (searchParams.get("githubConnected") !== "true" || !organization?.id) {
       return;
@@ -168,8 +160,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     nextUrl.searchParams.delete("githubConnected");
     window.history.replaceState(null, "", nextUrl);
 
-    handleGitHubInstalled();
-  }, [searchParams, organization?.id]);
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.github.app.get.queryKey({
+        input: { organizationId: organization.id },
+      }),
+    });
+  }, [searchParams, organization?.id, queryClient]);
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {
