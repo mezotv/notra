@@ -8,7 +8,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dialog";
@@ -41,7 +41,7 @@ export function StoreIntegrationsSection({
   const [managingIntegrationId, setManagingIntegrationId] = useState<
     string | null
   >(null);
-  const connectDeeplinkHandledRef = useRef(false);
+  const [deeplinkDismissed, setDeeplinkDismissed] = useState(false);
 
   const { data, isPending } = useQuery(
     dashboardOrpc.integrations.mcp.storeList.queryOptions({
@@ -63,12 +63,14 @@ export function StoreIntegrationsSection({
     });
   };
 
-  const clearConnectDeeplink = () => {
-    if (connectSlug) {
-      router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
-        scroll: false,
-      });
+  const dismissDeeplink = () => {
+    if (!connectSlug || deeplinkDismissed) {
+      return;
     }
+    setDeeplinkDismissed(true);
+    router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
+      scroll: false,
+    });
   };
 
   const connectPublicMutation = useMutation({
@@ -83,9 +85,9 @@ export function StoreIntegrationsSection({
         headers: {},
       }),
     onSuccess: () => {
-      invalidateIntegrations();
       setConfirmingIntegration(null);
-      clearConnectDeeplink();
+      dismissDeeplink();
+      invalidateIntegrations();
       toast.success("Integration connected");
     },
     onError: (error) => {
@@ -121,7 +123,7 @@ export function StoreIntegrationsSection({
         onSuccess: ({ authorizationUrl }) => {
           oauthPopup.navigate(authorizationUrl);
           setConfirmingIntegration(null);
-          clearConnectDeeplink();
+          dismissDeeplink();
         },
       });
       return;
@@ -131,41 +133,34 @@ export function StoreIntegrationsSection({
   };
 
   const integrations = data?.integrations ?? [];
-  const managingIntegration = integrations.find(
-    (integration) => integration.id === managingIntegrationId
-  );
 
-  useEffect(() => {
-    if (!connectSlug || isPending || connectDeeplinkHandledRef.current) {
-      return;
-    }
-    connectDeeplinkHandledRef.current = true;
+  const deeplinkIntegration =
+    connectSlug && !deeplinkDismissed
+      ? (integrations.find(
+          (integration) =>
+            integration.slug === connectSlug || integration.id === connectSlug
+        ) ?? null)
+      : null;
 
-    const match = integrations.find(
-      (integration) =>
-        integration.slug === connectSlug || integration.id === connectSlug
-    );
+  const activeManagingIntegration =
+    integrations.find(
+      (integration) => integration.id === managingIntegrationId
+    ) ?? (deeplinkIntegration?.connected ? deeplinkIntegration : null);
 
-    if (!match) {
-      toast.error("This integration is no longer available in the store");
-      router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
-        scroll: false,
-      });
-      return;
-    }
+  const activeConnectingIntegration =
+    connectingIntegration ??
+    (!deeplinkIntegration?.connected &&
+    deeplinkIntegration?.authType === "headers"
+      ? deeplinkIntegration
+      : null);
 
-    if (match.connected) {
-      setManagingIntegrationId(match.id);
-      return;
-    }
-
-    if (match.authType === "headers") {
-      setConnectingIntegration(match);
-      return;
-    }
-
-    setConfirmingIntegration(match);
-  }, [connectSlug, isPending, integrations, organizationSlug, router]);
+  const activeConfirmingIntegration =
+    confirmingIntegration ??
+    (deeplinkIntegration &&
+    !deeplinkIntegration.connected &&
+    deeplinkIntegration.authType !== "headers"
+      ? deeplinkIntegration
+      : null);
 
   const isConnectPending = (integration: McpStoreIntegration) =>
     (connectPublicMutation.isPending &&
@@ -173,7 +168,7 @@ export function StoreIntegrationsSection({
     (beginOAuthMutation.isPending &&
       beginOAuthMutation.variables?.id === integration.id);
 
-  if (!(isPending || connectSlug) && integrations.length === 0) {
+  if (!isPending && integrations.length === 0) {
     return null;
   }
 
@@ -264,40 +259,41 @@ export function StoreIntegrationsSection({
         </div>
       )}
 
-      {confirmingIntegration ? (
+      {activeConfirmingIntegration ? (
         <ConnectStoreIntegrationDialog
-          connecting={isConnectPending(confirmingIntegration)}
-          integration={confirmingIntegration}
-          key={confirmingIntegration.id}
-          onConnect={() => connectIntegration(confirmingIntegration)}
+          connecting={isConnectPending(activeConfirmingIntegration)}
+          integration={activeConfirmingIntegration}
+          key={activeConfirmingIntegration.id}
+          onConnect={() => connectIntegration(activeConfirmingIntegration)}
           onOpenChange={(open) => {
             if (!open) {
               setConfirmingIntegration(null);
-              clearConnectDeeplink();
+              dismissDeeplink();
             }
           }}
           open
         />
       ) : null}
 
-      {connectingIntegration ? (
+      {activeConnectingIntegration ? (
         <AddMcpServerDialog
           initialValues={{
-            name: connectingIntegration.name,
-            url: toMcpFormUrl(connectingIntegration.url),
-            description: connectingIntegration.description ?? "",
-            authType: toMcpFormAuthType(connectingIntegration.authType),
+            name: activeConnectingIntegration.name,
+            url: toMcpFormUrl(activeConnectingIntegration.url),
+            description: activeConnectingIntegration.description ?? "",
+            authType: toMcpFormAuthType(activeConnectingIntegration.authType),
           }}
-          key={connectingIntegration.id}
-          logoDarkUrl={connectingIntegration.logoDarkUrl}
-          logoLightUrl={connectingIntegration.logoLightUrl}
+          key={activeConnectingIntegration.id}
+          logoDarkUrl={activeConnectingIntegration.logoDarkUrl}
+          logoLightUrl={activeConnectingIntegration.logoLightUrl}
           onOpenChange={(open) => {
             if (!open) {
               setConnectingIntegration(null);
-              clearConnectDeeplink();
+              dismissDeeplink();
             }
           }}
           onSuccess={() => {
+            dismissDeeplink();
             queryClient.invalidateQueries({
               queryKey: dashboardOrpc.integrations.mcp.storeList.queryKey({
                 input: { organizationId },
@@ -306,25 +302,25 @@ export function StoreIntegrationsSection({
           }}
           open
           organizationId={organizationId}
-          storeIntegrationId={connectingIntegration.id}
+          storeIntegrationId={activeConnectingIntegration.id}
         />
       ) : null}
 
-      {managingIntegration?.connection ? (
+      {activeManagingIntegration?.connection ? (
         <ManageStoreIntegrationDialog
           integration={{
-            ...managingIntegration,
-            connection: managingIntegration.connection,
+            ...activeManagingIntegration,
+            connection: activeManagingIntegration.connection,
           }}
-          key={managingIntegration.connection.id}
+          key={activeManagingIntegration.connection.id}
           onDisconnected={() => {
             setManagingIntegrationId(null);
-            clearConnectDeeplink();
+            dismissDeeplink();
           }}
           onOpenChange={(open) => {
             if (!open) {
               setManagingIntegrationId(null);
-              clearConnectDeeplink();
+              dismissDeeplink();
             }
           }}
           open

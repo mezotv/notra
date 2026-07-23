@@ -1,15 +1,8 @@
-import {
-  getLiveMcpStoreIntegrationById,
-  getLiveMcpStoreIntegrationBySlug,
-} from "@notra/ai/integrations/mcp-store";
+import { Effect } from "effect";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import {
-  buildOrganizationIntegrationsPath,
-  decodeIntegrationSlugParam,
-} from "@/lib/integrations/deeplink";
-import { storeIntegrationDeeplinkSlugSchema } from "@/schemas/integrations";
+import { resolveOrganizationIntegrationConnect } from "@/lib/integrations/deeplink-resolution";
 import PageClient from "../page-client";
 
 export const metadata: Metadata = {
@@ -25,25 +18,23 @@ async function Page({
   }>;
 }) {
   const { slug, integrationSlug } = await params;
-  const parsed = storeIntegrationDeeplinkSlugSchema.safeParse(
-    decodeIntegrationSlugParam(integrationSlug)
+  const resolution = await Effect.runPromise(
+    resolveOrganizationIntegrationConnect({
+      organizationSlug: slug,
+      integrationSlugParam: integrationSlug,
+    })
   );
 
-  if (!parsed.success) {
-    redirect(buildOrganizationIntegrationsPath(slug));
-  }
-
-  const storeIntegration =
-    (await getLiveMcpStoreIntegrationBySlug(parsed.data)) ??
-    (await getLiveMcpStoreIntegrationById(parsed.data));
-
-  if (!storeIntegration) {
-    redirect(buildOrganizationIntegrationsPath(slug));
+  if (resolution.kind === "redirect") {
+    redirect(resolution.path);
   }
 
   return (
     <Suspense>
-      <PageClient connectSlug={parsed.data} organizationSlug={slug} />
+      <PageClient
+        connectSlug={resolution.connectSlug}
+        organizationSlug={slug}
+      />
     </Suspense>
   );
 }

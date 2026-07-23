@@ -1,11 +1,6 @@
+import { Effect } from "effect";
 import { notFound, redirect } from "next/navigation";
-import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
-import {
-  buildIntegrationConnectLoginUrl,
-  buildOrganizationIntegrationConnectPath,
-  decodeIntegrationSlugParam,
-} from "@/lib/integrations/deeplink";
-import { storeIntegrationDeeplinkSlugSchema } from "@/schemas/integrations";
+import { resolveIntegrationConnectDeeplink } from "@/lib/integrations/deeplink-resolution";
 
 async function Page({
   params,
@@ -15,29 +10,15 @@ async function Page({
   }>;
 }) {
   const { integrationSlug } = await params;
-  const parsed = storeIntegrationDeeplinkSlugSchema.safeParse(
-    decodeIntegrationSlugParam(integrationSlug)
+  const resolution = await Effect.runPromise(
+    resolveIntegrationConnectDeeplink(integrationSlug)
   );
 
-  if (!parsed.success) {
+  if (resolution.kind === "not-found") {
     notFound();
   }
 
-  const session = await getSession();
-
-  if (!session?.user) {
-    redirect(buildIntegrationConnectLoginUrl(parsed.data));
-  }
-
-  const organization = await getLastActiveOrganization();
-
-  if (!organization) {
-    redirect("/onboarding");
-  }
-
-  redirect(
-    buildOrganizationIntegrationConnectPath(organization.slug, parsed.data)
-  );
+  redirect(resolution.path);
 }
 
 export default Page;
