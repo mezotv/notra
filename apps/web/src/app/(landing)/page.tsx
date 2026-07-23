@@ -169,7 +169,7 @@ export default function LandingPage() {
         <section className="content-defer" id="faq">
           <FaqSection />
         </section>
-        <section className="pt-27.5 pb-27.5 content-defer" id="cta">
+        <section className="px-6 pt-27.5 pb-27.5 content-defer lg:px-20" id="cta">
           <CtaBanner />
         </section>
       </main>

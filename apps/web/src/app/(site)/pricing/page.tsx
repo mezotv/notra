@@ -120,7 +120,7 @@ export default function PricingPage() {
 
         <PricingComparisonTable />
 
-        <div className="pt-8 pb-24">
+        <div className="px-6 pt-8 pb-24 lg:px-20">
           <CtaBanner />
         </div>
       </div>
