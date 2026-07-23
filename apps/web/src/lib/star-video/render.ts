@@ -11,12 +11,19 @@ import type { StarVideoInputProps } from "@/types/star-video";
 
 let serveUrlPromise: Promise<string> | null = null;
 
+function bundleComposition(): Promise<string> {
+  return bundle({
+    entryPoint: join(process.cwd(), "src/remotion/index.ts"),
+    publicDir: join(process.cwd(), "public"),
+  });
+}
+
 function getServeUrl(): Promise<string> {
+  if (process.env.NODE_ENV !== "production") {
+    return bundleComposition();
+  }
   if (!serveUrlPromise) {
-    serveUrlPromise = bundle({
-      entryPoint: join(process.cwd(), "src/remotion/index.ts"),
-      publicDir: join(process.cwd(), "public"),
-    });
+    serveUrlPromise = bundleComposition();
     serveUrlPromise.catch(() => {
       serveUrlPromise = null;
     });
