@@ -1,26 +1,14 @@
 "use client";
 
-import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/button";
-import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dialog";
-import { ConnectStoreIntegrationDialog } from "@/components/integrations/connect-store-integration-dialog";
-import { ManageStoreIntegrationDialog } from "@/components/integrations/manage-store-integration-dialog";
-import { StoreIntegrationLogo } from "@/components/integrations/store-integration-logo";
+import { StoreIntegrationCard } from "@/components/integrations/store-integration-card";
+import { StoreIntegrationDialogs } from "@/components/integrations/store-integration-dialogs";
 import { buildOrganizationIntegrationsPath } from "@/lib/integrations/deeplink";
-import {
-  MCP_ACCENT_COLOR,
-  toMcpFormAuthType,
-  toMcpFormUrl,
-} from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   McpStoreIntegration,
@@ -41,7 +29,9 @@ export function StoreIntegrationsSection({
   const [managingIntegrationId, setManagingIntegrationId] = useState<
     string | null
   >(null);
-  const [deeplinkDismissed, setDeeplinkDismissed] = useState(false);
+  const [dismissedConnectSlug, setDismissedConnectSlug] = useState<
+    string | null
+  >(null);
 
   const { data, isPending } = useQuery(
     dashboardOrpc.integrations.mcp.storeList.queryOptions({
@@ -64,10 +54,10 @@ export function StoreIntegrationsSection({
   };
 
   const dismissDeeplink = () => {
-    if (!connectSlug || deeplinkDismissed) {
+    if (!connectSlug || dismissedConnectSlug === connectSlug) {
       return;
     }
-    setDeeplinkDismissed(true);
+    setDismissedConnectSlug(connectSlug);
     router.replace(buildOrganizationIntegrationsPath(organizationSlug), {
       scroll: false,
     });
@@ -135,7 +125,7 @@ export function StoreIntegrationsSection({
   const integrations = data?.integrations ?? [];
 
   const deeplinkIntegration =
-    connectSlug && !deeplinkDismissed
+    connectSlug && dismissedConnectSlug !== connectSlug
       ? (integrations.find(
           (integration) =>
             integration.slug === connectSlug || integration.id === connectSlug
@@ -193,140 +183,53 @@ export function StoreIntegrationsSection({
       ) : (
         <div className="grid gap-3 sm:gap-4 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {integrations.map((integration) => (
-            <TitleCard
-              accentColor={integration.brandColor ?? MCP_ACCENT_COLOR}
-              action={
-                integration.connected ? (
-                  <div className="flex items-center gap-2">
-                    <Badge className="text-xs" variant="default">
-                      Connected
-                    </Badge>
-                    <span className="text-muted-foreground">
-                      <HugeiconsIcon
-                        aria-hidden="true"
-                        className="size-4"
-                        icon={MoreHorizontalIcon}
-                      />
-                      <span className="sr-only">Manage integration</span>
-                    </span>
-                  </div>
-                ) : (
-                  <Button
-                    disabled={isConnectPending(integration)}
-                    onClick={() => connectIntegration(integration)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    {isConnectPending(integration)
-                      ? "Connecting..."
-                      : "Connect"}
-                  </Button>
-                )
-              }
-              className={
-                integration.connected
-                  ? "h-full cursor-pointer transition-colors hover:bg-muted/80"
-                  : "h-full"
-              }
-              heading={integration.name}
-              icon={<StoreIntegrationLogo integration={integration} />}
+            <StoreIntegrationCard
+              connectPending={isConnectPending(integration)}
+              integration={integration}
               key={integration.id}
-              onClick={() => {
-                if (integration.connected) {
-                  setManagingIntegrationId(integration.id);
-                }
-              }}
-              onKeyDown={(event) => {
-                if (
-                  integration.connected &&
-                  (event.key === "Enter" || event.key === " ")
-                ) {
-                  event.preventDefault();
-                  setManagingIntegrationId(integration.id);
-                }
-              }}
-              role={integration.connected ? "button" : undefined}
-              tabIndex={integration.connected ? 0 : undefined}
-            >
-              <p className="line-clamp-2 text-muted-foreground text-sm">
-                {integration.description ??
-                  (integration.author
-                    ? `By ${integration.author}`
-                    : "MCP server from the integration store")}
-              </p>
-            </TitleCard>
+              onConnect={connectIntegration}
+              onManage={(target) => setManagingIntegrationId(target.id)}
+            />
           ))}
         </div>
       )}
 
-      {activeConfirmingIntegration ? (
-        <ConnectStoreIntegrationDialog
-          connecting={isConnectPending(activeConfirmingIntegration)}
-          integration={activeConfirmingIntegration}
-          key={activeConfirmingIntegration.id}
-          onConnect={() => connectIntegration(activeConfirmingIntegration)}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConfirmingIntegration(null);
-              dismissDeeplink();
-            }
-          }}
-          open
-        />
-      ) : null}
-
-      {activeConnectingIntegration ? (
-        <AddMcpServerDialog
-          initialValues={{
-            name: activeConnectingIntegration.name,
-            url: toMcpFormUrl(activeConnectingIntegration.url),
-            description: activeConnectingIntegration.description ?? "",
-            authType: toMcpFormAuthType(activeConnectingIntegration.authType),
-          }}
-          key={activeConnectingIntegration.id}
-          logoDarkUrl={activeConnectingIntegration.logoDarkUrl}
-          logoLightUrl={activeConnectingIntegration.logoLightUrl}
-          onOpenChange={(open) => {
-            if (!open) {
-              setConnectingIntegration(null);
-              dismissDeeplink();
-            }
-          }}
-          onSuccess={() => {
-            dismissDeeplink();
-            queryClient.invalidateQueries({
-              queryKey: dashboardOrpc.integrations.mcp.storeList.queryKey({
-                input: { organizationId },
-              }),
-            });
-          }}
-          open
-          organizationId={organizationId}
-          storeIntegrationId={activeConnectingIntegration.id}
-        />
-      ) : null}
-
-      {activeManagingIntegration?.connection ? (
-        <ManageStoreIntegrationDialog
-          integration={{
-            ...activeManagingIntegration,
-            connection: activeManagingIntegration.connection,
-          }}
-          key={activeManagingIntegration.connection.id}
-          onDisconnected={() => {
-            setManagingIntegrationId(null);
-            dismissDeeplink();
-          }}
-          onOpenChange={(open) => {
-            if (!open) {
-              setManagingIntegrationId(null);
-              dismissDeeplink();
-            }
-          }}
-          open
-          organizationId={organizationId}
-        />
-      ) : null}
+      <StoreIntegrationDialogs
+        confirmingIntegration={activeConfirmingIntegration}
+        confirmingPending={
+          activeConfirmingIntegration
+            ? isConnectPending(activeConfirmingIntegration)
+            : false
+        }
+        connectingIntegration={activeConnectingIntegration}
+        managingIntegration={activeManagingIntegration}
+        onConfirmConnect={() => {
+          if (activeConfirmingIntegration) {
+            connectIntegration(activeConfirmingIntegration);
+          }
+        }}
+        onConfirmingClose={() => {
+          setConfirmingIntegration(null);
+          dismissDeeplink();
+        }}
+        onConnectingClose={() => {
+          setConnectingIntegration(null);
+          dismissDeeplink();
+        }}
+        onConnectingSuccess={() => {
+          dismissDeeplink();
+          queryClient.invalidateQueries({
+            queryKey: dashboardOrpc.integrations.mcp.storeList.queryKey({
+              input: { organizationId },
+            }),
+          });
+        }}
+        onManagingClose={() => {
+          setManagingIntegrationId(null);
+          dismissDeeplink();
+        }}
+        organizationId={organizationId}
+      />
     </section>
   );
 }
