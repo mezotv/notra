@@ -76,7 +76,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
 
       try {
         await submitWorkspaceForm({ existingOrg, value });
-        window.location.assign("/onboarding/socials");
+        window.location.assign("/onboarding/pricing");
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to create org"
