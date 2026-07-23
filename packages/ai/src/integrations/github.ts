@@ -770,9 +770,15 @@ async function listRepositoriesForInstallation(installation: {
   return mappedRepositories;
 }
 
-export async function listGitHubAppRepositories(organizationId: string) {
+export async function listGitHubAppRepositories(
+  organizationId: string,
+  preloadedInstallations?: Awaited<
+    ReturnType<typeof listGitHubAppInstallationsByOrganization>
+  >
+) {
   const installations =
-    await listGitHubAppInstallationsByOrganization(organizationId);
+    preloadedInstallations ??
+    (await listGitHubAppInstallationsByOrganization(organizationId));
 
   if (installations.length === 0) {
     return [];

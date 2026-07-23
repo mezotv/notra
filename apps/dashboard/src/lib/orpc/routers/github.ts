@@ -223,7 +223,7 @@ export const githubRouter = {
           Effect.tryPromise({
             try: async () => {
               const [repositories, selectedRepositoryIds] = await Promise.all([
-                listGitHubAppRepositories(input.organizationId),
+                listGitHubAppRepositories(input.organizationId, installations),
                 getSelectedGitHubAppRepositoryIds(
                   input.organizationId,
                   installations.map((installation) => installation.id)
@@ -287,8 +287,13 @@ export const githubRouter = {
         const installations = await listGitHubAppInstallationsByOrganization(
           input.organizationId
         );
+        const hasMatchingInstallation = input.accountId
+          ? installations.some(
+              (installation) => installation.accountId === input.accountId
+            )
+          : installations.length > 0;
 
-        if (installations.length === 0) {
+        if (!hasMatchingInstallation) {
           throw notFound("GitHub App installation not found");
         }
 
