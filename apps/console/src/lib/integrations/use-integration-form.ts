@@ -1,10 +1,11 @@
 "use client";
 
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
+import { slugify } from "@notra/utils/slugify";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ZodError } from "zod";
 import {
@@ -51,6 +52,8 @@ export function useIntegrationForm({
   const isEdit = Boolean(server);
 
   const [name, setName] = useState(server?.name ?? "");
+  const [integrationSlug, setIntegrationSlug] = useState(server?.slug ?? "");
+  const slugEditedRef = useRef(Boolean(server?.slug));
   const [author, setAuthor] = useState(server?.author ?? "");
   const [description, setDescription] = useState(server?.description ?? "");
   const [url, setUrl] = useState(server?.url ?? "");
@@ -89,11 +92,24 @@ export function useIntegrationForm({
 
   const backHref = `/${slug}/integrations`;
 
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!slugEditedRef.current) {
+      setIntegrationSlug(slugify(value));
+    }
+  }
+
+  function handleSlugChange(value: string) {
+    slugEditedRef.current = true;
+    setIntegrationSlug(value);
+  }
+
   function getSharedFields() {
     return {
       organizationId,
       ownershipConsent,
       name,
+      slug: integrationSlug.trim(),
       author: author.trim() || null,
       description: description.trim() || null,
       url,
@@ -557,9 +573,12 @@ export function useIntegrationForm({
     brandColor,
     canSubmitForReview,
     description,
+    handleNameChange,
     handleSaveDraft,
+    handleSlugChange,
     handleSubmit,
     headerRows,
+    integrationSlug,
     isBusy,
     isSaving,
     logoDarkUrl,

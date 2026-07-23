@@ -1,7 +1,6 @@
 import { DatabuddyWordmark } from "@notra/ui/components/ui/svgs/databuddyWordmark";
 import { Inth } from "@notra/ui/components/ui/svgs/inth";
 import { StackAuth } from "@notra/ui/components/ui/svgs/stack-auth";
-import { Stagewise } from "@notra/ui/components/ui/svgs/stagewise";
 import type { ComponentType, SVGProps } from "react";
 
 export const NOTRA_LOGO_PATH = "/notra-mark.svg";
@@ -224,12 +223,6 @@ export const SOCIAL_PROOF_LOGOS: {
     name: "Databuddy",
     Component: DatabuddyWordmark,
     href: "https://databuddy.cc?utm_source=notra",
-    className: "h-8",
-  },
-  {
-    name: "stagewise",
-    Component: Stagewise,
-    href: "https://stagewise.io?utm_source=notra",
     className: "h-8",
   },
   {

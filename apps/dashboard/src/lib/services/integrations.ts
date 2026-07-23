@@ -28,6 +28,9 @@ const integrationFetchers: Partial<
         id: integration.id,
         displayName: integration.displayName,
         type: "github" as const,
+        connectionMethod: integration.githubAppInstallationId
+          ? ("github-app" as const)
+          : ("personal-access-token" as const),
         enabled: integration.enabled,
         createdAt: integration.createdAt,
         repositories: uniqueRepositories.map((repo) => ({

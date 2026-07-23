@@ -19,7 +19,7 @@ import { copyHtmlAsFigma, copyHtmlAsPaper } from "@/lib/html-to-figma/export";
 import type { HtmlExportToolProps } from "@/types/html-to-figma";
 
 const PANEL_CLASS =
-  "h-[60vh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-xl border border-border bg-muted/30";
+  "h-[60svh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-background dark:border-white/10";
 
 export default function HtmlExportTool({ target }: HtmlExportToolProps) {
   const [html, setHtml] = useState("");
@@ -75,7 +75,7 @@ export default function HtmlExportTool({ target }: HtmlExportToolProps) {
         />
 
         <Button
-          className="gap-2 border border-border bg-white text-neutral-900 shadow-sm hover:bg-neutral-50"
+          className="gap-2 border border-border bg-white text-neutral-900 shadow-sm hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
           disabled={isEmpty || pending}
           onClick={handleCopy}
           size="lg"

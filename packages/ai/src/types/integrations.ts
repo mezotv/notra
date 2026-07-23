@@ -2,6 +2,10 @@ export interface ErrorWithStatus {
   status?: number;
 }
 
+export type GitHubOrgMembershipCheck =
+  | { verified: true; isAdmin: boolean }
+  | { verified: false };
+
 export interface ValidateRepositoryBranchExistsParams {
   owner: string;
   repo: string;
@@ -96,6 +100,7 @@ export interface McpServerIntegrationSerializationInput {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   storeSourceIntegrationId?: string | null;
   storeStatus?: string;
   reviewNote?: string | null;
@@ -134,6 +139,7 @@ export interface CreateMcpServerIntegrationParams {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   storeSourceIntegrationId?: string | null;
   headers?: McpHeaderMap;
 }
@@ -159,6 +165,7 @@ export interface UpdateMcpServerIntegrationParams {
   logoLightUrl?: string | null;
   logoDarkUrl?: string | null;
   bannerUrl?: string | null;
+  slug?: string | null;
   headers?: McpHeaderMap;
   enabled?: boolean;
 }

@@ -31,6 +31,16 @@ export const INTEGRATION_TYPES = [
 ] as const;
 export type IntegrationType = (typeof INTEGRATION_TYPES)[number];
 
+const STORE_INTEGRATION_DEEPLINK_SLUG_MAX_LENGTH = 120;
+const STORE_INTEGRATION_DEEPLINK_SLUG_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+export const storeIntegrationDeeplinkSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(STORE_INTEGRATION_DEEPLINK_SLUG_MAX_LENGTH)
+  .regex(STORE_INTEGRATION_DEEPLINK_SLUG_PATTERN);
+
 export const OUTPUT_CONTENT_TYPES = [
   "changelog",
   "blog_post",

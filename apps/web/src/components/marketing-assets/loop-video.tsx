@@ -53,7 +53,7 @@ export function LoopVideo({ src, poster, label, className }: LoopVideoProps) {
       aria-label={label}
       autoPlay={shouldAutoplay}
       className={cn(
-        "corner-squircle block aspect-video w-full rounded-2xl border border-border/60 object-cover shadow-[0_2.5rem_5rem_-2.5rem_rgb(0_0_0/0.45)] supports-[corner-shape:round]:rounded-[1.25rem]",
+        "corner-squircle block aspect-video w-full rounded-2xl border border-[#1E1E1E14] object-cover supports-[corner-shape:round]:rounded-[1.25rem] dark:border-white/10",
         className
       )}
       loop={shouldAutoplay}

@@ -38,7 +38,7 @@ export default function HtmlCodeEditor({
   }
 
   return (
-    <div className="relative h-[60vh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-xl border border-border bg-muted/30 transition-colors focus-within:border-foreground/30 focus-within:bg-background">
+    <div className="relative h-[60svh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-background transition-colors focus-within:border-foreground/30 dark:border-white/10">
       <style>{HTML_HIGHLIGHT_CSS}</style>
       <pre
         aria-hidden="true"

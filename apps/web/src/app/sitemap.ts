@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { changelog } from "@/../.source/server";
+import { fetchIntegrations } from "@/lib/integrations/fetch";
+import { getIntegrationHref } from "@/lib/integrations/helpers";
 import {
   filterPostsByAuthorSlug,
   getAuthorHref,
@@ -37,6 +39,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const notraBlogEntries = notraBlogPosts.map((post) => ({
     url: `${SITE_URL}/blog/${post.slug}`,
     lastModified: new Date(post.updatedAt),
+  }));
+
+  const integrationEntries = (await fetchIntegrations()).map((integration) => ({
+    url: `${SITE_URL}${getIntegrationHref(integration)}`,
+    lastModified: STATIC_PAGE_LAST_MODIFIED,
   }));
 
   const notraAuthorEntries = (await listNotraAuthors()).map((author) => {
@@ -102,6 +109,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
+      url: `${SITE_URL}/mcp`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
+      url: `${SITE_URL}/integrations`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
       url: `${SITE_URL}/brand`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
@@ -142,10 +157,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
-      url: `${SITE_URL}/subprocessors`,
-      lastModified: STATIC_PAGE_LAST_MODIFIED,
-    },
-    {
       url: `${SITE_URL}/blog`,
       lastModified: latestBlog,
     },
@@ -162,6 +173,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified:
         latestShowcaseByCompany.get(company.slug) ?? STATIC_PAGE_LAST_MODIFIED,
     })),
+    ...integrationEntries,
     ...showcaseEntries,
     ...notraChangelogEntries,
     ...notraBlogEntries,

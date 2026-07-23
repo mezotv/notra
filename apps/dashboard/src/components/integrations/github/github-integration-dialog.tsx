@@ -1,9 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { GITHUB_INSTALL_MESSAGE } from "@/constants/github";
 import { startGitHubInstall } from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GitHubIntegrationDialogProps } from "@/types/integrations/github";
@@ -17,6 +16,9 @@ export function GitHubIntegrationDialog({
   onOpenChange,
 }: GitHubIntegrationDialogProps) {
   const queryClient = useQueryClient();
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
+    null
+  );
 
   const githubAppQuery = useQuery(
     dashboardOrpc.github.app.get.queryOptions({
@@ -27,9 +29,20 @@ export function GitHubIntegrationDialog({
   );
 
   const data = githubAppQuery.data;
-  const isConnected = Boolean(data?.account);
+  const accounts = data?.accounts ?? [];
+  const isConnected = accounts.length > 0;
   const repositories = data?.repositories ? [...data.repositories] : [];
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
+  const dialogAccountId = selectedAccountId ?? accounts[0]?.id;
+  const dialogAccount = accounts.find(
+    (account) => account.id === dialogAccountId
+  );
+  const dialogRepositories = dialogAccount
+    ? repositories.filter(
+        (repository) =>
+          repository.owner.toLowerCase() === dialogAccount.login.toLowerCase()
+      )
+    : repositories;
 
   const invalidateGithubApp = () =>
     queryClient.invalidateQueries({
@@ -37,24 +50,6 @@ export function GitHubIntegrationDialog({
         input: { organizationId },
       }),
     });
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (
-        event.origin === window.location.origin &&
-        event.data === GITHUB_INSTALL_MESSAGE
-      ) {
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.github.app.get.queryKey({
-            input: { organizationId },
-          }),
-        });
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [organizationId, queryClient]);
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: (repositoryIds: string[]) =>
@@ -78,17 +73,17 @@ export function GitHubIntegrationDialog({
     }
 
     const callbackPath = `/${organizationSlug}/integrations/github`;
-    const didStart = await startGitHubInstall({ organizationId, callbackPath });
+    const result = await startGitHubInstall({ organizationId, callbackPath });
 
-    if (!didStart) {
+    if (!result.started) {
       toast.error("Failed to start GitHub install");
     }
   };
 
-  if (isConnected && data?.account) {
+  if (isConnected) {
     return (
       <SelectRepositoriesDialog
-        accounts={[data.account]}
+        accounts={accounts}
         initialSelected={selectedRepositoryIds}
         isLoading={githubAppQuery.isLoading}
         isSaving={saveRepositoriesMutation.isPending}
@@ -97,9 +92,10 @@ export function GitHubIntegrationDialog({
         onSave={(repositoryIds) =>
           saveRepositoriesMutation.mutate(repositoryIds)
         }
+        onSelectAccount={setSelectedAccountId}
         open={open}
-        repositories={repositories}
-        selectedAccountId={data.account.id}
+        repositories={dialogRepositories}
+        selectedAccountId={dialogAccountId}
       />
     );
   }

@@ -50,6 +50,7 @@ export interface McpServer {
   logoLightUrl: string | null;
   logoDarkUrl: string | null;
   bannerUrl: string | null;
+  slug: string | null;
   storeStatus: StoreStatus;
   reviewNote: string | null;
   submittedAt: string | null;
@@ -153,4 +154,19 @@ export interface ToolsEditorProps {
   serverName: string;
   serverUrl: string;
   tools: McpIntegrationTool[];
+}
+
+export interface StoreListingCurationItem {
+  id: string;
+  name: string;
+  author: string | null;
+  brandColor: string | null;
+  logoLightUrl: string | null;
+  logoDarkUrl: string | null;
+  category: string | null;
+  featured: boolean;
+}
+
+export interface CurationRowProps {
+  listing: StoreListingCurationItem;
 }

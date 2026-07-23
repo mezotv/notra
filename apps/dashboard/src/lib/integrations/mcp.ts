@@ -55,6 +55,16 @@ export function buildMcpHeaders(
   return headers;
 }
 
+export function getStoreIntegrationConnectHint(authType: string, name: string) {
+  if (authType === "oauth") {
+    return `You will be redirected to ${name} to authorize the connection.`;
+  }
+  if (authType === "headers") {
+    return `You will need your own ${name} credentials to finish connecting.`;
+  }
+  return `${name} connects instantly and needs no credentials.`;
+}
+
 export function toMcpFormAuthType(
   authType: string
 ): "none" | "headers" | "oauth" {

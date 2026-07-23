@@ -48,8 +48,18 @@ export interface ChangelogTimelineItem {
 
 export interface ChangelogTimelineProps {
   items: ChangelogTimelineItem[];
+  featuredLabel?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+}
+
+export interface ChangelogFeaturedEntryProps {
+  item: ChangelogTimelineItem;
+  label?: string;
+}
+
+export interface ChangelogRowProps {
+  item: ChangelogTimelineItem;
 }
 
 export interface ChangelogHtmlArticleProps {

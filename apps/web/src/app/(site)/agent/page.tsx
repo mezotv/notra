@@ -1,0 +1,53 @@
+import type { Metadata } from "next";
+import { MarketingHeroWash } from "@/components/marketing-hero-wash";
+import { apiUrl, buildAgentJson, siteUrl } from "@/utils/agent-metadata";
+
+export const metadata: Metadata = {
+  title: "Notra Agent Interface",
+  description:
+    "Machine-readable Notra discovery view for agents, API clients, and MCP integrations.",
+};
+
+export default function AgentPage() {
+  const agent = buildAgentJson();
+
+  return (
+    <main className="flex w-full flex-col items-center gap-8 pb-28 antialiased [font-synthesis:none]">
+      <MarketingHeroWash
+        subtitle="Notra turns shipped product work into changelogs, launch posts, blog drafts, marketing assets, and social updates in a saved brand voice. Agents should use this view for discovery instead of parsing the marketing homepage."
+        title={
+          <>
+            Notra <span className="text-primary">Agent</span> Interface
+          </>
+        }
+      />
+      <section className="mx-auto grid w-[min(100%-3rem,56rem)] gap-4 text-sm md:grid-cols-2">
+        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
+          <h2 className="font-medium font-sans text-[#1E1E1E] text-lg tracking-[-0.015em] dark:text-white">
+            Discovery
+          </h2>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[#1E1E1E99] dark:text-white/60">
+            <li>Agent JSON: {siteUrl("/.well-known/agent.json")}</li>
+            <li>Agent Card: {siteUrl("/.well-known/agent-card.json")}</li>
+            <li>API Catalog: {siteUrl("/.well-known/api-catalog")}</li>
+            <li>Auth guide: {siteUrl("/auth.md")}</li>
+          </ul>
+        </div>
+        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
+          <h2 className="font-medium font-sans text-[#1E1E1E] text-lg tracking-[-0.015em] dark:text-white">
+            Endpoints
+          </h2>
+          <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[#1E1E1E99] dark:text-white/60">
+            <li>API: {apiUrl()}</li>
+            <li>OpenAPI: {apiUrl("/openapi.json")}</li>
+            <li>MCP: {agent.mcp.streamable_http}</li>
+            <li>NLWeb ask: {siteUrl("/ask")}</li>
+          </ul>
+        </div>
+      </section>
+      <pre className="overflow-auto rounded-2xl border border-[#1E1E1E14] bg-background p-5 font-mono text-[#1E1E1E] text-xs leading-6 dark:border-white/10 dark:text-white/80">
+        {JSON.stringify(agent, null, 2)}
+      </pre>
+    </main>
+  );
+}

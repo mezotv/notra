@@ -11,6 +11,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import type { McpStoreCategory } from "../constants/mcp-store-categories";
 import type {
   McpStoreStatus,
   McpToolActionPhraseUpdate,
@@ -344,7 +345,25 @@ function isManualToolMeta(meta: unknown) {
   );
 }
 
-export async function listLiveMcpStoreIntegrations() {
+const LIVE_STORE_LISTING_DETAIL_COLUMNS = {
+  id: true,
+  name: true,
+  url: true,
+  description: true,
+  author: true,
+  websiteUrl: true,
+  brandColor: true,
+  logoLightUrl: true,
+  logoDarkUrl: true,
+  bannerUrl: true,
+  slug: true,
+  category: true,
+  storeFeaturedAt: true,
+  authType: true,
+  indexedToolCount: true,
+} as const;
+
+export async function listMcpStoreListingsForCuration() {
   return await db.query.mcpServerIntegrations.findMany({
     where: and(
       eq(mcpServerIntegrations.resourceType, "store_listing"),
@@ -355,16 +374,55 @@ export async function listLiveMcpStoreIntegrations() {
     columns: {
       id: true,
       name: true,
-      url: true,
-      description: true,
       author: true,
-      websiteUrl: true,
       brandColor: true,
       logoLightUrl: true,
       logoDarkUrl: true,
-      authType: true,
-      indexedToolCount: true,
+      category: true,
+      storeFeaturedAt: true,
     },
+  });
+}
+
+export async function setMcpStoreCuration(params: {
+  integrationId: string;
+  category?: McpStoreCategory | null;
+  featured?: boolean;
+}) {
+  const now = new Date();
+  const [row] = await db
+    .update(mcpServerIntegrations)
+    .set({
+      ...(params.category !== undefined ? { category: params.category } : {}),
+      ...(params.featured !== undefined
+        ? { storeFeaturedAt: params.featured ? now : null }
+        : {}),
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(mcpServerIntegrations.id, params.integrationId),
+        eq(mcpServerIntegrations.resourceType, "store_listing")
+      )
+    )
+    .returning({
+      id: mcpServerIntegrations.id,
+      category: mcpServerIntegrations.category,
+      storeFeaturedAt: mcpServerIntegrations.storeFeaturedAt,
+    });
+
+  return row ?? null;
+}
+
+export async function listLiveMcpStoreIntegrations() {
+  return await db.query.mcpServerIntegrations.findMany({
+    where: and(
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+    orderBy: asc(mcpServerIntegrations.name),
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
   });
 }
 
@@ -376,20 +434,21 @@ export async function getLiveMcpStoreIntegrationById(integrationId: string) {
       eq(mcpServerIntegrations.storeStatus, "live"),
       eq(mcpServerIntegrations.enabled, true)
     ),
-    columns: {
-      id: true,
-      name: true,
-      url: true,
-      description: true,
-      author: true,
-      websiteUrl: true,
-      brandColor: true,
-      logoLightUrl: true,
-      logoDarkUrl: true,
-      bannerUrl: true,
-      authType: true,
-      indexedToolCount: true,
-    },
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
+  });
+
+  return integration ?? null;
+}
+
+export async function getLiveMcpStoreIntegrationBySlug(slug: string) {
+  const integration = await db.query.mcpServerIntegrations.findFirst({
+    where: and(
+      eq(mcpServerIntegrations.slug, slug),
+      eq(mcpServerIntegrations.resourceType, "store_listing"),
+      eq(mcpServerIntegrations.storeStatus, "live"),
+      eq(mcpServerIntegrations.enabled, true)
+    ),
+    columns: LIVE_STORE_LISTING_DETAIL_COLUMNS,
   });
 
   return integration ?? null;

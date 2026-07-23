@@ -1,9 +1,4 @@
-import {
-  AiBrain01Icon,
-  BookOpen01Icon,
-  SparklesIcon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
+import type { ContactResourceLink } from "@/types/contact";
 
 export const CONTACT_RECIPIENT = "hello@usenotra.com";
 
@@ -19,35 +14,38 @@ export const CONTACT_RESPONSE_TIME =
   "Within one business day, often the same hour.";
 
 export const CONTACT_PURPOSE =
-  "For sales, support, security disclosures, and general questions.";
+  "Sales, support, security disclosures, and general questions.";
 
-export const CONTACT_RESOURCE_LINKS = [
+export const CONTACT_FORM_ASSURANCE =
+  "A real human writes back. No ticket numbers.";
+
+export const CONTACT_RESOURCE_LINKS: readonly ContactResourceLink[] = [
   {
     href: "https://docs.usenotra.com",
     label: "Documentation",
     description: "Guides, API reference, and setup walkthroughs.",
-    icon: BookOpen01Icon,
+    icon: "documentation",
     external: true,
   },
   {
     href: "https://docs.usenotra.com/devtools/mcp",
     label: "MCP server",
     description: "Connect Notra to your agents and editors.",
-    icon: AiBrain01Icon,
+    icon: "mcp",
     external: true,
   },
   {
     href: "/oss-program",
     label: "OSS program",
     description: "Free Notra Pro for open source maintainers.",
-    icon: UserGroupIcon,
+    icon: "oss",
     external: false,
   },
   {
     href: "/pricing",
     label: "Pricing",
     description: "Plans and limits for every team size.",
-    icon: SparklesIcon,
+    icon: "pricing",
     external: false,
   },
-] as const;
+];

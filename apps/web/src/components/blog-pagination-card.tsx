@@ -26,7 +26,7 @@ export function BlogPaginationCard({
   return (
     <Link className="group block h-full" href={link.href}>
       <Card
-        className={`h-full gap-3 p-5 transition-all hover:bg-neutral-50 hover:ring-foreground/20 dark:hover:bg-white/5 ${containerAlignment}`}
+        className={`h-full gap-3 p-5 transition-colors hover:bg-[#C8B2EE26] hover:ring-primary/40 dark:hover:bg-white/[0.04] ${containerAlignment}`}
       >
         <span className="flex items-center gap-1 font-mono text-neutral-500 text-xs dark:text-neutral-400">
           {isRight ? (
@@ -49,7 +49,7 @@ export function BlogPaginationCard({
             </>
           )}
         </span>
-        <h3 className="line-clamp-2 font-sans font-semibold text-base text-foreground leading-snug transition-colors group-hover:text-primary">
+        <h3 className="line-clamp-2 font-display font-medium text-[#1E1E1E] text-base leading-snug tracking-[-0.01em] transition-colors group-hover:text-primary dark:text-white">
           {link.title}
         </h3>
         {link.author ? (

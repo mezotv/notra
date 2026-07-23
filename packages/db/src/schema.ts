@@ -536,6 +536,9 @@ export const mcpServerIntegrations = pgTable(
     logoLightUrl: text("logo_light_url"),
     logoDarkUrl: text("logo_dark_url"),
     bannerUrl: text("banner_url"),
+    slug: text("slug"),
+    category: text("category"),
+    storeFeaturedAt: timestamp("store_featured_at"),
     storeSourceIntegrationId: text("store_source_integration_id"),
     storeStatus: text("store_status").default("draft").notNull(),
     reviewNote: text("review_note"),
@@ -571,6 +574,10 @@ export const mcpServerIntegrations = pgTable(
       sql`${table.resourceType} IN ('connection', 'store_listing')`
     ),
     check(
+      "mcpServerIntegrations_category_check",
+      sql`${table.category} IS NULL OR ${table.category} IN ('AI', 'Source control', 'Project management', 'Communication', 'Design', 'Notes', 'Deploys', 'Productivity', 'Marketing', 'Publishing')`
+    ),
+    check(
       "mcpServerIntegrations_resourceState_check",
       sql`(
         (${table.resourceType} = 'store_listing' AND ${table.storeSourceIntegrationId} IS NULL)
@@ -599,6 +606,9 @@ export const mcpServerIntegrations = pgTable(
     uniqueIndex("mcpServerIntegrations_org_storeSource_uidx")
       .on(table.organizationId, table.storeSourceIntegrationId)
       .where(sql`${table.storeSourceIntegrationId} IS NOT NULL`),
+    uniqueIndex("mcpServerIntegrations_storeListing_slug_uidx")
+      .on(table.slug)
+      .where(sql`${table.resourceType} = 'store_listing'`),
     foreignKey({
       columns: [table.storeSourceIntegrationId],
       foreignColumns: [table.id],

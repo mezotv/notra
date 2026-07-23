@@ -6,5 +6,5 @@ export function getNavbarVariantForPath(pathname: string): NavbarVariant {
   if (BLOG_POST_PATH_PATTERN.test(pathname)) {
     return "static";
   }
-  return "island";
+  return "landing";
 }

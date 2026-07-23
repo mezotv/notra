@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CurationClient } from "@/components/review/curation-client";
 import { ReviewQueueClient } from "@/components/review/review-queue-client";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 import { hasAdminRole } from "@/lib/auth/role";
@@ -20,5 +21,10 @@ export default async function ReviewQueuePage({
     notFound();
   }
 
-  return <ReviewQueueClient />;
+  return (
+    <div className="flex flex-col gap-10">
+      <ReviewQueueClient />
+      <CurationClient />
+    </div>
+  );
 }

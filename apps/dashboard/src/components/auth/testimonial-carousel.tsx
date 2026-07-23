@@ -1,5 +1,6 @@
 "use client";
 
+import { CarouselProgress } from "@notra/ui/components/ui/carousel-progress";
 import { useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
@@ -10,23 +11,44 @@ import {
 
 export function TestimonialCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const testimonial = AUTH_TESTIMONIALS[activeIndex];
   const isPaused = isHovered || isFocused;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeIndex intentionally restarts testimonial progress.
   useEffect(() => {
-    if (shouldReduceMotion || isPaused) {
+    if (shouldReduceMotion) {
       return;
     }
 
-    const timeout = setTimeout(() => {
-      setActiveIndex((activeIndex + 1) % AUTH_TESTIMONIALS.length);
-    }, AUTH_TESTIMONIAL_INTERVAL_MS);
+    if (isPaused) {
+      return;
+    }
 
-    return () => clearTimeout(timeout);
-  }, [shouldReduceMotion, isPaused, activeIndex]);
+    const startedAt = performance.now();
+
+    const interval = window.setInterval(() => {
+      const elapsed = performance.now() - startedAt;
+      const nextProgress = Math.min(
+        (elapsed / AUTH_TESTIMONIAL_INTERVAL_MS) * 100,
+        100
+      );
+
+      if (nextProgress >= 100) {
+        setProgress(0);
+        setActiveIndex(
+          (currentIndex) => (currentIndex + 1) % AUTH_TESTIMONIALS.length
+        );
+      } else {
+        setProgress(nextProgress);
+      }
+    }, 50);
+
+    return () => window.clearInterval(interval);
+  }, [activeIndex, shouldReduceMotion, isPaused]);
 
   if (!testimonial) {
     return null;
@@ -36,10 +58,16 @@ export function TestimonialCarousel() {
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: hover and focus only pause the carousel timer, this is not an interactive control
     // biome-ignore lint/a11y/noStaticElementInteractions: hover and focus only pause the carousel timer, this is not an interactive control
     <div
-      onBlur={() => setIsFocused(false)}
+      onBlur={() => {
+        setIsFocused(false);
+        setProgress(0);
+      }}
       onFocus={() => setIsFocused(true)}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setProgress(0);
+      }}
     >
       <section
         aria-label="Customer testimonials"
@@ -75,26 +103,18 @@ export function TestimonialCarousel() {
             </figcaption>
           </figure>
         </div>
-        <div className="flex items-center justify-center">
-          {AUTH_TESTIMONIALS.map((item, index) => (
-            <button
-              aria-current={index === activeIndex}
-              aria-label={`Show testimonial from ${item.name}`}
-              className="group flex size-6 cursor-pointer items-center justify-center"
-              key={item.name}
-              onClick={() => setActiveIndex(index)}
-              type="button"
-            >
-              <span
-                className={`h-1.5 rounded-full transition-all duration-300 motion-reduce:transition-none ${
-                  index === activeIndex
-                    ? "w-5 bg-white"
-                    : "w-1.5 bg-white/40 group-hover:bg-white/60"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
+        <CarouselProgress
+          activeIndex={activeIndex}
+          labels={AUTH_TESTIMONIALS.map(
+            (item) => `Show testimonial from ${item.name}`
+          )}
+          onSelect={(index) => {
+            setActiveIndex(index);
+            setProgress(0);
+          }}
+          progress={shouldReduceMotion ? 100 : progress}
+          variant="inverted"
+        />
       </section>
     </div>
   );

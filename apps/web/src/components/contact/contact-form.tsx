@@ -1,14 +1,17 @@
 "use client";
 
 import { Confetti } from "@neoconfetti/react";
-import { Button } from "@notra/ui/components/ui/button";
+import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useState } from "react";
-import { CONTACT_MESSAGE_MIN_LENGTH } from "@/constants/contact";
+import {
+  CONTACT_FORM_ASSURANCE,
+  CONTACT_MESSAGE_MIN_LENGTH,
+} from "@/constants/contact";
 import { contactMessageSchema } from "@/schemas/contact";
 
 type SubmitStatus =
@@ -19,8 +22,13 @@ type SubmitStatus =
   | "validation-error"
   | "rate-limited";
 
-const fieldErrorClass = "text-destructive text-sm";
-const labelClass = "font-medium font-sans text-foreground text-sm";
+const cardClass =
+  "flex flex-col gap-5 rounded-3xl border border-[#ECECEC] bg-white p-9 shadow-[0_0.0625rem_0.1875rem_#28282814] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none";
+const fieldErrorClass = "font-sans text-destructive text-sm";
+const labelClass =
+  "font-sans font-medium text-[#1E1E1E] text-sm/4.5 dark:text-white";
+const inputClass =
+  "h-11 rounded-xl border-[#E4E4E4] bg-transparent px-3.5 py-3 text-[0.9375rem]/5 shadow-none placeholder:text-[#1E1E1E66] dark:border-white/12 dark:placeholder:text-white/40";
 
 export function ContactForm() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
@@ -66,7 +74,7 @@ export function ContactForm() {
     return (
       <div
         aria-live="polite"
-        className="relative flex w-full flex-col items-center gap-3 rounded-2xl border border-border bg-card px-6 py-10 text-center"
+        className="relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-[#ECECEC] bg-white px-6 py-16 text-center shadow-[0_0.0625rem_0.1875rem_#28282814] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none"
       >
         <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
           <Confetti
@@ -87,10 +95,10 @@ export function ContactForm() {
             stageWidth={800}
           />
         </div>
-        <h3 className="relative font-sans font-semibold text-foreground text-xl">
+        <h3 className="relative font-display font-medium text-2xl text-[#1E1E1E] tracking-[-0.02em] dark:text-white">
           Message sent
         </h3>
-        <p className="relative max-w-md text-pretty font-sans text-muted-foreground text-sm leading-6">
+        <p className="relative max-w-md text-pretty font-sans text-[#1E1E1EBF] text-[0.9375rem] leading-6 dark:text-white/70">
           Thanks for reaching out. A real human will write back, usually within
           one business day.
         </p>
@@ -102,14 +110,18 @@ export function ContactForm() {
 
   return (
     <form
-      className="flex w-full flex-col gap-5"
+      className={cardClass}
       onSubmit={(event) => {
         event.preventDefault();
         event.stopPropagation();
         form.handleSubmit();
       }}
     >
-      <div className="grid gap-5 sm:grid-cols-2">
+      <h2 className="font-display font-medium text-[#1E1E1E] text-[1.625rem]/8 tracking-[-0.02em] dark:text-white">
+        Send us a message
+      </h2>
+
+      <div className="flex flex-col gap-4 sm:flex-row">
         <form.Field
           name="name"
           validators={{
@@ -119,12 +131,13 @@ export function ContactForm() {
           }}
         >
           {(field) => (
-            <div className="flex flex-col gap-2">
+            <div className="flex grow basis-0 flex-col gap-2">
               <Label className={labelClass} htmlFor={field.name}>
-                Your name
+                Name
               </Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
+                className={inputClass}
                 id={field.name}
                 name={field.name}
                 onBlur={field.handleBlur}
@@ -149,12 +162,13 @@ export function ContactForm() {
           }}
         >
           {(field) => (
-            <div className="flex flex-col gap-2">
+            <div className="flex grow basis-0 flex-col gap-2">
               <Label className={labelClass} htmlFor={field.name}>
                 Email
               </Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
+                className={inputClass}
                 id={field.name}
                 inputMode="email"
                 name={field.name}
@@ -185,12 +199,13 @@ export function ContactForm() {
           <div className="flex flex-col gap-2">
             <Label className={labelClass} htmlFor={field.name}>
               Company{" "}
-              <span className="font-normal text-muted-foreground">
-                (optional)
+              <span className="font-normal text-[#1E1E1E66] text-[0.8125rem]/4.25 dark:text-white/40">
+                optional
               </span>
             </Label>
             <Input
               aria-invalid={field.state.meta.errors.length > 0}
+              className={inputClass}
               id={field.name}
               name={field.name}
               onBlur={field.handleBlur}
@@ -224,7 +239,7 @@ export function ContactForm() {
               </Label>
               <Textarea
                 aria-invalid={field.state.meta.errors.length > 0}
-                className="min-h-32"
+                className="h-40 min-h-40 resize-none rounded-xl border-[#E4E4E4] bg-transparent px-3.5 py-3 text-[0.9375rem]/5.5 placeholder:text-[#1E1E1E66] dark:border-white/12 dark:placeholder:text-white/40"
                 id={field.name}
                 name={field.name}
                 onBlur={field.handleBlur}
@@ -239,7 +254,7 @@ export function ContactForm() {
                     {field.state.meta.errors[0]}
                   </p>
                 ) : null}
-                <span className="ml-auto shrink-0 font-sans text-muted-foreground text-xs">
+                <span className="ml-auto shrink-0 font-sans text-[#1E1E1E80] text-xs dark:text-white/40">
                   {charsRemaining > 0
                     ? `${charsRemaining} more character${charsRemaining === 1 ? "" : "s"} needed`
                     : `${trimmedLength} characters`}
@@ -272,30 +287,35 @@ export function ContactForm() {
         ) : null}
       </div>
 
-      <p className="text-pretty font-sans text-muted-foreground text-xs leading-5">
-        By submitting this form you agree to our{" "}
-        <Link
-          className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-          href="/privacy"
-        >
-          Privacy Policy
-        </Link>
-        . We'll only use your details to respond to your message.
-      </p>
-
-      <form.Subscribe selector={(state) => state.canSubmit}>
-        {(canSubmit) => (
-          <Button
-            className="h-11 w-full overflow-hidden rounded-lg border-transparent bg-primary px-6 hover:bg-primary-hover sm:w-auto sm:self-start"
-            disabled={!canSubmit || isSubmitting}
-            type="submit"
-          >
-            <span className="font-medium font-sans text-primary-foreground text-sm">
+      <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="font-sans text-[#1E1E1E80] text-[0.8125rem]/4.5 dark:text-white/50">
+            {CONTACT_FORM_ASSURANCE}
+          </p>
+          <p className="font-sans text-[#1E1E1E80] text-xs/4.5 dark:text-white/40">
+            By submitting you agree to our{" "}
+            <Link
+              className="font-medium text-[#1E1E1E] underline underline-offset-2 hover:text-primary dark:text-white"
+              href="/privacy"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
+        <form.Subscribe selector={(state) => state.canSubmit}>
+          {(canSubmit) => (
+            <CtaButton
+              className="px-7 text-[0.9375rem]/4.75 tracking-[-0.01em]"
+              disabled={!canSubmit || isSubmitting}
+              type="submit"
+              variant="primary"
+            >
               {isSubmitting ? "Sending..." : "Send message"}
-            </span>
-          </Button>
-        )}
-      </form.Subscribe>
+            </CtaButton>
+          )}
+        </form.Subscribe>
+      </div>
     </form>
   );
 }

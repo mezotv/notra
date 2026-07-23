@@ -9,7 +9,7 @@ export function Sponsors({ sponsors }: SponsorsProps) {
   return (
     <section className="flex w-full flex-col gap-8 px-4 py-12 sm:px-6 md:px-8 md:py-16">
       <div className="flex flex-col items-center gap-3 text-center">
-        <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+        <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
           Our Sponsors
         </h2>
         <p className="max-w-2xl text-balance text-muted-foreground">
@@ -21,7 +21,7 @@ export function Sponsors({ sponsors }: SponsorsProps) {
       <div className="mx-auto flex w-full max-w-4xl flex-wrap items-stretch justify-center gap-4">
         {sponsors.map((sponsor) => (
           <Link
-            className="group flex flex-col items-center gap-4 rounded-xl bg-card px-8 py-6 transition-colors hover:bg-muted"
+            className="group flex flex-col items-center gap-4 rounded-2xl border border-[#1E1E1E14] bg-[#C8B2EE1F] px-8 py-6 transition-colors hover:bg-[#C8B2EE33] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
             href={sponsor.url}
             key={sponsor.name}
             rel="noopener noreferrer"

@@ -25,7 +25,6 @@
     "@svgl": "https://svgl.app/r/{name}.json",
     "@diceui": "https://diceui.com/r/{name}.json",
     "@react-bits": "https://reactbits.dev/r/{name}.json",
-    "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
-    "@glasscn": "https://glasscn-components.vercel.app/r/{name}.json"
+    "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json"
   }
 }

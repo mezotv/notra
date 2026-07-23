@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 interface OnboardingProgressProps {
-  current: 1 | 2 | 3;
+  current: 1 | 2;
 }
 
-const STEPS = [1, 2, 3] as const;
+const STEPS = [1, 2] as const;
 
 function getStepClasses(step: number, current: number) {
   if (step === current) {

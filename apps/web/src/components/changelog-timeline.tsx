@@ -1,16 +1,17 @@
-import Link from "next/link";
-import { formatChangelogDate } from "@/utils/changelog";
+import { ChangelogFeaturedEntry } from "@/components/changelog-featured-entry";
+import { ChangelogRow } from "@/components/changelog-row";
 import type { ChangelogTimelineProps } from "~types/changelog";
 
 export function ChangelogTimeline({
   items,
+  featuredLabel = "Latest",
   emptyTitle = "No updates yet",
   emptyDescription = "Check back soon for the latest product updates.",
 }: ChangelogTimelineProps) {
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-border border-dashed bg-muted/30 px-6 py-12 text-center">
-        <h2 className="font-sans font-semibold text-foreground text-xl">
+      <div className="rounded-3xl bg-[#C8B2EE1A] px-6 py-12 text-center ring-1 ring-[#1E1E1E1A] dark:bg-white/[0.03] dark:ring-white/10">
+        <h2 className="font-display font-semibold text-foreground text-xl">
           {emptyTitle}
         </h2>
         <p className="mt-2 font-sans text-muted-foreground text-sm leading-6">
@@ -20,27 +21,22 @@ export function ChangelogTimeline({
     );
   }
 
+  const [featured, ...rest] = items;
+
+  if (!featured) {
+    return null;
+  }
+
   return (
-    <div className="relative flex flex-col gap-0">
-      {items.map((item, index) => (
-        <div className="relative pl-8" key={item.id}>
-          {index < items.length - 1 ? (
-            <div className="absolute top-7 left-[4px] h-[calc(100%-1rem)] w-px bg-border" />
-          ) : null}
-          <div className="absolute top-2 left-0 h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
-          <time className="block font-sans text-foreground/45 text-sm">
-            {formatChangelogDate(item.date)}
-          </time>
-          <Link className="group block py-6" href={item.href}>
-            <h2 className="font-sans font-semibold text-foreground text-xl tracking-tight transition-colors group-hover:text-primary">
-              {item.title}
-            </h2>
-            <p className="mt-2 font-sans text-muted-foreground text-sm leading-6 sm:text-base">
-              {item.description}
-            </p>
-          </Link>
+    <div className="flex flex-col gap-14">
+      <ChangelogFeaturedEntry item={featured} label={featuredLabel} />
+      {rest.length > 0 ? (
+        <div className="flex flex-col gap-10">
+          {rest.map((item) => (
+            <ChangelogRow item={item} key={item.id} />
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }

@@ -6,7 +6,7 @@ const FONT_WEIGHTS = ["400", "600", "700", "800"] as const;
 let started = false;
 
 export function ensureStarVideoFonts(): void {
-  if (started) {
+  if (started || typeof FontFace === "undefined") {
     return;
   }
   started = true;
