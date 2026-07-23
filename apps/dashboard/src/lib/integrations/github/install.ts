@@ -1,14 +1,13 @@
 "use client";
 
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
-
-class GitHubInstallStartError extends Data.TaggedError(
-  "GitHubInstallStartError"
-)<{
-  readonly cause: unknown;
-}> {}
+import {
+  GitHubAccountConnectionIncompleteError,
+  GitHubInstallStartError,
+  type StartGitHubInstallResult,
+} from "@/types/integrations/github";
 
 function authorizeGitHub(callbackURL: string, scopes?: string[]) {
   return Effect.tryPromise({
@@ -57,7 +56,7 @@ export function startGitHubInstall(params: {
   organizationId: string;
   callbackPath: string;
   allowAccountConnection?: boolean;
-}) {
+}): Promise<StartGitHubInstallResult> {
   const allowAccountConnection = params.allowAccountConnection ?? true;
 
   return Effect.runPromise(
@@ -69,35 +68,48 @@ export function startGitHubInstall(params: {
         }),
       catch: (cause) => new GitHubInstallStartError({ cause }),
     }).pipe(
-      Effect.flatMap((preparedInstall) => {
-        if (preparedInstall.requiresAccountConnection) {
-          if (!allowAccountConnection) {
-            return Effect.fail(
-              new GitHubInstallStartError({
-                cause: new Error("GitHub account connection did not complete"),
-              })
+      Effect.flatMap(
+        (
+          preparedInstall
+        ): Effect.Effect<
+          boolean,
+          GitHubInstallStartError | GitHubAccountConnectionIncompleteError
+        > => {
+          if (preparedInstall.requiresAccountConnection) {
+            if (!allowAccountConnection) {
+              return Effect.fail(
+                new GitHubAccountConnectionIncompleteError({
+                  callbackPath: params.callbackPath,
+                })
+              );
+            }
+
+            const callbackUrl = new URL(
+              params.callbackPath,
+              window.location.origin
+            );
+            callbackUrl.searchParams.set("githubAccountConnected", "true");
+
+            return authorizeGitHub(
+              `${callbackUrl.pathname}${callbackUrl.search}`
             );
           }
 
-          const callbackUrl = new URL(
-            params.callbackPath,
-            window.location.origin
-          );
-          callbackUrl.searchParams.set("githubAccountConnected", "true");
-
-          return authorizeGitHub(
-            `${callbackUrl.pathname}${callbackUrl.search}`
-          );
+          return Effect.sync(() => {
+            window.location.assign(preparedInstall.url);
+            return true;
+          });
         }
-
-        return Effect.sync(() => {
-          window.location.assign(preparedInstall.url);
-          return true;
-        });
-      }),
+      ),
       Effect.match({
-        onFailure: () => false,
-        onSuccess: () => true,
+        onFailure: (error): StartGitHubInstallResult => ({
+          started: false,
+          reason:
+            error._tag === "GitHubAccountConnectionIncompleteError"
+              ? "account-connection-incomplete"
+              : "install-start-failed",
+        }),
+        onSuccess: (): StartGitHubInstallResult => ({ started: true }),
       })
     )
   );

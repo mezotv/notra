@@ -88,10 +88,15 @@ function useResumeGitHubInstall(params: {
       organizationId: params.organizationId,
       callbackPath: params.callbackPath,
       allowAccountConnection: false,
-    }).then((started) => {
-      if (!started) {
-        toast.error("Failed to resume GitHub installation");
+    }).then((result) => {
+      if (result.started) {
+        return;
       }
+      toast.error(
+        result.reason === "account-connection-incomplete"
+          ? "GitHub account connection didn't complete. Please try connecting again."
+          : "Failed to resume GitHub installation"
+      );
     });
   }, [
     params.callbackPath,
@@ -204,24 +209,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
-  const openInstallTab = async () => {
+  const startInstall = async () => {
     if (!organizationId) {
       return;
     }
 
     const callbackPath = pathname || `/${organizationSlug}/integrations/github`;
-    const didStart = await startGitHubInstall({ organizationId, callbackPath });
+    const result = await startGitHubInstall({ organizationId, callbackPath });
 
-    if (!didStart) {
+    if (!result.started) {
       toast.error("Failed to start GitHub install");
     }
   };
 
   const handleOpenConnect = () => setConnectOpen(true);
 
-  const handleConnect = openInstallTab;
+  const handleConnect = startInstall;
 
-  const handleAddAccount = openInstallTab;
+  const handleAddAccount = startInstall;
 
   useHotkey(
     "C",

@@ -58,9 +58,9 @@ export function GitHubIntegrationDialog({
     }
 
     const callbackPath = `/${organizationSlug}/integrations/github`;
-    const didStart = await startGitHubInstall({ organizationId, callbackPath });
+    const result = await startGitHubInstall({ organizationId, callbackPath });
 
-    if (!didStart) {
+    if (!result.started) {
       toast.error("Failed to start GitHub install");
     }
   };

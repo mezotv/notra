@@ -1,4 +1,17 @@
+import { Data } from "effect";
 import type React from "react";
+
+export class GitHubInstallStartError extends Data.TaggedError(
+  "GitHubInstallStartError"
+)<{
+  readonly cause: unknown;
+}> {}
+
+export class GitHubAccountConnectionIncompleteError extends Data.TaggedError(
+  "GitHubAccountConnectionIncompleteError"
+)<{
+  readonly callbackPath: string;
+}> {}
 
 export type GitHubAccountType = "User" | "Organization";
 
@@ -19,6 +32,14 @@ export interface GitHubAppRepository {
   description: string | null;
   defaultBranch: string;
 }
+
+export type GitHubInstallFailureReason =
+  | "account-connection-incomplete"
+  | "install-start-failed";
+
+export type StartGitHubInstallResult =
+  | { started: true }
+  | { started: false; reason: GitHubInstallFailureReason };
 
 export interface ConnectGitHubDialogProps {
   onConnect: () => void;
