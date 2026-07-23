@@ -11,6 +11,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
 import { getLastVisitedOrganization } from "@/utils/cookies";
+import { ratelimit } from "@/utils/ratelimit";
 
 interface GitHubAppInstallState {
   organizationId: string;
@@ -114,6 +115,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const { success: withinLimit } = await ratelimit.githubAppCallback.limit(
+      session.userId
+    );
+    if (!withinLimit) {
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "too_many_requests",
+      });
+    }
+
     try {
       await assertOrganizationAccess({
         headers: request.headers,
@@ -167,7 +179,10 @@ export async function GET(request: NextRequest) {
         code: "github_installation_forbidden",
       });
     }
-    console.error("Error in GitHub App callback:", error);
+    console.error(
+      "Error in GitHub App callback:",
+      error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+    );
     return buildErrorRedirect({
       baseUrl,
       callbackPath,

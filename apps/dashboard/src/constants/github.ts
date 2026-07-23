@@ -26,6 +26,8 @@ export const GITHUB_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
   github_reauthorization_required:
     "GitHub needs to be reconnected to authorize organization access.",
   github_callback_failed: "Connecting GitHub failed. Please try again.",
+  too_many_requests:
+    "Too many GitHub connection attempts. Please wait a moment and try again.",
 };
 
 export const GITHUB_APP_PERMISSIONS = [

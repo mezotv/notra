@@ -193,7 +193,11 @@ async function getInstallationOrgMembership(params: {
     installationToken = await createGitHubAppInstallationToken(
       params.installationId
     );
-  } catch {
+  } catch (error) {
+    console.error(
+      "Failed to create GitHub App installation token for org membership check:",
+      error instanceof Error ? error.message : String(error)
+    );
     return { verified: false };
   }
 
@@ -217,6 +221,12 @@ async function getInstallationOrgMembership(params: {
   } catch (error) {
     if (getErrorStatus(error) === 404) {
       return { verified: true, isAdmin: false };
+    }
+    if (getErrorStatus(error) !== 403) {
+      console.error(
+        "GitHub org membership check via installation token failed:",
+        error instanceof Error ? error.message : String(error)
+      );
     }
     return { verified: false };
   }
