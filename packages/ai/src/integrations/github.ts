@@ -188,11 +188,17 @@ async function getInstallationOrgMembership(params: {
   org: string;
   username: string;
 }): Promise<GitHubOrgMembershipCheck> {
+  let installationToken: string;
   try {
-    const installationToken = await createGitHubAppInstallationToken(
+    installationToken = await createGitHubAppInstallationToken(
       params.installationId
     );
-    const octokit = createOctokit(installationToken);
+  } catch {
+    return { verified: false };
+  }
+
+  const octokit = createOctokit(installationToken);
+  try {
     const { data: membership } = await octokit.request(
       "GET /orgs/{org}/memberships/{username}",
       {

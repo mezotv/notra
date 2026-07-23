@@ -10,11 +10,22 @@ import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
+import { getLastVisitedOrganization } from "@/utils/cookies";
 
 interface GitHubAppInstallState {
   organizationId: string;
   userId: string;
   callbackPath: string;
+}
+
+const ORGANIZATION_SLUG_PATTERN = /^[a-z0-9-]+$/i;
+
+function getFallbackCallbackPath(request: NextRequest) {
+  const slug = getLastVisitedOrganization(request.cookies);
+  if (!slug || !ORGANIZATION_SLUG_PATTERN.test(slug)) {
+    return null;
+  }
+  return `/${slug}/integrations/github`;
 }
 
 function buildErrorRedirect(params: {
@@ -64,13 +75,17 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get("error");
 
     const installState = await readInstallState(state);
-    callbackPath = installState?.callbackPath ?? null;
+    callbackPath =
+      installState?.callbackPath ?? getFallbackCallbackPath(request);
 
     if (error) {
       return buildErrorRedirect({
         baseUrl,
         callbackPath,
-        code: error === "access_denied" ? "install_cancelled" : error,
+        code:
+          error === "access_denied"
+            ? "install_cancelled"
+            : "github_callback_failed",
       });
     }
 
