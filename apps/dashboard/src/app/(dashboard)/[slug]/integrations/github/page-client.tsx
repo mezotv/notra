@@ -18,10 +18,8 @@ import { LegacyAddIntegrationDialog } from "@/components/integrations/legacy/add
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
-  GITHUB_INSTALL_CHANNEL,
-  GITHUB_INSTALL_MESSAGE,
-} from "@/constants/github";
-import {
+  hasAttemptedGitHubReauthorization,
+  markGitHubReauthorizationAttempted,
   reauthorizeGitHub,
   startGitHubInstall,
 } from "@/lib/integrations/github/install";
@@ -29,31 +27,6 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface PageClientProps {
   organizationSlug: string;
-}
-
-interface GitHubInstallMessage {
-  type: typeof GITHUB_INSTALL_MESSAGE;
-  organizationId: string;
-}
-
-function isGitHubInstallMessage(
-  value: unknown,
-  organizationId: string
-): value is GitHubInstallMessage {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  return (
-    "type" in value &&
-    value.type === GITHUB_INSTALL_MESSAGE &&
-    "organizationId" in value &&
-    value.organizationId === organizationId
-  );
-}
-
-function getGitHubInstallStorageKey(organizationId: string) {
-  return `${GITHUB_INSTALL_CHANNEL}:${organizationId}`;
 }
 
 function useResumeGitHubInstall(params: {
@@ -85,6 +58,12 @@ function useResumeGitHubInstall(params: {
     window.history.replaceState(null, "", nextUrl);
 
     if (params.reauthorizationInstallationId && params.reauthorizationState) {
+      if (hasAttemptedGitHubReauthorization(params.reauthorizationState)) {
+        toast.error("Failed to reconnect GitHub. Please try again.");
+        return;
+      }
+      markGitHubReauthorizationAttempted(params.reauthorizationState);
+
       const callbackUrl = new URL(
         "/api/integrations/github/callback",
         window.location.origin
@@ -108,6 +87,7 @@ function useResumeGitHubInstall(params: {
     startGitHubInstall({
       organizationId: params.organizationId,
       callbackPath: params.callbackPath,
+      allowAccountConnection: false,
     }).then((started) => {
       if (!started) {
         toast.error("Failed to resume GitHub installation");
@@ -175,60 +155,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (
-        event.origin === window.location.origin &&
-        isGitHubInstallMessage(event.data, organization?.id ?? "")
-      ) {
-        handleGitHubInstalled();
-      }
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === getGitHubInstallStorageKey(organization?.id ?? "")) {
-        handleGitHubInstalled();
-      }
-    };
-    const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-    const handleChannelMessage = (event: MessageEvent) => {
-      if (isGitHubInstallMessage(event.data, organization?.id ?? "")) {
-        handleGitHubInstalled();
-      }
-    };
-    channel.addEventListener("message", handleChannelMessage);
-
-    window.addEventListener("message", handleMessage);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      channel.removeEventListener("message", handleChannelMessage);
-      channel.close();
-      window.removeEventListener("message", handleMessage);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, [organization?.id]);
-
-  useEffect(() => {
     if (searchParams.get("githubConnected") !== "true" || !organization?.id) {
       return;
     }
 
-    const message: GitHubInstallMessage = {
-      type: GITHUB_INSTALL_MESSAGE,
-      organizationId: organization.id,
-    };
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("githubConnected");
+    window.history.replaceState(null, "", nextUrl);
 
-    if (window.opener && window.opener !== window) {
-      window.opener.postMessage(message, window.location.origin);
-      window.close();
-      return;
-    }
-
-    const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-    channel.postMessage(message);
-    channel.close();
-    window.localStorage.setItem(
-      getGitHubInstallStorageKey(organization.id),
-      crypto.randomUUID()
-    );
+    handleGitHubInstalled();
   }, [searchParams, organization?.id]);
 
   const saveRepositoriesMutation = useMutation({

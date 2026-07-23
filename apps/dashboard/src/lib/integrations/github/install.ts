@@ -3,7 +3,6 @@
 import { Data, Effect } from "effect";
 import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import { openGitHubInstallTab } from "./tab";
 
 class GitHubInstallStartError extends Data.TaggedError(
   "GitHubInstallStartError"
@@ -40,17 +39,46 @@ export function reauthorizeGitHub(callbackURL: string) {
   );
 }
 
+function reauthorizationAttemptKey(state: string) {
+  return `notra:github-reauthorize-attempted:${state}`;
+}
+
+export function hasAttemptedGitHubReauthorization(state: string) {
+  return (
+    window.sessionStorage.getItem(reauthorizationAttemptKey(state)) !== null
+  );
+}
+
+export function markGitHubReauthorizationAttempted(state: string) {
+  window.sessionStorage.setItem(reauthorizationAttemptKey(state), "true");
+}
+
 export function startGitHubInstall(params: {
   organizationId: string;
   callbackPath: string;
+  allowAccountConnection?: boolean;
 }) {
+  const allowAccountConnection = params.allowAccountConnection ?? true;
+
   return Effect.runPromise(
     Effect.tryPromise({
-      try: () => dashboardOrpc.github.app.prepareInstallUrl.call(params),
+      try: () =>
+        dashboardOrpc.github.app.prepareInstallUrl.call({
+          organizationId: params.organizationId,
+          callbackPath: params.callbackPath,
+        }),
       catch: (cause) => new GitHubInstallStartError({ cause }),
     }).pipe(
       Effect.flatMap((preparedInstall) => {
         if (preparedInstall.requiresAccountConnection) {
+          if (!allowAccountConnection) {
+            return Effect.fail(
+              new GitHubInstallStartError({
+                cause: new Error("GitHub account connection did not complete"),
+              })
+            );
+          }
+
           const callbackUrl = new URL(
             params.callbackPath,
             window.location.origin
@@ -63,7 +91,7 @@ export function startGitHubInstall(params: {
         }
 
         return Effect.sync(() => {
-          openGitHubInstallTab(preparedInstall.url);
+          window.location.assign(preparedInstall.url);
           return true;
         });
       }),
