@@ -26,7 +26,7 @@ function FeaturesCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col items-start overflow-clip rounded-[0.8125rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-8.75 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] dark:bg-none dark:bg-white/[0.02] dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]",
+        "relative flex flex-col items-start overflow-clip rounded-[0.8125rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] sm:p-8.75 dark:bg-none dark:bg-white/[0.02] dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]",
         className
       )}
     >
@@ -36,7 +36,7 @@ function FeaturesCard({
       />
       <div className={cn("relative shrink-0", containerClassName)}>
         <div className="absolute top-0 left-0 z-10 flex w-full flex-col items-start gap-1.5 lg:w-110.25">
-          <h3 className="font-medium font-sans text-[#0A0D14] text-[1.5625rem]/8 tracking-[-0.015em] lg:h-8 dark:text-white">
+          <h3 className="font-medium font-sans text-[#0A0D14] text-xl/7 tracking-[-0.015em] sm:text-[1.5625rem]/8 lg:h-8 dark:text-white">
             {copy.title}
           </h3>
           <p className="w-full font-medium font-sans text-[#6A6B70] text-base/6 lg:w-102 dark:text-white/60">
@@ -51,13 +51,13 @@ function FeaturesCard({
 
 export function FeaturesSection() {
   return (
-    <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 pt-20 antialiased [font-synthesis:none] lg:px-20 lg:pt-35">
+    <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 pt-20 antialiased [font-synthesis:none] sm:px-12 lg:px-20 lg:pt-35">
       <div className="flex w-full flex-col items-center gap-13.5">
         <header className="flex flex-col items-center gap-4">
-          <h2 className="text-center font-display font-medium text-[2.25rem] text-black leading-[1.15] tracking-[-0.02em] lg:text-[3.0625rem]/14 dark:text-white">
+          <h2 className="text-center font-display font-medium text-[2rem] text-black leading-[1.15] tracking-[-0.02em] sm:text-[2.25rem] lg:text-[3.0625rem]/14 dark:text-white">
             {FEATURES_HEADING}
           </h2>
-          <p className="w-full max-w-206.25 text-balance text-center font-display font-medium text-[#1E1E1EBF] text-xl/7.5 tracking-[-0.01em] dark:text-white/70">
+          <p className="w-full max-w-206.25 text-balance text-center font-display font-medium text-[#1E1E1EBF] text-lg/7 tracking-[-0.01em] sm:text-xl/7.5 dark:text-white/70">
             {FEATURES_SUBCOPY_LINE_ONE}
             <br />
             {FEATURES_SUBCOPY_LINE_TWO}
