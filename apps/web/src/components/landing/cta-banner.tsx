@@ -1,9 +1,6 @@
-"use client";
-
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
-import { Dithering } from "@paper-design/shaders-react";
-import { useReducedMotion } from "motion/react";
 import Link from "next/link";
+import { DeferredDithering } from "@/components/deferred-dithering";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
 import {
   CTA_BANNER_CONTACT_HREF,
@@ -15,18 +12,16 @@ import {
 } from "@/constants/landing/cta-banner";
 
 export function CtaBanner() {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
     <div className="relative mx-auto flex min-h-[27.4375rem] w-full max-w-[87rem] shrink-0 items-center justify-center overflow-clip rounded-[1.5625rem] bg-[#C8B2EE40] px-6 py-16 antialiased dark:bg-[#231d3a]">
-      <Dithering
+      <DeferredDithering
         className="-top-66.25 absolute left-[-5.368rem] h-264.5 w-403.25"
         colorBack="#00000000"
         colorFront="#8B5CF62D"
         scale={0.53}
         shape="wave"
         size={2.9}
-        speed={shouldReduceMotion ? 0 : 0.7}
+        speed={0.7}
         type="4x4"
       />
       <div className="relative flex w-full max-w-[53.3125rem] flex-col items-center gap-10.5">

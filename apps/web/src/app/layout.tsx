@@ -37,7 +37,7 @@ const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
   weight: ["400"],
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 export const viewport: Viewport = {

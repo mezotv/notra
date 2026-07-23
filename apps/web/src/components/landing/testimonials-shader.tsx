@@ -1,7 +1,4 @@
-"use client";
-
-import { Dithering } from "@paper-design/shaders-react";
-import { useReducedMotion } from "motion/react";
+import { DeferredDithering } from "@/components/deferred-dithering";
 import type { TestimonialsShaderProps } from "@/types/landing/testimonials";
 
 export function TestimonialsShader({
@@ -9,17 +6,15 @@ export function TestimonialsShader({
   colorFront,
   className,
 }: TestimonialsShaderProps) {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
-    <Dithering
+    <DeferredDithering
       className={className}
       colorBack="#00000000"
       colorFront={colorFront}
       scale={0.74}
       shape="wave"
       size={size}
-      speed={shouldReduceMotion ? 0 : 0.5}
+      speed={0.5}
       type="4x4"
     />
   );
