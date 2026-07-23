@@ -272,6 +272,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
   });
 
   useEffect(() => {
+    // react-doctor-disable-next-line react-hooks-js/set-state-in-effect
     setScrolled(window.scrollY > getScrollThreshold());
   }, [getScrollThreshold]);
 
