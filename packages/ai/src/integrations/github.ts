@@ -23,6 +23,7 @@ import type {
   ConfigureOutputParams,
   CreateGitHubIntegrationParams,
   ErrorWithStatus,
+  GitHubOrgMembershipCheck,
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
@@ -182,8 +183,42 @@ async function getGitHubAppInstallation(installationId: string) {
   return Effect.runPromise(decodeGitHubAppInstallationResponse(data));
 }
 
+async function getInstallationOrgMembership(params: {
+  installationId: string;
+  org: string;
+  username: string;
+}): Promise<GitHubOrgMembershipCheck> {
+  try {
+    const installationToken = await createGitHubAppInstallationToken(
+      params.installationId
+    );
+    const octokit = createOctokit(installationToken);
+    const { data: membership } = await octokit.request(
+      "GET /orgs/{org}/memberships/{username}",
+      {
+        org: params.org,
+        username: params.username,
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      }
+    );
+
+    return {
+      verified: true,
+      isAdmin: membership.state === "active" && membership.role === "admin",
+    };
+  } catch (error) {
+    if (getErrorStatus(error) === 404) {
+      return { verified: true, isAdmin: false };
+    }
+    return { verified: false };
+  }
+}
+
 async function assertGitHubInstallationAdmin(params: {
   userId: string;
+  installationId: string;
   installationAccount: {
     id: number;
     login: string;
@@ -207,19 +242,19 @@ async function assertGitHubInstallationAdmin(params: {
   }
 
   const octokit = createOctokit(githubAccount.accessToken);
-  const githubUser = await octokit
+  const userResponse = await octokit
     .request("GET /user", {
       headers: {
         "X-GitHub-Api-Version": "2022-11-28",
       },
     })
-    .then(({ data }) => data)
     .catch((error: unknown) => {
       if (getErrorStatus(error) === 401) {
         throw new GitHubReauthorizationRequiredError();
       }
       throw error;
     });
+  const githubUser = userResponse.data;
 
   if (String(githubUser.id) !== githubAccount.accountId) {
     throw new GitHubInstallationAccessDeniedError();
@@ -232,7 +267,23 @@ async function assertGitHubInstallationAdmin(params: {
     return;
   }
 
-  if (!hasGitHubScope(githubAccount.scope, "read:org")) {
+  const installationMembership = await getInstallationOrgMembership({
+    installationId: params.installationId,
+    org: params.installationAccount.login,
+    username: githubUser.login,
+  });
+
+  if (installationMembership.verified) {
+    if (!installationMembership.isAdmin) {
+      throw new GitHubInstallationAccessDeniedError();
+    }
+    return;
+  }
+
+  const tokenScopes =
+    userResponse.headers["x-oauth-scopes"] ?? githubAccount.scope;
+
+  if (!hasGitHubScope(tokenScopes, "read:org")) {
     throw new GitHubReauthorizationRequiredError();
   }
 
@@ -570,6 +621,7 @@ export async function upsertGitHubAppInstallation(params: {
 
   await assertGitHubInstallationAdmin({
     userId: params.userId,
+    installationId: params.installationId,
     installationAccount: installation.account,
   });
 

@@ -17,6 +17,7 @@ import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LegacyAddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { GITHUB_CALLBACK_ERROR_MESSAGES } from "@/constants/github";
 import {
   hasAttemptedGitHubReauthorization,
   markGitHubReauthorizationAttempted,
@@ -32,6 +33,26 @@ import {
 
 interface PageClientProps {
   organizationSlug: string;
+}
+
+function useGitHubCallbackErrorToast(errorCode: string | null) {
+  const handledErrorRef = useRef(false);
+
+  useEffect(() => {
+    if (!errorCode || handledErrorRef.current) {
+      return;
+    }
+
+    handledErrorRef.current = true;
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("githubError");
+    window.history.replaceState(null, "", nextUrl);
+
+    toast.error(
+      GITHUB_CALLBACK_ERROR_MESSAGES[errorCode] ??
+        GITHUB_CALLBACK_ERROR_MESSAGES.github_callback_failed
+    );
+  }, [errorCode]);
 }
 
 function useResumeGitHubInstall(params: {
@@ -180,6 +201,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     reauthorizationState: searchParams.get("githubReauthorizeState"),
     shouldResume: searchParams.get("githubAccountConnected") === "true",
   });
+  useGitHubCallbackErrorToast(searchParams.get("githubError"));
 
   const githubAppQuery = useQuery(
     dashboardOrpc.github.app.get.queryOptions({
@@ -281,13 +303,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const handleOpenConnect = () => setConnectOpen(true);
 
-  const handleConnect = startInstall;
-
-  const handleAddAccount = startInstall;
+  const handleOpenRepositories = () => setReposOpen(true);
 
   useHotkey(
     "C",
-    () => (isConnected ? handleAddAccount() : handleOpenConnect()),
+    () => (isConnected ? handleOpenRepositories() : handleOpenConnect()),
     {
       enabled: !!organizationId,
     }
@@ -335,10 +355,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <Button
             className="gap-1.5"
-            onClick={isConnected ? handleAddAccount : handleOpenConnect}
+            onClick={isConnected ? handleOpenRepositories : handleOpenConnect}
           >
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            {isConnected ? "Add GitHub account" : "Connect GitHub"}
+            {isConnected ? "Add repositories" : "Connect GitHub"}
             <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
@@ -368,7 +388,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
       <ConnectGitHubDialog
         isConnecting={false}
-        onConnect={handleConnect}
+        onConnect={startInstall}
         onOpenChange={setConnectOpen}
         open={connectOpen}
       />
@@ -377,7 +397,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         initialSelected={selectedRepositoryIds}
         isLoading={githubAppQuery.isLoading && !data}
         isSaving={saveRepositoriesMutation.isPending}
-        onAddAccount={handleAddAccount}
+        onAddAccount={startInstall}
         onOpenChange={setReposOpen}
         onSave={handleSaveRepositories}
         open={reposOpen}

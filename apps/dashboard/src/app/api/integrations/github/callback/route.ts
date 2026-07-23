@@ -17,6 +17,39 @@ interface GitHubAppInstallState {
   callbackPath: string;
 }
 
+function buildErrorRedirect(params: {
+  baseUrl: string;
+  callbackPath: string | null;
+  code: string;
+}) {
+  if (params.callbackPath) {
+    return NextResponse.redirect(
+      buildCallbackUrl(params.baseUrl, params.callbackPath, {
+        githubError: params.code,
+      })
+    );
+  }
+
+  return NextResponse.redirect(
+    `${params.baseUrl}/?error=${encodeURIComponent(params.code)}`
+  );
+}
+
+async function readInstallState(state: string | null) {
+  if (!(state && redis)) {
+    return null;
+  }
+
+  const raw = await redis.get<string>(`github_app_install:${state}`);
+  if (!raw) {
+    return null;
+  }
+
+  const installState: GitHubAppInstallState =
+    typeof raw === "string" ? JSON.parse(raw) : raw;
+  return installState;
+}
+
 export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -30,28 +63,40 @@ export async function GET(request: NextRequest) {
     state = searchParams.get("state");
     const error = searchParams.get("error");
 
+    const installState = await readInstallState(state);
+    callbackPath = installState?.callbackPath ?? null;
+
     if (error) {
-      return NextResponse.redirect(
-        `${baseUrl}/?error=${encodeURIComponent(error)}`
-      );
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: error === "access_denied" ? "install_cancelled" : error,
+      });
     }
 
     if (!(installationId && state && redis)) {
-      return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "invalid_callback",
+      });
     }
 
-    const raw = await redis.get<string>(`github_app_install:${state}`);
-    if (!raw) {
-      return NextResponse.redirect(`${baseUrl}/?error=expired_state`);
+    if (!installState) {
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "expired_state",
+      });
     }
-
-    const installState: GitHubAppInstallState =
-      typeof raw === "string" ? JSON.parse(raw) : raw;
-    callbackPath = installState.callbackPath;
 
     const { session } = await getServerSession({ headers: request.headers });
     if (!session?.userId || session.userId !== installState.userId) {
-      return NextResponse.redirect(`${baseUrl}/?error=session_mismatch`);
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "session_mismatch",
+      });
     }
 
     try {
@@ -59,11 +104,15 @@ export async function GET(request: NextRequest) {
         headers: request.headers,
         organizationId: installState.organizationId,
       });
-    } catch (error) {
-      if (error instanceof ORPCError) {
-        return NextResponse.redirect(`${baseUrl}/?error=forbidden`);
+    } catch (accessError) {
+      if (accessError instanceof ORPCError) {
+        return buildErrorRedirect({
+          baseUrl,
+          callbackPath,
+          code: "forbidden",
+        });
       }
-      throw error;
+      throw accessError;
     }
 
     await upsertGitHubAppInstallation({
@@ -71,8 +120,6 @@ export async function GET(request: NextRequest) {
       userId: installState.userId,
       installationId,
     });
-
-    await redis.del(`github_app_install:${state}`);
 
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, installState.callbackPath, {
@@ -92,16 +139,24 @@ export async function GET(request: NextRequest) {
           })
         );
       }
-      return NextResponse.redirect(
-        `${baseUrl}/?error=github_reauthorization_required`
-      );
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "github_reauthorization_required",
+      });
     }
     if (error instanceof GitHubInstallationAccessDeniedError) {
-      return NextResponse.redirect(
-        `${baseUrl}/?error=github_installation_forbidden`
-      );
+      return buildErrorRedirect({
+        baseUrl,
+        callbackPath,
+        code: "github_installation_forbidden",
+      });
     }
     console.error("Error in GitHub App callback:", error);
-    return NextResponse.redirect(`${baseUrl}/?error=github_callback_failed`);
+    return buildErrorRedirect({
+      baseUrl,
+      callbackPath,
+      code: "github_callback_failed",
+    });
   }
 }

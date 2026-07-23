@@ -25,6 +25,7 @@ import { count, eq } from "drizzle-orm";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import { GITHUB_OAUTH_SCOPES } from "@/constants/github";
 import {
   OAUTH_ACCEPTED_SCOPES,
   OAUTH_ACCESS_TOKEN_TTL_SECONDS,
@@ -102,6 +103,7 @@ function buildSocialProviders() {
     providers.github = {
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      scope: [...GITHUB_OAUTH_SCOPES],
     };
   }
 

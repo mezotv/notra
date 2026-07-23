@@ -2,6 +2,10 @@ export interface ErrorWithStatus {
   status?: number;
 }
 
+export type GitHubOrgMembershipCheck =
+  | { verified: true; isAdmin: boolean }
+  | { verified: false };
+
 export interface ValidateRepositoryBranchExistsParams {
   owner: string;
   repo: string;
