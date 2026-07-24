@@ -56,37 +56,12 @@ export function StarVideoPreview() {
     (bgParam && normalizeHex(bgParam)) || DEFAULT_BACKGROUND_COLOR
   );
 
-  const loadRepo = useCallback(async (raw: string) => {
-    const parsed = parseRepoInput(raw);
-    if (!parsed) {
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `/api/star-video/repo?owner=${encodeURIComponent(parsed.owner)}&repo=${encodeURIComponent(parsed.repo)}`
-      );
-      const json: RepoStarData & { error?: string } = await response.json();
-      if (!response.ok) {
-        toast.error(json.error ?? "Could not load that repository.");
-        return;
-      }
-      setData(json);
-    } catch {
-      toast.error("Something went wrong loading that repository.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const containerRef = useRef<HTMLDivElement>(null);
   const hasMounted = useRef(false);
 
   useEffect(() => {
-    if (repoParam) {
-      loadRepo(repoParam);
-    }
+    const parsed = repoParam ? parseRepoInput(repoParam) : null;
+
     if (hasMounted.current && repoParam) {
       containerRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -94,7 +69,39 @@ export function StarVideoPreview() {
       });
     }
     hasMounted.current = true;
-  }, [repoParam, loadRepo]);
+
+    if (!parsed) {
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsLoading(true);
+
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/star-video/repo?owner=${encodeURIComponent(parsed.owner)}&repo=${encodeURIComponent(parsed.repo)}`,
+          { signal: controller.signal }
+        );
+        const json: RepoStarData & { error?: string } = await response.json();
+        if (!response.ok) {
+          toast.error(json.error ?? "Could not load that repository.");
+          return;
+        }
+        setData(json);
+      } catch {
+        if (!controller.signal.aborted) {
+          toast.error("Something went wrong loading that repository.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [repoParam]);
 
   const applyBackground = useCallback(
     (color: string) => {
