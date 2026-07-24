@@ -1,7 +1,10 @@
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { enforceStarVideoRateLimit } from "@/lib/star-video/ratelimit";
+import {
+  enforceGlobalRenderLimit,
+  enforceStarVideoRateLimit,
+} from "@/lib/star-video/ratelimit";
 import { renderStarVideo } from "@/lib/star-video/render";
 import { starVideoInputSchema } from "@/schemas/star-video";
 
@@ -32,6 +35,7 @@ export async function POST(request: NextRequest) {
   return Effect.runPromise(
     Effect.gen(function* () {
       yield* enforceStarVideoRateLimit(request, "render");
+      yield* enforceGlobalRenderLimit();
 
       const video = yield* Effect.tryPromise({
         try: () => renderStarVideo(parsed.data),

@@ -4,11 +4,14 @@ import { Redis } from "@upstash/redis";
 import { Data, Effect } from "effect";
 import type { NextRequest } from "next/server";
 
-type LimiterKind = "lookup" | "render";
+type LimiterKind = "lookup" | "render" | "render-global";
 
 const LIMITS: Record<LimiterKind, { requests: number; window: "1 h" }> = {
   lookup: { requests: 20, window: "1 h" },
   render: { requests: 10, window: "1 h" },
+  // Shared cap across every caller/instance so IP rotation can't multiply the
+  // expensive render budget beyond a bounded total per hour.
+  "render-global": { requests: 80, window: "1 h" },
 };
 
 class StarVideoRateLimitExceeded extends Data.TaggedError(
@@ -64,30 +67,43 @@ function getRateLimitKey(request: NextRequest): string {
   return createHash("sha256").update(getClientIp(request)).digest("hex");
 }
 
+const enforceLimit = Effect.fn("enforceStarVideoLimit")(function* (
+  kind: LimiterKind,
+  key: string
+) {
+  const limiter = getLimiter(kind);
+
+  if (!limiter) {
+    // Fail closed in production so the endpoints are never left unprotected
+    // when Redis is misconfigured; only allow the no-limiter path in dev.
+    if (process.env.NODE_ENV === "production") {
+      return yield* Effect.fail(new StarVideoRateLimitExceeded({ reset: 0 }));
+    }
+    return;
+  }
+
+  // Fail closed on Redis errors: a transient outage must not silently
+  // disable rate limiting on the expensive render path.
+  const result = yield* Effect.tryPromise({
+    try: () => limiter.limit(key),
+    catch: () => new StarVideoRateLimitExceeded({ reset: 0 }),
+  });
+
+  if (!result.success) {
+    return yield* Effect.fail(
+      new StarVideoRateLimitExceeded({ reset: result.reset })
+    );
+  }
+});
+
 export const enforceStarVideoRateLimit = Effect.fn("enforceStarVideoRateLimit")(
-  function* (request: NextRequest, kind: LimiterKind) {
-    const limiter = getLimiter(kind);
+  function* (request: NextRequest, kind: "lookup" | "render") {
+    yield* enforceLimit(kind, getRateLimitKey(request));
+  }
+);
 
-    if (!limiter) {
-      // Fail closed in production so the endpoints are never left unprotected
-      // when Redis is misconfigured; only allow the no-limiter path in dev.
-      if (process.env.NODE_ENV === "production") {
-        return yield* Effect.fail(new StarVideoRateLimitExceeded({ reset: 0 }));
-      }
-      return;
-    }
-
-    // Fail closed on Redis errors: a transient outage must not silently
-    // disable rate limiting on the expensive render path.
-    const result = yield* Effect.tryPromise({
-      try: () => limiter.limit(getRateLimitKey(request)),
-      catch: () => new StarVideoRateLimitExceeded({ reset: 0 }),
-    });
-
-    if (!result.success) {
-      return yield* Effect.fail(
-        new StarVideoRateLimitExceeded({ reset: result.reset })
-      );
-    }
+export const enforceGlobalRenderLimit = Effect.fn("enforceGlobalRenderLimit")(
+  function* () {
+    yield* enforceLimit("render-global", "global");
   }
 );
