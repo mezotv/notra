@@ -2,13 +2,25 @@
 
 import { Download04Icon, StarIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ColorPicker,
+  ColorPickerEyeDropper,
+  ColorPickerHue,
+  ColorPickerSelection,
+} from "@notra/ui/components/kibo-ui/color-picker";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notra/ui/components/ui/popover";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { cn } from "@notra/ui/lib/utils";
 import { Player } from "@remotion/player";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { normalizeHex, rgbaToHex } from "@/lib/star-video/color";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
 import {
   DEFAULT_BACKGROUND_COLOR,
@@ -19,22 +31,6 @@ import {
 } from "@/remotion/star-video/constants";
 import { StarVideo } from "@/remotion/star-video/star-video";
 import type { RepoStarData, StarVideoInputProps } from "@/types/star-video";
-
-const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-
-function normalizeHex(input: string): string | null {
-  if (!HEX_COLOR.test(input)) {
-    return null;
-  }
-  const hex = input.slice(1);
-  if (hex.length === 3) {
-    return `#${hex
-      .split("")
-      .map((char) => char + char)
-      .join("")}`.toLowerCase();
-  }
-  return `#${hex}`.toLowerCase();
-}
 
 const BACKGROUND_PRESETS = [
   { value: DEFAULT_BACKGROUND_COLOR, label: "Mint" },
@@ -117,6 +113,10 @@ export function StarVideoPreview() {
       setBgParam(normalized);
     },
     [setBgParam]
+  );
+
+  const isCustomBackground = !BACKGROUND_PRESETS.some(
+    (preset) => preset.value === backgroundColor
   );
 
   const inputProps = useMemo<StarVideoInputProps | null>(() => {
@@ -234,20 +234,37 @@ export function StarVideoPreview() {
                 type="button"
               />
             ))}
-            <label
-              className="flex size-7 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#1E1E1E1A] dark:border-white/15"
-              htmlFor="star-video-bg"
-              style={{ backgroundColor }}
-            >
-              <input
+            <Popover>
+              <PopoverTrigger
                 aria-label="Custom background color"
-                className="sr-only"
-                id="star-video-bg"
-                onChange={(event) => applyBackground(event.target.value)}
-                type="color"
-                value={backgroundColor}
+                aria-pressed={isCustomBackground}
+                className={cn(
+                  "size-7 cursor-pointer rounded-full border transition-transform hover:scale-110",
+                  isCustomBackground
+                    ? "border-[#1E1E1E] ring-2 ring-[#1E1E1E1A] dark:border-white dark:ring-white/20"
+                    : "border-[#1E1E1E1A] bg-[conic-gradient(from_180deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF,#B983FF,#FF6B6B)] dark:border-white/15"
+                )}
+                style={isCustomBackground ? { backgroundColor } : undefined}
+                type="button"
               />
-            </label>
+              <PopoverContent align="start" className="w-64">
+                <ColorPicker
+                  className="flex flex-col gap-3"
+                  defaultValue={backgroundColor}
+                  onChange={(value) => {
+                    if (Array.isArray(value)) {
+                      applyBackground(rgbaToHex(value));
+                    }
+                  }}
+                >
+                  <ColorPickerSelection className="h-32 rounded-md" />
+                  <div className="flex items-center gap-2">
+                    <ColorPickerEyeDropper />
+                    <ColorPickerHue className="flex-1" />
+                  </div>
+                </ColorPicker>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
