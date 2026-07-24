@@ -85,12 +85,14 @@ export function StarVideoPreview() {
         );
         const json: RepoStarData & { error?: string } = await response.json();
         if (!response.ok) {
+          setData(null);
           toast.error(json.error ?? "Could not load that repository.");
           return;
         }
         setData(json);
       } catch {
         if (!controller.signal.aborted) {
+          setData(null);
           toast.error("Something went wrong loading that repository.");
         }
       } finally {

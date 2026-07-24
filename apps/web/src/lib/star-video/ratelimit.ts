@@ -43,17 +43,11 @@ function getLimiter(kind: LimiterKind): Ratelimit | null {
 }
 
 function getClientIp(request: NextRequest): string {
-  const vercelForwardedFor = request.headers
-    .get("x-vercel-forwarded-for")
-    ?.split(",")[0]
-    ?.trim();
-
-  if (vercelForwardedFor) {
-    return vercelForwardedFor;
-  }
-
   if (process.env.VERCEL) {
-    return "unknown";
+    return (
+      request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown"
+    );
   }
 
   return (
