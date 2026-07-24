@@ -76,6 +76,8 @@ const SHELL_TRANSITION = {
   ease: EASE,
 };
 const SCROLL_THRESHOLD = 64;
+const MOBILE_SCROLL_THRESHOLD = 16;
+const MOBILE_MEDIA_QUERY = "(max-width: 63.9375rem)";
 const ISLAND_CHROME =
   "bg-white shadow-[0_0.125rem_1.25rem_#1E1E1E14,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E14] dark:bg-neutral-950 dark:shadow-black/50 dark:ring-white/10";
 const SWAP_TRANSITION = {
@@ -257,13 +259,22 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [logoMenuOpen, setLogoMenuOpen] = useState(false);
 
+  const getScrollThreshold = useCallback(
+    () =>
+      window.matchMedia(MOBILE_MEDIA_QUERY).matches
+        ? MOBILE_SCROLL_THRESHOLD
+        : SCROLL_THRESHOLD,
+    []
+  );
+
   useMotionValueEvent(scrollY, "change", (latest) => {
-    setScrolled(latest > SCROLL_THRESHOLD);
+    setScrolled(latest > getScrollThreshold());
   });
 
   useEffect(() => {
-    setScrolled(window.scrollY > SCROLL_THRESHOLD);
-  }, []);
+    // react-doctor-disable-next-line react-hooks-js/set-state-in-effect
+    setScrolled(window.scrollY > getScrollThreshold());
+  }, [getScrollThreshold]);
 
   const cancelClose = useCallback(() => {
     if (closeTimerRef.current) {
@@ -401,11 +412,13 @@ export function Navbar({ variant }: NavbarProps = {}) {
           initial={false}
           transition={shellTransition}
         >
-          <div className={innerPaddingClass}>
+          <div
+            className={`max-lg:transition-[padding] max-lg:duration-300 max-lg:ease-out ${innerPaddingClass}`}
+          >
             {/* biome-ignore lint/a11y/noStaticElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
             {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: see above */}
             <div
-              className={`relative flex items-center justify-between gap-4 ${rowHeightClass}`}
+              className={`relative flex items-center justify-between gap-4 max-lg:transition-[height] max-lg:duration-300 max-lg:ease-out ${rowHeightClass}`}
               onMouseLeave={scheduleClose}
             >
               <DropdownMenu
