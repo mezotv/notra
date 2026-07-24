@@ -203,11 +203,11 @@ export function StarVideoPreview() {
       </div>
 
       <div className="flex w-full flex-col items-center gap-5 sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
           <span className="font-sans text-[#1E1E1E99] text-sm dark:text-white/50">
             Background
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {BACKGROUND_PRESETS.map((preset) => (
               <button
                 aria-label={preset.label}

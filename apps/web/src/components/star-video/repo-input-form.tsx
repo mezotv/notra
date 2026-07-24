@@ -28,7 +28,7 @@ export function RepoInputForm() {
   return (
     <form className="w-full" onSubmit={onSubmit}>
       <div className="flex w-full max-w-[35rem] items-center justify-between gap-2.5 rounded-full bg-white py-2.5 pr-2.5 pl-5 [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.1875rem] dark:bg-white/[0.06] dark:[box-shadow:#FFFFFF1F_0_0_0_0.0625rem]">
-        <div className="flex grow items-center gap-2.5">
+        <div className="flex min-w-0 grow items-center gap-2.5">
           <GitHubMark className="size-4.5 shrink-0 text-[#1E1E1E80] dark:text-white/50" />
           <input
             aria-label="GitHub repository"
