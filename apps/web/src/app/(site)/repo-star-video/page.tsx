@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { RepoInputForm } from "@/components/star-video/repo-input-form";
 import { StarVideoPreview } from "@/components/star-video/star-video-preview";
@@ -79,10 +80,14 @@ export default function RepoStarVideoPage() {
               </>
             }
           >
-            <RepoInputForm />
+            <Suspense fallback={null}>
+              <RepoInputForm />
+            </Suspense>
           </MarketingHeroWash>
 
-          <StarVideoPreview />
+          <Suspense fallback={null}>
+            <StarVideoPreview />
+          </Suspense>
         </section>
       </NuqsAdapter>
     </div>
