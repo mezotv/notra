@@ -21,7 +21,6 @@ function isAllowedAvatarUrl(value: string): boolean {
 }
 
 const avatarUrl = z
-  .string()
   .url()
   .refine(isAllowedAvatarUrl, "Avatar URLs must be on githubusercontent.com.");
 

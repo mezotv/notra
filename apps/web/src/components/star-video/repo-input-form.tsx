@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryState } from "nuqs";
-import { type FormEvent, useCallback, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { GitHubMark } from "@/components/star-video/github-mark";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
@@ -12,18 +12,15 @@ export function RepoInputForm() {
   const [repoParam, setRepoParam] = useQueryState("repo");
   const [value, setValue] = useState(repoParam ?? DEFAULT_INPUT);
 
-  const onSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const parsed = parseRepoInput(value);
-      if (!parsed) {
-        toast.error("Enter a repo as owner/name or a GitHub URL.");
-        return;
-      }
-      setRepoParam(`${parsed.owner}/${parsed.repo}`.toLowerCase());
-    },
-    [setRepoParam, value]
-  );
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const parsed = parseRepoInput(value);
+    if (!parsed) {
+      toast.error("Enter a repo as owner/name or a GitHub URL.");
+      return;
+    }
+    setRepoParam(`${parsed.owner}/${parsed.repo}`.toLowerCase());
+  };
 
   return (
     <form

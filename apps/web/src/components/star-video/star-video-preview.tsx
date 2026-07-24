@@ -84,21 +84,20 @@ export function StarVideoPreview() {
           { signal: controller.signal }
         );
         const json: RepoStarData & { error?: string } = await response.json();
-        if (!response.ok) {
+        if (response.ok) {
+          setData(json);
+        } else {
           setData(null);
           toast.error(json.error ?? "Could not load that repository.");
-          return;
         }
-        setData(json);
       } catch {
         if (!controller.signal.aborted) {
           setData(null);
           toast.error("Something went wrong loading that repository.");
         }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoading(false);
-        }
+      }
+      if (!controller.signal.aborted) {
+        setIsLoading(false);
       }
     })();
 
@@ -130,7 +129,7 @@ export function StarVideoPreview() {
     };
   }, [data, backgroundColor]);
 
-  const onDownload = useCallback(async () => {
+  const onDownload = async () => {
     if (!inputProps) {
       return;
     }
@@ -144,29 +143,28 @@ export function StarVideoPreview() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inputProps),
       });
-      if (!response.ok) {
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${inputProps.owner}-${inputProps.repo}-stars.mp4`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast.success("Video ready.", { id: pending });
+      } else {
         const json: { error?: string } = await response
           .json()
           .catch(() => ({}));
         toast.error(json.error ?? "Could not render the video.", {
           id: pending,
         });
-        return;
       }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${inputProps.owner}-${inputProps.repo}-stars.mp4`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success("Video ready.", { id: pending });
     } catch {
       toast.error("Something went wrong rendering the video.", { id: pending });
-    } finally {
-      setIsRendering(false);
     }
-  }, [inputProps]);
+    setIsRendering(false);
+  };
 
   return (
     <div

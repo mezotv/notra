@@ -34,8 +34,7 @@ function getServeUrl(): Promise<string> {
 export async function renderStarVideo(
   inputProps: StarVideoInputProps
 ): Promise<Buffer> {
-  await ensureBrowser();
-  const serveUrl = await getServeUrl();
+  const [, serveUrl] = await Promise.all([ensureBrowser(), getServeUrl()]);
 
   const composition = await selectComposition({
     serveUrl,
