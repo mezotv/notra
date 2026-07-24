@@ -28,7 +28,6 @@ function Piece({ piece }: { piece: ConfettiPiece }) {
         backgroundColor: piece.color,
         borderRadius: piece.isCircle ? "50%" : 2,
         transform: `translate3d(${sway}px, ${y}px, 0) rotate(${rotation}deg)`,
-        willChange: "transform",
       }}
     />
   );

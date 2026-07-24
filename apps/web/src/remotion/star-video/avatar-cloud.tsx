@@ -52,7 +52,6 @@ function Avatar({ slot }: { slot: AvatarSlot }) {
         transform: `translate3d(${x}px, ${y}px, 0) scale(${entrance})`,
         backfaceVisibility: "hidden",
         backgroundColor: "#e2e8f0",
-        willChange: "transform",
       }}
     >
       <Img
@@ -66,8 +65,8 @@ function Avatar({ slot }: { slot: AvatarSlot }) {
 export function AvatarCloud({ slots }: { slots: AvatarSlot[] }) {
   return (
     <AbsoluteFill>
-      {slots.map((slot, index) => (
-        <Avatar key={`${index}-${slot.url}`} slot={slot} />
+      {slots.map((slot) => (
+        <Avatar key={slot.url} slot={slot} />
       ))}
     </AbsoluteFill>
   );

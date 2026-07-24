@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
 import type { StarVideoInputProps } from "../../types/star-video";
 import { AvatarCloud } from "./avatar-cloud";
@@ -107,11 +106,8 @@ export function StarVideo({
   backgroundColor,
 }: StarVideoInputProps) {
   const namespace = `${owner}/${repo}`;
-  const confetti = useMemo(() => buildConfetti(namespace), [namespace]);
-  const slots = useMemo(
-    () => buildAvatarSlots(avatars, namespace),
-    [avatars, namespace]
-  );
+  const confetti = buildConfetti(namespace);
+  const slots = buildAvatarSlots(avatars, namespace);
 
   return (
     <AbsoluteFill style={{ fontFamily }}>

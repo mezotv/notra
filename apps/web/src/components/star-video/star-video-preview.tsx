@@ -83,10 +83,13 @@ export function StarVideoPreview() {
           `/api/star-video/repo?owner=${encodeURIComponent(parsed.owner)}&repo=${encodeURIComponent(parsed.repo)}`,
           { signal: controller.signal }
         );
-        const json: RepoStarData & { error?: string } = await response.json();
         if (response.ok) {
+          const json: RepoStarData = await response.json();
           setData(json);
         } else {
+          const json: { error?: string } = await response
+            .json()
+            .catch(() => ({}));
           setData(null);
           toast.error(json.error ?? "Could not load that repository.");
         }

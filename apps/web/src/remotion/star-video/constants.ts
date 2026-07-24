@@ -113,8 +113,9 @@ export function buildAvatarSlots(
   avatars: string[],
   seedNamespace: string
 ): AvatarSlot[] {
+  const uniqueAvatars = [...new Set(avatars)];
   const slots: AvatarSlot[] = [];
-  const total = Math.min(avatars.length, AVATAR_COUNT);
+  const total = Math.min(uniqueAvatars.length, AVATAR_COUNT);
   const rings = planRings(total);
 
   let index = 0;
@@ -127,7 +128,7 @@ export function buildAvatarSlots(
     const phase = ring * (Math.PI / count);
     const orbitDir = ring === 1 ? -1 : 1;
     for (let position = 0; position < count; position++) {
-      const url = avatars[index];
+      const url = uniqueAvatars[index];
       if (!url) {
         index++;
         continue;
