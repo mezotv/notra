@@ -43,6 +43,9 @@ function getLimiter(kind: LimiterKind): Ratelimit | null {
 }
 
 function getClientIp(request: NextRequest): string {
+  // On Vercel only the platform-set x-vercel-forwarded-for is trustworthy.
+  // Off-Vercel we assume a trusted reverse proxy overwrites x-forwarded-for;
+  // if the app is exposed without one these headers are client-spoofable.
   if (process.env.VERCEL) {
     return (
       request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
@@ -66,13 +69,20 @@ export const enforceStarVideoRateLimit = Effect.fn("enforceStarVideoRateLimit")(
     const limiter = getLimiter(kind);
 
     if (!limiter) {
+      // Fail closed in production so the endpoints are never left unprotected
+      // when Redis is misconfigured; only allow the no-limiter path in dev.
+      if (process.env.NODE_ENV === "production") {
+        return yield* Effect.fail(new StarVideoRateLimitExceeded({ reset: 0 }));
+      }
       return;
     }
 
+    // Fail closed on Redis errors: a transient outage must not silently
+    // disable rate limiting on the expensive render path.
     const result = yield* Effect.tryPromise({
       try: () => limiter.limit(getRateLimitKey(request)),
-      catch: () => null,
-    }).pipe(Effect.orElseSucceed(() => ({ success: true, reset: 0 })));
+      catch: () => new StarVideoRateLimitExceeded({ reset: 0 }),
+    });
 
     if (!result.success) {
       return yield* Effect.fail(

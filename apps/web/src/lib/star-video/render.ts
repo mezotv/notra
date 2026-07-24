@@ -9,6 +9,13 @@ import {
 } from "@remotion/renderer";
 import type { StarVideoInputProps } from "@/types/star-video";
 
+class RenderBusy extends Error {
+  readonly _tag = "RenderBusy";
+}
+
+const MAX_CONCURRENT_RENDERS = 2;
+let activeRenders = 0;
+
 let serveUrlPromise: Promise<string> | null = null;
 
 function bundleComposition(): Promise<string> {
@@ -34,27 +41,36 @@ function getServeUrl(): Promise<string> {
 export async function renderStarVideo(
   inputProps: StarVideoInputProps
 ): Promise<Buffer> {
-  const [, serveUrl] = await Promise.all([ensureBrowser(), getServeUrl()]);
-
-  const composition = await selectComposition({
-    serveUrl,
-    id: "StarVideo",
-    inputProps,
-  });
-
-  const dir = await mkdtemp(join(tmpdir(), "star-video-"));
-  const outputLocation = join(dir, "star-video.mp4");
+  if (activeRenders >= MAX_CONCURRENT_RENDERS) {
+    throw new RenderBusy("The renderer is busy. Please try again shortly.");
+  }
+  activeRenders += 1;
 
   try {
-    await renderMedia({
-      composition,
+    const [, serveUrl] = await Promise.all([ensureBrowser(), getServeUrl()]);
+
+    const composition = await selectComposition({
       serveUrl,
-      codec: "h264",
-      outputLocation,
+      id: "StarVideo",
       inputProps,
     });
-    return await readFile(outputLocation);
+
+    const dir = await mkdtemp(join(tmpdir(), "star-video-"));
+    const outputLocation = join(dir, "star-video.mp4");
+
+    try {
+      await renderMedia({
+        composition,
+        serveUrl,
+        codec: "h264",
+        outputLocation,
+        inputProps,
+      });
+      return await readFile(outputLocation);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    activeRenders -= 1;
   }
 }

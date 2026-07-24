@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     }).pipe(
       Effect.match({
         onFailure: (error) => {
-          if ("_tag" in error && error._tag === "StarVideoRateLimitExceeded") {
+          if (
+            "_tag" in error &&
+            (error._tag === "StarVideoRateLimitExceeded" ||
+              error._tag === "RenderBusy")
+          ) {
             return NextResponse.json(
               { error: "Too many render requests. Please try again shortly." },
               { status: 429 }
