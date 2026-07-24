@@ -8,7 +8,6 @@ import {
   PuzzleIcon,
   QuillWrite01Icon,
   SparklesIcon,
-  StarIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react";
@@ -68,12 +67,6 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
         label: "Integrations",
         description: "Connect the tools you ship with",
         icon: PuzzleIcon,
-      },
-      {
-        href: "/repo-star-video",
-        label: "Repo Star Video",
-        description: "Free tool to celebrate your GitHub stars",
-        icon: StarIcon,
       },
     ],
     railHeading: "Developers",
