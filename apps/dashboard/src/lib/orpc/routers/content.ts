@@ -13,7 +13,12 @@ import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import {
+  githubIntegrations,
+  postCollections,
+  posts,
+  repositoryOutputs,
+} from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import {
@@ -31,6 +36,7 @@ import {
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
+import { DEFAULT_CHANGELOG_DIRECTORY } from "@/constants/github";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
@@ -43,6 +49,13 @@ import {
   getActiveGenerations,
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
+import {
+  GitHubChangelogPublishError,
+  GitHubChangelogTargetExistsError,
+  hasGitHubStatus,
+  publishChangelogDraftPullRequest,
+  resolveChangelogPath,
+} from "@/lib/integrations/github/publish-changelog";
 import { baseProcedure } from "@/lib/orpc/base";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
@@ -55,11 +68,13 @@ import {
   generateContentInputSchema,
   postCollectionInputSchema,
   postCollectionsListInputSchema,
+  publishChangelogToGitHubSchema,
   renamePostCollectionInputSchema,
   updateContentSchema,
   updateExpectedPostCountInputSchema,
 } from "@/schemas/content";
 import { clearCompletedGenerationSchema } from "@/schemas/generations";
+import { repositoryContentDirectoryConfigSchema } from "@/schemas/integrations";
 import type {
   CommitPreview,
   LinearIntegrationPreviewItem,
@@ -69,13 +84,15 @@ import type {
   RepositoryPreviewFailure,
 } from "@/types/content/preview";
 import { resolveLookbackRange } from "@/utils/lookback";
-
+import { ratelimit } from "@/utils/ratelimit";
 import {
   badRequest,
   conflict,
+  forbidden,
   internalServerError,
   notFound,
   paymentRequired,
+  tooManyRequests,
 } from "../utils/errors";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
@@ -687,6 +704,135 @@ export const contentRouter = {
           throw conflict("A post with this slug already exists");
         }
         throw error;
+      }
+    }),
+  publishChangelogToGitHub: baseProcedure
+    .input(contentInputSchema.and(publishChangelogToGitHubSchema))
+    .handler(async ({ context, input }) => {
+      const auth = await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+      });
+      await assertActiveSubscription(input.organizationId);
+
+      if (
+        process.env.UPSTASH_REDIS_REST_URL &&
+        process.env.UPSTASH_REDIS_REST_TOKEN
+      ) {
+        const { success: withinLimit } = await ratelimit.githubPublish.limit(
+          `${auth.user.id}:${input.organizationId}`
+        );
+        if (!withinLimit) {
+          throw tooManyRequests(
+            "Too many GitHub publish requests. Please try again shortly."
+          );
+        }
+      }
+
+      const [post, integration, changelogOutput] = await Promise.all([
+        db.query.posts.findFirst({
+          where: and(
+            eq(posts.id, input.contentId),
+            eq(posts.organizationId, input.organizationId)
+          ),
+          columns: {
+            title: true,
+            slug: true,
+            markdown: true,
+            contentType: true,
+          },
+        }),
+        db.query.githubIntegrations.findFirst({
+          where: and(
+            eq(githubIntegrations.organizationId, input.organizationId),
+            eq(githubIntegrations.id, input.repositoryId),
+            eq(githubIntegrations.enabled, true),
+            eq(githubIntegrations.repositoryEnabled, true)
+          ),
+          columns: {
+            id: true,
+            owner: true,
+            repo: true,
+            defaultBranch: true,
+          },
+        }),
+        db.query.repositoryOutputs.findFirst({
+          where: and(
+            eq(repositoryOutputs.repositoryId, input.repositoryId),
+            eq(repositoryOutputs.outputType, "changelog")
+          ),
+          columns: { config: true },
+        }),
+      ]);
+
+      if (!post) {
+        throw notFound("Content not found");
+      }
+      if (post.contentType !== "changelog") {
+        throw badRequest("Only changelogs can be published to GitHub");
+      }
+      if (!post.markdown) {
+        throw badRequest("Save the changelog before publishing it to GitHub");
+      }
+      if (
+        !(integration?.owner && integration.repo && integration.defaultBranch)
+      ) {
+        throw notFound("Selected GitHub repository not found");
+      }
+      const token = await getTokenForIntegrationId(integration.id);
+      if (!token) {
+        throw forbidden("GitHub repository access is not configured");
+      }
+
+      const outputConfig = repositoryContentDirectoryConfigSchema.safeParse(
+        changelogOutput?.config
+      );
+      const directory = outputConfig.success
+        ? outputConfig.data.directory
+        : DEFAULT_CHANGELOG_DIRECTORY;
+
+      try {
+        return await publishChangelogDraftPullRequest(createOctokit(token), {
+          owner: integration.owner,
+          repo: integration.repo,
+          defaultBranch: integration.defaultBranch,
+          path: resolveChangelogPath({
+            contentId: input.contentId,
+            customPath: input.path,
+            directory,
+            slug: post.slug,
+            title: post.title,
+          }),
+          title: post.title,
+          markdown: post.markdown,
+        });
+      } catch (error) {
+        if (error instanceof GitHubChangelogTargetExistsError) {
+          throw conflict(error.message);
+        }
+        if (error instanceof GitHubChangelogPublishError) {
+          if (
+            hasGitHubStatus(error.cause, 401) ||
+            hasGitHubStatus(error.cause, 403)
+          ) {
+            throw forbidden(
+              "GitHub denied the request. Grant the app read/write access to Contents and Pull requests."
+            );
+          }
+          if (
+            hasGitHubStatus(error.cause, 404) ||
+            hasGitHubStatus(error.cause, 422)
+          ) {
+            throw badRequest(error.message, {
+              branchName: error.branchName,
+            });
+          }
+          throw internalServerError(error.message, error.cause);
+        }
+        throw internalServerError(
+          "Failed to publish changelog to GitHub",
+          error
+        );
       }
     }),
   delete: baseProcedure
