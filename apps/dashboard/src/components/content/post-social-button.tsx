@@ -50,6 +50,7 @@ import {
 import {
   createTwitterPostUrl,
   getTwitterCharLimit,
+  getWeightedTweetLength,
   twitterAuthorFromAccount,
 } from "@/utils/twitter";
 
@@ -151,7 +152,9 @@ export function PostSocialButton({
     platform === "twitter" && selectedAccount
       ? getTwitterCharLimit(selectedAccount.verifiedType)
       : null;
-  const overCharCount = charLimit ? Math.max(0, draft.length - charLimit) : 0;
+  const overCharCount = charLimit
+    ? Math.max(0, getWeightedTweetLength(draft) - charLimit)
+    : 0;
   const isOverCharLimit = overCharCount > 0;
 
   if (!selectedAccount) {

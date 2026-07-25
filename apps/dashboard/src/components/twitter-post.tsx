@@ -43,7 +43,11 @@ import type {
   TwitterPostProps,
 } from "@/types/content/twitter-post";
 import { formatTweetContent } from "@/utils/format-tweet-content";
-import { getTwitterCharLimit, isSquareTwitterAvatar } from "@/utils/twitter";
+import {
+  getTwitterCharLimit,
+  getWeightedTweetLength,
+  isSquareTwitterAvatar,
+} from "@/utils/twitter";
 
 const TWEET_EDITOR_TEXT_STYLE: React.CSSProperties = {
   fontSize: "0.9375rem",
@@ -335,7 +339,7 @@ function TwitterPost({
                 </div>
                 <div className="flex justify-end">
                   <CharacterCounter
-                    count={localValue.length}
+                    count={getWeightedTweetLength(localValue)}
                     limit={getTwitterCharLimit(author.verifiedType)}
                   />
                 </div>

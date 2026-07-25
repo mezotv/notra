@@ -1,4 +1,7 @@
 import {
+  TWEET_LIGHT_CODE_POINT_RANGES,
+  TWEET_URL_REGEX,
+  TWEET_URL_WEIGHT,
   TWITTER_CHAR_LIMIT,
   TWITTER_PREMIUM_CHAR_LIMIT,
 } from "@/constants/twitter";
@@ -37,4 +40,31 @@ export function createTwitterPostUrl(text: string): string {
   url.searchParams.set("text", text.trim());
 
   return url.toString();
+}
+
+const HEAVY_CHARACTER_WEIGHT = 2;
+
+function getGraphemeWeight(grapheme: string): number {
+  const codePoints = [...grapheme];
+  if (codePoints.length > 1) {
+    return HEAVY_CHARACTER_WEIGHT;
+  }
+  const codePoint = codePoints[0]?.codePointAt(0) ?? 0;
+  const isLight = TWEET_LIGHT_CODE_POINT_RANGES.some(
+    ([start, end]) => codePoint >= start && codePoint <= end
+  );
+  return isLight ? 1 : HEAVY_CHARACTER_WEIGHT;
+}
+
+export function getWeightedTweetLength(text: string): number {
+  TWEET_URL_REGEX.lastIndex = 0;
+  let length = 0;
+  const withoutUrls = text.replace(TWEET_URL_REGEX, () => {
+    length += TWEET_URL_WEIGHT;
+    return "";
+  });
+  for (const { segment } of new Intl.Segmenter().segment(withoutUrls)) {
+    length += getGraphemeWeight(segment);
+  }
+  return length;
 }

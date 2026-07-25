@@ -7,11 +7,23 @@ import {
 } from "@/constants/twitter";
 
 const URL_PROTOCOL_REGEX = /^https?:\/\//i;
+const SAFE_URL_PROTOCOLS = new Set(["http:", "https:"]);
+
+function toSafeExternalUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    return SAFE_URL_PROTOCOLS.has(parsed.protocol) ? parsed.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function getTweetTokenUrl(token: string): string | undefined {
   if (TWEET_URL_REGEX.test(token)) {
     TWEET_URL_REGEX.lastIndex = 0;
-    return URL_PROTOCOL_REGEX.test(token) ? token : `https://${token}`;
+    return toSafeExternalUrl(
+      URL_PROTOCOL_REGEX.test(token) ? token : `https://${token}`
+    );
   }
   if (TWEET_MENTION_REGEX.test(token)) {
     TWEET_MENTION_REGEX.lastIndex = 0;

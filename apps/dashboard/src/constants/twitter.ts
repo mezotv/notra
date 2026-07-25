@@ -1,5 +1,14 @@
 export const TWITTER_CHAR_LIMIT = 280;
 export const TWITTER_PREMIUM_CHAR_LIMIT = 25_000;
+export const TWEET_URL_WEIGHT = 23;
+export const TWEET_LIGHT_CODE_POINT_RANGES: ReadonlyArray<
+  readonly [number, number]
+> = [
+  [0x00_00, 0x10_ff],
+  [0x20_00, 0x20_0d],
+  [0x20_10, 0x20_1f],
+  [0x20_32, 0x20_37],
+];
 export const MAX_IMPORT_POSTS = 20;
 export const TWITTER_BRAND_COLOR = "#000000";
 export const TWITTER_DUPLICATE_POST_DOCS_URL =
