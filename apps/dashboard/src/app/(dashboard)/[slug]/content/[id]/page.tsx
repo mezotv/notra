@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+import Loading from "../loading";
 import PageClient from "./page-client";
 
 interface PageProps {
@@ -20,7 +21,7 @@ async function Page({ params }: PageProps) {
   const { organization } = await validateOrganizationAccess(slug);
 
   return (
-    <Suspense>
+    <Suspense fallback={<Loading />}>
       <PageClient
         contentId={id}
         organizationId={organization.id}

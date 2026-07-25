@@ -6,7 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -17,43 +17,42 @@ import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LegacyAddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { GITHUB_CALLBACK_ERROR_MESSAGES } from "@/constants/github";
 import {
-  GITHUB_INSTALL_CHANNEL,
-  GITHUB_INSTALL_MESSAGE,
-} from "@/constants/github";
-import {
+  hasAttemptedGitHubReauthorization,
+  markGitHubReauthorizationAttempted,
   reauthorizeGitHub,
   startGitHubInstall,
 } from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import type { GitHubIntegration } from "@/types/integrations";
+import {
+  GitHubIntegrationSkeleton,
+  GitHubLegacyIntegrationsSkeleton,
+} from "./skeleton";
 
 interface PageClientProps {
   organizationSlug: string;
 }
 
-interface GitHubInstallMessage {
-  type: typeof GITHUB_INSTALL_MESSAGE;
-  organizationId: string;
-}
+function useGitHubCallbackErrorToast(errorCode: string | null) {
+  const handledErrorRef = useRef(false);
 
-function isGitHubInstallMessage(
-  value: unknown,
-  organizationId: string
-): value is GitHubInstallMessage {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
+  useEffect(() => {
+    if (!errorCode || handledErrorRef.current) {
+      return;
+    }
 
-  return (
-    "type" in value &&
-    value.type === GITHUB_INSTALL_MESSAGE &&
-    "organizationId" in value &&
-    value.organizationId === organizationId
-  );
-}
+    handledErrorRef.current = true;
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("githubError");
+    window.history.replaceState(null, "", nextUrl);
 
-function getGitHubInstallStorageKey(organizationId: string) {
-  return `${GITHUB_INSTALL_CHANNEL}:${organizationId}`;
+    toast.error(
+      GITHUB_CALLBACK_ERROR_MESSAGES[errorCode] ??
+        GITHUB_CALLBACK_ERROR_MESSAGES.github_callback_failed
+    );
+  }, [errorCode]);
 }
 
 function useResumeGitHubInstall(params: {
@@ -85,6 +84,12 @@ function useResumeGitHubInstall(params: {
     window.history.replaceState(null, "", nextUrl);
 
     if (params.reauthorizationInstallationId && params.reauthorizationState) {
+      if (hasAttemptedGitHubReauthorization(params.reauthorizationState)) {
+        toast.error("Failed to reconnect GitHub. Please try again.");
+        return;
+      }
+      markGitHubReauthorizationAttempted(params.reauthorizationState);
+
       const callbackUrl = new URL(
         "/api/integrations/github/callback",
         window.location.origin
@@ -108,10 +113,16 @@ function useResumeGitHubInstall(params: {
     startGitHubInstall({
       organizationId: params.organizationId,
       callbackPath: params.callbackPath,
-    }).then((started) => {
-      if (!started) {
-        toast.error("Failed to resume GitHub installation");
+      allowAccountConnection: false,
+    }).then((result) => {
+      if (result.started) {
+        return;
       }
+      toast.error(
+        result.reason === "account-connection-incomplete"
+          ? "GitHub account connection didn't complete. Please try connecting again."
+          : "Failed to resume GitHub installation"
+      );
     });
   }, [
     params.callbackPath,
@@ -122,16 +133,68 @@ function useResumeGitHubInstall(params: {
   ]);
 }
 
+function LegacyGitHubIntegrationsSection({
+  integrations,
+  isLoading,
+  onUpdate,
+  organizationId,
+  organizationSlug,
+}: {
+  integrations: GitHubIntegration[];
+  isLoading: boolean;
+  onUpdate: () => void;
+  organizationId: string;
+  organizationSlug: string;
+}) {
+  if (isLoading) {
+    return <GitHubLegacyIntegrationsSkeleton />;
+  }
+
+  if (integrations.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-3">
+      <div className="space-y-0.5">
+        <h2 className="font-semibold text-lg">
+          Personal access token (Legacy)
+        </h2>
+        <p className="text-muted-foreground text-sm">
+          Legacy integrations connected with a personal access token.
+        </p>
+      </div>
+      <div className="grid gap-4">
+        {integrations.map((integration) => (
+          <IntegrationCard
+            integration={integration}
+            key={integration.id}
+            onUpdate={onUpdate}
+            organizationId={organizationId}
+            organizationSlug={organizationSlug}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function PageClient({ organizationSlug }: PageClientProps) {
-  const { getOrganization } = useOrganizationsContext();
+  const { getOrganization, isLoading: isLoadingOrganizations } =
+    useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id ?? "";
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [connectOpen, setConnectOpen] = useState(false);
-  const [reposOpen, setReposOpen] = useState(false);
+  const [reposOpen, setReposOpen] = useState(
+    () => searchParams.get("githubConnected") === "true"
+  );
   const [legacyOpen, setLegacyOpen] = useState(false);
+  const [selectedDialogAccountId, setSelectedDialogAccountId] = useState<
+    string | null
+  >(null);
   useResumeGitHubInstall({
     callbackPath: pathname,
     organizationId,
@@ -141,6 +204,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     reauthorizationState: searchParams.get("githubReauthorizeState"),
     shouldResume: searchParams.get("githubAccountConnected") === "true",
   });
+  useGitHubCallbackErrorToast(searchParams.get("githubError"));
 
   const githubAppQuery = useQuery(
     dashboardOrpc.github.app.get.queryOptions({
@@ -157,79 +221,48 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     })
   );
   const legacyIntegrations =
-    legacyQuery.data?.integrations.filter((i) => i.type === "github") ?? [];
+    legacyQuery.data?.integrations.filter(
+      (integration) =>
+        integration.type === "github" &&
+        integration.connectionMethod === "personal-access-token"
+    ) ?? [];
   const data = githubAppQuery.data;
-  const isConnected = Boolean(data?.account);
-  const isLoading = !!organizationId && githubAppQuery.isLoading && !data;
+  const accounts = data?.accounts ?? [];
+  const isConnected = accounts.length > 0;
+  const isLoading =
+    isLoadingOrganizations ||
+    (!!organizationId && githubAppQuery.isLoading && !data);
+  const isLoadingLegacyIntegrations =
+    isLoadingOrganizations ||
+    (!!organizationId && legacyQuery.isLoading && !legacyQuery.data);
   const selectedRepositoryIds = data?.selectedRepositoryIds ?? [];
   const repositories = data?.repositories ? [...data.repositories] : [];
-
-  const handleGitHubInstalled = useEffectEvent(() => {
-    queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.github.app.get.queryKey({
-        input: { organizationId },
-      }),
-    });
-    setConnectOpen(false);
-    setReposOpen(true);
-  });
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (
-        event.origin === window.location.origin &&
-        isGitHubInstallMessage(event.data, organization?.id ?? "")
-      ) {
-        handleGitHubInstalled();
-      }
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === getGitHubInstallStorageKey(organization?.id ?? "")) {
-        handleGitHubInstalled();
-      }
-    };
-    const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-    const handleChannelMessage = (event: MessageEvent) => {
-      if (isGitHubInstallMessage(event.data, organization?.id ?? "")) {
-        handleGitHubInstalled();
-      }
-    };
-    channel.addEventListener("message", handleChannelMessage);
-
-    window.addEventListener("message", handleMessage);
-    window.addEventListener("storage", handleStorage);
-    return () => {
-      channel.removeEventListener("message", handleChannelMessage);
-      channel.close();
-      window.removeEventListener("message", handleMessage);
-      window.removeEventListener("storage", handleStorage);
-    };
-  }, [organization?.id]);
+  const dialogAccountId = selectedDialogAccountId ?? accounts[0]?.id;
+  const dialogAccount = accounts.find(
+    (account) => account.id === dialogAccountId
+  );
+  const dialogRepositories = dialogAccount
+    ? repositories.filter(
+        (repository) =>
+          repository.owner.toLowerCase() === dialogAccount.login.toLowerCase()
+      )
+    : repositories;
 
   useEffect(() => {
     if (searchParams.get("githubConnected") !== "true" || !organization?.id) {
       return;
     }
 
-    const message: GitHubInstallMessage = {
-      type: GITHUB_INSTALL_MESSAGE,
-      organizationId: organization.id,
-    };
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("githubConnected");
+    window.history.replaceState(null, "", nextUrl);
 
-    if (window.opener && window.opener !== window) {
-      window.opener.postMessage(message, window.location.origin);
-      window.close();
-      return;
-    }
-
-    const channel = new BroadcastChannel(GITHUB_INSTALL_CHANNEL);
-    channel.postMessage(message);
-    channel.close();
-    window.localStorage.setItem(
-      getGitHubInstallStorageKey(organization.id),
-      crypto.randomUUID()
-    );
-  }, [searchParams, organization?.id]);
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.github.app.get.queryKey({
+        input: { organizationId: organization.id },
+      }),
+    });
+  }, [searchParams, organization?.id, queryClient]);
 
   const saveRepositoriesMutation = useMutation({
     mutationFn: async (repositoryIds: string[]) => {
@@ -253,8 +286,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: async () => {
-      return dashboardOrpc.github.app.disconnect.call({ organizationId });
+    mutationFn: async (accountId: string) => {
+      return dashboardOrpc.github.app.disconnect.call({
+        organizationId,
+        accountId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -269,36 +305,33 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     },
   });
 
-  const openInstallTab = async () => {
+  const startInstall = async () => {
     if (!organizationId) {
       return;
     }
 
     const callbackPath = pathname || `/${organizationSlug}/integrations/github`;
-    const didStart = await startGitHubInstall({ organizationId, callbackPath });
+    const result = await startGitHubInstall({ organizationId, callbackPath });
 
-    if (!didStart) {
+    if (!result.started) {
       toast.error("Failed to start GitHub install");
     }
   };
 
   const handleOpenConnect = () => setConnectOpen(true);
 
-  const handleConnect = openInstallTab;
-
-  const handleAddAccount = openInstallTab;
+  const handleOpenRepositories = (accountId?: string) => {
+    setSelectedDialogAccountId(accountId ?? null);
+    setReposOpen(true);
+  };
 
   useHotkey(
     "C",
-    () => (isConnected ? handleAddAccount() : handleOpenConnect()),
+    () => (isConnected ? handleOpenRepositories() : handleOpenConnect()),
     {
       enabled: !!organizationId,
     }
   );
-
-  const handleDisconnect = () => {
-    disconnectMutation.mutate();
-  };
 
   const handleSaveRepositories = (repositoryIds: string[]) => {
     saveRepositoriesMutation.mutate(repositoryIds);
@@ -312,21 +345,24 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
 
   if (isLoading) {
+    githubAppContent = <GitHubIntegrationSkeleton />;
+  } else if (isConnected) {
     githubAppContent = (
-      <EmptyState
-        description="Loading your GitHub App installation."
-        title="Loading GitHub"
-      />
-    );
-  } else if (isConnected && data?.account) {
-    githubAppContent = (
-      <GitHubAccountCard
-        account={data.account}
-        onAddRepositories={() => setReposOpen(true)}
-        onDisconnect={handleDisconnect}
-        repositories={repositories}
-        selectedRepositoryIds={selectedRepositoryIds}
-      />
+      <div className="grid gap-4">
+        {accounts.map((account) => (
+          <GitHubAccountCard
+            account={account}
+            key={account.id}
+            onAddRepositories={() => handleOpenRepositories(account.id)}
+            onDisconnect={() => disconnectMutation.mutate(account.id)}
+            repositories={repositories.filter(
+              (repository) =>
+                repository.owner.toLowerCase() === account.login.toLowerCase()
+            )}
+            selectedRepositoryIds={selectedRepositoryIds}
+          />
+        ))}
+      </div>
     );
   }
 
@@ -343,39 +379,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </div>
           <Button
             className="gap-1.5"
-            onClick={isConnected ? handleAddAccount : handleOpenConnect}
+            onClick={
+              isConnected ? () => handleOpenRepositories() : handleOpenConnect
+            }
           >
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            {isConnected ? "Add GitHub account" : "Connect GitHub"}
+            {isConnected ? "Add repositories" : "Connect GitHub"}
             <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
 
         {githubAppContent}
 
-        {legacyIntegrations.length > 0 ? (
-          <section className="space-y-3">
-            <div className="space-y-0.5">
-              <h2 className="font-semibold text-lg">
-                Personal access token (Legacy)
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                Legacy integrations connected with a personal access token.
-              </p>
-            </div>
-            <div className="grid gap-4">
-              {legacyIntegrations.map((integration) => (
-                <IntegrationCard
-                  integration={integration}
-                  key={integration.id}
-                  onUpdate={() => legacyQuery.refetch()}
-                  organizationId={organizationId}
-                  organizationSlug={organizationSlug}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <LegacyGitHubIntegrationsSection
+          integrations={legacyIntegrations}
+          isLoading={isLoadingLegacyIntegrations}
+          onUpdate={() => legacyQuery.refetch()}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+        />
 
         <p className="text-muted-foreground text-xs">
           Still using a personal access token?{" "}
@@ -392,21 +414,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
       <ConnectGitHubDialog
         isConnecting={false}
-        onConnect={handleConnect}
+        onConnect={startInstall}
         onOpenChange={setConnectOpen}
         open={connectOpen}
       />
       <SelectRepositoriesDialog
-        accounts={data?.account ? [data.account] : []}
+        accounts={accounts}
         initialSelected={selectedRepositoryIds}
         isLoading={githubAppQuery.isLoading && !data}
         isSaving={saveRepositoriesMutation.isPending}
-        onAddAccount={handleAddAccount}
+        onAddAccount={startInstall}
         onOpenChange={setReposOpen}
         onSave={handleSaveRepositories}
+        onSelectAccount={setSelectedDialogAccountId}
         open={reposOpen}
-        repositories={repositories}
-        selectedAccountId={data?.account?.id}
+        repositories={dialogRepositories}
+        selectedAccountId={dialogAccountId}
       />
       <LegacyAddIntegrationDialog
         onOpenChange={setLegacyOpen}

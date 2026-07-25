@@ -41,6 +41,12 @@ export const ratelimit = {
     prefix: "ratelimit:github-app-repositories",
     limiter: Ratelimit.slidingWindow(60, "1m"),
   }),
+  githubAppCallback: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:github-app-callback",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
   granolaConnection: new Ratelimit({
     redis,
     analytics: true,

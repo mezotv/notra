@@ -42,7 +42,10 @@ export function FeaturedIntegrationCard({
                 {buildAuthorCategoryLine(integration)}
               </span>
             </div>
-            <IntegrationConnectButton className="pointer-events-auto px-5.5 py-2.5 text-[0.875rem] leading-[1.29]" />
+            <IntegrationConnectButton
+              className="pointer-events-auto px-5.5 py-2.5 text-[0.875rem] leading-[1.29]"
+              integration={integration}
+            />
           </div>
           {integration.description ? (
             <span className="line-clamp-2 font-sans text-[#1E1E1EBF] text-[0.9375rem] leading-[1.47] tracking-[-0.005em] dark:text-white/70">

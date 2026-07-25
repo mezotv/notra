@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Loading from "./loading";
 import PageClient from "./page-client";
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ async function Page({
   const { slug } = await params;
 
   return (
-    <Suspense>
+    <Suspense fallback={<Loading />}>
       <PageClient organizationSlug={slug} />
     </Suspense>
   );

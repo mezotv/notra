@@ -31,7 +31,10 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
           >
             <IntegrationLogo fill integration={integration} size={44} />
           </span>
-          <IntegrationConnectButton className="pointer-events-auto px-3.5 py-1.5 text-[0.8125rem] leading-[1.23]" />
+          <IntegrationConnectButton
+            className="pointer-events-auto px-3.5 py-1.5 text-[0.8125rem] leading-[1.23]"
+            integration={integration}
+          />
         </div>
         <div className="flex flex-col gap-0.5">
           <span className="font-sans font-semibold text-[#1E1E1E] text-[1.0625rem] leading-[1.29] tracking-[-0.01em] dark:text-white">

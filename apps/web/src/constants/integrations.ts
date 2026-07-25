@@ -1,11 +1,9 @@
 import type { Integration } from "@/types/integrations";
-import { APP_URL, DOCS_URL } from "@/utils/urls";
+import { DOCS_URL } from "@/utils/urls";
 
 export const INTEGRATIONS_CONSOLE_URL = "https://console.usenotra.com";
 
 export const INTEGRATIONS_DOCS_URL = DOCS_URL;
-
-export const INTEGRATIONS_CONNECT_URL = `${APP_URL}/login`;
 
 export const FEATURED_INTEGRATIONS_LIMIT = 2;
 

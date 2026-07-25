@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 import type { CollectionPageProps } from "@/types/content/collection";
 import PageClient from "./page-client";
+import { GroupDetailSkeleton } from "./skeleton";
 
 export const metadata: Metadata = {
   title: "Collection",
@@ -14,7 +15,7 @@ async function Page({ params }: CollectionPageProps) {
   const { organization } = await validateOrganizationAccess(slug);
 
   return (
-    <Suspense>
+    <Suspense fallback={<GroupDetailSkeleton />}>
       <PageClient
         collectionId={id}
         organizationId={organization.id}

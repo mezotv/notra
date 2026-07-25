@@ -28,6 +28,7 @@ import {
   PopoverTrigger,
 } from "@notra/ui/components/ui/popover";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+import { rgbaToHex } from "@notra/utils/color";
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "cnfast";
@@ -52,7 +53,6 @@ import {
   applyPhraseDraftChange,
   authChoiceToAuthType,
   buildInitialPhraseDrafts,
-  rgbaToHex,
 } from "@/lib/integrations/form";
 import { createHeaderRow } from "@/lib/integrations/headers";
 import { isManualTool, mergeManualTools } from "@/lib/integrations/tool-io";

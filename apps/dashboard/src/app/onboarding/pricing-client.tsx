@@ -128,7 +128,7 @@ export function PricingClient({ slug }: PricingClientProps) {
   return (
     <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-12">
       <div className="mb-6 flex justify-center">
-        <OnboardingProgress current={3} />
+        <OnboardingProgress current={2} />
       </div>
       <div className="space-y-3 text-center">
         <h1 className="font-bold text-3xl tracking-tight md:text-4xl">

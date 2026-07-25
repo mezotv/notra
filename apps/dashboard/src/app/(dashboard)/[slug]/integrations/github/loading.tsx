@@ -2,8 +2,11 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Button } from "@/components/button";
-import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
+import {
+  GitHubIntegrationSkeleton,
+  GitHubLegacyIntegrationsSkeleton,
+} from "./skeleton";
 
 export default function Loading() {
   return (
@@ -23,10 +26,8 @@ export default function Loading() {
             <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
-        <EmptyState
-          description="Loading your GitHub App installation."
-          title="Loading GitHub"
-        />
+        <GitHubIntegrationSkeleton />
+        <GitHubLegacyIntegrationsSkeleton />
       </div>
     </PageContainer>
   );

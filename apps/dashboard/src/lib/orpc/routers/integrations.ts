@@ -97,6 +97,7 @@ import type {
   GitHubRepository,
   RepositoryOutput,
 } from "@/types/integrations";
+import type { GitHubConnectionMethod } from "@/types/services/integrations";
 import { ratelimit } from "@/utils/ratelimit";
 import {
   badRequest,
@@ -228,6 +229,7 @@ function serializeListedIntegration(integration: {
   type: string;
   id: string;
   displayName: string;
+  connectionMethod?: GitHubConnectionMethod;
   enabled: boolean;
   createdAt: Date;
   repositories: Array<{
@@ -243,10 +245,16 @@ function serializeListedIntegration(integration: {
       enabled: boolean;
     }>;
   }>;
-}): GitHubIntegration & { type: IntegrationType } {
+}): GitHubIntegration & {
+  type: IntegrationType;
+  connectionMethod?: GitHubConnectionMethod;
+} {
   return {
     ...serializeIntegration(integration),
     type: integration.type as IntegrationType,
+    ...(integration.connectionMethod
+      ? { connectionMethod: integration.connectionMethod }
+      : {}),
   };
 }
 
@@ -1155,6 +1163,7 @@ export const integrationsRouter = {
             );
             return {
               id: integration.id,
+              slug: integration.slug,
               name: integration.name,
               url: integration.url,
               description: integration.description,

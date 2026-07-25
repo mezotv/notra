@@ -64,7 +64,10 @@ export function IntegrationDetailView({
                   <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} />
                 </a>
               ) : null}
-              <IntegrationConnectButton className="px-6.5 py-2.75 text-[0.875rem] leading-[1.29]" />
+              <IntegrationConnectButton
+                className="px-6.5 py-2.75 text-[0.875rem] leading-[1.29]"
+                integration={integration}
+              />
             </div>
           </div>
 

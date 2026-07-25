@@ -6,11 +6,17 @@ import type {
   Integration,
   IntegrationCategoryFilter,
 } from "@/types/integrations";
+import { APP_URL } from "@/utils/urls";
 
 const WHITESPACE_REGEX = /\s+/g;
 
 export function getIntegrationHref(integration: Integration): string {
   return `/integrations/${integration.slug ?? integration.id}`;
+}
+
+export function getIntegrationConnectUrl(integration: Integration): string {
+  const slug = integration.slug ?? integration.id;
+  return `${APP_URL}/integrations/${encodeURIComponent(slug)}`;
 }
 
 function collapseWhitespace(value: string): string {

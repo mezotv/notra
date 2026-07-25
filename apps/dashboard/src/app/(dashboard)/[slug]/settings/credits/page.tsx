@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Loading from "../../loading";
 import CreditsPageClient from "./page-client";
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function CreditsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<Loading />}>
       <CreditsPageClient />
     </Suspense>
   );

@@ -1,10 +1,10 @@
 import {
   deleteGitHubAppInstallationForOrganization,
   GitHubAppNotConfiguredError,
-  getGitHubAppInstallationByOrganization,
   getGitHubAppInstallUrl,
   getSelectedGitHubAppRepositoryIds,
   isGitHubAccountConnectionRequired,
+  listGitHubAppInstallationsByOrganization,
   listGitHubAppRepositories,
   setSelectedGitHubAppRepositories,
 } from "@notra/ai/integrations/github";
@@ -38,6 +38,10 @@ const organizationIdInputSchema = z.object({
 
 const saveGitHubAppRepositoriesInputSchema = organizationIdInputSchema.extend({
   repositoryIds: z.array(z.string().min(1)).default([]),
+});
+
+const disconnectGitHubAppInputSchema = organizationIdInputSchema.extend({
+  accountId: z.string().min(1).optional(),
 });
 
 const prepareInstallUrlInputSchema = organizationIdInputSchema.extend({
@@ -193,13 +197,13 @@ export const githubRouter = {
           organizationId: input.organizationId,
         });
 
-        const installation = await getGitHubAppInstallationByOrganization(
+        const installations = await listGitHubAppInstallationsByOrganization(
           input.organizationId
         );
 
-        if (!installation) {
+        if (installations.length === 0) {
           return {
-            account: null,
+            accounts: [],
             repositories: [],
             selectedRepositoryIds: [],
           };
@@ -219,21 +223,21 @@ export const githubRouter = {
           Effect.tryPromise({
             try: async () => {
               const [repositories, selectedRepositoryIds] = await Promise.all([
-                listGitHubAppRepositories(input.organizationId),
+                listGitHubAppRepositories(input.organizationId, installations),
                 getSelectedGitHubAppRepositoryIds(
                   input.organizationId,
-                  installation.id
+                  installations.map((installation) => installation.id)
                 ),
               ]);
 
               return {
-                account: {
+                accounts: installations.map((installation) => ({
                   id: installation.accountId,
                   login: installation.accountLogin,
                   name: installation.accountName,
                   avatarUrl: installation.accountAvatarUrl,
                   type: toGitHubAccountType(installation.accountType),
-                },
+                })),
                 repositories,
                 selectedRepositoryIds,
               };
@@ -273,22 +277,30 @@ export const githubRouter = {
         );
       }),
     disconnect: authorizedProcedure
-      .input(organizationIdInputSchema)
+      .input(disconnectGitHubAppInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
 
-        const installation = await getGitHubAppInstallationByOrganization(
+        const installations = await listGitHubAppInstallationsByOrganization(
           input.organizationId
         );
+        const hasMatchingInstallation = input.accountId
+          ? installations.some(
+              (installation) => installation.accountId === input.accountId
+            )
+          : installations.length > 0;
 
-        if (!installation) {
+        if (!hasMatchingInstallation) {
           throw notFound("GitHub App installation not found");
         }
 
-        await deleteGitHubAppInstallationForOrganization(input.organizationId);
+        await deleteGitHubAppInstallationForOrganization(
+          input.organizationId,
+          input.accountId
+        );
 
         return { success: true };
       }),

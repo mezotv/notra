@@ -30,7 +30,10 @@ import {
 } from "@/lib/integrations/constants";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { IntegrationType } from "@/schemas/integrations";
-import type { IntegrationConfig } from "@/types/integrations/catalog";
+import type {
+  IntegrationConfig,
+  IntegrationsPageClientProps,
+} from "@/types/integrations/catalog";
 
 interface Integration {
   id: string;
@@ -38,10 +41,6 @@ interface Integration {
   type: IntegrationType;
   enabled: boolean;
   createdAt: string;
-}
-
-interface PageClientProps {
-  organizationSlug: string;
 }
 
 const GitHubIntegrationDialog = dynamic(
@@ -163,7 +162,10 @@ const IntegrationCard = memo(function IntegrationCard({
   );
 });
 
-export default function PageClient({ organizationSlug }: PageClientProps) {
+export default function PageClient({
+  organizationSlug,
+  connectSlug,
+}: IntegrationsPageClientProps) {
   const { getOrganization } = useOrganizationsContext();
   const organization = getOrganization(organizationSlug);
   const organizationId = organization?.id;
@@ -265,7 +267,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           })}
         </Tabs>
 
-        <StoreIntegrationsSection organizationId={organizationId} />
+        <StoreIntegrationsSection
+          connectSlug={connectSlug}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+        />
       </div>
     </PageContainer>
   );

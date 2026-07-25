@@ -23,7 +23,7 @@ export function HeroSection() {
         </div>
 
         <div className="relative flex h-full w-full flex-col items-center">
-          <div className="flex flex-col items-center gap-10 px-6 pt-24 pb-2 lg:pt-[7.5rem]">
+          <div className="flex flex-col items-center gap-8 px-6 pt-14 pb-2 sm:gap-10 sm:pt-24 lg:pt-[7.5rem]">
             <div className="flex flex-col items-center gap-7">
               <h1 className="max-w-[56.875rem] text-center font-display font-medium text-[#1E1E1E] text-[2.5rem] leading-[1.08] tracking-[-0.015em] sm:text-[3.25rem] lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
                 {HERO_HEADLINE_SEGMENTS.map((segment) => (
@@ -60,7 +60,7 @@ export function HeroSection() {
             </div>
           </div>
 
-          <div className="mt-16.25 flex w-full flex-1 flex-col items-center overflow-clip py-3.75">
+          <div className="mt-9 flex w-full flex-1 flex-col items-center overflow-clip py-3.75 sm:mt-16.25">
             <div className="flex w-full flex-col items-center">
               <HeroCollage />
             </div>

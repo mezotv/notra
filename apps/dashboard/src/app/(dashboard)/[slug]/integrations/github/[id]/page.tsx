@@ -2,6 +2,7 @@ import { getGitHubIntegrationById } from "@notra/ai/integrations/github";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+import Loading from "../loading";
 import PageClient from "./page-client";
 
 interface PageProps {
@@ -31,7 +32,7 @@ async function Page({ params }: PageProps) {
   const { id } = await params;
 
   return (
-    <Suspense>
+    <Suspense fallback={<Loading />}>
       <PageClient integrationId={id} />
     </Suspense>
   );

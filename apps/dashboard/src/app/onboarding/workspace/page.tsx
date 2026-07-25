@@ -31,7 +31,7 @@ export default async function OnboardingWorkspacePage() {
       columns: { id: true },
     });
     if (brand) {
-      redirect("/onboarding/socials");
+      redirect("/onboarding/pricing");
     }
 
     const existingOrgRow = await db.query.organizations.findFirst({

@@ -124,6 +124,10 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
           { label: "Contributors", href: "/contributors" },
         ],
       },
+      {
+        title: "Free Tools",
+        links: [{ label: "Repo Star Video", href: "/repo-star-video" }],
+      },
     ],
   },
 ];

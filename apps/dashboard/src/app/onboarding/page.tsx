@@ -38,5 +38,5 @@ export default async function OnboardingPage() {
     redirect("/onboarding/workspace");
   }
 
-  redirect("/onboarding/socials");
+  redirect("/onboarding/pricing");
 }

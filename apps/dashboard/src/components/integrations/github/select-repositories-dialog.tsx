@@ -63,40 +63,42 @@ export function SelectRepositoriesDialog({
   return (
     <ResponsiveDialog onOpenChange={setOpen} open={open}>
       {triggerElement}
-      <ResponsiveDialogContent className="sm:max-w-[520px]">
-        <ResponsiveDialogHeader>
+      <ResponsiveDialogContent className="flex max-h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[520px] [&>*]:min-w-0">
+        <ResponsiveDialogHeader className="shrink-0 p-4 pb-0">
           <ResponsiveDialogTitle>Select repositories</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             Choose which repositories Notra should generate content from. Only
             repositories granted to the GitHub App appear here.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <div className="space-y-3 py-4">
-          <Field>
-            <FieldLabel>Repositories</FieldLabel>
-            <RepositoryMultiSelect
-              accounts={accounts}
-              isLoading={isLoading}
-              onAddAccount={onAddAccount}
-              onChange={setSelected}
-              onSelectAccount={onSelectAccount}
-              repositories={repositories}
-              selectedAccountId={selectedAccountId}
-              value={selected}
-            />
-          </Field>
-          {onAddAccount ? (
-            <button
-              className="inline-flex items-center gap-1 text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
-              onClick={onAddAccount}
-              type="button"
-            >
-              Missing a repository? Add access on GitHub
-              <HugeiconsIcon className="size-3" icon={ArrowUpRight01Icon} />
-            </button>
-          ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4">
+          <div className="space-y-3 py-4">
+            <Field>
+              <FieldLabel>Repositories</FieldLabel>
+              <RepositoryMultiSelect
+                accounts={accounts}
+                isLoading={isLoading}
+                onAddAccount={onAddAccount}
+                onChange={setSelected}
+                onSelectAccount={onSelectAccount}
+                repositories={repositories}
+                selectedAccountId={selectedAccountId}
+                value={selected}
+              />
+            </Field>
+            {onAddAccount ? (
+              <button
+                className="inline-flex items-center gap-1 text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
+                onClick={onAddAccount}
+                type="button"
+              >
+                Missing a repository? Add access on GitHub
+                <HugeiconsIcon className="size-3" icon={ArrowUpRight01Icon} />
+              </button>
+            ) : null}
+          </div>
         </div>
-        <ResponsiveDialogFooter>
+        <ResponsiveDialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t bg-muted/50 p-4">
           <ResponsiveDialogClose
             disabled={isSaving}
             render={<Button variant="outline" />}
