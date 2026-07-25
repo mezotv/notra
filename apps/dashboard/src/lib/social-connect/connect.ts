@@ -165,7 +165,7 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
     }
 
     const raw = yield* Effect.tryPromise({
-      try: () => redisClient.get<string>(getStateKey(params.state)),
+      try: () => redisClient.getdel<string>(getStateKey(params.state)),
       catch: (cause) =>
         new SocialConnectCallbackError({ code: "expired_state", cause }),
     });
@@ -175,12 +175,6 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
         new SocialConnectCallbackError({ code: "expired_state" })
       );
     }
-
-    yield* Effect.tryPromise({
-      try: () => redisClient.del(getStateKey(params.state)),
-      catch: (cause) =>
-        new SocialConnectCallbackError({ code: "callback_failed", cause }),
-    });
 
     const stateJson = yield* Effect.try({
       try: (): unknown => (typeof raw === "string" ? JSON.parse(raw) : raw),

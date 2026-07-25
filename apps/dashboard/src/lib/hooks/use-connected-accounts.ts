@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
 import { toast } from "sonner";
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
 import type { SocialConnectPlatform } from "@/schemas/social-accounts";
@@ -106,7 +105,7 @@ export function useHandleConnectSocialAccount(
 ) {
   const connectAccount = useConnectSocialAccount(organizationId, platform);
 
-  const handleConnect = useCallback(async () => {
+  const handleConnect = async () => {
     try {
       const result = await connectAccount.mutateAsync(
         window.location.pathname + window.location.search
@@ -119,7 +118,7 @@ export function useHandleConnectSocialAccount(
           : `Failed to connect ${SOCIAL_PLATFORM_LABELS[platform]} account`
       );
     }
-  }, [connectAccount, platform]);
+  };
 
   return { handleConnect, isPending: connectAccount.isPending };
 }

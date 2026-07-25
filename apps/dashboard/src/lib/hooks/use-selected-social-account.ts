@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { useSocialAccounts } from "@/lib/hooks/use-connected-accounts";
 import {
   getSelectedSocialAccountId,
@@ -16,11 +16,8 @@ export function useSelectedSocialAccount(
   const { accounts, isLoading } = useSocialAccounts(organizationId, platform);
 
   const selectedAccountId = useSyncExternalStore(
-    useCallback(
-      (onChange: () => void) =>
-        subscribeToSelectedSocialAccountId(organizationId, platform, onChange),
-      [organizationId, platform]
-    ),
+    (onChange: () => void) =>
+      subscribeToSelectedSocialAccountId(organizationId, platform, onChange),
     () => getSelectedSocialAccountId(organizationId, platform),
     () => null
   );
@@ -30,11 +27,8 @@ export function useSelectedSocialAccount(
     accounts[0] ??
     null;
 
-  const selectAccount = useCallback(
-    (accountId: string) =>
-      setSelectedSocialAccountId(organizationId, platform, accountId),
-    [organizationId, platform]
-  );
+  const selectAccount = (accountId: string) =>
+    setSelectedSocialAccountId(organizationId, platform, accountId);
 
   return { accounts, isLoading, selectedAccount, selectAccount };
 }

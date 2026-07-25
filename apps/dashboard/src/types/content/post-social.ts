@@ -1,4 +1,5 @@
 import type { SocialConnectPlatform } from "@/schemas/social-accounts";
+import type { BrandSettings } from "@/types/hooks/brand-analysis";
 
 export interface PublishedSocialPost {
   platform: SocialConnectPlatform;
@@ -19,4 +20,24 @@ export interface PublishErrorInfo {
   message: string;
   reconnectRequired: boolean;
   docsUrl: string | null;
+}
+
+export interface PostSocialErrorNoticeProps {
+  label: string;
+  error: PublishErrorInfo;
+  slug?: string;
+}
+
+export interface AddReferenceControlProps {
+  voices: BrandSettings[];
+  referencedVoiceIds: string[];
+  isPending: boolean;
+  onAdd: (voiceId: string, voiceName: string) => void;
+  onMissingVoice: () => void;
+}
+
+export interface PostSocialIntentButtonProps {
+  platform: SocialConnectPlatform;
+  content: string;
+  className?: string;
 }

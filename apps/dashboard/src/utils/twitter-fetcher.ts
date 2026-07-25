@@ -59,7 +59,7 @@ export const fetchTwitterUserWithPinnedTweet = Effect.fn(
   const response = yield* Effect.tryPromise({
     try: () =>
       twitterAppFetch(
-        `https://api.x.com/2/users/by/username/${username}?${params.toString()}`
+        `https://api.x.com/2/users/by/username/${encodeURIComponent(username)}?${params.toString()}`
       ),
     catch: (cause) =>
       new TwitterApiError({ message: "Failed to fetch X profile", cause }),
@@ -98,7 +98,7 @@ export const fetchTwitterVerification = Effect.fn("fetchTwitterVerification")(
     const response = yield* Effect.tryPromise({
       try: () =>
         twitterAppFetch(
-          `https://api.x.com/2/users/by/username/${username}?${params.toString()}`
+          `https://api.x.com/2/users/by/username/${encodeURIComponent(username)}?${params.toString()}`
         ),
       catch: (cause) =>
         new TwitterApiError({

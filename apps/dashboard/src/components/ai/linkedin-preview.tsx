@@ -21,7 +21,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { Effect } from "effect";
 import { Loader2Icon } from "lucide-react";
-import { useCallback, useEffect, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
@@ -101,7 +101,7 @@ export function LinkedInPreview({
     return () => window.clearTimeout(timer);
   }, [userAction]);
 
-  const handleApprove = useCallback(() => {
+  const handleApprove = () => {
     dispatch({ type: "userActionChanged", userAction: "saving" });
     dispatch({ type: "openChanged", open: false });
     const toastId = toast.loading("Saving draft...");
@@ -136,14 +136,14 @@ export function LinkedInPreview({
         })
       )
     );
-  }, [draftMarkdown, onApprove, onPersist, title]);
+  };
 
-  const handleDeny = useCallback(() => {
+  const handleDeny = () => {
     onDeny?.();
     toast("Canceled");
-  }, [onDeny]);
+  };
 
-  const handleRegenerate = useCallback(() => {
+  const handleRegenerate = () => {
     const instructions = regenerateInstructions.trim();
     if (!instructions) {
       dispatch({ type: "regenerateOpenChanged", open: true });
@@ -155,7 +155,7 @@ export function LinkedInPreview({
       title,
       markdown: draftMarkdown,
     });
-  }, [draftMarkdown, onRegenerate, regenerateInstructions, title]);
+  };
 
   const isFinished = effectiveState === "finished";
   const showStatusBadge = isFinished && userAction !== "save-failed";

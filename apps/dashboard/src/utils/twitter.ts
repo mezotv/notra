@@ -43,6 +43,7 @@ export function createTwitterPostUrl(text: string): string {
 }
 
 const HEAVY_CHARACTER_WEIGHT = 2;
+const graphemeSegmenter = new Intl.Segmenter();
 
 function getGraphemeWeight(grapheme: string): number {
   const codePoints = [...grapheme];
@@ -63,7 +64,7 @@ export function getWeightedTweetLength(text: string): number {
     length += TWEET_URL_WEIGHT;
     return "";
   });
-  for (const { segment } of new Intl.Segmenter().segment(withoutUrls)) {
+  for (const { segment } of graphemeSegmenter.segment(withoutUrls)) {
     length += getGraphemeWeight(segment);
   }
   return length;

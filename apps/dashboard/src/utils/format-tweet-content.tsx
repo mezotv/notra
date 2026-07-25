@@ -7,15 +7,18 @@ import {
 } from "@/constants/twitter";
 
 const URL_PROTOCOL_REGEX = /^https?:\/\//i;
-const SAFE_URL_PROTOCOLS = new Set(["http:", "https:"]);
 
 function toSafeExternalUrl(url: string): string | undefined {
+  let candidate: string;
   try {
-    const parsed = new URL(url);
-    return SAFE_URL_PROTOCOLS.has(parsed.protocol) ? parsed.href : undefined;
+    candidate = new URL(url).href;
   } catch {
     return undefined;
   }
+  if (candidate.startsWith("https://") || candidate.startsWith("http://")) {
+    return candidate;
+  }
+  return undefined;
 }
 
 function getTweetTokenUrl(token: string): string | undefined {

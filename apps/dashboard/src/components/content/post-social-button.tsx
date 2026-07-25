@@ -1,7 +1,5 @@
 "use client";
 
-import { Tick02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
 import {
   ResponsiveDialog,
@@ -12,20 +10,16 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@notra/ui/components/ui/dropdown-menu";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { Loader2Icon } from "lucide-react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/button";
+import { AddReferenceControl } from "@/components/content/add-reference-control";
+import { PostSocialErrorNotice } from "@/components/content/post-social-error-notice";
+import { PostSocialIntentButton } from "@/components/content/post-social-intent-button";
 import { LinkedInPost } from "@/components/linkedin-post";
 import { TwitterPost } from "@/components/twitter-post";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
@@ -38,17 +32,12 @@ import { usePublishSocialPost } from "@/lib/hooks/use-connected-accounts";
 import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
 import { cn } from "@/lib/utils";
 import type { PostSocialButtonProps } from "@/types/content/post-social";
-import {
-  copyLinkedInPostForPublishing,
-  createLinkedInPostUrl,
-  linkedInAuthorFromAccount,
-} from "@/utils/linkedin";
+import { linkedInAuthorFromAccount } from "@/utils/linkedin";
 import {
   buildReferenceInput,
   getPublishErrorInfo,
 } from "@/utils/social-publish";
 import {
-  createTwitterPostUrl,
   getTwitterCharLimit,
   getWeightedTweetLength,
   twitterAuthorFromAccount,
@@ -159,33 +148,10 @@ export function PostSocialButton({
 
   if (!selectedAccount) {
     return (
-      <Button
-        className={cn("text-white hover:opacity-90", className)}
-        nativeButton={false}
-        render={
-          platform === "twitter" ? (
-            <a
-              href={createTwitterPostUrl(content)}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <BrandIcon className="size-4" />
-              Post to {label}
-            </a>
-          ) : (
-            <a
-              href={createLinkedInPostUrl(content)}
-              onClick={() => copyLinkedInPostForPublishing(content)}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <BrandIcon className="size-4" />
-              Post to {label}
-            </a>
-          )
-        }
-        size="sm"
-        style={{ backgroundColor: brandColor }}
+      <PostSocialIntentButton
+        className={className}
+        content={content}
+        platform={platform}
       />
     );
   }
@@ -226,33 +192,11 @@ export function PostSocialButton({
           <ResponsiveDialogTitle>Post to {label}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         {publishMutation.isError && (
-          <div className="space-y-1">
-            <p className="text-destructive text-sm">{publishError.message}</p>
-            {publishError.docsUrl && (
-              <p className="text-muted-foreground text-sm">
-                {label} rejects duplicate posts.{" "}
-                <a
-                  className="text-primary underline underline-offset-2"
-                  href={publishError.docsUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Read the {label} docs
-                </a>
-              </p>
-            )}
-            {publishError.reconnectRequired && params.slug && (
-              <p className="text-muted-foreground text-sm">
-                Have you tried reconnecting?{" "}
-                <Link
-                  className="text-primary underline underline-offset-2"
-                  href={`/${params.slug}/settings/general`}
-                >
-                  Reconnect in settings
-                </Link>
-              </p>
-            )}
-          </div>
+          <PostSocialErrorNotice
+            error={publishError}
+            label={label}
+            slug={params.slug}
+          />
         )}
         {platform === "twitter" ? (
           <TwitterPost
@@ -284,53 +228,13 @@ export function PostSocialButton({
         <ResponsiveDialogFooter>
           {published ? (
             <>
-              {voices.length === 0 && (
-                <Button onClick={handleMissingVoice} variant="outline">
-                  Add as reference
-                </Button>
-              )}
-              {voices.length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className={cn(buttonVariants({ variant: "outline" }))}
-                    disabled={createReference.isPending}
-                  >
-                    {createReference.isPending ? (
-                      <Loader2Icon className="size-4 animate-spin" />
-                    ) : null}
-                    Add as reference
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {voices.map((voice) => {
-                      const alreadyAdded = referencedVoiceIds.includes(
-                        voice.id
-                      );
-                      return (
-                        <DropdownMenuItem
-                          disabled={alreadyAdded}
-                          key={voice.id}
-                          onClick={() =>
-                            handleAddReference(voice.id, voice.name)
-                          }
-                        >
-                          {voice.name}
-                          {voice.isDefault && (
-                            <span className="text-muted-foreground text-xs">
-                              Default
-                            </span>
-                          )}
-                          {alreadyAdded && (
-                            <HugeiconsIcon
-                              className="ml-auto size-4"
-                              icon={Tick02Icon}
-                            />
-                          )}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              <AddReferenceControl
+                isPending={createReference.isPending}
+                onAdd={handleAddReference}
+                onMissingVoice={handleMissingVoice}
+                referencedVoiceIds={referencedVoiceIds}
+                voices={voices}
+              />
               {published.postUrl && (
                 <Button
                   nativeButton={false}
