@@ -51,6 +51,13 @@ export function formatTweetContent(content: string): ReactNode[] {
     if (TWEET_TOKEN_REGEX.test(part)) {
       TWEET_TOKEN_REGEX.lastIndex = 0;
       const href = getTweetTokenUrl(part);
+      if (!(href?.startsWith("https://") || href?.startsWith("http://"))) {
+        return (
+          <span className="text-sky-500" key={`${i}-${part}`}>
+            {part}
+          </span>
+        );
+      }
       return (
         <a
           className="cursor-pointer text-sky-500 hover:underline"
