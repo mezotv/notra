@@ -32,8 +32,11 @@ export const GITHUB_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
     "Too many GitHub connection attempts. Please wait a moment and try again.",
 };
 
+export const DEFAULT_CHANGELOG_DIRECTORY = "changelogs";
+
 export const GITHUB_APP_PERMISSIONS = [
   "Read repository metadata, branches, and releases",
+  "Create branches, commits, and draft pull requests",
   "Receive webhook events for the repositories you choose",
   "Access only the repositories you grant during installation",
 ] as const;

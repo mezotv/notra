@@ -35,9 +35,17 @@ export interface AddRepositoryParams {
   }>;
 }
 
+export type RepositoryOutputType =
+  | "changelog"
+  | "blog_post"
+  | "twitter_post"
+  | "linkedin_post"
+  | "investor_update"
+  | "image";
+
 export interface ConfigureOutputParams {
   repositoryId: string;
-  outputType: string;
+  outputType: RepositoryOutputType;
   enabled: boolean;
   config?: Record<string, unknown> | null;
 }

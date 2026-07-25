@@ -48,6 +48,7 @@ export interface IntegrationWithRepositories {
   connectionMethod?: GitHubConnectionMethod;
   enabled: boolean;
   createdAt: Date;
+  managedByGitHubApp?: boolean;
   repositories: Array<{
     id: string;
     owner: string;

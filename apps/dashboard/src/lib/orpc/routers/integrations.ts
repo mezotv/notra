@@ -13,8 +13,10 @@ import {
   getGitHubIntegrationById,
   getOutputById,
   getRepositoryById,
+  getTokenForIntegrationId,
   getWebhookConfigForRepository,
   listAvailableRepositories,
+  setRepositoryOutputDirectory,
   toggleOutput,
   updateGitHubIntegration,
   updateGitHubIntegrationToken,
@@ -64,8 +66,9 @@ import {
   updateSlackIntegration,
 } from "@notra/ai/integrations/slack-workspace";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
+import { createOctokit } from "@notra/ai/utils/octokit";
 import { db } from "@notra/db/drizzle";
-import { contentTriggers } from "@notra/db/schema";
+import { contentTriggers, repositoryOutputs } from "@notra/db/schema";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
@@ -100,10 +103,17 @@ import {
   createGitHubIntegrationRequestSchema,
   createMcpServerRequestSchema,
   type IntegrationType,
+  integrationIdParamSchema,
   integrationInputSchema,
+  listRepositoryDirectoriesInputSchema,
+  mcpServerIdParamSchema,
   mcpServerInputSchema,
+  outputIdParamSchema,
   outputInputSchema,
   reauthorizeMcpOAuthRequestSchema,
+  repositoryContentDirectoryConfigSchema,
+  repositoryContentDirectoryInputSchema,
+  repositoryIdParamSchema,
   repositoryInputSchema,
   testMcpServerRequestSchema,
   triggerTargetsSchema,
@@ -111,6 +121,7 @@ import {
   updateMcpServerBodySchema,
   updateOutputBodySchema,
   updateRepositoryBodySchema,
+  updateRepositoryContentDirectoryBodySchema,
 } from "@/schemas/integrations";
 import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
 import {
@@ -130,6 +141,7 @@ import { ratelimit } from "@/utils/ratelimit";
 import {
   badRequest,
   conflict,
+  forbidden,
   internalServerError,
   notFound,
   tooManyRequests,
@@ -200,6 +212,8 @@ function serializeIntegration(integration: {
   id: string;
   displayName: string;
   enabled: boolean;
+  githubAppInstallationId?: string | null;
+  managedByGitHubApp?: boolean;
   createdAt: Date;
   createdByUser?: {
     id: string;
@@ -225,6 +239,9 @@ function serializeIntegration(integration: {
     id: integration.id,
     displayName: integration.displayName,
     enabled: integration.enabled,
+    managedByGitHubApp:
+      integration.managedByGitHubApp ??
+      Boolean(integration.githubAppInstallationId),
     createdAt: integration.createdAt.toISOString(),
     ...(integration.createdByUser
       ? { createdByUser: integration.createdByUser }
@@ -239,6 +256,7 @@ function serializeListedIntegration(integration: {
   displayName: string;
   connectionMethod?: GitHubConnectionMethod;
   enabled: boolean;
+  managedByGitHubApp?: boolean;
   createdAt: Date;
   repositories: Array<{
     id: string;
@@ -774,6 +792,140 @@ export const integrationsRouter = {
           mapKnownIntegrationError(error);
         }
       }),
+    contentDirectory: {
+      get: baseProcedure
+        .input(repositoryInputSchema.and(repositoryContentDirectoryInputSchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          const output = await db.query.repositoryOutputs.findFirst({
+            where: and(
+              eq(repositoryOutputs.repositoryId, input.repositoryId),
+              eq(repositoryOutputs.outputType, input.contentType)
+            ),
+            columns: { config: true },
+          });
+          const config = repositoryContentDirectoryConfigSchema.safeParse(
+            output?.config
+          );
+
+          return {
+            directory: config.success ? config.data.directory : null,
+          };
+        }),
+      update: baseProcedure
+        .input(
+          repositoryInputSchema.and(updateRepositoryContentDirectoryBodySchema)
+        )
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+          await assertActiveSubscription(input.organizationId);
+
+          await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+
+          await setRepositoryOutputDirectory({
+            repositoryId: input.repositoryId,
+            outputType: input.contentType,
+            directory: input.directory,
+          });
+
+          return { directory: input.directory };
+        }),
+    },
+    directories: {
+      list: baseProcedure
+        .input(repositoryInputSchema.and(listRepositoryDirectoriesInputSchema))
+        .handler(async ({ context, input }) => {
+          await assertOrganizationAccess({
+            headers: context.headers,
+            organizationId: input.organizationId,
+          });
+
+          const repository = await requireRepositoryInOrganization(
+            input.organizationId,
+            input.repositoryId
+          );
+          if (!(repository.enabled && repository.integration.enabled)) {
+            throw forbidden("This GitHub repository is disabled");
+          }
+          const token = await getTokenForIntegrationId(input.repositoryId);
+
+          if (!token) {
+            throw forbidden("GitHub repository access is not configured");
+          }
+
+          try {
+            const octokit = createOctokit(token);
+            const requestOptions = {
+              owner: repository.owner,
+              repo: repository.repo,
+              ...(repository.defaultBranch
+                ? { ref: repository.defaultBranch }
+                : {}),
+              headers: {
+                "X-GitHub-Api-Version": "2022-11-28" as const,
+              },
+            };
+            const { data } = input.directory
+              ? await octokit.request(
+                  "GET /repos/{owner}/{repo}/contents/{path}",
+                  {
+                    ...requestOptions,
+                    path: input.directory,
+                  }
+                )
+              : await octokit.request("GET /repos/{owner}/{repo}/contents", {
+                  ...requestOptions,
+                });
+
+            if (!Array.isArray(data)) {
+              throw badRequest("The selected path is not a directory");
+            }
+
+            return {
+              directories: data
+                .flatMap((entry) =>
+                  entry.type === "dir"
+                    ? [{ name: entry.name, path: entry.path }]
+                    : []
+                )
+                .sort((left, right) => left.name.localeCompare(right.name)),
+            };
+          } catch (error) {
+            if (
+              typeof error === "object" &&
+              error !== null &&
+              "status" in error &&
+              error.status === 404
+            ) {
+              throw notFound("Directory not found");
+            }
+            if (
+              typeof error === "object" &&
+              error !== null &&
+              "status" in error &&
+              (error.status === 401 || error.status === 403)
+            ) {
+              throw forbidden("GitHub denied access to this repository");
+            }
+            throw error;
+          }
+        }),
+    },
     delete: baseProcedure
       .input(repositoryInputSchema)
       .handler(async ({ context, input }) => {

@@ -327,6 +327,7 @@ const mockIntegration = {
   id: "integration_1",
   displayName: "GitHub",
   enabled: true,
+  managedByGitHubApp: true,
   createdAt: new Date().toISOString(),
   createdByUser: {
     id: "user_1",

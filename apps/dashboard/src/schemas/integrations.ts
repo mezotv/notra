@@ -239,6 +239,51 @@ export const updateRepositoryBodySchema = z
   );
 export type UpdateRepositoryBody = z.infer<typeof updateRepositoryBodySchema>;
 
+const GITHUB_DIRECTORY_INVALID_CHARACTERS_REGEX = /[?#]/;
+
+export const repositoryContentDirectorySchema = z
+  .string()
+  .trim()
+  .max(1024, "Directory is too long")
+  .refine(
+    (directory) => !directory.startsWith("/"),
+    "Enter a repository-relative directory"
+  )
+  .refine((directory) => !directory.endsWith("/"), "Remove the trailing slash")
+  .refine(
+    (directory) => !directory.includes("\\"),
+    "Use forward slashes in directories"
+  )
+  .refine(
+    (directory) => !GITHUB_DIRECTORY_INVALID_CHARACTERS_REGEX.test(directory),
+    "Directory contains invalid characters"
+  )
+  .refine(
+    (directory) =>
+      directory === "" ||
+      directory
+        .split("/")
+        .every((segment) => segment && segment !== "." && segment !== ".."),
+    "Directory contains an invalid segment"
+  );
+
+export const repositoryContentDirectoryConfigSchema = z.looseObject({
+  directory: repositoryContentDirectorySchema,
+});
+
+export const repositoryContentDirectoryInputSchema = z.object({
+  contentType: z.enum(OUTPUT_CONTENT_TYPES),
+});
+
+export const updateRepositoryContentDirectoryBodySchema =
+  repositoryContentDirectoryInputSchema.extend({
+    directory: repositoryContentDirectorySchema,
+  });
+
+export const listRepositoryDirectoriesInputSchema = z.object({
+  directory: repositoryContentDirectorySchema.default(""),
+});
+
 export const updateOutputBodySchema = z.object({
   enabled: z.boolean(),
 });

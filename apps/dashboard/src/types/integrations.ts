@@ -24,6 +24,7 @@ export interface GitHubIntegration {
   id: string;
   displayName: string;
   enabled: boolean;
+  managedByGitHubApp: boolean;
   createdAt: string;
   createdByUser?: {
     id: string;

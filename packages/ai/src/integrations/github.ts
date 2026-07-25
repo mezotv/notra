@@ -26,6 +26,7 @@ import type {
   CreateGitHubIntegrationParams,
   ErrorWithStatus,
   GitHubOrgMembershipCheck,
+  RepositoryOutputType,
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
@@ -1245,6 +1246,65 @@ export async function configureOutput(params: ConfigureOutputParams) {
     .returning();
 
   return output;
+}
+
+export async function setRepositoryOutputDirectory(params: {
+  directory: string;
+  outputType: RepositoryOutputType;
+  repositoryId: string;
+}) {
+  const directoryConfig = JSON.stringify({ directory: params.directory });
+  const mergedConfig = sql`(
+    CASE
+      WHEN jsonb_typeof(${repositoryOutputs.config}) = 'object'
+        THEN ${repositoryOutputs.config}
+      ELSE '{}'::jsonb
+    END
+  ) || ${directoryConfig}::jsonb`;
+  const [existing] = await db
+    .update(repositoryOutputs)
+    .set({ config: mergedConfig })
+    .where(
+      and(
+        eq(repositoryOutputs.repositoryId, params.repositoryId),
+        eq(repositoryOutputs.outputType, params.outputType)
+      )
+    )
+    .returning();
+
+  if (existing) {
+    return existing;
+  }
+
+  try {
+    const [created] = await db
+      .insert(repositoryOutputs)
+      .values({
+        id: nanoid(),
+        repositoryId: params.repositoryId,
+        outputType: params.outputType,
+        enabled: params.outputType === "changelog",
+        config: { directory: params.directory },
+      })
+      .returning();
+    return created;
+  } catch (error) {
+    const [concurrent] = await db
+      .update(repositoryOutputs)
+      .set({ config: mergedConfig })
+      .where(
+        and(
+          eq(repositoryOutputs.repositoryId, params.repositoryId),
+          eq(repositoryOutputs.outputType, params.outputType)
+        )
+      )
+      .returning();
+
+    if (concurrent) {
+      return concurrent;
+    }
+    throw error;
+  }
 }
 
 export async function toggleGitHubIntegration(
