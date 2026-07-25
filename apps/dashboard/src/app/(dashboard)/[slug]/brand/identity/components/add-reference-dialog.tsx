@@ -39,7 +39,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
-  type ConnectedAccount,
   useConnectedAccounts,
   useDisconnectAccount,
   useHandleConnectSocialAccount,
@@ -48,6 +47,7 @@ import type {
   AddReferenceDialogProps,
   ApplicablePlatform,
 } from "@/types/hooks/brand-references";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 import {
   useCreateReference,
   useFetchTweet,

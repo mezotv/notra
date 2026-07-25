@@ -1,5 +1,8 @@
 import { contentTypeSchema } from "@notra/ai/schemas/content";
-import { createGetAvailableBrandReferencesTool } from "@notra/ai/tools/brand-references";
+import {
+  createAddBrandReferenceTool,
+  createGetAvailableBrandReferencesTool,
+} from "@notra/ai/tools/brand-references";
 import { exampleTool } from "@notra/ai/tools/example";
 import {
   createGetCommitsByTimeframeTool,
@@ -106,6 +109,7 @@ export function buildStandaloneToolSet(
   tools.getAvailableBrandReferences = createGetAvailableBrandReferencesTool({
     organizationId,
   });
+  tools.addBrandReference = createAddBrandReferenceTool({ organizationId });
 
   descriptions.push(
     userId
@@ -114,6 +118,9 @@ export function buildStandaloneToolSet(
   );
   descriptions.push(
     "**Organization Data**: Inspect brand identities, brand references, available integrations, and existing posts using listBrandIdentities, getBrandIdentity, getAvailableBrandReferences, getAvailableIntegrations, getAvailablePosts, and getPost"
+  );
+  descriptions.push(
+    "**Brand References**: When the user tells you they just published a post and shares its URL, congratulate them, then ask if they want to save it as a brand reference. Only after they agree, call addBrandReference with the post content, type, and URL."
   );
 
   tools.listAvailableSkills = listAvailableSkills({ organizationId });

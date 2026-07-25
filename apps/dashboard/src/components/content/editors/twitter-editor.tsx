@@ -11,6 +11,8 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useRef } from "react";
 import { DiffView } from "@/components/content/diff-view";
 import { TwitterPost } from "@/components/twitter-post";
+import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
+import { twitterAuthorFromAccount } from "@/utils/twitter";
 import type { ContentEditorProps } from "./types";
 
 const VIEW_OPTIONS = ["preview", "raw", "diff"] as const;
@@ -27,6 +29,7 @@ export function TwitterEditor({
   state,
   actions,
   organization,
+  organizationId,
 }: ContentEditorProps) {
   const [view, setView] = useQueryState(
     "view",
@@ -34,6 +37,20 @@ export function TwitterEditor({
   );
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const { accounts, selectedAccount, selectAccount } = useSelectedSocialAccount(
+    organizationId ?? "",
+    "twitter"
+  );
+  const author = selectedAccount
+    ? twitterAuthorFromAccount(selectedAccount)
+    : {
+        name: organization?.name ?? "Your Name",
+        avatar: organization?.logo ?? undefined,
+        handle: (organization?.name ?? "yourname")
+          .toLowerCase()
+          .replace(/\s+/g, ""),
+      };
 
   const currentMarkdown = state.editedMarkdown ?? content.markdown ?? "";
   const title = state.editingTitle ?? state.serverTitle;
@@ -89,13 +106,11 @@ export function TwitterEditor({
       >
         <TabsContent className="mt-0 flex justify-center py-4" value="preview">
           <TwitterPost
-            author={{
-              name: organization?.name ?? "Your Name",
-              avatar: organization?.logo ?? undefined,
-              handle: (organization?.name ?? "yourname")
-                .toLowerCase()
-                .replace(/\s+/g, ""),
+            accountSelector={{
+              accounts,
+              onSelect: selectAccount,
             }}
+            author={author}
             className="w-full max-w-lg"
             content={currentMarkdown}
             onContentChange={(value) => actions.setEditedMarkdown(value)}

@@ -5,18 +5,8 @@ import { useCallback } from "react";
 import { toast } from "sonner";
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
 import type { SocialConnectPlatform } from "@/schemas/social-accounts";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 import { dashboardOrpc } from "../orpc/query";
-
-export interface ConnectedAccount {
-  id: string;
-  provider: string;
-  providerAccountId: string;
-  username: string;
-  displayName: string;
-  profileImageUrl: string | null;
-  verified: boolean;
-  createdAt: string;
-}
 
 export function useConnectedAccounts(organizationId: string) {
   return useQuery<{ accounts: ConnectedAccount[] }>(
@@ -25,6 +15,74 @@ export function useConnectedAccounts(organizationId: string) {
       enabled: !!organizationId,
     })
   );
+}
+
+export function useSocialAccounts(
+  organizationId: string,
+  platform: SocialConnectPlatform
+) {
+  const { data, isLoading } = useConnectedAccounts(organizationId);
+  const accounts = (data?.accounts ?? []).filter(
+    (account) => account.provider === platform
+  );
+  return { accounts, isLoading };
+}
+
+export function useRefreshConnectedAccount(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (accountId: string) =>
+      dashboardOrpc.socialAccounts.refresh.call({ organizationId, accountId }),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.socialAccounts.list.queryKey({
+          input: { organizationId },
+        }),
+      });
+      const account = result.accounts.at(0);
+      if (!account) {
+        return;
+      }
+      if (account.status === "missing") {
+        toast.warning(`@${account.username} needs reconnecting`);
+        return;
+      }
+      toast.success(`@${account.username} is up to date`);
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to refresh account"
+      );
+    },
+  });
+}
+
+export function usePublishSocialPost(
+  organizationId: string,
+  platform: SocialConnectPlatform
+) {
+  return useMutation({
+    mutationFn: async (input: { accountId: string; content: string }) =>
+      dashboardOrpc.socialAccounts.publish.call({
+        organizationId,
+        accountId: input.accountId,
+        content: input.content,
+      }),
+    onSuccess: (result) => {
+      toast.success(
+        `🎉 Posted to ${SOCIAL_PLATFORM_LABELS[platform]} as @${result.username}`
+      );
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to publish post"
+      );
+    },
+  });
 }
 
 export function useConnectSocialAccount(

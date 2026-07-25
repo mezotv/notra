@@ -51,6 +51,7 @@ export default async function OnboardingSocialsPage() {
         providerAccountId: true,
         username: true,
         verified: true,
+        verifiedType: true,
       },
       orderBy: [desc(connectedSocialAccounts.createdAt)],
     }),

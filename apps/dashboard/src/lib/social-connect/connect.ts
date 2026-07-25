@@ -4,11 +4,13 @@ import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { SOCIAL_CONNECT_STATE_TTL_SECONDS } from "@/constants/social-connect";
+import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import {
   getSocialConnectClient,
   isSocialConnectConfigured,
 } from "@/lib/social-connect/client";
 import {
+  getSocialConnectStatusCode,
   SocialConnectCallbackError,
   SocialConnectConfigError,
   SocialConnectRequestError,
@@ -25,10 +27,61 @@ import type {
   SocialConnectAccountsListResult,
   SocialConnectUrlResult,
 } from "@/types/services/social-connect";
+import { fetchTwitterVerification } from "@/utils/twitter-fetcher";
 
-function getStateKey(state: string) {
+export function getStateKey(state: string) {
   return `social_connect_oauth:${state}`;
 }
+
+export const loadSocialConnectOAuthState = Effect.fn(
+  "loadSocialConnectOAuthState"
+)(function* (state: string) {
+  const redisClient = redis;
+  if (!redisClient) {
+    return yield* Effect.fail(
+      new SocialConnectConfigError({ message: "Redis is not configured" })
+    );
+  }
+
+  const raw = yield* Effect.tryPromise({
+    try: () => redisClient.get<string>(getStateKey(state)),
+    catch: (cause) =>
+      new SocialConnectRequestError({
+        message: "Failed to load connect state",
+        cause,
+      }),
+  });
+
+  if (!raw) {
+    return yield* Effect.fail(
+      new SocialConnectRequestError({
+        message: "The connection attempt expired. Please try again.",
+        cause: null,
+      })
+    );
+  }
+
+  const stateJson = yield* Effect.try({
+    try: (): unknown => (typeof raw === "string" ? JSON.parse(raw) : raw),
+    catch: (cause) =>
+      new SocialConnectRequestError({
+        message: "The connection attempt was invalid. Please try again.",
+        cause,
+      }),
+  });
+
+  const parsedState = socialConnectOAuthStateSchema.safeParse(stateJson);
+  if (!parsedState.success) {
+    return yield* Effect.fail(
+      new SocialConnectRequestError({
+        message: "The connection attempt was invalid. Please try again.",
+        cause: null,
+      })
+    );
+  }
+
+  return parsedState.data;
+});
 
 export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
   params: BeginSocialConnectParams
@@ -48,7 +101,10 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
     );
   }
 
-  const profileId = yield* ensureSocialConnectProfileId(params.organizationId);
+  const profileId = yield* ensureSocialConnectProfileId(
+    params.organizationId,
+    params.platform
+  );
 
   const state = crypto.randomUUID();
   const oauthState: SocialConnectOAuthState = {
@@ -77,6 +133,7 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
         query: {
           profileId,
           redirect_url: `${params.baseUrl}/api/social-accounts/callback?state=${state}`,
+          ...(params.platform === "linkedin" ? { headless: true } : {}),
         },
       }),
     catch: (cause) =>
@@ -182,10 +239,24 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
     }
 
     const displayName = providerAccount?.displayName ?? username;
-    const profileImageUrl = providerAccount?.profilePicture ?? null;
+    const rawProfileImageUrl = providerAccount?.profilePicture ?? null;
+    const profileImageUrl =
+      rawProfileImageUrl && oauthState.platform === "twitter"
+        ? normalizeTwitterProfileImageUrl(rawProfileImageUrl)
+        : rawProfileImageUrl;
 
-    yield* Effect.tryPromise({
-      try: async () => {
+    let verifiedType =
+      providerAccount?.metadata?.profileData?.extraData?.verifiedType ?? null;
+    if (oauthState.platform === "twitter") {
+      const verification = yield* fetchTwitterVerification(username).pipe(
+        Effect.catch(() => Effect.succeed(null))
+      );
+      verifiedType = verification?.verifiedType ?? verifiedType;
+    }
+    const verified = verifiedType !== null && verifiedType !== "none";
+
+    const { replacedProviderAccountId } = yield* Effect.tryPromise({
+      try: async (): Promise<{ replacedProviderAccountId: string | null }> => {
         const existing = await db.query.connectedSocialAccounts.findFirst({
           columns: { id: true },
           where: and(
@@ -201,9 +272,44 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
         if (existing) {
           await db
             .update(connectedSocialAccounts)
-            .set({ username, displayName, profileImageUrl })
+            .set({
+              username,
+              displayName,
+              profileImageUrl,
+              verified,
+              verifiedType,
+              socialConnectProfileId: oauthState.profileId,
+            })
             .where(eq(connectedSocialAccounts.id, existing.id));
-          return;
+          return { replacedProviderAccountId: null };
+        }
+
+        const reconnected = await db.query.connectedSocialAccounts.findFirst({
+          columns: { id: true, providerAccountId: true },
+          where: and(
+            eq(
+              connectedSocialAccounts.organizationId,
+              oauthState.organizationId
+            ),
+            eq(connectedSocialAccounts.provider, oauthState.platform),
+            eq(connectedSocialAccounts.username, username)
+          ),
+        });
+
+        if (reconnected) {
+          await db
+            .update(connectedSocialAccounts)
+            .set({
+              providerAccountId: accountId,
+              username,
+              displayName,
+              profileImageUrl,
+              verified,
+              verifiedType,
+              socialConnectProfileId: oauthState.profileId,
+            })
+            .where(eq(connectedSocialAccounts.id, reconnected.id));
+          return { replacedProviderAccountId: reconnected.providerAccountId };
         }
 
         await db.insert(connectedSocialAccounts).values({
@@ -211,14 +317,28 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
           organizationId: oauthState.organizationId,
           provider: oauthState.platform,
           providerAccountId: accountId,
+          socialConnectProfileId: oauthState.profileId,
           username,
           displayName,
           profileImageUrl,
+          verified,
+          verifiedType,
         });
+        return { replacedProviderAccountId: null };
       },
       catch: (cause) =>
         new SocialConnectCallbackError({ code: "callback_failed", cause }),
     });
+
+    if (replacedProviderAccountId && replacedProviderAccountId !== accountId) {
+      yield* disconnectProviderAccount(replacedProviderAccountId).pipe(
+        Effect.catch((error) =>
+          Effect.logWarning(
+            `Failed to remove replaced account at provider: ${error.message}`
+          )
+        )
+      );
+    }
 
     const result: CompleteSocialConnectResult = {
       callbackPath: oauthState.callbackPath,
@@ -241,14 +361,14 @@ export const disconnectProviderAccount = Effect.fn("disconnectProviderAccount")(
         }),
       catch: (cause) =>
         new SocialConnectRequestError({
-          message: "Failed to disconnect account at provider",
+          message: "Failed to disconnect account",
           cause,
         }),
     }).pipe(
       Effect.catch((error) =>
-        Effect.logWarning(
-          `Failed to disconnect account at provider: ${error.message}`
-        )
+        getSocialConnectStatusCode(error.cause) === 404
+          ? Effect.void
+          : Effect.fail(error)
       )
     );
   }

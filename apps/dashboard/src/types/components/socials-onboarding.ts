@@ -1,5 +1,5 @@
-import type { ConnectedAccount } from "@/lib/hooks/use-connected-accounts";
 import type { BrandReference } from "@/types/hooks/brand-references";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 
 export interface SocialsClientProps {
   organizationId: string;

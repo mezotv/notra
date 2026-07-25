@@ -1,5 +1,5 @@
 import type { IconSvgElement } from "@hugeicons/react";
-import type { ConnectedAccount } from "@/lib/hooks/use-connected-accounts";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 
 export interface ConnectedAccountsGroupProps {
   organizationId: string;

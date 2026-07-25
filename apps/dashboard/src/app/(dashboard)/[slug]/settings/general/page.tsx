@@ -2,6 +2,7 @@
 
 import {
   Add01Icon,
+  ArrowReloadHorizontalIcon,
   Cancel01Icon,
   Linkedin02Icon,
   NewTwitterIcon,
@@ -13,14 +14,19 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
@@ -29,7 +35,9 @@ import {
   useConnectedAccounts,
   useDisconnectAccount,
   useHandleConnectSocialAccount,
+  useRefreshConnectedAccount,
 } from "@/lib/hooks/use-connected-accounts";
+import { useSocialConnectCallbackToasts } from "@/lib/hooks/use-social-connect-callback-toasts";
 import {
   getOrganizationMembershipActionLabel,
   type OrganizationMembershipAction,
@@ -41,6 +49,7 @@ import type {
 } from "@/types/settings/general";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
+import { isSquareTwitterAvatar } from "@/utils/twitter";
 import { OrganizationDetailsCard } from "./organization-details-card";
 
 export default function GeneralSettingsPage({
@@ -228,6 +237,7 @@ function ConnectedAccountsSection({
   organizationId: string;
 }) {
   const { data, isLoading, isError } = useConnectedAccounts(organizationId);
+  useSocialConnectCallbackToasts(organizationId);
   const twitterConnect = useHandleConnectSocialAccount(
     organizationId,
     "twitter"
@@ -303,6 +313,7 @@ function ConnectedAccountsGroup({
   isConnecting,
 }: ConnectedAccountsGroupProps) {
   const disconnectMutation = useDisconnectAccount(organizationId);
+  const refreshMutation = useRefreshConnectedAccount(organizationId);
 
   return (
     <div className="space-y-3">
@@ -351,6 +362,9 @@ function ConnectedAccountsGroup({
         const isDisconnecting =
           disconnectMutation.isPending &&
           disconnectMutation.variables === account.id;
+        const isRefreshing =
+          refreshMutation.isPending && refreshMutation.variables === account.id;
+        const hasSquareAvatar = isSquareTwitterAvatar(account.verifiedType);
 
         return (
           <div
@@ -358,7 +372,9 @@ function ConnectedAccountsGroup({
             key={account.id}
           >
             <Avatar
-              className="size-9 rounded-full after:rounded-full"
+              className={
+                hasSquareAvatar ? "size-9 rounded-md" : "size-9 rounded-full"
+              }
               size="sm"
             >
               {account.profileImageUrl && (
@@ -374,14 +390,39 @@ function ConnectedAccountsGroup({
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-1 truncate font-medium text-sm">
                 {account.displayName}
-                {account.verified && (
-                  <XVerifiedBadge className="size-4 shrink-0" />
-                )}
+                <XVerificationBadge
+                  className="size-4 shrink-0"
+                  verified={account.verified}
+                  verifiedType={account.verifiedType}
+                />
               </p>
               <p className="truncate text-muted-foreground text-xs">
                 @{account.username}
               </p>
             </div>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    aria-label={`Refresh @${account.username}`}
+                    disabled={refreshMutation.isPending}
+                    onClick={() => refreshMutation.mutate(account.id)}
+                    size="icon-sm"
+                    variant="outline"
+                  />
+                }
+              >
+                {isRefreshing ? (
+                  <Loader2Icon className="size-3.5 animate-spin" />
+                ) : (
+                  <HugeiconsIcon
+                    className="size-3.5"
+                    icon={ArrowReloadHorizontalIcon}
+                  />
+                )}
+              </TooltipTrigger>
+              <TooltipContent>Refresh account details</TooltipContent>
+            </Tooltip>
             <Button
               aria-label={`Disconnect @${account.username}`}
               disabled={disconnectMutation.isPending}

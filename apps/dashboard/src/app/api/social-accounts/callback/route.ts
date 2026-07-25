@@ -13,11 +13,19 @@ export async function GET(request: NextRequest) {
     state: searchParams.get("state") ?? undefined,
     accountId: searchParams.get("accountId") ?? undefined,
     username: searchParams.get("username") ?? undefined,
+    pendingDataToken: searchParams.get("pendingDataToken") ?? undefined,
     error: searchParams.get("error") ?? undefined,
   });
 
   if (!parsed.success) {
     return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
+  }
+
+  if (parsed.data.pendingDataToken && !parsed.data.error) {
+    const selectionUrl = new URL("/connect/linkedin", baseUrl);
+    selectionUrl.searchParams.set("state", parsed.data.state);
+    selectionUrl.searchParams.set("token", parsed.data.pendingDataToken);
+    return NextResponse.redirect(selectionUrl.toString());
   }
 
   try {

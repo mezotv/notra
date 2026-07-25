@@ -48,5 +48,6 @@ export interface ContentEditorProps {
   editorRef: React.RefObject<EditorRefHandle | null>;
   editorKey: number;
   organization?: OrganizationInfo;
+  organizationId?: string;
   imageExportRef?: React.RefObject<HTMLDivElement | null>;
 }

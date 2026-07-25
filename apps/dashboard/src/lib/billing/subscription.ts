@@ -1,4 +1,7 @@
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { ORPCError } from "@orpc/server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
@@ -6,7 +9,7 @@ import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 export async function assertActiveSubscription(
   organizationId: string
 ): Promise<void> {
-  if (!autumn) {
+  if (!autumn || allowUnmeteredAiInDevelopment) {
     return;
   }
 

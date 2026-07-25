@@ -1,5 +1,16 @@
 import { Data } from "effect";
 
+export function getSocialConnectStatusCode(cause: unknown): number | null {
+  if (
+    cause instanceof Error &&
+    "statusCode" in cause &&
+    typeof cause.statusCode === "number"
+  ) {
+    return cause.statusCode;
+  }
+  return null;
+}
+
 export class SocialConnectConfigError extends Data.TaggedError(
   "SocialConnectConfigError"
 )<{

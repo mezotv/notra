@@ -327,7 +327,6 @@ export const organizations = pgTable(
       .default(false)
       .notNull(),
     onboardingAgentStartedAt: timestamp("onboarding_agent_started_at"),
-    socialConnectProfileId: text("social_connect_profile_id"),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );
@@ -1308,10 +1307,12 @@ export const connectedSocialAccounts = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     provider: text("provider").notNull(),
     providerAccountId: text("provider_account_id").notNull(),
+    socialConnectProfileId: text("social_connect_profile_id"),
     username: text("username").notNull(),
     displayName: text("display_name").notNull(),
     profileImageUrl: text("profile_image_url"),
     verified: boolean("verified").default(false).notNull(),
+    verifiedType: text("verified_type"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

@@ -3,6 +3,8 @@ import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import type {
   TwitterUserLookup,
   TwitterUserLookupResponse,
+  TwitterVerification,
+  TwitterVerificationResponse,
 } from "@/types/services/twitter";
 
 export class TwitterApiError extends Data.TaggedError("TwitterApiError")<{
@@ -86,6 +88,50 @@ export const fetchTwitterUserWithPinnedTweet = Effect.fn(
   };
   return lookup;
 });
+
+export const fetchTwitterVerification = Effect.fn("fetchTwitterVerification")(
+  function* (username: string) {
+    const params = new URLSearchParams({
+      "user.fields": "verified,verified_type",
+    });
+
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        twitterAppFetch(
+          `https://api.x.com/2/users/by/username/${username}?${params.toString()}`
+        ),
+      catch: (cause) =>
+        new TwitterApiError({
+          message: "Failed to fetch X verification status",
+          cause,
+        }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const json = yield* Effect.tryPromise({
+      try: (): Promise<TwitterVerificationResponse> => response.json(),
+      catch: (cause) =>
+        new TwitterApiError({
+          message: "Failed to parse X verification response",
+          cause,
+        }),
+    });
+
+    if (!json.data?.id) {
+      return null;
+    }
+
+    const verifiedType = json.data.verified_type ?? "none";
+    const verification: TwitterVerification = {
+      verified: json.data.verified === true || verifiedType !== "none",
+      verifiedType,
+    };
+    return verification;
+  }
+);
 
 export async function fetchTweet(tweetUrl: string): Promise<TweetData> {
   const tweetId = parseTweetId(tweetUrl);

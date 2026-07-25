@@ -33,3 +33,18 @@ export interface TwitterUserLookup {
   userId: string;
   pinnedTweet: TwitterTweet | null;
 }
+
+export type TwitterVerifiedType = "blue" | "business" | "government" | "none";
+
+export interface TwitterVerificationResponse {
+  data?: {
+    id: string;
+    verified?: boolean;
+    verified_type?: TwitterVerifiedType;
+  };
+}
+
+export interface TwitterVerification {
+  verified: boolean;
+  verifiedType: TwitterVerifiedType;
+}
