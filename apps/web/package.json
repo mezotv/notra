@@ -25,6 +25,7 @@
     "@notra/email": "workspace:*",
     "@notra/kiwi": "workspace:*",
     "@notra/ui": "workspace:*",
+    "@notra/utils": "workspace:*",
     "@paper-design/shaders-react": "^0.0.77",
     "@remotion/bundler": "4.0.487",
     "@remotion/fonts": "4.0.487",

@@ -16,11 +16,12 @@ import {
 } from "@notra/ui/components/ui/popover";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { cn } from "@notra/ui/lib/utils";
+import { rgbaToHex } from "@notra/utils/color";
 import { Player } from "@remotion/player";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { normalizeHex, rgbaToHex } from "@/lib/star-video/color";
+import { normalizeHex } from "@/lib/star-video/color";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
 import {
   DEFAULT_BACKGROUND_COLOR,

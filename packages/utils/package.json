@@ -10,7 +10,8 @@
     "./url": "./src/url.ts",
     "./callback-url": "./src/callback-url.ts",
     "./oauth-popup": "./src/oauth-popup.ts",
-    "./slugify": "./src/slugify.ts"
+    "./slugify": "./src/slugify.ts",
+    "./color": "./src/color.ts"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
