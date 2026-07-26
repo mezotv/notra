@@ -1,8 +1,18 @@
+import { CpuIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ContextItem } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
+import {
+  getIntegrationReferenceValue,
+  getReferenceDisplay,
+  parseReferenceValue,
+} from "@/utils/integration-reference";
+
+export { getReferenceDisplay, parseReferenceValue };
 
 const REFERENCE_ATTR = "data-integration-reference";
 
@@ -21,7 +31,10 @@ const REFERENCE_GITHUB_ICON_WRAPPER_CLASS =
 const REFERENCE_LINEAR_ICON_WRAPPER_CLASS =
   "inline-flex size-[1.04em] shrink-0 items-center justify-center text-indigo-500 dark:text-indigo-400";
 
-type ReferenceKind = "github" | "linear";
+const REFERENCE_MCP_ICON_WRAPPER_CLASS =
+  "inline-flex size-[1.04em] shrink-0 items-center justify-center text-violet-600 dark:text-violet-400";
+
+type ReferenceKind = "github" | "linear" | "mcp";
 
 const GITHUB_ICON_MARKUP = renderToStaticMarkup(
   <Github className="size-full" />
@@ -29,26 +42,30 @@ const GITHUB_ICON_MARKUP = renderToStaticMarkup(
 const LINEAR_ICON_MARKUP = renderToStaticMarkup(
   <Linear className="size-full" />
 );
-const GITHUB_REFERENCE_VALUE_PATTERN =
-  /^@?integration\/github\/([^/\s]+)\/([^/\s]+)\/([^/\s]+)$/;
-const LINEAR_REFERENCE_VALUE_PATTERN = /^@?integration\/linear\/([^/\s]+)$/;
-
+const MCP_ICON_MARKUP = renderToStaticMarkup(
+  <HugeiconsIcon className="size-full" icon={CpuIcon} />
+);
 function getReferenceKind(item: ContextItem): ReferenceKind {
-  return item.type === "github-repo" ? "github" : "linear";
+  if (item.type === "github-repo") {
+    return "github";
+  }
+  return item.type === "linear-team" ? "linear" : "mcp";
 }
 
 function getReferenceIconWrapperClass(kind: ReferenceKind): string {
-  return kind === "github"
-    ? REFERENCE_GITHUB_ICON_WRAPPER_CLASS
-    : REFERENCE_LINEAR_ICON_WRAPPER_CLASS;
+  if (kind === "github") {
+    return REFERENCE_GITHUB_ICON_WRAPPER_CLASS;
+  }
+  return kind === "linear"
+    ? REFERENCE_LINEAR_ICON_WRAPPER_CLASS
+    : REFERENCE_MCP_ICON_WRAPPER_CLASS;
 }
 
 function getReferenceIconMarkup(kind: ReferenceKind): string {
   if (kind === "github") {
     return GITHUB_ICON_MARKUP;
   }
-
-  return LINEAR_ICON_MARKUP;
+  return kind === "linear" ? LINEAR_ICON_MARKUP : MCP_ICON_MARKUP;
 }
 
 function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
@@ -57,6 +74,13 @@ function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
     span.dataset.owner = item.owner;
     span.dataset.repo = item.repo;
     span.dataset.integrationId = item.integrationId;
+    return;
+  }
+
+  if (item.type === "mcp-server") {
+    span.dataset.kind = "mcp";
+    span.dataset.integrationId = item.integrationId;
+    span.dataset.name = item.name;
     return;
   }
 
@@ -88,20 +112,6 @@ function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
   );
 }
 
-function getReferenceValue(item: ContextItem): string {
-  if (item.type === "github-repo") {
-    return `@integration/github/${item.integrationId}/${item.owner}/${item.repo}`;
-  }
-  return `@integration/linear/${item.integrationId}`;
-}
-
-export function getReferenceDisplay(item: ContextItem): string {
-  if (item.type === "github-repo") {
-    return `@${item.owner}/${item.repo}`;
-  }
-  return `@${item.teamName ?? "Linear"}`;
-}
-
 export function buildIntegrationReferenceElement(
   item: ContextItem
 ): HTMLSpanElement {
@@ -109,7 +119,7 @@ export function buildIntegrationReferenceElement(
   span.contentEditable = "false";
   span.className = REFERENCE_CONTAINER_CLASS;
   span.setAttribute(REFERENCE_ATTR, "true");
-  span.dataset.value = getReferenceValue(item);
+  span.dataset.value = getIntegrationReferenceValue(item);
   appendReferenceData(span, item);
 
   const icon = createReferenceIcon(getReferenceKind(item));
@@ -155,14 +165,11 @@ export function hydrateLinearReferenceTeamNames(
   return changed;
 }
 
-const REFERENCE_TOKEN_SPLIT_REGEX =
-  /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g;
-
 export function buildFragmentFromReferencedText(
   text: string
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  const segments = text.split(REFERENCE_TOKEN_SPLIT_REGEX);
+  const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
 
   for (const segment of segments) {
     if (!segment) {
@@ -207,37 +214,20 @@ export function parseIntegrationReferenceElement(
     }
     return { type: "linear-team", integrationId, teamName };
   }
-  return null;
-}
-
-export function parseReferenceValue(value: string): ContextItem | null {
-  const trimmed = value.trim();
-
-  const githubMatch = trimmed.match(GITHUB_REFERENCE_VALUE_PATTERN);
-  if (githubMatch) {
-    const [, integrationId, owner, repo] = githubMatch;
-    if (integrationId && owner && repo) {
-      return { type: "github-repo", integrationId, owner, repo };
+  if (kind === "mcp") {
+    const { integrationId, name } = el.dataset;
+    if (!(integrationId && name)) {
+      return null;
     }
+    return { type: "mcp-server", integrationId, name };
   }
-
-  const linearMatch = trimmed.match(LINEAR_REFERENCE_VALUE_PATTERN);
-  if (linearMatch) {
-    const [, integrationId] = linearMatch;
-    if (integrationId) {
-      return { type: "linear-team", integrationId };
-    }
-  }
-
   return null;
 }
 
 export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let keySeed = 0;
-  const segments = text.split(
-    /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g
-  );
+  const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
 
   segments.forEach((segment, segmentIndex) => {
     if (!segment) {
@@ -251,7 +241,7 @@ export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
           display={getReferenceDisplay(referenceItem)}
           key={`ref-${segment}-${keySeed++}`}
           kind={getReferenceKind(referenceItem)}
-          value={getReferenceValue(referenceItem)}
+          value={getIntegrationReferenceValue(referenceItem)}
         />
       );
       return;

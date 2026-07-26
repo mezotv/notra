@@ -201,14 +201,17 @@ export async function orchestrateStandaloneChat(
   const linearContext = hasLinearToolsActive
     ? getLinearContextFromIntegrations(validatedIntegrations)
     : [];
+  const mcpContext = context.filter((item) => item.type === "mcp-server");
 
   const systemPrompt = getStandaloneChatPrompt({
     skillSummaries: await getStandaloneSkillSummaries(organizationId),
     repoContext,
     linearContext,
+    mcpContext,
     toolDescriptions: descriptions,
     hasGitHubEnabled: hasGitHubToolsActive,
     hasLinearEnabled: hasLinearToolsActive,
+    hasMcpEnabled: hasMcp,
     timezone,
   });
 
