@@ -368,50 +368,60 @@ export default function PageClient({
   }, [handleSave, handleDiscard]);
 
   useEffect(() => {
-    const isWide =
-      isActivityPanelOpen && window.matchMedia("(min-width: 64rem)").matches;
+    const mediaQuery = window.matchMedia("(min-width: 64rem)");
 
-    if ((!hasChanges || isWide) && saveToastIdRef.current) {
-      toast.dismiss(saveToastIdRef.current);
-      saveToastIdRef.current = null;
-    }
+    const syncSaveToast = () => {
+      const isWide = isActivityPanelOpen && mediaQuery.matches;
 
-    if (hasChanges && !isWide && !saveToastIdRef.current) {
-      saveToastIdRef.current = toast.custom(
-        (t) => (
-          <div
-            className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
-            data-save-bar
-          >
-            <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
-              <span className="text-muted-foreground text-sm">
-                Unsaved changes
-              </span>
-              <Button
-                onClick={() => {
-                  handleDiscardRef.current?.();
-                  toast.dismiss(t);
-                }}
-                size="sm"
-                variant="ghost"
-              >
-                Discard
-              </Button>
-              <Button
-                onClick={() => {
-                  handleSaveRef.current?.();
-                  toast.dismiss(t);
-                }}
-                size="sm"
-              >
-                Save
-              </Button>
+      if ((!hasChanges || isWide) && saveToastIdRef.current) {
+        toast.dismiss(saveToastIdRef.current);
+        saveToastIdRef.current = null;
+      }
+
+      if (hasChanges && !isWide && !saveToastIdRef.current) {
+        saveToastIdRef.current = toast.custom(
+          (t) => (
+            <div
+              className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+              data-save-bar
+            >
+              <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
+                <span className="text-muted-foreground text-sm">
+                  Unsaved changes
+                </span>
+                <Button
+                  onClick={() => {
+                    handleDiscardRef.current?.();
+                    toast.dismiss(t);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Discard
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleSaveRef.current?.();
+                    toast.dismiss(t);
+                  }}
+                  size="sm"
+                >
+                  Save
+                </Button>
+              </div>
             </div>
-          </div>
-        ),
-        { duration: Number.POSITIVE_INFINITY, position: "bottom-right" }
-      );
-    }
+          ),
+          { duration: Number.POSITIVE_INFINITY, position: "bottom-right" }
+        );
+      }
+    };
+
+    syncSaveToast();
+    mediaQuery.addEventListener("change", syncSaveToast);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncSaveToast);
+    };
   }, [hasChanges, isActivityPanelOpen]);
 
   useEffect(() => {

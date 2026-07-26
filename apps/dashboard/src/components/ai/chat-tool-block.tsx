@@ -446,6 +446,8 @@ const TOOL_COPY: Record<string, ToolCopy> = {
     verbs: ["Checking", "Checked"],
     noun: "integrations",
   },
+  getMarkdown: { verbs: ["Reading", "Read"], noun: "document" },
+  editMarkdown: { verbs: ["Editing", "Edited"], noun: "document" },
   listAvailableSkills: { verbs: ["Listing", "Listed"], noun: "skills" },
   getSkillByName: {
     verbs: ["Loading", "Loaded"],
