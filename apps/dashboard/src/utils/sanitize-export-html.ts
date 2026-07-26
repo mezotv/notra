@@ -1,83 +1,39 @@
+import DOMPurify from "dompurify";
 import {
-  EXPORT_HTML_FORBIDDEN_SELECTOR,
-  EXPORT_HTML_SAFE_URL_SCHEMES,
-  EXPORT_HTML_URL_ATTRIBUTES,
+  EXPORT_HTML_DATA_URI_TAGS,
+  EXPORT_HTML_DATA_URL_PREFIX,
+  EXPORT_HTML_FORBIDDEN_ATTRIBUTES,
+  EXPORT_HTML_FORBIDDEN_TAGS,
+  EXPORT_HTML_IMAGE_URL_ATTRIBUTES,
+  EXPORT_HTML_SAFE_DATA_URL_REGEX,
 } from "@/constants/image-export";
 
-const DATA_URL_PREFIX = "data:";
-const SAFE_DATA_URL_PREFIX = "data:image/";
-const SVG_DATA_URL_PREFIX = "data:image/svg";
-
-function isSafeUrlValue(value: string): boolean {
-  const trimmed = value.trim();
-  if (trimmed === "") {
-    return true;
-  }
-
-  if (trimmed.startsWith("#") || trimmed.startsWith("/")) {
-    return true;
-  }
-
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed, window.location.origin);
-  } catch {
-    return false;
-  }
-
-  if (
-    !(EXPORT_HTML_SAFE_URL_SCHEMES as readonly string[]).includes(
-      parsed.protocol
-    )
-  ) {
-    return false;
-  }
-
-  if (trimmed.toLowerCase().startsWith(DATA_URL_PREFIX)) {
-    const lowered = trimmed.toLowerCase();
-    return (
-      lowered.startsWith(SAFE_DATA_URL_PREFIX) &&
-      !lowered.startsWith(SVG_DATA_URL_PREFIX)
-    );
-  }
-
-  return true;
-}
-
-function stripUnsafeAttributes(element: Element) {
-  for (const attribute of [...element.attributes]) {
-    const name = attribute.name.toLowerCase();
-
-    if (name.startsWith("on")) {
-      element.removeAttribute(attribute.name);
-      continue;
-    }
-
-    if (
-      (EXPORT_HTML_URL_ATTRIBUTES as readonly string[]).includes(name) &&
-      !isSafeUrlValue(attribute.value)
-    ) {
-      element.removeAttribute(attribute.name);
-    }
-  }
+function isDisallowedDataUrl(value: string): boolean {
+  const trimmed = value.trim().toLowerCase();
+  return (
+    trimmed.startsWith(EXPORT_HTML_DATA_URL_PREFIX) &&
+    !EXPORT_HTML_SAFE_DATA_URL_REGEX.test(trimmed)
+  );
 }
 
 export function sanitizeExportHtml(html: string): DocumentFragment {
-  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const fragment = DOMPurify.sanitize(html, {
+    ADD_DATA_URI_TAGS: EXPORT_HTML_DATA_URI_TAGS,
+    FORBID_ATTR: EXPORT_HTML_FORBIDDEN_ATTRIBUTES,
+    FORBID_TAGS: EXPORT_HTML_FORBIDDEN_TAGS,
+    RETURN_DOM_FRAGMENT: true,
+    WHOLE_DOCUMENT: true,
+  });
 
-  for (const element of parsed.querySelectorAll(
-    EXPORT_HTML_FORBIDDEN_SELECTOR
+  for (const element of fragment.querySelectorAll(
+    EXPORT_HTML_DATA_URI_TAGS.join(", ")
   )) {
-    element.remove();
-  }
-
-  for (const element of parsed.querySelectorAll("*")) {
-    stripUnsafeAttributes(element);
-  }
-
-  const fragment = document.createDocumentFragment();
-  for (const node of [...parsed.head.childNodes, ...parsed.body.childNodes]) {
-    fragment.append(document.importNode(node, true));
+    for (const attribute of EXPORT_HTML_IMAGE_URL_ATTRIBUTES) {
+      const value = element.getAttribute(attribute);
+      if (value && isDisallowedDataUrl(value)) {
+        element.removeAttribute(attribute);
+      }
+    }
   }
 
   return fragment;
