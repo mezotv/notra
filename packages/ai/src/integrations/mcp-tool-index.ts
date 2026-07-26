@@ -16,6 +16,7 @@ import {
   isNull,
   notInArray,
   or,
+  type SQL,
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -635,28 +636,73 @@ export async function deactivateSessionMcpTools({
   surface,
   toolIds,
   runtimeToolNames,
+  serverIntegrationIds,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
   toolIds?: string[];
   runtimeToolNames?: string[];
+  serverIntegrationIds?: string[];
 }) {
+  if (serverIntegrationIds?.length === 0) {
+    return { deactivated: 0 };
+  }
+
   const conditions = [
     eq(mcpSessionToolActivations.organizationId, organizationId),
     eq(mcpSessionToolActivations.sessionId, sessionId),
     eq(mcpSessionToolActivations.surface, surface),
   ];
 
-  if (toolIds?.length) {
-    conditions.push(inArray(mcpSessionToolActivations.mcpToolIndexId, toolIds));
-  } else if (runtimeToolNames?.length) {
+  if (serverIntegrationIds) {
+    const selectedServerToolIds = db
+      .select({ id: mcpToolIndex.id })
+      .from(mcpToolIndex)
+      .where(
+        and(
+          eq(mcpToolIndex.organizationId, organizationId),
+          inArray(mcpToolIndex.serverIntegrationId, serverIntegrationIds)
+        )
+      );
     conditions.push(
-      inArray(mcpSessionToolActivations.runtimeToolName, runtimeToolNames)
+      inArray(mcpSessionToolActivations.mcpToolIndexId, selectedServerToolIds)
     );
-  } else {
+  }
+
+  const requestedToolConditions: SQL[] = [];
+  if (toolIds?.length) {
+    requestedToolConditions.push(
+      inArray(mcpSessionToolActivations.mcpToolIndexId, toolIds)
+    );
+  }
+  if (runtimeToolNames?.length) {
+    const currentRuntimeNameToolIds = db
+      .select({ id: mcpToolIndex.id })
+      .from(mcpToolIndex)
+      .where(
+        and(
+          eq(mcpToolIndex.organizationId, organizationId),
+          inArray(mcpToolIndex.runtimeToolName, runtimeToolNames)
+        )
+      );
+    const runtimeNameCondition = or(
+      inArray(mcpSessionToolActivations.runtimeToolName, runtimeToolNames),
+      inArray(
+        mcpSessionToolActivations.mcpToolIndexId,
+        currentRuntimeNameToolIds
+      )
+    );
+    if (runtimeNameCondition) {
+      requestedToolConditions.push(runtimeNameCondition);
+    }
+  }
+
+  const requestedToolCondition = or(...requestedToolConditions);
+  if (!requestedToolCondition) {
     return { deactivated: 0 };
   }
+  conditions.push(requestedToolCondition);
 
   const deleted = await db
     .delete(mcpSessionToolActivations)

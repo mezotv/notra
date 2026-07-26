@@ -117,6 +117,19 @@ export async function createLazyMcpRuntime({
     }
   };
 
+  const reconcileActiveTools = (mcpTools: ActivatedMcpTool[]) => {
+    const nextActiveMcpToolNames = new Set(
+      mcpTools.map((tool) => tool.runtimeToolName)
+    );
+    for (const runtimeToolName of activeMcpToolNames) {
+      if (!nextActiveMcpToolNames.has(runtimeToolName)) {
+        activeMcpToolNames.delete(runtimeToolName);
+        activeToolNames.delete(runtimeToolName);
+      }
+    }
+    setActiveTools(mcpTools);
+  };
+
   Object.assign(tools, {
     searchMcpTools: tool({
       description:
@@ -226,7 +239,7 @@ export async function createLazyMcpRuntime({
           surface,
           serverIntegrationIds,
         });
-        setActiveTools(active);
+        reconcileActiveTools(active);
         return {
           activeTools: active.map((activeTool) => ({
             toolId: activeTool.id,
@@ -261,28 +274,15 @@ export async function createLazyMcpRuntime({
           surface,
           toolIds,
           runtimeToolNames,
+          serverIntegrationIds,
         });
-        for (const runtimeToolName of runtimeToolNames ?? []) {
-          activeMcpToolNames.delete(runtimeToolName);
-          activeToolNames.delete(runtimeToolName);
-        }
-        if (toolIds?.length) {
-          const active = await getSessionActivatedMcpTools({
-            organizationId,
-            sessionId,
-            surface,
-            serverIntegrationIds,
-          });
-          const nextActiveNames = new Set(
-            active.map((activeTool) => activeTool.runtimeToolName)
-          );
-          for (const runtimeToolName of activeMcpToolNames) {
-            if (!nextActiveNames.has(runtimeToolName)) {
-              activeMcpToolNames.delete(runtimeToolName);
-              activeToolNames.delete(runtimeToolName);
-            }
-          }
-        }
+        const active = await getSessionActivatedMcpTools({
+          organizationId,
+          sessionId,
+          surface,
+          serverIntegrationIds,
+        });
+        reconcileActiveTools(active);
         return result;
       },
     }),
