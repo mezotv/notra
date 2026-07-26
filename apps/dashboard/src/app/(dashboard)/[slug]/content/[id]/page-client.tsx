@@ -1189,10 +1189,10 @@ export default function PageClient({
           <AnimatePresence initial={false}>
             {isActivityPanelOpen && (
               <m.aside
-                animate={{ opacity: 1, width: "24rem" }}
-                className="hidden min-h-0 shrink-0 overflow-hidden lg:block"
-                exit={{ opacity: 0, width: 0 }}
-                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="hidden min-h-0 w-96 shrink-0 overflow-hidden lg:block"
+                exit={{ opacity: 0, x: "100%" }}
+                initial={{ opacity: 0, x: "100%" }}
                 transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               >
                 <div className="flex h-full min-h-0 w-96 flex-col">
