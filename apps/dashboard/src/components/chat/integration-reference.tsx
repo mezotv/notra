@@ -12,8 +12,6 @@ import {
   parseReferenceValue,
 } from "@/utils/integration-reference";
 
-export { getReferenceDisplay, parseReferenceValue };
-
 const REFERENCE_ATTR = "data-integration-reference";
 
 export const INTEGRATION_REFERENCE_SELECTOR =

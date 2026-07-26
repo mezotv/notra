@@ -7,7 +7,7 @@ import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
 
-export const INPUT_SOURCES: readonly IntegrationConfig[] = [
+const INPUT_SOURCES: readonly IntegrationConfig[] = [
   {
     id: "github",
     name: "GitHub",
