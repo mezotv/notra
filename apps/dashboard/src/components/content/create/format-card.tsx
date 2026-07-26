@@ -20,7 +20,7 @@ export function FormatCard({ format, selected, onToggle }: FormatCardProps) {
     <button
       aria-pressed={selected}
       className={cn(
-        "group relative flex flex-col gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
+        "group relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-card p-4 text-left transition-colors",
         "hover:border-foreground/20",
         selected ? "border-foreground/40 bg-foreground/[0.02]" : "border-border"
       )}
