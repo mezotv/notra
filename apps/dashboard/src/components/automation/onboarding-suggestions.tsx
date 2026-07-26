@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { SuggestionDetailsSheet } from "@/components/automation/suggestion-details-sheet";
 import { BrailleLoader } from "@/components/braille-loader";
@@ -40,6 +40,7 @@ export function OnboardingSuggestions({
   const dismissMutation = useDismissOnboardingSuggestion();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
 
   const dismissPendingId = dismissMutation.isPending
     ? (dismissMutation.variables?.suggestionId ?? null)
@@ -82,6 +83,7 @@ export function OnboardingSuggestions({
           {matching.map((suggestion) => {
             const evidence = getOnboardingSuggestionEvidence(suggestion.data);
             const openDetails = () => {
+              selectedIdRef.current = suggestion.id;
               setSelectedId(suggestion.id);
               setDetailsOpen(true);
             };
@@ -166,9 +168,11 @@ export function OnboardingSuggestions({
             onCreate(selectedSuggestion.id);
           }}
           onDismiss={() =>
-            dismissSuggestion(selectedSuggestion.id, () =>
-              setDetailsOpen(false)
-            )
+            dismissSuggestion(selectedSuggestion.id, () => {
+              if (selectedIdRef.current === selectedSuggestion.id) {
+                setDetailsOpen(false);
+              }
+            })
           }
           onOpenChange={setDetailsOpen}
           open={detailsOpen}
