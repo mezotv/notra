@@ -209,6 +209,31 @@
         "mint": "4.2.676",
       },
     },
+    "apps/onboarding-agent": {
+      "name": "@notra/onboarding-agent",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-sdk/devtools": "1.0.1",
+        "@aws-sdk/client-s3": "^3.1009.0",
+        "@notra/ai": "workspace:*",
+        "@notra/db": "workspace:*",
+        "@notra/eve-tools": "workspace:*",
+        "@vercel/oidc": "^3.8.0",
+        "ai": "^7.0.0",
+        "drizzle-orm": "^0.45.2",
+        "effect": "4.0.0-beta.93",
+        "eve": "0.19.0",
+        "pg": "^8.20.0",
+        "zod": "^4.3.4",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "^24.0.0",
+        "dotenv-cli": "^11.0.0",
+        "microsandbox": "^0.6.1",
+        "typescript": "5.9.2",
+      },
+    },
     "apps/web": {
       "name": "web",
       "version": "0.1.0",
@@ -271,31 +296,6 @@
         "knip": "^6.12.1",
         "tailwindcss": "^4",
         "typescript": "^5",
-      },
-    },
-    "packages/agents/onboarding": {
-      "name": "@notra/onboarding-agent",
-      "version": "0.0.1",
-      "dependencies": {
-        "@ai-sdk/devtools": "1.0.1",
-        "@aws-sdk/client-s3": "^3.1009.0",
-        "@notra/ai": "workspace:*",
-        "@notra/db": "workspace:*",
-        "@notra/eve-tools": "workspace:*",
-        "@vercel/oidc": "^3.8.0",
-        "ai": "^7.0.0",
-        "drizzle-orm": "^0.45.2",
-        "effect": "4.0.0-beta.93",
-        "eve": "0.19.0",
-        "pg": "^8.20.0",
-        "zod": "^4.3.4",
-      },
-      "devDependencies": {
-        "@notra/typescript-config": "workspace:*",
-        "@types/node": "^24.0.0",
-        "dotenv-cli": "^11.0.0",
-        "microsandbox": "^0.6.1",
-        "typescript": "5.9.2",
       },
     },
     "packages/ai": {
@@ -1202,7 +1202,7 @@
 
     "@notra/kiwi": ["@notra/kiwi@workspace:packages/kiwi"],
 
-    "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:packages/agents/onboarding"],
+    "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:apps/onboarding-agent"],
 
     "@notra/typescript-config": ["@notra/typescript-config@workspace:packages/typescript-config"],
 

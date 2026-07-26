@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "build": "eve build",
-    "dev": "dotenv -e ../../../.env -- eve dev --port 3100",
-    "agent:dev": "dotenv -e ../../../.env -- eve dev",
+    "dev": "dotenv -e ../../.env -- eve dev --port 3100",
+    "agent:dev": "dotenv -e ../../.env -- eve dev",
     "agent:build": "eve build",
     "agent:start": "eve start",
     "check-types": "tsc --noEmit",
-    "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../../.env -- eve dev",
+    "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../.env -- eve dev",
     "devtools": "bun x @ai-sdk/devtools"
   },
   "engines": {
