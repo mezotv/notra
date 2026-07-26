@@ -29,11 +29,13 @@ import {
 } from "../constants/mcp-tool-index";
 import type { McpRequestAuth } from "../types/mcp-oauth";
 import type {
+  GetSessionActivatedMcpToolsParams,
   IndexedMcpTool,
   McpSessionSurface,
   McpToolActionPhrases,
   McpToolDefinition,
   McpToolIndexTransaction,
+  QuerySessionActivatedMcpToolsParams,
 } from "../types/mcp-tool-index";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { createMcpToolFingerprint } from "../utils/mcp-tool-fingerprint";
@@ -430,23 +432,25 @@ export async function hasActiveIndexedMcpToolsForOrganization({
   return (row?.value ?? 0) > 0;
 }
 
-export async function getSessionActivatedMcpTools({
+export async function getSessionActivatedMcpTools(
+  params: GetSessionActivatedMcpToolsParams
+) {
+  return querySessionActivatedMcpTools({ database: db, ...params });
+}
+
+async function querySessionActivatedMcpTools({
+  database,
   organizationId,
   sessionId,
   surface,
   serverIntegrationIds,
-}: {
-  organizationId: string;
-  sessionId: string;
-  surface: McpSessionSurface;
-  serverIntegrationIds?: string[];
-}) {
+}: QuerySessionActivatedMcpToolsParams) {
   if (serverIntegrationIds?.length === 0) {
     return [];
   }
 
   const now = new Date();
-  return db
+  return database
     .select({
       activation: mcpSessionToolActivations,
       tool: mcpToolIndex,
@@ -527,10 +531,13 @@ export async function activateSessionMcpTools({
   }
 
   let tools = await getToolsByIds(organizationId, uniqueToolIds);
+  const allowedServerIntegrationIds = serverIntegrationIds
+    ? new Set(serverIntegrationIds)
+    : null;
   if (
-    serverIntegrationIds &&
+    allowedServerIntegrationIds &&
     tools.some(
-      (tool) => !serverIntegrationIds.includes(tool.serverIntegrationId)
+      (tool) => !allowedServerIntegrationIds.has(tool.serverIntegrationId)
     )
   ) {
     throw new Error(
@@ -565,34 +572,40 @@ export async function activateSessionMcpTools({
     throw new Error("One or more MCP tools are unavailable.");
   }
 
-  const existing = await getSessionActivatedMcpTools({
-    organizationId,
-    sessionId,
-    surface,
-    serverIntegrationIds,
-  });
-  const existingIds = new Set(existing.map((tool) => tool.id));
-  const newCount = activeTools.filter(
-    (tool) => !existingIds.has(tool.id)
-  ).length;
-  if (existing.length + newCount > MCP_SESSION_ACTIVE_TOOL_LIMIT) {
-    throw new Error(
-      `This session can activate at most ${MCP_SESSION_ACTIVE_TOOL_LIMIT} MCP tools. Deactivate unused tools first.`
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`mcp-session-tool-activation:${organizationId}:${sessionId}:${surface}`}, 0))`
     );
-  }
 
-  for (const tool of activeTools) {
-    await db
+    const existing = await querySessionActivatedMcpTools({
+      database: tx,
+      organizationId,
+      sessionId,
+      surface,
+    });
+    const existingIds = new Set(existing.map((tool) => tool.id));
+    const newCount = activeTools.filter(
+      (tool) => !existingIds.has(tool.id)
+    ).length;
+    if (existing.length + newCount > MCP_SESSION_ACTIVE_TOOL_LIMIT) {
+      throw new Error(
+        `This session can activate at most ${MCP_SESSION_ACTIVE_TOOL_LIMIT} MCP tools. Deactivate unused tools first.`
+      );
+    }
+
+    await tx
       .insert(mcpSessionToolActivations)
-      .values({
-        id: `mcpa_${nanoid()}`,
-        organizationId,
-        sessionId,
-        surface,
-        mcpToolIndexId: tool.id,
-        runtimeToolName: tool.runtimeToolName,
-        sourceQuery: sourceQuery ?? null,
-      })
+      .values(
+        activeTools.map((tool) => ({
+          id: `mcpa_${nanoid()}`,
+          organizationId,
+          sessionId,
+          surface,
+          mcpToolIndexId: tool.id,
+          runtimeToolName: tool.runtimeToolName,
+          sourceQuery: sourceQuery ?? null,
+        }))
+      )
       .onConflictDoUpdate({
         target: [
           mcpSessionToolActivations.organizationId,
@@ -601,17 +614,18 @@ export async function activateSessionMcpTools({
           mcpSessionToolActivations.mcpToolIndexId,
         ],
         set: {
-          runtimeToolName: tool.runtimeToolName,
-          sourceQuery: sourceQuery ?? null,
+          runtimeToolName: sql`excluded.runtime_tool_name`,
+          sourceQuery: sql`excluded.source_query`,
         },
       });
-  }
 
-  return getSessionActivatedMcpTools({
-    organizationId,
-    sessionId,
-    surface,
-    serverIntegrationIds,
+    return querySessionActivatedMcpTools({
+      database: tx,
+      organizationId,
+      sessionId,
+      surface,
+      serverIntegrationIds,
+    });
   });
 }
 
