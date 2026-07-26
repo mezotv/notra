@@ -8,7 +8,6 @@ import { createLazyMcpRuntime } from "@notra/ai/tools/mcp-lazy";
 import type {
   AutoThinkingLevel,
   IntegrationFetchers,
-  StreamProviderOptions,
   ValidatedIntegration,
 } from "@notra/ai/types/orchestration";
 import type { PostToolsResult } from "@notra/ai/types/post-tools";
@@ -45,6 +44,7 @@ import {
   getLinearContextFromIntegrations,
   getRepoContextFromIntegrations,
 } from "./standalone-tool-registry";
+import { getThinkingProviderOptions } from "./thinking";
 
 const NOTRA_MANAGER_TOOL_NAMES = [
   "searchNotraTools",
@@ -668,68 +668,6 @@ function stripIncompleteToolParts(messages: UIMessage[]): UIMessage[] {
     }
     return { ...message, parts: filtered };
   });
-}
-
-function getThinkingProviderOptions(
-  modelId: string,
-  enableThinking: boolean,
-  thinkingLevel: "off" | "low" | "medium" | "high"
-): StreamProviderOptions | undefined {
-  if (!enableThinking || thinkingLevel === "off") {
-    return undefined;
-  }
-
-  if (modelId.startsWith("anthropic/")) {
-    if (usesAdaptiveThinking(modelId)) {
-      return {
-        anthropic: {
-          thinking: { type: "adaptive" },
-          output_config: { effort: thinkingLevel },
-        },
-      } satisfies StreamProviderOptions;
-    }
-
-    return {
-      anthropic: {
-        thinking: {
-          type: "enabled",
-          budgetTokens: getAnthropicThinkingBudget(thinkingLevel),
-        },
-      },
-    } satisfies StreamProviderOptions;
-  }
-
-  if (modelId.startsWith("openai/")) {
-    return {
-      openai: {
-        reasoningEffort: thinkingLevel,
-      },
-    } satisfies StreamProviderOptions;
-  }
-
-  return undefined;
-}
-
-function usesAdaptiveThinking(modelId: string): boolean {
-  return (
-    modelId.startsWith("anthropic/claude-opus-") ||
-    modelId.startsWith("anthropic/claude-sonnet-")
-  );
-}
-
-function getAnthropicThinkingBudget(
-  thinkingLevel: "off" | "low" | "medium" | "high"
-): number {
-  switch (thinkingLevel) {
-    case "low":
-      return 1024;
-    case "high":
-      return 8192;
-    case "medium":
-      return 4096;
-    default:
-      return 0;
-  }
 }
 
 async function validateStandaloneIntegrations(

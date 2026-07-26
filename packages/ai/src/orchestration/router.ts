@@ -224,5 +224,6 @@ export async function routeAndSelectModel(
     complexity: decision.complexity,
     requiresTools: decision.requiresTools,
     reasoning: decision.reasoning,
+    thinkingLevel: decision.complexity === "complex" ? "medium" : "low",
   };
 }

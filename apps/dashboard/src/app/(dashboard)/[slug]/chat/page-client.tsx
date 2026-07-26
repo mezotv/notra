@@ -1,12 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import {
-  AiBrain01Icon,
-  ArrowDown01Icon,
-  ArrowReloadHorizontalIcon,
-  X,
-} from "@hugeicons/core-free-icons";
+import { ArrowReloadHorizontalIcon, X } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { chatTransportRequestInputSchema } from "@notra/ai/schemas/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
@@ -23,11 +18,6 @@ import {
   MessageContent,
   MessageResponse,
 } from "@notra/ui/components/ai-elements/message";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@notra/ui/components/ui/collapsible";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -61,6 +51,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
 import { BrailleLoader } from "@/components/braille-loader";
@@ -135,108 +126,6 @@ const loadMotionFeatures = () =>
 const emptySubscribe = () => () => {
   // no external store to subscribe to; used to detect hydration
 };
-
-const THINKING_LABEL = "Thinking";
-const REASONING_AUTO_CLOSE_DELAY_MS = 1000;
-const REASONING_CONTENT_CLASSNAME =
-  "h-[var(--collapsible-panel-height)] overflow-hidden text-sm text-muted-foreground outline-none transition-[height,opacity] duration-300 ease-out data-[ending-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:h-0 data-[starting-style]:opacity-0";
-
-function formatReasoningDurationLabel(durationSeconds: number | null): string {
-  if (!durationSeconds || durationSeconds <= 1) {
-    return "Thought for a moment";
-  }
-
-  return `Thought for ${durationSeconds} seconds`;
-}
-
-function ChatReasoningBlock({
-  children,
-  isStreaming,
-}: {
-  children: string;
-  isStreaming: boolean;
-}) {
-  const [reasoningState, setReasoningState] = useState<{
-    durationSeconds: number | null;
-    isOpen: boolean;
-    wasStreaming: boolean | null;
-  }>({
-    durationSeconds: null,
-    isOpen: false,
-    wasStreaming: null,
-  });
-  const startTimeRef = useRef<number | null>(null);
-
-  if (reasoningState.wasStreaming !== isStreaming) {
-    setReasoningState({
-      durationSeconds: isStreaming ? null : reasoningState.durationSeconds,
-      isOpen: isStreaming ? true : reasoningState.isOpen,
-      wasStreaming: isStreaming,
-    });
-  }
-
-  useEffect(() => {
-    if (isStreaming) {
-      startTimeRef.current = Date.now();
-      return;
-    }
-
-    const durationTimer = window.setTimeout(() => {
-      const startedAt = startTimeRef.current;
-
-      setReasoningState((current) => ({
-        ...current,
-        durationSeconds: startedAt
-          ? Math.max(1, Math.ceil((Date.now() - startedAt) / 1000))
-          : null,
-      }));
-    }, 0);
-
-    const closeTimer = window.setTimeout(() => {
-      setReasoningState((current) => ({ ...current, isOpen: false }));
-    }, REASONING_AUTO_CLOSE_DELAY_MS);
-
-    return () => {
-      window.clearTimeout(durationTimer);
-      window.clearTimeout(closeTimer);
-    };
-  }, [isStreaming]);
-
-  const statusLabel = isStreaming
-    ? THINKING_LABEL
-    : formatReasoningDurationLabel(reasoningState.durationSeconds);
-
-  function handleOpenChange(isOpen: boolean) {
-    setReasoningState((current) => ({ ...current, isOpen }));
-  }
-
-  return (
-    <Collapsible onOpenChange={handleOpenChange} open={reasoningState.isOpen}>
-      <CollapsibleTrigger className="flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">
-        {isStreaming ? (
-          <BrailleLoader className="text-sm" label={statusLabel} />
-        ) : (
-          <>
-            <HugeiconsIcon className="size-4" icon={AiBrain01Icon} />
-            <span>{statusLabel}</span>
-          </>
-        )}
-        <HugeiconsIcon
-          className={`size-4 transition-transform ${reasoningState.isOpen ? "rotate-180" : "rotate-0"}`}
-          icon={ArrowDown01Icon}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent className={REASONING_CONTENT_CLASSNAME}>
-        <div className="pt-4">
-          <MessageResponse className="text-muted-foreground text-sm [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-            {children}
-          </MessageResponse>
-          <div className="h-3" />
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  );
-}
 
 function CreateToolPendingIndicator({
   toolCallId,

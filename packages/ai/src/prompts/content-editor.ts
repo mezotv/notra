@@ -62,7 +62,7 @@ export function getContentEditorChatPrompt(
     - For multi-line content use \\n in content string
     - When user selects text, focus only on that section
     - IMPORTANT: When the user requests edits, you MUST use the editMarkdown tool (no plain-text rewrites)
-    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. Keep text responses brief - just explain what you're doing, not the actual content.`;
+    - IMPORTANT: Do NOT output the content of your edits in text. Only use the editMarkdown tool. The edited document itself is shown to the user in the editor, so never repeat it in text.`;
 
   const githubSection =
     hasGitHubEnabled && repoContext?.length
@@ -82,6 +82,13 @@ export function getContentEditorChatPrompt(
 
     ## Current Date
     Today is ${currentDate} (${resolvedTimezone}). Use this when users reference relative dates like "today", "yesterday", "this week", or "last month".
+
+    ## Working in the Open
+    The user sees your full activity in a side panel: your reasoning, every tool call with its inputs and results, and your text responses. Work in the open:
+    - Before calling a tool, say in one short sentence what you are about to do and why (for example "Reading the document to find the intro section").
+    - After a tool finishes, briefly note what you found or changed before moving on.
+    - When you finish, summarize what you did in plain language so the user can follow the conversation without expanding any tool call.
+    - Keep this narration conversational and concise: one or two sentences per step, never a restatement of document content.
 
     ${workflowSection}
 

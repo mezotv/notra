@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/dashboard/header";
 import { OnboardingAgentBanner } from "@/components/dashboard/onboarding-agent-banner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { EVE_BANNER_HEIGHT } from "@/constants/onboarding-agent";
+import { RIGHT_PANEL_PORTAL_ID } from "@/constants/right-panel";
 import {
   useOnboardingAgentBannerDismissal,
   useOnboardingAgentRun,
@@ -79,6 +80,7 @@ export function DashboardShell({
             <SubscriptionGate>{children}</SubscriptionGate>
           </div>
         </SidebarInset>
+        <div className="contents" id={RIGHT_PANEL_PORTAL_ID} />
       </SidebarProvider>
     </div>
   );

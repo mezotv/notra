@@ -6,6 +6,7 @@ import {
   ArrowLeft02Icon,
   Download01Icon,
   SentIcon,
+  SidebarRight01Icon,
   TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -35,18 +36,24 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { DefaultChatTransport } from "ai";
+import { AnimatePresence, LazyMotion, m } from "motion/react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import remend from "remend";
 import { toast } from "sonner";
 import ChatInput from "@/components/chat-input";
 import { getContentTypeLabel } from "@/components/content/content-card";
+import { ContentChatActivityPanel } from "@/components/content/content-chat-activity-panel";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
+import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { CONTENT_TITLE_REGEX } from "@/constants/content-detail";
+import {
+  CONTENT_TITLE_REGEX,
+  SAVE_BAR_SELECTOR,
+} from "@/constants/content-detail";
 import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { localStorageKeys } from "@/constants/storage";
@@ -70,9 +77,13 @@ import {
   isImageExportTarget,
 } from "@/utils/image-export";
 import { createLinkedInPostUrl } from "@/utils/linkedin";
+import { shakeElements } from "@/utils/shake-element";
 import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
+
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => mod.default);
 
 function formatDate(date: Date): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -144,6 +155,7 @@ export default function PageClient({
   const [imageExportTarget, setImageExportTarget] =
     useState<ImageExportTarget>("paper");
 
+  const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false);
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
   const imageExportRef = useRef<HTMLDivElement | null>(null);
@@ -228,6 +240,7 @@ export default function PageClient({
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
+      shakeElements(SAVE_BAR_SELECTOR);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -355,10 +368,21 @@ export default function PageClient({
   }, [handleSave, handleDiscard]);
 
   useEffect(() => {
-    if (hasChanges && !saveToastIdRef.current) {
+    const isWide =
+      isActivityPanelOpen && window.matchMedia("(min-width: 64rem)").matches;
+
+    if ((!hasChanges || isWide) && saveToastIdRef.current) {
+      toast.dismiss(saveToastIdRef.current);
+      saveToastIdRef.current = null;
+    }
+
+    if (hasChanges && !isWide && !saveToastIdRef.current) {
       saveToastIdRef.current = toast.custom(
         (t) => (
-          <div className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm">
+          <div
+            className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+            data-save-bar
+          >
             <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
               <span className="text-muted-foreground text-sm">
                 Unsaved changes
@@ -387,11 +411,8 @@ export default function PageClient({
         ),
         { duration: Number.POSITIVE_INFINITY, position: "bottom-right" }
       );
-    } else if (!hasChanges && saveToastIdRef.current) {
-      toast.dismiss(saveToastIdRef.current);
-      saveToastIdRef.current = null;
     }
-  }, [hasChanges]);
+  }, [hasChanges, isActivityPanelOpen]);
 
   useEffect(() => {
     return () => {
@@ -637,6 +658,7 @@ export default function PageClient({
 
   const handleAiEdit = useCallback(
     async (instruction: string) => {
+      setIsActivityPanelOpen(true);
       await sendMessage(
         { text: instruction },
         {
@@ -663,9 +685,35 @@ export default function PageClient({
     ]
   );
 
+  const saveBarSection =
+    hasChanges && isActivityPanelOpen ? (
+      <div
+        className={`pointer-events-none fixed bottom-4 left-0 z-50 hidden lg:right-96 lg:block ${sidebarState === "collapsed" ? "lg:left-14" : "lg:left-64"}`}
+      >
+        <div className="pointer-events-auto mx-auto w-full max-w-xl px-4">
+          <div
+            className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+            data-save-bar
+          >
+            <div className="flex items-center gap-3 rounded-lg bg-background py-2 pr-2 pl-4">
+              <span className="flex-1 text-muted-foreground text-sm">
+                You have unsaved changes
+              </span>
+              <Button onClick={handleDiscard} size="sm" variant="ghost">
+                Discard
+              </Button>
+              <Button onClick={handleSave} size="sm">
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   const chatInputSection = (
     <div
-      className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"}`}
+      className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"} ${isActivityPanelOpen ? "lg:hidden" : ""}`}
     >
       <ChatInput
         completionMessage={completionMessage}
@@ -923,6 +971,22 @@ export default function PageClient({
                 })()}
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      className="hidden lg:inline-flex"
+                      onClick={() => setIsActivityPanelOpen((open) => !open)}
+                      size="icon-sm"
+                      variant={isActivityPanelOpen ? "secondary" : "outline"}
+                    />
+                  }
+                >
+                  <span className="sr-only">Toggle agent activity</span>
+                  <HugeiconsIcon className="size-4" icon={SidebarRight01Icon} />
+                </TooltipTrigger>
+                <TooltipContent>Agent activity</TooltipContent>
+              </Tooltip>
               {content.contentType !== "image" && (
                 <Button
                   disabled={isTogglingStatus}
@@ -1110,6 +1174,52 @@ export default function PageClient({
           <div className="h-24" />
         </div>
       </div>
+      <RightPanelPortal>
+        <LazyMotion features={loadMotionFeatures} strict>
+          <AnimatePresence initial={false}>
+            {isActivityPanelOpen && (
+              <m.aside
+                animate={{ opacity: 1, width: "24rem" }}
+                className="hidden min-h-0 shrink-0 overflow-hidden lg:block"
+                exit={{ opacity: 0, width: 0 }}
+                initial={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="flex h-full min-h-0 w-96 flex-col">
+                  <div className="min-h-0 flex-1">
+                    <ContentChatActivityPanel
+                      messages={messages}
+                      onClose={() => setIsActivityPanelOpen(false)}
+                      status={status}
+                    />
+                  </div>
+                  <div className="shrink-0 p-2 pt-1">
+                    <ChatInput
+                      completionMessage={null}
+                      context={context}
+                      error={chatError}
+                      isLoading={
+                        status === "streaming" || status === "submitted"
+                      }
+                      onAddContext={handleAddContext}
+                      onClearError={() => setChatError(null)}
+                      onClearSelection={clearSelection}
+                      onRemoveContext={handleRemoveContext}
+                      onSend={handleAiEdit}
+                      onValueChange={setChatInputValue}
+                      organizationId={organizationId}
+                      organizationSlug={organizationSlug}
+                      selection={selection}
+                      value={chatInputValue}
+                    />
+                  </div>
+                </div>
+              </m.aside>
+            )}
+          </AnimatePresence>
+        </LazyMotion>
+      </RightPanelPortal>
+      {saveBarSection}
       {chatInputSection}
     </>
   );

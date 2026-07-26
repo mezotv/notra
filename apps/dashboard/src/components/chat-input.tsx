@@ -146,7 +146,6 @@ const ChatInput = ({
     })
   );
 
-  // Get all enabled repos from all integrations (memoized, single iteration)
   const enabledRepos = useMemo(() => {
     const result: EnabledRepo[] = [];
     for (const integration of integrationsData?.integrations ?? []) {
@@ -198,7 +197,6 @@ const ChatInput = ({
     [onAddContext, onRemoveContext]
   );
 
-  // Resize textarea when controlled value changes
   useEffect(() => {
     if (isControlled) {
       requestAnimationFrame(resizeTextarea);
@@ -218,14 +216,12 @@ const ChatInput = ({
       return;
     }
 
-    // Only check billing if customer data is available (Autumn is configured)
     if (customer) {
       const checkResult = check({
         featureId: FEATURES.AI_CREDITS,
         requiredBalance: 1,
       });
 
-      // Only block if we explicitly got allowed: false (not if check failed)
       if (checkResult?.allowed === false) {
         setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;
