@@ -60,7 +60,11 @@ export async function createLazyMcpRuntime({
   surface,
   baseActiveToolNames,
   tools: sharedTools,
+  serverIntegrationIds,
 }: LazyMcpRuntimeParams): Promise<LazyMcpRuntime> {
+  const allowedServerIntegrationIds = serverIntegrationIds
+    ? new Set(serverIntegrationIds)
+    : null;
   const clients: McpClientRegistry = new Map();
   const retiredClients: RetiredMcpClients = new Set();
   const hasActiveIndexedTools = await hasActiveIndexedMcpToolsForOrganization({
@@ -80,6 +84,7 @@ export async function createLazyMcpRuntime({
     organizationId,
     sessionId,
     surface,
+    serverIntegrationIds,
   });
   const activeMcpToolNames = new Set(
     activatedTools.map((tool) => tool.runtimeToolName)
@@ -122,12 +127,50 @@ export async function createLazyMcpRuntime({
         serverIntegrationId: z.string().min(1).optional(),
       }),
       execute: async ({ query, limit, serverIntegrationId }) => {
-        const results = await searchMcpToolIndex({
-          organizationId,
-          query,
-          limit: limit ?? MCP_SEARCH_LIMIT_DEFAULT,
-          serverIntegrationId,
-        });
+        if (
+          serverIntegrationId &&
+          allowedServerIntegrationIds &&
+          !allowedServerIntegrationIds.has(serverIntegrationId)
+        ) {
+          throw new Error(
+            "That MCP server is outside the selected server context."
+          );
+        }
+
+        const boundedLimit = limit ?? MCP_SEARCH_LIMIT_DEFAULT;
+        let scopedServerIntegrationIds: string[] | null = null;
+        if (allowedServerIntegrationIds) {
+          scopedServerIntegrationIds = serverIntegrationId
+            ? [serverIntegrationId]
+            : Array.from(allowedServerIntegrationIds);
+        }
+        const results = scopedServerIntegrationIds
+          ? (
+              await Promise.all(
+                scopedServerIntegrationIds.map((scopedServerIntegrationId) =>
+                  searchMcpToolIndex({
+                    organizationId,
+                    query,
+                    limit: boundedLimit,
+                    serverIntegrationId: scopedServerIntegrationId,
+                  })
+                )
+              )
+            )
+              .flat()
+              .filter(
+                (result, index, allResults) =>
+                  allResults.findIndex(
+                    (candidate) => candidate.id === result.id
+                  ) === index
+              )
+              .slice(0, boundedLimit)
+          : await searchMcpToolIndex({
+              organizationId,
+              query,
+              limit: boundedLimit,
+              serverIntegrationId,
+            });
         return {
           results: results.map((result) => ({
             toolId: result.id,
@@ -155,6 +198,7 @@ export async function createLazyMcpRuntime({
           surface,
           toolIds,
           sourceQuery: reason,
+          serverIntegrationIds,
         });
         setActiveTools(activated);
 
@@ -180,6 +224,7 @@ export async function createLazyMcpRuntime({
           organizationId,
           sessionId,
           surface,
+          serverIntegrationIds,
         });
         setActiveTools(active);
         return {
@@ -226,6 +271,7 @@ export async function createLazyMcpRuntime({
             organizationId,
             sessionId,
             surface,
+            serverIntegrationIds,
           });
           const nextActiveNames = new Set(
             active.map((activeTool) => activeTool.runtimeToolName)

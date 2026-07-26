@@ -434,11 +434,17 @@ export async function getSessionActivatedMcpTools({
   organizationId,
   sessionId,
   surface,
+  serverIntegrationIds,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
+  serverIntegrationIds?: string[];
 }) {
+  if (serverIntegrationIds?.length === 0) {
+    return [];
+  }
+
   const now = new Date();
   return db
     .select({
@@ -468,6 +474,9 @@ export async function getSessionActivatedMcpTools({
         eq(mcpToolIndex.status, "active"),
         eq(mcpServerIntegrations.enabled, true),
         eq(mcpServerIntegrations.resourceType, "connection"),
+        serverIntegrationIds
+          ? inArray(mcpToolIndex.serverIntegrationId, serverIntegrationIds)
+          : undefined,
         or(
           isNull(mcpSessionToolActivations.expiresAt),
           gt(mcpSessionToolActivations.expiresAt, now)
@@ -498,12 +507,14 @@ export async function activateSessionMcpTools({
   surface,
   toolIds,
   sourceQuery,
+  serverIntegrationIds,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
   toolIds: string[];
   sourceQuery?: string;
+  serverIntegrationIds?: string[];
 }) {
   const uniqueToolIds = Array.from(new Set(toolIds));
   if (uniqueToolIds.length === 0) {
@@ -516,6 +527,16 @@ export async function activateSessionMcpTools({
   }
 
   let tools = await getToolsByIds(organizationId, uniqueToolIds);
+  if (
+    serverIntegrationIds &&
+    tools.some(
+      (tool) => !serverIntegrationIds.includes(tool.serverIntegrationId)
+    )
+  ) {
+    throw new Error(
+      "One or more MCP tools are outside the selected server context."
+    );
+  }
   const staleIntegrationIds = new Set(
     tools
       .filter((tool) => tool.status === "stale")
@@ -548,6 +569,7 @@ export async function activateSessionMcpTools({
     organizationId,
     sessionId,
     surface,
+    serverIntegrationIds,
   });
   const existingIds = new Set(existing.map((tool) => tool.id));
   const newCount = activeTools.filter(
@@ -585,7 +607,12 @@ export async function activateSessionMcpTools({
       });
   }
 
-  return getSessionActivatedMcpTools({ organizationId, sessionId, surface });
+  return getSessionActivatedMcpTools({
+    organizationId,
+    sessionId,
+    surface,
+    serverIntegrationIds,
+  });
 }
 
 export async function deactivateSessionMcpTools({

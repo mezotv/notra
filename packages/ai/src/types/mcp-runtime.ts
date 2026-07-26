@@ -18,6 +18,7 @@ export interface LazyMcpRuntimeParams {
   baseActiveToolNames: string[];
   tools?: Record<string, Tool>;
   maxRuntimeTools?: number;
+  serverIntegrationIds?: string[];
 }
 
 export interface LazyMcpRuntime {

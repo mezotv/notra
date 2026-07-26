@@ -103,6 +103,7 @@ export async function orchestrateStandaloneChat(
   const hasGitHub = hasEnabledGitHubIntegration(validatedIntegrations);
   const hasLinear = hasEnabledLinearIntegration(validatedIntegrations);
   const hasMcp = (await getEnabledMcpServerCount(organizationId)) > 0;
+  const mcpContext = context.filter((item) => item.type === "mcp-server");
 
   const lastUserMessage = getLastUserMessage(messages);
   const hasNonTextPartsOnLatestTurn = lastUserMessageHasNonTextParts(messages);
@@ -183,6 +184,10 @@ export async function orchestrateStandaloneChat(
           surface: "standalone-chat",
           baseActiveToolNames: notraToolRuntime.getActiveToolNames(),
           tools,
+          serverIntegrationIds:
+            mcpContext.length > 0
+              ? mcpContext.map((item) => item.integrationId)
+              : undefined,
         });
 
   const descriptions = lazyMcpRuntime
@@ -201,8 +206,6 @@ export async function orchestrateStandaloneChat(
   const linearContext = hasLinearToolsActive
     ? getLinearContextFromIntegrations(validatedIntegrations)
     : [];
-  const mcpContext = context.filter((item) => item.type === "mcp-server");
-
   const systemPrompt = getStandaloneChatPrompt({
     skillSummaries: await getStandaloneSkillSummaries(organizationId),
     repoContext,
