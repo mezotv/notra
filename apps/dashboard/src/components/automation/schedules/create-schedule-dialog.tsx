@@ -23,6 +23,7 @@ import {
   ComboboxEmpty,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
   useComboboxAnchor,
 } from "@notra/ui/components/ui/combobox";
 import { Input } from "@notra/ui/components/ui/input";
@@ -492,6 +493,7 @@ export function CreateScheduleDialog({
                                 );
                               })}
                               <ComboboxChipsInput placeholder="Search integrations" />
+                              <ComboboxTrigger className="ml-auto flex shrink-0 items-center self-center" />
                             </ComboboxChips>
                             <ComboboxContent anchor={comboboxAnchor.current}>
                               <ComboboxEmpty>
