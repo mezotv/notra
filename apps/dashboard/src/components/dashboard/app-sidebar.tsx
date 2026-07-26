@@ -143,9 +143,6 @@ export function DashboardSidebar({
                 variants={subpageVariants}
               >
                 <ChatHistoryNav />
-                <div className="mt-auto">
-                  <NavSecondary />
-                </div>
               </m.div>
             )}
             {!(isSettingsRoute || isChatRoute) && (
@@ -163,13 +160,13 @@ export function DashboardSidebar({
                   <SidebarTrialExpired />
                   <SidebarOnboarding />
                   <SidebarUpgrade />
-                  <NavSecondary />
                 </div>
               </m.div>
             )}
           </AnimatePresence>
         </SidebarContent>
         <SidebarFooter>
+          <NavSecondary className="p-0" />
           <NavUser />
         </SidebarFooter>
       </LazyMotion>
