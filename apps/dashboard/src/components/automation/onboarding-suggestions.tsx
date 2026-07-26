@@ -112,7 +112,11 @@ export function OnboardingSuggestions({
                 }
                 className="h-full"
                 contentClassName="relative"
-                heading={suggestion.title}
+                heading={
+                  <span className="block truncate" title={suggestion.title}>
+                    {suggestion.title}
+                  </span>
+                }
                 icon={<HugeiconsIcon icon={SparklesIcon} />}
                 key={suggestion.id}
               >
