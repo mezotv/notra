@@ -88,7 +88,7 @@ export function OnboardingSuggestions({
               <TitleCard
                 accentColor={EVE_ACCENT_COLOR}
                 action={
-                  <div className="relative z-10 flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Button onClick={() => onCreate(suggestion.id)} size="sm">
                       Create
                     </Button>
@@ -111,6 +111,7 @@ export function OnboardingSuggestions({
                   </div>
                 }
                 className="h-full"
+                contentClassName="relative"
                 heading={suggestion.title}
                 icon={<HugeiconsIcon icon={SparklesIcon} />}
                 key={suggestion.id}
@@ -128,7 +129,7 @@ export function OnboardingSuggestions({
                   ) : null}
                   <button
                     aria-label={`View details for "${suggestion.title}"`}
-                    className="peer absolute inset-0 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+                    className="peer absolute inset-0 cursor-pointer rounded-t-lg focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={openDetails}
                     type="button"
                   />
