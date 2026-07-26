@@ -1,5 +1,6 @@
 "use client";
 
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import {
   ArrowRight01Icon,
   Cancel01Icon,
@@ -10,6 +11,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
@@ -113,9 +115,16 @@ export function OnboardingSuggestions({
                 className="h-full"
                 contentClassName="relative"
                 heading={
-                  <span className="block truncate" title={suggestion.title}>
-                    {suggestion.title}
-                  </span>
+                  <TooltipProvider delay={400}>
+                    <BaseTooltip.Root>
+                      <TooltipTrigger
+                        render={<span className="block truncate" />}
+                      >
+                        {suggestion.title}
+                      </TooltipTrigger>
+                      <TooltipContent>{suggestion.title}</TooltipContent>
+                    </BaseTooltip.Root>
+                  </TooltipProvider>
                 }
                 icon={<HugeiconsIcon icon={SparklesIcon} />}
                 key={suggestion.id}
