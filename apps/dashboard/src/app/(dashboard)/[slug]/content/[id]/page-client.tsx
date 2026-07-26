@@ -1598,7 +1598,6 @@ export default function PageClient({
                 {content.contentType === "changelog" && (
                   <PublishChangelogDialog
                     contentId={contentId}
-                    hasChanges={hasChanges}
                     onSave={handleSave}
                     organizationId={organizationId}
                     organizationSlug={organizationSlug}

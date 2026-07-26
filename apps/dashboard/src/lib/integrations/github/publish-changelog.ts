@@ -150,6 +150,7 @@ export async function publishChangelogDraftPullRequest(
     );
   }
 
+  let destinationMissing = false;
   try {
     await octokit.request("GET /repos/{owner}/{repo}/contents/{path}", {
       owner: params.owner,
@@ -158,19 +159,20 @@ export async function publishChangelogDraftPullRequest(
       ref: baseSha,
       headers: GITHUB_API_VERSION_HEADERS,
     });
-    throw new GitHubChangelogTargetExistsError(
-      `${params.path} already exists in ${params.owner}/${params.repo}`
-    );
   } catch (error) {
-    if (error instanceof GitHubChangelogTargetExistsError) {
-      throw error;
-    }
     if (!hasGitHubStatus(error, 404)) {
       throw new GitHubChangelogPublishError(
         "Failed to check the destination path",
         error
       );
     }
+    destinationMissing = true;
+  }
+
+  if (!destinationMissing) {
+    throw new GitHubChangelogTargetExistsError(
+      `${params.path} already exists in ${params.owner}/${params.repo}`
+    );
   }
 
   const branchName = createChangelogBranchName(params.path);

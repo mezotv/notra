@@ -1261,50 +1261,22 @@ export async function setRepositoryOutputDirectory(params: {
       ELSE '{}'::jsonb
     END
   ) || ${directoryConfig}::jsonb`;
-  const [existing] = await db
-    .update(repositoryOutputs)
-    .set({ config: mergedConfig })
-    .where(
-      and(
-        eq(repositoryOutputs.repositoryId, params.repositoryId),
-        eq(repositoryOutputs.outputType, params.outputType)
-      )
-    )
+  const [output] = await db
+    .insert(repositoryOutputs)
+    .values({
+      id: nanoid(),
+      repositoryId: params.repositoryId,
+      outputType: params.outputType,
+      enabled: params.outputType === "changelog",
+      config: { directory: params.directory },
+    })
+    .onConflictDoUpdate({
+      target: [repositoryOutputs.repositoryId, repositoryOutputs.outputType],
+      set: { config: mergedConfig },
+    })
     .returning();
 
-  if (existing) {
-    return existing;
-  }
-
-  try {
-    const [created] = await db
-      .insert(repositoryOutputs)
-      .values({
-        id: nanoid(),
-        repositoryId: params.repositoryId,
-        outputType: params.outputType,
-        enabled: params.outputType === "changelog",
-        config: { directory: params.directory },
-      })
-      .returning();
-    return created;
-  } catch (error) {
-    const [concurrent] = await db
-      .update(repositoryOutputs)
-      .set({ config: mergedConfig })
-      .where(
-        and(
-          eq(repositoryOutputs.repositoryId, params.repositoryId),
-          eq(repositoryOutputs.outputType, params.outputType)
-        )
-      )
-      .returning();
-
-    if (concurrent) {
-      return concurrent;
-    }
-    throw error;
-  }
+  return output;
 }
 
 export async function toggleGitHubIntegration(

@@ -35,23 +35,14 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 
 interface PublishChangelogDialogProps {
   contentId: string;
-  hasChanges: boolean;
   onSave: () => Promise<boolean>;
   organizationId: string;
   organizationSlug: string;
   title: string;
 }
 
-interface PublishedPullRequest {
-  branchName: string;
-  path: string;
-  pullRequestNumber: number;
-  pullRequestUrl: string;
-}
-
 export function PublishChangelogDialog({
   contentId,
-  hasChanges,
   onSave,
   organizationId,
   organizationSlug,
@@ -59,9 +50,6 @@ export function PublishChangelogDialog({
 }: PublishChangelogDialogProps) {
   const [open, setOpen] = useState(false);
   const [repositoryId, setRepositoryId] = useState("");
-  const [pullRequest, setPullRequest] = useState<PublishedPullRequest | null>(
-    null
-  );
 
   const integrationsQuery = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
@@ -85,11 +73,9 @@ export function PublishChangelogDialog({
 
   const publishMutation = useMutation({
     mutationFn: async (targetRepositoryId: string) => {
-      if (hasChanges) {
-        const saved = await onSave();
-        if (!saved) {
-          throw new Error("Save the changelog before publishing it");
-        }
+      const saved = await onSave();
+      if (!saved) {
+        throw new Error("Save the changelog before publishing it");
       }
 
       return dashboardOrpc.content.publishChangelogToGitHub.call({
@@ -98,20 +84,20 @@ export function PublishChangelogDialog({
         repositoryId: targetRepositoryId,
       });
     },
-    onSuccess: (result) => {
-      setPullRequest(result);
+    onSuccess: () => {
       toast.success("Draft pull request created");
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create draft pull request");
     },
   });
+  const pullRequest = publishMutation.data;
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!publishMutation.isPending) {
       setOpen(nextOpen);
       if (nextOpen) {
-        setPullRequest(null);
+        publishMutation.reset();
       }
     }
   };
