@@ -9,7 +9,6 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
-  Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
@@ -69,7 +68,7 @@ export function OnboardingSuggestions({
   );
 
   return (
-    <>
+    <TooltipProvider delay={400}>
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <HugeiconsIcon
@@ -94,7 +93,7 @@ export function OnboardingSuggestions({
                     <Button onClick={() => onCreate(suggestion.id)} size="sm">
                       Create
                     </Button>
-                    <Tooltip>
+                    <BaseTooltip.Root>
                       <TooltipTrigger
                         render={
                           <Button
@@ -108,23 +107,25 @@ export function OnboardingSuggestions({
                       >
                         <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
                       </TooltipTrigger>
-                      <TooltipContent>Dismiss suggestion</TooltipContent>
-                    </Tooltip>
+                      <TooltipContent className="data-open:zoom-in-100 data-[side=top]:slide-in-from-bottom-0 data-[state=delayed-open]:zoom-in-100">
+                        Dismiss suggestion
+                      </TooltipContent>
+                    </BaseTooltip.Root>
                   </div>
                 }
                 className="h-full"
                 contentClassName="relative"
                 heading={
-                  <TooltipProvider delay={400}>
-                    <BaseTooltip.Root>
-                      <TooltipTrigger
-                        render={<span className="block truncate" />}
-                      >
-                        {suggestion.title}
-                      </TooltipTrigger>
-                      <TooltipContent>{suggestion.title}</TooltipContent>
-                    </BaseTooltip.Root>
-                  </TooltipProvider>
+                  <BaseTooltip.Root>
+                    <TooltipTrigger
+                      render={<span className="block truncate" />}
+                    >
+                      {suggestion.title}
+                    </TooltipTrigger>
+                    <TooltipContent className="data-open:zoom-in-100 data-[side=top]:slide-in-from-bottom-0 data-[state=delayed-open]:zoom-in-100">
+                      {suggestion.title}
+                    </TooltipContent>
+                  </BaseTooltip.Root>
                 }
                 icon={<HugeiconsIcon icon={SparklesIcon} />}
                 key={suggestion.id}
@@ -180,6 +181,6 @@ export function OnboardingSuggestions({
           }}
         />
       ) : null}
-    </>
+    </TooltipProvider>
   );
 }
