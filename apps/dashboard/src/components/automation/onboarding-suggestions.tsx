@@ -128,11 +128,11 @@ export function OnboardingSuggestions({
                   ) : null}
                   <button
                     aria-label={`View details for "${suggestion.title}"`}
-                    className="absolute inset-0 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
+                    className="peer absolute inset-0 cursor-pointer rounded-lg focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={openDetails}
                     type="button"
                   />
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-background via-background/90 to-transparent pt-6 pb-2 font-medium text-foreground text-sm opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-background via-background/90 to-transparent pt-6 pb-2 font-medium text-foreground text-sm opacity-0 transition-opacity duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
                     Click to expand
                     <HugeiconsIcon className="size-4" icon={ArrowRight01Icon} />
                   </span>
