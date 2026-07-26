@@ -12,6 +12,19 @@ export type McpTestStatus = "idle" | "testing" | "success" | "error";
 
 export type McpDialogStatus = "idle" | "testing" | "creating" | "redirecting";
 
+export interface McpIconUrls {
+  darkUrl?: string | null;
+  lightUrl?: string | null;
+}
+
+export interface McpIconProps extends McpIconUrls {
+  className?: string;
+}
+
+export interface GetMcpIconUrlsInput extends McpIconUrls {
+  fallbackUrl?: string | null;
+}
+
 export interface McpConnectionTestStatusProps {
   message: string;
   status: McpTestStatus;

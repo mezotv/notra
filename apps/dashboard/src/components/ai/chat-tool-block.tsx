@@ -17,6 +17,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { CheckIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { McpIcon } from "@/components/integrations/mcp-icon";
 import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
 import {
@@ -43,11 +44,7 @@ import {
 } from "./chat-tool-block/mcp/utils";
 import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
 import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
-import type {
-  ChatToolBlockProps,
-  McpToolIconProps,
-  ToolCopy,
-} from "./chat-tool-block/types";
+import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
 
 function firstStringValue<T extends object>(
   values: T,
@@ -733,7 +730,7 @@ export function ChatToolBlock({
   if (isMcp) {
     const mcpIconUrls = getMcpToolIconUrls(toolMetadata);
     toolIcon = (
-      <McpToolIcon
+      <McpIcon
         darkUrl={
           iconUrl ?? mcpLogoDarkUrl ?? mcpLogoLightUrl ?? mcpIconUrls.darkUrl
         }
@@ -820,24 +817,5 @@ export function ChatToolBlock({
         </div>
       </CollapsibleContent>
     </Collapsible>
-  );
-}
-
-function McpToolIcon({ darkUrl, lightUrl }: McpToolIconProps) {
-  return (
-    <span className="relative size-4 shrink-0">
-      <Avatar className="size-4 rounded-sm after:hidden dark:hidden">
-        <AvatarImage className="rounded-sm" src={lightUrl} />
-        <AvatarFallback className="rounded-sm bg-transparent">
-          <HugeiconsIcon className="size-3" icon={CpuIcon} />
-        </AvatarFallback>
-      </Avatar>
-      <Avatar className="hidden size-4 rounded-sm after:hidden dark:flex">
-        <AvatarImage className="rounded-sm" src={darkUrl} />
-        <AvatarFallback className="rounded-sm bg-transparent">
-          <HugeiconsIcon className="size-3" icon={CpuIcon} />
-        </AvatarFallback>
-      </Avatar>
-    </span>
   );
 }

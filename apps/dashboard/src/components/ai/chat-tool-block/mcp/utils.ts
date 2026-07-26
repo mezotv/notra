@@ -1,6 +1,6 @@
-import { getMcpFaviconUrl } from "@/lib/integrations/mcp";
+import { getMcpFaviconUrl, getMcpIconUrls } from "@/lib/integrations/mcp";
 import { mcpToolMetadataSchema } from "@/schemas/ai/chat-tool-block";
-import type { McpToolIconUrls } from "../types";
+import type { McpIconUrls } from "@/types/integrations/mcp";
 import {
   MCP_TOOL_NAME_REGEX,
   NON_ALPHANUMERIC_WORD_SEPARATOR_REGEX,
@@ -74,16 +74,13 @@ export function getMcpToolActionPhrase(
   return normalizedPhrase || undefined;
 }
 
-export function getMcpToolIconUrls(toolMetadata: unknown): McpToolIconUrls {
+export function getMcpToolIconUrls(toolMetadata: unknown): McpIconUrls {
   const notraMetadata = getNotraMcpMetadata(toolMetadata);
-  const fallbackUrl = getMcpFaviconUrl(notraMetadata?.serverUrl);
-  const lightLogo = notraMetadata?.logoLightUrl?.trim() || undefined;
-  const darkLogo = notraMetadata?.logoDarkUrl?.trim() || undefined;
-
-  return {
-    lightUrl: lightLogo ?? darkLogo ?? fallbackUrl,
-    darkUrl: darkLogo ?? lightLogo ?? fallbackUrl,
-  };
+  return getMcpIconUrls({
+    lightUrl: notraMetadata?.logoLightUrl,
+    darkUrl: notraMetadata?.logoDarkUrl,
+    fallbackUrl: getMcpFaviconUrl(notraMetadata?.serverUrl),
+  });
 }
 
 export function getMcpToolServerId(toolMetadata: unknown) {

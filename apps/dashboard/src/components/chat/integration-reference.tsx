@@ -5,7 +5,9 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { McpIcon } from "@/components/integrations/mcp-icon";
 import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
+import type { McpIconUrls } from "@/types/integrations/mcp";
 import {
   getIntegrationReferenceValue,
   getReferenceDisplay,
@@ -43,6 +45,7 @@ const LINEAR_ICON_MARKUP = renderToStaticMarkup(
 const MCP_ICON_MARKUP = renderToStaticMarkup(
   <HugeiconsIcon className="size-full" icon={CpuIcon} />
 );
+
 function getReferenceKind(item: ContextItem): ReferenceKind {
   if (item.type === "github-repo") {
     return "github";
@@ -89,16 +92,67 @@ function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
   }
 }
 
-function createReferenceIcon(kind: ReferenceKind): HTMLSpanElement {
+function createReferenceIcon(
+  kind: ReferenceKind,
+  mcpIcon?: McpIconUrls
+): HTMLSpanElement {
   const icon = document.createElement("span");
   icon.setAttribute("aria-hidden", "true");
   icon.className = getReferenceIconWrapperClass(kind);
+
+  const lightLogo = mcpIcon?.lightUrl ?? mcpIcon?.darkUrl;
+  const darkLogo = mcpIcon?.darkUrl ?? mcpIcon?.lightUrl;
+  if (kind === "mcp" && lightLogo && darkLogo) {
+    const lightImage = document.createElement("img");
+    lightImage.alt = "";
+    lightImage.className = "size-full rounded-sm object-contain dark:hidden";
+    lightImage.src = lightLogo;
+
+    const darkImage = document.createElement("img");
+    darkImage.alt = "";
+    darkImage.className =
+      "hidden size-full rounded-sm object-contain dark:block";
+    darkImage.src = darkLogo;
+
+    let didFallback = false;
+    const showFallbackIcon = () => {
+      if (didFallback) {
+        return;
+      }
+      didFallback = true;
+      icon.innerHTML = MCP_ICON_MARKUP;
+    };
+    lightImage.addEventListener("error", showFallbackIcon, { once: true });
+    darkImage.addEventListener("error", showFallbackIcon, { once: true });
+
+    icon.append(lightImage, darkImage);
+    return icon;
+  }
+
   icon.innerHTML = getReferenceIconMarkup(kind);
   return icon;
 }
 
-function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
+function ReferenceIcon({
+  kind,
+  mcpIcon,
+}: {
+  kind: ReferenceKind;
+  mcpIcon?: McpIconUrls;
+}) {
   const iconWrapperClass = getReferenceIconWrapperClass(kind);
+
+  if (kind === "mcp" && (mcpIcon?.lightUrl || mcpIcon?.darkUrl)) {
+    return (
+      <span aria-hidden="true" className={iconWrapperClass}>
+        <McpIcon
+          className="size-full"
+          darkUrl={mcpIcon.darkUrl}
+          lightUrl={mcpIcon.lightUrl}
+        />
+      </span>
+    );
+  }
 
   return (
     <span
@@ -111,7 +165,8 @@ function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
 }
 
 export function buildIntegrationReferenceElement(
-  item: ContextItem
+  item: ContextItem,
+  mcpIcon?: McpIconUrls
 ): HTMLSpanElement {
   const span = document.createElement("span");
   span.contentEditable = "false";
@@ -120,7 +175,7 @@ export function buildIntegrationReferenceElement(
   span.dataset.value = getIntegrationReferenceValue(item);
   appendReferenceData(span, item);
 
-  const icon = createReferenceIcon(getReferenceKind(item));
+  const icon = createReferenceIcon(getReferenceKind(item), mcpIcon);
   const label = document.createElement("span");
   label.className = REFERENCE_LABEL_CLASS;
   label.textContent = getReferenceDisplay(item);
@@ -163,8 +218,37 @@ export function hydrateLinearReferenceTeamNames(
   return changed;
 }
 
+export function hydrateMcpReferenceIcons(
+  root: HTMLElement,
+  iconsByIntegrationId: ReadonlyMap<string, McpIconUrls>
+): boolean {
+  let changed = false;
+  const chips = root.querySelectorAll<HTMLElement>(
+    INTEGRATION_REFERENCE_SELECTOR
+  );
+
+  for (const chip of chips) {
+    if (chip.dataset.kind !== "mcp") {
+      continue;
+    }
+    const integrationId = chip.dataset.integrationId;
+    if (!integrationId) {
+      continue;
+    }
+    const iconUrls = iconsByIntegrationId.get(integrationId);
+    if (!(iconUrls?.lightUrl || iconUrls?.darkUrl)) {
+      continue;
+    }
+    chip.firstElementChild?.replaceWith(createReferenceIcon("mcp", iconUrls));
+    changed = true;
+  }
+
+  return changed;
+}
+
 export function buildFragmentFromReferencedText(
-  text: string
+  text: string,
+  mcpIconsByIntegrationId?: ReadonlyMap<string, McpIconUrls>
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
   const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
@@ -176,7 +260,11 @@ export function buildFragmentFromReferencedText(
 
     const referenceItem = parseReferenceValue(segment);
     if (referenceItem) {
-      fragment.append(buildIntegrationReferenceElement(referenceItem));
+      const mcpIcon =
+        referenceItem.type === "mcp-server"
+          ? mcpIconsByIntegrationId?.get(referenceItem.integrationId)
+          : undefined;
+      fragment.append(buildIntegrationReferenceElement(referenceItem, mcpIcon));
       continue;
     }
 
@@ -222,7 +310,10 @@ export function parseIntegrationReferenceElement(
   return null;
 }
 
-export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
+export function renderTextWithIntegrationReferences(
+  text: string,
+  mcpIconsByIntegrationId?: ReadonlyMap<string, McpIconUrls>
+): ReactNode[] {
   const nodes: ReactNode[] = [];
   let keySeed = 0;
   const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
@@ -234,11 +325,16 @@ export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
 
     const referenceItem = parseReferenceValue(segment);
     if (referenceItem) {
+      const mcpIcon =
+        referenceItem.type === "mcp-server"
+          ? mcpIconsByIntegrationId?.get(referenceItem.integrationId)
+          : undefined;
       nodes.push(
         <IntegrationReference
           display={getReferenceDisplay(referenceItem)}
           key={`ref-${segment}-${keySeed++}`}
           kind={getReferenceKind(referenceItem)}
+          mcpIcon={mcpIcon}
           value={getIntegrationReferenceValue(referenceItem)}
         />
       );
@@ -311,12 +407,14 @@ interface IntegrationReferenceProps {
   value: string;
   display: string;
   kind: ReferenceKind;
+  mcpIcon?: McpIconUrls;
 }
 
 function IntegrationReference({
   value,
   display,
   kind,
+  mcpIcon,
 }: IntegrationReferenceProps) {
   return (
     <span
@@ -325,7 +423,7 @@ function IntegrationReference({
       data-integration-reference="true"
       data-value={value}
     >
-      <ReferenceIcon kind={kind} />
+      <ReferenceIcon kind={kind} mcpIcon={mcpIcon} />
       <span className={REFERENCE_LABEL_CLASS}>{display}</span>
     </span>
   );

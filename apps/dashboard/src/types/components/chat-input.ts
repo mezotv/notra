@@ -49,8 +49,6 @@ export interface ChatContextOption {
   logoDarkUrl?: string | null;
 }
 
-export interface McpSourceIconProps {
-  logoLightUrl?: string | null;
-  logoDarkUrl?: string | null;
-  className?: string;
+export interface ChatContextOptionContentProps {
+  option: ChatContextOption;
 }

@@ -2,6 +2,10 @@ import {
   type AddMcpServerFormValues,
   MCP_URL_PROTOCOL_REGEX,
 } from "@/schemas/integrations";
+import type {
+  GetMcpIconUrlsInput,
+  McpIconUrls,
+} from "@/types/integrations/mcp";
 
 export const MCP_ACCENT_COLOR = "#9333EA";
 
@@ -25,6 +29,21 @@ export function getMcpFaviconUrl(url: string | null | undefined) {
   } catch {
     return undefined;
   }
+}
+
+export function getMcpIconUrls({
+  lightUrl,
+  darkUrl,
+  fallbackUrl,
+}: GetMcpIconUrlsInput): McpIconUrls {
+  const normalizedLightUrl = lightUrl?.trim() || undefined;
+  const normalizedDarkUrl = darkUrl?.trim() || undefined;
+  const normalizedFallbackUrl = fallbackUrl?.trim() || undefined;
+
+  return {
+    lightUrl: normalizedLightUrl ?? normalizedDarkUrl ?? normalizedFallbackUrl,
+    darkUrl: normalizedDarkUrl ?? normalizedLightUrl ?? normalizedFallbackUrl,
+  };
 }
 
 export function getMcpFormErrorMessage(error: unknown) {

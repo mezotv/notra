@@ -5,7 +5,6 @@ import {
   AtIcon,
   Attachment01Icon,
   Cancel01Icon,
-  CpuIcon,
   File02Icon,
   StopIcon,
   Upload04Icon,
@@ -73,12 +72,14 @@ import {
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { McpIcon } from "@/components/integrations/mcp-icon";
 import {
   MAX_CHAT_ATTACHMENTS,
   MAX_CHAT_FILE_SIZE,
   MIME_DISPLAY_LABELS,
   PASTE_TO_ATTACHMENT_THRESHOLD,
 } from "@/constants/upload";
+import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   dragEventHasFiles,
@@ -95,7 +96,7 @@ import {
 } from "@/lib/upload/mime";
 import type {
   ChatContextOption,
-  McpSourceIconProps,
+  ChatContextOptionContentProps,
 } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
@@ -104,6 +105,7 @@ import {
   buildFragmentFromReferencedText,
   buildIntegrationReferenceElement,
   hydrateLinearReferenceTeamNames,
+  hydrateMcpReferenceIcons,
   INTEGRATION_REFERENCE_SELECTOR,
   isIntegrationReferenceElement,
   parseIntegrationReferenceElement,
@@ -112,6 +114,7 @@ import {
 } from "./integration-reference";
 
 const GENERIC_PASTED_IMAGE_NAME_RE = /^image\.(jpe?g|png|gif|webp)$/i;
+const CHAT_CREDITS_EMPTY_MESSAGE = "No chat credits left.";
 
 export const AVAILABLE_MODELS = [
   {
@@ -195,47 +198,6 @@ export function ModelIcon({
   return <ClaudeAiIcon className={className} />;
 }
 
-function McpSourceIcon({
-  logoLightUrl,
-  logoDarkUrl,
-  className = "size-4",
-}: McpSourceIconProps) {
-  const lightLogo = logoLightUrl ?? logoDarkUrl;
-  const darkLogo = logoDarkUrl ?? logoLightUrl;
-
-  if (lightLogo && darkLogo) {
-    return (
-      <>
-        <Image
-          alt=""
-          aria-hidden="true"
-          className={`${className} rounded-sm object-contain dark:hidden`}
-          height={20}
-          src={lightLogo}
-          width={20}
-        />
-        <Image
-          alt=""
-          aria-hidden="true"
-          className={`${className} hidden rounded-sm object-contain dark:block`}
-          height={20}
-          src={darkLogo}
-          width={20}
-        />
-      </>
-    );
-  }
-
-  return (
-    <span
-      aria-hidden="true"
-      className={`${className} flex shrink-0 items-center justify-center text-violet-600 dark:text-violet-400`}
-    >
-      <HugeiconsIcon className="size-full" icon={CpuIcon} />
-    </span>
-  );
-}
-
 const THINKING_LEVELS = ["off", "low", "medium", "high"] as const;
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 
@@ -297,12 +259,14 @@ function getSubmitTooltipText({
   isLoading,
   isQueued,
   isStopping,
+  isUsageBlocked,
 }: {
   canQueue: boolean;
   isEmpty: boolean;
   isLoading: boolean;
   isQueued: boolean;
   isStopping: boolean;
+  isUsageBlocked: boolean;
 }): string {
   if (isLoading && isStopping) {
     return "Stopping...";
@@ -313,10 +277,26 @@ function getSubmitTooltipText({
   if (isLoading && isEmpty) {
     return "Stop generating";
   }
+  if (isUsageBlocked) {
+    return CHAT_CREDITS_EMPTY_MESSAGE;
+  }
   if (canQueue) {
     return "Enter to queue this message. It will send once the AI finishes.";
   }
   return "Enter to send. Shift+Enter for a new line.";
+}
+
+function getContextPickerDisabledReason(
+  isLoading: boolean,
+  isQueued: boolean
+): string | null {
+  if (isQueued) {
+    return "Cancel the pending message before changing tools or context.";
+  }
+  if (isLoading) {
+    return "Wait for the current response before changing tools or context.";
+  }
+  return null;
 }
 
 function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
@@ -333,6 +313,24 @@ function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
     return a.integrationId === b.integrationId;
   }
   return false;
+}
+
+function ChatContextOptionContent({ option }: ChatContextOptionContentProps) {
+  return (
+    <>
+      {option.kind === "github" && <Github className="size-4 shrink-0" />}
+      {option.kind === "linear" && <Linear className="size-4 shrink-0" />}
+      {option.kind === "mcp" && (
+        <McpIcon darkUrl={option.logoDarkUrl} lightUrl={option.logoLightUrl} />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-sm">{option.label}</span>
+        <span className="truncate text-muted-foreground text-xs">
+          {option.description}
+        </span>
+      </span>
+    </>
+  );
 }
 
 interface ChatInputAdvancedProps {
@@ -431,6 +429,10 @@ export function ChatInputAdvanced({
     useState<ChatAttachment | null>(null);
   const isUploading = pendingUploads.length > 0;
   const isQueued = pendingSend !== null;
+  const contextPickerDisabledReason = getContextPickerDisabledReason(
+    isLoading,
+    isQueued
+  );
   const attachmentsRef = useRef(attachments);
   const pendingUploadsRef = useRef(pendingUploads);
 
@@ -718,9 +720,10 @@ export function ChatInputAdvanced({
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
   const isUsageBlocked = checkResult ? checkResult.allowed === false : false;
-  const limitMessage = "No chat credits left.";
   const usageLimitError =
-    externalError ?? internalError ?? (isUsageBlocked ? limitMessage : null);
+    externalError ??
+    internalError ??
+    (isUsageBlocked ? CHAT_CREDITS_EMPTY_MESSAGE : null);
 
   const clearError = useCallback(() => {
     setInternalError(null);
@@ -874,6 +877,19 @@ export function ChatInputAdvanced({
   const mcpToolOptions = useMemo(
     () => contextOptions.filter((option) => option.kind === "mcp"),
     [contextOptions]
+  );
+  const mcpIconsByIntegrationId = useMemo(
+    () =>
+      new Map(
+        mcpToolOptions.map((option) => [
+          option.contextItem.integrationId,
+          getMcpIconUrls({
+            lightUrl: option.logoLightUrl,
+            darkUrl: option.logoDarkUrl,
+          }),
+        ])
+      ),
+    [mcpToolOptions]
   );
 
   const isInContext = useCallback(
@@ -1073,13 +1089,21 @@ export function ChatInputAdvanced({
       if (!draft) {
         return;
       }
-      editor.append(buildFragmentFromReferencedText(draft));
+      editor.append(
+        buildFragmentFromReferencedText(draft, mcpIconsByIntegrationId)
+      );
       setIsEmpty(draft.trim().length === 0);
       syncContextFromDOM();
     } catch {
       // noop
     }
-  }, [draftStorageKey, initialValue, readEditorText, syncContextFromDOM]);
+  }, [
+    draftStorageKey,
+    initialValue,
+    mcpIconsByIntegrationId,
+    readEditorText,
+    syncContextFromDOM,
+  ]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1090,6 +1114,14 @@ export function ChatInputAdvanced({
       syncContextFromDOM();
     }
   }, [enabledLinearIntegrations, syncContextFromDOM]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || mcpIconsByIntegrationId.size === 0) {
+      return;
+    }
+    hydrateMcpReferenceIcons(editor, mcpIconsByIntegrationId);
+  }, [mcpIconsByIntegrationId]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1141,7 +1173,13 @@ export function ChatInputAdvanced({
       replaceRange.setStart(anchor.node, anchor.offset);
       replaceRange.setEnd(cursor.startContainer, cursor.startOffset);
 
-      const chip = buildIntegrationReferenceElement(option.contextItem);
+      const chip = buildIntegrationReferenceElement(
+        option.contextItem,
+        getMcpIconUrls({
+          lightUrl: option.logoLightUrl,
+          darkUrl: option.logoDarkUrl,
+        })
+      );
       insertChipAndSpace(chip, replaceRange);
 
       mentionAnchorRef.current = null;
@@ -1152,11 +1190,12 @@ export function ChatInputAdvanced({
   );
 
   const insertChipAtCursor = useCallback(
-    (item: ContextItem) => {
+    (option: ChatContextOption) => {
       const editor = editorRef.current;
       if (!editor) {
         return;
       }
+      const item = option.contextItem;
       if (contextRef.current.some((c) => contextItemsEqual(c, item))) {
         return;
       }
@@ -1174,7 +1213,13 @@ export function ChatInputAdvanced({
         range.selectNodeContents(editor);
         range.collapse(false);
       }
-      const chip = buildIntegrationReferenceElement(item);
+      const chip = buildIntegrationReferenceElement(
+        item,
+        getMcpIconUrls({
+          lightUrl: option.logoLightUrl,
+          darkUrl: option.logoDarkUrl,
+        })
+      );
       insertChipAndSpace(chip, range);
     },
     [insertChipAndSpace]
@@ -1209,45 +1254,51 @@ export function ChatInputAdvanced({
     [onRemoveContext, readEditorText]
   );
 
-  const insertTextAtRange = useCallback((text: string, targetRange?: Range) => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
+  const insertTextAtRange = useCallback(
+    (text: string, targetRange?: Range) => {
+      const editor = editorRef.current;
+      if (!editor) {
+        return;
+      }
 
-    const selection = window.getSelection();
-    let range: Range | null = null;
+      const selection = window.getSelection();
+      let range: Range | null = null;
 
-    if (
-      targetRange?.startContainer.isConnected &&
-      editor.contains(targetRange.startContainer)
-    ) {
-      range = targetRange;
-    } else if (selection && selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-    }
+      if (
+        targetRange?.startContainer.isConnected &&
+        editor.contains(targetRange.startContainer)
+      ) {
+        range = targetRange;
+      } else if (selection && selection.rangeCount > 0) {
+        range = selection.getRangeAt(0);
+      }
 
-    if (!range) {
-      return;
-    }
+      if (!range) {
+        return;
+      }
 
-    range.deleteContents();
+      range.deleteContents();
 
-    const fragment = buildFragmentFromReferencedText(text);
-    const lastNode = fragment.lastChild;
-    range.insertNode(fragment);
+      const fragment = buildFragmentFromReferencedText(
+        text,
+        mcpIconsByIntegrationId
+      );
+      const lastNode = fragment.lastChild;
+      range.insertNode(fragment);
 
-    const after = document.createRange();
-    if (lastNode) {
-      after.setStartAfter(lastNode);
-    } else {
-      after.setStart(range.endContainer, range.endOffset);
-    }
-    after.collapse(true);
-    selection?.removeAllRanges();
-    selection?.addRange(after);
-    editor.dispatchEvent(new Event("input", { bubbles: true }));
-  }, []);
+      const after = document.createRange();
+      if (lastNode) {
+        after.setStartAfter(lastNode);
+      } else {
+        after.setStart(range.endContainer, range.endOffset);
+      }
+      after.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(after);
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    [mcpIconsByIntegrationId]
+  );
 
   const clearComposer = useCallback(() => {
     const editor = editorRef.current;
@@ -1288,7 +1339,7 @@ export function ChatInputAdvanced({
         return false;
       }
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return false;
       }
       if (customer) {
@@ -1297,7 +1348,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(limitMessage);
+          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
           return false;
         }
       }
@@ -1350,7 +1401,7 @@ export function ChatInputAdvanced({
       }
       clearError();
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return;
       }
       if (customer) {
@@ -1359,7 +1410,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(limitMessage);
+          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
           return;
         }
       }
@@ -1380,7 +1431,7 @@ export function ChatInputAdvanced({
         return;
       }
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return;
       }
       clearError();
@@ -1785,11 +1836,11 @@ export function ChatInputAdvanced({
                   <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
                     {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
                     <div
-                      aria-disabled={isUsageBlocked || isQueued}
+                      aria-disabled={isQueued}
                       aria-label="Send a message"
                       aria-multiline="true"
                       className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
-                      contentEditable={!(isUsageBlocked || isQueued)}
+                      contentEditable={!isQueued}
                       data-empty={isEmpty ? "true" : "false"}
                       data-placeholder={
                         isLoading
@@ -1818,9 +1869,7 @@ export function ChatInputAdvanced({
                       ref={editorRef}
                       role="textbox"
                       suppressContentEditableWarning
-                      tabIndex={
-                        isLoading || isUsageBlocked || isQueued ? -1 : 0
-                      }
+                      tabIndex={isLoading || isQueued ? -1 : 0}
                     />
                   </div>
                 </div>
@@ -1861,26 +1910,7 @@ export function ChatInputAdvanced({
                                   }}
                                   type="button"
                                 >
-                                  {option.kind === "github" && (
-                                    <Github className="size-4 shrink-0" />
-                                  )}
-                                  {option.kind === "linear" && (
-                                    <Linear className="size-4 shrink-0" />
-                                  )}
-                                  {option.kind === "mcp" && (
-                                    <McpSourceIcon
-                                      logoDarkUrl={option.logoDarkUrl}
-                                      logoLightUrl={option.logoLightUrl}
-                                    />
-                                  )}
-                                  <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate text-sm">
-                                      {option.label}
-                                    </span>
-                                    <span className="truncate text-muted-foreground text-xs">
-                                      {option.description}
-                                    </span>
-                                  </span>
+                                  <ChatContextOptionContent option={option} />
                                   {inContext && (
                                     <span className="shrink-0 text-emerald-600 text-xs dark:text-emerald-400">
                                       Added
@@ -2054,129 +2084,138 @@ export function ChatInputAdvanced({
                   </PopoverContent>
                 </Popover>
 
-                <Popover
-                  modal
-                  onOpenChange={setIsContextPickerOpen}
-                  open={isContextPickerOpen}
-                >
-                  <PopoverTrigger
+                <Tooltip>
+                  <TooltipTrigger
                     render={
-                      <button
-                        aria-controls={contextPickerId}
-                        aria-expanded={isContextPickerOpen}
-                        aria-haspopup="listbox"
-                        aria-label="Add tools or context"
-                        className="flex items-center gap-1.5 rounded-lg border border-border border-dashed px-2.5 py-1.5 font-medium text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading || isQueued}
-                        role="combobox"
-                        type="button"
-                      />
+                      contextPickerDisabledReason ? (
+                        // biome-ignore lint/a11y/useSemanticElements: a real button would illegally nest the disabled popover trigger button.
+                        <span
+                          aria-disabled="true"
+                          aria-label="Add tools or context"
+                          className="inline-flex cursor-not-allowed"
+                          role="button"
+                          tabIndex={0}
+                        />
+                      ) : (
+                        <span className="inline-flex" />
+                      )
                     }
                   >
-                    <HugeiconsIcon className="size-3.5" icon={AtIcon} />
-                    Tools & context
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="start"
-                    className="w-80 p-0"
-                    id={contextPickerId}
-                    showBackdrop
-                    sideOffset={6}
-                  >
-                    <Command>
-                      <CommandInput placeholder="Search tools and context..." />
-                      <CommandList>
-                        <CommandEmpty>
-                          No matching tools or context found.
-                        </CommandEmpty>
-                        {integrationContextOptions.length > 0 && (
-                          <CommandGroup heading="Context">
-                            {integrationContextOptions.map((option) => {
-                              const inContext = isInContext(option.contextItem);
-                              return (
-                                <CommandItem
-                                  data-checked={inContext}
-                                  key={option.id}
-                                  keywords={[option.searchText]}
-                                  onSelect={() => {
-                                    if (inContext) {
-                                      removeChipForItem(option.contextItem);
-                                    } else {
-                                      insertChipAtCursor(option.contextItem);
-                                    }
-                                    setIsContextPickerOpen(false);
-                                  }}
-                                  value={option.id}
-                                >
-                                  {option.kind === "github" ? (
-                                    <Github className="size-4 shrink-0" />
-                                  ) : (
-                                    <Linear className="size-4 shrink-0" />
-                                  )}
-                                  <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate text-sm">
-                                      {option.label}
-                                    </span>
-                                    <span className="truncate text-muted-foreground text-xs">
-                                      {option.description}
-                                    </span>
-                                  </span>
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        )}
-                        {mcpToolOptions.length > 0 && (
-                          <CommandGroup heading="MCP tools">
-                            {mcpToolOptions.map((option) => {
-                              const inContext = isInContext(option.contextItem);
-                              return (
-                                <CommandItem
-                                  data-checked={inContext}
-                                  key={option.id}
-                                  keywords={[option.searchText]}
-                                  onSelect={() => {
-                                    if (inContext) {
-                                      removeChipForItem(option.contextItem);
-                                    } else {
-                                      insertChipAtCursor(option.contextItem);
-                                    }
-                                    setIsContextPickerOpen(false);
-                                  }}
-                                  value={option.id}
-                                >
-                                  <McpSourceIcon
-                                    logoDarkUrl={option.logoDarkUrl}
-                                    logoLightUrl={option.logoLightUrl}
-                                  />
-                                  <span className="flex min-w-0 flex-1 flex-col">
-                                    <span className="truncate text-sm">
-                                      {option.label}
-                                    </span>
-                                    <span className="truncate text-muted-foreground text-xs">
-                                      {option.description}
-                                    </span>
-                                  </span>
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        )}
-                      </CommandList>
-                      {organizationSlug && (
-                        <div className="border-border border-t p-1">
-                          <Link
-                            className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                            href={`/${organizationSlug}/integrations`}
-                            onClick={() => setIsContextPickerOpen(false)}
-                          >
-                            Manage integrations
-                          </Link>
-                        </div>
-                      )}
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                    <Popover
+                      modal
+                      onOpenChange={setIsContextPickerOpen}
+                      open={isContextPickerOpen}
+                    >
+                      <PopoverTrigger
+                        render={
+                          <button
+                            aria-controls={contextPickerId}
+                            aria-expanded={isContextPickerOpen}
+                            aria-haspopup="listbox"
+                            aria-label="Add tools or context"
+                            className="flex items-center gap-1.5 rounded-lg border border-border border-dashed px-2.5 py-1.5 font-medium text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                            disabled={isLoading || isQueued}
+                            role="combobox"
+                            type="button"
+                          />
+                        }
+                      >
+                        <HugeiconsIcon className="size-3.5" icon={AtIcon} />
+                        Tools & context
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        className="w-80 p-0"
+                        id={contextPickerId}
+                        showBackdrop
+                        sideOffset={6}
+                      >
+                        <Command>
+                          <CommandInput placeholder="Search tools and context..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              No matching tools or context found.
+                            </CommandEmpty>
+                            {integrationContextOptions.length > 0 && (
+                              <CommandGroup heading="Context">
+                                {integrationContextOptions.map((option) => {
+                                  const inContext = isInContext(
+                                    option.contextItem
+                                  );
+                                  return (
+                                    <CommandItem
+                                      data-checked={inContext}
+                                      key={option.id}
+                                      keywords={[option.searchText]}
+                                      onSelect={() => {
+                                        if (inContext) {
+                                          removeChipForItem(option.contextItem);
+                                        } else {
+                                          insertChipAtCursor(option);
+                                        }
+                                        setIsContextPickerOpen(false);
+                                      }}
+                                      value={option.id}
+                                    >
+                                      <ChatContextOptionContent
+                                        option={option}
+                                      />
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            )}
+                            {mcpToolOptions.length > 0 && (
+                              <CommandGroup heading="MCP tools">
+                                {mcpToolOptions.map((option) => {
+                                  const inContext = isInContext(
+                                    option.contextItem
+                                  );
+                                  return (
+                                    <CommandItem
+                                      data-checked={inContext}
+                                      key={option.id}
+                                      keywords={[option.searchText]}
+                                      onSelect={() => {
+                                        if (inContext) {
+                                          removeChipForItem(option.contextItem);
+                                        } else {
+                                          insertChipAtCursor(option);
+                                        }
+                                        setIsContextPickerOpen(false);
+                                      }}
+                                      value={option.id}
+                                    >
+                                      <ChatContextOptionContent
+                                        option={option}
+                                      />
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                          {organizationSlug && (
+                            <div className="border-border border-t p-1">
+                              <Link
+                                className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                                href={`/${organizationSlug}/integrations`}
+                                onClick={() => setIsContextPickerOpen(false)}
+                              >
+                                Manage integrations
+                              </Link>
+                            </div>
+                          )}
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  {contextPickerDisabledReason && (
+                    <TooltipContent>
+                      {contextPickerDisabledReason}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger
@@ -2220,13 +2259,13 @@ export function ChatInputAdvanced({
                     submitDisabled = false;
                   } else if (isLoading && isEmpty) {
                     submitDisabled = !onStop || isStopping;
+                  } else if (isUsageBlocked) {
+                    submitDisabled = true;
                   } else if (canQueue) {
                     submitDisabled = false;
                   } else {
                     submitDisabled =
-                      isUsageBlocked ||
-                      hasUnsupportedAttachmentsForModel ||
-                      !hasAnyContent;
+                      hasUnsupportedAttachmentsForModel || !hasAnyContent;
                   }
                   let submitOnClick: (() => void) | undefined;
                   if (isQueued) {
@@ -2241,11 +2280,10 @@ export function ChatInputAdvanced({
                       <TooltipTrigger
                         render={
                           <Button
-                            className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={submitDisabled}
-                            onClick={submitOnClick}
+                            aria-disabled={submitDisabled}
+                            className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:active:scale-100 aria-disabled:hover:bg-muted dark:aria-disabled:hover:bg-input/30"
+                            onClick={submitDisabled ? undefined : submitOnClick}
                             size="sm"
-                            tabIndex={0}
                             type="button"
                             variant="outline"
                           />
@@ -2268,6 +2306,7 @@ export function ChatInputAdvanced({
                           isLoading,
                           isQueued,
                           isStopping,
+                          isUsageBlocked,
                         })}
                       </TooltipContent>
                     </Tooltip>

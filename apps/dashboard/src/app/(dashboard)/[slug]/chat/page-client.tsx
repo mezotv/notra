@@ -83,6 +83,7 @@ import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration
 import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
+import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
@@ -439,6 +440,12 @@ function StandaloneChatPageClient({
   const organizationId = organization?.id ?? "";
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
+  const { data: customMcpData } = useQuery(
+    dashboardOrpc.integrations.mcp.list.queryOptions({
+      input: { organizationId },
+      enabled: Boolean(organizationId),
+    })
+  );
   const { data: mcpStoreData } = useQuery(
     dashboardOrpc.integrations.mcp.storeList.queryOptions({
       input: { organizationId },
@@ -447,22 +454,32 @@ function StandaloneChatPageClient({
   );
   const mcpLogosByConnectionId = useMemo(
     () =>
-      new Map(
-        (mcpStoreData?.integrations ?? []).flatMap((integration) =>
+      new Map([
+        ...(customMcpData?.servers ?? []).map(
+          (server) =>
+            [
+              server.id,
+              getMcpIconUrls({
+                darkUrl: server.logoDarkUrl,
+                lightUrl: server.logoLightUrl,
+              }),
+            ] as const
+        ),
+        ...(mcpStoreData?.integrations ?? []).flatMap((integration) =>
           integration.connection
             ? [
                 [
                   integration.connection.id,
-                  {
+                  getMcpIconUrls({
                     darkUrl: integration.logoDarkUrl,
                     lightUrl: integration.logoLightUrl,
-                  },
+                  }),
                 ] as const,
               ]
             : []
-        )
-      ),
-    [mcpStoreData?.integrations]
+        ),
+      ]),
+    [customMcpData?.servers, mcpStoreData?.integrations]
   );
   const [pendingMessageId, setPendingMessageId] = useState<string | null>(null);
   const isHydrated = useSyncExternalStore(
@@ -1554,7 +1571,7 @@ function StandaloneChatPageClient({
             className="wrap-break-word size-full whitespace-pre-wrap"
             key={`${messageId}-text-${index}`}
           >
-            {renderTextWithIntegrationReferences(text)}
+            {renderTextWithIntegrationReferences(text, mcpLogosByConnectionId)}
           </div>
         );
       }
