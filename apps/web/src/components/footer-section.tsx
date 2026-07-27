@@ -64,14 +64,14 @@ export default function FooterSection() {
         <Image
           alt=""
           aria-hidden="true"
-          className="h-auto w-[135%] min-w-[60rem] max-w-none translate-y-[20%] dark:opacity-40"
+          className="h-auto w-[121.4%] min-w-[60rem] max-w-[126rem] translate-y-[23%] dark:opacity-40"
           height={536}
           src="/marketing/landing/footer-wordmark.svg"
           width={1748}
         />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-36 md:px-8 md:pb-52">
+      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-64 md:px-8 md:pb-[30rem]">
         <div className="flex flex-col gap-12 py-7 lg:flex-row lg:items-start lg:justify-between lg:gap-24">
           <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
             <div className="flex flex-col gap-2.5">
