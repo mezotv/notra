@@ -1,4 +1,9 @@
 import { randomUUID } from "node:crypto";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
 import type { BrandReferencesConfig } from "@notra/ai/types/brand-references";
 import { serializeBrandReference } from "@notra/ai/utils/brand-references";
 import { toolDescription } from "@notra/ai/utils/description";
@@ -267,6 +272,30 @@ export function createAddBrandReferenceTool(config: {
           error:
             "No brand identity found. Ask the user to create one in brand settings first.",
         };
+      }
+
+      if (autumn && !allowUnmeteredAiInDevelopment) {
+        let allowed = false;
+
+        try {
+          const check = await autumn.check({
+            customerId: config.organizationId,
+            featureId: FEATURES.REFERENCES,
+            requiredBalance: 1,
+            sendEvent: true,
+          });
+          allowed = check?.allowed === true;
+        } catch {
+          allowed = false;
+        }
+
+        if (!allowed) {
+          return {
+            success: false,
+            error:
+              "Reference limit reached. Ask the user to upgrade their plan to add more references.",
+          };
+        }
       }
 
       if (sourceUrl) {

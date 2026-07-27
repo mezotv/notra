@@ -250,76 +250,77 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
     const verified = verifiedType !== null && verifiedType !== "none";
 
     const { replacedProviderAccountId } = yield* Effect.tryPromise({
-      try: async (): Promise<{ replacedProviderAccountId: string | null }> => {
-        const existing = await db.query.connectedSocialAccounts.findFirst({
-          columns: { id: true },
-          where: and(
-            eq(
-              connectedSocialAccounts.organizationId,
-              oauthState.organizationId
+      try: (): Promise<{ replacedProviderAccountId: string | null }> =>
+        db.transaction(async (tx) => {
+          const existing = await tx.query.connectedSocialAccounts.findFirst({
+            columns: { id: true },
+            where: and(
+              eq(
+                connectedSocialAccounts.organizationId,
+                oauthState.organizationId
+              ),
+              eq(connectedSocialAccounts.provider, oauthState.platform),
+              eq(connectedSocialAccounts.providerAccountId, accountId)
             ),
-            eq(connectedSocialAccounts.provider, oauthState.platform),
-            eq(connectedSocialAccounts.providerAccountId, accountId)
-          ),
-        });
+          });
 
-        if (existing) {
-          await db
-            .update(connectedSocialAccounts)
-            .set({
-              username,
-              displayName,
-              profileImageUrl,
-              verified,
-              verifiedType,
-              socialConnectProfileId: oauthState.profileId,
-            })
-            .where(eq(connectedSocialAccounts.id, existing.id));
+          if (existing) {
+            await tx
+              .update(connectedSocialAccounts)
+              .set({
+                username,
+                displayName,
+                profileImageUrl,
+                verified,
+                verifiedType,
+                socialConnectProfileId: oauthState.profileId,
+              })
+              .where(eq(connectedSocialAccounts.id, existing.id));
+            return { replacedProviderAccountId: null };
+          }
+
+          const reconnected = await tx.query.connectedSocialAccounts.findFirst({
+            columns: { id: true, providerAccountId: true },
+            where: and(
+              eq(
+                connectedSocialAccounts.organizationId,
+                oauthState.organizationId
+              ),
+              eq(connectedSocialAccounts.provider, oauthState.platform),
+              eq(connectedSocialAccounts.username, username)
+            ),
+          });
+
+          if (reconnected) {
+            await tx
+              .update(connectedSocialAccounts)
+              .set({
+                providerAccountId: accountId,
+                username,
+                displayName,
+                profileImageUrl,
+                verified,
+                verifiedType,
+                socialConnectProfileId: oauthState.profileId,
+              })
+              .where(eq(connectedSocialAccounts.id, reconnected.id));
+            return { replacedProviderAccountId: reconnected.providerAccountId };
+          }
+
+          await tx.insert(connectedSocialAccounts).values({
+            id: crypto.randomUUID(),
+            organizationId: oauthState.organizationId,
+            provider: oauthState.platform,
+            providerAccountId: accountId,
+            socialConnectProfileId: oauthState.profileId,
+            username,
+            displayName,
+            profileImageUrl,
+            verified,
+            verifiedType,
+          });
           return { replacedProviderAccountId: null };
-        }
-
-        const reconnected = await db.query.connectedSocialAccounts.findFirst({
-          columns: { id: true, providerAccountId: true },
-          where: and(
-            eq(
-              connectedSocialAccounts.organizationId,
-              oauthState.organizationId
-            ),
-            eq(connectedSocialAccounts.provider, oauthState.platform),
-            eq(connectedSocialAccounts.username, username)
-          ),
-        });
-
-        if (reconnected) {
-          await db
-            .update(connectedSocialAccounts)
-            .set({
-              providerAccountId: accountId,
-              username,
-              displayName,
-              profileImageUrl,
-              verified,
-              verifiedType,
-              socialConnectProfileId: oauthState.profileId,
-            })
-            .where(eq(connectedSocialAccounts.id, reconnected.id));
-          return { replacedProviderAccountId: reconnected.providerAccountId };
-        }
-
-        await db.insert(connectedSocialAccounts).values({
-          id: crypto.randomUUID(),
-          organizationId: oauthState.organizationId,
-          provider: oauthState.platform,
-          providerAccountId: accountId,
-          socialConnectProfileId: oauthState.profileId,
-          username,
-          displayName,
-          profileImageUrl,
-          verified,
-          verifiedType,
-        });
-        return { replacedProviderAccountId: null };
-      },
+        }),
       catch: (cause) =>
         new SocialConnectCallbackError({ code: "callback_failed", cause }),
     });

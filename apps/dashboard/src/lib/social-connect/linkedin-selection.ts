@@ -276,69 +276,70 @@ export const completeLinkedInSelection = Effect.fn("completeLinkedInSelection")(
     const profileImageUrl = account?.profilePicture ?? null;
 
     yield* Effect.tryPromise({
-      try: async () => {
-        const existing = await db.query.connectedSocialAccounts.findFirst({
-          columns: { id: true },
-          where: and(
-            eq(
-              connectedSocialAccounts.organizationId,
-              params.oauthState.organizationId
+      try: () =>
+        db.transaction(async (tx) => {
+          const existing = await tx.query.connectedSocialAccounts.findFirst({
+            columns: { id: true },
+            where: and(
+              eq(
+                connectedSocialAccounts.organizationId,
+                params.oauthState.organizationId
+              ),
+              eq(connectedSocialAccounts.provider, "linkedin"),
+              eq(connectedSocialAccounts.providerAccountId, providerAccountId)
             ),
-            eq(connectedSocialAccounts.provider, "linkedin"),
-            eq(connectedSocialAccounts.providerAccountId, providerAccountId)
-          ),
-        });
+          });
 
-        if (existing) {
-          await db
-            .update(connectedSocialAccounts)
-            .set({
-              username,
-              displayName,
-              profileImageUrl,
-              socialConnectProfileId: params.oauthState.profileId,
-            })
-            .where(eq(connectedSocialAccounts.id, existing.id));
-          return;
-        }
+          if (existing) {
+            await tx
+              .update(connectedSocialAccounts)
+              .set({
+                username,
+                displayName,
+                profileImageUrl,
+                socialConnectProfileId: params.oauthState.profileId,
+              })
+              .where(eq(connectedSocialAccounts.id, existing.id));
+            return;
+          }
 
-        const reconnected = await db.query.connectedSocialAccounts.findFirst({
-          columns: { id: true },
-          where: and(
-            eq(
-              connectedSocialAccounts.organizationId,
-              params.oauthState.organizationId
+          const reconnected = await tx.query.connectedSocialAccounts.findFirst({
+            columns: { id: true },
+            where: and(
+              eq(
+                connectedSocialAccounts.organizationId,
+                params.oauthState.organizationId
+              ),
+              eq(connectedSocialAccounts.provider, "linkedin"),
+              eq(connectedSocialAccounts.username, username)
             ),
-            eq(connectedSocialAccounts.provider, "linkedin"),
-            eq(connectedSocialAccounts.username, username)
-          ),
-        });
+          });
 
-        if (reconnected) {
-          await db
-            .update(connectedSocialAccounts)
-            .set({
-              providerAccountId,
-              username,
-              displayName,
-              profileImageUrl,
-              socialConnectProfileId: params.oauthState.profileId,
-            })
-            .where(eq(connectedSocialAccounts.id, reconnected.id));
-          return;
-        }
+          if (reconnected) {
+            await tx
+              .update(connectedSocialAccounts)
+              .set({
+                providerAccountId,
+                username,
+                displayName,
+                profileImageUrl,
+                socialConnectProfileId: params.oauthState.profileId,
+              })
+              .where(eq(connectedSocialAccounts.id, reconnected.id));
+            return;
+          }
 
-        await db.insert(connectedSocialAccounts).values({
-          id: crypto.randomUUID(),
-          organizationId: params.oauthState.organizationId,
-          provider: "linkedin",
-          providerAccountId,
-          socialConnectProfileId: params.oauthState.profileId,
-          username,
-          displayName,
-          profileImageUrl,
-        });
-      },
+          await tx.insert(connectedSocialAccounts).values({
+            id: crypto.randomUUID(),
+            organizationId: params.oauthState.organizationId,
+            provider: "linkedin",
+            providerAccountId,
+            socialConnectProfileId: params.oauthState.profileId,
+            username,
+            displayName,
+            profileImageUrl,
+          });
+        }),
       catch: (cause) =>
         new SocialConnectRequestError({
           message: "Failed to save the connected account",

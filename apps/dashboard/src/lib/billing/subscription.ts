@@ -9,7 +9,14 @@ import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 export async function assertActiveSubscription(
   organizationId: string
 ): Promise<void> {
-  if (!autumn || allowUnmeteredAiInDevelopment) {
+  if (allowUnmeteredAiInDevelopment) {
+    return;
+  }
+
+  if (!autumn) {
+    if (process.env.NODE_ENV === "production") {
+      throw internalServerError("Billing is not configured");
+    }
     return;
   }
 

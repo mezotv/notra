@@ -1,7 +1,6 @@
 import { Effect } from "effect";
 import {
   badRequest,
-  internalServerError,
   paymentRequired,
   serviceUnavailable,
 } from "@/lib/orpc/utils/errors";
@@ -56,5 +55,7 @@ export async function runSocialConnect<A>(
   if (statusCode !== null && statusCode >= 400 && statusCode < 500) {
     throw badRequest(message);
   }
-  throw internalServerError(message);
+  throw serviceUnavailable(
+    "The social platform service is temporarily unavailable. Please try again in a few minutes."
+  );
 }

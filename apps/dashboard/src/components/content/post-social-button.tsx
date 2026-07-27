@@ -62,7 +62,6 @@ export function PostSocialButton({
   const [referencedVoiceIds, setReferencedVoiceIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(content);
-  const [isEditing, setIsEditing] = useState(false);
 
   const label = SOCIAL_PLATFORM_LABELS[platform];
   const brandColor =
@@ -71,19 +70,19 @@ export function PostSocialButton({
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (!nextOpen) {
-      publishMutation.reset();
-      setReferencedVoiceIds([]);
+    if (nextOpen) {
       setDraft(content);
-      setIsEditing(false);
+      return;
     }
+    publishMutation.reset();
+    setReferencedVoiceIds([]);
+    setDraft(content);
   };
 
   const handlePublish = () => {
     if (!(selectedAccount && draft.trim()) || isOverCharLimit) {
       return;
     }
-    setIsEditing(false);
     publishMutation.mutate(
       { accountId: selectedAccount.id, content: draft },
       {
@@ -203,7 +202,7 @@ export function PostSocialButton({
             accountSelector={accountSelector}
             author={twitterAuthorFromAccount(selectedAccount)}
             content={draft}
-            onContentChange={isEditing && !published ? setDraft : undefined}
+            onContentChange={published ? undefined : setDraft}
             timestamp="Just now"
           />
         ) : (
@@ -212,7 +211,7 @@ export function PostSocialButton({
             author={linkedInAuthorFromAccount(selectedAccount)}
             content={draft}
             defaultExpanded
-            onContentChange={isEditing && !published ? setDraft : undefined}
+            onContentChange={published ? undefined : setDraft}
             timestamp="Just now"
             truncate={false}
           />
@@ -255,13 +254,6 @@ export function PostSocialButton({
             </>
           ) : (
             <>
-              <Button
-                className="mr-auto"
-                onClick={() => setIsEditing((editing) => !editing)}
-                variant="outline"
-              >
-                {isEditing ? "Preview" : "Edit post"}
-              </Button>
               <ResponsiveDialogClose
                 render={<Button variant="outline">Cancel</Button>}
               />
