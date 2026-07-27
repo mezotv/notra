@@ -68,6 +68,8 @@ Model access needs no key on Vercel: the agent uses gateway model ids (`openai/g
 | `SLACK_BOT_TOKEN` | optional | Slack Connect invite when the workflow starts; skipped when unset |
 | `SLACK_FOUNDER_MEMBER_ID` | with Slack | Slack workspace member ID added to every onboarding Slack Connect channel |
 
+The Slack bot token needs these scopes: `channels:manage`, `groups:write`, `conversations.connect:write` (create channels and send Slack Connect invites), plus `users:read`, `users:read.email`, `channels:read`, and `groups:read` for the invite deduplication check (skip an invite when the email already belongs to a member of an `ext-*-notra` channel, and reuse an existing channel instead of creating a duplicate). Without the read scopes the dedup check logs a warning and falls back to creating a channel.
+
 With OIDC federation enabled, the dashboard automatically sends its `VERCEL_OIDC_TOKEN` as a Bearer token and you can drop `EVE_ONBOARDING_AGENT_PASSWORD` on both sides entirely.
 
 ### 4. Verify the deployment

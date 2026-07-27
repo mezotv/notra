@@ -39,6 +39,7 @@ export interface OnboardingSlackInviteInput {
 export interface OnboardingSlackInviteResult {
   invited: boolean;
   channelId?: string;
+  deduplicated?: boolean;
 }
 
 export interface StartSelfServeOnboardingAgentInput {

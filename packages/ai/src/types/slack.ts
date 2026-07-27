@@ -35,3 +35,17 @@ export interface CreateSlackConnectChannelInviteInput {
 export interface CreateSlackConnectChannelInviteResult
   extends SlackConnectChannel,
     SlackConnectInviteResult {}
+
+export type SlackConnectChannelMatch = "member-email" | "channel-name";
+
+export interface ExistingSlackConnectChannel extends SlackConnectChannel {
+  matchedBy: SlackConnectChannelMatch;
+}
+
+export interface EnsureSlackConnectChannelInviteResult
+  extends SlackConnectChannel {
+  alreadyMember: boolean;
+  deduplicated: boolean;
+  inviteId?: string;
+  isLegacySharedChannel?: boolean;
+}

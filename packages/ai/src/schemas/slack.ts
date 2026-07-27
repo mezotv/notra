@@ -58,6 +58,35 @@ export const slackOkResponseSchema = z.looseObject({
   error: z.string().optional(),
 });
 
+export const slackLookupUserResponseSchema = z.looseObject({
+  ok: z.boolean(),
+  error: z.string().optional(),
+  user: z
+    .looseObject({
+      id: z.string(),
+    })
+    .optional(),
+});
+
+export const slackConversationsListResponseSchema = z.looseObject({
+  ok: z.boolean(),
+  error: z.string().optional(),
+  channels: z
+    .array(
+      z.looseObject({
+        id: z.string(),
+        name: z.string(),
+        is_archived: z.boolean().optional(),
+      })
+    )
+    .optional(),
+  response_metadata: z
+    .looseObject({
+      next_cursor: z.string().optional(),
+    })
+    .optional(),
+});
+
 export const slackCreateChannelResponseSchema = z.looseObject({
   ok: z.boolean(),
   error: z.string().optional(),

@@ -48,7 +48,10 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
         const invite = await context.run("slack-connect-invite", () =>
           sendOnboardingSlackInvite({ email, organizationName })
         );
-        log.set({ slackInvited: invite.invited });
+        log.set({
+          slackInviteDeduplicated: invite.deduplicated ?? false,
+          slackInvited: invite.invited,
+        });
       }
 
       const { sessionId } = await context.run("start-session", () =>

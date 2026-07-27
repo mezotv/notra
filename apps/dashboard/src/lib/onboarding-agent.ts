@@ -4,7 +4,7 @@ import {
   EVE_AGENT_SERVICE_USERNAME,
 } from "@notra/ai/constants/onboarding-agent";
 import {
-  createSlackConnectChannelWithInvite,
+  ensureSlackConnectChannelWithInvite,
   hasSlackConnectConfigured,
 } from "@notra/ai/integrations/slack";
 import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
@@ -186,12 +186,16 @@ export async function sendOnboardingSlackInvite({
 
   try {
     const channelName = buildExternalChannelName(organizationName);
-    const result = await createSlackConnectChannelWithInvite({
+    const result = await ensureSlackConnectChannelWithInvite({
       channelName,
       email,
       externalLimited: false,
     });
-    return { channelId: result.channelId, invited: true };
+    return {
+      channelId: result.channelId,
+      deduplicated: result.deduplicated,
+      invited: !result.alreadyMember,
+    };
   } catch (error) {
     console.error(
       `[Onboarding Agent] Slack Connect invite failed for ${organizationName}`,

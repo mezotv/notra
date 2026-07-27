@@ -7,6 +7,13 @@ import {
   SLACK_INVALID_CHANNEL_CHARS_REGEX,
 } from "../constants/slack";
 
+export function isExternalChannelName(channelName: string): boolean {
+  return (
+    channelName.startsWith(SLACK_EXTERNAL_CHANNEL_PREFIX) &&
+    channelName.endsWith(SLACK_EXTERNAL_CHANNEL_SUFFIX)
+  );
+}
+
 export function buildExternalChannelName(companyName: string): string {
   const slug = companyName
     .toLowerCase()
