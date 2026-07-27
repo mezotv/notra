@@ -75,9 +75,11 @@ export default function FooterSection() {
         <div className="flex flex-col gap-12 py-7 lg:flex-row lg:items-start lg:justify-between lg:gap-24">
           <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-1">
-                <NotraMark className="size-10.5 shrink-0" />
-                <span className="font-display font-semibold text-[1.25rem] text-foreground leading-[1.14] tracking-[-0.015em]">
+              <div className="flex items-center gap-2">
+                <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#F6F3F1] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
+                  <NotraMark className="size-7 shrink-0" />
+                </span>
+                <span className="font-display font-semibold text-foreground text-lg leading-[1.14] tracking-[-0.015em]">
                   Notra
                 </span>
               </div>
