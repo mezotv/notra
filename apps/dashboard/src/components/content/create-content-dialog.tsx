@@ -40,7 +40,11 @@ import {
   type CreateContentFormValues,
   createContentFormSchema,
 } from "@/schemas/content/create-content-form";
-import type { IntegrationOption, WizardStep } from "@/types/content/create";
+import type {
+  IntegrationOption,
+  StepProgressProps,
+  WizardStep,
+} from "@/types/content/create";
 import type { PrSelection, ReleaseSelection } from "@/types/content/preview";
 import {
   prSelectionFromKey,
@@ -724,6 +728,17 @@ export function CreateContentDialog({
     }
   }, [step]);
 
+  const goToStep = useCallback(
+    (idx: number) => {
+      const target = STEP_ORDER[idx];
+      if (target !== undefined && idx < STEP_ORDER.indexOf(step)) {
+        setAttemptedAdvance(false);
+        setStep(target);
+      }
+    },
+    [step]
+  );
+
   const buildSelectedItems = useCallback((): SelectedItems => {
     if (!selectionsTouchedRef.current) {
       return undefined;
@@ -917,7 +932,7 @@ export function CreateContentDialog({
               <ResponsiveDialogTitle className="text-base">
                 {STEP_TITLES[step]}
               </ResponsiveDialogTitle>
-              <StepProgress activeIndex={stepIndex} />
+              <StepProgress activeIndex={stepIndex} onStepSelect={goToStep} />
             </div>
           </ResponsiveDialogHeader>
 
@@ -1023,9 +1038,8 @@ export function CreateContentDialog({
                     <Button
                       disabled={mutation.isPending}
                       onClick={goBack}
-                      size="sm"
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                     >
                       <HugeiconsIcon
                         className="size-3.5"
@@ -1114,18 +1128,14 @@ export function CreateContentDialog({
   );
 }
 
-interface StepProgressProps {
-  activeIndex: number;
-}
-
-function StepProgress({ activeIndex }: StepProgressProps) {
+function StepProgress({ activeIndex, onStepSelect }: StepProgressProps) {
   return (
     <div className="flex items-center gap-2">
       {STEP_ORDER.map((stepKey, idx) => {
         const isCompleted = idx < activeIndex;
         const isActive = idx === activeIndex;
-        return (
-          <div className="flex items-center gap-2" key={stepKey}>
+        const indicator = (
+          <>
             <div
               className={cn(
                 "flex size-5 shrink-0 items-center justify-center rounded-full font-medium text-[10px] transition-colors",
@@ -1150,6 +1160,21 @@ function StepProgress({ activeIndex }: StepProgressProps) {
             >
               {STEP_LABELS[stepKey]}
             </span>
+          </>
+        );
+        return (
+          <div className="flex items-center gap-2" key={stepKey}>
+            {isCompleted ? (
+              <button
+                className="-m-1 flex cursor-pointer items-center gap-2 rounded-md p-1 transition-colors hover:bg-muted"
+                onClick={() => onStepSelect(idx)}
+                type="button"
+              >
+                {indicator}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">{indicator}</div>
+            )}
             {idx < STEP_ORDER.length - 1 && (
               <div
                 className={cn(
