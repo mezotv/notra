@@ -36,7 +36,6 @@ export function ContributorsGrid({
               className="size-12 rounded-full ring-1 ring-border transition-transform duration-200 group-hover:scale-110"
               height={96}
               src={contributor.avatar_url}
-              unoptimized
               width={96}
             />
             <span className="w-full truncate text-center font-sans text-muted-foreground text-xs transition-colors group-hover:text-foreground">

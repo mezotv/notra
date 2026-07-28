@@ -24,7 +24,6 @@ export function PullRequestList({ prs }: { prs: GitHubPR[] }) {
               className="mt-0.5 size-6 flex-shrink-0 rounded-full"
               height={48}
               src={pr.user.avatar_url}
-              unoptimized
               width={48}
             />
             <div className="min-w-0 flex-1">
