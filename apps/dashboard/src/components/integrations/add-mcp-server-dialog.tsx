@@ -347,7 +347,6 @@ function McpDialogLogo({
           className="size-9 object-contain dark:hidden"
           height={36}
           src={lightLogo}
-          unoptimized
           width={36}
         />
         <Image
@@ -355,7 +354,6 @@ function McpDialogLogo({
           className="hidden size-9 object-contain dark:block"
           height={36}
           src={darkLogo}
-          unoptimized
           width={36}
         />
       </div>

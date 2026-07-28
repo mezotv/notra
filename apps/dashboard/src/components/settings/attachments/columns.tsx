@@ -32,7 +32,6 @@ function FileThumbnail({ row }: { row: AttachmentRow }) {
           fill
           sizes="40px"
           src={row.url}
-          unoptimized
         />
       </div>
     );

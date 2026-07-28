@@ -1772,7 +1772,6 @@ export function ChatInputAdvanced({
                               className="size-5 rounded object-cover"
                               height={20}
                               src={attachment.url}
-                              unoptimized
                               width={20}
                             />
                           ) : (

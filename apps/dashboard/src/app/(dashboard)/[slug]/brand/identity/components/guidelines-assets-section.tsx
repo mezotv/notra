@@ -78,7 +78,6 @@ export function GuidelinesAssetsSection({
                     className="block h-auto max-h-32 w-auto max-w-full object-contain"
                     height={asset.height ?? 256}
                     src={asset.url}
-                    unoptimized
                     width={asset.width ?? 256}
                   />
                 </ImageZoom>

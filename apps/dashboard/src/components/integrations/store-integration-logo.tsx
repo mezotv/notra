@@ -17,7 +17,6 @@ export function StoreIntegrationLogo({
           className="size-6 rounded object-contain dark:hidden"
           height={24}
           src={lightLogo}
-          unoptimized
           width={24}
         />
         <Image
@@ -25,7 +24,6 @@ export function StoreIntegrationLogo({
           className="hidden size-6 rounded object-contain dark:block"
           height={24}
           src={darkLogo}
-          unoptimized
           width={24}
         />
       </>
