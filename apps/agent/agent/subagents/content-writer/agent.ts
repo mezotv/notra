@@ -1,7 +1,7 @@
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
+import { contentWriterResultSchema } from "@notra/ai/schemas/content-writer-result";
 import { defineAgent } from "eve";
 import { SONNET_5_CONTEXT_WINDOW_TOKENS } from "../../lib/constants/models";
-import { contentWriterResultSchema } from "../../lib/schemas/content-writer-result";
 import { createAgentModel } from "../../lib/utils/model";
 
 export default defineAgent({

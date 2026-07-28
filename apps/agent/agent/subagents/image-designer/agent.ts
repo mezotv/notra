@@ -1,9 +1,9 @@
+import { imageDesignerResultSchema } from "@notra/ai/schemas/image-designer-result";
 import { defineAgent } from "eve";
 import {
   ASSISTANT_MODEL_ID,
   SONNET_4_6_CONTEXT_WINDOW_TOKENS,
 } from "../../lib/constants/models";
-import { imageDesignerResultSchema } from "../../lib/schemas/image-designer-result";
 import { createAgentModel } from "../../lib/utils/model";
 
 export default defineAgent({

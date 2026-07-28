@@ -72,7 +72,8 @@
     "DASHBOARD_VERCEL_ENVIRONMENT",
     "EVE_NOTRA_AGENT_URL",
     "EVE_NOTRA_AGENT_PASSWORD",
-    "NOTRA_AGENT_CHAT"
+    "NOTRA_AGENT_CHAT",
+    "NOTRA_AGENT_CONTENT"
   ],
   "envMode": "strict",
   "tasks": {

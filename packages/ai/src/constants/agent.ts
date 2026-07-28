@@ -9,6 +9,7 @@ export const AGENT_CONTENT_TYPE_HEADER = "x-notra-content-type";
 export const AGENT_AUTO_PUBLISH_HEADER = "x-notra-auto-publish";
 export const AGENT_USE_MARKUP_HEADER = "x-notra-use-markup";
 export const AGENT_VOICE_HEADER = "x-notra-voice-id";
+export const AGENT_BRAND_AGENT_TYPE_HEADER = "x-notra-brand-agent-type";
 export const AGENT_SOURCE_METADATA_HEADER = "x-notra-source-metadata";
 export const AGENT_GENERATION_CONFIG_HEADER = "x-notra-generation-config";
 

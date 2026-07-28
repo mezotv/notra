@@ -3,6 +3,9 @@ import { generateBlogPost } from "@notra/ai/agents/blog-post";
 import { generateChangelog } from "@notra/ai/agents/changelog";
 import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
 import { generateTwitterPost } from "@notra/ai/agents/twitter";
+import { AGENT_CONTENT_TASK_TYPES } from "@/constants/agent-content";
+import { generateContentViaAgentTask } from "@/lib/agent/content-task";
+import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
 import type {
   EventGenerationContext,
   EventGenerationResult,
@@ -27,6 +30,37 @@ export async function generateEventBasedContent(
       status: "unsupported_output_type",
       outputType,
     };
+  }
+
+  const agentTaskType = isAgentContentGenerationEnabled()
+    ? AGENT_CONTENT_TASK_TYPES[outputType]
+    : undefined;
+  if (agentTaskType) {
+    const agentResult = await generateContentViaAgentTask({
+      organizationId: ctx.organizationId,
+      collectionId: ctx.collectionId,
+      contentType: agentTaskType.contentType,
+      contentLabel: agentTaskType.contentLabel,
+      brandAgentType: agentTaskType.brandAgentType,
+      repositories: [
+        {
+          integrationId: ctx.repositoryId,
+          owner: ctx.repositoryOwner,
+          repo: ctx.repositoryName,
+          defaultBranch: null,
+        },
+      ],
+      promptInput: buildEventPromptInput(ctx),
+      sourceMetadata: ctx.sourceMetadata,
+      autoPublish: ctx.autoPublish,
+    });
+    if (agentResult.status === "rate_limited") {
+      return {
+        status: "generation_failed",
+        reason: "Agent task was rate limited",
+      };
+    }
+    return agentResult;
   }
 
   try {
