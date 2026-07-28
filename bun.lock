@@ -215,16 +215,13 @@
       "version": "0.0.1",
       "dependencies": {
         "@ai-sdk/devtools": "1.0.1",
-        "@aws-sdk/client-s3": "^3.1009.0",
         "@notra/ai": "workspace:*",
         "@notra/db": "workspace:*",
-        "@notra/eve-tools": "workspace:*",
-        "@vercel/oidc": "^3.8.0",
+        "@notra/tools": "workspace:*",
         "ai": "^7.0.0",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
         "eve": "0.19.0",
-        "pg": "^8.20.0",
         "zod": "^4.3.4",
       },
       "devDependencies": {
@@ -390,17 +387,6 @@
         "typescript": "^5.6.3",
       },
     },
-    "packages/eve-tools": {
-      "name": "@notra/eve-tools",
-      "version": "0.0.1",
-      "dependencies": {
-        "eve": "0.19.0",
-      },
-      "devDependencies": {
-        "@notra/typescript-config": "workspace:*",
-        "typescript": "5.9.2",
-      },
-    },
     "packages/kiwi": {
       "name": "@notra/kiwi",
       "version": "0.0.1",
@@ -412,6 +398,24 @@
         "@notra/typescript-config": "workspace:*",
         "@types/node": "^22.15.3",
         "@types/opentype.js": "^1.3.9",
+        "typescript": "5.9.2",
+      },
+    },
+    "packages/tools": {
+      "name": "@notra/tools",
+      "version": "0.0.1",
+      "dependencies": {
+        "@aws-sdk/client-s3": "^3.1009.0",
+        "@notra/ai": "workspace:*",
+        "@notra/db": "workspace:*",
+        "drizzle-orm": "^0.45.2",
+        "effect": "4.0.0-beta.93",
+        "eve": "0.19.0",
+        "zod": "^4.3.4",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "^24.0.0",
         "typescript": "5.9.2",
       },
     },
@@ -1202,11 +1206,11 @@
 
     "@notra/email": ["@notra/email@workspace:packages/email"],
 
-    "@notra/eve-tools": ["@notra/eve-tools@workspace:packages/eve-tools"],
-
     "@notra/kiwi": ["@notra/kiwi@workspace:packages/kiwi"],
 
     "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:apps/onboarding-agent"],
+
+    "@notra/tools": ["@notra/tools@workspace:packages/tools"],
 
     "@notra/typescript-config": ["@notra/typescript-config@workspace:packages/typescript-config"],
 
@@ -4976,6 +4980,8 @@
 
     "@notra/onboarding-agent/ai": ["ai@7.0.11", "", { "dependencies": { "@ai-sdk/gateway": "4.0.8", "@ai-sdk/provider": "4.0.1", "@ai-sdk/provider-utils": "5.0.3" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ecCtume1NKJG/8oIkV8G26KL9jmFJRx6+Gjx2260FcDZqIUGPiF1uBoNeGy4S1vxbHmFxUul4D7axqiXZZ1XuA=="],
 
+    "@notra/tools/@types/node": ["@types/node@24.13.2", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-fRa09kZTgu8o71KFcDjUFuc7F+dEbZYZmkI0mg5YBTRs0yMKjYHsq/c0urDKeDb+D5qVgXOdFcuu+DZPKOITwA=="],
+
     "@oclif/core/string-width": ["string-width@4.2.3", "", { "dependencies": { "emoji-regex": "^8.0.0", "is-fullwidth-code-point": "^3.0.0", "strip-ansi": "^6.0.1" } }, "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g=="],
 
     "@oclif/core/wrap-ansi": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
@@ -5867,6 +5873,8 @@
     "@notra/onboarding-agent/ai/@ai-sdk/provider": ["@ai-sdk/provider@4.0.1", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-6p3C/vGqVIjcptBu1DnVd/BZJ2wWmV9TUv9192vT6ZvT9KNED8EwRTqyqFpoQZKgSbMDSvBSq3dqR524Nt/Crw=="],
 
     "@notra/onboarding-agent/ai/@ai-sdk/provider-utils": ["@ai-sdk/provider-utils@5.0.3", "", { "dependencies": { "@ai-sdk/provider": "4.0.1", "@standard-schema/spec": "^1.1.0", "@workflow/serde": "4.1.0", "eventsource-parser": "^3.0.8" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-El0JOXXGcHFe6+owJ1UV0VgB9XtdivP8vcZni+rUIt6lt+cBHCnUdddaA6LE2avJGJ5AD0uXSY+uAvRL2tSvgw=="],
+
+    "@notra/tools/@types/node/undici-types": ["undici-types@7.18.2", "", {}, "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w=="],
 
     "@oclif/core/string-width/emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
 
