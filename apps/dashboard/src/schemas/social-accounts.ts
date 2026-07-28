@@ -16,9 +16,15 @@ export type SocialConnectOAuthState = z.infer<
   typeof socialConnectOAuthStateSchema
 >;
 
+const PUBLISH_CONTENT_MAX_LENGTH = 25_000;
+
 export const publishSocialPostBodySchema = z.object({
   accountId: z.string().min(1),
-  content: z.string().trim().min(1, "Post content is required"),
+  content: z
+    .string()
+    .trim()
+    .min(1, "Post content is required")
+    .max(PUBLISH_CONTENT_MAX_LENGTH, "Post content is too long"),
 });
 
 export const socialAccountsOrganizationInputSchema = z.object({

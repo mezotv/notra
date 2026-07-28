@@ -215,24 +215,33 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
 
     const client = getSocialConnectClient();
 
-    const accounts = yield* Effect.tryPromise({
-      try: () =>
-        Promise.all(
-          params.accountIds.map((accountId) =>
-            client.socialAccounts.retrieve(accountId)
-          )
-        ),
+    const firstAccount = yield* Effect.tryPromise({
+      try: () => client.socialAccounts.retrieve(firstAccountId),
       catch: (cause) =>
         new SocialConnectCallbackError({ code: "account_fetch_failed", cause }),
     });
 
-    const state = accounts.at(0)?.external_id;
+    const state = firstAccount.external_id;
     if (!state) {
       return yield* Effect.fail(
         new SocialConnectCallbackError({ code: "invalid_callback" })
       );
     }
 
+    const oauthState = yield* loadOAuthStateForAccount(state);
+
+    const remainingAccounts = yield* Effect.tryPromise({
+      try: () =>
+        Promise.all(
+          params.accountIds
+            .slice(1)
+            .map((accountId) => client.socialAccounts.retrieve(accountId))
+        ),
+      catch: (cause) =>
+        new SocialConnectCallbackError({ code: "account_fetch_failed", cause }),
+    });
+
+    const accounts = [firstAccount, ...remainingAccounts];
     const stateAccounts = accounts.filter(
       (account) => account.external_id === state
     );
@@ -241,8 +250,6 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
         "Ignoring callback accounts that do not match the connect state"
       );
     }
-
-    const oauthState = yield* loadOAuthStateForAccount(state);
 
     for (const account of stateAccounts) {
       const platform =
@@ -329,17 +336,20 @@ const upsertConnectedAccount = Effect.fn("upsertConnectedAccount")(
             return;
           }
 
-          await tx.insert(connectedSocialAccounts).values({
-            id: crypto.randomUUID(),
-            organizationId: input.organizationId,
-            provider: input.platform,
-            providerAccountId: input.providerAccountId,
-            username: input.username,
-            displayName: input.displayName,
-            profileImageUrl: input.profileImageUrl,
-            verified: input.verified,
-            verifiedType: input.verifiedType,
-          });
+          await tx
+            .insert(connectedSocialAccounts)
+            .values({
+              id: crypto.randomUUID(),
+              organizationId: input.organizationId,
+              provider: input.platform,
+              providerAccountId: input.providerAccountId,
+              username: input.username,
+              displayName: input.displayName,
+              profileImageUrl: input.profileImageUrl,
+              verified: input.verified,
+              verifiedType: input.verifiedType,
+            })
+            .onConflictDoNothing();
         }),
       catch: (cause) =>
         new SocialConnectCallbackError({ code: "callback_failed", cause }),
