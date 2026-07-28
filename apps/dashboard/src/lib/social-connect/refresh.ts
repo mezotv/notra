@@ -2,20 +2,19 @@ import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+import type { SocialAccount } from "post-for-me/resources/social-accounts";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import {
   getSocialConnectClient,
+  hasProviderPremium,
   isSocialConnectConfigured,
 } from "@/lib/social-connect/client";
 import {
+  getSocialConnectStatusCode,
   SocialConnectConfigError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
-import type {
-  RefreshedAccountStatus,
-  SocialConnectAccountSummary,
-  SocialConnectAccountsListResult,
-} from "@/types/services/social-connect";
+import type { RefreshedAccountStatus } from "@/types/services/social-connect";
 import { fetchTwitterVerification } from "@/utils/twitter-fetcher";
 
 export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
@@ -55,65 +54,47 @@ export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
     }
 
     const client = getSocialConnectClient();
-    const profileIds = [
-      ...new Set(
-        rows
-          .map((row) => row.socialConnectProfileId)
-          .filter((id): id is string => id !== null)
-      ),
-    ];
-
-    const accountsByProfile = new Map<string, SocialConnectAccountSummary[]>();
-    for (const profileId of profileIds) {
-      const { data } = yield* Effect.tryPromise({
-        try: (): Promise<SocialConnectAccountsListResult> =>
-          client.accounts.listAccounts({ query: { profileId } }),
-        catch: (cause) =>
-          new SocialConnectRequestError({
-            message: "Failed to load accounts from provider",
-            cause,
-          }),
-      });
-      accountsByProfile.set(profileId, data?.accounts ?? []);
-    }
-
     const results: RefreshedAccountStatus[] = [];
 
     for (const row of rows) {
-      const providerAccounts = row.socialConnectProfileId
-        ? (accountsByProfile.get(row.socialConnectProfileId) ?? [])
-        : [];
-      const match =
-        providerAccounts.find(
-          (account) => account._id === row.providerAccountId
-        ) ??
-        providerAccounts.find(
-          (account) =>
-            account.platform === row.provider &&
-            account.username === row.username
-        );
+      const match = yield* Effect.tryPromise({
+        try: (): Promise<SocialAccount> =>
+          client.socialAccounts.retrieve(row.providerAccountId),
+        catch: (cause) =>
+          new SocialConnectRequestError({
+            message: "Failed to load account from provider",
+            cause,
+          }),
+      }).pipe(
+        Effect.catch((error) =>
+          getSocialConnectStatusCode(error.cause) === 404
+            ? Effect.succeed(null)
+            : Effect.fail(error)
+        )
+      );
 
-      if (!match) {
+      if (!match || match.status === "disconnected") {
         results.push({ username: row.username, status: "missing" });
         continue;
       }
 
       const username = match.username ?? row.username;
-      const displayName = match.displayName ?? username;
-      const rawProfileImageUrl = match.profilePicture ?? row.profileImageUrl;
+      const rawProfileImageUrl = match.profile_photo_url ?? row.profileImageUrl;
       const profileImageUrl =
         rawProfileImageUrl && row.provider === "twitter"
           ? normalizeTwitterProfileImageUrl(rawProfileImageUrl)
           : rawProfileImageUrl;
 
-      let verifiedType =
-        match.metadata?.profileData?.extraData?.verifiedType ??
-        row.verifiedType;
+      let displayName = row.displayName;
+      let verifiedType = row.verifiedType;
       if (row.provider === "twitter") {
         const verification = yield* fetchTwitterVerification(username).pipe(
           Effect.catch(() => Effect.succeed(null))
         );
-        verifiedType = verification?.verifiedType ?? verifiedType;
+        displayName = verification?.name ?? displayName;
+        verifiedType =
+          verification?.verifiedType ??
+          (hasProviderPremium(match.metadata) ? "blue" : verifiedType);
       }
       const verified = verifiedType !== null && verifiedType !== "none";
 
@@ -122,7 +103,7 @@ export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
           db
             .update(connectedSocialAccounts)
             .set({
-              providerAccountId: match._id,
+              providerAccountId: match.id,
               username,
               displayName,
               profileImageUrl,

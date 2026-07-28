@@ -4,16 +4,22 @@ import { SOCIAL_CONNECTED_PARAMS } from "@/constants/social-connect";
 import { completeSocialConnect } from "@/lib/social-connect/connect";
 import { socialConnectCallbackQuerySchema } from "@/schemas/social-accounts";
 
+function readAccountIds(searchParams: URLSearchParams): string[] {
+  const values = searchParams.getAll("accountIds");
+  return values
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const { searchParams } = new URL(request.url);
   const parsed = socialConnectCallbackQuerySchema.safeParse({
-    state: searchParams.get("state") ?? undefined,
-    accountId: searchParams.get("accountId") ?? undefined,
-    username: searchParams.get("username") ?? undefined,
-    pendingDataToken: searchParams.get("pendingDataToken") ?? undefined,
+    isSuccess: searchParams.get("isSuccess") ?? undefined,
+    accountIds: readAccountIds(searchParams),
     error: searchParams.get("error") ?? undefined,
   });
 
@@ -21,16 +27,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
   }
 
-  if (parsed.data.pendingDataToken && !parsed.data.error) {
-    const selectionUrl = new URL("/connect/linkedin", baseUrl);
-    selectionUrl.searchParams.set("state", parsed.data.state);
-    selectionUrl.searchParams.set("token", parsed.data.pendingDataToken);
-    return NextResponse.redirect(selectionUrl.toString());
+  const failed =
+    parsed.data.error ||
+    parsed.data.isSuccess === "false" ||
+    parsed.data.accountIds.length === 0;
+
+  if (failed) {
+    return NextResponse.redirect(`${baseUrl}/?error=connection_failed`);
   }
 
   try {
     const result = await Effect.runPromise(
-      completeSocialConnect(parsed.data).pipe(
+      completeSocialConnect({ accountIds: parsed.data.accountIds }).pipe(
         Effect.map((value) => ({ status: "connected" as const, ...value })),
         Effect.catch((error) =>
           Effect.succeed({ status: "failed" as const, code: error.code })

@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+import type { SocialPostResult } from "post-for-me/resources/social-post-results";
 import {
   getSocialConnectClient,
   isSocialConnectConfigured,
@@ -10,12 +11,27 @@ import {
   SocialConnectConfigError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
-import type {
-  PublishSocialPostParams,
-  SocialConnectPostGetResult,
-  SocialConnectPublishedPost,
-  SocialConnectPublishResult,
-} from "@/types/services/social-connect";
+import type { PublishSocialPostParams } from "@/types/services/social-connect";
+
+const RESULT_POLL_ATTEMPTS = 5;
+const RESULT_POLL_DELAY = "2 seconds";
+
+function getResultErrorMessage(result: SocialPostResult): string {
+  const { error } = result;
+  if (typeof error === "string" && error) {
+    return error;
+  }
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return error.message;
+  }
+  return "The platform rejected the post";
+}
 
 export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
   params: PublishSocialPostParams
@@ -53,19 +69,13 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
     );
   }
 
-  const { data } = yield* Effect.tryPromise({
-    try: (): Promise<SocialConnectPublishResult> =>
-      getSocialConnectClient().posts.createPost({
-        body: {
-          content: params.content,
-          platforms: [
-            {
-              platform: account.provider,
-              accountId: account.providerAccountId,
-            },
-          ],
-          publishNow: true,
-        },
+  const client = getSocialConnectClient();
+
+  const post = yield* Effect.tryPromise({
+    try: () =>
+      client.socialPosts.create({
+        caption: params.content,
+        social_accounts: [account.providerAccountId],
       }),
     catch: (cause) =>
       new SocialConnectRequestError({
@@ -74,61 +84,46 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
       }),
   });
 
-  const postId = data?.post?._id ?? null;
-  let platformPostId = getPlatformPostId(data?.post);
-
-  if (!platformPostId && postId) {
-    yield* Effect.sleep("2 seconds");
-    const refreshed = yield* Effect.tryPromise({
-      try: (): Promise<SocialConnectPostGetResult> =>
-        getSocialConnectClient().posts.getPost({ path: { postId } }),
+  let postResult: SocialPostResult | null = null;
+  for (let attempt = 0; attempt < RESULT_POLL_ATTEMPTS; attempt += 1) {
+    yield* Effect.sleep(RESULT_POLL_DELAY);
+    const results = yield* Effect.tryPromise({
+      try: () => client.socialPostResults.list({ post_id: [post.id] }),
       catch: (cause) =>
         new SocialConnectRequestError({
           message: "Failed to load published post",
           cause,
         }),
     }).pipe(Effect.catch(() => Effect.succeed(null)));
-    platformPostId = getPlatformPostId(refreshed?.data?.post);
+
+    postResult = results?.data.at(0) ?? null;
+    if (postResult) {
+      break;
+    }
   }
 
-  const postUrl = getPublishedPostUrl(
-    account.provider,
-    account.username,
-    platformPostId
-  );
+  if (postResult && !postResult.success) {
+    return yield* Effect.fail(
+      new SocialConnectRequestError({
+        message: getResultErrorMessage(postResult),
+        cause: null,
+      })
+    );
+  }
+
+  const platformPostId = postResult?.platform_data?.id ?? null;
+  const platformPostUrl = postResult?.platform_data?.url ?? null;
+  const postUrl =
+    platformPostUrl ??
+    (platformPostId && account.provider === "twitter"
+      ? `https://x.com/${account.username}/status/${platformPostId}`
+      : null);
 
   return {
-    postId,
+    postId: post.id,
     platformPostId,
     postUrl,
     username: account.username,
     platform: account.provider,
   };
 });
-
-function getPublishedPostUrl(
-  provider: string,
-  username: string,
-  platformPostId: string | null
-): string | null {
-  if (!platformPostId) {
-    return null;
-  }
-  if (provider === "twitter") {
-    return `https://x.com/${username}/status/${platformPostId}`;
-  }
-  if (provider === "linkedin") {
-    const urn = platformPostId.startsWith("urn:")
-      ? platformPostId
-      : `urn:li:share:${platformPostId}`;
-    return `https://www.linkedin.com/feed/update/${urn}/`;
-  }
-  return null;
-}
-
-function getPlatformPostId(
-  post: SocialConnectPublishedPost | undefined
-): string | null {
-  const platformPostId = post?.platforms?.at(0)?.platformPostId;
-  return platformPostId ?? null;
-}

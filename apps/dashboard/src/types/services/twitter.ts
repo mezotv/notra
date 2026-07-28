@@ -39,12 +39,14 @@ export type TwitterVerifiedType = "blue" | "business" | "government" | "none";
 export interface TwitterVerificationResponse {
   data?: {
     id: string;
+    name?: string;
     verified?: boolean;
     verified_type?: TwitterVerifiedType;
   };
 }
 
 export interface TwitterVerification {
+  name: string | null;
   verified: boolean;
   verifiedType: TwitterVerifiedType;
 }

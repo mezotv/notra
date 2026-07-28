@@ -8,24 +8,17 @@ import { runSocialConnect } from "@/lib/orpc/utils/social-connect";
 import {
   beginSocialConnect,
   disconnectProviderAccount,
-  loadSocialConnectOAuthState,
 } from "@/lib/social-connect/connect";
-import {
-  completeLinkedInSelection,
-  getLinkedInSelection,
-} from "@/lib/social-connect/linkedin-selection";
 import { publishSocialPost } from "@/lib/social-connect/publish";
 import { refreshConnectedAccounts } from "@/lib/social-connect/refresh";
 import {
   beginConnectInputSchema,
   disconnectSocialAccountInputSchema,
-  linkedinSelectionCompleteInputSchema,
-  linkedinSelectionGetInputSchema,
   publishSocialPostInputSchema,
   refreshSocialAccountsInputSchema,
   socialAccountsOrganizationInputSchema,
 } from "@/schemas/social-accounts";
-import { badRequest, notFound } from "../utils/errors";
+import { notFound } from "../utils/errors";
 
 export const socialAccountsRouter = {
   list: authorizedProcedure
@@ -134,69 +127,6 @@ export const socialAccountsRouter = {
         username: result.username,
       };
     }),
-  linkedinSelectionGet: authorizedProcedure
-    .input(linkedinSelectionGetInputSchema)
-    .handler(async ({ context, input }) => {
-      const oauthState = await runSocialConnect(
-        loadSocialConnectOAuthState(input.state),
-        { logLabel: "Failed to load connect state" }
-      );
-
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: oauthState.organizationId,
-        user: context.user,
-      });
-
-      if (oauthState.platform !== "linkedin") {
-        throw badRequest("This connection attempt is not for LinkedIn");
-      }
-
-      const options = await runSocialConnect(
-        getLinkedInSelection({
-          oauthState,
-          state: input.state,
-          token: input.token,
-        }),
-        { logLabel: "Failed to load LinkedIn selection" }
-      );
-
-      return {
-        options,
-        organizationId: oauthState.organizationId,
-        callbackPath: oauthState.callbackPath,
-      };
-    }),
-  linkedinSelectionComplete: authorizedProcedure
-    .input(linkedinSelectionCompleteInputSchema)
-    .handler(async ({ context, input }) => {
-      const oauthState = await runSocialConnect(
-        loadSocialConnectOAuthState(input.state),
-        { logLabel: "Failed to load connect state" }
-      );
-
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: oauthState.organizationId,
-        user: context.user,
-      });
-
-      if (oauthState.platform !== "linkedin") {
-        throw badRequest("This connection attempt is not for LinkedIn");
-      }
-
-      const result = await runSocialConnect(
-        completeLinkedInSelection({
-          oauthState,
-          state: input.state,
-          accountType: input.accountType,
-          organizationId: input.organizationId,
-        }),
-        { logLabel: "Failed to complete LinkedIn connection" }
-      );
-
-      return { callbackPath: result.callbackPath };
-    }),
   beginConnect: authorizedProcedure
     .input(beginConnectInputSchema)
     .handler(async ({ context, input }) => {
@@ -206,18 +136,11 @@ export const socialAccountsRouter = {
         user: context.user,
       });
 
-      const baseUrl =
-        process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
-      if (!baseUrl) {
-        throw badRequest("Application base URL is not configured");
-      }
-
       const result = await runSocialConnect(
         beginSocialConnect({
           organizationId: input.organizationId,
           platform: input.platform,
           callbackPath: input.callbackPath,
-          baseUrl,
         }),
         { logLabel: "Failed to create account connect link" }
       );

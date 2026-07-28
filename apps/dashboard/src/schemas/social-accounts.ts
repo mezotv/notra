@@ -10,7 +10,6 @@ export const socialConnectOAuthStateSchema = z.object({
   organizationId: z.string().min(1),
   callbackPath: z.string(),
   platform: socialConnectPlatformSchema,
-  profileId: z.string().min(1),
 });
 
 export type SocialConnectOAuthState = z.infer<
@@ -48,20 +47,7 @@ export const publishSocialPostInputSchema =
   );
 
 export const socialConnectCallbackQuerySchema = z.object({
-  state: z.string().min(1),
-  accountId: z.string().min(1).optional(),
-  username: z.string().min(1).optional(),
-  pendingDataToken: z.string().min(1).optional(),
+  isSuccess: z.string().optional(),
+  accountIds: z.array(z.string().min(1)).default([]),
   error: z.string().optional(),
-});
-
-export const linkedinSelectionGetInputSchema = z.object({
-  state: z.string().min(1),
-  token: z.string().min(1),
-});
-
-export const linkedinSelectionCompleteInputSchema = z.object({
-  state: z.string().min(1),
-  accountType: z.enum(["personal", "organization"]),
-  organizationId: z.string().min(1).optional(),
 });

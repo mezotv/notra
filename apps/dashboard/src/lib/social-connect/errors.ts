@@ -1,12 +1,14 @@
 import { Data } from "effect";
 
 export function getSocialConnectStatusCode(cause: unknown): number | null {
-  if (
-    cause instanceof Error &&
-    "statusCode" in cause &&
-    typeof cause.statusCode === "number"
-  ) {
+  if (!(cause instanceof Error)) {
+    return null;
+  }
+  if ("statusCode" in cause && typeof cause.statusCode === "number") {
     return cause.statusCode;
+  }
+  if ("status" in cause && typeof cause.status === "number") {
+    return cause.status;
   }
   return null;
 }

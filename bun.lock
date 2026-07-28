@@ -147,7 +147,6 @@
         "@upstash/workflow": "^1.1.0",
         "@vercel/oidc": "^3.8.0",
         "@vercel/otel": "^2.1.2",
-        "@zernio/node": "^0.2.376",
         "ai": "6.0.206",
         "autumn-js": "^1.2.7",
         "better-auth": "^1.5.5",
@@ -169,6 +168,7 @@
         "next": "^16.2.11",
         "next-themes": "^0.4.6",
         "nuqs": "^2.8.6",
+        "post-for-me": "^2.7.0",
         "posthog-js": "^1.399.2",
         "postprocessing": "^6.36.0",
         "react": "^19.2.6",
@@ -2286,8 +2286,6 @@
 
     "@xyflow/system": ["@xyflow/system@0.0.77", "", { "dependencies": { "@types/d3-drag": "^3.0.7", "@types/d3-interpolate": "^3.0.4", "@types/d3-selection": "^3.0.10", "@types/d3-transition": "^3.0.8", "@types/d3-zoom": "^3.0.8", "d3-drag": "^3.0.0", "d3-interpolate": "^3.0.1", "d3-selection": "^3.0.0", "d3-zoom": "^3.0.0" } }, "sha512-qCDCMCQAAgUu8yHnhloHG9F5mwPX5E+Wl8McpYIOPSSXfzFJJoZcwOcsDiAjitVKIg2de1WmJbCHfpcvxprsgg=="],
 
-    "@zernio/node": ["@zernio/node@0.2.376", "", {}, "sha512-HcwBAJZrLplq0pgOp6Pjs7Pdc3grcAtqeztjjL48zICOKQiEhTUu5gCf/ZiECAHj9mYccqGAet1QhOji0JmMOA=="],
-
     "abort-controller": ["abort-controller@3.0.0", "", { "dependencies": { "event-target-shim": "^5.0.0" } }, "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
@@ -3983,6 +3981,8 @@
     "pony-cause": ["pony-cause@1.1.1", "", {}, "sha512-PxkIc/2ZpLiEzQXu5YRDOUgBlfGYBY8156HY5ZcRAwwonMk5W/MrJP2LLkG/hF7GEQzaHo2aS7ho6ZLCOvf+6g=="],
 
     "possible-typed-array-names": ["possible-typed-array-names@1.1.0", "", {}, "sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg=="],
+
+    "post-for-me": ["post-for-me@2.7.0", "", {}, "sha512-VOw1HZzMCiR95xUQFkDZk+PdBu3Vgi8h3/jxKqAffj5TLVA5r9iGDHH7Tzvcy29sk4KQM8x9jvf0bKMrcx/CtA=="],
 
     "postal-mime": ["postal-mime@2.7.4", "", {}, "sha512-0WdnFQYUrPGGTFu1uOqD2s7omwua8xaeYGdO6rb88oD5yJ/4pPHDA4sdWqfD8wQVfCny563n/HQS7zTFft+f/g=="],
 

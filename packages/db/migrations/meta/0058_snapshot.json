@@ -1,5 +1,5 @@
 {
-  "id": "513ece4a-84ff-45e1-9739-610db052d4f2",
+  "id": "d1c4dbe4-8e15-4827-aa9d-dcc04f7bb743",
   "prevId": "eb6b2f41-412d-4b0f-adb7-d18d01a6212a",
   "version": "7",
   "dialect": "postgresql",
@@ -1974,12 +1974,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "social_connect_profile_id": {
-          "name": "social_connect_profile_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "username": {
           "name": "username",

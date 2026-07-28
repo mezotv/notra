@@ -126,6 +126,7 @@ export const fetchTwitterVerification = Effect.fn("fetchTwitterVerification")(
 
     const verifiedType = json.data.verified_type ?? "none";
     const verification: TwitterVerification = {
+      name: json.data.name ?? null,
       verified: json.data.verified === true || verifiedType !== "none",
       verifiedType,
     };

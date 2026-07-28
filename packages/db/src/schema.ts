@@ -1307,7 +1307,6 @@ export const connectedSocialAccounts = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     provider: text("provider").notNull(),
     providerAccountId: text("provider_account_id").notNull(),
-    socialConnectProfileId: text("social_connect_profile_id"),
     username: text("username").notNull(),
     displayName: text("display_name").notNull(),
     profileImageUrl: text("profile_image_url"),
