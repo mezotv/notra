@@ -13,6 +13,8 @@ export const DETAIL_VISIBLE_TOOLS = 5;
 
 export const ALL_CATEGORY_ID = "all";
 
+export const INTEGRATION_REFERRAL_SOURCE = "usenotra.com";
+
 const R2_ASSET_PREFIX = "https://pub-006cb776ab3047f59b502d72fca0f223.r2.dev";
 
 const FALLBACK_INTEGRATION_ID = "brew-store-listing";
