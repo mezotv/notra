@@ -233,9 +233,18 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
       );
     }
 
+    const stateAccounts = accounts.filter(
+      (account) => account.external_id === state
+    );
+    if (stateAccounts.length < accounts.length) {
+      yield* Effect.logWarning(
+        "Ignoring callback accounts that do not match the connect state"
+      );
+    }
+
     const oauthState = yield* loadOAuthStateForAccount(state);
 
-    for (const account of accounts) {
+    for (const account of stateAccounts) {
       const platform =
         fromProviderPlatform(account.platform) ?? oauthState.platform;
       const details = yield* buildAccountDetails(platform, account);

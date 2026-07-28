@@ -274,6 +274,13 @@ export function createAddBrandReferenceTool(config: {
         };
       }
 
+      if (!autumn && process.env.NODE_ENV === "production") {
+        return {
+          success: false,
+          error: "Billing is not configured. The reference was not saved.",
+        };
+      }
+
       if (autumn && !allowUnmeteredAiInDevelopment) {
         let allowed = false;
 

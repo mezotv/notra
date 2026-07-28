@@ -48,6 +48,6 @@ export const publishSocialPostInputSchema =
 
 export const socialConnectCallbackQuerySchema = z.object({
   isSuccess: z.string().optional(),
-  accountIds: z.array(z.string().min(1)).default([]),
+  accountIds: z.array(z.string().min(1).max(128)).max(20).default([]),
   error: z.string().optional(),
 });
