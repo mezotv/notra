@@ -69,7 +69,10 @@
     "EVE_ONBOARDING_AGENT_PASSWORD",
     "DASHBOARD_VERCEL_TEAM_SLUG",
     "DASHBOARD_VERCEL_PROJECT_NAME",
-    "DASHBOARD_VERCEL_ENVIRONMENT"
+    "DASHBOARD_VERCEL_ENVIRONMENT",
+    "EVE_NOTRA_AGENT_URL",
+    "EVE_NOTRA_AGENT_PASSWORD",
+    "NOTRA_AGENT_CHAT"
   ],
   "envMode": "strict",
   "tasks": {
@@ -99,6 +102,15 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "@notra/agent#build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        ".output/**",
+        ".vercel/output/**",
+        ".eve/compile/**",
+        ".eve/discovery/**"
+      ]
     }
   }
 }

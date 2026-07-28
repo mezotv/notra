@@ -1,0 +1,146 @@
+import {
+  deleteRepoImageSnapshot,
+  generateRepoImage,
+} from "@notra/ai/agents/repo-image";
+import {
+  uploadGeneratedHtmlAsset,
+  uploadGeneratedImageAsset,
+} from "@notra/ai/utils/image-assets";
+import {
+  buildRevisionSourceMetadata,
+  getImageSnapshot,
+  trackImageGenerationUsage,
+} from "@notra/ai/utils/image-post-service";
+import { db } from "@notra/db/drizzle";
+import { posts } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
+import { defineTool } from "eve/tools";
+import { reviseImageInputSchema } from "../schemas/image-tools";
+import { requireOrganizationId } from "../utils/organization";
+import {
+  getBooleanSessionAttribute,
+  getSessionAttribute,
+  requireSessionAttribute,
+} from "../utils/session";
+
+export function createReviseImageTool() {
+  return defineTool({
+    description:
+      "Revises a previously generated marketing asset by restoring its saved sandbox snapshot, applying the requested visual change, rendering a new 1200x630 PNG, saving it back to the image content item, and snapshotting the sandbox again. Describe the requested visual change in prompt. Revisions are long-running operations that usually take 3 to 8 minutes.",
+    inputSchema: reviseImageInputSchema,
+    async execute({ postId: inputPostId, prompt, title }, ctx) {
+      const organizationId = requireOrganizationId(ctx);
+      const userId = requireSessionAttribute(ctx, "userId");
+      const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
+      const postId = inputPostId ?? getSessionAttribute(ctx, "contentId");
+      if (!postId) {
+        throw new Error(
+          "revise_image needs a postId: pass it in the input or run inside a content editor session."
+        );
+      }
+
+      const post = await db.query.posts.findFirst({
+        where: and(
+          eq(posts.id, postId),
+          eq(posts.organizationId, organizationId)
+        ),
+      });
+      if (!post) {
+        throw new Error("Source image post not found");
+      }
+      const metadata =
+        post.sourceMetadata && typeof post.sourceMetadata === "object"
+          ? post.sourceMetadata
+          : {};
+      const integrationId =
+        "integrationId" in metadata &&
+        typeof metadata.integrationId === "string"
+          ? metadata.integrationId
+          : null;
+      const branch =
+        "branch" in metadata && typeof metadata.branch === "string"
+          ? metadata.branch
+          : null;
+      if (!(integrationId && branch)) {
+        throw new Error(
+          "The image post is missing its repository metadata and cannot be revised."
+        );
+      }
+
+      const previousSnapshot = await getImageSnapshot(organizationId, postId);
+      const nextTitle = title ?? post.title;
+
+      const result = await generateRepoImage({
+        input: {
+          organizationId,
+          integrationId,
+          branch,
+          brandIdentityId: previousSnapshot.brandIdentityId,
+          mode: "prompt",
+          prompt,
+        },
+        restoreSnapshotId: previousSnapshot.snapshotId,
+        snapshotName: `image-${organizationId}-${Date.now()}`,
+        userId,
+      });
+
+      const imageUrl = await uploadGeneratedImageAsset({
+        organizationId,
+        pngBase64: result.pngBase64,
+        postId,
+      });
+      const htmlUrl = await uploadGeneratedHtmlAsset({
+        organizationId,
+        html: result.html,
+        postId,
+      });
+      const sourceMetadata = await buildRevisionSourceMetadata({
+        organizationId,
+        postId,
+        integrationId,
+        branch,
+        prompt,
+        result,
+      });
+
+      await db
+        .update(posts)
+        .set({
+          title: nextTitle,
+          content: imageUrl,
+          htmlUrl,
+          markdown: null,
+          sourceMetadata,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(eq(posts.id, postId), eq(posts.organizationId, organizationId))
+        );
+
+      await deleteRepoImageSnapshot(previousSnapshot).catch((error) => {
+        console.error("[repo-image] Failed to delete previous snapshot", {
+          postId,
+          snapshotId: previousSnapshot.snapshotId,
+          error,
+        });
+      });
+
+      await trackImageGenerationUsage({
+        organizationId,
+        postId,
+        usage: result.usage,
+        useMarkup,
+      });
+
+      return {
+        postId,
+        title: nextTitle,
+        imageUrl,
+        status: "updated",
+        contentType: "image",
+        sandbox: result.sandbox,
+        usage: result.usage ?? null,
+      };
+    },
+  });
+}
