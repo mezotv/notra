@@ -475,7 +475,7 @@ export function ChatInputAdvanced({
     try {
       await deleteChatUploadFile({ key });
     } catch {
-      // Best-effort cleanup for abandoned uploads.
+      // noop
     }
   }, []);
 
@@ -593,10 +593,6 @@ export function ChatInputAdvanced({
             const message =
               err instanceof Error ? err.message : "Upload failed";
             toast.error(`Failed to upload ${file.name}: ${message}`);
-            // Do NOT null pendingSend here. The drain effect (keyed on
-            // isUploading reaching 0) surfaces a user-facing "Some attachments
-            // failed to upload" error when it detects missing completions.
-            // Nulling here would silently drop the queued message.
             updatePendingUploads(
               pendingUploadsRef.current.filter(
                 (pending) => pending.id !== placeholder.id
@@ -627,8 +623,6 @@ export function ChatInputAdvanced({
     return () => {
       isMountedRef.current = false;
 
-      // Never GC attachments that were already submitted — the chat history
-      // references those URLs and needs them to persist server-side.
       for (const attachment of attachmentsRef.current) {
         if (submittedKeysRef.current.has(attachment.key)) {
           continue;
@@ -916,7 +910,7 @@ export function ChatInputAdvanced({
     return (editor.innerText ?? "").replace(/\u00A0/g, " ");
   }, []);
   const submitRef = useRef<() => void>(() => {
-    // Populated after handleSend is defined.
+    // noop
   });
 
   useImperativeHandle(
@@ -1778,6 +1772,7 @@ export function ChatInputAdvanced({
                               className="size-5 rounded object-cover"
                               height={20}
                               src={attachment.url}
+                              unoptimized
                               width={20}
                             />
                           ) : (
