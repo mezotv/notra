@@ -9,11 +9,11 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { RealtimeProvider } from "@upstash/realtime/client";
-import { AutumnProvider } from "autumn-js/react";
 import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { toast } from "sonner";
+import { AutumnOrgProvider } from "@/components/providers/autumn-org-provider";
 import { PostHogIdentity } from "@/components/providers/posthog-identity";
 import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
 import { useMcpConnectionToast } from "@/lib/hooks/use-mcp-connection-toast";
@@ -87,7 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
       <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
         <TooltipProvider>
-          <AutumnProvider includeCredentials>
+          <AutumnOrgProvider>
             <NuqsAdapter>
               <RealtimeProvider
                 api={{ url: "/api/realtime", withCredentials: true }}
@@ -99,7 +99,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <DatabuddyAnalytics />
             </NuqsAdapter>
             <Toaster position="top-center" />
-          </AutumnProvider>
+          </AutumnOrgProvider>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

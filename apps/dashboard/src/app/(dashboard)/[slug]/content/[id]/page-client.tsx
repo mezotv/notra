@@ -58,6 +58,7 @@ import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { localStorageKeys } from "@/constants/storage";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import {
   copyImageAsFigma,
   copyImageAsPaper,
@@ -499,7 +500,7 @@ export default function PageClient({
     }),
     onFinish: () => {
       clearSelection();
-      queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
+      emitAutumnRefresh();
     },
     onError: (err) => {
       console.error("Error editing content:", err);

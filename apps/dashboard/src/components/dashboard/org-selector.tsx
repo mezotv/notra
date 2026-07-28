@@ -313,6 +313,7 @@ export function OrgSelector() {
       }
 
       await setLastVisitedOrganization(org.slug);
+      queryClient.invalidateQueries({ refetchType: "none" });
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });

@@ -2,11 +2,18 @@
 
 import { FEATURES } from "@notra/ai/billing/features";
 import { useCustomer } from "autumn-js/react";
+import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 
 export function useCreditBalance() {
-  const { data: customer, isLoading } = useCustomer({
+  const {
+    data: customer,
+    isLoading,
+    refetch,
+  } = useCustomer({
     expand: ["balances.feature", "subscriptions.plan"],
   });
+
+  useAutumnRefreshListener(refetch);
 
   const hasActiveSubscription =
     customer?.subscriptions?.some(

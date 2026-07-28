@@ -40,6 +40,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
+import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -96,7 +97,9 @@ const ChatInput = ({
   const [internalValue, setInternalValue] = useState("");
   const [internalError, setInternalError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer, refetch: refetchCustomer } = useCustomer();
+
+  useAutumnRefreshListener(refetchCustomer);
 
   const checkResult = useMemo(() => {
     if (!customer) {

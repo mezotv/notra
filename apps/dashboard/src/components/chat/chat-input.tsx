@@ -79,6 +79,7 @@ import {
   MIME_DISPLAY_LABELS,
   PASTE_TO_ATTACHMENT_THRESHOLD,
 } from "@/constants/upload";
+import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
@@ -693,7 +694,9 @@ export function ChatInputAdvanced({
       document.removeEventListener("drop", onDrop);
     };
   }, [handleFilesSelected]);
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer, refetch: refetchCustomer } = useCustomer();
+
+  useAutumnRefreshListener(refetchCustomer);
 
   const checkResult = useMemo(() => {
     if (!customer) {

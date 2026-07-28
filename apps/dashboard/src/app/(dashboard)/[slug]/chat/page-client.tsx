@@ -73,6 +73,7 @@ import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
 import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
+import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -514,7 +515,7 @@ function StandaloneChatPageClient({
       }
 
       setPendingMessageId(null);
-      queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
+      emitAutumnRefresh();
       queryClient.invalidateQueries({
         queryKey: ["chat-sessions", organizationId],
       });

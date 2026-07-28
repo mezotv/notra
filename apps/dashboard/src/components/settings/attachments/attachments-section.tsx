@@ -24,6 +24,7 @@ import { LoaderCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { type AttachmentRow, buildAttachmentColumns } from "./columns";
 import { AttachmentsDataTable } from "./data-table";
@@ -40,6 +41,7 @@ const FILTER_LABELS: Record<Filter, string> = {
 
 export function AttachmentsSection() {
   const queryClient = useQueryClient();
+  const { activeOrganization } = useOrganizationsContext();
   const [filter, setFilter] = useState<Filter>("all");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -49,7 +51,11 @@ export function AttachmentsSection() {
     input: { filter },
   });
 
-  const { data, isLoading } = useQuery(queryOptions);
+  const { data, isLoading } = useQuery({
+    ...queryOptions,
+    queryKey: [...queryOptions.queryKey, activeOrganization?.id],
+    enabled: Boolean(activeOrganization?.id),
+  });
 
   const attachments: AttachmentRow[] = useMemo(() => {
     return (
