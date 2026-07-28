@@ -9,6 +9,7 @@ import {
   AGENT_RUN_HARD_LIMIT_POLLS,
   AGENT_RUN_SOFT_LIMIT_POLLS,
 } from "@/constants/onboarding-agent";
+import { grantSignupCredits } from "@/lib/billing/grant-signup-credits";
 import {
   getOnboardingAgentState,
   releaseOnboardingAgentReservation,
@@ -49,6 +50,13 @@ export const { POST } = serve<OnboardingAgentWorkflowPayload>(
           sendOnboardingSlackInvite({ email, organizationName })
         );
         log.set({ slackInvited: invite.invited });
+      }
+
+      if (email) {
+        const credits = await context.run("grant-signup-credits", () =>
+          grantSignupCredits({ email, organizationId })
+        );
+        log.set({ signupCreditsGranted: credits.granted });
       }
 
       const { sessionId } = await context.run("start-session", () =>

@@ -14,7 +14,6 @@ import { AuthOrDivider } from "@/components/auth/auth-or-divider";
 import { AuthPasswordField } from "@/components/auth/auth-password-field";
 import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
-import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
 import { authClient } from "@/lib/auth/client";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
@@ -170,7 +169,7 @@ export function SignupForm({
     <div className="flex w-full flex-col gap-5">
       <AuthFormHeader description={description} title={title} />
 
-      {SHOW_SIGNUP_CREDITS_BANNER && <SignupCreditsBanner />}
+      <SignupCreditsBanner />
 
       <div className="grid gap-4">
         <AuthSocialButtons

@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
@@ -10,7 +11,7 @@ export function SidebarTrialExpired() {
   const { activeOrganization } = useOrganizationsContext();
   const slug = activeOrganization?.slug ?? "";
   const { data: customer, isLoading } = useCustomer({
-    expand: ["subscriptions.plan"],
+    expand: ["balances.feature", "subscriptions.plan"],
   });
 
   if (isLoading || !customer) {
@@ -18,10 +19,17 @@ export function SidebarTrialExpired() {
   }
 
   const hasActiveSubscription = customer.subscriptions.some(
-    (subscription) => !subscription.addOn && subscription.status === "active"
+    (subscription) =>
+      !subscription.addOn &&
+      subscription.status === "active" &&
+      PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
   );
 
-  if (hasActiveSubscription) {
+  const aiCredits = customer.balances?.[FEATURES.AI_CREDITS];
+  const hasCreditsBalance =
+    typeof aiCredits?.remaining === "number" && aiCredits.remaining > 0;
+
+  if (hasActiveSubscription || hasCreditsBalance) {
     return null;
   }
 

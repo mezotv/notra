@@ -22,15 +22,6 @@ export async function checkWorkflowAiCredits(
       ACTIVE_PAID_PLAN_IDS.has(subscription.planId)
   );
 
-  if (!hasActivePaidPlan) {
-    return {
-      allowed: false,
-      reason: "no_active_paid_plan",
-      shouldNotify: false,
-      balanceRemaining: null,
-    };
-  }
-
   let data: CheckResponse | null = null;
   try {
     data = await autumn.check({
@@ -46,6 +37,15 @@ export async function checkWorkflowAiCredits(
     typeof data?.balance?.remaining === "number" ? data.balance.remaining : 0;
 
   if (!data?.allowed || balanceRemaining <= 0) {
+    if (!hasActivePaidPlan) {
+      return {
+        allowed: false,
+        reason: "no_active_paid_plan",
+        shouldNotify: false,
+        balanceRemaining: null,
+      };
+    }
+
     return {
       allowed: false,
       reason: "insufficient_ai_credits",

@@ -7,12 +7,13 @@ import { getOrganizationId } from "../utils/auth";
 const RESTRICTED_METHODS = new Set(["POST", "PUT", "PATCH"]);
 
 const PAID_OR_LEGACY_PLAN_IDS = new Set([
-  "free",
   "basic",
   "basic_yearly",
   "pro",
   "pro_yearly",
 ]);
+
+const AI_CREDITS_FEATURE_ID = "ai_credits";
 
 export function subscriptionMiddleware() {
   return async (c: Context, next: Next) => {
@@ -43,14 +44,23 @@ export function subscriptionMiddleware() {
         customerId: orgId,
       });
 
-      const hasActivePlan = customer.subscriptions.some(
+      let hasAccess = customer.subscriptions.some(
         (subscription) =>
           !subscription.addOn &&
           subscription.status === "active" &&
           PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
       );
 
-      if (!hasActivePlan) {
+      if (!hasAccess) {
+        const check = await autumn.check({
+          customerId: orgId,
+          featureId: AI_CREDITS_FEATURE_ID,
+          requiredBalance: 1,
+        });
+        hasAccess = check.allowed === true;
+      }
+
+      if (!hasAccess) {
         return c.json({ error: "Active subscription required" }, 402);
       }
     } catch {
