@@ -11,6 +11,7 @@ import {
   SocialConnectConfigError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
+import { socialConnectPlatformSchema } from "@/schemas/social-accounts";
 import type { PublishSocialPostParams } from "@/types/services/social-connect";
 
 const RESULT_POLL_ATTEMPTS = 5;
@@ -69,7 +70,18 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
     );
   }
 
-  const client = getSocialConnectClient();
+  const parsedPlatform = socialConnectPlatformSchema.safeParse(
+    account.provider
+  );
+  if (!parsedPlatform.success) {
+    return yield* Effect.fail(
+      new SocialConnectRequestError({
+        message: "This account's platform is not supported",
+        cause: null,
+      })
+    );
+  }
+  const client = getSocialConnectClient(parsedPlatform.data);
 
   const post = yield* Effect.tryPromise({
     try: () =>

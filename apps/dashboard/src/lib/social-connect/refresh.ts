@@ -14,6 +14,7 @@ import {
   SocialConnectConfigError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
+import { socialConnectPlatformSchema } from "@/schemas/social-accounts";
 import type { RefreshedAccountStatus } from "@/types/services/social-connect";
 import { fetchTwitterVerification } from "@/utils/twitter-fetcher";
 
@@ -53,10 +54,18 @@ export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
       );
     }
 
-    const client = getSocialConnectClient();
     const results: RefreshedAccountStatus[] = [];
 
     for (const row of rows) {
+      const parsedPlatform = socialConnectPlatformSchema.safeParse(
+        row.provider
+      );
+      if (!parsedPlatform.success) {
+        results.push({ username: row.username, status: "missing" });
+        continue;
+      }
+      const client = getSocialConnectClient(parsedPlatform.data);
+
       const match = yield* Effect.tryPromise({
         try: (): Promise<SocialAccount> =>
           client.socialAccounts.retrieve(row.providerAccountId),

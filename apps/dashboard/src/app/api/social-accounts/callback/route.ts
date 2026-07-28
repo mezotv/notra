@@ -1,6 +1,8 @@
 import { Effect } from "effect";
 import { type NextRequest, NextResponse } from "next/server";
 import { SOCIAL_CONNECTED_PARAMS } from "@/constants/social-connect";
+import { getServerSession } from "@/lib/auth/session";
+import { fromProviderPlatform } from "@/lib/social-connect/client";
 import { completeSocialConnect } from "@/lib/social-connect/connect";
 import { socialConnectCallbackQuerySchema } from "@/schemas/social-accounts";
 
@@ -18,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const parsed = socialConnectCallbackQuerySchema.safeParse({
+    provider: searchParams.get("provider") ?? undefined,
     isSuccess: searchParams.get("isSuccess") ?? undefined,
     accountIds: readAccountIds(searchParams),
     error: searchParams.get("error") ?? undefined,
@@ -36,9 +39,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${baseUrl}/?error=connection_failed`);
   }
 
+  const { user } = await getServerSession({ headers: request.headers });
+
   try {
     const result = await Effect.runPromise(
-      completeSocialConnect({ accountIds: parsed.data.accountIds }).pipe(
+      completeSocialConnect({
+        accountIds: parsed.data.accountIds,
+        platform: parsed.data.provider
+          ? fromProviderPlatform(parsed.data.provider)
+          : null,
+        userId: user?.id ?? null,
+      }).pipe(
         Effect.map((value) => ({ status: "connected" as const, ...value })),
         Effect.catch((error) =>
           Effect.succeed({ status: "failed" as const, code: error.code })

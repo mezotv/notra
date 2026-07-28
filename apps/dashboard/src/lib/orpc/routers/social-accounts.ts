@@ -17,6 +17,7 @@ import {
   publishSocialPostInputSchema,
   refreshSocialAccountsInputSchema,
   socialAccountsOrganizationInputSchema,
+  socialConnectPlatformSchema,
 } from "@/schemas/social-accounts";
 import { notFound } from "../utils/errors";
 
@@ -62,7 +63,7 @@ export const socialAccountsRouter = {
       });
 
       const existing = await db.query.connectedSocialAccounts.findFirst({
-        columns: { id: true, providerAccountId: true },
+        columns: { id: true, providerAccountId: true, provider: true },
         where: and(
           eq(connectedSocialAccounts.id, input.accountId),
           eq(connectedSocialAccounts.organizationId, input.organizationId)
@@ -73,12 +74,18 @@ export const socialAccountsRouter = {
         throw notFound("Account not found");
       }
 
-      await runSocialConnect(
-        disconnectProviderAccount(existing.providerAccountId).pipe(
-          Effect.map(() => undefined)
-        ),
-        { logLabel: "Failed to disconnect account" }
+      const parsedPlatform = socialConnectPlatformSchema.safeParse(
+        existing.provider
       );
+      if (parsedPlatform.success) {
+        await runSocialConnect(
+          disconnectProviderAccount(
+            existing.providerAccountId,
+            parsedPlatform.data
+          ).pipe(Effect.map(() => undefined)),
+          { logLabel: "Failed to disconnect account" }
+        );
+      }
 
       await db
         .delete(connectedSocialAccounts)
@@ -139,6 +146,7 @@ export const socialAccountsRouter = {
       const result = await runSocialConnect(
         beginSocialConnect({
           organizationId: input.organizationId,
+          userId: context.user.id,
           platform: input.platform,
           callbackPath: input.callbackPath,
         }),

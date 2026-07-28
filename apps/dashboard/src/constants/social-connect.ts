@@ -22,6 +22,8 @@ export const SOCIAL_CONNECT_ERROR_MESSAGES: Record<string, string> = {
     "We could not load the connected account. Please try again.",
   callback_failed:
     "Something went wrong while connecting the account. Please try again.",
+  state_mismatch:
+    "This connection link was started from a different account. Please start the connection again from your own settings.",
 };
 
 export const DUPLICATE_POST_DOCS_URLS: Record<SocialConnectPlatform, string> = {

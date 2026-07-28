@@ -8,6 +8,7 @@ export type SocialConnectPlatform = z.infer<typeof socialConnectPlatformSchema>;
 
 export const socialConnectOAuthStateSchema = z.object({
   organizationId: z.string().min(1),
+  userId: z.string().min(1),
   callbackPath: z.string(),
   platform: socialConnectPlatformSchema,
 });
@@ -53,6 +54,7 @@ export const publishSocialPostInputSchema =
   );
 
 export const socialConnectCallbackQuerySchema = z.object({
+  provider: z.string().optional(),
   isSuccess: z.string().optional(),
   accountIds: z.array(z.string().min(1).max(128)).max(20).default([]),
   error: z.string().optional(),

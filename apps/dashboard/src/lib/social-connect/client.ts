@@ -2,23 +2,39 @@ import "server-only";
 import PostForMe from "post-for-me";
 import type { SocialConnectPlatform } from "@/schemas/social-accounts";
 
-let client: PostForMe | null = null;
+const clients = new Map<string, PostForMe>();
 
 const PROVIDER_PLATFORMS: Record<SocialConnectPlatform, string> = {
   twitter: "x",
   linkedin: "linkedin",
 };
 
-export function isSocialConnectConfigured(): boolean {
-  return Boolean(process.env.POST_FOR_ME_API_KEY);
+function getApiKey(platform: SocialConnectPlatform): string | undefined {
+  const specificKey =
+    platform === "twitter"
+      ? process.env.POST_FOR_ME_API_KEY_TWITTER
+      : process.env.POST_FOR_ME_API_KEY_LINKEDIN;
+  return specificKey || process.env.POST_FOR_ME_API_KEY || undefined;
 }
 
-export function getSocialConnectClient(): PostForMe {
-  if (!isSocialConnectConfigured()) {
+export function isSocialConnectConfigured(): boolean {
+  return Boolean(getApiKey("twitter") || getApiKey("linkedin"));
+}
+
+export function getSocialConnectClient(
+  platform: SocialConnectPlatform
+): PostForMe {
+  const apiKey = getApiKey(platform);
+  if (!apiKey) {
     throw new Error("Social account linking is not configured");
   }
-  client ??= new PostForMe();
-  return client;
+  const existing = clients.get(apiKey);
+  if (existing) {
+    return existing;
+  }
+  const created = new PostForMe({ apiKey });
+  clients.set(apiKey, created);
+  return created;
 }
 
 export function toProviderPlatform(platform: SocialConnectPlatform): string {

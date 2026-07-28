@@ -65,6 +65,7 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
   const oauthState: SocialConnectOAuthState = {
     callbackPath: params.callbackPath,
     organizationId: params.organizationId,
+    userId: params.userId,
     platform: params.platform,
   };
 
@@ -90,7 +91,7 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
   const createAuthUrl = (withRedirectOverride: boolean) =>
     Effect.tryPromise({
       try: () =>
-        getSocialConnectClient().socialAccounts.createAuthURL({
+        getSocialConnectClient(params.platform).socialAccounts.createAuthURL({
           platform: toProviderPlatform(params.platform),
           external_id: state,
           ...(withRedirectOverride && baseUrl
@@ -171,6 +172,32 @@ const loadOAuthStateForAccount = Effect.fn("loadOAuthStateForAccount")(
   }
 );
 
+const resolveFirstAccount = Effect.fn("resolveFirstAccount")(function* (
+  accountId: string,
+  platformHint: SocialConnectPlatform | null
+) {
+  const candidatePlatforms: SocialConnectPlatform[] = platformHint
+    ? [platformHint]
+    : ["twitter", "linkedin"];
+
+  for (const platform of candidatePlatforms) {
+    const account = yield* Effect.tryPromise({
+      try: (): Promise<SocialAccount> =>
+        getSocialConnectClient(platform).socialAccounts.retrieve(accountId),
+      catch: (cause) =>
+        new SocialConnectCallbackError({ code: "account_fetch_failed", cause }),
+    }).pipe(Effect.catch(() => Effect.succeed(null)));
+
+    if (account) {
+      return { platform, account };
+    }
+  }
+
+  return yield* Effect.fail(
+    new SocialConnectCallbackError({ code: "account_fetch_failed" })
+  );
+});
+
 const buildAccountDetails = Effect.fn("buildAccountDetails")(function* (
   platform: SocialConnectPlatform,
   account: SocialAccount
@@ -213,13 +240,8 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
       );
     }
 
-    const client = getSocialConnectClient();
-
-    const firstAccount = yield* Effect.tryPromise({
-      try: () => client.socialAccounts.retrieve(firstAccountId),
-      catch: (cause) =>
-        new SocialConnectCallbackError({ code: "account_fetch_failed", cause }),
-    });
+    const { platform: clientPlatform, account: firstAccount } =
+      yield* resolveFirstAccount(firstAccountId, params.platform);
 
     const state = firstAccount.external_id;
     if (!state) {
@@ -229,6 +251,14 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
     }
 
     const oauthState = yield* loadOAuthStateForAccount(state);
+
+    if (!params.userId || params.userId !== oauthState.userId) {
+      return yield* Effect.fail(
+        new SocialConnectCallbackError({ code: "state_mismatch" })
+      );
+    }
+
+    const client = getSocialConnectClient(clientPlatform);
 
     const remainingAccounts = yield* Effect.tryPromise({
       try: () =>
@@ -261,7 +291,11 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
         providerAccountId: account.id,
         ...details,
       });
-      yield* tagProviderAccount(account.id, oauthState.organizationId);
+      yield* tagProviderAccount(
+        clientPlatform,
+        account.id,
+        oauthState.organizationId
+      );
     }
 
     const result: CompleteSocialConnectResult = {
@@ -358,12 +392,13 @@ const upsertConnectedAccount = Effect.fn("upsertConnectedAccount")(
 );
 
 const tagProviderAccount = Effect.fn("tagProviderAccount")(function* (
+  clientPlatform: SocialConnectPlatform,
   accountId: string,
   organizationId: string
 ) {
   yield* Effect.tryPromise({
     try: () =>
-      getSocialConnectClient().socialAccounts.update(accountId, {
+      getSocialConnectClient(clientPlatform).socialAccounts.update(accountId, {
         external_id: organizationId,
       }),
     catch: (cause) =>
@@ -379,13 +414,14 @@ const tagProviderAccount = Effect.fn("tagProviderAccount")(function* (
 });
 
 export const disconnectProviderAccount = Effect.fn("disconnectProviderAccount")(
-  function* (accountId: string) {
+  function* (accountId: string, platform: SocialConnectPlatform) {
     if (!isSocialConnectConfigured()) {
       return;
     }
 
     yield* Effect.tryPromise({
-      try: () => getSocialConnectClient().socialAccounts.disconnect(accountId),
+      try: () =>
+        getSocialConnectClient(platform).socialAccounts.disconnect(accountId),
       catch: (cause) =>
         new SocialConnectRequestError({
           message: "Failed to disconnect account",
