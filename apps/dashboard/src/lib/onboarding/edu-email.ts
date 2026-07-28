@@ -1,4 +1,4 @@
-const EDU_DOMAIN_PATTERN = /\.edu(\.[a-z]{2,3})?$/;
+const EDU_DOMAIN_PATTERN = /\.edu(\.[a-z]{2})?$/;
 
 export function isEduEmail(email: string): boolean {
   const domain = email.trim().toLowerCase().split("@").at(-1) ?? "";
