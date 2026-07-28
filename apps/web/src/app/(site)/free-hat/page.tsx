@@ -11,7 +11,7 @@ import { SITE_URL } from "@/utils/urls";
 const title = "Merch";
 const description =
   "The Notra Classic Hat, our gift to paid workspaces. Reach out and we'll put one in the mail.";
-const url = `${SITE_URL}/merch`;
+const url = `${SITE_URL}/free-hat`;
 
 export const metadata: Metadata = {
   title,
