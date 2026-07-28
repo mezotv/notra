@@ -155,18 +155,16 @@ export async function publishChangelogDraftPullRequest(
   }
 
   const branchName = createChangelogBranchName(params.path);
+  let existingPullRequest: GitHubPullRequestSummary | undefined;
 
   try {
-    const existingPullRequest = await findExistingPullRequest({
+    existingPullRequest = await findExistingPullRequest({
       branchName,
       defaultBranch: params.defaultBranch,
       octokit,
       owner: params.owner,
       repo: params.repo,
     });
-    if (existingPullRequest) {
-      return toPullRequestResult(existingPullRequest, branchName, params.path);
-    }
   } catch (error) {
     throw new GitHubChangelogPublishError(
       "Failed to check for an existing changelog pull request",
@@ -175,40 +173,35 @@ export async function publishChangelogDraftPullRequest(
   }
 
   let createdBranch = false;
-  try {
-    await octokit.request("POST /repos/{owner}/{repo}/git/refs", {
-      owner: params.owner,
-      repo: params.repo,
-      ref: `refs/heads/${branchName}`,
-      sha: baseSha,
-      headers: GITHUB_API_VERSION_HEADERS,
-    });
-    createdBranch = true;
-  } catch (error) {
-    if (hasGitHubStatus(error, 422)) {
-      try {
-        const existingPullRequest = await findExistingPullRequest({
-          branchName,
-          defaultBranch: params.defaultBranch,
-          octokit,
-          owner: params.owner,
-          repo: params.repo,
-        });
-        if (existingPullRequest) {
-          return toPullRequestResult(
-            existingPullRequest,
+  if (!existingPullRequest) {
+    try {
+      await octokit.request("POST /repos/{owner}/{repo}/git/refs", {
+        owner: params.owner,
+        repo: params.repo,
+        ref: `refs/heads/${branchName}`,
+        sha: baseSha,
+        headers: GITHUB_API_VERSION_HEADERS,
+      });
+      createdBranch = true;
+    } catch (error) {
+      if (hasGitHubStatus(error, 422)) {
+        try {
+          existingPullRequest = await findExistingPullRequest({
             branchName,
-            params.path
-          );
+            defaultBranch: params.defaultBranch,
+            octokit,
+            owner: params.owner,
+            repo: params.repo,
+          });
+        } catch {
+          // Continue with branch reconciliation below.
         }
-      } catch {
-        // Continue with branch reconciliation below.
+      } else {
+        throw new GitHubChangelogPublishError(
+          "GitHub could not create the changelog branch",
+          error
+        );
       }
-    } else {
-      throw new GitHubChangelogPublishError(
-        "GitHub could not create the changelog branch",
-        error
-      );
     }
   }
 
@@ -238,6 +231,10 @@ export async function publishChangelogDraftPullRequest(
       error,
       branchName
     );
+  }
+
+  if (existingPullRequest) {
+    return toPullRequestResult(existingPullRequest, branchName, params.path);
   }
 
   try {

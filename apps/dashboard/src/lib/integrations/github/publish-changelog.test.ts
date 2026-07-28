@@ -96,9 +96,10 @@ describe("resolveChangelogPath", () => {
 });
 
 describe("publishChangelogDraftPullRequest", () => {
-  test("returns an existing pull request without creating another branch", async () => {
+  test("updates the branch before returning an existing pull request", async () => {
     const routes: string[] = [];
-    const client = createGitHubClient((route) => {
+    let updateOptions: Record<string, unknown> | undefined;
+    const client = createGitHubClient((route, options) => {
       routes.push(route);
       if (route === "GET /repos/{owner}/{repo}/pulls") {
         return {
@@ -106,6 +107,15 @@ describe("publishChangelogDraftPullRequest", () => {
             { number: 42, html_url: "https://github.com/notra/docs/pull/42" },
           ],
         };
+      }
+      if (
+        route === "GET /repos/{owner}/{repo}/contents/{path}" &&
+        options.ref !== "base-sha"
+      ) {
+        return { data: { sha: "existing-file-sha" } };
+      }
+      if (route === "PUT /repos/{owner}/{repo}/contents/{path}") {
+        updateOptions = options;
       }
       return defaultResponse(route);
     });
@@ -117,6 +127,12 @@ describe("publishChangelogDraftPullRequest", () => {
 
     assert.equal(result.pullRequestNumber, 42);
     assert.ok(!routes.includes("POST /repos/{owner}/{repo}/git/refs"));
+    assert.ok(!routes.includes("POST /repos/{owner}/{repo}/pulls"));
+    assert.equal(updateOptions?.sha, "existing-file-sha");
+    assert.equal(
+      updateOptions?.content,
+      Buffer.from(publishParams.markdown).toString("base64")
+    );
   });
 
   test("recovers an existing branch instead of creating a duplicate", async () => {
