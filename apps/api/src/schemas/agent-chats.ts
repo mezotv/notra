@@ -1,0 +1,70 @@
+import { z } from "@hono/zod-openapi";
+
+const AGENT_MESSAGE_MAX_LENGTH = 200_000;
+const AGENT_SESSION_LIST_LIMIT_MAX = 50;
+
+export const agentCreateSessionResponseSchema = z.object({
+  ok: z.literal(true),
+  sessionId: z.string().min(1),
+  continuationToken: z.string().min(1),
+});
+
+export const createAgentChatRequestSchema = z
+  .object({
+    message: z
+      .string()
+      .min(1)
+      .max(AGENT_MESSAGE_MAX_LENGTH)
+      .openapi({ description: "The first user message of the session." }),
+  })
+  .openapi("CreateAgentChatRequest");
+
+export const createAgentChatResponseSchema = z
+  .object({
+    sessionId: z.string(),
+    continuationToken: z.string(),
+  })
+  .openapi("CreateAgentChatResponse");
+
+export const sendAgentMessageRequestSchema = z
+  .object({
+    message: z.string().min(1).max(AGENT_MESSAGE_MAX_LENGTH),
+    continuationToken: z.string().min(1).openapi({
+      description:
+        "The continuation token returned by the previous request for this session.",
+    }),
+  })
+  .openapi("SendAgentMessageRequest");
+
+export const agentSessionParamsSchema = z.object({
+  sessionId: z
+    .string()
+    .min(1)
+    .openapi({ param: { name: "sessionId" } }),
+});
+
+export const listAgentChatsQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(AGENT_SESSION_LIST_LIMIT_MAX)
+    .default(20),
+});
+
+const agentSessionSummarySchema = z
+  .object({
+    sessionId: z.string(),
+    chatId: z.string().nullable(),
+    surface: z.string(),
+    status: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("AgentSessionSummary");
+
+export const listAgentChatsResponseSchema = z
+  .object({
+    sessions: z.array(agentSessionSummarySchema),
+  })
+  .openapi("ListAgentChatsResponse");

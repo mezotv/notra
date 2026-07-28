@@ -1,6 +1,7 @@
 import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
+import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import {
@@ -9,6 +10,7 @@ import {
 } from "./constants/oauth-scopes";
 import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
+import { agentChatsRoutes } from "./routes/agent-chats";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
 import { chatWorkflowRoutes } from "./routes/chat-workflow";
 import { chatsRoutes } from "./routes/chats";
@@ -116,7 +118,10 @@ assertRequiredEnv();
 
 const app = new OpenAPIHono<AppEnv>({ strict: true });
 
-app.use("/v1/*", async (c, next) => {
+const securityHeadersMiddleware = async (
+  c: Context,
+  next: () => Promise<void>
+) => {
   const origin = c.req.header("origin");
   const allowedOrigin = getAllowedOrigin(origin);
 
@@ -143,14 +148,20 @@ app.use("/v1/*", async (c, next) => {
   }
 
   await next();
-});
+};
+
+app.use("/v1/*", securityHeadersMiddleware);
+app.use("/v2/*", securityHeadersMiddleware);
 
 app.use(trimTrailingSlash({ alwaysRedirect: true }));
 
-app.use("/v1/*", async (c, next) => {
+const databaseMiddleware = async (c: Context, next: () => Promise<void>) => {
   c.set("db", createDb(c.env.DATABASE_URL));
   await next();
-});
+};
+
+app.use("/v1/*", databaseMiddleware);
+app.use("/v2/*", databaseMiddleware);
 
 app.openapi(publicStatusRoute, (c) => {
   return c.json({
@@ -166,7 +177,7 @@ app.openapi(publicStatusRoute, (c) => {
   });
 });
 
-app.use("/v1/*", (c, next) => {
+const oauthScopeMiddleware = (c: Context, next: () => Promise<void>) => {
   const requiredScope = getRequiredOAuthScope(
     new URL(c.req.url).pathname,
     c.req.method
@@ -181,9 +192,13 @@ app.use("/v1/*", (c, next) => {
     legacyPermissions: [legacyPermission],
     permissions: requiredScope,
   })(c, next);
-});
+};
+
+app.use("/v1/*", oauthScopeMiddleware);
+app.use("/v2/*", oauthScopeMiddleware);
 
 app.use("/v1/*", subscriptionMiddleware());
+app.use("/v2/*", subscriptionMiddleware());
 
 app.get("/", (c) => {
   return c.text("ok");
@@ -240,6 +255,7 @@ app.route("/v1", schedulesRoutes);
 app.route("/v1", eventTriggersRoutes);
 app.route("/v1", chatsRoutes);
 app.route("/v1", skillsRoutes);
+app.route("/v2", agentChatsRoutes);
 app.route("/", chatWorkflowRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
