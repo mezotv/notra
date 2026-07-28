@@ -5,18 +5,13 @@ export function MerchTweets() {
   return (
     <section className="w-full px-6 pt-28 lg:pt-32">
       <div className="mx-auto flex w-full max-w-[80rem] flex-col items-center gap-8">
-        <div className="flex flex-col items-center gap-4">
-          <h2 className="max-w-[50rem] text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.14] tracking-[-0.02em] sm:text-[2.875rem] dark:text-white">
-            Spotted in the <span className="text-primary">wild</span>.
-          </h2>
-          <p className="max-w-[40rem] text-center font-medium font-sans text-[#1E1E1EBF] text-[1.0625rem] leading-[1.3] tracking-[-0.005em] sm:text-[1.25rem] dark:text-white/70">
-            Hats already out there, on heads that shipped.
-          </p>
-        </div>
+        <h2 className="max-w-[50rem] text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.14] tracking-[-0.02em] sm:text-[2.875rem] dark:text-white">
+          Spotted in the <span className="text-primary">wild</span>.
+        </h2>
         <div className="grid w-full grid-cols-1 items-start gap-4 md:grid-cols-3">
           {MERCH_TWEET_IDS.map((id) => (
             <div
-              className="flex justify-center [&_.react-tweet-theme]:my-0"
+              className="flex justify-center [&_.react-tweet-theme]:my-0 [&_[class*='quoted-tweet']]:hidden [&_[class*='tweet-replies']]:hidden"
               key={id}
             >
               <Tweet id={id} />
