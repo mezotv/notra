@@ -18,19 +18,19 @@ export async function grantSignupCredits({
     return { granted: false };
   }
 
-  try {
-    await autumn.balances.create({
-      balanceId: `${SIGNUP_CREDITS_BALANCE_PREFIX}-${organizationId}`,
-      customerId: organizationId,
-      featureId: FEATURES.AI_CREDITS,
-      includedGrant: SIGNUP_CREDITS_GRANT_CENTS,
-    });
-    return { granted: true };
-  } catch (error) {
-    console.error(
-      `[Onboarding Agent] Signup credits grant failed for ${organizationId}`,
-      error
-    );
+  const existing = await autumn.check({
+    customerId: organizationId,
+    featureId: FEATURES.AI_CREDITS,
+  });
+  if (existing.balance != null) {
     return { granted: false };
   }
+
+  await autumn.balances.create({
+    balanceId: `${SIGNUP_CREDITS_BALANCE_PREFIX}-${organizationId}`,
+    customerId: organizationId,
+    featureId: FEATURES.AI_CREDITS,
+    includedGrant: SIGNUP_CREDITS_GRANT_CENTS,
+  });
+  return { granted: true };
 }
