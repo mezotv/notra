@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Add01Icon,
   AlertCircleIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -17,7 +16,6 @@ import {
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Button } from "@notra/ui/components/ui/button";
-import { Kbd } from "@notra/ui/components/ui/kbd";
 import { cn } from "@notra/ui/lib/utils";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useHotkey } from "@tanstack/react-hotkeys";
@@ -27,6 +25,7 @@ import { toast } from "sonner";
 import { StepActivity } from "@/components/content/create/step-activity";
 import { StepBrandIdentities } from "@/components/content/create/step-brand-identities";
 import { StepFormats } from "@/components/content/create/step-formats";
+import { CreateContentButton } from "@/components/content/create-content-button";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
 import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
@@ -917,13 +916,7 @@ export function CreateContentDialog({
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {!hideTrigger && (
           <ResponsiveDialogTrigger
-            render={
-              <Button className="gap-1.5" disabled={!organizationId}>
-                <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                Create Content
-                <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-              </Button>
-            }
+            render={<CreateContentButton disabled={!organizationId} />}
           />
         )}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
