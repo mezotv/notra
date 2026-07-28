@@ -35,7 +35,7 @@ The agent is a standalone eve server. It is not part of the dashboard's Next.js 
 ### 1. Create a second Vercel project
 
 1. In Vercel, add a new project from the same monorepo.
-2. Set the **Root Directory** to `packages/agents/onboarding`.
+2. Set the **Root Directory** to `apps/onboarding-agent`.
 3. Framework preset: **Other**. Build command: `bun run agent:build` (`eve build`). No output directory override is needed: when `VERCEL` is set, `eve build` emits a [Vercel Build Output](https://vercel.com/docs/build-output-api) bundle under `.vercel/output`, and eve's workflow execution runs on Vercel Workflow.
 4. Enable **OIDC federation** on both this project and the dashboard project (Project Settings → Security) so the dashboard can authenticate with short-lived Vercel tokens instead of a static secret.
 

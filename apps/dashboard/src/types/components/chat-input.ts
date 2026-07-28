@@ -35,3 +35,20 @@ export interface ChatInputProps {
 }
 
 export type EnabledRepo = GitHubRepository & { integrationId: string };
+
+export type ChatContextOptionKind = "github" | "linear" | "mcp";
+
+export interface ChatContextOption {
+  id: string;
+  kind: ChatContextOptionKind;
+  label: string;
+  description: string;
+  searchText: string;
+  contextItem: ContextItem;
+  logoLightUrl?: string | null;
+  logoDarkUrl?: string | null;
+}
+
+export interface ChatContextOptionContentProps {
+  option: ChatContextOption;
+}

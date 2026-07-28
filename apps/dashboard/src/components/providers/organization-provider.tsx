@@ -170,6 +170,7 @@ export function OrganizationsProvider({
           setOptimisticActiveOrg(null);
           lastSyncedSlugRef.current = null;
         } else {
+          queryClient.invalidateQueries({ refetchType: "none" });
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           });
@@ -217,6 +218,7 @@ export function OrganizationsProvider({
               setOptimisticActiveOrg(null);
               hasAutoSelectedRef.current = false;
             } else {
+              queryClient.invalidateQueries({ refetchType: "none" });
               queryClient.invalidateQueries({
                 queryKey: QUERY_KEYS.AUTH.activeOrganization,
               });
@@ -259,14 +261,6 @@ export function OrganizationsProvider({
     }),
     [organizations, resolvedActiveOrganization, isLoading, getOrganization]
   );
-
-  useEffect(() => {
-    if (!contextValue.activeOrganization?.id) {
-      return;
-    }
-
-    queryClient.invalidateQueries({ queryKey: ["autumn", "customer"] });
-  }, [contextValue.activeOrganization?.id, queryClient]);
 
   return (
     <OrganizationsContext.Provider value={contextValue}>

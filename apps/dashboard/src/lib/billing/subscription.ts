@@ -2,9 +2,36 @@ import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
-import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
+import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { ORPCError } from "@orpc/server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
+
+async function hasAiCreditsBalance(organizationId: string): Promise<boolean> {
+  if (!autumn) {
+    return false;
+  }
+
+  const data = await autumn.check({
+    customerId: organizationId,
+    featureId: FEATURES.AI_CREDITS,
+    requiredBalance: 1,
+  });
+
+  return data.allowed === true;
+}
+
+async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
+  if (!autumn) {
+    return false;
+  }
+
+  const data = await autumn.check({
+    customerId: organizationId,
+    featureId: FEATURES.AI_CREDITS,
+  });
+
+  return data.balance != null;
+}
 
 export async function assertActiveSubscription(
   organizationId: string
@@ -20,19 +47,23 @@ export async function assertActiveSubscription(
     return;
   }
 
-  let hasActivePlan = false;
+  let hasAccess = false;
 
   try {
     const customer = await autumn.customers.getOrCreate({
       customerId: organizationId,
     });
 
-    hasActivePlan = customer.subscriptions.some(
+    hasAccess = customer.subscriptions.some(
       (subscription) =>
         !subscription.addOn &&
         subscription.status === "active" &&
         PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
     );
+
+    if (!hasAccess) {
+      hasAccess = await hasAiCreditsBalance(organizationId);
+    }
   } catch (error) {
     if (error instanceof ORPCError) {
       throw error;
@@ -40,7 +71,7 @@ export async function assertActiveSubscription(
     throw internalServerError("Failed to verify subscription status");
   }
 
-  if (!hasActivePlan) {
+  if (!hasAccess) {
     throw paymentRequired("Active subscription required");
   }
 }
@@ -57,10 +88,16 @@ export async function hasPaidSubscriptionHistory(
       customerId: organizationId,
     });
 
-    return customer.subscriptions.some(
+    const hasHistory = customer.subscriptions.some(
       (subscription) =>
         !subscription.addOn && PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
     );
+
+    if (hasHistory) {
+      return true;
+    }
+
+    return await hasAiCreditsGrant(organizationId);
   } catch {
     return true;
   }

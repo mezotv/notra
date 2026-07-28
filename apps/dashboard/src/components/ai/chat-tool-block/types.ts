@@ -24,10 +24,3 @@ export interface ChatToolBlockProps {
   mcpLogoLightUrl?: string | null;
   toolMetadata?: unknown;
 }
-
-export interface McpToolIconUrls {
-  darkUrl?: string;
-  lightUrl?: string;
-}
-
-export type McpToolIconProps = McpToolIconUrls;

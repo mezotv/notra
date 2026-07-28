@@ -242,6 +242,7 @@ export const POST = withEvlog(async function POST(
     });
 
     return stream.toUIMessageStreamResponse({
+      sendReasoning: true,
       onError: (error) => {
         console.error("[Content Chat] Stream error:", { requestId, error });
         return "An error occurred while processing your request.";

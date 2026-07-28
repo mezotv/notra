@@ -6,6 +6,7 @@ import {
   downloadBlob,
   sanitizeDownloadFilename,
 } from "@/utils/download";
+import { sanitizeExportHtml } from "@/utils/sanitize-export-html";
 
 function createExportElement(html: string): HTMLDivElement {
   const container = document.createElement("div");
@@ -17,8 +18,7 @@ function createExportElement(html: string): HTMLDivElement {
   container.style.overflow = "hidden";
   container.style.pointerEvents = "none";
 
-  const range = document.createRange();
-  container.replaceChildren(range.createContextualFragment(html));
+  container.replaceChildren(sanitizeExportHtml(html));
   document.body.appendChild(container);
 
   return container;

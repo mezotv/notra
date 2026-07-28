@@ -150,7 +150,7 @@ function OrgSelectorTrigger({
               className="rounded-lg"
               src={activeOrganization?.logo || undefined}
             />
-            <AvatarFallback className="border bg-sidebar-accent">
+            <AvatarFallback className="rounded-lg bg-sidebar-accent">
               {activeOrganization?.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
@@ -313,6 +313,7 @@ export function OrgSelector() {
       }
 
       await setLastVisitedOrganization(org.slug);
+      queryClient.invalidateQueries({ refetchType: "none" });
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
       });

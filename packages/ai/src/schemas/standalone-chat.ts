@@ -13,6 +13,11 @@ export const standaloneChatContextSchema = z.discriminatedUnion("type", [
     integrationId: z.string(),
     teamName: z.string().optional(),
   }),
+  z.object({
+    type: z.literal("mcp-server"),
+    integrationId: z.string(),
+    name: z.string().trim().min(1).max(200),
+  }),
 ]);
 
 export type StandaloneChatContextItem = z.infer<

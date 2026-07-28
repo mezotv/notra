@@ -2,7 +2,6 @@
 
 import {
   AiBrain01Icon,
-  ArrowRight01Icon,
   AtIcon,
   Attachment01Icon,
   Cancel01Icon,
@@ -37,10 +36,6 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import {
@@ -68,6 +63,7 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -76,13 +72,15 @@ import {
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { McpIcon } from "@/components/integrations/mcp-icon";
 import {
   MAX_CHAT_ATTACHMENTS,
   MAX_CHAT_FILE_SIZE,
   MIME_DISPLAY_LABELS,
   PASTE_TO_ATTACHMENT_THRESHOLD,
 } from "@/constants/upload";
-import { INPUT_SOURCES } from "@/lib/integrations/catalog";
+import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
+import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   dragEventHasFiles,
@@ -97,6 +95,10 @@ import {
   isAllowedChatMimeType,
   isImageMimeType,
 } from "@/lib/upload/mime";
+import type {
+  ChatContextOption,
+  ChatContextOptionContentProps,
+} from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import type { QueuedMessage } from "./chat-queue";
@@ -104,6 +106,7 @@ import {
   buildFragmentFromReferencedText,
   buildIntegrationReferenceElement,
   hydrateLinearReferenceTeamNames,
+  hydrateMcpReferenceIcons,
   INTEGRATION_REFERENCE_SELECTOR,
   isIntegrationReferenceElement,
   parseIntegrationReferenceElement,
@@ -112,6 +115,7 @@ import {
 } from "./integration-reference";
 
 const GENERIC_PASTED_IMAGE_NAME_RE = /^image\.(jpe?g|png|gif|webp)$/i;
+const CHAT_CREDITS_EMPTY_MESSAGE = "No chat credits left.";
 
 export const AVAILABLE_MODELS = [
   {
@@ -256,12 +260,14 @@ function getSubmitTooltipText({
   isLoading,
   isQueued,
   isStopping,
+  isUsageBlocked,
 }: {
   canQueue: boolean;
   isEmpty: boolean;
   isLoading: boolean;
   isQueued: boolean;
   isStopping: boolean;
+  isUsageBlocked: boolean;
 }): string {
   if (isLoading && isStopping) {
     return "Stopping...";
@@ -272,10 +278,26 @@ function getSubmitTooltipText({
   if (isLoading && isEmpty) {
     return "Stop generating";
   }
+  if (isUsageBlocked) {
+    return CHAT_CREDITS_EMPTY_MESSAGE;
+  }
   if (canQueue) {
     return "Enter to queue this message. It will send once the AI finishes.";
   }
   return "Enter to send. Shift+Enter for a new line.";
+}
+
+function getContextPickerDisabledReason(
+  isLoading: boolean,
+  isQueued: boolean
+): string | null {
+  if (isQueued) {
+    return "Cancel the pending message before changing tools or context.";
+  }
+  if (isLoading) {
+    return "Wait for the current response before changing tools or context.";
+  }
+  return null;
 }
 
 function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
@@ -288,7 +310,28 @@ function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
   if (a.type === "linear-team" && b.type === "linear-team") {
     return a.integrationId === b.integrationId;
   }
+  if (a.type === "mcp-server" && b.type === "mcp-server") {
+    return a.integrationId === b.integrationId;
+  }
   return false;
+}
+
+function ChatContextOptionContent({ option }: ChatContextOptionContentProps) {
+  return (
+    <>
+      {option.kind === "github" && <Github className="size-4 shrink-0" />}
+      {option.kind === "linear" && <Linear className="size-4 shrink-0" />}
+      {option.kind === "mcp" && (
+        <McpIcon darkUrl={option.logoDarkUrl} lightUrl={option.logoLightUrl} />
+      )}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-sm">{option.label}</span>
+        <span className="truncate text-muted-foreground text-xs">
+          {option.description}
+        </span>
+      </span>
+    </>
+  );
 }
 
 interface ChatInputAdvancedProps {
@@ -356,10 +399,12 @@ export function ChatInputAdvanced({
   draftStorageKey,
   ref,
 }: ChatInputAdvancedProps) {
+  const contextPickerId = useId();
   const currentModel =
     AVAILABLE_MODELS.find((availableModel) => availableModel.id === model) ??
     AVAILABLE_MODELS[0];
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
+  const [isContextPickerOpen, setIsContextPickerOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const [internalError, setInternalError] = useState<string | null>(null);
@@ -385,6 +430,10 @@ export function ChatInputAdvanced({
     useState<ChatAttachment | null>(null);
   const isUploading = pendingUploads.length > 0;
   const isQueued = pendingSend !== null;
+  const contextPickerDisabledReason = getContextPickerDisabledReason(
+    isLoading,
+    isQueued
+  );
   const attachmentsRef = useRef(attachments);
   const pendingUploadsRef = useRef(pendingUploads);
 
@@ -427,7 +476,7 @@ export function ChatInputAdvanced({
     try {
       await deleteChatUploadFile({ key });
     } catch {
-      // Best-effort cleanup for abandoned uploads.
+      // noop
     }
   }, []);
 
@@ -545,10 +594,6 @@ export function ChatInputAdvanced({
             const message =
               err instanceof Error ? err.message : "Upload failed";
             toast.error(`Failed to upload ${file.name}: ${message}`);
-            // Do NOT null pendingSend here. The drain effect (keyed on
-            // isUploading reaching 0) surfaces a user-facing "Some attachments
-            // failed to upload" error when it detects missing completions.
-            // Nulling here would silently drop the queued message.
             updatePendingUploads(
               pendingUploadsRef.current.filter(
                 (pending) => pending.id !== placeholder.id
@@ -579,8 +624,6 @@ export function ChatInputAdvanced({
     return () => {
       isMountedRef.current = false;
 
-      // Never GC attachments that were already submitted — the chat history
-      // references those URLs and needs them to persist server-side.
       for (const attachment of attachmentsRef.current) {
         if (submittedKeysRef.current.has(attachment.key)) {
           continue;
@@ -651,7 +694,9 @@ export function ChatInputAdvanced({
       document.removeEventListener("drop", onDrop);
     };
   }, [handleFilesSelected]);
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer, refetch: refetchCustomer } = useCustomer();
+
+  useAutumnRefreshListener(refetchCustomer);
 
   const checkResult = useMemo(() => {
     if (!customer) {
@@ -672,9 +717,10 @@ export function ChatInputAdvanced({
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
   const isUsageBlocked = checkResult ? checkResult.allowed === false : false;
-  const limitMessage = "No chat credits left.";
   const usageLimitError =
-    externalError ?? internalError ?? (isUsageBlocked ? limitMessage : null);
+    externalError ??
+    internalError ??
+    (isUsageBlocked ? CHAT_CREDITS_EMPTY_MESSAGE : null);
 
   const clearError = useCallback(() => {
     setInternalError(null);
@@ -683,6 +729,18 @@ export function ChatInputAdvanced({
 
   const { data: integrationsData } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
+  const { data: customMcpData } = useQuery(
+    dashboardOrpc.integrations.mcp.list.queryOptions({
+      input: { organizationId: organizationId ?? "" },
+      enabled: !!organizationId,
+    })
+  );
+  const { data: mcpStoreData } = useQuery(
+    dashboardOrpc.integrations.mcp.storeList.queryOptions({
       input: { organizationId: organizationId ?? "" },
       enabled: !!organizationId,
     })
@@ -723,49 +781,117 @@ export function ChatInputAdvanced({
     return result;
   }, [integrationsData?.integrations]);
 
-  const enabledGranolaIntegrations = useMemo(() => {
-    const result: Array<{ id: string; displayName: string }> = [];
-    for (const integration of integrationsData?.integrations ?? []) {
-      if (integration.type === "granola" && integration.enabled) {
-        result.push({
-          id: integration.id,
-          displayName: integration.displayName,
-        });
-      }
+  const contextOptions = useMemo(() => {
+    const options: ChatContextOption[] = [];
+
+    for (const repo of enabledRepos) {
+      const label = `${repo.owner}/${repo.repo}`;
+      options.push({
+        id: `github-${repo.id}`,
+        kind: "github",
+        label,
+        description: "GitHub repository",
+        searchText: `${label} GitHub repository`,
+        contextItem: {
+          type: "github-repo",
+          owner: repo.owner,
+          repo: repo.repo,
+          integrationId: repo.integrationId,
+        },
+      });
     }
-    return result;
-  }, [integrationsData?.integrations]);
 
-  type MentionItem =
-    | { kind: "github"; data: GitHubRepository & { integrationId: string } }
-    | {
-        kind: "linear";
-        data: {
-          id: string;
-          displayName: string;
-          integrationId: string;
-          teamName?: string | null;
-        };
-      };
+    for (const integration of enabledLinearIntegrations) {
+      options.push({
+        id: `linear-${integration.integrationId}`,
+        kind: "linear",
+        label: integration.displayName,
+        description: "Linear team",
+        searchText: `${integration.displayName} ${integration.teamName ?? ""} Linear team`,
+        contextItem: {
+          type: "linear-team",
+          integrationId: integration.integrationId,
+          teamName: integration.teamName ?? undefined,
+        },
+      });
+    }
 
-  const isRepoInContext = useCallback(
-    (repo: GitHubRepository & { integrationId: string }) =>
-      context.some(
-        (c) =>
-          c.type === "github-repo" &&
-          c.owner === repo.owner &&
-          c.repo === repo.repo
+    for (const server of customMcpData?.servers ?? []) {
+      if (!server.enabled) {
+        continue;
+      }
+      const toolLabel = `${server.indexedToolCount} ${server.indexedToolCount === 1 ? "tool" : "tools"}`;
+      options.push({
+        id: `mcp-${server.id}`,
+        kind: "mcp",
+        label: server.name,
+        description: `Custom MCP server · ${toolLabel}`,
+        searchText: `${server.name} ${server.description ?? ""} custom MCP ${toolLabel}`,
+        contextItem: {
+          type: "mcp-server",
+          integrationId: server.id,
+          name: server.name,
+        },
+        logoLightUrl: server.logoLightUrl,
+        logoDarkUrl: server.logoDarkUrl,
+      });
+    }
+
+    for (const integration of mcpStoreData?.integrations ?? []) {
+      const connection = integration.connection;
+      if (!(integration.connected && connection?.enabled)) {
+        continue;
+      }
+      const toolLabel = `${connection.indexedToolCount} ${connection.indexedToolCount === 1 ? "tool" : "tools"}`;
+      options.push({
+        id: `mcp-${connection.id}`,
+        kind: "mcp",
+        label: integration.name,
+        description: `Marketplace MCP server · ${toolLabel}`,
+        searchText: `${integration.name} ${integration.description ?? ""} ${integration.author ?? ""} marketplace MCP ${toolLabel}`,
+        contextItem: {
+          type: "mcp-server",
+          integrationId: connection.id,
+          name: integration.name,
+        },
+        logoLightUrl: integration.logoLightUrl,
+        logoDarkUrl: integration.logoDarkUrl,
+      });
+    }
+
+    return options;
+  }, [
+    customMcpData?.servers,
+    enabledLinearIntegrations,
+    enabledRepos,
+    mcpStoreData?.integrations,
+  ]);
+
+  const integrationContextOptions = useMemo(
+    () => contextOptions.filter((option) => option.kind !== "mcp"),
+    [contextOptions]
+  );
+  const mcpToolOptions = useMemo(
+    () => contextOptions.filter((option) => option.kind === "mcp"),
+    [contextOptions]
+  );
+  const mcpIconsByIntegrationId = useMemo(
+    () =>
+      new Map(
+        mcpToolOptions.map((option) => [
+          option.contextItem.integrationId,
+          getMcpIconUrls({
+            lightUrl: option.logoLightUrl,
+            darkUrl: option.logoDarkUrl,
+          }),
+        ])
       ),
-    [context]
+    [mcpToolOptions]
   );
 
-  const isLinearInContext = useCallback(
-    (integration: { integrationId: string }) =>
-      context.some(
-        (c) =>
-          c.type === "linear-team" &&
-          c.integrationId === integration.integrationId
-      ),
+  const isInContext = useCallback(
+    (item: ContextItem) =>
+      context.some((contextItem) => contextItemsEqual(contextItem, item)),
     [context]
   );
 
@@ -773,20 +899,11 @@ export function ChatInputAdvanced({
     if (mentionQuery === null) {
       return [];
     }
-    const q = mentionQuery.toLowerCase();
-    const items: MentionItem[] = [];
-    for (const repo of enabledRepos) {
-      if (`${repo.owner}/${repo.repo}`.toLowerCase().includes(q)) {
-        items.push({ kind: "github", data: repo });
-      }
-    }
-    for (const integration of enabledLinearIntegrations) {
-      if (integration.displayName.toLowerCase().includes(q)) {
-        items.push({ kind: "linear", data: integration });
-      }
-    }
-    return items;
-  }, [mentionQuery, enabledRepos, enabledLinearIntegrations]);
+    const q = mentionQuery.trim().toLowerCase();
+    return contextOptions.filter((option) =>
+      option.searchText.toLowerCase().includes(q)
+    );
+  }, [contextOptions, mentionQuery]);
 
   const readEditorText = useCallback(() => {
     const editor = editorRef.current;
@@ -796,7 +913,7 @@ export function ChatInputAdvanced({
     return (editor.innerText ?? "").replace(/\u00A0/g, " ");
   }, []);
   const submitRef = useRef<() => void>(() => {
-    // Populated after handleSend is defined.
+    // noop
   });
 
   useImperativeHandle(
@@ -969,13 +1086,21 @@ export function ChatInputAdvanced({
       if (!draft) {
         return;
       }
-      editor.append(buildFragmentFromReferencedText(draft));
+      editor.append(
+        buildFragmentFromReferencedText(draft, mcpIconsByIntegrationId)
+      );
       setIsEmpty(draft.trim().length === 0);
       syncContextFromDOM();
     } catch {
       // noop
     }
-  }, [draftStorageKey, initialValue, readEditorText, syncContextFromDOM]);
+  }, [
+    draftStorageKey,
+    initialValue,
+    mcpIconsByIntegrationId,
+    readEditorText,
+    syncContextFromDOM,
+  ]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -986,6 +1111,14 @@ export function ChatInputAdvanced({
       syncContextFromDOM();
     }
   }, [enabledLinearIntegrations, syncContextFromDOM]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || mcpIconsByIntegrationId.size === 0) {
+      return;
+    }
+    hydrateMcpReferenceIcons(editor, mcpIconsByIntegrationId);
+  }, [mcpIconsByIntegrationId]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1018,7 +1151,7 @@ export function ChatInputAdvanced({
   }, [initialValue]);
 
   const insertMention = useCallback(
-    (item: MentionItem) => {
+    (option: ChatContextOption) => {
       const editor = editorRef.current;
       const anchor = mentionAnchorRef.current;
       if (!editor || !anchor) {
@@ -1033,25 +1166,17 @@ export function ChatInputAdvanced({
         return;
       }
 
-      const contextItem: ContextItem =
-        item.kind === "github"
-          ? {
-              type: "github-repo",
-              owner: item.data.owner,
-              repo: item.data.repo,
-              integrationId: item.data.integrationId,
-            }
-          : {
-              type: "linear-team",
-              integrationId: item.data.integrationId,
-              teamName: item.data.teamName ?? undefined,
-            };
-
       const replaceRange = document.createRange();
       replaceRange.setStart(anchor.node, anchor.offset);
       replaceRange.setEnd(cursor.startContainer, cursor.startOffset);
 
-      const chip = buildIntegrationReferenceElement(contextItem);
+      const chip = buildIntegrationReferenceElement(
+        option.contextItem,
+        getMcpIconUrls({
+          lightUrl: option.logoLightUrl,
+          darkUrl: option.logoDarkUrl,
+        })
+      );
       insertChipAndSpace(chip, replaceRange);
 
       mentionAnchorRef.current = null;
@@ -1062,11 +1187,12 @@ export function ChatInputAdvanced({
   );
 
   const insertChipAtCursor = useCallback(
-    (item: ContextItem) => {
+    (option: ChatContextOption) => {
       const editor = editorRef.current;
       if (!editor) {
         return;
       }
+      const item = option.contextItem;
       if (contextRef.current.some((c) => contextItemsEqual(c, item))) {
         return;
       }
@@ -1084,7 +1210,13 @@ export function ChatInputAdvanced({
         range.selectNodeContents(editor);
         range.collapse(false);
       }
-      const chip = buildIntegrationReferenceElement(item);
+      const chip = buildIntegrationReferenceElement(
+        item,
+        getMcpIconUrls({
+          lightUrl: option.logoLightUrl,
+          darkUrl: option.logoDarkUrl,
+        })
+      );
       insertChipAndSpace(chip, range);
     },
     [insertChipAndSpace]
@@ -1119,45 +1251,51 @@ export function ChatInputAdvanced({
     [onRemoveContext, readEditorText]
   );
 
-  const insertTextAtRange = useCallback((text: string, targetRange?: Range) => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
+  const insertTextAtRange = useCallback(
+    (text: string, targetRange?: Range) => {
+      const editor = editorRef.current;
+      if (!editor) {
+        return;
+      }
 
-    const selection = window.getSelection();
-    let range: Range | null = null;
+      const selection = window.getSelection();
+      let range: Range | null = null;
 
-    if (
-      targetRange?.startContainer.isConnected &&
-      editor.contains(targetRange.startContainer)
-    ) {
-      range = targetRange;
-    } else if (selection && selection.rangeCount > 0) {
-      range = selection.getRangeAt(0);
-    }
+      if (
+        targetRange?.startContainer.isConnected &&
+        editor.contains(targetRange.startContainer)
+      ) {
+        range = targetRange;
+      } else if (selection && selection.rangeCount > 0) {
+        range = selection.getRangeAt(0);
+      }
 
-    if (!range) {
-      return;
-    }
+      if (!range) {
+        return;
+      }
 
-    range.deleteContents();
+      range.deleteContents();
 
-    const fragment = buildFragmentFromReferencedText(text);
-    const lastNode = fragment.lastChild;
-    range.insertNode(fragment);
+      const fragment = buildFragmentFromReferencedText(
+        text,
+        mcpIconsByIntegrationId
+      );
+      const lastNode = fragment.lastChild;
+      range.insertNode(fragment);
 
-    const after = document.createRange();
-    if (lastNode) {
-      after.setStartAfter(lastNode);
-    } else {
-      after.setStart(range.endContainer, range.endOffset);
-    }
-    after.collapse(true);
-    selection?.removeAllRanges();
-    selection?.addRange(after);
-    editor.dispatchEvent(new Event("input", { bubbles: true }));
-  }, []);
+      const after = document.createRange();
+      if (lastNode) {
+        after.setStartAfter(lastNode);
+      } else {
+        after.setStart(range.endContainer, range.endOffset);
+      }
+      after.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(after);
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    [mcpIconsByIntegrationId]
+  );
 
   const clearComposer = useCallback(() => {
     const editor = editorRef.current;
@@ -1198,7 +1336,7 @@ export function ChatInputAdvanced({
         return false;
       }
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return false;
       }
       if (customer) {
@@ -1207,7 +1345,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(limitMessage);
+          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
           return false;
         }
       }
@@ -1260,7 +1398,7 @@ export function ChatInputAdvanced({
       }
       clearError();
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return;
       }
       if (customer) {
@@ -1269,7 +1407,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(limitMessage);
+          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
           return;
         }
       }
@@ -1290,7 +1428,7 @@ export function ChatInputAdvanced({
         return;
       }
       if (isUsageBlocked) {
-        setInternalError(limitMessage);
+        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
         return;
       }
       clearError();
@@ -1695,16 +1833,16 @@ export function ChatInputAdvanced({
                   <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
                     {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
                     <div
-                      aria-disabled={isUsageBlocked || isQueued}
+                      aria-disabled={isQueued}
                       aria-label="Send a message"
                       aria-multiline="true"
                       className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
-                      contentEditable={!(isUsageBlocked || isQueued)}
+                      contentEditable={!isQueued}
                       data-empty={isEmpty ? "true" : "false"}
                       data-placeholder={
                         isLoading
                           ? "Queue a message while AI is working..."
-                          : "Send a message... (type @ to add context)"
+                          : "Send a message... (type @ for tools and context)"
                       }
                       onBlur={() => {
                         setIsFocused(false);
@@ -1728,64 +1866,55 @@ export function ChatInputAdvanced({
                       ref={editorRef}
                       role="textbox"
                       suppressContentEditableWarning
-                      tabIndex={
-                        isLoading || isUsageBlocked || isQueued ? -1 : 0
-                      }
+                      tabIndex={isLoading || isQueued ? -1 : 0}
                     />
                   </div>
                 </div>
                 {mentionQuery !== null && (
                   <div
-                    className="absolute bottom-full left-1 z-50 mb-1 w-56"
+                    className="absolute bottom-full left-1 z-50 mb-1 w-72"
                     ref={mentionListRef}
                   >
                     <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
-                      <div className="px-2 py-1.5 font-semibold text-xs">
-                        Integrations
-                      </div>
                       {filteredMentionItems.length > 0 ? (
                         <>
-                          {filteredMentionItems.map((item, idx) => {
-                            const key =
-                              item.kind === "github"
-                                ? item.data.id
-                                : item.data.integrationId;
-                            const inContext =
-                              item.kind === "github"
-                                ? isRepoInContext(item.data)
-                                : isLinearInContext(item.data);
-                            const label =
-                              item.kind === "github"
-                                ? `${item.data.owner}/${item.data.repo}`
-                                : item.data.displayName;
+                          {filteredMentionItems.map((option, idx) => {
+                            const inContext = isInContext(option.contextItem);
+                            const previousOption =
+                              filteredMentionItems[idx - 1];
+                            const startsGroup =
+                              idx === 0 ||
+                              (previousOption?.kind === "mcp") !==
+                                (option.kind === "mcp");
                             return (
-                              <button
-                                className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors ${
-                                  idx === mentionIndex
-                                    ? "bg-accent text-accent-foreground"
-                                    : "text-popover-foreground hover:bg-accent hover:text-accent-foreground"
-                                }`}
-                                key={key}
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  insertMention(item);
-                                }}
-                                type="button"
-                              >
-                                {item.kind === "github" ? (
-                                  <Github className="size-4" />
-                                ) : (
-                                  <Linear className="size-4" />
+                              <div key={option.id}>
+                                {startsGroup && (
+                                  <div className="px-2 py-1.5 font-semibold text-xs">
+                                    {option.kind === "mcp"
+                                      ? "MCP tools"
+                                      : "Context"}
+                                  </div>
                                 )}
-                                <span className="truncate text-sm">
-                                  {label}
-                                </span>
-                                {inContext && (
-                                  <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                                    Added
-                                  </span>
-                                )}
-                              </button>
+                                <button
+                                  className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors ${
+                                    idx === mentionIndex
+                                      ? "bg-accent text-accent-foreground"
+                                      : "text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+                                  }`}
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    insertMention(option);
+                                  }}
+                                  type="button"
+                                >
+                                  <ChatContextOptionContent option={option} />
+                                  {inContext && (
+                                    <span className="shrink-0 text-emerald-600 text-xs dark:text-emerald-400">
+                                      Added
+                                    </span>
+                                  )}
+                                </button>
+                              </div>
                             );
                           })}
                           {organizationSlug && (
@@ -1806,21 +1935,18 @@ export function ChatInputAdvanced({
                       ) : (
                         <div className="flex flex-col items-center gap-1 px-3 py-4 text-center">
                           <span className="text-muted-foreground text-xs">
-                            {enabledRepos.length === 0 &&
-                            enabledLinearIntegrations.length === 0
-                              ? "No integrations connected"
+                            {contextOptions.length === 0
+                              ? "No context or MCP tools connected"
                               : "No matches found"}
                           </span>
-                          {enabledRepos.length === 0 &&
-                            enabledLinearIntegrations.length === 0 &&
-                            organizationSlug && (
-                              <Link
-                                className="text-primary text-xs hover:underline"
-                                href={`/${organizationSlug}/integrations`}
-                              >
-                                Connect integrations
-                              </Link>
-                            )}
+                          {contextOptions.length === 0 && organizationSlug && (
+                            <Link
+                              className="text-primary text-xs hover:underline"
+                              href={`/${organizationSlug}/integrations`}
+                            >
+                              Connect integrations
+                            </Link>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1955,276 +2081,138 @@ export function ChatInputAdvanced({
                   </PopoverContent>
                 </Popover>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger
+                <Tooltip>
+                  <TooltipTrigger
                     render={
-                      <button
-                        className="flex items-center gap-1.5 rounded-lg border border-border border-dashed px-2.5 py-1.5 font-medium text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading || isQueued}
-                        type="button"
-                      />
+                      contextPickerDisabledReason ? (
+                        // biome-ignore lint/a11y/useSemanticElements: a real button would illegally nest the disabled popover trigger button.
+                        <span
+                          aria-disabled="true"
+                          aria-label="Add tools or context"
+                          className="inline-flex cursor-not-allowed"
+                          role="button"
+                          tabIndex={0}
+                        />
+                      ) : (
+                        <span className="inline-flex" />
+                      )
                     }
                   >
-                    <HugeiconsIcon className="size-3.5" icon={AtIcon} />
-                    Context
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Integrations</DropdownMenuLabel>
-                    </DropdownMenuGroup>
-                    {INPUT_SOURCES.map((integration) => {
-                      const isGitHub = integration.id === "github";
-                      const isLinear = integration.id === "linear";
-                      const isGranola = integration.id === "granola";
-                      const isAvailable = integration.available;
-
-                      if (isGitHub && isAvailable && enabledRepos.length > 0) {
-                        return (
-                          <DropdownMenuSub key={integration.id}>
-                            <DropdownMenuSubTrigger className="grid grid-cols-[1rem_3.5rem_1fr_1rem]">
-                              <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                                {integration.icon}
-                              </span>
-                              <span className="truncate text-foreground">
-                                {integration.name}
-                              </span>
-                              <span className="justify-self-center text-emerald-600 text-xs dark:text-emerald-400">
-                                {enabledRepos.length}
-                              </span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                              <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                  Select Repository
-                                </DropdownMenuLabel>
-                              </DropdownMenuGroup>
-                              {enabledRepos.map((repo) => {
-                                const inContext = isRepoInContext(repo);
-                                return (
-                                  <DropdownMenuItem
-                                    key={repo.id}
-                                    onClick={() => {
-                                      const item: ContextItem = {
-                                        type: "github-repo",
-                                        owner: repo.owner,
-                                        repo: repo.repo,
-                                        integrationId: repo.integrationId,
-                                      };
-                                      if (inContext) {
-                                        removeChipForItem(item);
-                                      } else {
-                                        insertChipAtCursor(item);
-                                      }
-                                    }}
-                                  >
-                                    <Github className="size-4" />
-                                    <span className="truncate">
-                                      {repo.owner}/{repo.repo}
-                                    </span>
-                                    {inContext && (
-                                      <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                                        Added
-                                      </span>
-                                    )}
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                              {organizationSlug && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    render={
-                                      <Link
-                                        href={`/${organizationSlug}/integrations/github`}
-                                      />
-                                    }
-                                  >
-                                    Manage repositories
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        );
-                      }
-
-                      if (
-                        isLinear &&
-                        isAvailable &&
-                        enabledLinearIntegrations.length > 0
-                      ) {
-                        return (
-                          <DropdownMenuSub key={integration.id}>
-                            <DropdownMenuSubTrigger className="grid grid-cols-[1rem_3.5rem_1fr_1rem]">
-                              <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                                {integration.icon}
-                              </span>
-                              <span className="truncate text-foreground">
-                                {integration.name}
-                              </span>
-                              <span className="justify-self-center text-emerald-600 text-xs dark:text-emerald-400">
-                                {enabledLinearIntegrations.length}
-                              </span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                              <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                  Select Integration
-                                </DropdownMenuLabel>
-                              </DropdownMenuGroup>
-                              {enabledLinearIntegrations.map((li) => {
-                                const inContext = isLinearInContext(li);
-                                return (
-                                  <DropdownMenuItem
-                                    key={li.id}
-                                    onClick={() => {
-                                      const item: ContextItem = {
-                                        type: "linear-team",
-                                        integrationId: li.integrationId,
-                                        teamName: li.teamName ?? undefined,
-                                      };
-                                      if (inContext) {
-                                        removeChipForItem(item);
-                                      } else {
-                                        insertChipAtCursor(item);
-                                      }
-                                    }}
-                                  >
-                                    <Linear className="size-4" />
-                                    <span className="truncate">
-                                      {li.displayName}
-                                    </span>
-                                    {inContext && (
-                                      <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                                        Added
-                                      </span>
-                                    )}
-                                  </DropdownMenuItem>
-                                );
-                              })}
-                              {organizationSlug && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    render={
-                                      <Link
-                                        href={`/${organizationSlug}/integrations/linear`}
-                                      />
-                                    }
-                                  >
-                                    Manage Linear
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        );
-                      }
-
-                      if (
-                        isGranola &&
-                        isAvailable &&
-                        enabledGranolaIntegrations.length > 0 &&
-                        organizationSlug
-                      ) {
-                        return (
-                          <DropdownMenuItem
-                            className="grid grid-cols-[1rem_3.5rem_1fr_1rem]"
-                            key={integration.id}
-                            render={
-                              <Link
-                                href={`/${organizationSlug}/integrations/granola`}
-                              />
-                            }
-                          >
-                            <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                              {integration.icon}
-                            </span>
-                            <span className="truncate text-foreground">
-                              {integration.name}
-                            </span>
-                            <span className="justify-self-center text-emerald-600 text-xs dark:text-emerald-400">
-                              {enabledGranolaIntegrations.length}
-                            </span>
-                            <HugeiconsIcon
-                              className="size-4 text-muted-foreground"
-                              icon={ArrowRight01Icon}
-                              strokeWidth={2}
-                            />
-                          </DropdownMenuItem>
-                        );
-                      }
-
-                      if (
-                        (isGitHub || isLinear || isGranola) &&
-                        isAvailable &&
-                        organizationSlug
-                      ) {
-                        return (
-                          <DropdownMenuItem
-                            className="grid grid-cols-[1rem_3.5rem_1fr_1rem]"
-                            key={integration.id}
-                            render={
-                              <Link
-                                href={`/${organizationSlug}/integrations/${integration.href}`}
-                              />
-                            }
-                          >
-                            <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                              {integration.icon}
-                            </span>
-                            <span className="truncate text-foreground">
-                              {integration.name}
-                            </span>
-                            <span className="justify-self-center text-muted-foreground text-xs">
-                              Setup
-                            </span>
-                            <HugeiconsIcon
-                              className="size-4 text-muted-foreground"
-                              icon={ArrowRight01Icon}
-                              strokeWidth={2}
-                            />
-                          </DropdownMenuItem>
-                        );
-                      }
-
-                      return (
-                        <DropdownMenuItem
-                          className="opacity-60"
-                          disabled
-                          key={integration.id}
-                        >
-                          <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                            {integration.icon}
-                          </span>
-                          <span className="text-foreground">
-                            {integration.name}
-                          </span>
-                          <span className="ml-auto text-muted-foreground text-xs">
-                            Soon
-                          </span>
-                          <HugeiconsIcon
-                            className="size-4 text-muted-foreground"
-                            icon={ArrowRight01Icon}
-                            strokeWidth={2}
+                    <Popover
+                      modal
+                      onOpenChange={setIsContextPickerOpen}
+                      open={isContextPickerOpen}
+                    >
+                      <PopoverTrigger
+                        render={
+                          <button
+                            aria-controls={contextPickerId}
+                            aria-expanded={isContextPickerOpen}
+                            aria-haspopup="listbox"
+                            aria-label="Add tools or context"
+                            className="flex items-center gap-1.5 rounded-lg border border-border border-dashed px-2.5 py-1.5 font-medium text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                            disabled={isLoading || isQueued}
+                            role="combobox"
+                            type="button"
                           />
-                        </DropdownMenuItem>
-                      );
-                    })}
-                    {organizationSlug && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          render={
-                            <Link href={`/${organizationSlug}/integrations`} />
-                          }
-                        >
-                          Manage integrations
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                        }
+                      >
+                        <HugeiconsIcon className="size-3.5" icon={AtIcon} />
+                        Tools & context
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        className="w-80 p-0"
+                        id={contextPickerId}
+                        showBackdrop
+                        sideOffset={6}
+                      >
+                        <Command>
+                          <CommandInput placeholder="Search tools and context..." />
+                          <CommandList>
+                            <CommandEmpty>
+                              No matching tools or context found.
+                            </CommandEmpty>
+                            {integrationContextOptions.length > 0 && (
+                              <CommandGroup heading="Context">
+                                {integrationContextOptions.map((option) => {
+                                  const inContext = isInContext(
+                                    option.contextItem
+                                  );
+                                  return (
+                                    <CommandItem
+                                      data-checked={inContext}
+                                      key={option.id}
+                                      keywords={[option.searchText]}
+                                      onSelect={() => {
+                                        if (inContext) {
+                                          removeChipForItem(option.contextItem);
+                                        } else {
+                                          insertChipAtCursor(option);
+                                        }
+                                        setIsContextPickerOpen(false);
+                                      }}
+                                      value={option.id}
+                                    >
+                                      <ChatContextOptionContent
+                                        option={option}
+                                      />
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            )}
+                            {mcpToolOptions.length > 0 && (
+                              <CommandGroup heading="MCP tools">
+                                {mcpToolOptions.map((option) => {
+                                  const inContext = isInContext(
+                                    option.contextItem
+                                  );
+                                  return (
+                                    <CommandItem
+                                      data-checked={inContext}
+                                      key={option.id}
+                                      keywords={[option.searchText]}
+                                      onSelect={() => {
+                                        if (inContext) {
+                                          removeChipForItem(option.contextItem);
+                                        } else {
+                                          insertChipAtCursor(option);
+                                        }
+                                        setIsContextPickerOpen(false);
+                                      }}
+                                      value={option.id}
+                                    >
+                                      <ChatContextOptionContent
+                                        option={option}
+                                      />
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            )}
+                          </CommandList>
+                          {organizationSlug && (
+                            <div className="border-border border-t p-1">
+                              <Link
+                                className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                                href={`/${organizationSlug}/integrations`}
+                                onClick={() => setIsContextPickerOpen(false)}
+                              >
+                                Manage integrations
+                              </Link>
+                            </div>
+                          )}
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </TooltipTrigger>
+                  {contextPickerDisabledReason && (
+                    <TooltipContent>
+                      {contextPickerDisabledReason}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger
@@ -2268,13 +2256,13 @@ export function ChatInputAdvanced({
                     submitDisabled = false;
                   } else if (isLoading && isEmpty) {
                     submitDisabled = !onStop || isStopping;
+                  } else if (isUsageBlocked) {
+                    submitDisabled = true;
                   } else if (canQueue) {
                     submitDisabled = false;
                   } else {
                     submitDisabled =
-                      isUsageBlocked ||
-                      hasUnsupportedAttachmentsForModel ||
-                      !hasAnyContent;
+                      hasUnsupportedAttachmentsForModel || !hasAnyContent;
                   }
                   let submitOnClick: (() => void) | undefined;
                   if (isQueued) {
@@ -2289,11 +2277,10 @@ export function ChatInputAdvanced({
                       <TooltipTrigger
                         render={
                           <Button
-                            className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={submitDisabled}
-                            onClick={submitOnClick}
+                            aria-disabled={submitDisabled}
+                            className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:active:scale-100 aria-disabled:hover:bg-muted dark:aria-disabled:hover:bg-input/30"
+                            onClick={submitDisabled ? undefined : submitOnClick}
                             size="sm"
-                            tabIndex={0}
                             type="button"
                             variant="outline"
                           />
@@ -2316,6 +2303,7 @@ export function ChatInputAdvanced({
                           isLoading,
                           isQueued,
                           isStopping,
+                          isUsageBlocked,
                         })}
                       </TooltipContent>
                     </Tooltip>

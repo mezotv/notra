@@ -17,7 +17,8 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "drizzle-orm": "^0.45.2",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "zod": "^4.3.4"
   },
   "devDependencies": {
     "@notra/typescript-config": "*",

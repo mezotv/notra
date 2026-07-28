@@ -1,8 +1,18 @@
+import { CpuIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ContextItem } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { McpIcon } from "@/components/integrations/mcp-icon";
+import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
+import type { McpIconUrls } from "@/types/integrations/mcp";
+import {
+  getIntegrationReferenceValue,
+  getReferenceDisplay,
+  parseReferenceValue,
+} from "@/utils/integration-reference";
 
 const REFERENCE_ATTR = "data-integration-reference";
 
@@ -21,7 +31,10 @@ const REFERENCE_GITHUB_ICON_WRAPPER_CLASS =
 const REFERENCE_LINEAR_ICON_WRAPPER_CLASS =
   "inline-flex size-[1.04em] shrink-0 items-center justify-center text-indigo-500 dark:text-indigo-400";
 
-type ReferenceKind = "github" | "linear";
+const REFERENCE_MCP_ICON_WRAPPER_CLASS =
+  "inline-flex size-[1.04em] shrink-0 items-center justify-center text-violet-600 dark:text-violet-400";
+
+type ReferenceKind = "github" | "linear" | "mcp";
 
 const GITHUB_ICON_MARKUP = renderToStaticMarkup(
   <Github className="size-full" />
@@ -29,26 +42,31 @@ const GITHUB_ICON_MARKUP = renderToStaticMarkup(
 const LINEAR_ICON_MARKUP = renderToStaticMarkup(
   <Linear className="size-full" />
 );
-const GITHUB_REFERENCE_VALUE_PATTERN =
-  /^@?integration\/github\/([^/\s]+)\/([^/\s]+)\/([^/\s]+)$/;
-const LINEAR_REFERENCE_VALUE_PATTERN = /^@?integration\/linear\/([^/\s]+)$/;
+const MCP_ICON_MARKUP = renderToStaticMarkup(
+  <HugeiconsIcon className="size-full" icon={CpuIcon} />
+);
 
 function getReferenceKind(item: ContextItem): ReferenceKind {
-  return item.type === "github-repo" ? "github" : "linear";
+  if (item.type === "github-repo") {
+    return "github";
+  }
+  return item.type === "linear-team" ? "linear" : "mcp";
 }
 
 function getReferenceIconWrapperClass(kind: ReferenceKind): string {
-  return kind === "github"
-    ? REFERENCE_GITHUB_ICON_WRAPPER_CLASS
-    : REFERENCE_LINEAR_ICON_WRAPPER_CLASS;
+  if (kind === "github") {
+    return REFERENCE_GITHUB_ICON_WRAPPER_CLASS;
+  }
+  return kind === "linear"
+    ? REFERENCE_LINEAR_ICON_WRAPPER_CLASS
+    : REFERENCE_MCP_ICON_WRAPPER_CLASS;
 }
 
 function getReferenceIconMarkup(kind: ReferenceKind): string {
   if (kind === "github") {
     return GITHUB_ICON_MARKUP;
   }
-
-  return LINEAR_ICON_MARKUP;
+  return kind === "linear" ? LINEAR_ICON_MARKUP : MCP_ICON_MARKUP;
 }
 
 function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
@@ -60,6 +78,13 @@ function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
     return;
   }
 
+  if (item.type === "mcp-server") {
+    span.dataset.kind = "mcp";
+    span.dataset.integrationId = item.integrationId;
+    span.dataset.name = item.name;
+    return;
+  }
+
   span.dataset.kind = "linear";
   span.dataset.integrationId = item.integrationId;
   if (item.teamName) {
@@ -67,16 +92,67 @@ function appendReferenceData(span: HTMLSpanElement, item: ContextItem): void {
   }
 }
 
-function createReferenceIcon(kind: ReferenceKind): HTMLSpanElement {
+function createReferenceIcon(
+  kind: ReferenceKind,
+  mcpIcon?: McpIconUrls
+): HTMLSpanElement {
   const icon = document.createElement("span");
   icon.setAttribute("aria-hidden", "true");
   icon.className = getReferenceIconWrapperClass(kind);
+
+  const lightLogo = mcpIcon?.lightUrl ?? mcpIcon?.darkUrl;
+  const darkLogo = mcpIcon?.darkUrl ?? mcpIcon?.lightUrl;
+  if (kind === "mcp" && lightLogo && darkLogo) {
+    const lightImage = document.createElement("img");
+    lightImage.alt = "";
+    lightImage.className = "size-full rounded-sm object-contain dark:hidden";
+    lightImage.src = lightLogo;
+
+    const darkImage = document.createElement("img");
+    darkImage.alt = "";
+    darkImage.className =
+      "hidden size-full rounded-sm object-contain dark:block";
+    darkImage.src = darkLogo;
+
+    let didFallback = false;
+    const showFallbackIcon = () => {
+      if (didFallback) {
+        return;
+      }
+      didFallback = true;
+      icon.innerHTML = MCP_ICON_MARKUP;
+    };
+    lightImage.addEventListener("error", showFallbackIcon, { once: true });
+    darkImage.addEventListener("error", showFallbackIcon, { once: true });
+
+    icon.append(lightImage, darkImage);
+    return icon;
+  }
+
   icon.innerHTML = getReferenceIconMarkup(kind);
   return icon;
 }
 
-function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
+function ReferenceIcon({
+  kind,
+  mcpIcon,
+}: {
+  kind: ReferenceKind;
+  mcpIcon?: McpIconUrls;
+}) {
   const iconWrapperClass = getReferenceIconWrapperClass(kind);
+
+  if (kind === "mcp" && (mcpIcon?.lightUrl || mcpIcon?.darkUrl)) {
+    return (
+      <span aria-hidden="true" className={iconWrapperClass}>
+        <McpIcon
+          className="size-full"
+          darkUrl={mcpIcon.darkUrl}
+          lightUrl={mcpIcon.lightUrl}
+        />
+      </span>
+    );
+  }
 
   return (
     <span
@@ -88,31 +164,18 @@ function ReferenceIcon({ kind }: { kind: ReferenceKind }) {
   );
 }
 
-function getReferenceValue(item: ContextItem): string {
-  if (item.type === "github-repo") {
-    return `@integration/github/${item.integrationId}/${item.owner}/${item.repo}`;
-  }
-  return `@integration/linear/${item.integrationId}`;
-}
-
-export function getReferenceDisplay(item: ContextItem): string {
-  if (item.type === "github-repo") {
-    return `@${item.owner}/${item.repo}`;
-  }
-  return `@${item.teamName ?? "Linear"}`;
-}
-
 export function buildIntegrationReferenceElement(
-  item: ContextItem
+  item: ContextItem,
+  mcpIcon?: McpIconUrls
 ): HTMLSpanElement {
   const span = document.createElement("span");
   span.contentEditable = "false";
   span.className = REFERENCE_CONTAINER_CLASS;
   span.setAttribute(REFERENCE_ATTR, "true");
-  span.dataset.value = getReferenceValue(item);
+  span.dataset.value = getIntegrationReferenceValue(item);
   appendReferenceData(span, item);
 
-  const icon = createReferenceIcon(getReferenceKind(item));
+  const icon = createReferenceIcon(getReferenceKind(item), mcpIcon);
   const label = document.createElement("span");
   label.className = REFERENCE_LABEL_CLASS;
   label.textContent = getReferenceDisplay(item);
@@ -155,14 +218,40 @@ export function hydrateLinearReferenceTeamNames(
   return changed;
 }
 
-const REFERENCE_TOKEN_SPLIT_REGEX =
-  /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g;
+export function hydrateMcpReferenceIcons(
+  root: HTMLElement,
+  iconsByIntegrationId: ReadonlyMap<string, McpIconUrls>
+): boolean {
+  let changed = false;
+  const chips = root.querySelectorAll<HTMLElement>(
+    INTEGRATION_REFERENCE_SELECTOR
+  );
+
+  for (const chip of chips) {
+    if (chip.dataset.kind !== "mcp") {
+      continue;
+    }
+    const integrationId = chip.dataset.integrationId;
+    if (!integrationId) {
+      continue;
+    }
+    const iconUrls = iconsByIntegrationId.get(integrationId);
+    if (!(iconUrls?.lightUrl || iconUrls?.darkUrl)) {
+      continue;
+    }
+    chip.firstElementChild?.replaceWith(createReferenceIcon("mcp", iconUrls));
+    changed = true;
+  }
+
+  return changed;
+}
 
 export function buildFragmentFromReferencedText(
-  text: string
+  text: string,
+  mcpIconsByIntegrationId?: ReadonlyMap<string, McpIconUrls>
 ): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  const segments = text.split(REFERENCE_TOKEN_SPLIT_REGEX);
+  const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
 
   for (const segment of segments) {
     if (!segment) {
@@ -171,7 +260,11 @@ export function buildFragmentFromReferencedText(
 
     const referenceItem = parseReferenceValue(segment);
     if (referenceItem) {
-      fragment.append(buildIntegrationReferenceElement(referenceItem));
+      const mcpIcon =
+        referenceItem.type === "mcp-server"
+          ? mcpIconsByIntegrationId?.get(referenceItem.integrationId)
+          : undefined;
+      fragment.append(buildIntegrationReferenceElement(referenceItem, mcpIcon));
       continue;
     }
 
@@ -207,37 +300,23 @@ export function parseIntegrationReferenceElement(
     }
     return { type: "linear-team", integrationId, teamName };
   }
+  if (kind === "mcp") {
+    const { integrationId, name } = el.dataset;
+    if (!(integrationId && name)) {
+      return null;
+    }
+    return { type: "mcp-server", integrationId, name };
+  }
   return null;
 }
 
-export function parseReferenceValue(value: string): ContextItem | null {
-  const trimmed = value.trim();
-
-  const githubMatch = trimmed.match(GITHUB_REFERENCE_VALUE_PATTERN);
-  if (githubMatch) {
-    const [, integrationId, owner, repo] = githubMatch;
-    if (integrationId && owner && repo) {
-      return { type: "github-repo", integrationId, owner, repo };
-    }
-  }
-
-  const linearMatch = trimmed.match(LINEAR_REFERENCE_VALUE_PATTERN);
-  if (linearMatch) {
-    const [, integrationId] = linearMatch;
-    if (integrationId) {
-      return { type: "linear-team", integrationId };
-    }
-  }
-
-  return null;
-}
-
-export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
+export function renderTextWithIntegrationReferences(
+  text: string,
+  mcpIconsByIntegrationId?: ReadonlyMap<string, McpIconUrls>
+): ReactNode[] {
   const nodes: ReactNode[] = [];
   let keySeed = 0;
-  const segments = text.split(
-    /(@?integration\/(?:github\/[^/\s]+\/[^/\s]+\/[^/\s]+|linear\/[^/\s]+))/g
-  );
+  const segments = text.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX);
 
   segments.forEach((segment, segmentIndex) => {
     if (!segment) {
@@ -246,12 +325,17 @@ export function renderTextWithIntegrationReferences(text: string): ReactNode[] {
 
     const referenceItem = parseReferenceValue(segment);
     if (referenceItem) {
+      const mcpIcon =
+        referenceItem.type === "mcp-server"
+          ? mcpIconsByIntegrationId?.get(referenceItem.integrationId)
+          : undefined;
       nodes.push(
         <IntegrationReference
           display={getReferenceDisplay(referenceItem)}
           key={`ref-${segment}-${keySeed++}`}
           kind={getReferenceKind(referenceItem)}
-          value={getReferenceValue(referenceItem)}
+          mcpIcon={mcpIcon}
+          value={getIntegrationReferenceValue(referenceItem)}
         />
       );
       return;
@@ -323,12 +407,14 @@ interface IntegrationReferenceProps {
   value: string;
   display: string;
   kind: ReferenceKind;
+  mcpIcon?: McpIconUrls;
 }
 
 function IntegrationReference({
   value,
   display,
   kind,
+  mcpIcon,
 }: IntegrationReferenceProps) {
   return (
     <span
@@ -337,7 +423,7 @@ function IntegrationReference({
       data-integration-reference="true"
       data-value={value}
     >
-      <ReferenceIcon kind={kind} />
+      <ReferenceIcon kind={kind} mcpIcon={mcpIcon} />
       <span className={REFERENCE_LABEL_CLASS}>{display}</span>
     </span>
   );

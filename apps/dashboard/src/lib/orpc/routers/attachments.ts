@@ -31,6 +31,7 @@ type AttachmentFilter = (typeof ATTACHMENT_FILTER)[number];
 const LIST_PAGE_SIZE = 100;
 
 const listInputSchema = z.object({
+  organizationId: z.string().min(1),
   filter: z.enum(ATTACHMENT_FILTER).default("all"),
   cursor: z
     .object({
@@ -41,6 +42,7 @@ const listInputSchema = z.object({
 });
 
 const deleteManyInputSchema = z.object({
+  organizationId: z.string().min(1),
   keys: z.array(z.string().min(1)).min(1).max(500),
 });
 
@@ -132,7 +134,7 @@ export const attachmentsRouter = {
     .handler(async ({ context, input }) => {
       const organizationId = await requireOrganizationAccess(
         context.user.id,
-        context.session?.activeOrganizationId
+        input.organizationId
       );
 
       const filterCondition = buildFilterCondition(
@@ -186,7 +188,7 @@ export const attachmentsRouter = {
     .handler(async ({ context, input }) => {
       const organizationId = await requireOrganizationAccess(
         context.user.id,
-        context.session?.activeOrganizationId
+        input.organizationId
       );
 
       const owned = await db

@@ -2,7 +2,7 @@
 Give a short summary of what this PR does and why it's needed.
 
 ### Screenshot/Recording (if applicable)
-Attach a screenshot or recording of the change. This is optional, but can help reviewers understand the change. You can use [Loom](https://www.loom.com/) to record a video.
+Attach a screenshot or recording of the change. This is optional, but can help reviewers understand the change. You can use [Cap](https://cap.so/) to record a video.
 
 <details>
 <summary>Checklist</summary>

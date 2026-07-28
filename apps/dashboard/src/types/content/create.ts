@@ -72,6 +72,11 @@ export interface BrandIdentitiesStepProps {
   organizationId: string;
 }
 
+export interface StepProgressProps {
+  activeIndex: number;
+  onStepSelect: (index: number) => void;
+}
+
 export interface SelectionState {
   commits: Set<string>;
   prs: Set<string>;

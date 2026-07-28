@@ -18,7 +18,6 @@ export function IntegrationBanner({
           priority={priority}
           sizes="(max-width: 48rem) 100vw, 40rem"
           src={integration.bannerUrl}
-          unoptimized
         />
       </div>
     );

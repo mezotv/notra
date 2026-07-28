@@ -1,10 +1,21 @@
 "use client";
 
-import { Cancel01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import {
+  ArrowRight01Icon,
+  Cancel01Icon,
+  SparklesIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@notra/ui/components/ui/badge";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { SuggestionDetailsSheet } from "@/components/automation/suggestion-details-sheet";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { EVE_ACCENT_COLOR } from "@/constants/onboarding-agent";
@@ -27,6 +38,23 @@ export function OnboardingSuggestions({
     agentRunning,
   });
   const dismissMutation = useDismissOnboardingSuggestion();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedIdRef = useRef<string | null>(null);
+
+  const dismissPendingId = dismissMutation.isPending
+    ? (dismissMutation.variables?.suggestionId ?? null)
+    : null;
+
+  const dismissSuggestion = (suggestionId: string, onSuccess?: () => void) => {
+    dismissMutation.mutate(
+      { organizationId, suggestionId },
+      {
+        onError: () => toast.error("Couldn't dismiss the suggestion"),
+        onSuccess,
+      }
+    );
+  };
 
   const matching = (suggestions ?? []).filter(
     (suggestion) => suggestion.type === type
@@ -36,70 +64,127 @@ export function OnboardingSuggestions({
     return null;
   }
 
+  const selectedSuggestion = matching.find(
+    (suggestion) => suggestion.id === selectedId
+  );
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <HugeiconsIcon
-          className="size-4 text-muted-foreground"
-          icon={SparklesIcon}
-        />
-        <h2 className="font-medium text-sm">Suggestions</h2>
-        {agentRunning && <BrailleLoader className="text-xs" />}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {matching.map((suggestion) => {
-          const evidence = getOnboardingSuggestionEvidence(suggestion.data);
-          return (
-            <TitleCard
-              accentColor={EVE_ACCENT_COLOR}
-              action={
-                <div className="flex items-center gap-1.5">
-                  <Button onClick={() => onCreate(suggestion.id)} size="sm">
-                    Create
-                  </Button>
-                  <Button
-                    aria-label={`Dismiss suggestion "${suggestion.title}"`}
-                    disabled={dismissMutation.isPending}
-                    onClick={() =>
-                      dismissMutation.mutate(
-                        { organizationId, suggestionId: suggestion.id },
-                        {
-                          onError: () =>
-                            toast.error("Couldn't dismiss the suggestion"),
+    <TooltipProvider delay={400}>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <HugeiconsIcon
+            className="size-4 text-muted-foreground"
+            icon={SparklesIcon}
+          />
+          <h2 className="font-medium text-sm">Suggestions</h2>
+          {agentRunning && <BrailleLoader className="text-xs" />}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {matching.map((suggestion) => {
+            const evidence = getOnboardingSuggestionEvidence(suggestion.data);
+            const openDetails = () => {
+              selectedIdRef.current = suggestion.id;
+              setSelectedId(suggestion.id);
+              setDetailsOpen(true);
+            };
+            return (
+              <TitleCard
+                accentColor={EVE_ACCENT_COLOR}
+                action={
+                  <div className="flex items-center gap-1.5">
+                    <Button onClick={() => onCreate(suggestion.id)} size="sm">
+                      Create
+                    </Button>
+                    <BaseTooltip.Root>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            aria-label={`Dismiss suggestion "${suggestion.title}"`}
+                            disabled={dismissPendingId === suggestion.id}
+                            onClick={() => dismissSuggestion(suggestion.id)}
+                            size="icon-sm"
+                            variant="ghost"
+                          />
                         }
-                      )
-                    }
-                    size="icon-sm"
-                    variant="ghost"
-                  >
-                    <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
-                  </Button>
+                      >
+                        <HugeiconsIcon className="size-4" icon={Cancel01Icon} />
+                      </TooltipTrigger>
+                      <TooltipContent className="data-open:zoom-in-100 data-[side=top]:slide-in-from-bottom-0 data-[state=delayed-open]:zoom-in-100">
+                        Dismiss suggestion
+                      </TooltipContent>
+                    </BaseTooltip.Root>
+                  </div>
+                }
+                className="h-full"
+                contentClassName="relative"
+                heading={
+                  <BaseTooltip.Root>
+                    <TooltipTrigger
+                      render={<span className="block truncate" />}
+                    >
+                      {suggestion.title}
+                    </TooltipTrigger>
+                    <TooltipContent className="data-open:zoom-in-100 data-[side=top]:slide-in-from-bottom-0 data-[state=delayed-open]:zoom-in-100">
+                      {suggestion.title}
+                    </TooltipContent>
+                  </BaseTooltip.Root>
+                }
+                icon={<HugeiconsIcon icon={SparklesIcon} />}
+                key={suggestion.id}
+              >
+                <div className="space-y-1.5">
+                  {suggestion.description ? (
+                    <p className="line-clamp-3 text-muted-foreground text-sm">
+                      {suggestion.description}
+                    </p>
+                  ) : null}
+                  {evidence ? (
+                    <p className="line-clamp-2 text-muted-foreground/70 text-xs">
+                      {evidence}
+                    </p>
+                  ) : null}
+                  <button
+                    aria-label={`View details for "${suggestion.title}"`}
+                    className="peer absolute inset-0 cursor-pointer rounded-t-lg focus-visible:ring-2 focus-visible:ring-ring"
+                    onClick={openDetails}
+                    type="button"
+                  />
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-background via-background/90 to-transparent pt-6 pb-2 font-medium text-foreground text-sm opacity-0 transition-opacity duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+                    Click to expand
+                    <HugeiconsIcon className="size-4" icon={ArrowRight01Icon} />
+                  </span>
                 </div>
-              }
-              className="h-full"
-              heading={suggestion.title}
-              icon={<HugeiconsIcon icon={SparklesIcon} />}
-              key={suggestion.id}
-            >
-              <div className="space-y-1.5">
-                <Badge className="font-normal text-xs" variant="secondary">
-                  Suggestion
-                </Badge>
-                {suggestion.description ? (
-                  <p className="line-clamp-3 text-muted-foreground text-sm">
-                    {suggestion.description}
-                  </p>
-                ) : null}
-                {evidence ? (
-                  <p className="line-clamp-2 text-muted-foreground/70 text-xs">
-                    {evidence}
-                  </p>
-                ) : null}
-              </div>
-            </TitleCard>
-          );
-        })}
+              </TitleCard>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {selectedSuggestion ? (
+        <SuggestionDetailsSheet
+          dismissing={dismissPendingId === selectedSuggestion.id}
+          onCreate={() => {
+            setDetailsOpen(false);
+            onCreate(selectedSuggestion.id);
+          }}
+          onDismiss={() =>
+            dismissSuggestion(selectedSuggestion.id, () => {
+              if (selectedIdRef.current === selectedSuggestion.id) {
+                setDetailsOpen(false);
+              }
+            })
+          }
+          onOpenChange={setDetailsOpen}
+          open={detailsOpen}
+          suggestion={{
+            description: selectedSuggestion.description,
+            evidence: getOnboardingSuggestionEvidence(selectedSuggestion.data),
+            id: selectedSuggestion.id,
+            title: selectedSuggestion.title,
+            type: selectedSuggestion.type,
+          }}
+        />
+      ) : null}
+    </TooltipProvider>
   );
 }

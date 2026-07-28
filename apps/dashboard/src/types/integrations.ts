@@ -149,6 +149,21 @@ export interface IntegrationCardProps {
   onUpdate?: () => void;
 }
 
+export interface IntegrationCardDitherProps {
+  active: boolean;
+  color: string;
+}
+
+export type DitherInteractionProps = Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onBlur" | "onFocus" | "onPointerEnter" | "onPointerLeave"
+>;
+
+export interface IntegrationCardDitherInteraction {
+  active: boolean;
+  interactionProps: DitherInteractionProps;
+}
+
 export interface RepositoryListProps {
   integrationId: string;
   organizationId: string;

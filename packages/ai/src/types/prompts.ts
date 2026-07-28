@@ -50,9 +50,14 @@ export interface StandaloneChatPromptParams {
     teamName?: string;
     displayName?: string;
   }>;
+  mcpContext?: Array<{
+    integrationId: string;
+    name: string;
+  }>;
   toolDescriptions?: string[];
   hasGitHubEnabled: boolean;
   hasLinearEnabled: boolean;
+  hasMcpEnabled: boolean;
   timezone?: string;
 }
 

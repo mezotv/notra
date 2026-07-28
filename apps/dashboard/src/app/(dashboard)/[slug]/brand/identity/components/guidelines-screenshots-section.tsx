@@ -141,7 +141,6 @@ export function GuidelinesScreenshotsSection({
                     className="block h-auto max-h-48 w-auto max-w-full object-contain"
                     height={screenshot.height}
                     src={screenshot.url}
-                    unoptimized
                     width={screenshot.width}
                   />
                 </ImageZoom>

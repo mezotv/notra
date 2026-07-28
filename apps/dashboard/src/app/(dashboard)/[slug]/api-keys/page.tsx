@@ -51,6 +51,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -125,6 +126,8 @@ const EDIT_FORM_DEFAULTS: ApiKeyFormValues = {
   scopes: [...API_KEY_DEFAULT_SCOPES],
   expiration: "never",
 };
+
+const API_KEY_SKELETON_ROWS = ["row-1", "row-2", "row-3"];
 
 interface ApiKeyEditForm {
   // TanStack Form's Field component carries deep generics that are local to the
@@ -309,14 +312,30 @@ function ApiKeysTableContent({
 }) {
   if (isPending) {
     return (
-      <TableRow>
-        <TableCell
-          className="h-24 text-center text-muted-foreground"
-          colSpan={6}
-        >
-          Loading…
-        </TableCell>
-      </TableRow>
+      <>
+        {API_KEY_SKELETON_ROWS.map((row) => (
+          <TableRow key={row}>
+            <TableCell>
+              <Skeleton className="h-4 w-32" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-28" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-20" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="size-8 rounded-md" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </>
     );
   }
 

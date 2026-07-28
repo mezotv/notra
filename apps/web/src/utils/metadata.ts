@@ -34,6 +34,12 @@ export const PAGE_SOCIAL_IMAGES = {
     height: SOCIAL_IMAGE_HEIGHT,
     alt: "Notra changelog social preview image",
   },
+  freeHat: {
+    url: "/og/free-hat.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra free hat social preview image",
+  },
   contact: {
     url: "/og/contact.png",
     width: SOCIAL_IMAGE_WIDTH,

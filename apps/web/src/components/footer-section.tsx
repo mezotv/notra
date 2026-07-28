@@ -64,20 +64,22 @@ export default function FooterSection() {
         <Image
           alt=""
           aria-hidden="true"
-          className="h-auto w-[135%] min-w-[60rem] max-w-none translate-y-[20%] dark:opacity-40"
+          className="h-auto w-[121.4%] min-w-[60rem] max-w-[126rem] translate-y-[23%] dark:opacity-40"
           height={536}
           src="/marketing/landing/footer-wordmark.svg"
           width={1748}
         />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-36 md:px-8 md:pb-52">
+      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-64 md:px-8 md:pb-[30rem]">
         <div className="flex flex-col gap-12 py-7 lg:flex-row lg:items-start lg:justify-between lg:gap-24">
           <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-1">
-                <NotraMark className="size-10.5 shrink-0" />
-                <span className="font-display font-semibold text-[1.25rem] text-foreground leading-[1.14] tracking-[-0.015em]">
+              <div className="flex items-center gap-2">
+                <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#F6F3F1] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
+                  <NotraMark className="size-7 shrink-0" />
+                </span>
+                <span className="font-display font-semibold text-foreground text-lg leading-[1.14] tracking-[-0.015em]">
                   Notra
                 </span>
               </div>

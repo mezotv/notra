@@ -75,7 +75,16 @@ export interface LinearContextItem {
   teamName?: string;
 }
 
-export type ContextItem = GitHubContextItem | LinearContextItem;
+export interface McpServerContextItem {
+  type: "mcp-server";
+  integrationId: string;
+  name: string;
+}
+
+export type ContextItem =
+  | GitHubContextItem
+  | LinearContextItem
+  | McpServerContextItem;
 
 export interface RoutingDecision {
   complexity: "simple" | "complex";

@@ -10,6 +10,19 @@ export type McpToolDefinition = McpListToolsResult["tools"][number];
 export type McpToolIndexTransaction = Parameters<
   Parameters<typeof db.transaction>[0]
 >[0];
+export type McpToolIndexDatabase = typeof db | McpToolIndexTransaction;
+
+export interface GetSessionActivatedMcpToolsParams {
+  organizationId: string;
+  sessionId: string;
+  surface: McpSessionSurface;
+  serverIntegrationIds?: string[];
+}
+
+export interface QuerySessionActivatedMcpToolsParams
+  extends GetSessionActivatedMcpToolsParams {
+  database: McpToolIndexDatabase;
+}
 
 export interface IndexedMcpTool {
   id: string;

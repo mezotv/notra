@@ -26,6 +26,7 @@ import {
   resolveCompanyDomain,
   resolveReachableWebsiteUrl,
 } from "@/lib/onboarding/company-domain";
+import { isEduEmail } from "@/lib/onboarding/edu-email";
 import { buildOnboardingAgentMessage } from "@/lib/onboarding/onboarding-agent-message";
 import {
   eveCreateSessionResponseSchema,
@@ -180,7 +181,12 @@ export async function sendOnboardingSlackInvite({
   email,
   organizationName,
 }: OnboardingSlackInviteInput): Promise<OnboardingSlackInviteResult> {
-  if (!hasSlackConnectConfigured() || isFreeEmail(email.trim().toLowerCase())) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (
+    !hasSlackConnectConfigured() ||
+    isFreeEmail(normalizedEmail) ||
+    isEduEmail(normalizedEmail)
+  ) {
     return { invited: false };
   }
 

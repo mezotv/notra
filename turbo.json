@@ -83,7 +83,12 @@
     },
     "@notra/onboarding-agent#build": {
       "dependsOn": ["^build"],
-      "outputs": [".output/**", ".eve/compile/**", ".eve/discovery/**"]
+      "outputs": [
+        ".output/**",
+        ".vercel/output/**",
+        ".eve/compile/**",
+        ".eve/discovery/**"
+      ]
     },
     "check-types": {
       "dependsOn": ["transit"]

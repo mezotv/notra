@@ -104,6 +104,7 @@
         "@ai-sdk/react": "3.0.208",
         "@aws-sdk/client-s3": "^3.990.0",
         "@aws-sdk/s3-request-presigner": "^3.990.0",
+        "@base-ui/react": "^1.1.0",
         "@better-auth/oauth-provider": "1.6.11",
         "@calcom/embed-react": "^1.5.3",
         "@contextcompany/otel": "^1.0.16",
@@ -153,6 +154,7 @@
         "cmdk": "^1.1.1",
         "cnfast": "^0.0.6",
         "date-fns": "^4.1.0",
+        "dompurify": "3.4.12",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
         "eve": "0.19.0",
@@ -209,6 +211,31 @@
         "mint": "4.2.676",
       },
     },
+    "apps/onboarding-agent": {
+      "name": "@notra/onboarding-agent",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-sdk/devtools": "1.0.1",
+        "@aws-sdk/client-s3": "^3.1009.0",
+        "@notra/ai": "workspace:*",
+        "@notra/db": "workspace:*",
+        "@notra/eve-tools": "workspace:*",
+        "@vercel/oidc": "^3.8.0",
+        "ai": "^7.0.0",
+        "drizzle-orm": "^0.45.2",
+        "effect": "4.0.0-beta.93",
+        "eve": "0.19.0",
+        "pg": "^8.20.0",
+        "zod": "^4.3.4",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "^24.0.0",
+        "dotenv-cli": "^11.0.0",
+        "microsandbox": "^0.6.1",
+        "typescript": "5.9.2",
+      },
+    },
     "apps/web": {
       "name": "web",
       "version": "0.1.0",
@@ -251,6 +278,7 @@
         "postcss": "^8.5.8",
         "react": "^19.2.6",
         "react-dom": "^19.2.6",
+        "react-tweet": "^3.3.1",
         "remotion": "4.0.487",
         "sharp": "^0.34.5",
         "shiki": "^4.1.0",
@@ -271,31 +299,6 @@
         "knip": "^6.12.1",
         "tailwindcss": "^4",
         "typescript": "^5",
-      },
-    },
-    "packages/agents/onboarding": {
-      "name": "@notra/onboarding-agent",
-      "version": "0.0.1",
-      "dependencies": {
-        "@ai-sdk/devtools": "1.0.1",
-        "@aws-sdk/client-s3": "^3.1009.0",
-        "@notra/ai": "workspace:*",
-        "@notra/db": "workspace:*",
-        "@notra/eve-tools": "workspace:*",
-        "@vercel/oidc": "^3.8.0",
-        "ai": "^7.0.0",
-        "drizzle-orm": "^0.45.2",
-        "effect": "4.0.0-beta.93",
-        "eve": "0.19.0",
-        "pg": "^8.20.0",
-        "zod": "^4.3.4",
-      },
-      "devDependencies": {
-        "@notra/typescript-config": "workspace:*",
-        "@types/node": "^24.0.0",
-        "dotenv-cli": "^11.0.0",
-        "microsandbox": "^0.6.1",
-        "typescript": "5.9.2",
       },
     },
     "packages/ai": {
@@ -362,6 +365,7 @@
         "@neondatabase/serverless": "^1.0.2",
         "drizzle-orm": "^0.45.2",
         "pg": "^8.20.0",
+        "zod": "^4.3.4",
       },
       "devDependencies": {
         "@notra/typescript-config": "*",
@@ -403,6 +407,7 @@
       "version": "0.0.1",
       "dependencies": {
         "opentype.js": "^2.0.0",
+        "zod": "^4.3.4",
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
@@ -1202,7 +1207,7 @@
 
     "@notra/kiwi": ["@notra/kiwi@workspace:packages/kiwi"],
 
-    "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:packages/agents/onboarding"],
+    "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:apps/onboarding-agent"],
 
     "@notra/typescript-config": ["@notra/typescript-config@workspace:packages/typescript-config"],
 
@@ -4123,6 +4128,8 @@
     "react-style-singleton": ["react-style-singleton@2.2.3", "", { "dependencies": { "get-nonce": "^1.0.0", "tslib": "^2.0.0" }, "peerDependencies": { "@types/react": "*", "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^19.0.0-rc" }, "optionalPeers": ["@types/react"] }, "sha512-b6jSvxvVnyptAiLjbkWLE/lOnR4lfTtDAl+eUC7RZy+QQWc6wRzIV2CE6xBuMmDxc2qIihtDCZD5NPOFl7fRBQ=="],
 
     "react-transition-group": ["react-transition-group@4.4.5", "", { "dependencies": { "@babel/runtime": "^7.5.5", "dom-helpers": "^5.0.1", "loose-envify": "^1.4.0", "prop-types": "^15.6.2" }, "peerDependencies": { "react": ">=16.6.0", "react-dom": ">=16.6.0" } }, "sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g=="],
+
+    "react-tweet": ["react-tweet@3.3.1", "", { "dependencies": { "@swc/helpers": "^0.5.3", "clsx": "^2.0.0", "swr": "^2.2.4" }, "peerDependencies": { "react": "^18.0.0 || ^19.0.0", "react-dom": "^18.0.0 || ^19.0.0" } }, "sha512-0Gj1YgBTe1K85NBMoWBlUc17Rdc67gIJLlacrVgj+3jWIoXpFfxPdZ1U5OnWkkF9zxhphqs2pY1i//JBfP3Qog=="],
 
     "read-cache": ["read-cache@1.0.0", "", { "dependencies": { "pify": "^2.3.0" } }, "sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA=="],
 

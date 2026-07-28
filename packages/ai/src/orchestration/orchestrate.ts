@@ -20,6 +20,7 @@ import {
   validateIntegrations,
 } from "./integration-validator";
 import { routeAndSelectModel } from "./router";
+import { getThinkingProviderOptions } from "./thinking";
 import {
   buildToolSet,
   getLinearContextFromIntegrations,
@@ -124,9 +125,16 @@ export async function orchestrateChat(
     }),
     tools,
     stopWhen: stepCountIs(maxSteps),
-    providerOptions: withGatewayDefaults(undefined, {
-      modelId: routingDecision.model,
-    }),
+    providerOptions: withGatewayDefaults(
+      getThinkingProviderOptions(
+        routingDecision.model,
+        true,
+        routingDecision.thinkingLevel ?? "low"
+      ),
+      {
+        modelId: routingDecision.model,
+      }
+    ),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
     async onFinish({ totalUsage }) {
       await deps?.onUsage?.(totalUsage, routingDecision.model);

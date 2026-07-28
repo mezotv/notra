@@ -24,6 +24,7 @@ import { LoaderCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { type AttachmentRow, buildAttachmentColumns } from "./columns";
 import { AttachmentsDataTable } from "./data-table";
@@ -40,16 +41,20 @@ const FILTER_LABELS: Record<Filter, string> = {
 
 export function AttachmentsSection() {
   const queryClient = useQueryClient();
+  const { activeOrganization } = useOrganizationsContext();
   const [filter, setFilter] = useState<Filter>("all");
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [confirmKeys, setConfirmKeys] = useState<string[] | null>(null);
 
-  const queryOptions = dashboardOrpc.attachments.list.queryOptions({
-    input: { filter },
-  });
+  const organizationId = activeOrganization?.id ?? "";
 
-  const { data, isLoading } = useQuery(queryOptions);
+  const { data, isLoading } = useQuery(
+    dashboardOrpc.attachments.list.queryOptions({
+      input: { filter, organizationId },
+      enabled: Boolean(organizationId),
+    })
+  );
 
   const attachments: AttachmentRow[] = useMemo(() => {
     return (
@@ -72,7 +77,7 @@ export function AttachmentsSection() {
 
   const deleteManyMutation = useMutation({
     mutationFn: async (keys: string[]) => {
-      await dashboardOrpc.attachments.deleteMany.call({ keys });
+      await dashboardOrpc.attachments.deleteMany.call({ keys, organizationId });
     },
     onSuccess: async (_data, keys) => {
       toast.success(

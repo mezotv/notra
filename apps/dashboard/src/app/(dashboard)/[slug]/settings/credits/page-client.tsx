@@ -43,6 +43,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { authClient } from "@/lib/auth/client";
 import {
   CREDIT_RANGE_LABELS,
   CREDIT_RANGES,
@@ -152,11 +154,17 @@ export default function CreditsPageClient() {
   const eventsLimit = 20;
   const eventsOffset = Math.max(0, page - 1) * eventsLimit;
   const autumnClient = useAutumnClient({ caller: "CreditsPageClient" });
+  const { activeOrganization } = useOrganizationsContext();
+  const { data: session } = authClient.useSession();
+  const sessionMatchesOrganization =
+    Boolean(activeOrganization?.id) &&
+    session?.session.activeOrganizationId === activeOrganization?.id;
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: [
       "autumn",
       "events",
       "list",
+      activeOrganization?.id,
       FEATURES.AI_CREDITS,
       eventsOffset,
       eventsLimit,
@@ -169,6 +177,7 @@ export default function CreditsPageClient() {
       };
       return autumnClient.listEvents(params);
     },
+    enabled: sessionMatchesOrganization,
   });
 
   const hasMore = hasMorePaginatedResults(eventsData, eventsLimit);

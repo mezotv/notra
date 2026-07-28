@@ -16,6 +16,7 @@ import {
   isNull,
   notInArray,
   or,
+  type SQL,
   sql,
 } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
@@ -29,11 +30,13 @@ import {
 } from "../constants/mcp-tool-index";
 import type { McpRequestAuth } from "../types/mcp-oauth";
 import type {
+  GetSessionActivatedMcpToolsParams,
   IndexedMcpTool,
   McpSessionSurface,
   McpToolActionPhrases,
   McpToolDefinition,
   McpToolIndexTransaction,
+  QuerySessionActivatedMcpToolsParams,
 } from "../types/mcp-tool-index";
 import { publicMcpRuntimeFetch } from "../utils/mcp-fetch";
 import { createMcpToolFingerprint } from "../utils/mcp-tool-fingerprint";
@@ -430,17 +433,25 @@ export async function hasActiveIndexedMcpToolsForOrganization({
   return (row?.value ?? 0) > 0;
 }
 
-export async function getSessionActivatedMcpTools({
+export async function getSessionActivatedMcpTools(
+  params: GetSessionActivatedMcpToolsParams
+) {
+  return querySessionActivatedMcpTools({ database: db, ...params });
+}
+
+async function querySessionActivatedMcpTools({
+  database,
   organizationId,
   sessionId,
   surface,
-}: {
-  organizationId: string;
-  sessionId: string;
-  surface: McpSessionSurface;
-}) {
+  serverIntegrationIds,
+}: QuerySessionActivatedMcpToolsParams) {
+  if (serverIntegrationIds?.length === 0) {
+    return [];
+  }
+
   const now = new Date();
-  return db
+  return database
     .select({
       activation: mcpSessionToolActivations,
       tool: mcpToolIndex,
@@ -468,6 +479,9 @@ export async function getSessionActivatedMcpTools({
         eq(mcpToolIndex.status, "active"),
         eq(mcpServerIntegrations.enabled, true),
         eq(mcpServerIntegrations.resourceType, "connection"),
+        serverIntegrationIds
+          ? inArray(mcpToolIndex.serverIntegrationId, serverIntegrationIds)
+          : undefined,
         or(
           isNull(mcpSessionToolActivations.expiresAt),
           gt(mcpSessionToolActivations.expiresAt, now)
@@ -498,12 +512,14 @@ export async function activateSessionMcpTools({
   surface,
   toolIds,
   sourceQuery,
+  serverIntegrationIds,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
   toolIds: string[];
   sourceQuery?: string;
+  serverIntegrationIds?: string[];
 }) {
   const uniqueToolIds = Array.from(new Set(toolIds));
   if (uniqueToolIds.length === 0) {
@@ -516,6 +532,19 @@ export async function activateSessionMcpTools({
   }
 
   let tools = await getToolsByIds(organizationId, uniqueToolIds);
+  const allowedServerIntegrationIds = serverIntegrationIds
+    ? new Set(serverIntegrationIds)
+    : null;
+  if (
+    allowedServerIntegrationIds &&
+    tools.some(
+      (tool) => !allowedServerIntegrationIds.has(tool.serverIntegrationId)
+    )
+  ) {
+    throw new Error(
+      "One or more MCP tools are outside the selected server context."
+    );
+  }
   const staleIntegrationIds = new Set(
     tools
       .filter((tool) => tool.status === "stale")
@@ -544,33 +573,40 @@ export async function activateSessionMcpTools({
     throw new Error("One or more MCP tools are unavailable.");
   }
 
-  const existing = await getSessionActivatedMcpTools({
-    organizationId,
-    sessionId,
-    surface,
-  });
-  const existingIds = new Set(existing.map((tool) => tool.id));
-  const newCount = activeTools.filter(
-    (tool) => !existingIds.has(tool.id)
-  ).length;
-  if (existing.length + newCount > MCP_SESSION_ACTIVE_TOOL_LIMIT) {
-    throw new Error(
-      `This session can activate at most ${MCP_SESSION_ACTIVE_TOOL_LIMIT} MCP tools. Deactivate unused tools first.`
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`mcp-session-tool-activation:${organizationId}:${sessionId}:${surface}`}, 0))`
     );
-  }
 
-  for (const tool of activeTools) {
-    await db
+    const existing = await querySessionActivatedMcpTools({
+      database: tx,
+      organizationId,
+      sessionId,
+      surface,
+    });
+    const existingIds = new Set(existing.map((tool) => tool.id));
+    const newCount = activeTools.filter(
+      (tool) => !existingIds.has(tool.id)
+    ).length;
+    if (existing.length + newCount > MCP_SESSION_ACTIVE_TOOL_LIMIT) {
+      throw new Error(
+        `This session can activate at most ${MCP_SESSION_ACTIVE_TOOL_LIMIT} MCP tools. Deactivate unused tools first.`
+      );
+    }
+
+    await tx
       .insert(mcpSessionToolActivations)
-      .values({
-        id: `mcpa_${nanoid()}`,
-        organizationId,
-        sessionId,
-        surface,
-        mcpToolIndexId: tool.id,
-        runtimeToolName: tool.runtimeToolName,
-        sourceQuery: sourceQuery ?? null,
-      })
+      .values(
+        activeTools.map((tool) => ({
+          id: `mcpa_${nanoid()}`,
+          organizationId,
+          sessionId,
+          surface,
+          mcpToolIndexId: tool.id,
+          runtimeToolName: tool.runtimeToolName,
+          sourceQuery: sourceQuery ?? null,
+        }))
+      )
       .onConflictDoUpdate({
         target: [
           mcpSessionToolActivations.organizationId,
@@ -579,13 +615,19 @@ export async function activateSessionMcpTools({
           mcpSessionToolActivations.mcpToolIndexId,
         ],
         set: {
-          runtimeToolName: tool.runtimeToolName,
-          sourceQuery: sourceQuery ?? null,
+          runtimeToolName: sql`excluded.runtime_tool_name`,
+          sourceQuery: sql`excluded.source_query`,
         },
       });
-  }
 
-  return getSessionActivatedMcpTools({ organizationId, sessionId, surface });
+    return querySessionActivatedMcpTools({
+      database: tx,
+      organizationId,
+      sessionId,
+      surface,
+      serverIntegrationIds,
+    });
+  });
 }
 
 export async function deactivateSessionMcpTools({
@@ -594,28 +636,73 @@ export async function deactivateSessionMcpTools({
   surface,
   toolIds,
   runtimeToolNames,
+  serverIntegrationIds,
 }: {
   organizationId: string;
   sessionId: string;
   surface: McpSessionSurface;
   toolIds?: string[];
   runtimeToolNames?: string[];
+  serverIntegrationIds?: string[];
 }) {
+  if (serverIntegrationIds?.length === 0) {
+    return { deactivated: 0 };
+  }
+
   const conditions = [
     eq(mcpSessionToolActivations.organizationId, organizationId),
     eq(mcpSessionToolActivations.sessionId, sessionId),
     eq(mcpSessionToolActivations.surface, surface),
   ];
 
-  if (toolIds?.length) {
-    conditions.push(inArray(mcpSessionToolActivations.mcpToolIndexId, toolIds));
-  } else if (runtimeToolNames?.length) {
+  if (serverIntegrationIds) {
+    const selectedServerToolIds = db
+      .select({ id: mcpToolIndex.id })
+      .from(mcpToolIndex)
+      .where(
+        and(
+          eq(mcpToolIndex.organizationId, organizationId),
+          inArray(mcpToolIndex.serverIntegrationId, serverIntegrationIds)
+        )
+      );
     conditions.push(
-      inArray(mcpSessionToolActivations.runtimeToolName, runtimeToolNames)
+      inArray(mcpSessionToolActivations.mcpToolIndexId, selectedServerToolIds)
     );
-  } else {
+  }
+
+  const requestedToolConditions: SQL[] = [];
+  if (toolIds?.length) {
+    requestedToolConditions.push(
+      inArray(mcpSessionToolActivations.mcpToolIndexId, toolIds)
+    );
+  }
+  if (runtimeToolNames?.length) {
+    const currentRuntimeNameToolIds = db
+      .select({ id: mcpToolIndex.id })
+      .from(mcpToolIndex)
+      .where(
+        and(
+          eq(mcpToolIndex.organizationId, organizationId),
+          inArray(mcpToolIndex.runtimeToolName, runtimeToolNames)
+        )
+      );
+    const runtimeNameCondition = or(
+      inArray(mcpSessionToolActivations.runtimeToolName, runtimeToolNames),
+      inArray(
+        mcpSessionToolActivations.mcpToolIndexId,
+        currentRuntimeNameToolIds
+      )
+    );
+    if (runtimeNameCondition) {
+      requestedToolConditions.push(runtimeNameCondition);
+    }
+  }
+
+  const requestedToolCondition = or(...requestedToolConditions);
+  if (!requestedToolCondition) {
     return { deactivated: 0 };
   }
+  conditions.push(requestedToolCondition);
 
   const deleted = await db
     .delete(mcpSessionToolActivations)

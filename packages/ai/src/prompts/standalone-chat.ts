@@ -7,10 +7,12 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
   const {
     repoContext,
     linearContext,
+    mcpContext,
     skillSummaries,
     toolDescriptions,
     hasGitHubEnabled,
     hasLinearEnabled,
+    hasMcpEnabled,
     timezone,
   } = params;
 
@@ -31,6 +33,11 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
   const linearSection =
     hasLinearEnabled && linearContext?.length
       ? `\n\n## Linear Integration\nSource of truth identifiers for Linear context:\n${linearContext.map((c) => `- ${formatLinearContext(c)}`).join("\n")}\n\nWhen working with Linear data, call Linear tools (getLinearIssues, getLinearProjects, getLinearCycles) using integrationId.`
+      : "";
+
+  const mcpSection =
+    hasMcpEnabled && mcpContext?.length
+      ? `\n\n## MCP Server Context\nSource of truth identifiers for selected MCP servers:\n${mcpContext.map((c) => `- ${formatMcpContext(c)}`).join("\n")}\n\nWhen using an attached MCP server, call searchMcpTools with its serverIntegrationId to constrain tool discovery, then activate the matching tools before calling them.`
       : "";
 
   const { formatted: currentDate, timezone: resolvedTimezone } =
@@ -67,7 +74,7 @@ export function getStandaloneChatPrompt(params: StandaloneChatPromptParams) {
     - When creating posts, activate and use the matching create tool instead of only outputting content as text.
     - When you create a post, tell the user the post title and that it was saved as a draft.
     - Brand identity and source names do not need to match. When creating content from GitHub, Linear, or another connected source, apply the selected brand voice to whatever source the user selected. Never refuse, skip, or tell the user the source belongs to a different product because a repository, integration, owner, team, or workspace name differs from the brand identity.
-    ${capabilitiesSection}${integrationResolutionSection}${githubSection}${linearSection}
+    ${capabilitiesSection}${integrationResolutionSection}${githubSection}${linearSection}${mcpSection}
   `;
 }
 
@@ -89,4 +96,10 @@ function formatLinearContext(
     ? `displayName: ${context.displayName}; `
     : "";
   return `${team}${displayName}integrationId: ${context.integrationId}`;
+}
+
+function formatMcpContext(
+  context: NonNullable<StandaloneChatPromptParams["mcpContext"]>[number]
+) {
+  return `name: ${context.name}; serverIntegrationId: ${context.integrationId}`;
 }

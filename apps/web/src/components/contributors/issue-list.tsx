@@ -26,7 +26,6 @@ export function IssueList({ issues }: { issues: GitHubIssue[] }) {
                 className="mt-0.5 size-6 flex-shrink-0 rounded-full"
                 height={48}
                 src={issue.user.avatar_url}
-                unoptimized
                 width={48}
               />
               <div className="min-w-0 flex-1">

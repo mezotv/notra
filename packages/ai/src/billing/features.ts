@@ -18,7 +18,6 @@ export const PLANS = {
 } as const;
 
 export const PAID_OR_LEGACY_PLAN_IDS: Set<string> = new Set([
-  PLANS.FREE,
   PLANS.BASIC,
   PLANS.BASIC_YEARLY,
   PLANS.PRO,

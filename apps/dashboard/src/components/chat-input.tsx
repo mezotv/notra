@@ -40,6 +40,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
+import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -96,7 +97,9 @@ const ChatInput = ({
   const [internalValue, setInternalValue] = useState("");
   const [internalError, setInternalError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const { check, data: customer } = useCustomer();
+  const { check, data: customer, refetch: refetchCustomer } = useCustomer();
+
+  useAutumnRefreshListener(refetchCustomer);
 
   const checkResult = useMemo(() => {
     if (!customer) {
@@ -146,7 +149,6 @@ const ChatInput = ({
     })
   );
 
-  // Get all enabled repos from all integrations (memoized, single iteration)
   const enabledRepos = useMemo(() => {
     const result: EnabledRepo[] = [];
     for (const integration of integrationsData?.integrations ?? []) {
@@ -198,7 +200,6 @@ const ChatInput = ({
     [onAddContext, onRemoveContext]
   );
 
-  // Resize textarea when controlled value changes
   useEffect(() => {
     if (isControlled) {
       requestAnimationFrame(resizeTextarea);
@@ -218,14 +219,12 @@ const ChatInput = ({
       return;
     }
 
-    // Only check billing if customer data is available (Autumn is configured)
     if (customer) {
       const checkResult = check({
         featureId: FEATURES.AI_CREDITS,
         requiredBalance: 1,
       });
 
-      // Only block if we explicitly got allowed: false (not if check failed)
       if (checkResult?.allowed === false) {
         setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;

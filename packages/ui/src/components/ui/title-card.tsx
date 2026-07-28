@@ -8,6 +8,7 @@ interface TitleCardProps extends Omit<React.ComponentProps<"div">, "title"> {
   action?: React.ReactNode;
   footer?: React.ReactNode;
   accentColor?: string;
+  hoverBackground?: React.ReactNode;
   contentClassName?: string;
   footerClassName?: string;
   disabled?: boolean;
@@ -19,6 +20,7 @@ function TitleCard({
   action,
   footer,
   accentColor,
+  hoverBackground,
   className,
   contentClassName,
   footerClassName,
@@ -50,6 +52,14 @@ function TitleCard({
           )}
           style={gradientStyle}
         />
+      )}
+      {hoverBackground && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10"
+        >
+          {hoverBackground}
+        </div>
       )}
       <div className="flex items-start justify-between gap-4 px-4 py-2.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">

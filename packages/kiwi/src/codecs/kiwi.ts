@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noBitwiseOperators: Kiwi binary encoding requires explicit bitwise operations.
 import { KIND_ENUM, KIND_MESSAGE, KIND_STRUCT } from "../constants/kiwi";
+import { kiwiRecordSchema } from "../schemas/kiwi";
 import type { Definition, FieldDef, KiwiValue } from "../types/kiwi";
 
 export type { Definition, FieldDef, KiwiValue } from "../types/kiwi";
@@ -344,14 +345,11 @@ function arrayValue(value: KiwiValue): KiwiValue[] {
 }
 
 function objectValue(value: KiwiValue): Record<string, KiwiValue> {
-  if (!isKiwiRecord(value)) {
+  const parsed = kiwiRecordSchema.safeParse(value);
+  if (!parsed.success) {
     throw new Error(`cannot encode ${String(value)} as object`);
   }
-  return value;
-}
-
-function isKiwiRecord(value: KiwiValue): value is Record<string, KiwiValue> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return parsed.data;
 }
 
 export function decodeValue(

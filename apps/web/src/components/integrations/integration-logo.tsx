@@ -38,7 +38,6 @@ export function IntegrationLogo({
           className={`block h-full w-full ${fit}`}
           height={size}
           src={light}
-          unoptimized
           width={size}
         />
       </span>
@@ -52,7 +51,6 @@ export function IntegrationLogo({
         className={`block h-full w-full ${fit} dark:hidden`}
         height={size}
         src={light}
-        unoptimized
         width={size}
       />
       <Image
@@ -60,7 +58,6 @@ export function IntegrationLogo({
         className={`hidden h-full w-full ${fit} dark:block`}
         height={size}
         src={dark}
-        unoptimized
         width={size}
       />
     </span>
