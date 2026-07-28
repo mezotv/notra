@@ -37,6 +37,12 @@ export const MERCH_GALLERY_IMAGES: MerchGalleryImage[] = [
 
 export const MERCH_PHOTO_CREDIT = "Product photography © Fourthwall, Inc.";
 
+export const MERCH_TWEET_IDS = [
+  "2080746602642211029",
+  "2081755331026182607",
+  "2082079045374574904",
+];
+
 export const MERCH_SPEC_ROWS: MerchSpecRow[] = [
   { label: "Fabric", value: "100% chino cotton twill" },
   { label: "Profile", value: "Low, unstructured" },

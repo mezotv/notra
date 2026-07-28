@@ -4,6 +4,7 @@ import { MerchCtaBanner } from "@/components/merch/merch-cta-banner";
 import { MerchGallery } from "@/components/merch/merch-gallery";
 import { MerchHero } from "@/components/merch/merch-hero";
 import { MerchSpecs } from "@/components/merch/merch-specs";
+import { MerchTweets } from "@/components/merch/merch-tweets";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
@@ -41,6 +42,7 @@ export default function MerchPage() {
       <MerchGallery />
       <MerchSpecs />
       <MerchClaim />
+      <MerchTweets />
       <section className="w-full px-6 pt-27.5 content-defer lg:px-20">
         <MerchCtaBanner />
       </section>
