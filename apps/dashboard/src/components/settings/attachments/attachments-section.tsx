@@ -47,15 +47,14 @@ export function AttachmentsSection() {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [confirmKeys, setConfirmKeys] = useState<string[] | null>(null);
 
-  const queryOptions = dashboardOrpc.attachments.list.queryOptions({
-    input: { filter },
-  });
+  const organizationId = activeOrganization?.id ?? "";
 
-  const { data, isLoading } = useQuery({
-    ...queryOptions,
-    queryKey: [...queryOptions.queryKey, activeOrganization?.id],
-    enabled: Boolean(activeOrganization?.id),
-  });
+  const { data, isLoading } = useQuery(
+    dashboardOrpc.attachments.list.queryOptions({
+      input: { filter, organizationId },
+      enabled: Boolean(organizationId),
+    })
+  );
 
   const attachments: AttachmentRow[] = useMemo(() => {
     return (
@@ -78,7 +77,7 @@ export function AttachmentsSection() {
 
   const deleteManyMutation = useMutation({
     mutationFn: async (keys: string[]) => {
-      await dashboardOrpc.attachments.deleteMany.call({ keys });
+      await dashboardOrpc.attachments.deleteMany.call({ keys, organizationId });
     },
     onSuccess: async (_data, keys) => {
       toast.success(

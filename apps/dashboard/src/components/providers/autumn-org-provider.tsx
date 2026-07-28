@@ -1,7 +1,7 @@
 "use client";
 
 import { AutumnProvider } from "autumn-js/react";
-import { useRef } from "react";
+import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
 import type { AutumnOrgProviderProps } from "@/types/components/providers";
 
@@ -12,24 +12,32 @@ export function AutumnOrgProvider({ children }: AutumnOrgProviderProps) {
   const { data: session, isPending } = authClient.useSession();
   const sessionOrganizationId = session?.session.activeOrganizationId ?? null;
 
-  const lastKnownOrganizationIdRef = useRef<string | null>(null);
-  const baselineOrganizationIdRef = useRef<string | null>(null);
+  const [lastKnownOrganizationId, setLastKnownOrganizationId] = useState<
+    string | null
+  >(null);
+  const [baselineOrganizationId, setBaselineOrganizationId] = useState<
+    string | null
+  >(null);
 
-  if (sessionOrganizationId) {
-    lastKnownOrganizationIdRef.current = sessionOrganizationId;
+  if (
+    sessionOrganizationId &&
+    sessionOrganizationId !== lastKnownOrganizationId
+  ) {
+    setLastKnownOrganizationId(sessionOrganizationId);
   }
 
-  if (baselineOrganizationIdRef.current === null && !isPending) {
-    baselineOrganizationIdRef.current =
-      sessionOrganizationId ?? NO_ORGANIZATION_BASELINE;
+  if (baselineOrganizationId === null && !isPending) {
+    setBaselineOrganizationId(
+      sessionOrganizationId ?? NO_ORGANIZATION_BASELINE
+    );
   }
 
   const effectiveOrganizationId =
-    sessionOrganizationId ?? lastKnownOrganizationIdRef.current;
+    sessionOrganizationId ?? lastKnownOrganizationId;
   const hasSwitchedOrganization =
     effectiveOrganizationId !== null &&
-    baselineOrganizationIdRef.current !== null &&
-    effectiveOrganizationId !== baselineOrganizationIdRef.current;
+    baselineOrganizationId !== null &&
+    effectiveOrganizationId !== baselineOrganizationId;
   const providerKey = hasSwitchedOrganization
     ? effectiveOrganizationId
     : INITIAL_PROVIDER_KEY;
