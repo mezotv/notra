@@ -24,7 +24,7 @@ export default async function AuthLayout({
     <div className="flex h-screen w-full justify-center lg:grid lg:grid-cols-2">
       <section className="flex h-full min-h-0 w-full flex-col items-center justify-between px-6 py-5 lg:px-10 lg:py-6">
         <Link
-          className="flex w-full items-center gap-2 self-start"
+          className="flex items-center gap-2 self-start"
           href="https://usenotra.com"
         >
           <span aria-hidden="true">
