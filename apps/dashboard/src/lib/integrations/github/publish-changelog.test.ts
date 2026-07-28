@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import type { GitHubClient } from "@/types/integrations/github";
 import {
   GitHubChangelogPublishError,
   publishChangelogDraftPullRequest,
   resolveChangelogPath,
 } from "./publish-changelog";
-
-type GitHubClient = Parameters<typeof publishChangelogDraftPullRequest>[0];
 
 const publishParams = {
   owner: "notra",

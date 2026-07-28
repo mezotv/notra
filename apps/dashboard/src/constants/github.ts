@@ -34,6 +34,12 @@ export const GITHUB_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
 
 export const DEFAULT_CHANGELOG_DIRECTORY = "changelogs";
 
+export const GITHUB_API_VERSION_HEADERS = {
+  "X-GitHub-Api-Version": "2022-11-28",
+} as const;
+
+export const GITHUB_PATH_INVALID_CHARACTERS_REGEX = /[?#]/;
+
 export const GITHUB_APP_PERMISSIONS = [
   "Read repository metadata, branches, and releases",
   "Create branches, commits, and draft pull requests",

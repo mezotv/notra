@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
-import type { createOctokit } from "@notra/ai/utils/octokit";
 import { slugify } from "@notra/utils/slugify";
-
-const GITHUB_API_VERSION_HEADERS = {
-  "X-GitHub-Api-Version": "2022-11-28",
-} as const;
-
-type GitHubClient = ReturnType<typeof createOctokit>;
+import { GITHUB_API_VERSION_HEADERS } from "@/constants/github";
+import type {
+  FindExistingGitHubPullRequestParams,
+  GetExistingGitHubFileShaParams,
+  GitHubClient,
+  GitHubPullRequestSummary,
+  PublishChangelogDraftPullRequestParams,
+  ResolveChangelogPathParams,
+} from "@/types/integrations/github";
 
 export class GitHubChangelogTargetExistsError extends Error {}
 
@@ -35,13 +37,7 @@ export function hasGitHubStatus(error: unknown, status: number) {
   );
 }
 
-export function resolveChangelogPath(params: {
-  contentId: string;
-  customPath?: string;
-  directory: string;
-  slug: string | null;
-  title: string;
-}) {
+export function resolveChangelogPath(params: ResolveChangelogPathParams) {
   if (params.customPath) {
     return params.customPath;
   }
@@ -58,7 +54,7 @@ function createChangelogBranchName(path: string) {
 }
 
 function toPullRequestResult(
-  pullRequest: { number: number; html_url: string },
+  pullRequest: GitHubPullRequestSummary,
   branchName: string,
   path: string
 ) {
@@ -70,13 +66,9 @@ function toPullRequestResult(
   };
 }
 
-async function findExistingPullRequest(params: {
-  branchName: string;
-  defaultBranch: string;
-  octokit: GitHubClient;
-  owner: string;
-  repo: string;
-}) {
+async function findExistingPullRequest(
+  params: FindExistingGitHubPullRequestParams
+) {
   const { data: pullRequests } = await params.octokit.request(
     "GET /repos/{owner}/{repo}/pulls",
     {
@@ -92,13 +84,7 @@ async function findExistingPullRequest(params: {
   return pullRequests[0];
 }
 
-async function getExistingFileSha(params: {
-  branchName: string;
-  octokit: GitHubClient;
-  owner: string;
-  path: string;
-  repo: string;
-}) {
+async function getExistingFileSha(params: GetExistingGitHubFileShaParams) {
   try {
     const { data } = await params.octokit.request(
       "GET /repos/{owner}/{repo}/contents/{path}",
@@ -121,14 +107,7 @@ async function getExistingFileSha(params: {
 
 export async function publishChangelogDraftPullRequest(
   octokit: GitHubClient,
-  params: {
-    owner: string;
-    repo: string;
-    defaultBranch: string;
-    path: string;
-    title: string;
-    markdown: string;
-  }
+  params: PublishChangelogDraftPullRequestParams
 ) {
   let baseSha: string;
 

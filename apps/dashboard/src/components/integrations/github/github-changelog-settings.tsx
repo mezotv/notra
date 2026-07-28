@@ -19,13 +19,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DEFAULT_CHANGELOG_DIRECTORY } from "@/constants/github";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { GitHubRepository } from "@/types/integrations";
+import type {
+  GitHubChangelogDirectoryMutationVariables,
+  GitHubChangelogSettingsProps,
+} from "@/types/integrations/github";
 import { GitHubDirectoryPicker } from "./github-directory-picker";
-
-interface GitHubChangelogSettingsProps {
-  organizationId: string;
-  repositories: GitHubRepository[];
-}
 
 export function GitHubChangelogSettings({
   organizationId,
@@ -56,10 +54,7 @@ export function GitHubChangelogSettings({
     mutationFn: ({
       nextDirectory,
       targetRepositoryId,
-    }: {
-      nextDirectory: string;
-      targetRepositoryId: string;
-    }) =>
+    }: GitHubChangelogDirectoryMutationVariables) =>
       dashboardOrpc.integrations.repositories.contentDirectory.update.call({
         organizationId,
         repositoryId: targetRepositoryId,

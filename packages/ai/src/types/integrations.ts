@@ -50,6 +50,12 @@ export interface ConfigureOutputParams {
   config?: Record<string, unknown> | null;
 }
 
+export interface SetRepositoryOutputDirectoryParams {
+  directory: string;
+  outputType: RepositoryOutputType;
+  repositoryId: string;
+}
+
 export interface WebhookConfig {
   webhookUrl: string;
   webhookSecret: string;

@@ -15,12 +15,11 @@ import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
+import { GITHUB_PATH_INVALID_CHARACTERS_REGEX } from "@/constants/github";
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
 } from "./integrations";
-
-const GITHUB_PATH_INVALID_CHARACTERS_REGEX = /[?#]/;
 
 export const postStatusSchema = z.enum(["draft", "published"]);
 export type PostStatus = z.infer<typeof postStatusSchema>;

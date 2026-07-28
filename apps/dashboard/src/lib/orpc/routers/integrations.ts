@@ -73,7 +73,10 @@ import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
+import * as z from "zod";
 
+import { GITHUB_API_VERSION_HEADERS } from "@/constants/github";
 import {
   INTEGRATION_AUTH_KINDS,
   INTEGRATION_PROVIDERS,
@@ -876,9 +879,7 @@ export const integrationsRouter = {
               ...(repository.defaultBranch
                 ? { ref: repository.defaultBranch }
                 : {}),
-              headers: {
-                "X-GitHub-Api-Version": "2022-11-28" as const,
-              },
+              headers: GITHUB_API_VERSION_HEADERS,
             };
             const { data } = input.directory
               ? await octokit.request(

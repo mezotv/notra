@@ -30,26 +30,10 @@ import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useId, useState } from "react";
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
-
-interface GitHubDirectoryPickerProps {
-  directory: string;
-  disabled?: boolean;
-  isSaving?: boolean;
-  onSave: (directory: string) => Promise<void>;
-  organizationId: string;
-  repositoryId: string;
-  repositoryName: string;
-  triggerId?: string;
-}
-
-interface DirectoryNodeProps {
-  depth: number;
-  name: string;
-  open: boolean;
-  organizationId: string;
-  path: string;
-  repositoryId: string;
-}
+import type {
+  GitHubDirectoryNodeProps,
+  GitHubDirectoryPickerProps,
+} from "@/types/integrations/github";
 
 function DirectoryNode({
   depth,
@@ -58,7 +42,7 @@ function DirectoryNode({
   organizationId,
   path,
   repositoryId,
-}: DirectoryNodeProps) {
+}: GitHubDirectoryNodeProps) {
   const [expanded, setExpanded] = useState(false);
   const directoriesQuery = useQuery(
     dashboardOrpc.integrations.repositories.directories.list.queryOptions({

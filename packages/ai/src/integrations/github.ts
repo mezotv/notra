@@ -27,6 +27,7 @@ import type {
   ErrorWithStatus,
   GitHubOrgMembershipCheck,
   RepositoryOutputType,
+  SetRepositoryOutputDirectoryParams,
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
@@ -1248,11 +1249,9 @@ export async function configureOutput(params: ConfigureOutputParams) {
   return output;
 }
 
-export async function setRepositoryOutputDirectory(params: {
-  directory: string;
-  outputType: RepositoryOutputType;
-  repositoryId: string;
-}) {
+export async function setRepositoryOutputDirectory(
+  params: SetRepositoryOutputDirectoryParams
+) {
   const directoryConfig = JSON.stringify({ directory: params.directory });
   const mergedConfig = sql`(
     CASE

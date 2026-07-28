@@ -32,14 +32,7 @@ import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
-
-interface PublishChangelogDialogProps {
-  contentId: string;
-  onSave: () => Promise<boolean>;
-  organizationId: string;
-  organizationSlug: string;
-  title: string;
-}
+import type { PublishChangelogDialogProps } from "@/types/content/detail";
 
 export function PublishChangelogDialog({
   contentId,

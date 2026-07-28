@@ -1,5 +1,9 @@
+import type { createOctokit } from "@notra/ai/utils/octokit";
 import { Data } from "effect";
 import type React from "react";
+import type { GitHubRepository } from "../integrations";
+
+export type GitHubClient = ReturnType<typeof createOctokit>;
 
 export class GitHubInstallStartError extends Data.TaggedError(
   "GitHubInstallStartError"
@@ -98,4 +102,72 @@ export interface GitHubAccountCardProps {
   selectedRepositoryIds: string[];
   onAddRepositories: () => void;
   onDisconnect: () => void;
+}
+
+export interface GitHubChangelogSettingsProps {
+  organizationId: string;
+  repositories: GitHubRepository[];
+}
+
+export interface GitHubChangelogDirectoryMutationVariables {
+  nextDirectory: string;
+  targetRepositoryId: string;
+}
+
+export interface GitHubDirectoryPickerProps {
+  directory: string;
+  disabled?: boolean;
+  isSaving?: boolean;
+  onSave: (directory: string) => Promise<void>;
+  organizationId: string;
+  repositoryId: string;
+  repositoryName: string;
+  triggerId?: string;
+}
+
+export interface GitHubDirectoryNodeProps {
+  depth: number;
+  name: string;
+  open: boolean;
+  organizationId: string;
+  path: string;
+  repositoryId: string;
+}
+
+export interface ResolveChangelogPathParams {
+  contentId: string;
+  customPath?: string;
+  directory: string;
+  slug: string | null;
+  title: string;
+}
+
+export interface FindExistingGitHubPullRequestParams {
+  branchName: string;
+  defaultBranch: string;
+  octokit: GitHubClient;
+  owner: string;
+  repo: string;
+}
+
+export interface GetExistingGitHubFileShaParams {
+  branchName: string;
+  octokit: GitHubClient;
+  owner: string;
+  path: string;
+  repo: string;
+}
+
+export interface PublishChangelogDraftPullRequestParams {
+  owner: string;
+  repo: string;
+  defaultBranch: string;
+  path: string;
+  title: string;
+  markdown: string;
+}
+
+export interface GitHubPullRequestSummary {
+  number: number;
+  html_url: string;
 }
