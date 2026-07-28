@@ -364,6 +364,7 @@
         "@neondatabase/serverless": "^1.0.2",
         "drizzle-orm": "^0.45.2",
         "pg": "^8.20.0",
+        "zod": "^4.3.4",
       },
       "devDependencies": {
         "@notra/typescript-config": "*",
@@ -405,6 +406,7 @@
       "version": "0.0.1",
       "dependencies": {
         "opentype.js": "^2.0.0",
+        "zod": "^4.3.4",
       },
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",

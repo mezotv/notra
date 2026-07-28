@@ -5,16 +5,16 @@ import {
   SUPERMEMORY_CUSTOM_ID_HASH_LENGTH,
   SUPERMEMORY_REQUEST_TIMEOUT_MS,
 } from "../constants/supermemory";
+import {
+  brandReferenceMetadataSchema,
+  supermemoryDocumentResponseSchema,
+} from "../schemas/supermemory";
 import type {
   BrandReferenceMemoryLink,
   BrandReferenceMemoryPayload,
   DeleteBrandReferenceMemoryInput,
   SupermemorySearchResult,
 } from "../types/supermemory";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function getApiKey() {
   return process.env.SUPERMEMORY_API_KEY;
@@ -116,9 +116,9 @@ export function buildBrandReferenceMemoryPayload(input: {
     sourceUrl: string | null;
   };
 }) {
-  const tweetId = isRecord(input.reference.metadata)
-    ? input.reference.metadata.tweetId
-    : null;
+  const metadata = brandReferenceMetadataSchema.safeParse(
+    input.reference.metadata
+  );
   return {
     organizationId: input.organizationId,
     voiceId: input.voiceId,
@@ -127,7 +127,7 @@ export function buildBrandReferenceMemoryPayload(input: {
     content: input.reference.content,
     note: input.reference.note,
     applicableTo: input.reference.applicableTo,
-    tweetId: typeof tweetId === "string" ? tweetId : null,
+    tweetId: metadata.success ? (metadata.data.tweetId ?? null) : null,
     sourceUrl: input.reference.sourceUrl,
   } satisfies BrandReferenceMemoryPayload;
 }
@@ -185,19 +185,17 @@ export async function createBrandReferenceMemory(
     );
   }
 
-  const data: unknown = await response.json();
-  if (!isRecord(data)) {
+  const data = supermemoryDocumentResponseSchema.safeParse(
+    await response.json()
+  );
+  if (!data.success) {
     throw new Error(
       "Supermemory returned an invalid reference memory response"
     );
   }
 
-  if (typeof data.id !== "string") {
-    throw new Error("Supermemory did not return a document ID");
-  }
-
   return {
-    documentId: data.id,
+    documentId: data.data.id,
     memoryId: null,
   };
 }
