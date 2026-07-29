@@ -6,9 +6,11 @@ import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { AGENT_SURFACES } from "@notra/ai/constants/agent";
 import {
-  acquireAgentSendLock,
-  releaseAgentSendLock,
-} from "@notra/ai/utils/agent-session-lock";
+  AgentSendLockedError,
+  forwardAgentFollowUp,
+  forwardAgentStream,
+  getAgentSessionMapping,
+} from "@notra/ai/utils/agent-proxy";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
@@ -16,16 +18,13 @@ import { and, eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { AGENT_PROXY_ALLOWED_PATHS } from "@/constants/agent";
-import {
-  createNotraAgentClient,
-  getAgentSessionForOrganization,
-  startAgentSession,
-  updateAgentSessionContinuationToken,
-} from "@/lib/agent/client";
+import { createNotraAgentClient, startAgentSession } from "@/lib/agent/client";
 import { isAgentChatEnabled } from "@/lib/agent/flag";
 import { withOrganizationAuth } from "@/lib/auth/organization";
-import { agentFollowUpResponseSchema } from "@/schemas/agent";
-import { agentProxyCreateSessionSchema } from "@/schemas/agent-proxy";
+import {
+  agentProxyCreateSessionSchema,
+  agentProxyFollowUpSchema,
+} from "@/schemas/agent-proxy";
 import type { AgentSurface } from "@/types/agent";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
@@ -186,18 +185,15 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
   if (!eveSessionId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const mapping = await getAgentSessionForOrganization(
-    organizationId,
-    eveSessionId
-  );
+  const mapping = await getAgentSessionMapping(organizationId, eveSessionId);
   if (!mapping || (mapping.userId && mapping.userId !== auth.context.user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const lockAcquired = await acquireAgentSendLock(eveSessionId);
-  if (!lockAcquired) {
+  const parsed = agentProxyFollowUpSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "A message is already being processed for this session" },
-      { status: 409 }
+      { error: "Invalid request body", details: parsed.error.issues },
+      { status: 400 }
     );
   }
   const client = await createNotraAgentClient({
@@ -210,40 +206,21 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
     useMarkup: credits.useMarkup,
   });
   try {
-    const forwardedBody =
-      body && typeof body === "object"
-        ? { ...body, continuationToken: mapping.continuationToken }
-        : { continuationToken: mapping.continuationToken };
-    const upstream = await client.fetch(`/${path}`, {
-      body: JSON.stringify(forwardedBody),
-      headers: { "content-type": "application/json" },
-      method: "POST",
+    return await forwardAgentFollowUp({
+      fetchUpstream: (upstreamPath, init) => client.fetch(upstreamPath, init),
+      eveSessionId,
+      continuationToken: mapping.continuationToken,
+      message: parsed.data.message,
+      inputResponses: parsed.data.inputResponses,
     });
-    const upstreamText = await upstream.text();
-    if (upstream.ok) {
-      let upstreamJson: unknown = null;
-      try {
-        upstreamJson = JSON.parse(upstreamText);
-      } catch {
-        upstreamJson = null;
-      }
-      const parsed = agentFollowUpResponseSchema.safeParse(upstreamJson);
-      if (parsed.success && parsed.data.continuationToken) {
-        await updateAgentSessionContinuationToken(
-          eveSessionId,
-          parsed.data.continuationToken
-        );
-      }
+  } catch (error) {
+    if (error instanceof AgentSendLockedError) {
+      return NextResponse.json(
+        { error: "A message is already being processed for this session" },
+        { status: 409 }
+      );
     }
-    return new NextResponse(upstreamText, {
-      status: upstream.status,
-      headers: {
-        "content-type":
-          upstream.headers.get("content-type") ?? "application/json",
-      },
-    });
-  } finally {
-    await releaseAgentSendLock(eveSessionId);
+    throw error;
   }
 }
 
@@ -269,9 +246,12 @@ export async function GET(request: NextRequest, context: AgentRouteContext) {
   }
   const eveSessionId = eve[3];
   const mapping = eveSessionId
-    ? await getAgentSessionForOrganization(organizationId, eveSessionId)
+    ? await getAgentSessionMapping(organizationId, eveSessionId)
     : null;
-  if (!mapping || (mapping.userId && mapping.userId !== auth.context.user.id)) {
+  if (
+    !(mapping && eveSessionId) ||
+    (mapping.userId && mapping.userId !== auth.context.user.id)
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -281,18 +261,9 @@ export async function GET(request: NextRequest, context: AgentRouteContext) {
       AGENT_SURFACES.find((value) => value === mapping.surface) ??
       "standalone-chat",
   });
-  const startIndex = request.nextUrl.searchParams.get("startIndex");
-  const upstream = await client.fetch(
-    `/${path}${startIndex ? `?startIndex=${encodeURIComponent(startIndex)}` : ""}`,
-    { method: "GET" }
-  );
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: {
-      "content-type":
-        upstream.headers.get("content-type") ??
-        "application/x-ndjson; charset=utf-8",
-      "cache-control": "no-store",
-    },
+  return await forwardAgentStream({
+    fetchUpstream: (upstreamPath, init) => client.fetch(upstreamPath, init),
+    eveSessionId,
+    startIndex: request.nextUrl.searchParams.get("startIndex"),
   });
 }

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import {
   AGENT_AUTO_PUBLISH_HEADER,
   AGENT_BRAND_AGENT_TYPE_HEADER,
@@ -15,6 +14,7 @@ import {
   AGENT_USER_HEADER,
   AGENT_VOICE_HEADER,
 } from "@notra/ai/constants/agent";
+import { createAgentSessionWithMapping } from "@notra/ai/utils/agent-proxy";
 import { db } from "@notra/db/drizzle";
 import { agentSessions } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
@@ -29,7 +29,6 @@ import {
 import {
   AgentTaskFailedError,
   AgentTaskTimeoutError,
-  agentCreateSessionResponseSchema,
   agentStreamEventSchema,
 } from "@/schemas/agent";
 import type {
@@ -127,56 +126,19 @@ export async function startAgentSession(
   input: StartAgentSessionInput
 ): Promise<StartAgentSessionResult> {
   const client = await createNotraAgentClient(input.scope);
-  const response = await client.fetch(AGENT_CREATE_SESSION_PATH, {
-    body: JSON.stringify({
-      message: input.message,
-      ...(input.mode ? { mode: input.mode } : {}),
-      ...(input.outputSchema ? { outputSchema: input.outputSchema } : {}),
-    }),
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(
-      `Agent session creation failed with status ${response.status}: ${body.slice(0, 500)}`
-    );
-  }
-  const payload = agentCreateSessionResponseSchema.parse(await response.json());
-
-  const agentSessionId = randomUUID();
-  const values = {
-    id: agentSessionId,
-    organizationId: input.scope.organizationId,
-    userId: input.scope.userId ?? null,
-    chatId: input.scope.chatId ?? null,
-    surface: input.scope.surface,
-    contentId: input.scope.contentId ?? null,
-    collectionId: input.scope.collectionId ?? null,
-    eveSessionId: payload.sessionId,
-    continuationToken: payload.continuationToken,
-  };
-  await db
-    .insert(agentSessions)
-    .values(values)
-    .onConflictDoNothing({ target: agentSessions.eveSessionId });
-
-  return {
-    agentSessionId,
-    eveSessionId: payload.sessionId,
-    continuationToken: payload.continuationToken,
-  };
-}
-
-export async function getAgentSessionForOrganization(
-  organizationId: string,
-  eveSessionId: string
-) {
-  return await db.query.agentSessions.findFirst({
-    where: and(
-      eq(agentSessions.organizationId, organizationId),
-      eq(agentSessions.eveSessionId, eveSessionId)
-    ),
+  return await createAgentSessionWithMapping({
+    fetchUpstream: (path, init) => client.fetch(path, init),
+    scope: {
+      organizationId: input.scope.organizationId,
+      userId: input.scope.userId,
+      chatId: input.scope.chatId,
+      surface: input.scope.surface,
+      contentId: input.scope.contentId,
+      collectionId: input.scope.collectionId,
+    },
+    message: input.message,
+    mode: input.mode,
+    outputSchema: input.outputSchema,
   });
 }
 
@@ -263,14 +225,4 @@ export async function runAgentTask(
     .set({ status: "timed_out" })
     .where(eq(agentSessions.id, started.agentSessionId));
   throw new AgentTaskTimeoutError(started.eveSessionId);
-}
-
-export async function updateAgentSessionContinuationToken(
-  eveSessionId: string,
-  continuationToken: string
-): Promise<void> {
-  await db
-    .update(agentSessions)
-    .set({ continuationToken })
-    .where(eq(agentSessions.eveSessionId, eveSessionId));
 }

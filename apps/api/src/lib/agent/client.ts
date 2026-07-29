@@ -1,19 +1,13 @@
-import { randomUUID } from "node:crypto";
 import {
   AGENT_CHAT_HEADER,
   AGENT_ORGANIZATION_HEADER,
   AGENT_SERVICE_USERNAME,
-  AGENT_SESSION_ROUTE_PATH,
   AGENT_SURFACE_HEADER,
   AGENT_USE_MARKUP_HEADER,
   AGENT_USER_HEADER,
 } from "@notra/ai/constants/agent";
-import { db } from "@notra/db/drizzle";
-import { agentSessions } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
-import { and, desc, eq } from "drizzle-orm";
 import { Client } from "eve/client";
-import { agentCreateSessionResponseSchema } from "../../schemas/agent-chats";
 import type { ApiAgentScope } from "../../types/agent";
 
 const TRAILING_SLASH_PATTERN = /\/+$/;
@@ -68,72 +62,4 @@ export async function createAgentClient(scope: ApiAgentScope): Promise<Client> {
   throw new Error(
     "Notra agent auth is not configured: set EVE_NOTRA_AGENT_PASSWORD or enable Vercel OIDC federation with an agent-side allowlist for this project"
   );
-}
-
-export async function createAgentChatSession(
-  scope: ApiAgentScope,
-  message: string
-) {
-  const client = await createAgentClient(scope);
-  const response = await client.fetch(AGENT_SESSION_ROUTE_PATH, {
-    body: JSON.stringify({ message }),
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new Error(
-      `Agent session creation failed with status ${response.status}: ${body.slice(0, 500)}`
-    );
-  }
-  const payload = agentCreateSessionResponseSchema.parse(await response.json());
-
-  const values = {
-    id: randomUUID(),
-    organizationId: scope.organizationId,
-    userId: scope.userId ?? null,
-    chatId: scope.chatId ?? null,
-    surface: "standalone-chat",
-    eveSessionId: payload.sessionId,
-    continuationToken: payload.continuationToken,
-  };
-  await db
-    .insert(agentSessions)
-    .values(values)
-    .onConflictDoNothing({ target: agentSessions.eveSessionId });
-
-  return payload;
-}
-
-export async function getAgentSessionForOrganization(
-  organizationId: string,
-  eveSessionId: string
-) {
-  return await db.query.agentSessions.findFirst({
-    where: and(
-      eq(agentSessions.organizationId, organizationId),
-      eq(agentSessions.eveSessionId, eveSessionId)
-    ),
-  });
-}
-
-export async function listAgentSessionsForOrganization(
-  organizationId: string,
-  limit: number
-) {
-  return await db.query.agentSessions.findMany({
-    where: eq(agentSessions.organizationId, organizationId),
-    orderBy: [desc(agentSessions.createdAt)],
-    limit,
-  });
-}
-
-export async function updateAgentSessionContinuationToken(
-  eveSessionId: string,
-  continuationToken: string
-): Promise<void> {
-  await db
-    .update(agentSessions)
-    .set({ continuationToken })
-    .where(eq(agentSessions.eveSessionId, eveSessionId));
 }

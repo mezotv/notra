@@ -3,13 +3,7 @@ import { z } from "@hono/zod-openapi";
 const AGENT_MESSAGE_MAX_LENGTH = 200_000;
 const AGENT_SESSION_LIST_LIMIT_MAX = 50;
 
-export const agentCreateSessionResponseSchema = z.object({
-  ok: z.literal(true),
-  sessionId: z.string().min(1),
-  continuationToken: z.string().min(1),
-});
-
-export const createAgentChatRequestSchema = z
+export const createAgentSessionRequestSchema = z
   .object({
     message: z
       .string()
@@ -17,14 +11,15 @@ export const createAgentChatRequestSchema = z
       .max(AGENT_MESSAGE_MAX_LENGTH)
       .openapi({ description: "The first user message of the session." }),
   })
-  .openapi("CreateAgentChatRequest");
+  .openapi("CreateAgentSessionRequest");
 
-export const createAgentChatResponseSchema = z
+export const createAgentSessionResponseSchema = z
   .object({
+    ok: z.literal(true),
     sessionId: z.string(),
     continuationToken: z.string(),
   })
-  .openapi("CreateAgentChatResponse");
+  .openapi("CreateAgentSessionResponse");
 
 const agentInputResponseSchema = z.object({
   requestId: z.string().min(1),
@@ -45,13 +40,10 @@ export const sendAgentMessageRequestSchema = z
         description:
           "The next user message. Omit when only answering a pending input request.",
       }),
-    inputResponses: z
-      .array(agentInputResponseSchema)
-      .optional()
-      .openapi({
-        description:
-          "Answers to pending input.requested events (tool approvals, questions) from the event stream.",
-      }),
+    inputResponses: z.array(agentInputResponseSchema).optional().openapi({
+      description:
+        "Answers to pending input.requested events (tool approvals, questions) from the event stream.",
+    }),
     continuationToken: z.string().min(1).openapi({
       description:
         "The continuation token returned by the previous request for this session.",
