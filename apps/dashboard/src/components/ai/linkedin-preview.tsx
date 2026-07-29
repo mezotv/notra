@@ -47,6 +47,7 @@ interface LinkedInPreviewProps {
     logo?: string | null;
   };
   persistedStatus?: "draft" | "published";
+  readOnly?: boolean;
   onApprove?: () => void;
   onDeny?: () => void;
   onPersist?: (
@@ -65,6 +66,7 @@ export function LinkedInPreview({
   markdown,
   organization,
   persistedStatus = "draft",
+  readOnly = false,
   onApprove,
   onDeny,
   onPersist,
@@ -204,7 +206,7 @@ export function LinkedInPreview({
                   content={draftMarkdown}
                   defaultExpanded
                   onContentChange={
-                    isFinished
+                    isFinished || readOnly
                       ? undefined
                       : (value) =>
                           dispatch({
@@ -216,7 +218,7 @@ export function LinkedInPreview({
                   truncate={false}
                 />
               </div>
-              {regenerateOpen && !isFinished && (
+              {regenerateOpen && !(isFinished || readOnly) && (
                 <input
                   autoFocus
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -238,7 +240,7 @@ export function LinkedInPreview({
             </div>
           </CollapsibleContent>
 
-          {!isFinished && isOpen && (
+          {!isFinished && !readOnly && isOpen && (
             <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">

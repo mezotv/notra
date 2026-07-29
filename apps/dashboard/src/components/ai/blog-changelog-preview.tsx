@@ -73,6 +73,7 @@ interface BlogChangelogPreviewProps {
     "blog_post" | "changelog" | "investor_update"
   >;
   persistedStatus?: "draft" | "published";
+  readOnly?: boolean;
   onApprove?: () => void;
   onDeny?: () => void;
   onPersist?: (
@@ -91,6 +92,7 @@ export function BlogChangelogPreview({
   markdown,
   contentType,
   persistedStatus = "draft",
+  readOnly = false,
   onApprove,
   onDeny,
   onPersist,
@@ -252,8 +254,9 @@ export function BlogChangelogPreview({
 
           <CollapsibleContent>
             <div className="mx-2 mb-2 space-y-2">
-              {!isFinished && (
+              {!isFinished && !readOnly && (
                 <input
+                  aria-label="Post title"
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onChange={(event) =>
                     dispatch({
@@ -271,6 +274,7 @@ export function BlogChangelogPreview({
                 </TabsList>
                 <TabsContent className="mt-2" value="markdown">
                   <textarea
+                    aria-label="Post content"
                     className="min-h-72 w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onChange={(event) =>
                       dispatch({
@@ -278,14 +282,14 @@ export function BlogChangelogPreview({
                         draftMarkdown: event.target.value,
                       })
                     }
-                    readOnly={isFinished}
+                    readOnly={isFinished || readOnly}
                     value={draftMarkdown}
                   />
                 </TabsContent>
                 <TabsContent className="mt-2" value="preview">
                   <div className="max-h-[24rem] overflow-y-auto rounded-lg border border-border/80 bg-background px-4 py-3">
                     <LexicalEditor
-                      editable={!isFinished}
+                      editable={!(isFinished || readOnly)}
                       initialMarkdown={draftMarkdown}
                       onChange={(value) =>
                         dispatch({
@@ -298,8 +302,9 @@ export function BlogChangelogPreview({
                   </div>
                 </TabsContent>
               </Tabs>
-              {regenerateOpen && !isFinished && (
+              {regenerateOpen && !(isFinished || readOnly) && (
                 <input
+                  aria-label="Regeneration instructions"
                   autoFocus
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onChange={(event) =>
@@ -320,7 +325,7 @@ export function BlogChangelogPreview({
             </div>
           </CollapsibleContent>
 
-          {!isFinished && isOpen && (
+          {!isFinished && !readOnly && isOpen && (
             <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">

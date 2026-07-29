@@ -13,6 +13,7 @@ import {
   clearLastResponseStopped,
   generateAndSetChatTitle,
   generateChatId,
+  getChatSession,
   isChatDeleted,
   loadChatHistory,
   replaceChatHistory,
@@ -84,6 +85,22 @@ export const POST = withEvlog(async function POST(
       );
     }
 
+    const { messages } = parseResult.data;
+    const chatId = parseResult.data.chatId ?? generateChatId();
+
+    if (parseResult.data.chatId) {
+      const existingSession = await getChatSession(organizationId, chatId);
+      if (existingSession?.externalChannelId?.source === "slack") {
+        return NextResponse.json(
+          {
+            error: "Slack-mirrored chats are read-only in the dashboard",
+            code: "CHAT_READ_ONLY",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const rateLimited = await enforceChatGenerationRatelimit(
       organizationId,
       auth.context.user.id
@@ -131,8 +148,6 @@ export const POST = withEvlog(async function POST(
       );
     }
 
-    const { messages } = parseResult.data;
-    const chatId = parseResult.data.chatId ?? generateChatId();
     cleanupOrganizationId = organizationId;
     cleanupChatId = chatId;
     const validatedIntegrations =

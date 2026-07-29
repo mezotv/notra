@@ -10,6 +10,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_TITLE_MAX_LENGTH } from "@notra/ai/constants/chat";
+import { externalChannelIdSchema } from "@notra/ai/schemas/chat";
 import type { ChatSessionSummary } from "@notra/ai/types/chat";
 import { normalizeChatTitle } from "@notra/ai/utils/chat";
 import {
@@ -87,9 +88,12 @@ export function ChatHistoryNav() {
           `/api/organizations/${organizationId}/chat/${encodeURIComponent(chatId)}`
         );
         if (!res.ok) {
-          return null;
+          throw new Error("Failed to prefetch chat history");
         }
         const data = await res.json();
+        const externalChannelId = externalChannelIdSchema.safeParse(
+          data?.externalChannelId
+        );
         return {
           messages: data?.messages ?? null,
           lastResponseStopped: Boolean(data?.lastResponseStopped),
@@ -97,6 +101,9 @@ export function ChatHistoryNav() {
             typeof data?.activeStreamId === "string"
               ? data.activeStreamId
               : null,
+          externalChannelId: externalChannelId.success
+            ? externalChannelId.data
+            : null,
         };
       },
       staleTime: 1000 * 60 * 5,

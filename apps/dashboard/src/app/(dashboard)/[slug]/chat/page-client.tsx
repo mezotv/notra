@@ -3,7 +3,10 @@
 import { useChat } from "@ai-sdk/react";
 import { ArrowReloadHorizontalIcon, X } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { chatTransportRequestInputSchema } from "@notra/ai/schemas/chat";
+import {
+  chatTransportRequestInputSchema,
+  externalChannelIdSchema,
+} from "@notra/ai/schemas/chat";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type {
   ChatAttachment,
@@ -12,6 +15,7 @@ import type {
   ChatMessagePart,
   ChatUIMessage,
   ContextItem,
+  ExternalChannelId,
 } from "@notra/ai/types/chat";
 import {
   Message,
@@ -129,6 +133,14 @@ const loadMotionFeatures = () =>
 const emptySubscribe = () => () => {
   // no external store to subscribe to; used to detect hydration
 };
+
+function SlackMirrorNotice() {
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-center text-muted-foreground text-sm">
+      Mirrored from Slack — continue in Slack
+    </div>
+  );
+}
 
 function CreateToolPendingIndicator({
   toolCallId,
@@ -643,6 +655,7 @@ function StandaloneChatPageClient({
     messages: ChatUIMessage[] | null;
     lastResponseStopped: boolean;
     activeStreamId: string | null;
+    externalChannelId: ExternalChannelId | null;
   } | null>({
     queryKey: ["chat-history", organizationId, initialChatId],
     queryFn: async () => {
@@ -653,19 +666,30 @@ function StandaloneChatPageClient({
         `/api/organizations/${organizationId}/chat/${encodeURIComponent(initialChatId)}`
       );
       if (!res.ok) {
-        return null;
+        throw new Error("Failed to load chat history");
       }
       const data = await res.json();
+      const externalChannelId = externalChannelIdSchema.safeParse(
+        data?.externalChannelId
+      );
       return {
         messages: data?.messages ?? null,
         lastResponseStopped: Boolean(data?.lastResponseStopped),
         activeStreamId:
           typeof data?.activeStreamId === "string" ? data.activeStreamId : null,
+        externalChannelId: externalChannelId.success
+          ? externalChannelId.data
+          : null,
       };
     },
     enabled: Boolean(initialChatId) && Boolean(organizationId),
+    refetchInterval: (query) =>
+      query.state.data?.externalChannelId?.source === "slack" ? 3000 : false,
     staleTime: 1000 * 60 * 5,
   });
+
+  const isSlackMirrored =
+    chatHistoryData?.externalChannelId?.source === "slack";
 
   useLayoutEffect(() => {
     if (!chatHistoryData) {
@@ -765,6 +789,9 @@ function StandaloneChatPageClient({
   const loadedQueueKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (isSlackMirrored) {
+      return;
+    }
     if (loadedQueueKeyRef.current === queueStorageKey) {
       return;
     }
@@ -791,7 +818,7 @@ function StandaloneChatPageClient({
     } catch {
       setQueuedMessages([]);
     }
-  }, [queueStorageKey]);
+  }, [isSlackMirrored, queueStorageKey]);
 
   useEffect(() => {
     if (loadedQueueKeyRef.current !== queueStorageKey) {
@@ -860,6 +887,9 @@ function StandaloneChatPageClient({
     }
 
     function handleAutoFocus(event: KeyboardEvent) {
+      if (isSlackMirrored) {
+        return;
+      }
       if (event.defaultPrevented) {
         return;
       }
@@ -879,7 +909,7 @@ function StandaloneChatPageClient({
     return () => {
       window.removeEventListener("keydown", handleAutoFocus);
     };
-  }, []);
+  }, [isSlackMirrored]);
 
   const handleAddContext = useCallback((item: ContextItem) => {
     setHasCustomizedContext(true);
@@ -969,6 +999,10 @@ function StandaloneChatPageClient({
       attachments: ChatMessagePart[],
       modelOverride?: string
     ) => {
+      if (isSlackMirrored) {
+        return;
+      }
+
       const current = messagesRef.current;
       const index = current.findIndex((m) => m.id === userMessageId);
       if (index === -1) {
@@ -1018,7 +1052,7 @@ function StandaloneChatPageClient({
         await sendMessage({ text, messageId: userMessageId });
       }
     },
-    [sendMessage, setMessages]
+    [isSlackMirrored, sendMessage, setMessages]
   );
 
   const handleEditMessage = useCallback(
@@ -1095,6 +1129,10 @@ function StandaloneChatPageClient({
 
   const dispatchMessage = useCallback(
     async (text: string, attachments: ChatAttachment[] = []) => {
+      if (isSlackMirrored) {
+        return;
+      }
+
       if (text.trim().length === 0 && attachments.length === 0) {
         return;
       }
@@ -1155,6 +1193,7 @@ function StandaloneChatPageClient({
             messages: messagesRef.current,
             lastResponseStopped: wasStoppedByUserRef.current,
             activeStreamId: null,
+            externalChannelId: null,
           }
         );
         router.replace(`/${organizationSlug}/chat/${stableChatId}`, {
@@ -1168,6 +1207,7 @@ function StandaloneChatPageClient({
     [
       addToolApprovalResponse,
       initialChatId,
+      isSlackMirrored,
       organizationId,
       organizationSlug,
       queryClient,
@@ -1180,6 +1220,9 @@ function StandaloneChatPageClient({
 
   const handleSend = useCallback(
     async (text: string, attachments: ChatAttachment[] = []) => {
+      if (isSlackMirrored) {
+        return;
+      }
       if (isLoading) {
         if (attachments.length > 0) {
           return;
@@ -1189,7 +1232,7 @@ function StandaloneChatPageClient({
       }
       await dispatchMessage(text, attachments);
     },
-    [dispatchMessage, isLoading]
+    [dispatchMessage, isLoading, isSlackMirrored]
   );
 
   const autoSubmittedQueryRef = useRef<string | null>(null);
@@ -1293,6 +1336,9 @@ function StandaloneChatPageClient({
 
   useEffect(() => {
     drainQueueRef.current = () => {
+      if (isSlackMirrored) {
+        return;
+      }
       if (isDrainingRef.current) {
         return;
       }
@@ -1316,7 +1362,7 @@ function StandaloneChatPageClient({
         setQueuedMessages((prev) => [next, ...prev]);
       });
     };
-  }, [dispatchMessage]);
+  }, [dispatchMessage, isSlackMirrored]);
 
   useEffect(() => {
     if (isLoading && !prevIsLoadingRef.current) {
@@ -1338,6 +1384,9 @@ function StandaloneChatPageClient({
   }, [isLoading]);
 
   useEffect(() => {
+    if (isSlackMirrored) {
+      return;
+    }
     if (!isLoading) {
       return;
     }
@@ -1388,12 +1437,16 @@ function StandaloneChatPageClient({
     isLoading,
     messages,
     queuedMessages.length,
+    isSlackMirrored,
     wasStoppedByUser,
     stopActiveResponse,
   ]);
 
   useEffect(() => {
     function handleGlobalKeydown(event: KeyboardEvent) {
+      if (isSlackMirrored) {
+        return;
+      }
       if (event.metaKey || event.ctrlKey || event.altKey) {
         return;
       }
@@ -1421,7 +1474,7 @@ function StandaloneChatPageClient({
     return () => {
       window.removeEventListener("keydown", handleGlobalKeydown);
     };
-  }, []);
+  }, [isSlackMirrored]);
 
   const handleClearError = useCallback(() => setChatError(null), []);
 
@@ -1603,7 +1656,7 @@ function StandaloneChatPageClient({
             ? "published"
             : "draft";
 
-        const approvalId = toolPart.approval?.id;
+        const approvalId = isSlackMirrored ? undefined : toolPart.approval?.id;
         const handleApprove = approvalId
           ? () =>
               addToolApprovalResponse({
@@ -1693,6 +1746,7 @@ function StandaloneChatPageClient({
                   logo: organization?.logo ?? null,
                 }}
                 persistedStatus={persistedStatus}
+                readOnly={isSlackMirrored}
                 state={previewState}
                 title={title}
               />
@@ -1717,6 +1771,7 @@ function StandaloneChatPageClient({
                   logo: organization?.logo ?? null,
                 }}
                 persistedStatus={persistedStatus}
+                readOnly={isSlackMirrored}
                 state={previewState}
                 title={title}
               />
@@ -1737,6 +1792,7 @@ function StandaloneChatPageClient({
               onPersist={handlePersist}
               onRegenerate={handleRegenerate}
               persistedStatus={persistedStatus}
+              readOnly={isSlackMirrored}
               state={previewState}
               title={title}
             />
@@ -1752,7 +1808,7 @@ function StandaloneChatPageClient({
         toolPart.state === "output-error"
       ) {
         const approvalId =
-          toolPart.state === "approval-requested"
+          !isSlackMirrored && toolPart.state === "approval-requested"
             ? toolPart.approval.id
             : undefined;
         const handleApprove = approvalId
@@ -1836,23 +1892,7 @@ function StandaloneChatPageClient({
             <div className="sticky bottom-0 z-10 bg-background px-4 pb-4">
               <div className="-inset-x-4 pointer-events-none absolute bottom-full h-12 bg-linear-to-t from-background to-transparent" />
               <div className="mx-auto w-full max-w-2xl">
-                <ChatInputAdvanced
-                  context={context}
-                  error={chatError}
-                  isLoading={isLoading}
-                  isStopping={isStopping}
-                  model={selectedModel}
-                  onAddContext={handleAddContext}
-                  onClearError={handleClearError}
-                  onModelChange={handleModelChange}
-                  onRemoveContext={handleRemoveContext}
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  onThinkingLevelChange={handleThinkingLevelChange}
-                  organizationId={organizationId}
-                  organizationSlug={organizationSlug}
-                  thinkingLevel={thinkingLevel}
-                />
+                <Skeleton className="h-28 w-full rounded-2xl" />
               </div>
             </div>
           </div>
@@ -1862,6 +1902,16 @@ function StandaloneChatPageClient({
   }
 
   if (!(hasMessages || isPendingAutoSubmit || isLoading)) {
+    if (isSlackMirrored) {
+      return (
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="w-full max-w-2xl">
+            <SlackMirrorNotice />
+          </div>
+        </div>
+      );
+    }
+
     const now = isHydrated ? new Date() : null;
     const greeting = now ? getGreeting(now) : "Welcome";
     const userName = session?.user?.name?.split(" ")[0];
@@ -2030,7 +2080,7 @@ function StandaloneChatPageClient({
                                   )}
                                 </MessageContent>
                               )}
-                              {isUser && (
+                              {isUser && !isSlackMirrored && (
                                 <UserMessageActions
                                   branchIndex={
                                     branchTotal > 1 ? branchIdx : undefined
@@ -2077,17 +2127,19 @@ function StandaloneChatPageClient({
                       <div className="flex w-fit flex-wrap items-center gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5 text-destructive text-xs">
                         <HugeiconsIcon className="size-3.5 shrink-0" icon={X} />
                         <span>{chatError}</span>
-                        <button
-                          className="inline-flex items-center gap-1 rounded font-medium underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          onClick={handleRetryAfterError}
-                          type="button"
-                        >
-                          <HugeiconsIcon
-                            className="size-3.5"
-                            icon={ArrowReloadHorizontalIcon}
-                          />
-                          <span>Retry</span>
-                        </button>
+                        {!isSlackMirrored && (
+                          <button
+                            className="inline-flex items-center gap-1 rounded font-medium underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={handleRetryAfterError}
+                            type="button"
+                          >
+                            <HugeiconsIcon
+                              className="size-3.5"
+                              icon={ArrowReloadHorizontalIcon}
+                            />
+                            <span>Retry</span>
+                          </button>
+                        )}
                       </div>
                     )}
                     {showThinkingIndicator && (
@@ -2108,43 +2160,51 @@ function StandaloneChatPageClient({
               <MessageScrollerButton />
             </MessageScroller>
           </MessageScrollerProvider>
-          <div
-            className={cn(
-              "z-10 bg-background px-4 pb-4",
-              isFirstMessageTransition && "chat-input-slide-down"
-            )}
-          >
-            <div className="mx-auto w-full max-w-2xl">
-              <ChatQueue
-                messages={queuedMessages}
-                onEdit={handleEditQueued}
-                onRemove={handleRemoveQueued}
-              />
-              <ChatInputAdvanced
-                connectedTop={queuedMessages.length > 0}
-                context={context}
-                draftStorageKey={draftStorageKey}
-                error={null}
-                initialValue={initialQuery ?? undefined}
-                isLoading={isLoading}
-                isStopping={isStopping}
-                model={selectedModel}
-                onAddContext={handleAddContext}
-                onClearError={handleClearError}
-                onModelChange={handleModelChange}
-                onRemoveContext={handleRemoveContext}
-                onSend={handleSend}
-                onStop={handleStop}
-                onThinkingLevelChange={handleThinkingLevelChange}
-                onUpdateQueued={handleUpdateQueued}
-                organizationId={organizationId}
-                organizationSlug={organizationSlug}
-                queuedMessages={queuedMessages}
-                ref={chatInputRef}
-                thinkingLevel={thinkingLevel}
-              />
+          {isSlackMirrored ? (
+            <div className="z-10 bg-background px-4 pb-4">
+              <div className="mx-auto w-full max-w-2xl">
+                <SlackMirrorNotice />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div
+              className={cn(
+                "z-10 bg-background px-4 pb-4",
+                isFirstMessageTransition && "chat-input-slide-down"
+              )}
+            >
+              <div className="mx-auto w-full max-w-2xl">
+                <ChatQueue
+                  messages={queuedMessages}
+                  onEdit={handleEditQueued}
+                  onRemove={handleRemoveQueued}
+                />
+                <ChatInputAdvanced
+                  connectedTop={queuedMessages.length > 0}
+                  context={context}
+                  draftStorageKey={draftStorageKey}
+                  error={null}
+                  initialValue={initialQuery ?? undefined}
+                  isLoading={isLoading}
+                  isStopping={isStopping}
+                  model={selectedModel}
+                  onAddContext={handleAddContext}
+                  onClearError={handleClearError}
+                  onModelChange={handleModelChange}
+                  onRemoveContext={handleRemoveContext}
+                  onSend={handleSend}
+                  onStop={handleStop}
+                  onThinkingLevelChange={handleThinkingLevelChange}
+                  onUpdateQueued={handleUpdateQueued}
+                  organizationId={organizationId}
+                  organizationSlug={organizationSlug}
+                  queuedMessages={queuedMessages}
+                  ref={chatInputRef}
+                  thinkingLevel={thinkingLevel}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </LazyMotion>
       <AttachmentPreviewDialog

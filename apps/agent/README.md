@@ -18,6 +18,7 @@ apps/api /v2/agent-chats
 
 eve agent (this package, separate Vercel project)
   ├─ root: Notra assistant (anthropic/claude-sonnet-4.6)
+  ├─ Slack: mentions, DMs, and active thread replies through /eve/v1/slack
   ├─ subagents/content-writer (anthropic/claude-sonnet-5, structured result)
   └─ subagents/image-designer (wraps the @upstash/box sandbox image pipeline)
 ```
@@ -27,6 +28,8 @@ Tool implementations live in `@notra/tools` (`src/assistant`, `src/content-write
 ## Authentication and tenancy
 
 The eve channel accepts, in order: dashboard Vercel OIDC, HTTP Basic service auth (`EVE_NOTRA_AGENT_PASSWORD`, username `notra-dashboard`), same-project Vercel OIDC, and loopback local dev. Trusted callers stamp tenant scope through `x-notra-*` headers (organization, user, chat, surface, content, collection, content type, auto-publish, markup, voice, brand agent type, source metadata, generation config); the channel copies them onto the session principal and tools read them from `ctx.session.auth`, never from model input. Post creation derives a deterministic id from `(sessionId, turnId, input)` and inserts with `ON CONFLICT DO NOTHING`, so replayed steps cannot double-create posts.
+
+Slack has its own signed webhook route and does not pass through the eve HTTP channel auth above. The app uses its own Slack bot token and signing secret. This first Slack surface is intentionally single-tenant: `SLACK_AGENT_TEAM_ID` binds one Slack workspace to the Notra organization in `SLACK_AGENT_ORGANIZATION_ID`. `SLACK_AGENT_ALLOWED_CHANNEL_IDS` can optionally narrow access to a comma-separated channel allowlist. Slack user ids are not treated as Notra user ids. Public-channel threads are mirrored into the dashboard; DMs and private-channel threads remain in Slack because Notra does not yet have Slack-user-to-Notra-user access mapping.
 
 Usage metering: hooks on the root agent and both subagents accumulate `step.completed` token usage in Redis (deduped by `(sessionId, turnId, stepIndex)`) and bill Autumn once per completed turn.
 
@@ -49,10 +52,28 @@ Usage metering: hooks on the root agent and both subagents accumulate `step.comp
 | `DASHBOARD_VERCEL_TEAM_SLUG` / `DASHBOARD_VERCEL_PROJECT_NAME` | prod | Dashboard OIDC route auth |
 | `API_VERCEL_PROJECT_NAME` | prod | API project OIDC route auth (same team slug) |
 | `EVE_NOTRA_AGENT_PASSWORD` | fallback | Basic auth when OIDC is unavailable |
+| `SLACK_AGENT_BOT_TOKEN` / `SLACK_AGENT_SIGNING_SECRET` | Slack | Bot User OAuth Token and App Credentials signing secret for the Notra Agent Slack app |
+| `SLACK_AGENT_ORGANIZATION_ID` / `SLACK_AGENT_TEAM_ID` | Slack | Bind the signed Slack workspace to one Notra organization |
+| `SLACK_AGENT_ALLOWED_CHANNEL_IDS` | optional | Comma-separated Slack channel ids; empty allows the whole bound workspace |
 
 Model access needs no key on Vercel (AI Gateway OIDC); off Vercel set `AI_GATEWAY_API_KEY`.
 
 4. Callers (dashboard and API projects) need `EVE_NOTRA_AGENT_URL` plus either OIDC federation or `EVE_NOTRA_AGENT_PASSWORD`, and the canary flags `NOTRA_AGENT_CHAT=1` / `NOTRA_AGENT_CONTENT=1` to route traffic here.
+
+## Slack bot
+
+The Slack transport is Eve's native Slack channel. Eve owns signed webhook verification, durable thread sessions, progress messages, and human-in-the-loop buttons while using Vercel Chat SDK card primitives for rich messages. The bot credentials belong to the Notra Slack app directly; Vercel Connect is not involved.
+
+1. Create the Slack app in the Notra workspace and add these bot scopes: `assistant:write`, `app_mentions:read`, `chat:write`, `channels:history`, `groups:history`, `im:history`, and `files:read`. `assistant:write` enables Slack's App Agent experience, the history scopes support Eve's thread context, and `files:read` supports its default inbound attachment handling. Add `files:write` only when the bot needs to upload files, and `im:write` only when authorization challenges are overridden to open a new DM.
+2. Under **Event Subscriptions**, set the HTTPS Request URL to `{agent deployment URL}/eve/v1/slack` and subscribe to `app_mention`, `message.im`, `message.channels`, and `message.groups`. The channel and group message events let Eve continue an active public or private channel thread without requiring another mention. Under **Interactivity & Shortcuts**, enable interactivity with the same Request URL so Eve's approval buttons work. Leave Socket Mode off.
+3. Under **App Home**, enable the Messages tab and allow users to send messages to the app. Install or reinstall the app to the Notra workspace.
+4. Copy the **Bot User OAuth Token** into `SLACK_AGENT_BOT_TOKEN` and the signing secret from **Basic Information → App Credentials** into `SLACK_AGENT_SIGNING_SECRET` on the agent project.
+5. Set `SLACK_AGENT_ORGANIZATION_ID` and `SLACK_AGENT_TEAM_ID`. Set `SLACK_AGENT_ALLOWED_CHANNEL_IDS` for a limited rollout, then deploy the agent.
+6. Mention the app in an allowed channel, or DM it when the DM channel is allowed. Once Eve owns a channel thread, ordinary replies in that thread continue the same durable session without another mention; unrelated channel messages remain ignored.
+
+Tool approval cards in shared channels are collaborative: any Slack member who can see the card can act on it for the bound organization. Use `SLACK_AGENT_ALLOWED_CHANNEL_IDS` to limit the bot to channels whose members are trusted to approve those actions.
+
+`SLACK_AGENT_BOT_TOKEN` is intentionally separate from the onboarding workflow's `SLACK_BOT_TOKEN`. The Slack route runs outside the dashboard/API proxy: usage hooks still meter the bound organization and public-channel Slack conversations are mirrored into read-only dashboard `chat_sessions`, but proxy rate limits, credit preflight checks, and `agent_sessions` do not apply. This is a proper workspace-installed bot bound to Notra; it is not yet a publicly installable multi-workspace implementation. Public distribution requires an OAuth install callback, encrypted per-workspace installation storage, team-aware token selection, Slack workspace-to-organization and Slack-user-to-Notra-user mappings, plus equivalent entitlement and rate-limit checks.
 
 ## Local development
 

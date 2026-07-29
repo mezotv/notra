@@ -222,6 +222,31 @@ export async function saveChatMessage(
   return upsertChatSession(organizationId, chatId, [message], "append");
 }
 
+export async function appendChatMessageIfMissing(
+  organizationId: string,
+  chatId: string,
+  message: UIMessage
+): Promise<boolean> {
+  const serializedMessage = JSON.stringify([message]);
+  const serializedMessageId = JSON.stringify([{ id: message.id }]);
+  const updated = await db
+    .update(chatSessions)
+    .set({
+      messages: sql`${chatSessions.messages} || ${serializedMessage}::jsonb`,
+    })
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.deletedAt),
+        sql`NOT (${chatSessions.messages} @> ${serializedMessageId}::jsonb)`
+      )
+    )
+    .returning({ id: chatSessions.id });
+
+  return updated.length > 0;
+}
+
 export async function saveChatMessages(
   organizationId: string,
   chatId: string,

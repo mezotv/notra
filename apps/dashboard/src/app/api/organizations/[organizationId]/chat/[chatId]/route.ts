@@ -1,6 +1,7 @@
 import {
   deleteChatSession,
   getActiveChatStream,
+  getChatSession,
   getLastResponseStopped,
   isChatDeleted,
   loadChatHistory,
@@ -28,16 +29,19 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Chat not found" }, { status: 404 });
   }
 
-  const [messages, lastResponseStopped, activeStreamId] = await Promise.all([
-    loadChatHistory(organizationId, chatId),
-    getLastResponseStopped(organizationId, chatId),
-    getActiveChatStream(organizationId, chatId),
-  ]);
+  const [messages, lastResponseStopped, activeStreamId, chatSession] =
+    await Promise.all([
+      loadChatHistory(organizationId, chatId),
+      getLastResponseStopped(organizationId, chatId),
+      getActiveChatStream(organizationId, chatId),
+      getChatSession(organizationId, chatId),
+    ]);
   return NextResponse.json({
     chatId,
     messages,
     lastResponseStopped,
     activeStreamId,
+    externalChannelId: chatSession?.externalChannelId ?? null,
   });
 }
 

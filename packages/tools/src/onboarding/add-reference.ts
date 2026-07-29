@@ -6,7 +6,7 @@ import { addBrandReferences } from "../utils/references";
 export function createAddReferenceTool() {
   return defineTool({
     description:
-      "Save one strong example of the company's own writing (a tweet, LinkedIn post, blog excerpt, or custom text) as a brand reference on the organization's default brand voice. Use verbatim text from researched sources only.",
+      "Save one strong example of the company's own writing (a tweet, LinkedIn post, blog excerpt, or custom text) as a brand reference on the organization's default brand voice. Use verbatim text from an owned source, or content the user explicitly confirmed they published and asked to save.",
     inputSchema: addReferenceInputSchema,
     async execute(reference, ctx) {
       const organizationId = requireOrganizationId(ctx);
