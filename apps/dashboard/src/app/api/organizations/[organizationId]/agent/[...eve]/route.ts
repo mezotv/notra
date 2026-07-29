@@ -5,6 +5,10 @@ import {
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { AGENT_SURFACES } from "@notra/ai/constants/agent";
+import {
+  acquireAgentSendLock,
+  releaseAgentSendLock,
+} from "@notra/ai/utils/agent-session-lock";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
@@ -16,9 +20,11 @@ import {
   createNotraAgentClient,
   getAgentSessionForOrganization,
   startAgentSession,
+  updateAgentSessionContinuationToken,
 } from "@/lib/agent/client";
 import { isAgentChatEnabled } from "@/lib/agent/flag";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import { agentFollowUpResponseSchema } from "@/schemas/agent";
 import { agentProxyCreateSessionSchema } from "@/schemas/agent-proxy";
 import type { AgentSurface } from "@/types/agent";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
@@ -176,7 +182,7 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
     }
   }
 
-  const eveSessionId = eve[2];
+  const eveSessionId = eve[3];
   if (!eveSessionId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -187,6 +193,13 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
   if (!mapping) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const lockAcquired = await acquireAgentSendLock(eveSessionId);
+  if (!lockAcquired) {
+    return NextResponse.json(
+      { error: "A message is already being processed for this session" },
+      { status: 409 }
+    );
+  }
   const client = await createNotraAgentClient({
     organizationId,
     userId: mapping.userId ?? auth.context.user.id,
@@ -196,18 +209,42 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
     contentId: mapping.contentId ?? undefined,
     useMarkup: credits.useMarkup,
   });
-  const upstream = await client.fetch(`/${path}`, {
-    body: JSON.stringify(body ?? {}),
-    headers: { "content-type": "application/json" },
-    method: "POST",
-  });
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: {
-      "content-type":
-        upstream.headers.get("content-type") ?? "application/json",
-    },
-  });
+  try {
+    const forwardedBody =
+      body && typeof body === "object"
+        ? { ...body, continuationToken: mapping.continuationToken }
+        : { continuationToken: mapping.continuationToken };
+    const upstream = await client.fetch(`/${path}`, {
+      body: JSON.stringify(forwardedBody),
+      headers: { "content-type": "application/json" },
+      method: "POST",
+    });
+    const upstreamText = await upstream.text();
+    if (upstream.ok) {
+      let upstreamJson: unknown = null;
+      try {
+        upstreamJson = JSON.parse(upstreamText);
+      } catch {
+        upstreamJson = null;
+      }
+      const parsed = agentFollowUpResponseSchema.safeParse(upstreamJson);
+      if (parsed.success && parsed.data.continuationToken) {
+        await updateAgentSessionContinuationToken(
+          eveSessionId,
+          parsed.data.continuationToken
+        );
+      }
+    }
+    return new NextResponse(upstreamText, {
+      status: upstream.status,
+      headers: {
+        "content-type":
+          upstream.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } finally {
+    await releaseAgentSendLock(eveSessionId);
+  }
 }
 
 export async function GET(request: NextRequest, context: AgentRouteContext) {
@@ -223,7 +260,7 @@ export async function GET(request: NextRequest, context: AgentRouteContext) {
   if (!path?.endsWith("/stream")) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const eveSessionId = eve[2];
+  const eveSessionId = eve[3];
   const mapping = eveSessionId
     ? await getAgentSessionForOrganization(organizationId, eveSessionId)
     : null;

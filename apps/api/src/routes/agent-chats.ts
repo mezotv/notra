@@ -1,11 +1,16 @@
 import { createRoute } from "@hono/zod-openapi";
 import { AGENT_SESSION_ROUTE_PATH } from "@notra/ai/constants/agent";
 import {
+  acquireAgentSendLock,
+  releaseAgentSendLock,
+} from "@notra/ai/utils/agent-session-lock";
+import {
   createAgentChatSession,
   createAgentClient,
   getAgentSessionForOrganization,
   isAgentApiEnabled,
   listAgentSessionsForOrganization,
+  updateAgentSessionContinuationToken,
 } from "../lib/agent/client";
 import {
   agentSessionParamsSchema,
@@ -15,6 +20,7 @@ import {
   listAgentChatsResponseSchema,
   sendAgentMessageRequestSchema,
 } from "../schemas/agent-chats";
+import { checkAgentAiCredits } from "../utils/agent-credits";
 import { getOrganizationId } from "../utils/auth";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
@@ -66,6 +72,7 @@ const createAgentChatRoute = createRoute({
       RATE_LIMITS.chatGeneration.requests,
       RATE_LIMITS.chatGeneration.window
     ),
+    500: errorResponse("Failed to check usage limits"),
     502: errorResponse("Agent session creation failed"),
     503: errorResponse("Agent service is not configured"),
   },
@@ -144,9 +151,20 @@ agentChatsRoutes.openapi(createAgentChatRoute, async (c) => {
     return rateLimited;
   }
 
+  const credits = await checkAgentAiCredits(organizationId);
+  if (!credits.allowed) {
+    if (credits.status === 403) {
+      return c.json({ error: credits.error, code: credits.code }, 403);
+    }
+    return c.json({ error: credits.error, code: credits.code }, 500);
+  }
+
   const { message } = c.req.valid("json");
   try {
-    const payload = await createAgentChatSession({ organizationId }, message);
+    const payload = await createAgentChatSession(
+      { organizationId, useMarkup: credits.useMarkup },
+      message
+    );
     return c.json(
       {
         sessionId: payload.sessionId,
@@ -196,27 +214,66 @@ agentChatsRoutes.post("/agent-chats/:sessionId/messages", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "Invalid request body" }, 400);
   }
-  const { message, continuationToken } = parsed.data;
-  const client = await createAgentClient({
-    organizationId,
-    userId: mapping.userId ?? undefined,
-    chatId: mapping.chatId ?? undefined,
-  });
-  const upstream = await client.fetch(
-    `${AGENT_SESSION_ROUTE_PATH}/${sessionId}`,
-    {
-      body: JSON.stringify({ continuationToken, message }),
-      headers: { "content-type": "application/json" },
-      method: "POST",
+  const credits = await checkAgentAiCredits(organizationId);
+  if (!credits.allowed) {
+    return c.json({ error: credits.error, code: credits.code }, credits.status);
+  }
+  const lockAcquired = await acquireAgentSendLock(sessionId);
+  if (!lockAcquired) {
+    return c.json(
+      { error: "A message is already being processed for this session" },
+      409
+    );
+  }
+  try {
+    const { message } = parsed.data;
+    const client = await createAgentClient({
+      organizationId,
+      userId: mapping.userId ?? undefined,
+      chatId: mapping.chatId ?? undefined,
+      useMarkup: credits.useMarkup,
+    });
+    const upstream = await client.fetch(
+      `${AGENT_SESSION_ROUTE_PATH}/${sessionId}`,
+      {
+        body: JSON.stringify({
+          continuationToken: mapping.continuationToken,
+          message,
+        }),
+        headers: { "content-type": "application/json" },
+        method: "POST",
+      }
+    );
+    const upstreamText = await upstream.text();
+    if (upstream.ok) {
+      let upstreamJson: unknown = null;
+      try {
+        upstreamJson = JSON.parse(upstreamText);
+      } catch {
+        upstreamJson = null;
+      }
+      if (
+        upstreamJson &&
+        typeof upstreamJson === "object" &&
+        "continuationToken" in upstreamJson &&
+        typeof upstreamJson.continuationToken === "string"
+      ) {
+        await updateAgentSessionContinuationToken(
+          sessionId,
+          upstreamJson.continuationToken
+        );
+      }
     }
-  );
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: {
-      "content-type":
-        upstream.headers.get("content-type") ?? "application/json",
-    },
-  });
+    return new Response(upstreamText, {
+      status: upstream.status,
+      headers: {
+        "content-type":
+          upstream.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } finally {
+    await releaseAgentSendLock(sessionId);
+  }
 });
 
 agentChatsRoutes.get("/agent-chats/:sessionId/events", async (c) => {

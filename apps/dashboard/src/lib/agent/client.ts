@@ -145,7 +145,7 @@ export async function startAgentSession(
   const payload = agentCreateSessionResponseSchema.parse(await response.json());
 
   const agentSessionId = randomUUID();
-  await db.insert(agentSessions).values({
+  const values = {
     id: agentSessionId,
     organizationId: input.scope.organizationId,
     userId: input.scope.userId ?? null,
@@ -155,7 +155,16 @@ export async function startAgentSession(
     collectionId: input.scope.collectionId ?? null,
     eveSessionId: payload.sessionId,
     continuationToken: payload.continuationToken,
-  });
+  };
+  try {
+    await db.insert(agentSessions).values(values);
+  } catch (insertError) {
+    console.error("[agent] Session mapping insert failed; retrying once", {
+      eveSessionId: payload.sessionId,
+      insertError,
+    });
+    await db.insert(agentSessions).values(values);
+  }
 
   return {
     agentSessionId,
@@ -257,4 +266,14 @@ export async function runAgentTask(
     .set({ status: "timed_out" })
     .where(eq(agentSessions.id, started.agentSessionId));
   throw new AgentTaskTimeoutError(started.eveSessionId);
+}
+
+export async function updateAgentSessionContinuationToken(
+  eveSessionId: string,
+  continuationToken: string
+): Promise<void> {
+  await db
+    .update(agentSessions)
+    .set({ continuationToken })
+    .where(eq(agentSessions.eveSessionId, eveSessionId));
 }

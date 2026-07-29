@@ -26,6 +26,7 @@ import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, count, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
+import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
 import {
   trackScheduledContentCreated,
   trackScheduledContentFailed,
@@ -859,7 +860,11 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             },
           });
         });
-      } else if (aiCreditReserved && autumnClient) {
+      } else if (
+        !isAgentContentGenerationEnabled() &&
+        aiCreditReserved &&
+        autumnClient
+      ) {
         await context.run("track-ai-credit-fallback", async () => {
           await autumnClient.track({
             customerId: organizationId,

@@ -174,11 +174,12 @@ export async function saveGeneratedImagePost(params: {
   chatId?: string;
   organizationId: string;
   title: string;
+  postId?: string;
   pngBase64: string;
   html: string;
   sourceMetadata: Record<string, unknown>;
 }) {
-  const postId = nanoid();
+  const postId = params.postId ?? nanoid();
   const imageUrl = await uploadGeneratedImageAsset({
     organizationId: params.organizationId,
     pngBase64: params.pngBase64,

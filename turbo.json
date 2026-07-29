@@ -73,7 +73,8 @@
     "EVE_NOTRA_AGENT_URL",
     "EVE_NOTRA_AGENT_PASSWORD",
     "NOTRA_AGENT_CHAT",
-    "NOTRA_AGENT_CONTENT"
+    "NOTRA_AGENT_CONTENT",
+    "API_VERCEL_PROJECT_NAME"
   ],
   "envMode": "strict",
   "tasks": {

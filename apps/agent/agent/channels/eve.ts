@@ -75,10 +75,12 @@ function withNotraAttributes(
   };
 }
 
-function dashboardOidcAuth(): AuthFn<Request> {
+function trustedProjectOidcAuth(
+  getProjectName: () => string | undefined
+): AuthFn<Request> {
   return async (request) => {
     const teamSlug = process.env.DASHBOARD_VERCEL_TEAM_SLUG;
-    const projectName = process.env.DASHBOARD_VERCEL_PROJECT_NAME;
+    const projectName = getProjectName();
     if (!(teamSlug && projectName)) {
       return null;
     }
@@ -130,7 +132,8 @@ function localDevAttributeAuth(): AuthFn<Request> {
 
 export default eveChannel({
   auth: [
-    dashboardOidcAuth(),
+    trustedProjectOidcAuth(() => process.env.DASHBOARD_VERCEL_PROJECT_NAME),
+    trustedProjectOidcAuth(() => process.env.API_VERCEL_PROJECT_NAME),
     serviceAuth(),
     vercelOidc(),
     localDevAttributeAuth(),

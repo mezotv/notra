@@ -11,6 +11,7 @@ import {
   getImageSnapshot,
   trackImageGenerationUsage,
 } from "@notra/ai/utils/image-post-service";
+import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -47,6 +48,19 @@ export function createReviseImageTool() {
       });
       if (!post) {
         throw new Error("Source image post not found");
+      }
+
+      const revisionKey = `agent:revise-image:${ctx.session.id}:${ctx.session.turn.id}:${postId}`;
+      if (redis && (await redis.get(revisionKey))) {
+        return {
+          postId,
+          title: post.title,
+          imageUrl: post.content,
+          status: "updated",
+          contentType: "image",
+          sandbox: null,
+          usage: null,
+        };
       }
       const metadata =
         post.sourceMetadata && typeof post.sourceMetadata === "object"
@@ -131,6 +145,10 @@ export function createReviseImageTool() {
         usage: result.usage,
         useMarkup,
       });
+
+      if (redis) {
+        await redis.set(revisionKey, "1", { ex: 60 * 60 * 24 });
+      }
 
       return {
         postId,

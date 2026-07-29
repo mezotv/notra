@@ -5,7 +5,11 @@ import {
   saveGeneratedImagePost,
   trackImageGenerationUsage,
 } from "@notra/ai/utils/image-post-service";
+import { db } from "@notra/db/drizzle";
+import { posts } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+import { deriveDeterministicPostId } from "../utils/idempotency";
 import { requireOrganizationId } from "../utils/organization";
 import {
   getBooleanSessionAttribute,
@@ -23,6 +27,28 @@ export function createGenerateImageTool() {
       const userId = requireSessionAttribute(ctx, "userId");
       const chatId = getSessionAttribute(ctx, "chatId") ?? undefined;
       const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
+
+      const deterministicPostId = deriveDeterministicPostId(
+        ctx,
+        `generate_image:${JSON.stringify({ ...input, sourcePostId, title })}`
+      );
+      const existing = await db.query.posts.findFirst({
+        where: and(
+          eq(posts.id, deterministicPostId),
+          eq(posts.organizationId, organizationId)
+        ),
+      });
+      if (existing) {
+        return {
+          postId: existing.id,
+          title: existing.title,
+          imageUrl: existing.content,
+          status: "created",
+          contentType: "image",
+          sandbox: null,
+          usage: null,
+        };
+      }
 
       const restoreSnapshot = sourcePostId
         ? await getImageSnapshot(organizationId, sourcePostId)
@@ -50,6 +76,7 @@ export function createGenerateImageTool() {
         chatId,
         organizationId,
         title,
+        postId: deterministicPostId,
         pngBase64: result.pngBase64,
         html: result.html,
         sourceMetadata: {

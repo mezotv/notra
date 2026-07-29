@@ -28,7 +28,7 @@ Tool implementations live in `@notra/tools` (`src/assistant`, `src/content-write
 
 The eve channel accepts, in order: dashboard Vercel OIDC, HTTP Basic service auth (`EVE_NOTRA_AGENT_PASSWORD`, username `notra-dashboard`), same-project Vercel OIDC, and loopback local dev. Trusted callers stamp tenant scope through `x-notra-*` headers (organization, user, chat, surface, content, collection, content type, auto-publish, markup, voice, brand agent type, source metadata, generation config); the channel copies them onto the session principal and tools read them from `ctx.session.auth`, never from model input. Post creation derives a deterministic id from `(sessionId, turnId, input)` and inserts with `ON CONFLICT DO NOTHING`, so replayed steps cannot double-create posts.
 
-Usage metering: `step.completed` hooks on the root agent and both subagents track AI credits to Autumn, deduped in Redis by `(sessionId, turnId, stepIndex)`.
+Usage metering: hooks on the root agent and both subagents accumulate `step.completed` token usage in Redis (deduped by `(sessionId, turnId, stepIndex)`) and bill Autumn once per completed turn.
 
 ## Deploying on Vercel
 
@@ -47,6 +47,7 @@ Usage metering: `step.completed` hooks on the root agent and both subagents trac
 | `INTEGRATION_ENCRYPTION_KEY`, `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` | yes | GitHub/Linear/Granola integration resolution |
 | `SUPERMEMORY_API_KEY` | yes | Brand reference semantic search |
 | `DASHBOARD_VERCEL_TEAM_SLUG` / `DASHBOARD_VERCEL_PROJECT_NAME` | prod | Dashboard OIDC route auth |
+| `API_VERCEL_PROJECT_NAME` | prod | API project OIDC route auth (same team slug) |
 | `EVE_NOTRA_AGENT_PASSWORD` | fallback | Basic auth when OIDC is unavailable |
 
 Model access needs no key on Vercel (AI Gateway OIDC); off Vercel set `AI_GATEWAY_API_KEY`.
