@@ -137,7 +137,7 @@ const emptySubscribe = () => () => {
 function SlackMirrorNotice() {
   return (
     <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-center text-muted-foreground text-sm">
-      Mirrored from Slack — continue in Slack
+      Mirrored from Slack. Reply in the Slack thread to continue.
     </div>
   );
 }

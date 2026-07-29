@@ -78,9 +78,6 @@ function createTwitterDraftApprovalPost(
     emoji: true,
   });
 
-  // Slack URL buttons still emit an interaction. The custom option resolves
-  // the pending approval without approving the draft write while X opens its
-  // prefilled composer.
   return {
     text: `Tweet draft\n${markdown}`,
     blocks: [

@@ -1,51 +1,13 @@
+import { Effect } from "effect";
 import { type SlackChannelConfig, slackChannel } from "eve/channels/slack";
+import { CREATE_POST_TOOL_NAMES } from "../lib/constants/slack";
 import { createNotraSlackAuth } from "../lib/utils/slack-auth";
-import { mirrorSlackInboundMessage } from "../lib/utils/slack-chat-mirror";
+import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
 import { createSlackAgentCredentials } from "../lib/utils/slack-credentials";
 import { handleSlackInputRequested } from "../lib/utils/slack-input-request";
-
-const CREATE_POST_TOOL_NAMES = new Set([
-  "create_blog_post",
-  "create_changelog",
-  "create_investor_update",
-  "create_linkedin_post",
-  "create_twitter_post",
-]);
-
-interface DraftCompletionState {
-  count: number;
-  turnId: string;
-}
-
-function isPostToXRejection(output: unknown): boolean {
-  if (
-    typeof output !== "object" ||
-    output === null ||
-    Array.isArray(output) ||
-    !("approval" in output)
-  ) {
-    return false;
-  }
-
-  const { approval } = output;
-  return (
-    typeof approval === "object" &&
-    approval !== null &&
-    !Array.isArray(approval) &&
-    "status" in approval &&
-    approval.status === "invalid"
-  );
-}
-
-function firstNonEmptyLine(value: string): string | null {
-  for (const line of value.split(/\r?\n/gu)) {
-    const trimmed = line.trim();
-    if (trimmed.length > 0) {
-      return trimmed;
-    }
-  }
-  return null;
-}
+import { getNotraSlackState } from "../lib/utils/slack-state";
+import { isPostToXRejection } from "../lib/utils/slack-tool-results";
+import { firstNonEmptyLine } from "../lib/utils/text";
 
 const onSlackMessage: NonNullable<SlackChannelConfig["onAppMention"]> = async (
   ctx,
@@ -57,26 +19,16 @@ const onSlackMessage: NonNullable<SlackChannelConfig["onAppMention"]> = async (
   }
 
   await ctx.thread.startTyping("Thinking...");
-  try {
-    const organizationId = auth.attributes.organizationId;
-    if (
-      typeof organizationId === "string" &&
-      message.raw.channel_type === "channel"
-    ) {
-      const chatId = await mirrorSlackInboundMessage(
-        ctx,
-        message,
-        organizationId
-      );
-      return {
-        auth: {
-          ...auth,
-          attributes: { ...auth.attributes, chatId },
-        },
-      };
-    }
-  } catch (error) {
-    console.error("[agent] Slack inbound chat mirror failed", error);
+  const chatId = await Effect.runPromise(
+    mirrorPublicSlackThread(ctx, message, auth.attributes.organizationId)
+  );
+  if (chatId) {
+    return {
+      auth: {
+        ...auth,
+        attributes: { ...auth.attributes, chatId },
+      },
+    };
   }
 
   return { auth };
@@ -98,6 +50,7 @@ export default slackChannel({
   events: {
     "action.result": (data, channel) => {
       const result = data.result;
+      const state = getNotraSlackState(channel.state);
 
       if (
         data.status === "rejected" &&
@@ -105,9 +58,6 @@ export default slackChannel({
         result.toolName === "create_twitter_post" &&
         isPostToXRejection(result.output)
       ) {
-        const state = channel.state as typeof channel.state & {
-          notraPostToXTurnId?: string;
-        };
         state.notraPostToXTurnId = data.turnId;
         return;
       }
@@ -120,10 +70,6 @@ export default slackChannel({
         return;
       }
 
-      const state = channel.state as typeof channel.state & {
-        notraDraftCompletion?: DraftCompletionState;
-        notraReferenceCompletionTurnId?: string;
-      };
       if (result.toolName === "add_reference") {
         state.notraReferenceCompletionTurnId = data.turnId;
         return;
@@ -149,11 +95,7 @@ export default slackChannel({
       }
 
       channel.state.pendingToolCallMessage = null;
-      const state = channel.state as typeof channel.state & {
-        notraDraftCompletion?: DraftCompletionState;
-        notraPostToXTurnId?: string;
-        notraReferenceCompletionTurnId?: string;
-      };
+      const state = getNotraSlackState(channel.state);
       const completion = state.notraDraftCompletion;
       const postToXTurnId = state.notraPostToXTurnId;
       const referenceCompletionTurnId = state.notraReferenceCompletionTurnId;
