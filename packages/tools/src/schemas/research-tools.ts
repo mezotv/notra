@@ -41,7 +41,10 @@ export const webpageInputSchema = z.object({
 });
 
 export const webpagesInputSchema = z.object({
-  urls: z.array(z.url({ protocol: /^https?$/ })).min(1).max(50),
+  urls: z
+    .array(z.url({ protocol: /^https?$/ }))
+    .min(1)
+    .max(50),
 });
 
 export const webSearchInputSchema = z.object({
