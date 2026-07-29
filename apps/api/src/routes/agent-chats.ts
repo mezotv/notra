@@ -214,6 +214,9 @@ agentChatsRoutes.post("/agent-chats/:sessionId/messages", async (c) => {
   if (!parsed.success) {
     return c.json({ error: "Invalid request body" }, 400);
   }
+  if (!(parsed.data.message || parsed.data.inputResponses?.length)) {
+    return c.json({ error: "Invalid request body" }, 400);
+  }
   const credits = await checkAgentAiCredits(organizationId);
   if (!credits.allowed) {
     return c.json({ error: credits.error, code: credits.code }, credits.status);
@@ -226,7 +229,7 @@ agentChatsRoutes.post("/agent-chats/:sessionId/messages", async (c) => {
     );
   }
   try {
-    const { message } = parsed.data;
+    const { message, inputResponses } = parsed.data;
     const client = await createAgentClient({
       organizationId,
       userId: mapping.userId ?? undefined,
@@ -238,7 +241,8 @@ agentChatsRoutes.post("/agent-chats/:sessionId/messages", async (c) => {
       {
         body: JSON.stringify({
           continuationToken: mapping.continuationToken,
-          message,
+          ...(message ? { message } : {}),
+          ...(inputResponses?.length ? { inputResponses } : {}),
         }),
         headers: { "content-type": "application/json" },
         method: "POST",

@@ -26,9 +26,32 @@ export const createAgentChatResponseSchema = z
   })
   .openapi("CreateAgentChatResponse");
 
+const agentInputResponseSchema = z.object({
+  requestId: z.string().min(1),
+  optionId: z.string().min(1).openapi({
+    description:
+      'The chosen option id from the input.requested event, e.g. "approve" or "deny".',
+  }),
+});
+
 export const sendAgentMessageRequestSchema = z
   .object({
-    message: z.string().min(1).max(AGENT_MESSAGE_MAX_LENGTH),
+    message: z
+      .string()
+      .min(1)
+      .max(AGENT_MESSAGE_MAX_LENGTH)
+      .optional()
+      .openapi({
+        description:
+          "The next user message. Omit when only answering a pending input request.",
+      }),
+    inputResponses: z
+      .array(agentInputResponseSchema)
+      .optional()
+      .openapi({
+        description:
+          "Answers to pending input.requested events (tool approvals, questions) from the event stream.",
+      }),
     continuationToken: z.string().min(1).openapi({
       description:
         "The continuation token returned by the previous request for this session.",
