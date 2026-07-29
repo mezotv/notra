@@ -21,8 +21,8 @@ export async function startDashboardWorkflow(
   url: string,
   payload: unknown
 ): Promise<string> {
-  const secret = process.env.INTERNAL_WORKFLOW_SECRET;
-  const token = secret ?? (await getVercelOidcToken().catch(() => null));
+  const secret = process.env.INTERNAL_WORKFLOW_SECRET?.trim();
+  const token = secret || (await getVercelOidcToken().catch(() => null));
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
