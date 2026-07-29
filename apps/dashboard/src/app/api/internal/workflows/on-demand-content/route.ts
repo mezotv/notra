@@ -1,6 +1,7 @@
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { verifyInternalWorkflowRequest } from "@/lib/workflows/internal-auth";
 import { startOnDemandRun } from "@/lib/workflows/start";
+import { ratelimit } from "@/utils/ratelimit";
 
 export async function POST(request: Request) {
   const authorized = await verifyInternalWorkflowRequest(request);
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
       { error: "Invalid payload", details: parsed.error.flatten() },
       { status: 400 }
     );
+  }
+
+  const { success } = await ratelimit.internalWorkflowStart.limit(
+    parsed.data.organizationId
+  );
+  if (!success) {
+    return new Response("Too many requests", { status: 429 });
   }
 
   const { runId } = await startOnDemandRun(parsed.data);

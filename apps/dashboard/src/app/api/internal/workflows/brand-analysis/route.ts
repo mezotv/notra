@@ -1,5 +1,6 @@
 import { verifyInternalWorkflowRequest } from "@/lib/workflows/internal-auth";
 import { startBrandAnalysisRun } from "@/lib/workflows/start";
+import { ratelimit } from "@/utils/ratelimit";
 import { brandAnalysisPayloadSchema } from "@/workflows/brand-analysis";
 
 export async function POST(request: Request) {
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
       { error: "Invalid payload", details: parsed.error.flatten() },
       { status: 400 }
     );
+  }
+
+  const { success } = await ratelimit.internalWorkflowStart.limit(
+    parsed.data.organizationId
+  );
+  if (!success) {
+    return new Response("Too many requests", { status: 429 });
   }
 
   const { runId } = await startBrandAnalysisRun(parsed.data);

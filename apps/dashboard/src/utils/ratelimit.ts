@@ -53,6 +53,12 @@ export const ratelimit = {
     prefix: "ratelimit:granola-connection",
     limiter: Ratelimit.slidingWindow(10, "1m"),
   }),
+  internalWorkflowStart: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:internal-workflow-start",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
   onboardingBrandAnalysis: new Ratelimit({
     redis,
     analytics: true,

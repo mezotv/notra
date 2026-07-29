@@ -36,6 +36,12 @@ export async function verifyInternalWorkflowRequest(
     }
   }
 
+  const isVercelDeployment =
+    process.env.VERCEL === "1" && process.env.VERCEL_ENV !== "development";
+  if (isVercelDeployment) {
+    return false;
+  }
+
   const localAuth = await localDev()(request);
   return localAuth !== null;
 }
