@@ -1,5 +1,5 @@
-import { triggerEventNow } from "@notra/ai/qstash/triggers";
 import { Data, Effect } from "effect";
+import { startEventRun } from "@/lib/workflows/start";
 import { triggerSourceConfigSchema } from "@/schemas/integrations";
 import type {
   DispatchEventTriggerProps,
@@ -46,13 +46,16 @@ const dispatchEventTrigger = Effect.fn("dispatchEventTrigger")(function* ({
 }: DispatchEventTriggerProps) {
   yield* Effect.tryPromise({
     try: () =>
-      triggerEventNow({
+      startEventRun({
         triggerId: trigger.id,
         eventType: processedEvent.type,
         eventAction: processedEvent.action,
         eventData: processedEvent.data,
         repositoryId,
         deliveryId,
+        executionId: deliveryId
+          ? `event-${trigger.id}-${deliveryId}`
+          : undefined,
       }),
     catch: (cause) =>
       new EventTriggerDispatchError({ triggerId: trigger.id, cause }),

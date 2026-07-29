@@ -16,7 +16,7 @@ import {
   sendOnboardingSlackInvite,
   startOnboardingAgentSession,
 } from "@/lib/onboarding-agent";
-import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/onboarding-agent";
+import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 
 export const { POST } = serve<OnboardingAgentWorkflowPayload>(
   async (context: WorkflowContext<OnboardingAgentWorkflowPayload>) => {

@@ -5,13 +5,15 @@ import {
   githubIntegrations,
   linearIntegrations,
 } from "@notra/db/schema";
-import { Client as WorkflowClient } from "@upstash/workflow";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import {
+  getInternalWorkflowUrl,
+  startDashboardWorkflow,
+} from "./internal-workflow";
 
 type DbClient = ReturnType<typeof createDb>;
 
 interface ContentGenerationEnv {
-  QSTASH_TOKEN?: string;
   WORKFLOW_BASE_URL?: string;
 }
 
@@ -20,20 +22,15 @@ interface ContentGenerationRuntimeEnv extends ContentGenerationEnv {
   UPSTASH_REDIS_REST_TOKEN?: string;
 }
 
-function trimTrailingSlash(value: string) {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-}
-
 function getContentGenerationWorkflowUrl(env: ContentGenerationEnv) {
-  if (env.WORKFLOW_BASE_URL) {
-    return `${trimTrailingSlash(env.WORKFLOW_BASE_URL)}/api/workflows/on-demand-content`;
-  }
-
-  return null;
+  return getInternalWorkflowUrl(
+    env,
+    "/api/internal/workflows/on-demand-content"
+  );
 }
 
 export function isContentGenerationConfigured(env: ContentGenerationEnv) {
-  return !!(env.QSTASH_TOKEN && getContentGenerationWorkflowUrl(env));
+  return !!getContentGenerationWorkflowUrl(env);
 }
 
 export function getContentGenerationUnavailableReason(
@@ -43,10 +40,6 @@ export function getContentGenerationUnavailableReason(
     !(runtimeEnv.UPSTASH_REDIS_REST_URL && runtimeEnv.UPSTASH_REDIS_REST_TOKEN)
   ) {
     return "Content generation is unavailable: Redis is not configured";
-  }
-
-  if (!runtimeEnv.QSTASH_TOKEN) {
-    return "Content generation is unavailable: QStash is not configured";
   }
 
   if (!runtimeEnv.WORKFLOW_BASE_URL) {
@@ -60,24 +53,13 @@ export async function triggerContentGenerationWorkflow(
   env: ContentGenerationEnv,
   payload: ContentGenerationWorkflowPayload
 ) {
-  const token = env.QSTASH_TOKEN;
   const url = getContentGenerationWorkflowUrl(env);
-
-  if (!token) {
-    throw new Error("QSTASH_TOKEN is not configured");
-  }
 
   if (!url) {
     throw new Error("Content generation workflow URL is not configured");
   }
 
-  const client = new WorkflowClient({ token });
-  const result = await client.trigger({
-    url,
-    body: payload,
-  });
-
-  return result.workflowRunId;
+  return await startDashboardWorkflow(url, payload);
 }
 
 export async function resolveRequestedRepositoryIds(

@@ -7,7 +7,6 @@ import {
   createSlackConnectChannelWithInvite,
   hasSlackConnectConfigured,
 } from "@notra/ai/integrations/slack";
-import { triggerOnboardingAgent } from "@notra/ai/qstash/triggers";
 import { buildExternalChannelName } from "@notra/ai/utils/slack";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, organizations } from "@notra/db/schema";
@@ -18,6 +17,7 @@ import { Client } from "eve/client";
 import { isFreeEmail } from "free-email-domains-list";
 import {
   AGENT_RUN_HARD_LIMIT_MS,
+  AGENT_RUN_LEASE_MARGIN_MS,
   EVE_CREATE_SESSION_ROUTE_PATH,
   EVE_SESSION_TASK_MODE,
   TRAILING_SLASH_PATTERN,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/onboarding/company-domain";
 import { isEduEmail } from "@/lib/onboarding/edu-email";
 import { buildOnboardingAgentMessage } from "@/lib/onboarding/onboarding-agent-message";
+import { startOnboardingAgentRun } from "@/lib/workflows/start";
 import {
   eveCreateSessionResponseSchema,
   OnboardingAgentCompensationError,
@@ -91,7 +92,9 @@ export async function reserveInitialOnboardingAgentRun(
   organizationId: string
 ): Promise<Date | null> {
   const reservedAt = new Date();
-  const staleBefore = new Date(reservedAt.getTime() - AGENT_RUN_HARD_LIMIT_MS);
+  const staleBefore = new Date(
+    reservedAt.getTime() - (AGENT_RUN_HARD_LIMIT_MS + AGENT_RUN_LEASE_MARGIN_MS)
+  );
   const reserved = await db
     .update(organizations)
     .set({ onboardingAgentStartedAt: reservedAt })
@@ -131,7 +134,7 @@ export const launchReservedOnboardingAgent = Effect.fn(
   const organizationId = payload.organizationId;
   return yield* Effect.tryPromise({
     try: () =>
-      triggerOnboardingAgent({
+      startOnboardingAgentRun({
         ...payload,
         reservedAt: reservedAt.toISOString(),
       }),

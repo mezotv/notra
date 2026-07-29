@@ -18,6 +18,8 @@ export type GenerateChangelogBody = z.infer<typeof generateChangelogBodySchema>;
 export const scheduleWorkflowPayloadSchema = z.object({
   triggerId: z.string().min(1),
   manual: z.boolean().optional().default(false),
+  executionId: z.string().min(1).optional(),
+  delaySeconds: z.number().int().min(0).max(86_400).optional(),
 });
 
 export const onDemandContentWorkflowPayloadSchema =
@@ -35,9 +37,10 @@ export const eventWorkflowPayloadSchema = z.object({
   triggerId: z.string().min(1),
   eventType: z.string().min(1),
   eventAction: z.string(),
-  eventData: z.record(z.string(), z.unknown()),
+  eventData: z.record(z.string(), z.json()),
   repositoryId: z.string().min(1),
   deliveryId: z.string().optional(),
+  executionId: z.string().min(1).optional(),
 });
 
 export type EventWorkflowPayload = z.infer<typeof eventWorkflowPayloadSchema>;
