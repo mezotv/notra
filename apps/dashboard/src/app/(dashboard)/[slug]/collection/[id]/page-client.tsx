@@ -12,6 +12,7 @@ import { RenameCollectionDialog } from "@/components/content/group/rename-collec
 import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useCollection } from "@/lib/hooks/use-collections";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import type { CollectionDetailPageClientProps } from "@/types/content/collection";
 import { formatLongDate, getMarkdownPreview } from "@/utils/content-preview";
 import { resolveImagePreviewSrc } from "@/utils/markdown-image";
@@ -26,6 +27,8 @@ export default function PageClient({
     organizationId,
     collectionId
   );
+  const { hasScope } = useMemberPermissions(organizationId);
+  const canEditContent = hasScope("posts:edit");
   const [showRenameDialog, setShowRenameDialog] = useState(false);
 
   if (isPending) {
@@ -87,15 +90,17 @@ export default function PageClient({
                 <h1 className="font-bold text-2xl tracking-tight">
                   {collection.name}
                 </h1>
-                <Button
-                  className="size-7 shrink-0 text-muted-foreground"
-                  onClick={() => setShowRenameDialog(true)}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <span className="sr-only">Rename collection</span>
-                  <HugeiconsIcon className="size-4" icon={PencilEdit02Icon} />
-                </Button>
+                {canEditContent && (
+                  <Button
+                    className="size-7 shrink-0 text-muted-foreground"
+                    onClick={() => setShowRenameDialog(true)}
+                    size="icon-sm"
+                    variant="ghost"
+                  >
+                    <span className="sr-only">Rename collection</span>
+                    <HugeiconsIcon className="size-4" icon={PencilEdit02Icon} />
+                  </Button>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-sm">
                 <span>{postCountLabel}</span>

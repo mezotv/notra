@@ -45,6 +45,7 @@ export function DataTable<TData>({
               <TableHead>User</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Roles</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -62,6 +63,9 @@ export function DataTable<TData>({
                 </TableCell>
                 <TableCell>
                   <Skeleton className="h-5 w-16 rounded-full" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-20 rounded-full" />
                 </TableCell>
                 <TableCell>
                   <Skeleton className="size-8" />

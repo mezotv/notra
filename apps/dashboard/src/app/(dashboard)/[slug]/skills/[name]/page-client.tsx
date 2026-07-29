@@ -38,6 +38,7 @@ import { Button } from "@/components/button";
 import { DiffView } from "@/components/content/diff-view";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { updateSkillSchema } from "@/schemas/skills";
 
@@ -54,6 +55,9 @@ export default function PageClient({ slug, name }: PageClientProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const { hasScope } = useMemberPermissions(organizationId ?? "");
+  const canEditSkills = hasScope("skills:edit");
+  const canDeleteSkills = hasScope("skills:delete");
   const [view, setView] = useQueryState(
     "view",
     parseAsStringLiteral(VIEW_OPTIONS).withDefault("edit")
@@ -91,6 +95,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
   }
 
   const hasChanges =
+    canEditSkills &&
     !!original &&
     (nameInput !== original.name ||
       description !== original.description ||
@@ -264,7 +269,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
               )}
             </div>
           </div>
-          {skill && !skill.isSystem && (
+          {skill && !skill.isSystem && canDeleteSkills && (
             <Button
               className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
               disabled={saveMutation.isPending || deleteMutation.isPending}
@@ -289,9 +294,11 @@ export default function PageClient({ slug, name }: PageClientProps) {
             <Field>
               <FieldLabel>Name</FieldLabel>
               <Input
-                disabled={skill.isSystem || saveMutation.isPending}
+                disabled={
+                  skill.isSystem || saveMutation.isPending || !canEditSkills
+                }
                 onChange={(e) => setNameInput(e.target.value)}
-                readOnly={skill.isSystem}
+                readOnly={skill.isSystem || !canEditSkills}
                 value={nameInput}
               />
               {!skill.isSystem && (
@@ -307,7 +314,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
               </FieldLabel>
               <Textarea
                 className="max-h-[5rem] min-h-[4rem] overflow-y-auto"
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || !canEditSkills}
                 onChange={(e) => setDescription(e.target.value)}
                 value={description}
               />
@@ -329,7 +336,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
                 <TabsContent className="mt-2" value="edit">
                   <Textarea
                     className="max-h-[20rem] min-h-[16rem] overflow-y-auto font-mono text-sm"
-                    disabled={saveMutation.isPending}
+                    disabled={saveMutation.isPending || !canEditSkills}
                     onChange={(e) => setContent(e.target.value)}
                     value={content}
                   />

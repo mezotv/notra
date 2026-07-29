@@ -46,6 +46,7 @@ import type {
   EntityHit,
 } from "@/types/components/command-palette";
 import { truncateSnippet } from "@/utils/format";
+import { getPostStatusLabel } from "@/utils/post-status";
 import { useCommandPalette } from "./command-palette-context";
 import { COMMAND_ROUTES, COMMAND_SECTIONS } from "./registry";
 
@@ -184,7 +185,7 @@ export function CommandPalette() {
       hits.push({
         key: `post:${post.id}`,
         label: post.title,
-        sublabel: post.status === "published" ? "Published" : "Draft",
+        sublabel: getPostStatusLabel(post.status),
         icon: NoteIcon,
         path: `/${slug}/content/${post.id}`,
         keywords: ["post", "content", post.slug ?? "", debouncedQuery],

@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
@@ -126,10 +127,11 @@ export const skillsRouter = {
   create: authorizedProcedure
     .input(createSkillInput)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["skills:create"],
       });
 
       const existing = await db.query.skills.findFirst({
@@ -164,10 +166,11 @@ export const skillsRouter = {
   update: authorizedProcedure
     .input(updateSkillInput)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["skills:edit"],
       });
 
       const row = await db.query.skills.findFirst({
@@ -223,10 +226,11 @@ export const skillsRouter = {
   delete: authorizedProcedure
     .input(deleteSkillInput)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["skills:delete"],
       });
 
       const row = await db.query.skills.findFirst({

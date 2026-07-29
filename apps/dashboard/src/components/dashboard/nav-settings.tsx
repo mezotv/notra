@@ -4,9 +4,11 @@ import {
   Attachment01Icon,
   CreditCardIcon,
   Notification03Icon,
+  SentIcon,
   Settings01Icon,
   UserCircleIcon,
   UserGroupIcon,
+  UserShield01Icon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
@@ -44,6 +46,16 @@ const organizationItems: NavSettingsItem[] = [
     label: "Members",
     url: "settings/members",
     icon: UserGroupIcon,
+  },
+  {
+    label: "Roles",
+    url: "settings/roles",
+    icon: UserShield01Icon,
+  },
+  {
+    label: "Publishing",
+    url: "settings/publishing",
+    icon: SentIcon,
   },
   {
     label: "Notifications",

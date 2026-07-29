@@ -27,6 +27,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useCollections } from "@/lib/hooks/use-collections";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import type { ContentListPageClientProps } from "@/types/content/collection";
 import { formatRelativeDate, getPageNumbers } from "@/utils/content-preview";
 import { GroupsPageSkeleton } from "./skeleton";
@@ -51,6 +52,9 @@ export default function PageClient({
   );
   const page = Math.max(1, rawPage);
 
+  const { hasScope } = useMemberPermissions(organizationId);
+  const canCreateContent = hasScope("posts:create");
+
   const { data, isPending } = useCollections(organizationId, page);
 
   const collections = useMemo(
@@ -69,7 +73,9 @@ export default function PageClient({
               Every batch of generated content, organized into collections.
             </p>
           </div>
-          <CreateContentDialog organizationId={organizationId} />
+          {canCreateContent && (
+            <CreateContentDialog organizationId={organizationId} />
+          )}
         </div>
 
         {isPending && <GroupsPageSkeleton />}

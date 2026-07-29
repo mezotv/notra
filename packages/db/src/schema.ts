@@ -13,6 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { ApprovalWorkflowStepSnapshot } from "./types/roles";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
@@ -22,7 +23,22 @@ export const lookbackWindowEnum = pgEnum("lookback_window", [
   "last_30_days",
 ]);
 
-export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
+export const postStatusEnum = pgEnum("post_status", [
+  "draft",
+  "in_review",
+  "approved",
+  "published",
+]);
+
+export const postApprovalRequestStatusEnum = pgEnum(
+  "post_approval_request_status",
+  ["pending", "approved", "rejected", "canceled"]
+);
+
+export const postReviewDecisionEnum = pgEnum("post_review_decision", [
+  "approved",
+  "changes_requested",
+]);
 
 export const postCollectionSourceEnum = pgEnum("post_collection_source", [
   "manual",
@@ -1454,6 +1470,13 @@ export const posts = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
     status: postStatusEnum("status").default("draft").notNull(),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    publishedAt: timestamp("published_at"),
+    publishedBy: text("published_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
@@ -1492,6 +1515,172 @@ export const skills = pgTable(
   (table) => [
     index("skills_organizationId_idx").on(table.organizationId),
     uniqueIndex("skills_org_name_uidx").on(table.organizationId, table.name),
+  ]
+);
+
+export const organizationRoles = pgTable(
+  "organization_roles",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    scopes: jsonb("scopes").$type<string[]>().notNull(),
+    systemKey: text("system_key"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("organization_roles_organizationId_idx").on(table.organizationId),
+    uniqueIndex("organization_roles_org_name_uidx").on(
+      table.organizationId,
+      table.name
+    ),
+    uniqueIndex("organization_roles_org_system_key_uidx")
+      .on(table.organizationId, table.systemKey)
+      .where(sql`${table.systemKey} IS NOT NULL`),
+  ]
+);
+
+export const memberRoleAssignments = pgTable(
+  "member_role_assignments",
+  {
+    id: text("id").primaryKey(),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    roleId: text("role_id")
+      .notNull()
+      .references(() => organizationRoles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("member_role_assignments_member_role_uidx").on(
+      table.memberId,
+      table.roleId
+    ),
+    index("member_role_assignments_roleId_idx").on(table.roleId),
+  ]
+);
+
+export const approvalWorkflows = pgTable(
+  "approval_workflows",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    appliesToRoleId: text("applies_to_role_id").references(
+      () => organizationRoles.id,
+      { onDelete: "restrict" }
+    ),
+    isDefault: boolean("is_default").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("approval_workflows_organizationId_idx").on(table.organizationId),
+    uniqueIndex("approval_workflows_org_role_uidx")
+      .on(table.organizationId, table.appliesToRoleId)
+      .where(sql`${table.appliesToRoleId} IS NOT NULL`),
+    uniqueIndex("approval_workflows_org_default_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.isDefault} = true`),
+  ]
+);
+
+export const approvalWorkflowSteps = pgTable(
+  "approval_workflow_steps",
+  {
+    id: text("id").primaryKey(),
+    workflowId: text("workflow_id")
+      .notNull()
+      .references(() => approvalWorkflows.id, { onDelete: "cascade" }),
+    stepOrder: integer("step_order").notNull(),
+    reviewerRoleId: text("reviewer_role_id")
+      .notNull()
+      .references(() => organizationRoles.id, { onDelete: "restrict" }),
+    requiredApprovals: integer("required_approvals").default(1).notNull(),
+    name: text("name"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("approval_workflow_steps_workflow_order_uidx").on(
+      table.workflowId,
+      table.stepOrder
+    ),
+  ]
+);
+
+export const postApprovalRequests = pgTable(
+  "post_approval_requests",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    workflowId: text("workflow_id").references(() => approvalWorkflows.id, {
+      onDelete: "set null",
+    }),
+    steps: jsonb("steps").$type<ApprovalWorkflowStepSnapshot[]>().notNull(),
+    currentStepOrder: integer("current_step_order").default(1).notNull(),
+    status: postApprovalRequestStatusEnum("status")
+      .default("pending")
+      .notNull(),
+    requestedBy: text("requested_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    resolvedAt: timestamp("resolved_at"),
+  },
+  (table) => [
+    index("post_approval_requests_postId_idx").on(table.postId),
+    index("post_approval_requests_organizationId_idx").on(table.organizationId),
+    uniqueIndex("post_approval_requests_post_pending_uidx")
+      .on(table.postId)
+      .where(sql`${table.status} = 'pending'`),
+  ]
+);
+
+export const postReviews = pgTable(
+  "post_reviews",
+  {
+    id: text("id").primaryKey(),
+    requestId: text("request_id")
+      .notNull()
+      .references(() => postApprovalRequests.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    stepOrder: integer("step_order").notNull(),
+    reviewerId: text("reviewer_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    decision: postReviewDecisionEnum("decision").notNull(),
+    comment: text("comment"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("post_reviews_requestId_idx").on(table.requestId),
+    index("post_reviews_postId_idx").on(table.postId),
+    uniqueIndex("post_reviews_request_step_reviewer_uidx").on(
+      table.requestId,
+      table.stepOrder,
+      table.reviewerId
+    ),
   ]
 );
 
@@ -1629,6 +1818,8 @@ export const organizationsRelations = relations(
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
+    roles: many(organizationRoles),
+    approvalWorkflows: many(approvalWorkflows),
   })
 );
 
@@ -1642,13 +1833,106 @@ export const onboardingSuggestionsRelations = relations(
   })
 );
 
-export const membersRelations = relations(members, ({ one }) => ({
+export const membersRelations = relations(members, ({ one, many }) => ({
   organizations: one(organizations, {
     fields: [members.organizationId],
     references: [organizations.id],
   }),
   users: one(users, {
     fields: [members.userId],
+    references: [users.id],
+  }),
+  roleAssignments: many(memberRoleAssignments),
+}));
+
+export const organizationRolesRelations = relations(
+  organizationRoles,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [organizationRoles.organizationId],
+      references: [organizations.id],
+    }),
+    memberAssignments: many(memberRoleAssignments),
+  })
+);
+
+export const memberRoleAssignmentsRelations = relations(
+  memberRoleAssignments,
+  ({ one }) => ({
+    member: one(members, {
+      fields: [memberRoleAssignments.memberId],
+      references: [members.id],
+    }),
+    role: one(organizationRoles, {
+      fields: [memberRoleAssignments.roleId],
+      references: [organizationRoles.id],
+    }),
+  })
+);
+
+export const approvalWorkflowsRelations = relations(
+  approvalWorkflows,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [approvalWorkflows.organizationId],
+      references: [organizations.id],
+    }),
+    appliesToRole: one(organizationRoles, {
+      fields: [approvalWorkflows.appliesToRoleId],
+      references: [organizationRoles.id],
+    }),
+    steps: many(approvalWorkflowSteps),
+  })
+);
+
+export const approvalWorkflowStepsRelations = relations(
+  approvalWorkflowSteps,
+  ({ one }) => ({
+    workflow: one(approvalWorkflows, {
+      fields: [approvalWorkflowSteps.workflowId],
+      references: [approvalWorkflows.id],
+    }),
+    reviewerRole: one(organizationRoles, {
+      fields: [approvalWorkflowSteps.reviewerRoleId],
+      references: [organizationRoles.id],
+    }),
+  })
+);
+
+export const postApprovalRequestsRelations = relations(
+  postApprovalRequests,
+  ({ one, many }) => ({
+    post: one(posts, {
+      fields: [postApprovalRequests.postId],
+      references: [posts.id],
+    }),
+    organization: one(organizations, {
+      fields: [postApprovalRequests.organizationId],
+      references: [organizations.id],
+    }),
+    workflow: one(approvalWorkflows, {
+      fields: [postApprovalRequests.workflowId],
+      references: [approvalWorkflows.id],
+    }),
+    requestedByUser: one(users, {
+      fields: [postApprovalRequests.requestedBy],
+      references: [users.id],
+    }),
+    reviews: many(postReviews),
+  })
+);
+
+export const postReviewsRelations = relations(postReviews, ({ one }) => ({
+  request: one(postApprovalRequests, {
+    fields: [postReviews.requestId],
+    references: [postApprovalRequests.id],
+  }),
+  post: one(posts, {
+    fields: [postReviews.postId],
+    references: [posts.id],
+  }),
+  reviewer: one(users, {
+    fields: [postReviews.reviewerId],
     references: [users.id],
   }),
 }));
@@ -1979,7 +2263,7 @@ export const postCollectionsRelations = relations(
   })
 );
 
-export const postsRelations = relations(posts, ({ one }) => ({
+export const postsRelations = relations(posts, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
     references: [organizations.id],
@@ -1988,6 +2272,11 @@ export const postsRelations = relations(posts, ({ one }) => ({
     fields: [posts.collectionId],
     references: [postCollections.id],
   }),
+  createdByUser: one(users, {
+    fields: [posts.createdBy],
+    references: [users.id],
+  }),
+  approvalRequests: many(postApprovalRequests),
 }));
 
 export const skillsRelations = relations(skills, ({ one }) => ({

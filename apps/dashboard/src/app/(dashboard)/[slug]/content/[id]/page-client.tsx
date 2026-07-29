@@ -5,9 +5,7 @@ import {
   ArrowDown01Icon,
   ArrowLeft02Icon,
   Download01Icon,
-  SentIcon,
   SidebarRight01Icon,
-  TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
@@ -44,10 +42,13 @@ import { toast } from "sonner";
 import ChatInput from "@/components/chat-input";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { ContentChatActivityPanel } from "@/components/content/content-chat-activity-panel";
+import { ContentReviewControls } from "@/components/content/content-review-controls";
+import { ContentReviewPanel } from "@/components/content/content-review-panel";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
+import { PostStatusBadge } from "@/components/content/status-badge";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
@@ -323,45 +324,6 @@ export default function PageClient({
     setEditingTitle(null);
     setEditingSlug(null);
   }, [originalMarkdown]);
-
-  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
-
-  const handleToggleStatus = useCallback(async () => {
-    const currentStatus = data?.content?.status;
-    if (!currentStatus) {
-      return;
-    }
-    setIsTogglingStatus(true);
-    const newStatus = currentStatus === "published" ? "draft" : "published";
-    try {
-      await dashboardOrpc.content.update.call({
-        organizationId,
-        contentId,
-        status: newStatus,
-      });
-      toast.success(
-        newStatus === "published" ? "Post published" : "Post moved to drafts"
-      );
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.get.queryKey({
-            input: { organizationId, contentId },
-          }),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.list.key(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.metrics.get.queryKey({
-            input: { organizationId },
-          }),
-        }),
-      ]);
-    } catch {
-      toast.error("Failed to update post status");
-    }
-    setIsTogglingStatus(false);
-  }, [data?.content?.status, organizationId, contentId, queryClient]);
 
   useEffect(() => {
     handleSaveRef.current = handleSave;
@@ -849,14 +811,7 @@ export default function PageClient({
                   {getContentTypeLabel(content.contentType)}
                 </Badge>
                 {content.contentType !== "image" && (
-                  <Badge
-                    className="capitalize"
-                    variant={
-                      content.status === "published" ? "default" : "outline"
-                    }
-                  >
-                    {content.status}
-                  </Badge>
+                  <PostStatusBadge status={content.status} />
                 )}
               </div>
               {content.sourceMetadata &&
@@ -999,25 +954,11 @@ export default function PageClient({
                 <TooltipContent>Agent activity</TooltipContent>
               </Tooltip>
               {content.contentType !== "image" && (
-                <Button
-                  disabled={isTogglingStatus}
-                  onClick={handleToggleStatus}
-                  size="sm"
-                  variant={content.status === "draft" ? "default" : "outline"}
-                >
-                  <HugeiconsIcon
-                    className="size-4"
-                    icon={content.status === "published" ? TextIcon : SentIcon}
-                  />
-                  {(() => {
-                    if (isTogglingStatus) {
-                      return "Updating...";
-                    }
-                    return content.status === "published"
-                      ? "Move to draft"
-                      : "Publish";
-                  })()}
-                </Button>
+                <ContentReviewControls
+                  contentId={content.id}
+                  organizationId={organizationId}
+                  status={content.status}
+                />
               )}
               {content.contentType === "linkedin_post" && (
                 <Button
@@ -1131,6 +1072,14 @@ export default function PageClient({
               )}
             </div>
           </div>
+
+          {content.contentType !== "image" && (
+            <ContentReviewPanel
+              contentId={content.id}
+              organizationId={organizationId}
+              status={content.status}
+            />
+          )}
 
           <ContentEditorSwitch
             actions={{

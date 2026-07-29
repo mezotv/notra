@@ -13,8 +13,16 @@ import {
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
 } from "./integrations";
 
-export const postStatusSchema = z.enum(["draft", "published"]);
+export const postStatusSchema = z.enum([
+  "draft",
+  "in_review",
+  "approved",
+  "published",
+]);
 export type PostStatus = z.infer<typeof postStatusSchema>;
+
+export const editablePostStatusSchema = z.enum(["draft", "published"]);
+export type EditablePostStatus = z.infer<typeof editablePostStatusSchema>;
 
 export const sourceMetadataSchema = z
   .looseObject({
@@ -114,7 +122,7 @@ export const createChatPostSchema = z.object({
   slug: z.string().trim().min(1).nullable().optional(),
   markdown: z.string().trim().min(1),
   contentType: contentTypeSchema,
-  status: postStatusSchema,
+  status: editablePostStatusSchema,
 });
 
 export const contentOrganizationIdInputSchema = z.object({
@@ -157,6 +165,8 @@ export type PostCollectionNameSource = z.infer<
 export const postCollectionStatusSummarySchema = z.object({
   total: z.number().int().min(0),
   draft: z.number().int().min(0),
+  inReview: z.number().int().min(0),
+  approved: z.number().int().min(0),
   published: z.number().int().min(0),
 });
 export type PostCollectionStatusSummary = z.infer<
@@ -276,7 +286,7 @@ export const updateContentSchema = z
     title: z.string().trim().min(1).max(POST_TITLE_MAX_LENGTH).optional(),
     slug: slugFieldSchema.nullable().optional(),
     markdown: z.string().min(1).max(POST_MARKDOWN_MAX_LENGTH).optional(),
-    status: postStatusSchema.optional(),
+    status: editablePostStatusSchema.optional(),
   })
   .refine(
     (data) =>

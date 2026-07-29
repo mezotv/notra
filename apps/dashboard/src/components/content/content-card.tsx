@@ -5,6 +5,7 @@ import {
   MoreVerticalIcon,
   SentIcon,
   TextIcon,
+  UserCheck01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -31,6 +32,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 import { toast } from "sonner";
+import { PostStatusBadge } from "@/components/content/status-badge";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
+import {
+  useSubmitForReview,
+  useUpdatePostStatus,
+} from "@/lib/hooks/use-reviews";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
 import type { ContentCardProps, ContentCardType } from "@/types/content/card";
@@ -68,7 +75,25 @@ const ContentCard = memo(function ContentCard({
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const { hasScope } = useMemberPermissions(organizationId);
+  const statusMutation = useUpdatePostStatus(organizationId);
+  const submitMutation = useSubmitForReview(organizationId);
+
+  const canPublishNow =
+    hasScope("posts:publish") || hasScope("posts:publish_override");
+  const canOverridePublish = hasScope("posts:publish_override");
+  const canSubmitForReview =
+    status === "draft" &&
+    !canPublishNow &&
+    (hasScope("posts:create") || hasScope("posts:edit"));
+  const canPublishFromCard =
+    ((status === "draft" || status === "approved") && canPublishNow) ||
+    (status === "in_review" && canOverridePublish);
+  const canMoveToDraft = status === "published" && canPublishNow;
+  const canDeletePost = hasScope("posts:delete");
+  const hasMenuActions =
+    canPublishFromCard || canSubmitForReview || canMoveToDraft || canDeletePost;
+  const isUpdatingStatus = statusMutation.isPending || submitMutation.isPending;
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -97,39 +122,11 @@ const ContentCard = memo(function ContentCard({
     setIsDeleting(false);
   }
 
-  async function handleToggleStatus() {
-    setIsTogglingStatus(true);
-    const newStatus = status === "published" ? "draft" : "published";
-    const successMessage =
-      newStatus === "published" ? "Post published" : "Post moved to drafts";
-    try {
-      await dashboardOrpc.content.update.call({
-        organizationId,
-        contentId: id,
-        status: newStatus,
-      });
-
-      toast.success(successMessage);
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.list.key(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.collections.list.key(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.collections.get.key(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.content.metrics.get.queryKey({
-            input: { organizationId },
-          }),
-        }),
-      ]);
-    } catch {
-      toast.error("Failed to update post status");
-    }
-    setIsTogglingStatus(false);
+  function handleToggleStatus() {
+    statusMutation.mutate({
+      contentId: id,
+      status: status === "published" ? "draft" : "published",
+    });
   }
 
   const cardContent = (
@@ -145,49 +142,84 @@ const ContentCard = memo(function ContentCard({
         <p className="line-clamp-2 min-w-0 font-medium text-lg leading-snug">
           {title}
         </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  className="size-7 p-0"
-                  onClick={(e) => e.preventDefault()}
-                  variant="ghost"
-                >
-                  <span className="sr-only">Open menu</span>
-                  <HugeiconsIcon className="size-4" icon={MoreVerticalIcon} />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem
-                disabled={isTogglingStatus}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleToggleStatus();
-                }}
-              >
-                <HugeiconsIcon
-                  className="mr-2 size-4"
-                  icon={status === "published" ? TextIcon : SentIcon}
-                />
-                {status === "published" ? "Move to draft" : "Publish"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={isDeleting}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowDeleteDialog(true);
-                }}
-                variant="destructive"
-              >
-                <HugeiconsIcon className="mr-2 size-4" icon={Delete02Icon} />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {hasMenuActions && (
+          <div className="flex shrink-0 items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    className="size-7 p-0"
+                    onClick={(e) => e.preventDefault()}
+                    variant="ghost"
+                  >
+                    <span className="sr-only">Open menu</span>
+                    <HugeiconsIcon className="size-4" icon={MoreVerticalIcon} />
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-48">
+                {canPublishFromCard && (
+                  <DropdownMenuItem
+                    disabled={isUpdatingStatus}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleStatus();
+                    }}
+                  >
+                    <HugeiconsIcon className="mr-2 size-4" icon={SentIcon} />
+                    {status === "in_review" ? "Publish now" : "Publish"}
+                  </DropdownMenuItem>
+                )}
+                {canSubmitForReview && (
+                  <DropdownMenuItem
+                    disabled={isUpdatingStatus}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      submitMutation.mutate(id);
+                    }}
+                  >
+                    <HugeiconsIcon
+                      className="mr-2 size-4"
+                      icon={UserCheck01Icon}
+                    />
+                    Submit for review
+                  </DropdownMenuItem>
+                )}
+                {canMoveToDraft && (
+                  <DropdownMenuItem
+                    disabled={isUpdatingStatus}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleStatus();
+                    }}
+                  >
+                    <HugeiconsIcon className="mr-2 size-4" icon={TextIcon} />
+                    Move to draft
+                  </DropdownMenuItem>
+                )}
+                {canDeletePost && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowDeleteDialog(true);
+                      }}
+                      variant="destructive"
+                    >
+                      <HugeiconsIcon
+                        className="mr-2 size-4"
+                        icon={Delete02Icon}
+                      />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
       <div
         className={cn(
@@ -213,12 +245,7 @@ const ContentCard = memo(function ContentCard({
         )}
       </div>
       <div className="flex items-center gap-2 px-2 py-2">
-        <Badge
-          className="capitalize"
-          variant={status === "published" ? "default" : "outline"}
-        >
-          {status}
-        </Badge>
+        <PostStatusBadge status={status} />
         <Badge
           className="flex items-center gap-1 capitalize"
           variant="secondary"

@@ -39,6 +39,7 @@ export async function createPostRecord(
         recommendations: params.recommendations ?? null,
         contentType: params.contentType,
         status: params.autoPublish ? "published" : "draft",
+        publishedAt: params.autoPublish ? new Date() : null,
         sourceMetadata: params.sourceMetadata ?? null,
       })
       .onConflictDoNothing({ target: posts.id })

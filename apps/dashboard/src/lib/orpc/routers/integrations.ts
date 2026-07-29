@@ -67,6 +67,7 @@ import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
 import {
   createGranolaIntegrationRequestSchema,
@@ -373,9 +374,10 @@ export const integrationsRouter = {
   create: baseProcedure
     .input(createGitHubIntegrationRequestSchema)
     .handler(async ({ context, input }) => {
-      const auth = await assertOrganizationAccess({
+      const auth = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["integrations:manage"],
       });
       await assertActiveSubscription(input.organizationId);
 
@@ -417,9 +419,10 @@ export const integrationsRouter = {
   update: baseProcedure
     .input(integrationInputSchema.and(updateIntegrationBodySchema))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["integrations:manage"],
       });
       await assertActiveSubscription(input.organizationId);
 
@@ -521,9 +524,10 @@ export const integrationsRouter = {
   delete: baseProcedure
     .input(integrationInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["integrations:manage"],
       });
 
       await requireIntegrationInOrganization(
@@ -622,9 +626,10 @@ export const integrationsRouter = {
     add: baseProcedure
       .input(integrationInputSchema.and(addRepositoryRequestSchema))
       .handler(async ({ context, input }) => {
-        const auth = await assertOrganizationAccess({
+        const auth = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -667,9 +672,10 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(repositoryInputSchema.and(updateRepositoryBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -718,9 +724,10 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(repositoryInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
 
         await requireRepositoryInOrganization(
@@ -736,9 +743,10 @@ export const integrationsRouter = {
     configureOutput: baseProcedure
       .input(repositoryInputSchema.and(configureOutputBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -793,9 +801,10 @@ export const integrationsRouter = {
       generateSecret: baseProcedure
         .input(repositoryInputSchema)
         .handler(async ({ context, input }) => {
-          const auth = await assertOrganizationAccess({
+          const auth = await assertOrganizationScopes({
             headers: context.headers,
             organizationId: input.organizationId,
+            scopes: ["integrations:manage"],
           });
           await assertActiveSubscription(input.organizationId);
 
@@ -819,9 +828,10 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(outputInputSchema.and(updateOutputBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -902,9 +912,10 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(integrationInputSchema.and(updateLinearIntegrationBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -927,9 +938,10 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(integrationInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
 
         const existing = await getLinearIntegrationById(input.integrationId);
@@ -1013,9 +1025,10 @@ export const integrationsRouter = {
     create: baseProcedure
       .input(createGranolaIntegrationRequestSchema)
       .handler(async ({ context, input }) => {
-        const { user } = await assertOrganizationAccess({
+        const { user } = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1058,9 +1071,10 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(integrationInputSchema.and(updateGranolaIntegrationBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1092,9 +1106,10 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(integrationInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
 
         const existing = await getGranolaIntegrationById(input.integrationId);
@@ -1185,9 +1200,10 @@ export const integrationsRouter = {
     create: baseProcedure
       .input(createMcpServerRequestSchema)
       .handler(async ({ context, input }) => {
-        const auth = await assertOrganizationAccess({
+        const auth = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
@@ -1246,9 +1262,10 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(mcpServerInputSchema.and(updateMcpServerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1297,9 +1314,10 @@ export const integrationsRouter = {
     beginOAuth: baseProcedure
       .input(beginMcpOAuthRequestSchema)
       .handler(async ({ context, input }) => {
-        const access = await assertOrganizationAccess({
+        const access = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
@@ -1353,9 +1371,10 @@ export const integrationsRouter = {
     reauthorizeOAuth: baseProcedure
       .input(reauthorizeMcpOAuthRequestSchema)
       .handler(async ({ context, input }) => {
-        const access = await assertOrganizationAccess({
+        const access = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
@@ -1404,9 +1423,10 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(mcpServerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
 
         const existing = await getMcpConnectionIntegration({
@@ -1429,9 +1449,10 @@ export const integrationsRouter = {
     refreshTools: baseProcedure
       .input(mcpServerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["integrations:manage"],
         });
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);

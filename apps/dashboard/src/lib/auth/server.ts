@@ -41,6 +41,7 @@ import {
   sendVerificationEmailAction,
   sendWelcomeEmailAction,
 } from "@/lib/email/actions";
+import { ensureSystemRoles } from "@/lib/permissions/system-roles";
 import { organizationSlugSchema } from "@/schemas/organization";
 
 async function enforceTeamMembersLimit(organizationId?: string | null) {
@@ -270,6 +271,15 @@ export const auth = betterAuth({
                 error,
               }
             );
+          }
+
+          try {
+            await ensureSystemRoles(organization.id);
+          } catch (error) {
+            console.error("[Roles] Failed to seed system roles for new org:", {
+              organizationId: organization.id,
+              error,
+            });
           }
 
           if (!autumn) {

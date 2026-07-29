@@ -8,10 +8,13 @@ import {
   isLegacyPostCollectionName,
 } from "@notra/db/utils/post-collections";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { Effect } from "effect";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
 import { after, NextResponse } from "next/server";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { withOrganizationScopes } from "@/lib/permissions/assert";
+import { resolveMemberRoleIds } from "@/lib/permissions/resolve-scopes";
+import { findApplicableWorkflow } from "@/lib/reviews/workflow";
 import { createChatPostSchema } from "@/schemas/content";
 import type { RouteContext } from "@/types/api/routes";
 
@@ -21,10 +24,13 @@ export async function POST(
 ) {
   const { organizationId } = await params;
 
-  await assertOrganizationAccess({
-    headers: request.headers,
-    organizationId,
+  const auth = await withOrganizationScopes(request, organizationId, {
+    scopes: ["posts:create"],
   });
+
+  if (!auth.success) {
+    return auth.response;
+  }
 
   const parsed = createChatPostSchema.safeParse(
     await request.json().catch(() => null)
@@ -37,6 +43,53 @@ export async function POST(
   }
 
   const { chatId, title, contentType, markdown, status } = parsed.data;
+
+  if (status === "published") {
+    const { scopes, membership } = auth.context;
+    const canPublishDirectly = scopes.includes("posts:publish_override");
+
+    if (!canPublishDirectly) {
+      if (!scopes.includes("posts:publish")) {
+        return NextResponse.json(
+          { error: "You do not have permission to publish posts" },
+          { status: 403 }
+        );
+      }
+
+      const workflowCheck = await Effect.runPromise(
+        Effect.gen(function* () {
+          const roleIds = yield* resolveMemberRoleIds({
+            memberId: membership.id,
+          });
+          return yield* findApplicableWorkflow({
+            organizationId,
+            authorRoleIds: roleIds,
+          });
+        }).pipe(
+          Effect.match({
+            onFailure: () => ({ failed: true as const, workflow: null }),
+            onSuccess: (workflow) => ({ failed: false as const, workflow }),
+          })
+        )
+      );
+
+      if (workflowCheck.failed) {
+        return NextResponse.json(
+          { error: "Failed to resolve publishing requirements" },
+          { status: 500 }
+        );
+      }
+
+      if (workflowCheck.workflow) {
+        return NextResponse.json(
+          {
+            error: `Posts you create must be approved through the "${workflowCheck.workflow.name}" workflow before publishing. Save it as a draft and submit it for review.`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+  }
   const slug =
     supportsPostSlug(contentType) && parsed.data.slug ? parsed.data.slug : null;
   const content = sanitizeMarkdownHtml(await marked.parse(markdown));
@@ -119,6 +172,10 @@ export async function POST(
       markdown,
       contentType,
       status,
+      createdBy: auth.context.user.id,
+      ...(status === "published"
+        ? { publishedAt: now, publishedBy: auth.context.user.id }
+        : {}),
       sourceMetadata: null,
     });
 

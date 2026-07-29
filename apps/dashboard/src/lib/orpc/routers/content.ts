@@ -20,6 +20,7 @@ import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
+import { Effect } from "effect";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
 import {
@@ -37,9 +38,20 @@ import {
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
 import { baseProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
+import { toReviewOrpcError } from "@/lib/reviews/map-errors";
+import {
+  assertPublishAllowed,
+  cancelPendingReview,
+} from "@/lib/reviews/workflow";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
-import type { ContentResponse, PostsResponse } from "@/schemas/content";
+import type {
+  ContentResponse,
+  EditablePostStatus,
+  PostStatus,
+  PostsResponse,
+} from "@/schemas/content";
 import {
   contentInputSchema,
   contentOrganizationIdInputSchema,
@@ -66,6 +78,7 @@ import { resolveLookbackRange } from "@/utils/lookback";
 import {
   badRequest,
   conflict,
+  forbidden,
   internalServerError,
   notFound,
   paymentRequired,
@@ -100,7 +113,7 @@ function serializePost(post: {
   sourceMetadata: unknown;
   recommendations: string | null;
   slug: string | null;
-  status: "draft" | "published";
+  status: PostStatus;
   title: string;
   updatedAt: Date;
 }): PostsResponse["posts"][number] {
@@ -131,7 +144,7 @@ function serializeContent(post: {
   recommendations: string | null;
   slug: string | null;
   sourceMetadata: unknown;
-  status: "draft" | "published";
+  status: PostStatus;
   title: string;
 }): ContentResponse {
   return {
@@ -222,7 +235,7 @@ export async function buildContentUpdateData(
   existingTitle: string,
   input: {
     markdown?: string;
-    status?: "draft" | "published";
+    status?: EditablePostStatus;
     title?: string;
   }
 ) {
@@ -557,7 +570,7 @@ export const contentRouter = {
   update: baseProcedure
     .input(contentInputSchema.and(updateContentSchema))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const access = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -571,6 +584,7 @@ export const contentRouter = {
         columns: {
           title: true,
           contentType: true,
+          status: true,
         },
       });
 
@@ -578,10 +592,63 @@ export const contentRouter = {
         throw notFound("Content not found");
       }
 
+      const hasContentChanges =
+        input.title !== undefined ||
+        input.markdown !== undefined ||
+        input.slug !== undefined;
+
+      if (hasContentChanges && !access.scopes.includes("posts:edit")) {
+        throw forbidden("You do not have permission to edit posts");
+      }
+
       const updateData = await buildContentUpdateData(
         existingPost.title,
         input
       );
+
+      const isStatusChange =
+        input.status !== undefined && input.status !== existingPost.status;
+
+      if (isStatusChange && input.status === "published") {
+        await Effect.runPromise(
+          assertPublishAllowed({
+            postId: input.contentId,
+            organizationId: input.organizationId,
+            scopes: access.scopes,
+          }).pipe(Effect.mapError(toReviewOrpcError))
+        );
+
+        updateData.publishedAt = new Date();
+        updateData.publishedBy = access.user.id;
+      }
+
+      if (isStatusChange && input.status === "draft") {
+        const canUnpublish =
+          access.scopes.includes("posts:publish") ||
+          access.scopes.includes("posts:publish_override");
+
+        if (existingPost.status === "published" && !canUnpublish) {
+          throw forbidden("You do not have permission to unpublish posts");
+        }
+
+        if (
+          existingPost.status !== "published" &&
+          !access.scopes.includes("posts:edit")
+        ) {
+          throw forbidden(
+            "You do not have permission to withdraw posts from review"
+          );
+        }
+      }
+
+      if (isStatusChange) {
+        await Effect.runPromise(
+          cancelPendingReview({
+            postId: input.contentId,
+            organizationId: input.organizationId,
+          }).pipe(Effect.mapError(toReviewOrpcError))
+        );
+      }
 
       if (input.slug !== undefined) {
         if (!supportsPostSlug(existingPost.contentType)) {
@@ -642,9 +709,10 @@ export const contentRouter = {
   delete: baseProcedure
     .input(contentInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["posts:delete"],
       });
 
       const existingPost = await db.query.posts.findFirst({
@@ -718,18 +786,31 @@ export const contentRouter = {
 
         const aggregates = new Map<
           string,
-          { total: number; draft: number; published: number; types: string[] }
+          {
+            total: number;
+            draft: number;
+            inReview: number;
+            approved: number;
+            published: number;
+            types: string[];
+          }
         >();
         for (const post of postRows) {
           const aggregate = aggregates.get(post.collectionId) ?? {
             total: 0,
             draft: 0,
+            inReview: 0,
+            approved: 0,
             published: 0,
             types: [],
           };
           aggregate.total += 1;
           if (post.status === "published") {
             aggregate.published += 1;
+          } else if (post.status === "in_review") {
+            aggregate.inReview += 1;
+          } else if (post.status === "approved") {
+            aggregate.approved += 1;
           } else {
             aggregate.draft += 1;
           }
@@ -768,6 +849,8 @@ export const contentRouter = {
             statusSummary: {
               total: postCount,
               draft: aggregate?.draft ?? 0,
+              inReview: aggregate?.inReview ?? 0,
+              approved: aggregate?.approved ?? 0,
               published: aggregate?.published ?? 0,
             },
             createdAt: collection.createdAt.toISOString(),
@@ -864,9 +947,10 @@ export const contentRouter = {
     rename: baseProcedure
       .input(renamePostCollectionInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["posts:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -900,9 +984,10 @@ export const contentRouter = {
     delete: baseProcedure
       .input(postCollectionInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["posts:delete"],
         });
 
         const existingCollection = await db.query.postCollections.findFirst({
@@ -931,9 +1016,10 @@ export const contentRouter = {
     updateExpectedPostCount: baseProcedure
       .input(updateExpectedPostCountInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["posts:create"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1336,9 +1422,10 @@ export const contentRouter = {
   createCollection: baseProcedure
     .input(createPostCollectionInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["posts:create"],
       });
       await assertActiveSubscription(input.organizationId);
 
@@ -1364,9 +1451,10 @@ export const contentRouter = {
   generate: baseProcedure
     .input(generateContentInputSchema)
     .handler(async ({ context, input }) => {
-      const auth = await assertOrganizationAccess({
+      const auth = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
+        scopes: ["posts:create"],
       });
       await assertActiveSubscription(input.organizationId);
 

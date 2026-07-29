@@ -10,6 +10,7 @@ import {
   Notification03Icon,
   PlugIcon,
   SearchIcon,
+  TaskDone01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
@@ -27,7 +28,12 @@ import { usePathname } from "next/navigation";
 import { Fragment, memo } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
+import type {
+  NavGroupProps,
+  NavMainCategory,
+  NavMainItem,
+} from "@/types/components/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { NavBrandIdentity } from "./nav-brand-identity";
 
@@ -56,6 +62,13 @@ const navMainItems: NavMainItem[] = [
     icon: NoteIcon,
     label: "Content",
     category: "workspace",
+  },
+  {
+    link: "/reviews",
+    icon: TaskDone01Icon,
+    label: "Reviews",
+    category: "workspace",
+    requiredScope: "posts:review",
   },
   {
     link: "/skills",
@@ -110,19 +123,19 @@ const NavGroup = memo(function NavGroup({
   slug,
   label,
   pathname,
-}: {
-  items: NavMainItem[];
-  slug: string;
-  label?: string;
-  pathname: string;
-}) {
-  if (items.length === 0) {
+  hasScope,
+}: NavGroupProps) {
+  const visibleItems = items.filter(
+    (item) => !item.requiredScope || hasScope(item.requiredScope)
+  );
+
+  if (visibleItems.length === 0) {
     return null;
   }
 
   const menu = (
     <SidebarMenu>
-      {items.map((item) => {
+      {visibleItems.map((item) => {
         const href = `/${slug}${item.link}`;
         const isActive =
           item.link === ""
@@ -177,6 +190,7 @@ export function NavMain() {
   const pathname = usePathname();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const isApplePlatform = useIsApplePlatform();
+  const { hasScope } = useMemberPermissions(activeOrganization?.id ?? "");
 
   if (!activeOrganization?.slug) {
     return null;
@@ -208,10 +222,16 @@ export function NavMain() {
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
-      <NavGroup items={rootItems} pathname={pathname} slug={slug} />
+      <NavGroup
+        hasScope={hasScope}
+        items={rootItems}
+        pathname={pathname}
+        slug={slug}
+      />
       {categories.map((category) => (
         <Fragment key={category}>
           <NavGroup
+            hasScope={hasScope}
             items={itemsByCategory[category]}
             label={categoryLabels[category]}
             pathname={pathname}

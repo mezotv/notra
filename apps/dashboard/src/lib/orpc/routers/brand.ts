@@ -29,6 +29,7 @@ import {
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
 import { baseProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import {
   startBrandAnalysisRun,
   startBrandGuidelinesRun,
@@ -339,9 +340,10 @@ export const brandRouter = {
     create: baseProcedure
       .input(voiceCreateInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -397,9 +399,10 @@ export const brandRouter = {
     update: baseProcedure
       .input(voiceUpdateInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -448,9 +451,10 @@ export const brandRouter = {
     delete: baseProcedure
       .input(voiceInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
 
         const voice = await verifyVoiceOwnership(
@@ -523,9 +527,10 @@ export const brandRouter = {
     setDefault: baseProcedure
       .input(setDefaultVoiceInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -619,9 +624,10 @@ export const brandRouter = {
     start: baseProcedure
       .input(analyzeInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -653,9 +659,10 @@ export const brandRouter = {
     refresh: baseProcedure
       .input(guidelineInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -692,9 +699,10 @@ export const brandRouter = {
     updateColor: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineColorSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -727,9 +735,10 @@ export const brandRouter = {
     updateFont: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineFontSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -762,9 +771,10 @@ export const brandRouter = {
     updateToken: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineTokenSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -795,9 +805,10 @@ export const brandRouter = {
     updateAsset: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineAssetSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -838,9 +849,10 @@ export const brandRouter = {
     updateScreenshot: baseProcedure
       .input(voiceInputSchema.and(updateGuidelineScreenshotSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -877,9 +889,10 @@ export const brandRouter = {
     createColor: baseProcedure
       .input(voiceInputSchema.and(createGuidelineColorSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -909,9 +922,10 @@ export const brandRouter = {
     createAsset: baseProcedure
       .input(voiceInputSchema.and(createGuidelineAssetSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -964,9 +978,10 @@ export const brandRouter = {
     create: baseProcedure
       .input(voiceInputSchema.and(createReferenceSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1105,9 +1120,10 @@ export const brandRouter = {
     update: baseProcedure
       .input(referenceInputSchema.and(updateReferenceSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -1250,9 +1266,10 @@ export const brandRouter = {
     delete: baseProcedure
       .input(referenceInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
 
         await verifyVoiceOwnership(input.organizationId, input.voiceId);
@@ -1289,9 +1306,10 @@ export const brandRouter = {
     importTweets: baseProcedure
       .input(voiceInputSchema.and(importTweetsSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["brand:edit"],
         });
 
         const { success: withinLimit } = await ratelimit.importTweets.limit(

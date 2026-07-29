@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   badRequest,
@@ -83,10 +84,11 @@ export const socialAccountsRouter = {
   disconnect: authorizedProcedure
     .input(disconnectSocialAccountInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["integrations:manage"],
       });
 
       const existing = await db.query.connectedSocialAccounts.findFirst({
@@ -111,10 +113,11 @@ export const socialAccountsRouter = {
     beginAuth: authorizedProcedure
       .input(beginTwitterAuthInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
           user: context.user,
+          scopes: ["integrations:manage"],
         });
 
         const clientId = process.env.TWITTER_CLIENT_ID;

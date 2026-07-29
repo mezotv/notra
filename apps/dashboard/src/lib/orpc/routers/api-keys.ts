@@ -13,6 +13,7 @@ import { unkey } from "@/lib/api-keys/unkey";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import {
   createApiKeySchema,
   deleteApiKeySchema,
@@ -167,10 +168,11 @@ export const apiKeysRouter = {
   create: authorizedProcedure
     .input(organizationInputSchema.extend(createApiKeySchema.shape))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["api-keys:manage"],
       });
       await assertActiveSubscription(input.organizationId);
 
@@ -206,10 +208,11 @@ export const apiKeysRouter = {
   update: authorizedProcedure
     .input(updateKeyInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["api-keys:manage"],
       });
       await assertActiveSubscription(input.organizationId);
 
@@ -271,10 +274,11 @@ export const apiKeysRouter = {
   delete: authorizedProcedure
     .input(deleteKeyInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
+        scopes: ["api-keys:manage"],
       });
 
       const { apiId, client } = requireUnkeyConfig();

@@ -12,6 +12,7 @@ import {
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { and, count, eq, inArray, sql } from "drizzle-orm";
+import { Effect } from "effect";
 import { nanoid } from "nanoid";
 
 import {
@@ -49,6 +50,7 @@ import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
+import { assertApiPublishAllowed } from "../utils/publishing";
 import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
 import { getRedis } from "../utils/redis";
 
@@ -92,7 +94,7 @@ function serializePost(post: {
   recommendations: string | null;
   slug: string | null;
   sourceMetadata: unknown;
-  status: "draft" | "published";
+  status: "draft" | "in_review" | "approved" | "published";
   title: string;
   updatedAt: Date;
 }) {
@@ -490,6 +492,8 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
       title: true,
       slug: true,
       contentType: true,
+      status: true,
+      createdBy: true,
     },
   });
 
@@ -497,9 +501,36 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     return c.json({ error: "Post not found" }, 404);
   }
 
+  if (body.status === "published" && existingPost.status !== "published") {
+    const publishCheck = await Effect.runPromise(
+      assertApiPublishAllowed({
+        db,
+        organizationId: orgId,
+        post: existingPost,
+      }).pipe(
+        Effect.match({
+          onFailure: (error) => error,
+          onSuccess: () => null,
+        })
+      )
+    );
+
+    if (publishCheck?._tag === "PublishRequirementError") {
+      return c.json({ error: publishCheck.message }, 403);
+    }
+
+    if (publishCheck) {
+      throw new Error(publishCheck.message, { cause: publishCheck.cause });
+    }
+  }
+
   const updateData: Partial<typeof posts.$inferInsert> = {
     updatedAt: new Date(),
   };
+
+  if (body.status === "published" && existingPost.status !== "published") {
+    updateData.publishedAt = new Date();
+  }
 
   if (body.title !== undefined) {
     updateData.title = body.title;
@@ -549,7 +580,7 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     recommendations: string | null;
     contentType: string;
     sourceMetadata: unknown;
-    status: "draft" | "published";
+    status: "draft" | "in_review" | "approved" | "published";
     createdAt: Date;
     updatedAt: Date;
   }> = [];

@@ -12,6 +12,7 @@
     "./drizzle-http": "./src/drizzle-http.ts",
     "./schema": "./src/schema.ts",
     "./types/*": "./src/types/*.ts",
+    "./constants/*": "./src/constants/*.ts",
     "./utils/*": "./src/utils/*.ts"
   },
   "dependencies": {

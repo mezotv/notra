@@ -66,6 +66,7 @@ export async function handleImage(
         recommendations: null,
         contentType: "image",
         status: ctx.autoPublish ? "published" : "draft",
+        publishedAt: ctx.autoPublish ? new Date() : null,
         sourceMetadata: {
           ...ctx.sourceMetadata,
           type: "generated_image",

@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
@@ -52,8 +53,12 @@ export default function PageClient({ slug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickstartUrl, setQuickstartUrl] = useState("");
+  const { hasScope } = useMemberPermissions(organizationId ?? "");
+  const canCreateSkills = hasScope("skills:create");
 
-  useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
+  useHotkey("C", () => setDialogOpen(true), {
+    enabled: !dialogOpen && canCreateSkills,
+  });
 
   const [form, setForm] = useState({
     name: "",
@@ -164,11 +169,13 @@ export default function PageClient({ slug }: PageClientProps) {
               Reusable instructions your agents load when generating content.
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
-            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Create Skill
-            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-          </Button>
+          {canCreateSkills && (
+            <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
+              <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+              Create Skill
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+            </Button>
+          )}
         </div>
 
         {isLoadingSkills && <SkillsPageSkeleton />}

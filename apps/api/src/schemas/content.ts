@@ -23,6 +23,7 @@ const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
 export const getPostsParamsSchema = z.object({});
 
 const postStatusSchema = z.enum(postStatusEnum.enumValues);
+const editablePostStatusSchema = z.enum(["draft", "published"]);
 const postContentTypeSchema = z.enum([
   "changelog",
   "linkedin_post",
@@ -401,7 +402,7 @@ export const patchPostRequestSchema = z
       .openapi({
         example: "# Ship notes\n\nWe shipped a faster editor.",
       }),
-    status: postStatusSchema.optional().openapi({
+    status: editablePostStatusSchema.optional().openapi({
       example: "published",
     }),
   })

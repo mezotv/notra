@@ -21,6 +21,7 @@ import { DEFAULT_LOOKBACK_WINDOW } from "@/constants/workflows";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
+import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import {
   ManualTriggerRunError,
   triggerManualAutomationRun,
@@ -211,9 +212,10 @@ export const automationRouter = {
     create: baseProcedure
       .input(organizationIdInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -268,9 +270,10 @@ export const automationRouter = {
     update: baseProcedure
       .input(triggerInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -347,9 +350,10 @@ export const automationRouter = {
     delete: baseProcedure
       .input(triggerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
 
         const existing = await db.query.contentTriggers.findFirst({
@@ -467,9 +471,10 @@ export const automationRouter = {
     create: baseProcedure
       .input(organizationIdInputSchema.and(configureScheduleBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -584,9 +589,10 @@ export const automationRouter = {
     update: baseProcedure
       .input(triggerInputSchema.and(configureScheduleBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
@@ -717,9 +723,10 @@ export const automationRouter = {
     delete: baseProcedure
       .input(triggerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
 
         const existing = await db.query.contentTriggers.findFirst({
@@ -751,9 +758,10 @@ export const automationRouter = {
     runNow: baseProcedure
       .input(triggerInputSchema)
       .handler(async ({ context, input }) => {
-        const auth = await assertOrganizationAccess({
+        const auth = await assertOrganizationScopes({
           headers: context.headers,
           organizationId: input.organizationId,
+          scopes: ["automation:manage"],
         });
         await assertActiveSubscription(input.organizationId);
 
