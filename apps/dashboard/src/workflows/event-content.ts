@@ -51,8 +51,12 @@ export async function eventContentWorkflow(payload: {
   } = parseResult.data;
   const manual = eventData.manualRun === true;
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
+  const claimToken = crypto.randomUUID();
 
-  const claim = await claimWorkflowExecution(resolvedExecutionId);
+  const claim = await claimWorkflowExecution({
+    executionId: resolvedExecutionId,
+    claimToken,
+  });
   if (!claim.claimed) {
     console.warn(
       `[Event] Duplicate execution ${resolvedExecutionId} for trigger ${triggerId}, skipping`
@@ -95,17 +99,29 @@ export async function eventContentWorkflow(payload: {
     return { status: "credits_exhausted" };
   }
 
-  const [repository, brand, logRetentionDays] = await Promise.all([
-    fetchEventRepository({
-      repositoryId,
-      organizationId: trigger.organizationId,
-    }),
-    fetchBrandSettingsData({
-      organizationId: trigger.organizationId,
-      outputConfig: trigger.outputConfig,
-    }),
-    fetchLogRetention(trigger.organizationId),
-  ]);
+  let repository: Awaited<ReturnType<typeof fetchEventRepository>>;
+  let brand: Awaited<ReturnType<typeof fetchBrandSettingsData>>;
+  let logRetentionDays: Awaited<ReturnType<typeof fetchLogRetention>>;
+  try {
+    [repository, brand, logRetentionDays] = await Promise.all([
+      fetchEventRepository({
+        repositoryId,
+        organizationId: trigger.organizationId,
+      }),
+      fetchBrandSettingsData({
+        organizationId: trigger.organizationId,
+        outputConfig: trigger.outputConfig,
+      }),
+      fetchLogRetention(trigger.organizationId),
+    ]);
+  } catch (error) {
+    await finalizeAiCredit({
+      lockId: gate.lockId,
+      action: "release",
+      logPrefix: LOG_PREFIX,
+    });
+    throw error;
+  }
 
   if (!repository) {
     console.log(
@@ -337,6 +353,24 @@ export async function eventContentWorkflow(payload: {
       title: contentTitle,
     });
 
+    await finalizeAiCredit({
+      lockId: gate.lockId,
+      action: "confirm",
+      usage: contentResult.usage,
+      fallbackModelId: "anthropic/claude-sonnet-4.6",
+      useMarkup: gate.useMarkup,
+      properties: {
+        source: "workflow_event",
+        output_type: trigger.outputType,
+        trigger_name: trigger.name,
+        trigger_id: triggerId,
+        run_id: runId,
+        event_type: eventType,
+        markup_applied: gate.useMarkup,
+      },
+      logPrefix: LOG_PREFIX,
+    });
+
     try {
       await appendAutomationLog({
         organizationId: trigger.organizationId,
@@ -360,23 +394,6 @@ export async function eventContentWorkflow(payload: {
         repositoryCount: 1,
         source: "event",
         postIds: createdPosts.map((createdPost) => createdPost.postId),
-        logPrefix: LOG_PREFIX,
-      });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
-        action: "confirm",
-        usage: contentResult.usage,
-        fallbackModelId: "anthropic/claude-sonnet-4.6",
-        useMarkup: gate.useMarkup,
-        properties: {
-          source: "workflow_event",
-          output_type: trigger.outputType,
-          trigger_name: trigger.name,
-          trigger_id: triggerId,
-          run_id: runId,
-          event_type: eventType,
-          markup_applied: gate.useMarkup,
-        },
         logPrefix: LOG_PREFIX,
       });
       const notificationData = await fetchNotificationData({

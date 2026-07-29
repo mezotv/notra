@@ -141,3 +141,5 @@ export async function runScheduledGeneration(
     log.emit();
   }
 }
+
+Object.assign(runScheduledGeneration, { maxRetries: 0 });

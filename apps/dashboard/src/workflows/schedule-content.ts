@@ -2,6 +2,7 @@ import { sleep } from "workflow";
 import { flattenError } from "zod";
 import {
   GITHUB_RATE_LIMIT_RETRY_DELAY,
+  SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
   SCHEDULE_RATE_LIMIT_MAX_ATTEMPTS,
 } from "@/constants/workflows";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
@@ -51,12 +52,16 @@ export async function scheduleContentWorkflow(payload: {
   const { triggerId, manual, executionId, delaySeconds } = parseResult.data;
   const creationMode = manual ? "manual" : "automatic";
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
+  const claimToken = crypto.randomUUID();
 
   if (delaySeconds && delaySeconds > 0) {
     await sleep(delaySeconds * 1000);
   }
 
-  const claim = await claimWorkflowExecution(resolvedExecutionId);
+  const claim = await claimWorkflowExecution({
+    executionId: resolvedExecutionId,
+    claimToken,
+  });
   if (!claim.claimed) {
     console.warn(
       `[Schedule] Duplicate execution ${resolvedExecutionId} for trigger ${triggerId}, skipping`
@@ -79,6 +84,7 @@ export async function scheduleContentWorkflow(payload: {
   const gate = await gateAndReserveAiCredits({
     organizationId: trigger.organizationId,
     executionId: resolvedExecutionId,
+    lockTtlMs: SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
   });
   if (!gate.allowed) {
     if (gate.shouldNotify) {
@@ -100,17 +106,29 @@ export async function scheduleContentWorkflow(payload: {
     return { status: "credits_exhausted" };
   }
 
-  const [sources, brand, generationUserId] = await Promise.all([
-    fetchScheduleSources({
-      organizationId: trigger.organizationId,
-      repositoryIds: trigger.targets.repositoryIds,
-    }),
-    fetchBrandSettingsData({
-      organizationId: trigger.organizationId,
-      outputConfig: trigger.outputConfig,
-    }),
-    fetchGenerationUserId(trigger.organizationId),
-  ]);
+  let sources: Awaited<ReturnType<typeof fetchScheduleSources>>;
+  let brand: Awaited<ReturnType<typeof fetchBrandSettingsData>>;
+  let generationUserId: Awaited<ReturnType<typeof fetchGenerationUserId>>;
+  try {
+    [sources, brand, generationUserId] = await Promise.all([
+      fetchScheduleSources({
+        organizationId: trigger.organizationId,
+        repositoryIds: trigger.targets.repositoryIds,
+      }),
+      fetchBrandSettingsData({
+        organizationId: trigger.organizationId,
+        outputConfig: trigger.outputConfig,
+      }),
+      fetchGenerationUserId(trigger.organizationId),
+    ]);
+  } catch (error) {
+    await finalizeAiCredit({
+      lockId: gate.lockId,
+      action: "release",
+      logPrefix: LOG_PREFIX,
+    });
+    throw error;
+  }
   const { repositories, linearIntegrationRefs } = sources;
 
   if (repositories.length === 0 && linearIntegrationRefs.length === 0) {
@@ -424,6 +442,22 @@ export async function scheduleContentWorkflow(payload: {
       title: contentTitle,
     });
 
+    await finalizeAiCredit({
+      lockId: gate.lockId,
+      action: "confirm",
+      usage: contentResult.usage,
+      fallbackModelId: "anthropic/claude-sonnet-4.6",
+      useMarkup: gate.useMarkup,
+      properties: buildCreditProperties(
+        gate,
+        trigger.outputType,
+        automationName,
+        triggerId,
+        runId
+      ),
+      logPrefix: LOG_PREFIX,
+    });
+
     try {
       await appendAutomationLog({
         organizationId: trigger.organizationId,
@@ -477,21 +511,6 @@ export async function scheduleContentWorkflow(payload: {
           logPrefix: LOG_PREFIX,
         });
       }
-      await finalizeAiCredit({
-        lockId: gate.lockId,
-        action: "confirm",
-        usage: contentResult.usage,
-        fallbackModelId: "anthropic/claude-sonnet-4.6",
-        useMarkup: gate.useMarkup,
-        properties: buildCreditProperties(
-          gate,
-          trigger.outputType,
-          automationName,
-          triggerId,
-          runId
-        ),
-        logPrefix: LOG_PREFIX,
-      });
       if (!manual) {
         await clearWorkflowPause({ triggerId, logPrefix: LOG_PREFIX });
       }

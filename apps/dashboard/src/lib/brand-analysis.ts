@@ -5,7 +5,6 @@ import {
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
 import { redis } from "@notra/ai/utils/redis";
-import { getConfiguredWorkflowUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
@@ -67,10 +66,7 @@ async function dispatchBrandAnalysisWorkflow({
   brandIdentityId,
   jobId,
 }: DispatchBrandAnalysisInput) {
-  const token = process.env.QSTASH_TOKEN;
-  const workflowBaseUrl = getConfiguredWorkflowUrl();
-
-  if (!(redis && token && workflowBaseUrl)) {
+  if (!redis) {
     return;
   }
 
@@ -129,10 +125,7 @@ export async function queueBrandAnalysisForOnboarding({
   websiteUrl,
   name,
 }: QueueBrandAnalysisInput): Promise<QueueBrandAnalysisResult | null> {
-  const token = process.env.QSTASH_TOKEN;
-  const workflowBaseUrl = getConfiguredWorkflowUrl();
-
-  if (!(redis && token && workflowBaseUrl)) {
+  if (!redis) {
     return null;
   }
 

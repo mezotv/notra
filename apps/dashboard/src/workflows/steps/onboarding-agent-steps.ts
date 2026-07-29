@@ -56,3 +56,5 @@ export async function releaseOnboardingAgentReservationStep(input: {
     new Date(input.reservedAt)
   );
 }
+
+Object.assign(startOnboardingAgentSessionStep, { maxRetries: 0 });

@@ -180,3 +180,5 @@ export async function runOnDemandGeneration(
     log.emit();
   }
 }
+
+Object.assign(runOnDemandGeneration, { maxRetries: 0 });

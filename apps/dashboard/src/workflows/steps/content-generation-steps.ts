@@ -67,18 +67,24 @@ import type {
 
 const EXECUTION_CLAIM_TTL_SECONDS = 60 * 60 * 24;
 
-export async function claimWorkflowExecution(
-  executionId: string
-): Promise<{ claimed: boolean }> {
+export async function claimWorkflowExecution(input: {
+  executionId: string;
+  claimToken: string;
+}): Promise<{ claimed: boolean }> {
   "use step";
   if (!redis) {
     return { claimed: true };
   }
-  const claimed = await redis.set(`workflow:claim:${executionId}`, "1", {
+  const key = `workflow:claim:${input.executionId}`;
+  const claimed = await redis.set(key, input.claimToken, {
     nx: true,
     ex: EXECUTION_CLAIM_TTL_SECONDS,
   });
-  return { claimed: claimed === "OK" };
+  if (claimed === "OK") {
+    return { claimed: true };
+  }
+  const holder = await redis.get(key);
+  return { claimed: holder === input.claimToken };
 }
 
 export async function fetchScheduleTriggerContext(triggerId: string): Promise<{
@@ -124,6 +130,7 @@ export async function fetchScheduleTriggerContext(triggerId: string): Promise<{
 export async function gateAndReserveAiCredits(input: {
   organizationId: string;
   executionId: string;
+  lockTtlMs?: number;
 }): Promise<WorkflowAiCreditGate> {
   "use step";
   if (!autumn) {
@@ -142,7 +149,8 @@ export async function gateAndReserveAiCredits(input: {
 
   const reservation = await reserveAiCredits(
     input.organizationId,
-    input.executionId
+    input.executionId,
+    input.lockTtlMs
   );
   if (reservation.allowed) {
     return reservation;
@@ -429,32 +437,24 @@ export async function finalizeAiCredit(
   input: FinalizeAiCreditInput
 ): Promise<void> {
   "use step";
-  try {
-    if (input.action === "confirm") {
-      const costCents = input.usage
-        ? calculateAiCreditCostCents(
-            input.usage,
-            input.usage.modelId ??
-              input.fallbackModelId ??
-              "anthropic/claude-sonnet-4.6",
-            input.useMarkup ?? false
-          ).costCents
-        : 1;
-      await confirmAiCredits({
-        lockId: input.lockId,
-        costCents,
-        properties: input.properties,
-      });
-      return;
-    }
-    await releaseAiCredits(input.lockId);
-  } catch (error) {
-    console.error(`[${input.logPrefix}] Failed to finalize AI credit`, {
+  if (input.action === "confirm") {
+    const costCents = input.usage
+      ? calculateAiCreditCostCents(
+          input.usage,
+          input.usage.modelId ??
+            input.fallbackModelId ??
+            "anthropic/claude-sonnet-4.6",
+          input.useMarkup ?? false
+        ).costCents
+      : 1;
+    await confirmAiCredits({
       lockId: input.lockId,
-      action: input.action,
-      error,
+      costCents,
+      properties: input.properties,
     });
+    return;
   }
+  await releaseAiCredits(input.lockId);
 }
 
 export async function appendAutomationLog(

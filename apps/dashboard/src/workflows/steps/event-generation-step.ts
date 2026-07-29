@@ -62,3 +62,5 @@ export async function runEventGeneration(
     },
   });
 }
+
+Object.assign(runEventGeneration, { maxRetries: 0 });

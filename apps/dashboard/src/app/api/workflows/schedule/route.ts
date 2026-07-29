@@ -536,6 +536,7 @@ const { POST: legacyWorkflowContinuation } = serve<ScheduleWorkflowPayload>(
             const { runId: delayedRunId } = await startScheduleRun({
               triggerId,
               delaySeconds: GITHUB_RATE_LIMIT_RETRY_DELAY_SECONDS,
+              executionId: `schedule-retry-${runId}`,
             });
             return delayedRunId;
           }
@@ -1333,8 +1334,17 @@ export async function POST(request: Request) {
     return legacyWorkflowContinuation(request);
   }
 
+  const messageId = request.headers.get("upstash-message-id");
+  if (!messageId) {
+    return new Response("Missing message id", { status: 400 });
+  }
+
   const rawBody = await request.text();
-  const verified = await verifyQstashSignature({ request, rawBody });
+  const verified = await verifyQstashSignature({
+    request,
+    rawBody,
+    url: `${getBaseUrl()}/api/workflows/schedule`,
+  });
   if (!verified) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -1355,14 +1365,11 @@ export async function POST(request: Request) {
     return new Response("Invalid payload", { status: 400 });
   }
 
-  const messageId = request.headers.get("upstash-message-id");
   const { runId } = await startScheduleRun({
     ...parsed.data,
     executionId:
       parsed.data.executionId ??
-      (messageId
-        ? `schedule-${parsed.data.triggerId}-${messageId}`
-        : undefined),
+      `schedule-${parsed.data.triggerId}-${messageId}`,
   });
 
   return Response.json({ runId }, { status: 202 });

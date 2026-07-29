@@ -48,7 +48,11 @@ export async function onDemandContentWorkflow(
     source,
   } = parsed;
 
-  const claim = await claimWorkflowExecution(runId);
+  const claimToken = crypto.randomUUID();
+  const claim = await claimWorkflowExecution({
+    executionId: runId,
+    claimToken,
+  });
   if (!claim.claimed) {
     console.warn(
       `[OnDemandContent] Duplicate execution ${runId} for org ${organizationId}, skipping`
@@ -76,14 +80,25 @@ export async function onDemandContentWorkflow(
     return { status: "credits_exhausted" };
   }
 
-  const [repositories, brand] = await Promise.all([
-    fetchOnDemandRepositories({
-      organizationId,
-      repositoryIds,
-      linearIntegrationIds,
-    }),
-    resolveManualBrandSettings({ organizationId, brandVoiceId }),
-  ]);
+  let repositories: Awaited<ReturnType<typeof fetchOnDemandRepositories>>;
+  let brand: Awaited<ReturnType<typeof resolveManualBrandSettings>>;
+  try {
+    [repositories, brand] = await Promise.all([
+      fetchOnDemandRepositories({
+        organizationId,
+        repositoryIds,
+        linearIntegrationIds,
+      }),
+      resolveManualBrandSettings({ organizationId, brandVoiceId }),
+    ]);
+  } catch (error) {
+    await finalizeAiCredit({
+      lockId: gate.lockId,
+      action: "release",
+      logPrefix: LOG_PREFIX,
+    });
+    throw error;
+  }
 
   const hasLinearSources = Boolean(
     dataPoints.includeLinearData &&

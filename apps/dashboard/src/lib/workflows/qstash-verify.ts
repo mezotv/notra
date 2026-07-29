@@ -3,6 +3,7 @@ import { Receiver } from "@upstash/qstash";
 export async function verifyQstashSignature(params: {
   request: Request;
   rawBody: string;
+  url: string;
 }): Promise<boolean> {
   const currentSigningKey = process.env.QSTASH_CURRENT_SIGNING_KEY;
   const nextSigningKey = process.env.QSTASH_NEXT_SIGNING_KEY;
@@ -15,7 +16,11 @@ export async function verifyQstashSignature(params: {
   }
   const receiver = new Receiver({ currentSigningKey, nextSigningKey });
   try {
-    return await receiver.verify({ signature, body: params.rawBody });
+    return await receiver.verify({
+      signature,
+      body: params.rawBody,
+      url: params.url,
+    });
   } catch {
     return false;
   }

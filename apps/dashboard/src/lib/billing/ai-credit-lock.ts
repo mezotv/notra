@@ -36,7 +36,8 @@ function getErrorStatus(error: unknown): number | undefined {
 
 export async function reserveAiCredits(
   organizationId: string,
-  executionId: string
+  executionId: string,
+  lockTtlMs: number = LOCK_TTL_MS
 ): Promise<AiCreditReservation> {
   if (!autumn) {
     return { allowed: true, reserved: false, useMarkup: false, lockId: null };
@@ -49,7 +50,7 @@ export async function reserveAiCredits(
         customerId: organizationId,
         featureId: FEATURES.AI_CREDITS,
         requiredBalance: 1,
-        lock: { lockId, enabled: true, expiresAt: Date.now() + LOCK_TTL_MS },
+        lock: { lockId, enabled: true, expiresAt: Date.now() + lockTtlMs },
       },
       { retries: { strategy: "none" }, headers: { "Idempotency-Key": lockId } }
     );
@@ -115,6 +116,6 @@ export async function releaseAiCredits(lockId: string | null): Promise<void> {
     if (GONE_STATUS_CODES.has(getErrorStatus(error) ?? 0)) {
       return;
     }
-    console.error("[ai-credit-lock] Release failed", { lockId, error });
+    throw error;
   }
 }
