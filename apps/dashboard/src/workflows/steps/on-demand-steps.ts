@@ -1,55 +1,18 @@
-import { redis } from "@notra/ai/utils/redis";
-import {
-  appendContentGenerationJobEvent,
-  setContentGenerationJobStatus,
-} from "@notra/content-generation/jobs";
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { resolveBrandVoiceForManualGeneration } from "@/lib/workflows/on-demand/helpers";
+import {
+  appendTrackedJobEvent,
+  setTrackedJobStatus,
+} from "@/lib/workflows/on-demand/job-tracking";
 import { reconcileUnsuccessfulPostCollectionAttempt } from "@/lib/workflows/on-demand/reconcile";
-import type {
-  FinishOnDemandInput,
-  OnDemandJobEventInput,
-} from "@/types/workflows/on-demand-generation";
+import type { FinishOnDemandInput } from "@/types/workflows/on-demand-generation";
 import type {
   ScheduleBrandSettingsData,
   ScheduleRepositoryData,
 } from "@/types/workflows/workflows";
-
-async function setTrackedJobStatus(
-  jobId: string | undefined,
-  status: "running" | "completed" | "failed" | "skipped",
-  updates?: { postId?: string | null; error?: string | null }
-) {
-  if (!(jobId && redis)) {
-    return;
-  }
-  await setContentGenerationJobStatus(redis, jobId, status, {
-    ...(updates?.postId !== undefined ? { postId: updates.postId } : {}),
-    ...(updates?.error !== undefined ? { error: updates.error } : {}),
-  });
-}
-
-async function appendTrackedJobEvent(
-  jobId: string | undefined,
-  type: OnDemandJobEventInput["type"],
-  message: string,
-  metadata?: Record<string, unknown> | null
-) {
-  if (!(jobId && redis)) {
-    return;
-  }
-  await appendContentGenerationJobEvent(redis, {
-    id: crypto.randomUUID(),
-    jobId,
-    type,
-    message,
-    createdAt: new Date().toISOString(),
-    metadata: metadata ?? null,
-  });
-}
 
 export async function markOnDemandJobRunning(input: {
   jobId?: string;

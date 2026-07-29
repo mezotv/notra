@@ -1,13 +1,8 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
-import {
-  setBrandAnalysisJobStatus,
-  updateBrandAnalysisJob,
-} from "@notra/ai/jobs/brand-analysis";
 import { withGatewayAutomaticCaching } from "@notra/ai/provider-options";
 import type { ContextDevScrapingResult } from "@notra/ai/types/context-dev";
 import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
-import { redis } from "@notra/ai/utils/redis";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
@@ -15,6 +10,10 @@ import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { createAILogger } from "evlog/ai";
+import {
+  setJobProgress,
+  setProgress,
+} from "@/lib/workflows/brand-analysis/progress";
 import { isFinalStepAttempt } from "@/lib/workflows/step-errors";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 import type { ExtractionResult } from "@/types/brand-analysis";
@@ -29,51 +28,6 @@ import {
   getStepFromStatus,
   updateDefaultBrandSettings,
 } from "@/utils/brand-settings";
-
-const PROGRESS_TTL = 300;
-
-async function setProgress(organizationId: string, data: ProgressData) {
-  if (!redis) {
-    return;
-  }
-  await redis.set(`brand:progress:${organizationId}`, data, {
-    ex: PROGRESS_TTL,
-  });
-}
-
-async function setJobProgress(jobId: string | undefined, data: ProgressData) {
-  if (!(redis && jobId)) {
-    return;
-  }
-
-  if (data.status === "failed") {
-    await setBrandAnalysisJobStatus(redis, jobId, "failed", {
-      step: getStepFromCurrentStep(data),
-      currentStep: data.currentStep,
-      totalSteps: data.totalSteps,
-      error: data.error ?? "Brand analysis failed",
-    });
-    return;
-  }
-
-  if (data.status === "completed") {
-    await setBrandAnalysisJobStatus(redis, jobId, "completed", {
-      step: null,
-      currentStep: data.currentStep,
-      totalSteps: data.totalSteps,
-      error: null,
-    });
-    return;
-  }
-
-  await updateBrandAnalysisJob(redis, jobId, {
-    status: "running",
-    step: getStepFromStatus(data.status),
-    currentStep: data.currentStep,
-    totalSteps: data.totalSteps,
-    error: null,
-  });
-}
 
 export async function setBrandAnalysisProgress(
   input: BrandAnalysisProgressInput
