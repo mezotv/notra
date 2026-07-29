@@ -39,8 +39,10 @@ export async function assertOrganizationScopes({
     throw internalServerError("Failed to resolve permissions");
   }
 
+  const memberScopeSet = new Set(memberScopes);
+
   if (scopes && scopes.length > 0) {
-    const missing = scopes.filter((scope) => !memberScopes.includes(scope));
+    const missing = scopes.filter((scope) => !memberScopeSet.has(scope));
     if (missing.length > 0) {
       throw forbidden(`Missing required permissions: ${missing.join(", ")}`);
     }
@@ -49,7 +51,7 @@ export async function assertOrganizationScopes({
   if (
     anyOfScopes &&
     anyOfScopes.length > 0 &&
-    !anyOfScopes.some((scope) => memberScopes.includes(scope))
+    !anyOfScopes.some((scope) => memberScopeSet.has(scope))
   ) {
     throw forbidden(
       `Missing required permissions: one of ${anyOfScopes.join(", ")}`

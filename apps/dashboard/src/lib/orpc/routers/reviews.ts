@@ -446,6 +446,7 @@ export const reviewsRouter = {
       ]);
 
       const admin = isWorkspaceAdmin(access.membership.role);
+      const myRoleIdSet = new Set(myRoleIds);
 
       const items = requests.flatMap((request) => {
         const currentStep = request.steps.find(
@@ -460,7 +461,7 @@ export const reviewsRouter = {
           return [];
         }
 
-        if (!(admin || myRoleIds.includes(currentStep.reviewerRoleId))) {
+        if (!(admin || myRoleIdSet.has(currentStep.reviewerRoleId))) {
           return [];
         }
 

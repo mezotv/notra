@@ -2,7 +2,6 @@
 
 import type { OrganizationScope } from "@notra/db/types/roles";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
 import { dashboardOrpc } from "../orpc/query";
 
 export function useMemberPermissions(organizationId: string) {
@@ -15,10 +14,8 @@ export function useMemberPermissions(organizationId: string) {
 
   const scopes = query.data?.scopes;
 
-  const hasScope = useCallback(
-    (scope: OrganizationScope) => scopes?.includes(scope) ?? false,
-    [scopes]
-  );
+  const hasScope = (scope: OrganizationScope) =>
+    scopes?.includes(scope) ?? false;
 
   return {
     isLoading: query.isLoading,

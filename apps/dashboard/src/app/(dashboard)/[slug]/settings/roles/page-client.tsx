@@ -2,7 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { DeleteRoleDialog } from "@/components/roles/delete-role-dialog";
@@ -32,10 +32,7 @@ export default function RolesPageClient() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const scopeGroups = data?.scopeGroups ?? [];
-  const scopeLabels = useMemo(
-    () => buildScopeLabels(scopeGroups),
-    [scopeGroups]
-  );
+  const scopeLabels = buildScopeLabels(scopeGroups);
   const canManage = hasScope("roles:manage");
 
   const openDialog = (role: OrganizationRoleSummary | null) => {

@@ -62,11 +62,12 @@ export const findApplicableWorkflow = Effect.fn("findApplicableWorkflow")(
       })
     );
 
+    const authorRoleIdSet = new Set(authorRoleIds);
     const withSteps = workflows.filter((workflow) => workflow.steps.length > 0);
     const roleMatch = withSteps.find(
       (workflow) =>
         workflow.appliesToRoleId &&
-        authorRoleIds.includes(workflow.appliesToRoleId)
+        authorRoleIdSet.has(workflow.appliesToRoleId)
     );
 
     return (

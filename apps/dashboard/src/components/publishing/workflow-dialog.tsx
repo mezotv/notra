@@ -48,7 +48,7 @@ export function WorkflowDialog({
   const [appliesToRoleId, setAppliesToRoleId] = useState(
     workflow?.appliesToRole?.id ?? ""
   );
-  const [steps, setSteps] = useState<WorkflowStepDraft[]>(
+  const [steps, setSteps] = useState<WorkflowStepDraft[]>(() =>
     toStepDrafts(workflow)
   );
 
