@@ -39,13 +39,7 @@ export function PersonaSocialsCard({
       if (!username) {
         return [];
       }
-      return [
-        {
-          platform: platform.value,
-          username,
-          url: platform.profileUrl(username),
-        },
-      ];
+      return [{ platform: platform.value, username }];
     });
 
     try {

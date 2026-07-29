@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
+import { getPersonaSocialProfileUrl } from "@/lib/personas/social-urls";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   createPersonaReferenceSchema,
@@ -453,7 +454,7 @@ const setPersonaSocialsProgram = Effect.fn("setPersonaSocialsProgram")(
               personaId,
               platform: social.platform,
               username: social.username,
-              url: social.url ?? null,
+              url: getPersonaSocialProfileUrl(social.platform, social.username),
             }))
           );
         }

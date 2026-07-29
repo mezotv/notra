@@ -10,7 +10,6 @@ export interface PersonaSocialPlatformConfig {
   label: string;
   icon: IconSvgElement;
   placeholder: string;
-  profileUrl: (username: string) => string;
 }
 
 export interface PersonasPageClientProps {

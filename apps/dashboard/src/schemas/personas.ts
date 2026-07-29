@@ -64,11 +64,6 @@ export const personaSocialInputSchema = z.object({
     .trim()
     .min(1, "Username is required")
     .max(PERSONA_SOCIAL_USERNAME_MAX_LENGTH),
-  url: z
-    .url({ protocol: /^https?$/ })
-    .max(2048)
-    .nullable()
-    .optional(),
 });
 
 export const setPersonaSocialsSchema = z.object({
