@@ -97,15 +97,10 @@ export async function createAgentChatSession(
     eveSessionId: payload.sessionId,
     continuationToken: payload.continuationToken,
   };
-  try {
-    await db.insert(agentSessions).values(values);
-  } catch (insertError) {
-    console.error("[agent] Session mapping insert failed; retrying once", {
-      eveSessionId: payload.sessionId,
-      insertError,
-    });
-    await db.insert(agentSessions).values(values);
-  }
+  await db
+    .insert(agentSessions)
+    .values(values)
+    .onConflictDoNothing({ target: agentSessions.eveSessionId });
 
   return payload;
 }

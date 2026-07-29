@@ -127,8 +127,11 @@ export function createUsageHook(modelId: string): HookDefinition {
             return;
           }
           const billedKey = `agent:usage:billed:${ctx.session.id}:${event.data.turnId}`;
-          const alreadyBilled = await redis.get(billedKey);
-          if (alreadyBilled) {
+          const claimed = await redis.set(billedKey, "1", {
+            nx: true,
+            ex: USAGE_KEY_TTL_SECONDS,
+          });
+          if (claimed !== "OK") {
             return;
           }
           const key = accumulatorKey(ctx.session.id, event.data.turnId);
@@ -155,10 +158,12 @@ export function createUsageHook(modelId: string): HookDefinition {
                 : "false",
             }
           );
-          await redis.set(billedKey, "1", { ex: USAGE_KEY_TTL_SECONDS });
           await redis.del(key);
         } catch (error) {
           console.error("[agent] Usage metering failed", error);
+          await redis
+            ?.del(`agent:usage:billed:${ctx.session.id}:${event.data.turnId}`)
+            .catch(() => null);
         }
       },
     },

@@ -190,7 +190,7 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
     organizationId,
     eveSessionId
   );
-  if (!mapping) {
+  if (!mapping || (mapping.userId && mapping.userId !== auth.context.user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   const lockAcquired = await acquireAgentSendLock(eveSessionId);
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
   }
   const client = await createNotraAgentClient({
     organizationId,
-    userId: mapping.userId ?? auth.context.user.id,
+    userId: auth.context.user.id,
     surface:
       AGENT_SURFACES.find((value) => value === mapping.surface) ??
       "standalone-chat",
@@ -260,11 +260,18 @@ export async function GET(request: NextRequest, context: AgentRouteContext) {
   if (!path?.endsWith("/stream")) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const rateLimited = await enforceChatGenerationRatelimit(
+    organizationId,
+    auth.context.user.id
+  );
+  if (rateLimited) {
+    return rateLimited;
+  }
   const eveSessionId = eve[3];
   const mapping = eveSessionId
     ? await getAgentSessionForOrganization(organizationId, eveSessionId)
     : null;
-  if (!mapping) {
+  if (!mapping || (mapping.userId && mapping.userId !== auth.context.user.id)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

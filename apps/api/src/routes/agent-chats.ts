@@ -287,6 +287,14 @@ agentChatsRoutes.get("/agent-chats/:sessionId/events", async (c) => {
       403
     );
   }
+  const rateLimited = await enforceRatelimit(
+    c,
+    ratelimit.chatGeneration,
+    "organization"
+  );
+  if (rateLimited) {
+    return rateLimited;
+  }
   const sessionId = c.req.param("sessionId");
   const mapping = await getAgentSessionForOrganization(
     organizationId,

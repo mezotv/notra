@@ -19,9 +19,11 @@ export const crawlSitemapInputSchema = z.object({
   maxLinks: z.number().int().min(1).max(500).default(SITEMAP_DEFAULT_MAX_LINKS),
 });
 
+const GITHUB_NAME_REGEX = /^[A-Za-z0-9._-]+$/;
+
 export const githubRepositoryInputSchema = z.object({
-  owner: z.string().min(1),
-  repo: z.string().min(1),
+  owner: z.string().min(1).max(100).regex(GITHUB_NAME_REGEX),
+  repo: z.string().min(1).max(100).regex(GITHUB_NAME_REGEX),
 });
 
 export const recentTweetsInputSchema = z.object({
@@ -35,14 +37,14 @@ export const recentTweetsInputSchema = z.object({
 });
 
 export const webpageInputSchema = z.object({
-  url: z.url(),
+  url: z.url({ protocol: /^https?$/ }),
 });
 
 export const webpagesInputSchema = z.object({
-  urls: z.array(z.url()).min(1).max(50),
+  urls: z.array(z.url({ protocol: /^https?$/ })).min(1).max(50),
 });
 
 export const webSearchInputSchema = z.object({
-  query: z.string().min(1),
+  query: z.string().min(1).max(1000),
   limit: z.number().int().min(1).max(WEB_SEARCH_MAX_RESULTS).optional(),
 });

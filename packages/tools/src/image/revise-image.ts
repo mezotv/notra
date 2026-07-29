@@ -12,6 +12,7 @@ import {
   trackImageGenerationUsage,
 } from "@notra/ai/utils/image-post-service";
 import { redis } from "@notra/ai/utils/redis";
+import { deriveOperationHash } from "../utils/idempotency";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
@@ -50,7 +51,7 @@ export function createReviseImageTool() {
         throw new Error("Source image post not found");
       }
 
-      const revisionKey = `agent:revise-image:${ctx.session.id}:${ctx.session.turn.id}:${postId}`;
+      const revisionKey = `agent:revise-image:${ctx.session.id}:${ctx.session.turn.id}:${postId}:${deriveOperationHash(`${prompt} ${title ?? ""}`)}`;
       if (redis && (await redis.get(revisionKey))) {
         return {
           postId,

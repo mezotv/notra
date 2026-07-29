@@ -125,9 +125,18 @@ export const searchBrandReferencesInputSchema = z.object({
 });
 
 export const listAvailableSkillsInputSchema = z.object({
-  limit: z.number().default(20).describe("The number of skills to list"),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20)
+    .describe("The number of skills to list"),
   offset: z
     .number()
+    .int()
+    .min(0)
+    .max(10_000)
     .default(0)
     .describe("The offset to start listing skills from"),
 });
@@ -137,7 +146,7 @@ export const getSkillByNameInputSchema = z.object({
 });
 
 export const searchWebInputSchema = z.object({
-  query: z.string().min(1).describe("The web search query."),
+  query: z.string().min(1).max(1000).describe("The web search query."),
   limit: z
     .number()
     .int()
@@ -160,7 +169,9 @@ export const searchWebInputSchema = z.object({
 });
 
 export const fetchWebpageInputSchema = z.object({
-  url: z.url().describe("The full public HTTP or HTTPS URL to fetch."),
+  url: z
+    .url({ protocol: /^https?$/ })
+    .describe("The full public HTTP or HTTPS URL to fetch."),
   includeLinks: z
     .boolean()
     .default(true)
