@@ -1,9 +1,9 @@
-import { triggerEventNow, triggerScheduleNow } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
+import { startEventRun, startScheduleRun } from "@/lib/workflows/start";
 
 interface TriggerRecord {
   id: string;
@@ -143,7 +143,7 @@ export async function triggerManualAutomationRun({
 
   if (trigger.sourceType === "cron") {
     kind = "schedule";
-    workflowRunId = await triggerScheduleNow(triggerId, { manual: true });
+    workflowRunId = (await startScheduleRun({ triggerId, manual: true })).runId;
     payload = {
       triggerId,
       scheduleName: triggerName,
@@ -155,13 +155,15 @@ export async function triggerManualAutomationRun({
   } else if (trigger.sourceType === "github_webhook") {
     kind = "event";
     const eventPayload = buildManualEventPayload(trigger);
-    workflowRunId = await triggerEventNow({
-      triggerId,
-      repositoryId: eventPayload.repositoryId,
-      eventType: eventPayload.eventType,
-      eventAction: eventPayload.eventAction,
-      eventData: eventPayload.eventData,
-    });
+    workflowRunId = (
+      await startEventRun({
+        triggerId,
+        repositoryId: eventPayload.repositoryId,
+        eventType: eventPayload.eventType,
+        eventAction: eventPayload.eventAction,
+        eventData: eventPayload.eventData,
+      })
+    ).runId;
     payload = {
       triggerId,
       sourceType: trigger.sourceType,

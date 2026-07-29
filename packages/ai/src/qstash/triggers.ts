@@ -185,38 +185,6 @@ export async function triggerEventNow(
   return result.workflowRunId;
 }
 
-export async function triggerBrandGuidelines(
-  payload: BrandGuidelinesWorkflowPayload
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/brand-guidelines`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-  });
-
-  return result.workflowRunId;
-}
-
-export async function triggerOnboardingAgent(
-  payload: OnboardingAgentWorkflowPayload
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/onboarding-agent`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-  });
-
-  return result.workflowRunId;
-}
-
 export async function triggerOnDemandContent(payload: unknown) {
   const client = getWorkflowClient();
   const appUrl = getAppUrl();
