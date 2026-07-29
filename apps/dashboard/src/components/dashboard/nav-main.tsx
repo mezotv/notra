@@ -10,6 +10,7 @@ import {
   Notification03Icon,
   PlugIcon,
   SearchIcon,
+  UserMultiple02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
@@ -61,6 +62,12 @@ const navMainItems: NavMainItem[] = [
     link: "/skills",
     icon: MagicWand01Icon,
     label: "Skills",
+    category: "workspace",
+  },
+  {
+    link: "/personas",
+    icon: UserMultiple02Icon,
+    label: "Personas",
     category: "workspace",
   },
   {

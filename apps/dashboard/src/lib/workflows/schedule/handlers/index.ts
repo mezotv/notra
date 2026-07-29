@@ -25,7 +25,13 @@ export async function generateScheduledContent(
   outputType: string,
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
-  if (isAgentContentGenerationEnabled() && isScheduleOutputType(outputType)) {
+  const canUseAgentTask = !ctx.personaId;
+
+  if (
+    canUseAgentTask &&
+    isAgentContentGenerationEnabled() &&
+    isScheduleOutputType(outputType)
+  ) {
     const taskType = AGENT_CONTENT_TASK_TYPES[outputType];
     if (taskType) {
       return generateContentViaAgentTask({

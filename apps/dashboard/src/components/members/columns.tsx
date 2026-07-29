@@ -8,6 +8,7 @@ import {
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
 import { MemberActions } from "./member-actions";
+import { PersonaCell } from "./persona-cell";
 
 export interface Member {
   id: string;
@@ -62,6 +63,11 @@ export const columns = [
   columnHelper.accessor("role", {
     header: "Role",
     cell: (info) => <RoleBadge role={info.getValue()} />,
+  }),
+  columnHelper.display({
+    id: "persona",
+    header: "Persona",
+    cell: (info) => <PersonaCell member={info.row.original} />,
   }),
   columnHelper.display({
     id: "actions",

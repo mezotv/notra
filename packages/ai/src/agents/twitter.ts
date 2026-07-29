@@ -15,6 +15,7 @@ export async function generateTwitterPost(
     brandAgentType: "twitter",
     contentLabel: "tweet",
     voiceId: options.voiceId,
+    personaId: options.personaId,
     repositories: options.repositories,
     linearIntegrations: options.linearIntegrations,
     promptInput: options.promptInput,

@@ -44,6 +44,7 @@ export interface ContentGenerationContext {
     until: string;
   };
   voiceId?: string;
+  personaId?: string;
   autoPublish?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;

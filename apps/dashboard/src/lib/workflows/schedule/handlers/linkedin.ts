@@ -14,6 +14,7 @@ export async function handleLinkedIn(
       organizationId: ctx.organizationId,
       collectionId: ctx.collectionId,
       voiceId: ctx.voiceId,
+      personaId: ctx.personaId,
       repositories: ctx.repositories,
       linearIntegrations: ctx.linearIntegrations,
       tone: ctx.tone,

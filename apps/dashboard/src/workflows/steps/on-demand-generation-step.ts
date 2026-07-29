@@ -1,7 +1,9 @@
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
-import type { PostSourceMetadata } from "@notra/db/schema";
+import { db } from "@notra/db/drizzle";
+import { type PostSourceMetadata, personas } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import {
   buildDataPointRestrictionInstructions,
@@ -31,8 +33,29 @@ export async function runOnDemandGeneration(
     dataPoints,
     selectedItems,
     linearIntegrationIds,
+    personaId,
     source,
   } = payload;
+
+  let persona: { id: string; name: string } | null = null;
+  if (personaId) {
+    const personaRow = await db.query.personas.findFirst({
+      where: and(
+        eq(personas.id, personaId),
+        eq(personas.organizationId, organizationId)
+      ),
+      columns: { id: true, name: true },
+    });
+
+    if (!personaRow) {
+      return {
+        status: "generation_failed",
+        reason: "The selected persona no longer exists in this organization.",
+      };
+    }
+
+    persona = personaRow;
+  }
 
   const targetRepositoryIds = new Set(
     repositories.map((repository) => repository.id)
@@ -84,6 +107,8 @@ export async function runOnDemandGeneration(
     },
     brandVoiceName: brand?.name,
     brandVoiceId: brand?.id,
+    personaId: persona?.id,
+    personaName: persona?.name,
     selectedCommitShas: selectedItems?.commitShas?.length
       ? selectedItems.commitShas
       : undefined,
@@ -160,6 +185,7 @@ export async function runOnDemandGeneration(
         until: lookback.end.toISOString(),
       },
       voiceId: brand?.id,
+      personaId: persona?.id,
       resolveContext: getGitHubToolRepositoryContextByIntegrationId,
       resolveLinearContext: getLinearToolContextByIntegrationId,
       log,

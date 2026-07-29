@@ -71,6 +71,7 @@ export interface BackgroundGenOptions {
   brandAgentType: AgentType;
   contentLabel: string;
   voiceId?: string;
+  personaId?: string;
   repositories: Array<{
     integrationId: string;
     owner: string;
@@ -107,6 +108,7 @@ export interface ChangelogAgentOptions {
   organizationId: string;
   collectionId: string;
   voiceId?: string;
+  personaId?: string;
   repositories: Array<{
     integrationId: string;
     owner: string;
@@ -138,6 +140,7 @@ export interface LinkedInAgentOptions {
   organizationId: string;
   collectionId: string;
   voiceId?: string;
+  personaId?: string;
   repositories: Array<{
     integrationId: string;
     owner: string;
@@ -169,6 +172,7 @@ export interface TwitterAgentOptions {
   organizationId: string;
   collectionId: string;
   voiceId?: string;
+  personaId?: string;
   repositories: Array<{
     integrationId: string;
     owner: string;
@@ -200,6 +204,7 @@ export interface BlogPostAgentOptions {
   organizationId: string;
   collectionId: string;
   voiceId?: string;
+  personaId?: string;
   repositories: Array<{
     integrationId: string;
     owner: string;

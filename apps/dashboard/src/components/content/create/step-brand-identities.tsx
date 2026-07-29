@@ -6,6 +6,11 @@ import {
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import { Label } from "@notra/ui/components/ui/label";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -148,12 +153,84 @@ function InlineCreateForm({ organizationId }: InlineCreateFormProps) {
   );
 }
 
+function PersonaPicker({
+  personas,
+  selectedPersonaId,
+  onSelectPersona,
+  isLoadingPersonas,
+}: Pick<
+  BrandIdentitiesStepProps,
+  "personas" | "selectedPersonaId" | "onSelectPersona" | "isLoadingPersonas"
+>) {
+  if (isLoadingPersonas) {
+    return <Skeleton className="h-14 w-full" />;
+  }
+
+  if (personas.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1">
+        <h3 className="font-medium text-sm">Write as a persona (optional)</h3>
+        <p className="text-muted-foreground text-xs">
+          Publish this content in an individual voice instead of the brand's.
+        </p>
+      </div>
+      <div className="space-y-2">
+        {personas.map((persona) => {
+          const isSelected = selectedPersonaId === persona.id;
+          return (
+            <button
+              aria-pressed={isSelected}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-left transition-colors",
+                "hover:border-foreground/20",
+                isSelected
+                  ? "border-foreground/40 ring-2 ring-foreground/10"
+                  : "border-border"
+              )}
+              key={persona.id}
+              onClick={() => onSelectPersona(isSelected ? null : persona.id)}
+              type="button"
+            >
+              <Avatar className="size-8">
+                <AvatarImage
+                  alt={persona.name}
+                  src={persona.avatarUrl ?? undefined}
+                />
+                <AvatarFallback>
+                  {persona.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium text-sm">{persona.name}</p>
+                <p className="truncate text-muted-foreground text-xs">
+                  {persona.title ?? "Persona"}
+                </p>
+              </div>
+              {isSelected && (
+                <HugeiconsIcon className="size-4" icon={Tick01Icon} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function StepBrandIdentities({
   voices,
   selected,
   onToggle,
   isLoading,
   organizationId,
+  personas,
+  selectedPersonaId,
+  onSelectPersona,
+  isLoadingPersonas,
 }: BrandIdentitiesStepProps) {
   return (
     <div className="space-y-6">
@@ -227,6 +304,13 @@ export function StepBrandIdentities({
           })}
         </div>
       )}
+
+      <PersonaPicker
+        isLoadingPersonas={isLoadingPersonas}
+        onSelectPersona={onSelectPersona}
+        personas={personas}
+        selectedPersonaId={selectedPersonaId}
+      />
     </div>
   );
 }

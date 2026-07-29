@@ -18,6 +18,7 @@ import { db } from "@notra/db/drizzle";
 import {
   githubIntegrations,
   type PostSourceMetadata,
+  personas,
   postCollections,
   posts,
 } from "@notra/db/schema";
@@ -212,6 +213,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       timezone,
       repositoryIds,
       brandVoiceId,
+      personaId,
       dataPoints,
       selectedItems,
       linearIntegrationIds,
@@ -342,6 +344,23 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       return;
     }
 
+    const persona = await context.run<{ id: string; name: string } | null>(
+      "fetch-persona",
+      async () => {
+        if (!personaId) {
+          return null;
+        }
+        const personaRow = await db.query.personas.findFirst({
+          where: and(
+            eq(personas.id, personaId),
+            eq(personas.organizationId, organizationId)
+          ),
+          columns: { id: true, name: true },
+        });
+        return personaRow ?? null;
+      }
+    );
+
     const brand = await context.run<BrandSettingsData>(
       "fetch-brand-settings",
       async () => {
@@ -429,6 +448,8 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
             },
             brandVoiceName: brand?.name,
             brandVoiceId: brand?.id,
+            personaId: persona?.id,
+            personaName: persona?.name,
             selectedCommitShas: selectedItems?.commitShas?.length
               ? selectedItems.commitShas
               : undefined,
@@ -511,6 +532,7 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
                 until: lookback.end.toISOString(),
               },
               voiceId: brand?.id,
+              personaId: persona?.id,
               resolveContext: getGitHubToolRepositoryContextByIntegrationId,
               resolveLinearContext: getLinearToolContextByIntegrationId,
               log,

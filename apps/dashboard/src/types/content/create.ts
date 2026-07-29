@@ -70,6 +70,15 @@ export interface BrandIdentitiesStepProps {
   onToggle: (id: string) => void;
   isLoading: boolean;
   organizationId: string;
+  personas: Array<{
+    id: string;
+    name: string;
+    title: string | null;
+    avatarUrl: string | null;
+  }>;
+  selectedPersonaId: string | null;
+  onSelectPersona: (id: string | null) => void;
+  isLoadingPersonas: boolean;
 }
 
 export interface StepProgressProps {

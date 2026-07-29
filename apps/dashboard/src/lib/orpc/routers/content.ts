@@ -15,7 +15,12 @@ import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import {
+  githubIntegrations,
+  personas,
+  postCollections,
+  posts,
+} from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
@@ -1426,6 +1431,20 @@ export const contentRouter = {
         aiCreditMarkup = shouldApplyMarkup(data?.balance ?? null);
       }
 
+      if (input.personaId) {
+        const persona = await db.query.personas.findFirst({
+          where: and(
+            eq(personas.id, input.personaId),
+            eq(personas.organizationId, input.organizationId)
+          ),
+          columns: { id: true },
+        });
+
+        if (!persona) {
+          throw notFound("Persona not found");
+        }
+      }
+
       const runId = generateRunId("manual_on_demand");
 
       await addActiveGeneration(input.organizationId, {
@@ -1467,6 +1486,7 @@ export const contentRouter = {
         repositoryIds: input.repositoryIds ?? input.integrations?.github,
         linearIntegrationIds,
         brandVoiceId: input.brandIdentityId ?? input.brandVoiceId,
+        personaId: input.personaId ?? undefined,
         dataPoints: input.dataPoints,
         selectedItems: input.selectedItems,
         aiCreditReserved: aiCreditChecked,

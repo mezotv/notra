@@ -11,6 +11,7 @@ import {
   MAX_CHAT_FILE_SIZE,
   MAX_CONTENT_FILE_SIZE,
   MAX_LOGO_FILE_SIZE,
+  MAX_PERSONA_AVATAR_FILE_SIZE,
   MAX_SVG_CONTENT_SIZE,
   SVG_MIME_TYPE,
 } from "@/constants/upload";
@@ -25,6 +26,18 @@ export const uploadAvatarSchema = z.object({
     .positive()
     .max(MAX_AVATAR_FILE_SIZE, {
       message: `Avatar image must be less than ${MAX_AVATAR_FILE_SIZE / 1024 / 1024}MB`,
+    }),
+});
+
+const uploadPersonaAvatarSchema = z.object({
+  type: z.literal("persona_avatar"),
+  fileType: z.coerce.string().nonempty(),
+  fileSize: z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(MAX_PERSONA_AVATAR_FILE_SIZE, {
+      message: `Persona avatar must be less than ${MAX_PERSONA_AVATAR_FILE_SIZE / 1024 / 1024}MB`,
     }),
 });
 
@@ -78,6 +91,7 @@ export const uploadChatSchema = z.object({
 
 export const uploadSchema = z.union([
   uploadAvatarSchema,
+  uploadPersonaAvatarSchema,
   uploadLogoSchema,
   uploadBrandAssetSchema,
   uploadMediaSchema,
@@ -134,6 +148,7 @@ export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
 
 const maxSizeByType = {
   avatar: MAX_AVATAR_FILE_SIZE,
+  persona_avatar: MAX_PERSONA_AVATAR_FILE_SIZE,
   brand_asset: MAX_BRAND_ASSET_FILE_SIZE,
   logo: MAX_LOGO_FILE_SIZE,
   content: MAX_CONTENT_FILE_SIZE,
@@ -176,6 +191,7 @@ export function validateUpload({
 
   switch (type) {
     case "avatar":
+    case "persona_avatar":
     case "logo":
       if (
         !ALLOWED_RASTER_MIME_TYPES.includes(fileType as AllowedRasterMimeType)

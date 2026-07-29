@@ -9,6 +9,7 @@ import {
 } from "@notra/ai/tools/brand-references";
 import { buildGitHubDataTools } from "@notra/ai/tools/github";
 import { buildLinearDataTools } from "@notra/ai/tools/linear";
+import { createGetPersonaVoiceTool } from "@notra/ai/tools/personas";
 import {
   createCreatePostTool,
   createFailTool,
@@ -35,12 +36,24 @@ export class ContentGenerationSkippedError extends Error {
   }
 }
 
+function buildPersonaInstructions(): string {
+  return `
+
+## Persona voice (hard requirement)
+This content is published as an individual persona, not as the company brand. Before step 1, call getPersonaVoice to load the persona's profile, writing instructions, and writing references. Write the content in first person as that individual. The persona's writing instructions and references take priority over brand references for tone and style; still use brand references for factual company context when helpful.`;
+}
+
 function buildDispatcherInstructions(options: {
   contentLabel: string;
   contentType: string;
   primarySkillName: string;
+  hasPersona: boolean;
 }): string {
-  return `You are a content generation agent for this organization. Your task: produce ${options.contentLabel} (contentType: ${options.contentType}).
+  const personaInstructions = options.hasPersona
+    ? buildPersonaInstructions()
+    : "";
+
+  return `You are a content generation agent for this organization. Your task: produce ${options.contentLabel} (contentType: ${options.contentType}).${personaInstructions}
 
 Skills drive your behavior. Skill content is NOT injected into this prompt. You load skills on demand via tools.
 
@@ -75,6 +88,7 @@ export async function runBackgroundGen(
     brandAgentType,
     contentLabel,
     voiceId,
+    personaId,
     repositories,
     linearIntegrations,
     promptInput,
@@ -103,6 +117,7 @@ export async function runBackgroundGen(
     contentLabel,
     contentType,
     primarySkillName: skillName,
+    hasPersona: Boolean(personaId),
   });
 
   await assertGatewayHasCredits();
@@ -154,6 +169,19 @@ export async function runBackgroundGen(
     );
   }
 
+  const personaTools: Record<
+    string,
+    ReturnType<typeof createGetPersonaVoiceTool>
+  > = {};
+
+  if (personaId) {
+    personaTools.getPersonaVoice = createGetPersonaVoiceTool({
+      organizationId,
+      personaId,
+      agentType: brandAgentType,
+    });
+  }
+
   const agent = new ToolLoopAgent({
     model,
     providerOptions: withGatewayDefaults(
@@ -166,6 +194,7 @@ export async function runBackgroundGen(
     ),
     tools: {
       ...brandReferenceTools,
+      ...personaTools,
       ...buildGitHubDataTools({
         organizationId,
         allowedIntegrationIds,

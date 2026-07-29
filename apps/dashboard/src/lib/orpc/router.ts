@@ -9,6 +9,7 @@ import { integrationsRouter } from "./routers/integrations";
 import { logsRouter } from "./routers/logs";
 import { notificationsRouter } from "./routers/notifications";
 import { onboardingRouter } from "./routers/onboarding";
+import { personasRouter } from "./routers/personas";
 import { searchRouter } from "./routers/search";
 import { skillsRouter } from "./routers/skills";
 import { socialAccountsRouter } from "./routers/social-accounts";
@@ -27,6 +28,7 @@ export const dashboardRouter = {
   logs: logsRouter,
   notifications: notificationsRouter,
   onboarding: onboardingRouter,
+  personas: personasRouter,
   search: searchRouter,
   skills: skillsRouter,
   socialAccounts: socialAccountsRouter,

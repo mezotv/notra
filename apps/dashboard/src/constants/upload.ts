@@ -36,6 +36,7 @@ export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 export type AllowedChatMimeType = (typeof ALLOWED_CHAT_MIME_TYPES)[number];
 
 export const MAX_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
+export const MAX_PERSONA_AVATAR_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_LOGO_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_BRAND_ASSET_FILE_SIZE = 5 * 1024 * 1024;
 export const MAX_CONTENT_FILE_SIZE = 250 * 1024 * 1024;

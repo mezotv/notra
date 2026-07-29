@@ -15,6 +15,7 @@ export async function generateChangelog(
     brandAgentType: "changelog",
     contentLabel: "changelog",
     voiceId: options.voiceId,
+    personaId: options.personaId,
     repositories: options.repositories,
     linearIntegrations: options.linearIntegrations,
     promptInput: options.promptInput,

@@ -15,6 +15,7 @@ export async function generateLinkedInPost(
     brandAgentType: "linkedin",
     contentLabel: "LinkedIn post",
     voiceId: options.voiceId,
+    personaId: options.personaId,
     repositories: options.repositories,
     linearIntegrations: options.linearIntegrations,
     promptInput: options.promptInput,

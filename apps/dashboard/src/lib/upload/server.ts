@@ -43,7 +43,8 @@ async function assertUploadAccess({
     type === "logo" ||
     type === "brand_asset" ||
     type === "content" ||
-    type === "chat";
+    type === "chat" ||
+    type === "persona_avatar";
 
   if (requiresOrganization && !organizationId) {
     throw new ORPCError("UNAUTHORIZED", {
@@ -103,6 +104,9 @@ async function resolveUploadTarget({
   switch (type) {
     case "avatar":
       key = `user/${userId}/avatar/${id}.${extension}`;
+      break;
+    case "persona_avatar":
+      key = `organization/${organizationId}/personas/${id}.${extension}`;
       break;
     case "logo":
       key = `organization/${organizationId}/logo/${id}.${extension}`;

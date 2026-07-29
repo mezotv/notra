@@ -29,6 +29,7 @@ import { CreateContentButton } from "@/components/content/create-content-button"
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
 import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
+import { usePersonas } from "@/lib/hooks/use-personas";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ContentDataPointSettings,
@@ -181,6 +182,13 @@ export function CreateContentDialog({
     })
   );
   const brandVoices = brandResponse?.voices ?? [];
+
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(
+    null
+  );
+  const { data: personasResponse, isPending: isLoadingPersonas } =
+    usePersonas(organizationId);
+  const personaOptions = personasResponse?.personas ?? [];
 
   const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
@@ -366,10 +374,11 @@ export function CreateContentDialog({
     {
       formats: OnDemandContentType[];
       voiceIds: string[];
+      personaId: string | null;
       selectedItems: SelectedItems;
     }
   >({
-    mutationFn: async ({ formats, voiceIds, selectedItems }) => {
+    mutationFn: async ({ formats, voiceIds, personaId, selectedItems }) => {
       const hasLinear = selectedLinearIds.length > 0;
       const calls = formats.flatMap((format) =>
         voiceIds.map((voiceId) => ({ format, voiceId }))
@@ -396,6 +405,7 @@ export function CreateContentDialog({
             repositoryIds: githubRepoIds,
             linearIntegrationIds: hasLinear ? selectedLinearIds : undefined,
             brandVoiceId: voiceId || undefined,
+            personaId: personaId ?? undefined,
             dataPoints: { ...dataPoints, includeLinearData: hasLinear },
             selectedItems,
           })
@@ -458,6 +468,7 @@ export function CreateContentDialog({
   const resetWizard = useCallback(() => {
     setStep("formats");
     form.reset();
+    setSelectedPersonaId(null);
     setSelectedCommitKeys(new Set());
     setSelectedPrKeys(new Set());
     setSelectedReleaseKeys(new Set());
@@ -798,6 +809,7 @@ export function CreateContentDialog({
     await mutation.mutateAsync({
       formats: value.formats,
       voiceIds,
+      personaId: selectedPersonaId,
       selectedItems: buildSelectedItems(),
     });
   };
@@ -1016,9 +1028,13 @@ export function CreateContentDialog({
               {step === "identities" && (
                 <StepBrandIdentities
                   isLoading={isLoadingVoices}
+                  isLoadingPersonas={!!organizationId && isLoadingPersonas}
+                  onSelectPersona={setSelectedPersonaId}
                   onToggle={toggleVoiceId}
                   organizationId={organizationId}
+                  personas={personaOptions}
                   selected={selectedBrandVoiceIds}
+                  selectedPersonaId={selectedPersonaId}
                   voices={brandVoices}
                 />
               )}

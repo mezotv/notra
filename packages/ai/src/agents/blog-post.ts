@@ -15,6 +15,7 @@ export async function generateBlogPost(
     brandAgentType: "blog",
     contentLabel: "blog post",
     voiceId: options.voiceId,
+    personaId: options.personaId,
     repositories: options.repositories,
     linearIntegrations: options.linearIntegrations,
     promptInput: options.promptInput,

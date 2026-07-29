@@ -1526,6 +1526,96 @@ export const onboardingSuggestions = pgTable(
   ]
 );
 
+export const personaSocialPlatformEnum = pgEnum("persona_social_platform", [
+  "twitter",
+  "linkedin",
+  "github",
+  "instagram",
+  "youtube",
+  "tiktok",
+  "website",
+]);
+
+export const personas = pgTable(
+  "personas",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    memberId: text("member_id").references(() => members.id, {
+      onDelete: "set null",
+    }),
+    name: text("name").notNull(),
+    title: text("title"),
+    bio: text("bio"),
+    avatarUrl: text("avatar_url"),
+    customInstructions: text("custom_instructions"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("personas_organizationId_idx").on(table.organizationId),
+    uniqueIndex("personas_org_name_uidx").on(table.organizationId, table.name),
+    uniqueIndex("personas_memberId_uidx")
+      .on(table.memberId)
+      .where(sql`${table.memberId} IS NOT NULL`),
+  ]
+);
+
+export const personaSocials = pgTable(
+  "persona_socials",
+  {
+    id: text("id").primaryKey(),
+    personaId: text("persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }),
+    platform: personaSocialPlatformEnum("platform").notNull(),
+    username: text("username").notNull(),
+    url: text("url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("personaSocials_personaId_idx").on(table.personaId),
+    uniqueIndex("personaSocials_persona_platform_uidx").on(
+      table.personaId,
+      table.platform
+    ),
+  ]
+);
+
+export const personaReferences = pgTable(
+  "persona_references",
+  {
+    id: text("id").primaryKey(),
+    personaId: text("persona_id")
+      .notNull()
+      .references(() => personas.id, { onDelete: "cascade" }),
+    type: referenceTypeEnum("type").notNull(),
+    content: text("content").notNull(),
+    sourceUrl: text("source_url"),
+    metadata: jsonb("metadata"),
+    note: text("note"),
+    applicableTo: applicablePlatformEnum("applicable_to")
+      .array()
+      .default(sql`ARRAY['all']::applicable_platform[]`)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("personaReferences_personaId_idx").on(table.personaId)]
+);
+
 export interface PostSourceMetadata {
   triggerId?: string;
   triggerSourceType?: string;
@@ -1537,6 +1627,8 @@ export interface PostSourceMetadata {
   eventAction?: string;
   brandVoiceName?: string;
   brandVoiceId?: string;
+  personaId?: string;
+  personaName?: string;
   selectedCommitShas?: string[];
   selectedPullRequests?: Array<{ repositoryId: string; number: number }>;
   selectedReleases?: Array<{ repositoryId: string; tagName: string }>;
@@ -1629,6 +1721,37 @@ export const organizationsRelations = relations(
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
+    personas: many(personas),
+  })
+);
+
+export const personasRelations = relations(personas, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [personas.organizationId],
+    references: [organizations.id],
+  }),
+  member: one(members, {
+    fields: [personas.memberId],
+    references: [members.id],
+  }),
+  socials: many(personaSocials),
+  references: many(personaReferences),
+}));
+
+export const personaSocialsRelations = relations(personaSocials, ({ one }) => ({
+  persona: one(personas, {
+    fields: [personaSocials.personaId],
+    references: [personas.id],
+  }),
+}));
+
+export const personaReferencesRelations = relations(
+  personaReferences,
+  ({ one }) => ({
+    persona: one(personas, {
+      fields: [personaReferences.personaId],
+      references: [personas.id],
+    }),
   })
 );
 
@@ -1651,6 +1774,7 @@ export const membersRelations = relations(members, ({ one }) => ({
     fields: [members.userId],
     references: [users.id],
   }),
+  persona: one(personas),
 }));
 
 export const invitationsRelations = relations(invitations, ({ one }) => ({
