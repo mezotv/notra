@@ -236,8 +236,10 @@ async function readTaskResultFromStream(
 export async function runAgentTask(
   input: StartAgentSessionInput
 ): Promise<AgentTaskRunResult> {
-  const client = await createNotraAgentClient(input.scope);
-  const started = await startAgentSession({ ...input, mode: "task" });
+  const [client, started] = await Promise.all([
+    createNotraAgentClient(input.scope),
+    startAgentSession({ ...input, mode: "task" }),
+  ]);
 
   const deadline = Date.now() + AGENT_TASK_TIMEOUT_MS;
   while (Date.now() < deadline) {

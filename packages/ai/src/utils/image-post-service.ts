@@ -180,16 +180,18 @@ export async function saveGeneratedImagePost(params: {
   sourceMetadata: Record<string, unknown>;
 }) {
   const postId = params.postId ?? nanoid();
-  const imageUrl = await uploadGeneratedImageAsset({
-    organizationId: params.organizationId,
-    pngBase64: params.pngBase64,
-    postId,
-  });
-  const htmlUrl = await uploadGeneratedHtmlAsset({
-    organizationId: params.organizationId,
-    html: params.html,
-    postId,
-  });
+  const [imageUrl, htmlUrl] = await Promise.all([
+    uploadGeneratedImageAsset({
+      organizationId: params.organizationId,
+      pngBase64: params.pngBase64,
+      postId,
+    }),
+    uploadGeneratedHtmlAsset({
+      organizationId: params.organizationId,
+      html: params.html,
+      postId,
+    }),
+  ]);
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify(["image"]);

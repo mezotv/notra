@@ -143,6 +143,7 @@ export default function AgentChatClient({
         }}
       >
         <textarea
+          aria-label="Message your Notra agent"
           className="min-h-[3rem] flex-1 resize-none rounded-lg border bg-background p-3 text-sm outline-none focus-visible:ring-1"
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {

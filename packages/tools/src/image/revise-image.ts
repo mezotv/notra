@@ -98,16 +98,18 @@ export function createReviseImageTool() {
         userId,
       });
 
-      const imageUrl = await uploadGeneratedImageAsset({
-        organizationId,
-        pngBase64: result.pngBase64,
-        postId,
-      });
-      const htmlUrl = await uploadGeneratedHtmlAsset({
-        organizationId,
-        html: result.html,
-        postId,
-      });
+      const [imageUrl, htmlUrl] = await Promise.all([
+        uploadGeneratedImageAsset({
+          organizationId,
+          pngBase64: result.pngBase64,
+          postId,
+        }),
+        uploadGeneratedHtmlAsset({
+          organizationId,
+          html: result.html,
+          postId,
+        }),
+      ]);
       const sourceMetadata = await buildRevisionSourceMetadata({
         organizationId,
         postId,
