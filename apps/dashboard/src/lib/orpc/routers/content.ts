@@ -15,7 +15,12 @@ import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import {
+  githubIntegrations,
+  postApprovalRequests,
+  postCollections,
+  posts,
+} from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
@@ -631,13 +636,33 @@ export const contentRouter = {
           throw forbidden("You do not have permission to unpublish posts");
         }
 
-        if (
-          existingPost.status !== "published" &&
-          !access.scopes.includes("posts:edit")
-        ) {
-          throw forbidden(
-            "You do not have permission to withdraw posts from review"
-          );
+        if (existingPost.status !== "published") {
+          if (!access.scopes.includes("posts:edit")) {
+            throw forbidden(
+              "You do not have permission to withdraw posts from review"
+            );
+          }
+
+          const canWithdrawForOthers =
+            canUnpublish || access.scopes.includes("posts:review");
+
+          if (!canWithdrawForOthers) {
+            const latestRequest = await db.query.postApprovalRequests.findFirst(
+              {
+                where: eq(postApprovalRequests.postId, input.contentId),
+                orderBy: [desc(postApprovalRequests.createdAt)],
+                columns: {
+                  requestedBy: true,
+                },
+              }
+            );
+
+            if (latestRequest && latestRequest.requestedBy !== access.user.id) {
+              throw forbidden(
+                "Only the person who requested the review or a reviewer can withdraw this post"
+              );
+            }
+          }
         }
       }
 

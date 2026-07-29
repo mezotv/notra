@@ -321,38 +321,25 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
 
   const reviewId = nanoid();
 
-  if (decision === "changes_requested") {
-    yield* tryDb(() =>
-      db.transaction(async (tx) => {
-        await tx.insert(postReviews).values({
-          id: reviewId,
-          requestId: request.id,
-          postId,
-          stepOrder: request.currentStepOrder,
-          reviewerId: reviewerUserId,
-          decision,
-          comment: comment ?? null,
-        });
-
-        await tx
-          .update(postApprovalRequests)
-          .set({ status: "rejected", resolvedAt: new Date() })
-          .where(eq(postApprovalRequests.id, request.id));
-
-        await tx
-          .update(posts)
-          .set({ status: "draft", updatedAt: new Date() })
-          .where(eq(posts.id, postId));
-      })
-    );
-
-    return { outcome: "changes_requested" as const };
-  }
-
-  const nextStep = findNextStep(request.steps, request.currentStepOrder);
-
   const result = yield* tryDb(() =>
     db.transaction(async (tx) => {
+      const [locked] = await tx
+        .select({
+          status: postApprovalRequests.status,
+          currentStepOrder: postApprovalRequests.currentStepOrder,
+        })
+        .from(postApprovalRequests)
+        .where(eq(postApprovalRequests.id, request.id))
+        .for("update");
+
+      if (
+        !locked ||
+        locked.status !== "pending" ||
+        locked.currentStepOrder !== request.currentStepOrder
+      ) {
+        return { outcome: "stale" as const };
+      }
+
       await tx.insert(postReviews).values({
         id: reviewId,
         requestId: request.id,
@@ -362,6 +349,20 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
         decision,
         comment: comment ?? null,
       });
+
+      if (decision === "changes_requested") {
+        await tx
+          .update(postApprovalRequests)
+          .set({ status: "rejected", resolvedAt: new Date() })
+          .where(eq(postApprovalRequests.id, request.id));
+
+        await tx
+          .update(posts)
+          .set({ status: "draft", updatedAt: new Date() })
+          .where(eq(posts.id, postId));
+
+        return { outcome: "changes_requested" as const };
+      }
 
       const approvalsForStep = await tx.query.postReviews.findMany({
         where: and(
@@ -377,6 +378,8 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
       if (approvalsForStep.length < currentStep.requiredApprovals) {
         return { outcome: "approved_waiting" as const };
       }
+
+      const nextStep = findNextStep(request.steps, request.currentStepOrder);
 
       if (nextStep) {
         await tx
@@ -403,6 +406,14 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
       return { outcome: "fully_approved" as const };
     })
   );
+
+  if (result.outcome === "stale") {
+    return yield* Effect.fail(
+      new ReviewStateError({
+        message: "This review request just changed. Refresh and try again.",
+      })
+    );
+  }
 
   return result;
 });
