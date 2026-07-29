@@ -16,10 +16,10 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import type { Member } from "@/components/members/columns";
 import { authClient } from "@/lib/auth/client";
 import { useUpdatePersona } from "@/lib/hooks/use-personas";
 import type { PersonaMemberCardProps } from "@/types/components/personas";
+import type { Member } from "@/types/members/member";
 
 const UNLINKED_VALUE = "none";
 

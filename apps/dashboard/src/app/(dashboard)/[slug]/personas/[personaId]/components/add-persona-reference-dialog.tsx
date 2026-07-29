@@ -50,6 +50,13 @@ export function AddPersonaReferenceDialog({
     setNote("");
   }
 
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      resetForm();
+    }
+    onOpenChange(next);
+  }
+
   async function handleSubmit() {
     const parsed = createPersonaReferenceSchema.safeParse({
       type,
@@ -77,7 +84,7 @@ export function AddPersonaReferenceDialog({
   }
 
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+    <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
       <ResponsiveDialogContent className="flex max-h-[85svh] flex-col overflow-hidden sm:max-w-[32rem]">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add writing reference</ResponsiveDialogTitle>
@@ -87,7 +94,7 @@ export function AddPersonaReferenceDialog({
         </ResponsiveDialogHeader>
         <div className="-mx-4 min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-2">
           <Field>
-            <FieldLabel>Type</FieldLabel>
+            <FieldLabel htmlFor="persona-reference-type">Type</FieldLabel>
             <Select
               disabled={createReference.isPending}
               onValueChange={(value) => {
@@ -100,7 +107,7 @@ export function AddPersonaReferenceDialog({
               }}
               value={type}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" id="persona-reference-type">
                 <SelectValue placeholder="Select a type" />
               </SelectTrigger>
               <SelectContent>
@@ -113,31 +120,36 @@ export function AddPersonaReferenceDialog({
             </Select>
           </Field>
           <Field>
-            <FieldLabel>
+            <FieldLabel htmlFor="persona-reference-content">
               Content<span className="-ml-1 text-destructive">*</span>
             </FieldLabel>
             <Textarea
               className="max-h-[14rem] min-h-[8rem]"
               disabled={createReference.isPending}
+              id="persona-reference-content"
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste the post or writing sample here."
               value={content}
             />
           </Field>
           <Field>
-            <FieldLabel>Source URL</FieldLabel>
+            <FieldLabel htmlFor="persona-reference-source">
+              Source URL
+            </FieldLabel>
             <Input
               disabled={createReference.isPending}
+              id="persona-reference-source"
               onChange={(e) => setSourceUrl(e.target.value)}
               placeholder="https://x.com/username/status/..."
               value={sourceUrl}
             />
           </Field>
           <Field>
-            <FieldLabel>Note</FieldLabel>
+            <FieldLabel htmlFor="persona-reference-note">Note</FieldLabel>
             <Textarea
               className="max-h-[6rem] min-h-[3.5rem]"
               disabled={createReference.isPending}
+              id="persona-reference-note"
               onChange={(e) => setNote(e.target.value)}
               placeholder="Why this is a good example of their voice."
               value={note}

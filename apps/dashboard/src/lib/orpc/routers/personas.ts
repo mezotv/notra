@@ -6,7 +6,7 @@ import {
   personas,
 } from "@notra/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { Data, Effect } from "effect";
+import { Data, Effect, Result } from "effect";
 import { nanoid } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
@@ -84,7 +84,7 @@ class PersonaMemberNotFoundError extends Data.TaggedError(
 class MemberAlreadyLinkedError extends Data.TaggedError(
   "MemberAlreadyLinkedError"
 )<{
-  readonly personaName: string;
+  readonly personaName: string | null;
 }> {}
 
 class PersonaReferenceNotFoundError extends Data.TaggedError(
@@ -116,13 +116,48 @@ function mapPersonaError(error: PersonaError): never {
       throw notFound("Member not found in this organization");
     case "MemberAlreadyLinkedError":
       throw conflict(
-        `This member is already linked to the persona "${error.personaName}"`
+        error.personaName
+          ? `This member is already linked to the persona "${error.personaName}"`
+          : "This member is already linked to another persona"
       );
     case "PersonaReferenceNotFoundError":
       throw notFound("Reference not found");
     default:
       throw internalServerError(error.message, error.cause);
   }
+}
+
+const MAX_CAUSE_DEPTH = 5;
+
+function getUniqueViolationConstraint(cause: unknown): string | null {
+  let current: unknown = cause;
+  for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
+    if (typeof current !== "object" || current === null) {
+      return null;
+    }
+    if ("code" in current && current.code === "23505") {
+      return "constraint" in current && typeof current.constraint === "string"
+        ? current.constraint
+        : "";
+    }
+    current = "cause" in current ? current.cause : null;
+  }
+  return null;
+}
+
+function toPersonaWriteError(
+  message: string,
+  name: string | undefined,
+  cause: unknown
+): PersonaError {
+  const constraint = getUniqueViolationConstraint(cause);
+  if (constraint === "personas_org_name_uidx" && name !== undefined) {
+    return new PersonaNameTakenError({ name });
+  }
+  if (constraint === "personas_memberId_uidx") {
+    return new MemberAlreadyLinkedError({ personaName: null });
+  }
+  return new PersonaPersistenceError({ message, cause });
 }
 
 function tryDb<T>(message: string, run: () => Promise<T>) {
@@ -132,15 +167,25 @@ function tryDb<T>(message: string, run: () => Promise<T>) {
   });
 }
 
-function runPersonaProgram<T>(program: Effect.Effect<T, PersonaError>) {
-  return Effect.runPromise(
-    program.pipe(
-      Effect.match({
-        onFailure: mapPersonaError,
-        onSuccess: (value) => value,
-      })
-    )
-  );
+function tryPersonaWrite<T>(
+  message: string,
+  name: string | undefined,
+  run: () => Promise<T>
+) {
+  return Effect.tryPromise({
+    try: run,
+    catch: (cause) => toPersonaWriteError(message, name, cause),
+  });
+}
+
+async function runPersonaProgram<T>(
+  program: Effect.Effect<T, PersonaError>
+): Promise<T> {
+  const outcome = await Effect.runPromise(Effect.result(program));
+  if (Result.isFailure(outcome)) {
+    mapPersonaError(outcome.failure);
+  }
+  return outcome.success;
 }
 
 const personaQueryWith = {
@@ -314,7 +359,6 @@ const requirePersonaReference = Effect.fn("requirePersonaReference")(function* (
         eq(personaReferences.id, referenceId),
         eq(personaReferences.personaId, personaId)
       ),
-      columns: { id: true },
     })
   );
 
@@ -337,7 +381,7 @@ const createPersonaProgram = Effect.fn("createPersonaProgram")(function* (
   }
 
   const personaId = nanoid();
-  yield* tryDb("Failed to create persona", () =>
+  yield* tryPersonaWrite("Failed to create persona", payload.name, () =>
     db.insert(personas).values({
       id: personaId,
       organizationId,
@@ -368,19 +412,22 @@ const updatePersonaProgram = Effect.fn("updatePersonaProgram")(function* (
     yield* ensureMemberLinkable(organizationId, payload.memberId, personaId);
   }
 
-  yield* tryDb("Failed to update persona", () =>
-    db
-      .update(personas)
-      .set({
-        name: payload.name,
-        title: payload.title,
-        bio: payload.bio,
-        avatarUrl: payload.avatarUrl,
-        customInstructions: payload.customInstructions,
-        memberId: payload.memberId,
-      })
-      .where(eq(personas.id, personaId))
-  );
+  const updates = {
+    ...(payload.name !== undefined && { name: payload.name }),
+    ...(payload.title !== undefined && { title: payload.title }),
+    ...(payload.bio !== undefined && { bio: payload.bio }),
+    ...(payload.avatarUrl !== undefined && { avatarUrl: payload.avatarUrl }),
+    ...(payload.customInstructions !== undefined && {
+      customInstructions: payload.customInstructions,
+    }),
+    ...(payload.memberId !== undefined && { memberId: payload.memberId }),
+  };
+
+  if (Object.keys(updates).length > 0) {
+    yield* tryPersonaWrite("Failed to update persona", payload.name, () =>
+      db.update(personas).set(updates).where(eq(personas.id, personaId))
+    );
+  }
 
   return yield* loadSerializedPersona(personaId);
 });
@@ -426,17 +473,25 @@ const updatePersonaReferenceProgram = Effect.fn(
   payload: UpdatePersonaReferenceInput
 ) {
   yield* requirePersona(organizationId, personaId);
-  yield* requirePersonaReference(personaId, referenceId);
+  const existing = yield* requirePersonaReference(personaId, referenceId);
+
+  const updates = {
+    ...(payload.content !== undefined && { content: payload.content }),
+    ...(payload.note !== undefined && { note: payload.note }),
+    ...(payload.sourceUrl !== undefined && { sourceUrl: payload.sourceUrl }),
+    ...(payload.applicableTo !== undefined && {
+      applicableTo: payload.applicableTo,
+    }),
+  };
+
+  if (Object.keys(updates).length === 0) {
+    return serializePersonaReference(existing);
+  }
 
   const updated = yield* tryDb("Failed to update reference", () =>
     db
       .update(personaReferences)
-      .set({
-        content: payload.content,
-        note: payload.note,
-        sourceUrl: payload.sourceUrl,
-        applicableTo: payload.applicableTo,
-      })
+      .set(updates)
       .where(eq(personaReferences.id, referenceId))
       .returning()
   );

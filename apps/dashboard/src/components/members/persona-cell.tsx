@@ -30,9 +30,9 @@ export function PersonaCell({ member }: MemberPersonaCellProps) {
   const linkedPersona = personas.find(
     (persona) => persona.memberId === member.id
   );
-  const availablePersonas = personas.filter(
-    (persona) => !persona.memberId || persona.memberId === member.id
-  );
+  const availablePersonas = linkedPersona
+    ? []
+    : personas.filter((persona) => !persona.memberId);
 
   async function handleLink(personaId: string) {
     try {
@@ -125,7 +125,7 @@ export function PersonaCell({ member }: MemberPersonaCellProps) {
             <span className="truncate">{persona.name}</span>
           </DropdownMenuItem>
         ))}
-        {availablePersonas.length === 0 && (
+        {!linkedPersona && availablePersonas.length === 0 && (
           <DropdownMenuItem disabled>
             All personas are already linked
           </DropdownMenuItem>

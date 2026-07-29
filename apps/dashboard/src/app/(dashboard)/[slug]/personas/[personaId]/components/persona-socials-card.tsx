@@ -5,46 +5,33 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { PERSONA_SOCIAL_PLATFORMS } from "@/constants/personas";
 import { useSetPersonaSocials } from "@/lib/hooks/use-personas";
+import {
+  buildPersonaSocialUsernames,
+  getPersonaSocialsKey,
+} from "@/lib/personas/socials";
 import type { PersonaSocialsCardProps } from "@/types/components/personas";
-import type { PersonaSocialPlatform } from "@/types/personas";
-
-type SocialUsernames = Record<PersonaSocialPlatform, string>;
-
-function buildUsernames(
-  socials: PersonaSocialsCardProps["persona"]["socials"]
-): SocialUsernames {
-  const usernames: SocialUsernames = {
-    twitter: "",
-    linkedin: "",
-    github: "",
-    instagram: "",
-    youtube: "",
-    tiktok: "",
-    website: "",
-  };
-  for (const social of socials) {
-    usernames[social.platform] = social.username;
-  }
-  return usernames;
-}
+import type { PersonaSocialUsernames } from "@/types/personas";
 
 export function PersonaSocialsCard({
   organizationId,
   persona,
 }: PersonaSocialsCardProps) {
   const setSocials = useSetPersonaSocials(organizationId);
-  const [usernames, setUsernames] = useState<SocialUsernames>(() =>
-    buildUsernames(persona.socials)
+  const serverKey = getPersonaSocialsKey(persona.socials);
+  const [syncedKey, setSyncedKey] = useState(serverKey);
+  const [usernames, setUsernames] = useState<PersonaSocialUsernames>(() =>
+    buildPersonaSocialUsernames(persona.socials)
   );
 
-  useEffect(() => {
-    setUsernames(buildUsernames(persona.socials));
-  }, [persona.socials]);
+  if (syncedKey !== serverKey) {
+    setSyncedKey(serverKey);
+    setUsernames(buildPersonaSocialUsernames(persona.socials));
+  }
 
   async function handleSave() {
     const socials = PERSONA_SOCIAL_PLATFORMS.flatMap((platform) => {

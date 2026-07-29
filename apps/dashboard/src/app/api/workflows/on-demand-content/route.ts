@@ -396,6 +396,14 @@ export const { POST } = serve<ContentGenerationWorkflowPayload>(
       const contentResult = await context.run<ContentGenerationResult>(
         "generate-content",
         async () => {
+          if (personaId && !persona) {
+            return {
+              status: "generation_failed",
+              reason:
+                "The selected persona no longer exists in this organization.",
+            };
+          }
+
           const targetRepositoryIds = new Set(
             repositories.map((repo) => repo.id)
           );

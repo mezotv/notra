@@ -7,20 +7,9 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
+import type { Member } from "@/types/members/member";
 import { MemberActions } from "./member-actions";
 import { PersonaCell } from "./persona-cell";
-
-export interface Member {
-  id: string;
-  userId: string;
-  role: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string | null;
-  };
-}
 
 const columnHelper = createColumnHelper<Member>();
 

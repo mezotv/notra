@@ -15,12 +15,13 @@ import type { Invitation } from "better-auth/plugins/organization";
 import { use, useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
-import { columns, type Member } from "@/components/members/columns";
+import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/members/data-table";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import type { Member } from "@/types/members/member";
 
 interface PageProps {
   params: Promise<{ slug: string }>;

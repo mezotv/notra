@@ -59,6 +59,8 @@ export interface Persona {
   updatedAt: string;
 }
 
+export type PersonaSocialUsernames = Record<PersonaSocialPlatform, string>;
+
 export interface PersonaReference {
   id: string;
   personaId: string;

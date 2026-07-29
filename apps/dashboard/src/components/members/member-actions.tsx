@@ -50,12 +50,12 @@ import {
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
 import { errorMessageOr } from "@/lib/utils";
+import type { Member } from "@/types/members/member";
 import type {
   MemberActionsAction,
   MemberActionsState,
   MemberRole,
 } from "@/types/members/member-actions";
-import type { Member } from "./columns";
 
 interface MemberActionsProps {
   member: Member;

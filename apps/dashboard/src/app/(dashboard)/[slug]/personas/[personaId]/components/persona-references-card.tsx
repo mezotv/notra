@@ -23,6 +23,7 @@ import type {
   PersonaReferenceRowProps,
   PersonaReferencesCardProps,
 } from "@/types/components/personas";
+import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 import { AddPersonaReferenceDialog } from "./add-persona-reference-dialog";
 
 function ReferenceRow({
@@ -41,6 +42,10 @@ function ReferenceRow({
     onUpdateNote(reference.id, trimmed ? trimmed : null);
   }
 
+  const safeSourceUrl = reference.sourceUrl
+    ? getSafeReferenceSourceUrl(reference.sourceUrl)
+    : null;
+
   return (
     <div className="space-y-2 rounded-lg border p-4">
       <div className="flex items-start justify-between gap-2">
@@ -57,11 +62,11 @@ function ReferenceRow({
             ))}
         </div>
         <div className="flex items-center gap-1">
-          {reference.sourceUrl ? (
+          {safeSourceUrl ? (
             <a
               aria-label="Open source"
               className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-              href={reference.sourceUrl}
+              href={safeSourceUrl}
               rel="noopener noreferrer"
               target="_blank"
             >
