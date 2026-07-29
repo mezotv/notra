@@ -16,6 +16,7 @@ import {
 } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { and, eq, inArray } from "drizzle-orm";
+import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
 import {
   confirmAiCredits,
   releaseAiCredits,
@@ -437,6 +438,14 @@ export async function finalizeAiCredit(
   input: FinalizeAiCreditInput
 ): Promise<void> {
   "use step";
+  if (
+    input.action === "confirm" &&
+    !input.usage &&
+    isAgentContentGenerationEnabled()
+  ) {
+    await releaseAiCredits(input.lockId);
+    return;
+  }
   if (input.action === "confirm") {
     const costCents = input.usage
       ? calculateAiCreditCostCents(

@@ -12,6 +12,7 @@ import {
 import { gateway } from "@notra/ai/gateway";
 import {
   getGitHubCloneToken,
+  getGitHubCloneTokenForOrganization,
   getGitHubIntegrationById,
   validateRepositoryBranchExists,
 } from "@notra/ai/integrations/github";
@@ -380,7 +381,7 @@ async function buildSourceContext(params: {
 
 export async function generateRepoImage(params: {
   input: GenerateRepoImageInput;
-  userId: string;
+  userId: string | null;
   restoreSnapshotId?: string | null;
   snapshotName?: string;
 }): Promise<GenerateRepoImageResult> {
@@ -420,7 +421,12 @@ export async function generateRepoImage(params: {
     );
   }
 
-  const token = await getGitHubCloneToken(input.integrationId, userId);
+  const token = userId
+    ? await getGitHubCloneToken(input.integrationId, userId)
+    : await getGitHubCloneTokenForOrganization(
+        input.integrationId,
+        input.organizationId
+      );
 
   await validateRepositoryBranchExists({
     owner: repository.owner,

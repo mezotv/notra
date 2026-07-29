@@ -14,7 +14,6 @@ import { requireOrganizationId } from "../utils/organization";
 import {
   getBooleanSessionAttribute,
   getSessionAttribute,
-  requireSessionAttribute,
 } from "../utils/session";
 
 export function createGenerateImageTool() {
@@ -24,7 +23,7 @@ export function createGenerateImageTool() {
     inputSchema: imageToolInputSchema,
     async execute({ sourcePostId, title, ...input }, ctx) {
       const organizationId = requireOrganizationId(ctx);
-      const userId = requireSessionAttribute(ctx, "userId");
+      const userId = getSessionAttribute(ctx, "userId") ?? null;
       const chatId = getSessionAttribute(ctx, "chatId") ?? undefined;
       const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
 

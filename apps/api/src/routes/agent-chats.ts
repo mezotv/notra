@@ -295,6 +295,7 @@ const listAgentChatsRoute = createRoute({
         "application/json": { schema: listAgentChatsResponseSchema },
       },
     },
+    429: chatRateLimitResponse,
     ...commonErrorResponses,
   },
 });
@@ -309,6 +310,14 @@ agentChatsRoutes.openapi(listAgentChatsRoute, async (c) => {
       { error: "Forbidden: API key must be scoped to an organization" },
       403
     );
+  }
+  const rateLimited = await enforceRatelimit(
+    c,
+    ratelimit.chatGeneration,
+    "organization"
+  );
+  if (rateLimited) {
+    return rateLimited;
   }
   const { limit } = c.req.valid("query");
   const sessions = await listAgentSessionMappings(organizationId, limit);

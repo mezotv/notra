@@ -118,6 +118,7 @@ export function createUsageHook(modelId: string): HookDefinition {
         }
       },
       async "turn.completed"(event, ctx) {
+        let charged = false;
         try {
           if (!redis || allowUnmeteredAiInDevelopment) {
             return;
@@ -135,7 +136,14 @@ export function createUsageHook(modelId: string): HookDefinition {
             return;
           }
           const key = accumulatorKey(ctx.session.id, event.data.turnId);
-          const accumulated = await redis.hgetall<Record<string, string>>(key);
+          const billingKey = `${key}:billing`;
+          try {
+            await redis.rename(key, billingKey);
+          } catch {
+            return;
+          }
+          const accumulated =
+            await redis.hgetall<Record<string, string>>(billingKey);
           if (!accumulated) {
             return;
           }
@@ -158,12 +166,15 @@ export function createUsageHook(modelId: string): HookDefinition {
                 : "false",
             }
           );
-          await redis.del(key);
+          charged = true;
+          await redis.del(billingKey);
         } catch (error) {
           console.error("[agent] Usage metering failed", error);
-          await redis
-            ?.del(`agent:usage:billed:${ctx.session.id}:${event.data.turnId}`)
-            .catch(() => null);
+          if (!charged) {
+            await redis
+              ?.del(`agent:usage:billed:${ctx.session.id}:${event.data.turnId}`)
+              .catch(() => null);
+          }
         }
       },
     },

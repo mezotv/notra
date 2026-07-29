@@ -52,11 +52,11 @@ export async function createAgentSessionWithMapping(
   }
   const payload = createSessionResponseSchema.parse(await response.json());
 
-  const agentSessionId = randomUUID();
-  await db
+  const generatedSessionId = randomUUID();
+  const inserted = await db
     .insert(agentSessions)
     .values({
-      id: agentSessionId,
+      id: generatedSessionId,
       organizationId: params.scope.organizationId,
       userId: params.scope.userId ?? null,
       chatId: params.scope.chatId ?? null,
@@ -66,7 +66,23 @@ export async function createAgentSessionWithMapping(
       eveSessionId: payload.sessionId,
       continuationToken: payload.continuationToken,
     })
-    .onConflictDoNothing({ target: agentSessions.eveSessionId });
+    .onConflictDoNothing({ target: agentSessions.eveSessionId })
+    .returning({ id: agentSessions.id });
+
+  let agentSessionId = inserted[0]?.id;
+  if (!agentSessionId) {
+    const [existing] = await db
+      .select({ id: agentSessions.id })
+      .from(agentSessions)
+      .where(eq(agentSessions.eveSessionId, payload.sessionId))
+      .limit(1);
+    if (!existing) {
+      throw new Error(
+        `Agent session mapping missing for eve session ${payload.sessionId}`
+      );
+    }
+    agentSessionId = existing.id;
+  }
 
   return {
     agentSessionId,
@@ -83,13 +99,20 @@ export async function forwardAgentFollowUp(
     throw new AgentSendLockedError(params.eveSessionId);
   }
   try {
+    const [currentSession] = await db
+      .select({ continuationToken: agentSessions.continuationToken })
+      .from(agentSessions)
+      .where(eq(agentSessions.eveSessionId, params.eveSessionId))
+      .limit(1);
+    const continuationToken =
+      currentSession?.continuationToken ?? params.continuationToken;
     const upstream = await params.fetchUpstream(
       `${AGENT_SESSION_ROUTE_PATH}/${params.eveSessionId}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          continuationToken: params.continuationToken,
+          continuationToken,
           ...(params.message ? { message: params.message } : {}),
           ...(params.inputResponses?.length
             ? { inputResponses: params.inputResponses }

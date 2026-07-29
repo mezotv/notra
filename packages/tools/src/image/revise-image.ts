@@ -22,7 +22,6 @@ import { requireOrganizationId } from "../utils/organization";
 import {
   getBooleanSessionAttribute,
   getSessionAttribute,
-  requireSessionAttribute,
 } from "../utils/session";
 
 export function createReviseImageTool() {
@@ -32,7 +31,7 @@ export function createReviseImageTool() {
     inputSchema: reviseImageInputSchema,
     async execute({ postId: inputPostId, prompt, title }, ctx) {
       const organizationId = requireOrganizationId(ctx);
-      const userId = requireSessionAttribute(ctx, "userId");
+      const userId = getSessionAttribute(ctx, "userId") ?? null;
       const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
       const postId = inputPostId ?? getSessionAttribute(ctx, "contentId");
       if (!postId) {
@@ -52,116 +51,125 @@ export function createReviseImageTool() {
       }
 
       const revisionKey = `agent:revise-image:${ctx.session.id}:${ctx.session.turn.id}:${postId}:${deriveOperationHash(`${prompt} ${title ?? ""}`)}`;
-      if (redis && (await redis.get(revisionKey))) {
-        return {
-          postId,
-          title: post.title,
-          imageUrl: post.content,
-          status: "updated",
-          contentType: "image",
-          sandbox: null,
-          usage: null,
-        };
+      if (redis) {
+        const claimed = await redis.set(revisionKey, "1", {
+          nx: true,
+          ex: 60 * 60 * 24,
+        });
+        if (claimed !== "OK") {
+          return {
+            postId,
+            title: post.title,
+            imageUrl: post.content,
+            status: "updated",
+            contentType: "image",
+            sandbox: null,
+            usage: null,
+          };
+        }
       }
-      const metadata =
-        post.sourceMetadata && typeof post.sourceMetadata === "object"
-          ? post.sourceMetadata
-          : {};
-      const integrationId =
-        "integrationId" in metadata &&
-        typeof metadata.integrationId === "string"
-          ? metadata.integrationId
-          : null;
-      const branch =
-        "branch" in metadata && typeof metadata.branch === "string"
-          ? metadata.branch
-          : null;
-      if (!(integrationId && branch)) {
-        throw new Error(
-          "The image post is missing its repository metadata and cannot be revised."
-        );
-      }
+      try {
+        const metadata =
+          post.sourceMetadata && typeof post.sourceMetadata === "object"
+            ? post.sourceMetadata
+            : {};
+        const integrationId =
+          "integrationId" in metadata &&
+          typeof metadata.integrationId === "string"
+            ? metadata.integrationId
+            : null;
+        const branch =
+          "branch" in metadata && typeof metadata.branch === "string"
+            ? metadata.branch
+            : null;
+        if (!(integrationId && branch)) {
+          throw new Error(
+            "The image post is missing its repository metadata and cannot be revised."
+          );
+        }
 
-      const previousSnapshot = await getImageSnapshot(organizationId, postId);
-      const nextTitle = title ?? post.title;
+        const previousSnapshot = await getImageSnapshot(organizationId, postId);
+        const nextTitle = title ?? post.title;
 
-      const result = await generateRepoImage({
-        input: {
+        const result = await generateRepoImage({
+          input: {
+            organizationId,
+            integrationId,
+            branch,
+            brandIdentityId: previousSnapshot.brandIdentityId,
+            mode: "prompt",
+            prompt,
+          },
+          restoreSnapshotId: previousSnapshot.snapshotId,
+          snapshotName: `image-${organizationId}-${Date.now()}`,
+          userId,
+        });
+
+        const [imageUrl, htmlUrl] = await Promise.all([
+          uploadGeneratedImageAsset({
+            organizationId,
+            pngBase64: result.pngBase64,
+            postId,
+          }),
+          uploadGeneratedHtmlAsset({
+            organizationId,
+            html: result.html,
+            postId,
+          }),
+        ]);
+        const sourceMetadata = await buildRevisionSourceMetadata({
           organizationId,
+          postId,
           integrationId,
           branch,
-          brandIdentityId: previousSnapshot.brandIdentityId,
-          mode: "prompt",
           prompt,
-        },
-        restoreSnapshotId: previousSnapshot.snapshotId,
-        snapshotName: `image-${organizationId}-${Date.now()}`,
-        userId,
-      });
-
-      const [imageUrl, htmlUrl] = await Promise.all([
-        uploadGeneratedImageAsset({
-          organizationId,
-          pngBase64: result.pngBase64,
-          postId,
-        }),
-        uploadGeneratedHtmlAsset({
-          organizationId,
-          html: result.html,
-          postId,
-        }),
-      ]);
-      const sourceMetadata = await buildRevisionSourceMetadata({
-        organizationId,
-        postId,
-        integrationId,
-        branch,
-        prompt,
-        result,
-      });
-
-      await db
-        .update(posts)
-        .set({
-          title: nextTitle,
-          content: imageUrl,
-          htmlUrl,
-          markdown: null,
-          sourceMetadata,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(eq(posts.id, postId), eq(posts.organizationId, organizationId))
-        );
-
-      await deleteRepoImageSnapshot(previousSnapshot).catch((error) => {
-        console.error("[repo-image] Failed to delete previous snapshot", {
-          postId,
-          snapshotId: previousSnapshot.snapshotId,
-          error,
+          result,
         });
-      });
 
-      await trackImageGenerationUsage({
-        organizationId,
-        postId,
-        usage: result.usage,
-        useMarkup,
-      });
+        await db
+          .update(posts)
+          .set({
+            title: nextTitle,
+            content: imageUrl,
+            htmlUrl,
+            markdown: null,
+            sourceMetadata,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(eq(posts.id, postId), eq(posts.organizationId, organizationId))
+          );
 
-      if (redis) {
-        await redis.set(revisionKey, "1", { ex: 60 * 60 * 24 });
+        await deleteRepoImageSnapshot(previousSnapshot).catch((error) => {
+          console.error("[repo-image] Failed to delete previous snapshot", {
+            postId,
+            snapshotId: previousSnapshot.snapshotId,
+            error,
+          });
+        });
+
+        await trackImageGenerationUsage({
+          organizationId,
+          postId,
+          usage: result.usage,
+          useMarkup,
+        });
+
+        return {
+          postId,
+          title: nextTitle,
+          imageUrl,
+          status: "updated",
+          contentType: "image",
+          sandbox: result.sandbox,
+          usage: result.usage ?? null,
+        };
+      } catch (error) {
+        if (redis) {
+          await redis.del(revisionKey).catch(() => null);
+        }
+        throw error;
       }
-
-      return {
-        postId,
-        title: nextTitle,
-        imageUrl,
-        status: "updated",
-        contentType: "image",
-        sandbox: result.sandbox,
-        usage: result.usage ?? null,
-      };
     },
   });
 }
