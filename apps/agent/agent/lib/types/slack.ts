@@ -1,8 +1,3 @@
-export interface ChannelVisibilityCacheEntry {
-  expiresAt: number;
-  isPublic: boolean;
-}
-
 export interface DraftCompletionState {
   count: number;
   turnId: string;

@@ -3,14 +3,7 @@ import type {
   SlackInboundMessageContext,
   SlackMessage,
 } from "eve/channels/slack";
-import {
-  CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES,
-  CHANNEL_VISIBILITY_TTL_MS,
-} from "../constants/slack";
 import { SlackApiError } from "../schemas/slack";
-import type { ChannelVisibilityCacheEntry } from "../types/slack";
-
-const channelVisibilityCache = new Map<string, ChannelVisibilityCacheEntry>();
 
 function isPublicChannelInfo(channel: unknown): boolean {
   return (
@@ -22,12 +15,18 @@ function isPublicChannelInfo(channel: unknown): boolean {
   );
 }
 
-function fetchChannelVisibility(
+export function isPublicSlackChannel(
   ctx: SlackInboundMessageContext,
-  channelId: string
+  message: SlackMessage
 ): Effect.Effect<boolean, SlackApiError> {
+  const channelType = message.raw.channel_type;
+  if (typeof channelType === "string") {
+    return Effect.succeed(channelType === "channel");
+  }
+
   return Effect.tryPromise({
-    try: () => ctx.slack.request("conversations.info", { channel: channelId }),
+    try: () =>
+      ctx.slack.request("conversations.info", { channel: message.channelId }),
     catch: (cause) =>
       new SlackApiError({ cause, operation: "conversations.info" }),
   }).pipe(
@@ -42,45 +41,4 @@ function fetchChannelVisibility(
           )
     )
   );
-}
-
-export function isPublicSlackChannel(
-  ctx: SlackInboundMessageContext,
-  message: SlackMessage
-): Effect.Effect<boolean, SlackApiError> {
-  const channelType = message.raw.channel_type;
-  if (typeof channelType === "string") {
-    return Effect.succeed(channelType === "channel");
-  }
-
-  const cached = channelVisibilityCache.get(message.channelId);
-  if (cached && cached.expiresAt > Date.now()) {
-    return Effect.succeed(cached.isPublic);
-  }
-
-  return fetchChannelVisibility(ctx, message.channelId).pipe(
-    Effect.tap((isPublic) =>
-      Effect.sync(() => {
-        cacheChannelVisibility(message.channelId, isPublic);
-      })
-    )
-  );
-}
-
-function cacheChannelVisibility(channelId: string, isPublic: boolean) {
-  const now = Date.now();
-  if (channelVisibilityCache.size >= CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES) {
-    for (const [key, entry] of channelVisibilityCache) {
-      if (entry.expiresAt <= now) {
-        channelVisibilityCache.delete(key);
-      }
-    }
-  }
-  if (channelVisibilityCache.size >= CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES) {
-    channelVisibilityCache.clear();
-  }
-  channelVisibilityCache.set(channelId, {
-    expiresAt: now + CHANNEL_VISIBILITY_TTL_MS,
-    isPublic,
-  });
 }
