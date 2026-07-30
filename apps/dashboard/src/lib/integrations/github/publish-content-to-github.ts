@@ -5,14 +5,17 @@ import type {
   FindExistingGitHubPullRequestParams,
   GetExistingGitHubFileShaParams,
   GitHubClient,
+  GitHubErrorHeaders,
+  GitHubPublishContentType,
+  GitHubPublishFailureKind,
   GitHubPullRequestSummary,
-  PublishChangelogDraftPullRequestParams,
-  ResolveChangelogPathParams,
+  PublishContentDraftPullRequestParams,
+  ResolveGitHubContentPathParams,
 } from "@/types/integrations/github";
 
-export class GitHubChangelogTargetExistsError extends Error {}
+export class GitHubContentTargetExistsError extends Error {}
 
-export class GitHubChangelogPublishError extends Error {
+export class GitHubContentPublishError extends Error {
   readonly branchName: string | null;
   readonly cause: unknown;
 
@@ -22,7 +25,7 @@ export class GitHubChangelogPublishError extends Error {
     branchName: string | null = null
   ) {
     super(message);
-    this.name = "GitHubChangelogPublishError";
+    this.name = "GitHubContentPublishError";
     this.branchName = branchName;
     this.cause = cause;
   }
@@ -37,7 +40,72 @@ export function hasGitHubStatus(error: unknown, status: number) {
   );
 }
 
-export function resolveChangelogPath(params: ResolveChangelogPathParams) {
+function getGitHubErrorHeaders(error: unknown): GitHubErrorHeaders | undefined {
+  if (!(error instanceof Error) || !("response" in error)) {
+    return undefined;
+  }
+
+  const response = error.response;
+  if (!response || typeof response !== "object" || !("headers" in response)) {
+    return undefined;
+  }
+
+  const { headers } = response;
+  return headers && typeof headers === "object"
+    ? (headers as GitHubErrorHeaders)
+    : undefined;
+}
+
+function getHeaderCaseInsensitive(
+  headers: GitHubErrorHeaders | undefined,
+  name: string
+) {
+  const key = Object.keys(headers ?? {}).find(
+    (headerName) => headerName.toLowerCase() === name.toLowerCase()
+  );
+  return key ? headers?.[key] : undefined;
+}
+
+export function classifyGitHubPublishFailure(
+  error: unknown
+): GitHubPublishFailureKind {
+  if (hasGitHubStatus(error, 401)) {
+    return "authentication";
+  }
+
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  const isForbidden = hasGitHubStatus(error, 403);
+  const remaining = getHeaderCaseInsensitive(
+    getGitHubErrorHeaders(error),
+    "x-ratelimit-remaining"
+  );
+
+  if (
+    hasGitHubStatus(error, 429) ||
+    (isForbidden && String(remaining ?? "") === "0") ||
+    (isForbidden && message.includes("secondary rate limit"))
+  ) {
+    return "rate_limit";
+  }
+
+  if (
+    isForbidden &&
+    (message.includes("resource not accessible by integration") ||
+      message.includes("permission to the resource"))
+  ) {
+    return "permissions";
+  }
+
+  if (isForbidden) {
+    return "forbidden";
+  }
+
+  return "unknown";
+}
+
+export function resolveGitHubContentPath(
+  params: ResolveGitHubContentPathParams
+) {
   if (params.customPath) {
     return params.customPath;
   }
@@ -47,10 +115,14 @@ export function resolveChangelogPath(params: ResolveChangelogPathParams) {
   return `${params.directory ? `${params.directory}/` : ""}${fileName}.md`;
 }
 
-function createChangelogBranchName(path: string) {
+function createContentBranchName(
+  path: string,
+  contentType: GitHubPublishContentType
+) {
   const slug = slugify(path).slice(0, 40);
   const pathHash = createHash("sha256").update(path).digest("hex").slice(0, 8);
-  return `notra/changelog-${slug || "update"}-${pathHash}`;
+  const prefix = contentType === "changelog" ? "changelog" : "blog-post";
+  return `notra/${prefix}-${slug || "update"}-${pathHash}`;
 }
 
 function toPullRequestResult(
@@ -105,9 +177,9 @@ async function getExistingFileSha(params: GetExistingGitHubFileShaParams) {
   }
 }
 
-export async function publishChangelogDraftPullRequest(
+export async function publishContentDraftPullRequest(
   octokit: GitHubClient,
-  params: PublishChangelogDraftPullRequestParams
+  params: PublishContentDraftPullRequestParams
 ) {
   let baseSha: string;
 
@@ -123,7 +195,7 @@ export async function publishChangelogDraftPullRequest(
     );
     baseSha = baseRef.object.sha;
   } catch (error) {
-    throw new GitHubChangelogPublishError(
+    throw new GitHubContentPublishError(
       "Failed to read the repository's default branch",
       error
     );
@@ -140,7 +212,7 @@ export async function publishChangelogDraftPullRequest(
     });
   } catch (error) {
     if (!hasGitHubStatus(error, 404)) {
-      throw new GitHubChangelogPublishError(
+      throw new GitHubContentPublishError(
         "Failed to check the destination path",
         error
       );
@@ -149,12 +221,12 @@ export async function publishChangelogDraftPullRequest(
   }
 
   if (!destinationMissing) {
-    throw new GitHubChangelogTargetExistsError(
+    throw new GitHubContentTargetExistsError(
       `${params.path} already exists in ${params.owner}/${params.repo}`
     );
   }
 
-  const branchName = createChangelogBranchName(params.path);
+  const branchName = createContentBranchName(params.path, params.contentType);
   let existingPullRequest: GitHubPullRequestSummary | undefined;
 
   try {
@@ -166,8 +238,8 @@ export async function publishChangelogDraftPullRequest(
       repo: params.repo,
     });
   } catch (error) {
-    throw new GitHubChangelogPublishError(
-      "Failed to check for an existing changelog pull request",
+    throw new GitHubContentPublishError(
+      "Failed to check for an existing content pull request",
       error
     );
   }
@@ -197,8 +269,8 @@ export async function publishChangelogDraftPullRequest(
           // Continue with branch reconciliation below.
         }
       } else {
-        throw new GitHubChangelogPublishError(
-          "GitHub could not create the changelog branch",
+        throw new GitHubContentPublishError(
+          "GitHub could not create the content branch",
           error
         );
       }
@@ -226,8 +298,8 @@ export async function publishChangelogDraftPullRequest(
       headers: GITHUB_API_VERSION_HEADERS,
     });
   } catch (error) {
-    throw new GitHubChangelogPublishError(
-      "GitHub could not create the changelog file",
+    throw new GitHubContentPublishError(
+      "GitHub could not create the content file",
       error,
       branchName
     );
@@ -246,7 +318,7 @@ export async function publishChangelogDraftPullRequest(
         base: params.defaultBranch,
         head: branchName,
         title: `docs: add ${params.title}`,
-        body: "Draft changelog generated and published with Notra.",
+        body: `Draft ${params.contentType === "changelog" ? "changelog" : "blog post"} generated and published with Notra.`,
         draft: true,
         headers: GITHUB_API_VERSION_HEADERS,
       }
@@ -270,14 +342,14 @@ export async function publishChangelogDraftPullRequest(
         );
       }
     } catch (reconciliationError) {
-      throw new GitHubChangelogPublishError(
+      throw new GitHubContentPublishError(
         `GitHub may have created the draft pull request. Check branch: ${branchName}`,
         reconciliationError,
         branchName
       );
     }
 
-    throw new GitHubChangelogPublishError(
+    throw new GitHubContentPublishError(
       "GitHub could not create the draft pull request",
       error,
       branchName

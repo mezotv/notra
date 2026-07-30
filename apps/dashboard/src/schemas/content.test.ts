@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { publishChangelogToGitHubSchema } from "./content";
+import { publishContentToGitHubSchema } from "./content";
 
 const repositoryId = "123456";
 
-describe("publishChangelogToGitHubSchema", () => {
+describe("publishContentToGitHubSchema", () => {
   test("adds the Markdown extension to a repository-relative path", () => {
-    const result = publishChangelogToGitHubSchema.parse({
+    const result = publishContentToGitHubSchema.parse({
+      contentType: "changelog",
       repositoryId,
       path: "apps/docs/changelogs/july-update",
     });
@@ -15,7 +16,8 @@ describe("publishChangelogToGitHubSchema", () => {
   });
 
   test("does not duplicate an existing Markdown extension", () => {
-    const result = publishChangelogToGitHubSchema.parse({
+    const result = publishContentToGitHubSchema.parse({
+      contentType: "blog_post",
       repositoryId,
       path: "apps/docs/changelogs/july-update.md",
     });
@@ -24,9 +26,18 @@ describe("publishChangelogToGitHubSchema", () => {
   });
 
   test("allows the file path to be omitted", () => {
-    const result = publishChangelogToGitHubSchema.parse({ repositoryId });
+    const result = publishContentToGitHubSchema.parse({
+      contentType: "blog_post",
+      repositoryId,
+    });
 
     assert.equal(result.path, undefined);
+  });
+
+  test("defaults legacy requests to changelog publishing", () => {
+    const result = publishContentToGitHubSchema.parse({ repositoryId });
+
+    assert.equal(result.contentType, "changelog");
   });
 
   for (const path of [
@@ -38,7 +49,8 @@ describe("publishChangelogToGitHubSchema", () => {
     "apps/docs/changelog?raw=1",
   ]) {
     test(`rejects unsafe path ${path}`, () => {
-      const result = publishChangelogToGitHubSchema.safeParse({
+      const result = publishContentToGitHubSchema.safeParse({
+        contentType: "changelog",
         repositoryId,
         path,
       });

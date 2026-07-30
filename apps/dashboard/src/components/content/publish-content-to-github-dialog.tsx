@@ -1,6 +1,10 @@
 "use client";
 
-import { ArrowUpRight01Icon, GitCommitIcon } from "@hugeicons/core-free-icons";
+import {
+  AlertCircleIcon,
+  ArrowUpRight01Icon,
+  GitCommitIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
@@ -12,6 +16,11 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@notra/ui/components/shared/responsive-dialog";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@notra/ui/components/ui/alert";
 import {
   Field,
   FieldDescription,
@@ -26,23 +35,31 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Notra } from "@notra/ui/components/ui/svgs/notra";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import {
+  DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
+  GITHUB_RECOVERY_COPY,
+} from "@/constants/github";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { PublishChangelogDialogProps } from "@/types/content/detail";
+import type { PublishContentToGitHubDialogProps } from "@/types/content/detail";
+import { getGitHubPublishRecovery } from "@/utils/github-publish-recovery";
 
-export function PublishChangelogDialog({
+export function PublishContentToGitHubDialog({
   contentId,
+  contentType,
   onSave,
   organizationId,
   organizationSlug,
   title,
-}: PublishChangelogDialogProps) {
+}: PublishContentToGitHubDialogProps) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [repositoryId, setRepositoryId] = useState("");
+  const contentLabel = contentType === "changelog" ? "changelog" : "blog post";
 
   const integrationsQuery = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
@@ -57,7 +74,16 @@ export function PublishChangelogDialog({
       integration.type === "github" &&
       integration.enabled &&
       integration.repositories.length > 0
-        ? integration.repositories.filter((repository) => repository.enabled)
+        ? integration.repositories.filter((repository) => {
+            const output = repository.outputs?.find(
+              (candidate) => candidate.outputType === contentType
+            );
+            return (
+              repository.enabled &&
+              (output?.enabled ??
+                DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[contentType])
+            );
+          })
         : []
     ) ?? [];
   const selectedRepository = repositories.find(
@@ -68,12 +94,13 @@ export function PublishChangelogDialog({
     mutationFn: async (targetRepositoryId: string) => {
       const saved = await onSave();
       if (!saved) {
-        throw new Error("Save the changelog before publishing it");
+        throw new Error(`Save the ${contentLabel} before publishing it`);
       }
 
       return dashboardOrpc.content.publishChangelogToGitHub.call({
         organizationId,
         contentId,
+        contentType,
         repositoryId: targetRepositoryId,
       });
     },
@@ -81,10 +108,36 @@ export function PublishChangelogDialog({
       toast.success("Draft pull request created");
     },
     onError: (error) => {
+      const recovery = getGitHubPublishRecovery(error);
+      if (recovery) {
+        if (
+          recovery.code === "github_content_publishing_paused" ||
+          recovery.publishingPaused
+        ) {
+          queryClient.invalidateQueries({
+            queryKey: dashboardOrpc.integrations.list.queryKey({
+              input: { organizationId },
+            }),
+          });
+        }
+        return;
+      }
       toast.error(error.message || "Failed to create draft pull request");
     },
   });
   const pullRequest = publishMutation.data;
+  const publishRecovery = getGitHubPublishRecovery(publishMutation.error);
+  const recoveryCopy = publishRecovery
+    ? GITHUB_RECOVERY_COPY[publishRecovery.code]
+    : null;
+  const showIntegrationRecovery =
+    publishRecovery &&
+    (publishRecovery.publishingPaused ||
+      publishRecovery.code !== "github_app_permissions_required" ||
+      !publishRecovery.permissionsUrl);
+  const showPermissionsRecovery =
+    publishRecovery?.code === "github_app_permissions_required" &&
+    Boolean(publishRecovery.permissionsUrl);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!publishMutation.isPending) {
@@ -115,8 +168,9 @@ export function PublishChangelogDialog({
               Create a draft pull request
             </ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Notra creates a branch, adds the changelog as Markdown, and opens
-              a draft pull request against the repository&apos;s default branch.
+              Notra creates a branch, adds the {contentLabel} as Markdown, and
+              opens a draft pull request against the repository&apos;s default
+              branch.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
 
@@ -166,7 +220,7 @@ export function PublishChangelogDialog({
           ) : (
             <div className="space-y-4 py-6">
               <Field>
-                <FieldLabel htmlFor="changelog-repository">
+                <FieldLabel htmlFor="github-publish-repository">
                   Repository
                 </FieldLabel>
                 <Select
@@ -174,7 +228,7 @@ export function PublishChangelogDialog({
                   onValueChange={(value) => setRepositoryId(value ?? "")}
                   value={repositoryId}
                 >
-                  <SelectTrigger id="changelog-repository">
+                  <SelectTrigger id="github-publish-repository">
                     <SelectValue
                       placeholder={
                         integrationsQuery.isLoading
@@ -213,6 +267,21 @@ export function PublishChangelogDialog({
                   </FieldDescription>
                 ) : null}
               </Field>
+              {publishRecovery ? (
+                <Alert variant="destructive">
+                  <HugeiconsIcon icon={AlertCircleIcon} />
+                  <AlertTitle>{recoveryCopy?.title}</AlertTitle>
+                  <AlertDescription>
+                    <p>{recoveryCopy?.description}</p>
+                    {publishRecovery.publishingPaused ? (
+                      <p>
+                        Publishing was also paused after three failures. Resume
+                        it in the GitHub integration after fixing this.
+                      </p>
+                    ) : null}
+                  </AlertDescription>
+                </Alert>
+              ) : null}
             </div>
           )}
 
@@ -223,7 +292,35 @@ export function PublishChangelogDialog({
             >
               Close
             </ResponsiveDialogClose>
-            {pullRequest ? (
+            {showIntegrationRecovery ? (
+              <Button
+                nativeButton={false}
+                render={
+                  <Link href={`/${organizationSlug}/integrations/github`}>
+                    Open GitHub integration
+                  </Link>
+                }
+              />
+            ) : null}
+            {showPermissionsRecovery && publishRecovery.permissionsUrl ? (
+              <Button
+                nativeButton={false}
+                render={
+                  <a
+                    href={publishRecovery.permissionsUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Update permissions
+                    <HugeiconsIcon
+                      className="size-4"
+                      icon={ArrowUpRight01Icon}
+                    />
+                  </a>
+                }
+              />
+            ) : null}
+            {!publishRecovery && pullRequest ? (
               <Button
                 nativeButton={false}
                 render={
@@ -240,7 +337,8 @@ export function PublishChangelogDialog({
                   </a>
                 }
               />
-            ) : (
+            ) : null}
+            {publishRecovery || pullRequest ? null : (
               <Button
                 disabled={publishMutation.isPending || !selectedRepository}
                 type="submit"

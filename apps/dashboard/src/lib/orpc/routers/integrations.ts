@@ -87,6 +87,7 @@ import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { toMcpIntegrationAuthKind } from "@/lib/integrations/auth-kind";
+import { clearGitHubPublishFailures } from "@/lib/integrations/github/github-publish-failure-state";
 import {
   clearCachedSlackChannels,
   getCachedSlackChannels,
@@ -865,7 +866,9 @@ export const integrationsRouter = {
           if (!(repository.enabled && repository.integration.enabled)) {
             throw forbidden("This GitHub repository is disabled");
           }
-          const token = await getTokenForIntegrationId(input.repositoryId);
+          const token = await getTokenForIntegrationId(input.repositoryId, {
+            organizationId: input.organizationId,
+          });
 
           if (!token) {
             throw forbidden("GitHub repository access is not configured");
@@ -1049,9 +1052,27 @@ export const integrationsRouter = {
         });
         await assertActiveSubscription(input.organizationId);
 
-        await requireOutputInOrganization(input.organizationId, input.outputId);
+        const output = await requireOutputInOrganization(
+          input.organizationId,
+          input.outputId
+        );
 
-        return toggleOutput(input.outputId, input.enabled);
+        const updatedOutput = await toggleOutput(input.outputId, input.enabled);
+
+        if (
+          updatedOutput &&
+          input.enabled &&
+          (output.outputType === "changelog" ||
+            output.outputType === "blog_post")
+        ) {
+          await clearGitHubPublishFailures({
+            organizationId: input.organizationId,
+            outputType: output.outputType,
+            repositoryId: output.repository.id,
+          });
+        }
+
+        return updatedOutput;
       }),
   },
   linear: {

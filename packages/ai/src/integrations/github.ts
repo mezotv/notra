@@ -157,9 +157,17 @@ async function createGitHubAppInstallationToken(installationId: string) {
   return data.token;
 }
 
-async function createGitHubAppInstallationTokenForRecord(recordId: string) {
+async function createGitHubAppInstallationTokenForRecord(
+  recordId: string,
+  options?: { organizationId?: string }
+) {
   const installation = await db.query.githubAppInstallations.findFirst({
-    where: eq(githubAppInstallations.id, recordId),
+    where: options?.organizationId
+      ? and(
+          eq(githubAppInstallations.id, recordId),
+          eq(githubAppInstallations.organizationId, options.organizationId)
+        )
+      : eq(githubAppInstallations.id, recordId),
     columns: {
       installationId: true,
     },
@@ -1523,14 +1531,23 @@ export async function getTokenForRepository(
   return decryptToken(integration.encryptedToken);
 }
 
-export async function getTokenForIntegrationId(integrationId: string) {
+export async function getTokenForIntegrationId(
+  integrationId: string,
+  options?: { organizationId?: string }
+) {
   const integration = await db.query.githubIntegrations.findFirst({
-    where: eq(githubIntegrations.id, integrationId),
+    where: options?.organizationId
+      ? and(
+          eq(githubIntegrations.id, integrationId),
+          eq(githubIntegrations.organizationId, options.organizationId)
+        )
+      : eq(githubIntegrations.id, integrationId),
   });
 
   if (integration?.githubAppInstallationId) {
     return createGitHubAppInstallationTokenForRecord(
-      integration.githubAppInstallationId
+      integration.githubAppInstallationId,
+      options
     );
   }
 

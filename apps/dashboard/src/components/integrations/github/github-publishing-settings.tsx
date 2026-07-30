@@ -13,22 +13,31 @@ import {
   RadioGroupItem,
 } from "@notra/ui/components/ui/radio-group";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { Switch } from "@notra/ui/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { DEFAULT_CHANGELOG_DIRECTORY } from "@/constants/github";
+import {
+  DEFAULT_GITHUB_CONTENT_DIRECTORIES,
+  DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
+} from "@/constants/github";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
-  GitHubChangelogDirectoryMutationVariables,
-  GitHubChangelogSettingsProps,
+  GitHubContentDirectoryMutationVariables,
+  GitHubContentPublishingSettingsProps,
+  GitHubOutputMutationVariables,
+  GitHubPublishingSettingsProps,
 } from "@/types/integrations/github";
 import { GitHubDirectoryPicker } from "./github-directory-picker";
 
-export function GitHubChangelogSettings({
+function GitHubContentPublishingSettings({
+  contentLabel,
+  contentType,
   organizationId,
+  pluralLabel,
   repositories,
-}: GitHubChangelogSettingsProps) {
+}: GitHubContentPublishingSettingsProps) {
   const queryClient = useQueryClient();
   const folderTriggerId = useId();
   const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
@@ -36,29 +45,36 @@ export function GitHubChangelogSettings({
     repositories.find((repository) => repository.id === selectedRepositoryId) ??
     repositories[0];
   const repositoryId = selectedRepository?.id ?? "";
+  const contentOutput = selectedRepository?.outputs?.find(
+    (output) => output.outputType === contentType
+  );
+  const publishingEnabled =
+    contentOutput?.enabled ??
+    DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[contentType];
   const directoryQuery = useQuery(
     dashboardOrpc.integrations.repositories.contentDirectory.get.queryOptions({
       input: {
         organizationId,
         repositoryId,
-        contentType: "changelog",
+        contentType,
       },
       enabled: Boolean(organizationId && repositoryId),
       staleTime: 0,
     })
   );
   const directory = directoryQuery.isSuccess
-    ? (directoryQuery.data.directory ?? DEFAULT_CHANGELOG_DIRECTORY)
-    : DEFAULT_CHANGELOG_DIRECTORY;
+    ? (directoryQuery.data.directory ??
+      DEFAULT_GITHUB_CONTENT_DIRECTORIES[contentType])
+    : DEFAULT_GITHUB_CONTENT_DIRECTORIES[contentType];
   const directoryMutation = useMutation({
     mutationFn: ({
       nextDirectory,
       targetRepositoryId,
-    }: GitHubChangelogDirectoryMutationVariables) =>
+    }: GitHubContentDirectoryMutationVariables) =>
       dashboardOrpc.integrations.repositories.contentDirectory.update.call({
         organizationId,
         repositoryId: targetRepositoryId,
-        contentType: "changelog",
+        contentType,
         directory: nextDirectory,
       }),
     onMutate: async (variables) => {
@@ -69,7 +85,7 @@ export function GitHubChangelogSettings({
               input: {
                 organizationId,
                 repositoryId: variables.targetRepositoryId,
-                contentType: "changelog",
+                contentType,
               },
             }
           ),
@@ -81,15 +97,52 @@ export function GitHubChangelogSettings({
           input: {
             organizationId,
             repositoryId: variables.targetRepositoryId,
-            contentType: "changelog",
+            contentType,
           },
         }),
         result
       );
-      toast.success("Changelog folder saved");
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        }),
+      });
+      toast.success(`${contentLabel} folder saved`);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to save changelog folder");
+      toast.error(error.message || `Failed to save ${contentLabel} folder`);
+    },
+  });
+  const outputMutation = useMutation({
+    mutationFn: ({ enabled, outputId }: GitHubOutputMutationVariables) =>
+      outputId
+        ? dashboardOrpc.integrations.outputs.update.call({
+            organizationId,
+            outputId,
+            enabled,
+          })
+        : dashboardOrpc.integrations.repositories.configureOutput.call({
+            organizationId,
+            repositoryId,
+            outputType: contentType,
+            enabled,
+          }),
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        }),
+      });
+      toast.success(
+        variables.enabled
+          ? `${contentLabel} publishing resumed`
+          : `${contentLabel} publishing paused`
+      );
+    },
+    onError: (error) => {
+      toast.error(
+        error.message || `Failed to update ${contentLabel} publishing`
+      );
     },
   });
 
@@ -100,9 +153,9 @@ export function GitHubChangelogSettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Changelog publishing</CardTitle>
+        <CardTitle>{contentLabel} publishing</CardTitle>
         <CardDescription>
-          Choose where each repository stores generated changelogs.
+          Choose where each repository stores generated {pluralLabel}.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -136,15 +189,39 @@ export function GitHubChangelogSettings({
           })}
         </RadioGroup>
 
+        <div className="flex max-w-xl items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
+          <div className="space-y-0.5">
+            <p className="font-medium text-sm">Publish {pluralLabel}</p>
+            <p className="text-muted-foreground text-xs">
+              {publishingEnabled
+                ? `Create draft pull requests from ${pluralLabel}.`
+                : "Publishing is off. Turn it on to resume."}
+            </p>
+          </div>
+          <Switch
+            aria-label={`Publish ${pluralLabel}`}
+            checked={publishingEnabled}
+            disabled={outputMutation.isPending}
+            onCheckedChange={(enabled) => {
+              outputMutation.mutate({
+                enabled,
+                outputId: contentOutput?.id,
+              });
+            }}
+          />
+        </div>
+
         <Field className="max-w-xl">
-          <FieldLabel htmlFor={folderTriggerId}>Changelog folder</FieldLabel>
+          <FieldLabel htmlFor={folderTriggerId}>
+            {contentLabel} folder
+          </FieldLabel>
           {directoryQuery.isError && !directoryQuery.data ? (
             <div
               className="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-destructive/30 px-3"
               role="alert"
             >
               <p className="text-destructive text-sm">
-                Unable to load the changelog folder.
+                Unable to load the {contentLabel} folder.
               </p>
               <Button
                 onClick={() => directoryQuery.refetch()}
@@ -157,6 +234,7 @@ export function GitHubChangelogSettings({
             </div>
           ) : (
             <GitHubDirectoryPicker
+              contentLabel={contentLabel}
               directory={directory}
               disabled={directoryQuery.isLoading}
               isSaving={directoryMutation.isPending}
@@ -175,5 +253,24 @@ export function GitHubChangelogSettings({
         </Field>
       </CardContent>
     </Card>
+  );
+}
+
+export function GitHubPublishingSettings(props: GitHubPublishingSettingsProps) {
+  return (
+    <>
+      <GitHubContentPublishingSettings
+        {...props}
+        contentLabel="Changelog"
+        contentType="changelog"
+        pluralLabel="changelogs"
+      />
+      <GitHubContentPublishingSettings
+        {...props}
+        contentLabel="Blog post"
+        contentType="blog_post"
+        pluralLabel="blog posts"
+      />
+    </>
   );
 }

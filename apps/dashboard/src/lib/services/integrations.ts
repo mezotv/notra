@@ -42,6 +42,11 @@ const integrationFetchers: Partial<
           repo: repo.repo,
           defaultBranch: repo.defaultBranch,
           enabled: repo.enabled,
+          outputs: repo.outputs.map((output) => ({
+            id: output.id,
+            outputType: output.outputType,
+            enabled: output.enabled,
+          })),
         })),
       };
     });

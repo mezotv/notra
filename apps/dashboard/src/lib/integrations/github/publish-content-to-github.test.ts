@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import type { GitHubClient } from "@/types/integrations/github";
 import {
-  GitHubChangelogPublishError,
-  publishChangelogDraftPullRequest,
-  resolveChangelogPath,
-} from "./publish-changelog";
+  classifyGitHubPublishFailure,
+  GitHubContentPublishError,
+  publishContentDraftPullRequest,
+  resolveGitHubContentPath,
+} from "./publish-content-to-github";
+
+const BLOG_POST_BRANCH_REGEX = /^refs\/heads\/notra\/blog-post-/;
 
 const publishParams = {
+  contentType: "changelog" as const,
   owner: "notra",
   repo: "docs",
   defaultBranch: "main",
@@ -18,6 +22,17 @@ const publishParams = {
 
 function githubError(status: number) {
   return Object.assign(new Error(`GitHub ${status}`), { status });
+}
+
+function githubApiError(params: {
+  headers?: Record<string, string | number | undefined>;
+  message: string;
+  status: number;
+}) {
+  return Object.assign(new Error(params.message), {
+    status: params.status,
+    response: { headers: params.headers },
+  });
 }
 
 function createGitHubClient(
@@ -42,9 +57,9 @@ function defaultResponse(route: string) {
   return { data: {} };
 }
 
-describe("resolveChangelogPath", () => {
+describe("resolveGitHubContentPath", () => {
   test("builds the path from the configured directory and content slug", () => {
-    const path = resolveChangelogPath({
+    const path = resolveGitHubContentPath({
       contentId: "content-123",
       directory: "apps/docs/changelogs",
       slug: "july-update",
@@ -55,7 +70,7 @@ describe("resolveChangelogPath", () => {
   });
 
   test("supports the repository root and falls back to the title", () => {
-    const path = resolveChangelogPath({
+    const path = resolveGitHubContentPath({
       contentId: "content-123",
       directory: "",
       slug: null,
@@ -71,7 +86,7 @@ describe("resolveChangelogPath", () => {
     ["Release.md", "release-md"],
   ] as const) {
     test(`normalizes unsafe stored slug ${slug}`, () => {
-      const path = resolveChangelogPath({
+      const path = resolveGitHubContentPath({
         contentId: "content-123",
         directory: "changelogs",
         slug,
@@ -83,7 +98,7 @@ describe("resolveChangelogPath", () => {
   }
 
   test("keeps an explicit custom path", () => {
-    const path = resolveChangelogPath({
+    const path = resolveGitHubContentPath({
       contentId: "content-123",
       customPath: "special/update.md",
       directory: "changelogs",
@@ -95,7 +110,89 @@ describe("resolveChangelogPath", () => {
   });
 });
 
-describe("publishChangelogDraftPullRequest", () => {
+describe("classifyGitHubPublishFailure", () => {
+  test("classifies authentication failures separately", () => {
+    assert.equal(
+      classifyGitHubPublishFailure(githubError(401)),
+      "authentication"
+    );
+  });
+
+  test("recognizes primary and secondary rate-limit 403 responses", () => {
+    assert.equal(
+      classifyGitHubPublishFailure(
+        githubApiError({
+          headers: { "X-RateLimit-Remaining": "0" },
+          message: "Forbidden",
+          status: 403,
+        })
+      ),
+      "rate_limit"
+    );
+    assert.equal(
+      classifyGitHubPublishFailure(
+        githubApiError({
+          message: "You have exceeded a secondary rate limit",
+          status: 403,
+        })
+      ),
+      "rate_limit"
+    );
+  });
+
+  test("recognizes GitHub App permission denials", () => {
+    assert.equal(
+      classifyGitHubPublishFailure(
+        githubApiError({
+          message: "Resource not accessible by integration",
+          status: 403,
+        })
+      ),
+      "permissions"
+    );
+  });
+
+  test("does not present organization policy blocks as missing permissions", () => {
+    assert.equal(
+      classifyGitHubPublishFailure(
+        githubApiError({
+          message: "The organization has blocked access to this application",
+          status: 403,
+        })
+      ),
+      "forbidden"
+    );
+  });
+});
+
+describe("publishContentDraftPullRequest", () => {
+  test("uses blog-specific branch and pull request copy", async () => {
+    let branchRef: unknown;
+    let pullRequestOptions: Record<string, unknown> | undefined;
+    const client = createGitHubClient((route, options) => {
+      if (route === "POST /repos/{owner}/{repo}/git/refs") {
+        branchRef = options.ref;
+      }
+      if (route === "POST /repos/{owner}/{repo}/pulls") {
+        pullRequestOptions = options;
+        return { data: { number: 18, html_url: "https://github.com/pr/18" } };
+      }
+      return defaultResponse(route);
+    });
+
+    await publishContentDraftPullRequest(client, {
+      ...publishParams,
+      contentType: "blog_post",
+      path: "blog/july.md",
+    });
+
+    assert.match(String(branchRef), BLOG_POST_BRANCH_REGEX);
+    assert.equal(
+      pullRequestOptions?.body,
+      "Draft blog post generated and published with Notra."
+    );
+  });
+
   test("updates the branch before returning an existing pull request", async () => {
     const routes: string[] = [];
     let updateOptions: Record<string, unknown> | undefined;
@@ -120,10 +217,7 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    const result = await publishChangelogDraftPullRequest(
-      client,
-      publishParams
-    );
+    const result = await publishContentDraftPullRequest(client, publishParams);
 
     assert.equal(result.pullRequestNumber, 42);
     assert.ok(!routes.includes("POST /repos/{owner}/{repo}/git/refs"));
@@ -148,10 +242,7 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    const result = await publishChangelogDraftPullRequest(
-      client,
-      publishParams
-    );
+    const result = await publishContentDraftPullRequest(client, publishParams);
 
     assert.equal(result.pullRequestNumber, 12);
     assert.ok(routes.includes("PUT /repos/{owner}/{repo}/contents/{path}"));
@@ -170,8 +261,8 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    await publishChangelogDraftPullRequest(client, publishParams);
-    await publishChangelogDraftPullRequest(client, {
+    await publishContentDraftPullRequest(client, publishParams);
+    await publishContentDraftPullRequest(client, {
       ...publishParams,
       title: "Renamed July update",
     });
@@ -192,7 +283,7 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    await publishChangelogDraftPullRequest(client, publishParams);
+    await publishContentDraftPullRequest(client, publishParams);
 
     assert.equal(checkedRef, "base-sha");
   });
@@ -209,7 +300,7 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    await publishChangelogDraftPullRequest(client, publishParams);
+    await publishContentDraftPullRequest(client, publishParams);
 
     assert.ok(createFileOptions);
     assert.equal("author" in createFileOptions, false);
@@ -227,10 +318,9 @@ describe("publishChangelogDraftPullRequest", () => {
     });
 
     await assert.rejects(
-      publishChangelogDraftPullRequest(client, publishParams),
+      publishContentDraftPullRequest(client, publishParams),
       (error: unknown) =>
-        error instanceof GitHubChangelogPublishError &&
-        error.branchName !== null
+        error instanceof GitHubContentPublishError && error.branchName !== null
     );
     assert.ok(!routes.includes("DELETE /repos/{owner}/{repo}/git/refs/{ref}"));
   });
@@ -249,10 +339,9 @@ describe("publishChangelogDraftPullRequest", () => {
     });
 
     await assert.rejects(
-      publishChangelogDraftPullRequest(client, publishParams),
+      publishContentDraftPullRequest(client, publishParams),
       (error: unknown) =>
-        error instanceof GitHubChangelogPublishError &&
-        error.branchName !== null
+        error instanceof GitHubContentPublishError && error.branchName !== null
     );
     assert.ok(!routes.includes("DELETE /repos/{owner}/{repo}/git/refs/{ref}"));
   });
@@ -274,10 +363,7 @@ describe("publishChangelogDraftPullRequest", () => {
       return defaultResponse(route);
     });
 
-    const result = await publishChangelogDraftPullRequest(
-      client,
-      publishParams
-    );
+    const result = await publishContentDraftPullRequest(client, publishParams);
 
     assert.equal(result.pullRequestNumber, 42);
     assert.equal(

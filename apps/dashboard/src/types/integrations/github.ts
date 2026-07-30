@@ -1,9 +1,11 @@
 import type { createOctokit } from "@notra/ai/utils/octokit";
+import type { redis } from "@notra/ai/utils/redis";
 import { Data } from "effect";
 import type React from "react";
 import type { GitHubRepository } from "../integrations";
 
 export type GitHubClient = ReturnType<typeof createOctokit>;
+export type GitHubPublishContentType = "blog_post" | "changelog";
 
 export class GitHubInstallStartError extends Data.TaggedError(
   "GitHubInstallStartError"
@@ -104,17 +106,30 @@ export interface GitHubAccountCardProps {
   onDisconnect: () => void;
 }
 
-export interface GitHubChangelogSettingsProps {
+export interface GitHubPublishingSettingsProps {
   organizationId: string;
   repositories: GitHubRepository[];
 }
 
-export interface GitHubChangelogDirectoryMutationVariables {
+export interface GitHubContentPublishingSettingsProps
+  extends GitHubPublishingSettingsProps {
+  contentLabel: string;
+  contentType: GitHubPublishContentType;
+  pluralLabel: string;
+}
+
+export interface GitHubContentDirectoryMutationVariables {
   nextDirectory: string;
   targetRepositoryId: string;
 }
 
+export interface GitHubOutputMutationVariables {
+  enabled: boolean;
+  outputId?: string;
+}
+
 export interface GitHubDirectoryPickerProps {
+  contentLabel: string;
   directory: string;
   disabled?: boolean;
   isSaving?: boolean;
@@ -134,7 +149,7 @@ export interface GitHubDirectoryNodeProps {
   repositoryId: string;
 }
 
-export interface ResolveChangelogPathParams {
+export interface ResolveGitHubContentPathParams {
   contentId: string;
   customPath?: string;
   directory: string;
@@ -158,7 +173,8 @@ export interface GetExistingGitHubFileShaParams {
   repo: string;
 }
 
-export interface PublishChangelogDraftPullRequestParams {
+export interface PublishContentDraftPullRequestParams {
+  contentType: GitHubPublishContentType;
   owner: string;
   repo: string;
   defaultBranch: string;
@@ -171,3 +187,48 @@ export interface GitHubPullRequestSummary {
   number: number;
   html_url: string;
 }
+
+export type GitHubErrorHeaders = Record<string, string | number | undefined>;
+
+export type GitHubPublishFailureKind =
+  | "authentication"
+  | "forbidden"
+  | "permissions"
+  | "rate_limit"
+  | "unknown";
+
+export interface GitHubPublishOutputTarget {
+  outputId: string;
+  outputType: GitHubPublishContentType;
+  repositoryId: string;
+}
+
+export interface RecordGitHubPublishFailureParams
+  extends GitHubPublishOutputTarget {
+  organizationId: string;
+}
+
+export interface ClearGitHubPublishFailuresParams {
+  organizationId: string;
+  outputType: GitHubPublishContentType;
+  repositoryId: string;
+}
+
+export type GitHubPublishFailureRedis = Pick<
+  NonNullable<typeof redis>,
+  "del" | "eval"
+>;
+
+export interface GitHubPublishFailureDependencies {
+  pauseOutput?: (params: GitHubPublishOutputTarget) => Promise<boolean>;
+  redisClient: GitHubPublishFailureRedis | null;
+}
+
+export type GitHubPublishRecovery = (
+  | { code: "github_authentication_required" }
+  | { code: "github_content_publishing_paused" }
+  | {
+      code: "github_app_permissions_required";
+      permissionsUrl?: string;
+    }
+) & { publishingPaused?: boolean };

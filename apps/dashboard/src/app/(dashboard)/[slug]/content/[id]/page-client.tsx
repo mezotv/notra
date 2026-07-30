@@ -72,7 +72,7 @@ import type { EditorRefHandle } from "@/components/content/editor/plugins/editor
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
 import { PostSocialButton } from "@/components/content/post-social-button";
-import { PublishChangelogDialog } from "@/components/content/publish-changelog-dialog";
+import { PublishContentToGitHubDialog } from "@/components/content/publish-content-to-github-dialog";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { WriterExecute } from "@/components/geo/writer/writer-execute";
@@ -1595,9 +1595,11 @@ export default function PageClient({
                   })()}
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                {content.contentType === "changelog" && (
-                  <PublishChangelogDialog
+                {(content.contentType === "changelog" ||
+                  content.contentType === "blog_post") && (
+                  <PublishContentToGitHubDialog
                     contentId={contentId}
+                    contentType={content.contentType}
                     onSave={handleSave}
                     organizationId={organizationId}
                     organizationSlug={organizationSlug}

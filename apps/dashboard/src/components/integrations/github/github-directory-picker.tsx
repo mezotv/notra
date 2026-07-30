@@ -125,6 +125,7 @@ function DirectoryNode({
 }
 
 export function GitHubDirectoryPicker({
+  contentLabel,
   directory,
   disabled = false,
   isSaving = false,
@@ -196,7 +197,7 @@ export function GitHubDirectoryPicker({
       <ResponsiveDialogTrigger
         render={
           <Button
-            aria-label={`Changelog folder: ${directory || "Repository root"}. Browse folders`}
+            aria-label={`${contentLabel} folder: ${directory || "Repository root"}. Browse folders`}
             className="h-10 w-full justify-between px-3 font-normal"
             disabled={disabled}
             id={triggerId}
@@ -217,14 +218,16 @@ export function GitHubDirectoryPicker({
 
       <ResponsiveDialogContent className="sm:max-w-[600px]">
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>Choose changelog folder</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>
+            Choose {contentLabel.toLowerCase()} folder
+          </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             {repositoryName}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         <RadioGroup
-          aria-label="Changelog folder"
+          aria-label={`${contentLabel} folder`}
           className="my-4 max-h-[420px] gap-0 overflow-y-auto rounded-xl border p-1"
           onValueChange={(value) => {
             if (typeof value === "string") {

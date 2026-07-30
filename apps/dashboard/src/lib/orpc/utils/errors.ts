@@ -7,15 +7,17 @@ export function badRequest(message: string, data?: unknown) {
   });
 }
 
-export function unauthorized(message = "Unauthorized") {
+export function unauthorized(message = "Unauthorized", data?: unknown) {
   return new ORPCError("UNAUTHORIZED", {
     message,
+    data,
   });
 }
 
-export function forbidden(message = "Forbidden") {
+export function forbidden(message = "Forbidden", data?: unknown) {
   return new ORPCError("FORBIDDEN", {
     message,
+    data,
   });
 }
 

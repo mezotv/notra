@@ -15,7 +15,10 @@ import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
-import { GITHUB_PATH_INVALID_CHARACTERS_REGEX } from "@/constants/github";
+import {
+  GITHUB_PATH_INVALID_CHARACTERS_REGEX,
+  GITHUB_PUBLISH_CONTENT_TYPES,
+} from "@/constants/github";
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
@@ -363,7 +366,8 @@ const githubMarkdownPathSchema = z
     path.toLowerCase().endsWith(".md") ? path : `${path}.md`
   );
 
-export const publishChangelogToGitHubSchema = z.object({
+export const publishContentToGitHubSchema = z.object({
+  contentType: z.enum(GITHUB_PUBLISH_CONTENT_TYPES).default("changelog"),
   repositoryId: z.string().min(1, "Repository is required"),
   path: githubMarkdownPathSchema.optional(),
 });

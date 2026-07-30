@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { ConnectGitHubDialog } from "@/components/integrations/github/connect-github-dialog";
 import { GitHubAccountCard } from "@/components/integrations/github/github-account-card";
-import { GitHubChangelogSettings } from "@/components/integrations/github/github-changelog-settings";
+import { GitHubPublishingSettings } from "@/components/integrations/github/github-publishing-settings";
 import { SelectRepositoriesDialog } from "@/components/integrations/github/select-repositories-dialog";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LegacyAddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
@@ -436,7 +436,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         />
 
         {connectedRepositories.length > 0 ? (
-          <GitHubChangelogSettings
+          <GitHubPublishingSettings
             organizationId={organizationId}
             repositories={connectedRepositories}
           />
