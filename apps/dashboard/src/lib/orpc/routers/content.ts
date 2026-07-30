@@ -45,10 +45,7 @@ import {
 import { baseProcedure } from "@/lib/orpc/base";
 import { assertOrganizationScopes } from "@/lib/permissions/assert";
 import { toReviewOrpcError } from "@/lib/reviews/map-errors";
-import {
-  assertPublishAllowed,
-  cancelPendingReview,
-} from "@/lib/reviews/workflow";
+import { assertPublishAllowed } from "@/lib/reviews/workflow";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type {
@@ -666,15 +663,6 @@ export const contentRouter = {
         }
       }
 
-      if (isStatusChange) {
-        await Effect.runPromise(
-          cancelPendingReview({
-            postId: input.contentId,
-            organizationId: input.organizationId,
-          }).pipe(Effect.mapError(toReviewOrpcError))
-        );
-      }
-
       if (input.slug !== undefined) {
         if (!supportsPostSlug(existingPost.contentType)) {
           throw badRequest(
@@ -685,31 +673,48 @@ export const contentRouter = {
       }
 
       try {
-        const [updatedPost] = await db
-          .update(posts)
-          .set(updateData)
-          .where(
-            and(
-              eq(posts.id, input.contentId),
-              eq(posts.organizationId, input.organizationId)
+        const [updatedPost] = await db.transaction(async (tx) => {
+          const rows = await tx
+            .update(posts)
+            .set(updateData)
+            .where(
+              and(
+                eq(posts.id, input.contentId),
+                eq(posts.organizationId, input.organizationId)
+              )
             )
-          )
-          .returning({
-            id: posts.id,
-            organizationId: posts.organizationId,
-            collectionId: posts.collectionId,
-            title: posts.title,
-            slug: posts.slug,
-            content: posts.content,
-            htmlUrl: posts.htmlUrl,
-            markdown: posts.markdown,
-            recommendations: posts.recommendations,
-            contentType: posts.contentType,
-            createdAt: posts.createdAt,
-            sourceMetadata: posts.sourceMetadata,
-            status: posts.status,
-            updatedAt: posts.updatedAt,
-          });
+            .returning({
+              id: posts.id,
+              organizationId: posts.organizationId,
+              collectionId: posts.collectionId,
+              title: posts.title,
+              slug: posts.slug,
+              content: posts.content,
+              htmlUrl: posts.htmlUrl,
+              markdown: posts.markdown,
+              recommendations: posts.recommendations,
+              contentType: posts.contentType,
+              createdAt: posts.createdAt,
+              sourceMetadata: posts.sourceMetadata,
+              status: posts.status,
+              updatedAt: posts.updatedAt,
+            });
+
+          if (rows.length > 0 && isStatusChange) {
+            await tx
+              .update(postApprovalRequests)
+              .set({ status: "canceled", resolvedAt: new Date() })
+              .where(
+                and(
+                  eq(postApprovalRequests.postId, input.contentId),
+                  eq(postApprovalRequests.organizationId, input.organizationId),
+                  eq(postApprovalRequests.status, "pending")
+                )
+              );
+          }
+
+          return rows;
+        });
 
         if (!updatedPost) {
           throw internalServerError("Failed to update content");

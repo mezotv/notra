@@ -518,24 +518,3 @@ export const getAuthorRoleIds = Effect.fn("getAuthorRoleIds")(function* ({
     )
   );
 });
-
-export const cancelPendingReview = Effect.fn("cancelPendingReview")(function* ({
-  postId,
-  organizationId,
-}: {
-  postId: string;
-  organizationId: string;
-}) {
-  yield* tryDb(() =>
-    db
-      .update(postApprovalRequests)
-      .set({ status: "canceled", resolvedAt: new Date() })
-      .where(
-        and(
-          eq(postApprovalRequests.postId, postId),
-          eq(postApprovalRequests.organizationId, organizationId),
-          eq(postApprovalRequests.status, "pending")
-        )
-      )
-  );
-});
