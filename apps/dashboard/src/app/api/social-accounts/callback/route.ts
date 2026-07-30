@@ -63,6 +63,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (result.selectionToken) {
+      const selectionUrl = new URL("/connect/linkedin", baseUrl);
+      selectionUrl.searchParams.set("token", result.selectionToken);
+      return NextResponse.redirect(selectionUrl.toString());
+    }
+
     const rawPath = result.callbackPath || "/";
     const callbackPath =
       rawPath.startsWith("/") && !rawPath.startsWith("//") ? rawPath : "/";

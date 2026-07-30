@@ -7,7 +7,10 @@ import type { SocialAccount } from "post-for-me/resources/social-accounts";
 import { SOCIAL_CONNECT_STATE_TTL_SECONDS } from "@/constants/social-connect";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import {
+  clearProviderAccountExternalId,
   fromProviderPlatform,
+  getLinkedInConnectionType,
+  getLinkedInProfileUrl,
   getSocialConnectClient,
   hasProviderPremium,
   isSocialConnectConfigured,
@@ -28,6 +31,7 @@ import type {
   BeginSocialConnectParams,
   CompleteSocialConnectParams,
   CompleteSocialConnectResult,
+  LinkedInSelectionStash,
 } from "@/types/services/social-connect";
 import { fetchTwitterVerification } from "@/utils/twitter-fetcher";
 
@@ -35,12 +39,8 @@ function getStateKey(state: string) {
   return `social_connect_oauth:${state}`;
 }
 
-function isRedirectOverrideRejected(cause: unknown): boolean {
-  if (getSocialConnectStatusCode(cause) !== 400) {
-    return false;
-  }
-  const message = cause instanceof Error ? cause.message : "";
-  return message.toLowerCase().includes("redirect url override");
+export function getLinkedInSelectionKey(token: string) {
+  return `social_connect_linkedin_selection:${token}`;
 }
 
 export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
@@ -81,46 +81,30 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
       }),
   });
 
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
   const linkedInConnectionType =
     process.env.SOCIAL_CONNECT_LINKEDIN_ORGANIZATIONS === "true"
       ? ("organization" as const)
       : ("personal" as const);
 
-  const createAuthUrl = (withRedirectOverride: boolean) =>
-    Effect.tryPromise({
-      try: () =>
-        getSocialConnectClient(params.platform).socialAccounts.createAuthURL({
-          platform: toProviderPlatform(params.platform),
-          external_id: state,
-          ...(withRedirectOverride && baseUrl
-            ? {
-                redirect_url_override: `${baseUrl}/api/social-accounts/callback`,
-              }
-            : {}),
-          ...(params.platform === "linkedin"
-            ? {
-                platform_data: {
-                  linkedin: { connection_type: linkedInConnectionType },
-                },
-              }
-            : {}),
-        }),
-      catch: (cause) =>
-        new SocialConnectRequestError({
-          message: "Failed to create account connect link",
-          cause,
-        }),
-    });
-
-  const result = yield* createAuthUrl(true).pipe(
-    Effect.catch((error) =>
-      isRedirectOverrideRejected(error.cause)
-        ? createAuthUrl(false)
-        : Effect.fail(error)
-    )
-  );
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      getSocialConnectClient(params.platform).socialAccounts.createAuthURL({
+        platform: toProviderPlatform(params.platform),
+        external_id: state,
+        ...(params.platform === "linkedin"
+          ? {
+              platform_data: {
+                linkedin: { connection_type: linkedInConnectionType },
+              },
+            }
+          : {}),
+      }),
+    catch: (cause) =>
+      new SocialConnectRequestError({
+        message: "Failed to create account connect link",
+        cause,
+      }),
+  });
 
   if (!result.url) {
     return yield* Effect.fail(
@@ -204,7 +188,7 @@ const buildAccountDetails = Effect.fn("buildAccountDetails")(function* (
 ) {
   const username = account.username ?? account.user_id;
   const rawProfileImageUrl = account.profile_photo_url;
-  const profileImageUrl =
+  let profileImageUrl =
     rawProfileImageUrl && platform === "twitter"
       ? normalizeTwitterProfileImageUrl(rawProfileImageUrl)
       : rawProfileImageUrl;
@@ -216,6 +200,7 @@ const buildAccountDetails = Effect.fn("buildAccountDetails")(function* (
       Effect.catch(() => Effect.succeed(null))
     );
     displayName = verification?.name ?? username;
+    profileImageUrl = verification?.profileImageUrl ?? profileImageUrl;
     verifiedType =
       verification?.verifiedType ??
       (hasProviderPremium(account.metadata) ? "blue" : null);
@@ -281,6 +266,24 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
       );
     }
 
+    yield* clearProviderAccountTags(
+      clientPlatform,
+      stateAccounts.map((account) => account.id)
+    );
+
+    if (oauthState.platform === "linkedin" && stateAccounts.length > 1) {
+      const selectionToken = yield* stashLinkedInSelection(
+        oauthState,
+        stateAccounts
+      );
+      const selectionResult: CompleteSocialConnectResult = {
+        callbackPath: oauthState.callbackPath,
+        platform: oauthState.platform,
+        selectionToken,
+      };
+      return selectionResult;
+    }
+
     for (const account of stateAccounts) {
       const platform =
         fromProviderPlatform(account.platform) ?? oauthState.platform;
@@ -291,11 +294,6 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
         providerAccountId: account.id,
         ...details,
       });
-      yield* tagProviderAccount(
-        clientPlatform,
-        account.id,
-        oauthState.organizationId
-      );
     }
 
     const result: CompleteSocialConnectResult = {
@@ -306,7 +304,70 @@ export const completeSocialConnect = Effect.fn("completeSocialConnect")(
   }
 );
 
-const upsertConnectedAccount = Effect.fn("upsertConnectedAccount")(
+const stashLinkedInSelection = Effect.fn("stashLinkedInSelection")(function* (
+  oauthState: SocialConnectOAuthState,
+  accounts: SocialAccount[]
+) {
+  const redisClient = redis;
+  if (!redisClient) {
+    return yield* Effect.fail(
+      new SocialConnectCallbackError({ code: "callback_failed" })
+    );
+  }
+
+  const selectionToken = crypto.randomUUID();
+  const stash: LinkedInSelectionStash = {
+    organizationId: oauthState.organizationId,
+    userId: oauthState.userId,
+    callbackPath: oauthState.callbackPath,
+    accounts: accounts.map((account) => ({
+      providerAccountId: account.id,
+      username: account.username ?? account.user_id,
+      profileImageUrl: account.profile_photo_url,
+      connectionType: getLinkedInConnectionType(account.metadata),
+      profileUrl: getLinkedInProfileUrl(account.metadata),
+    })),
+  };
+
+  yield* Effect.tryPromise({
+    try: () =>
+      redisClient.set(
+        getLinkedInSelectionKey(selectionToken),
+        JSON.stringify(stash),
+        { ex: SOCIAL_CONNECT_STATE_TTL_SECONDS }
+      ),
+    catch: (cause) =>
+      new SocialConnectCallbackError({ code: "callback_failed", cause }),
+  });
+
+  return selectionToken;
+});
+
+const clearProviderAccountTags = Effect.fn("clearProviderAccountTags")(
+  function* (clientPlatform: SocialConnectPlatform, accountIds: string[]) {
+    yield* Effect.tryPromise({
+      try: () =>
+        Promise.all(
+          accountIds.map((accountId) =>
+            clearProviderAccountExternalId(clientPlatform, accountId)
+          )
+        ),
+      catch: (cause) =>
+        new SocialConnectRequestError({
+          message: "Failed to reset connected account tags",
+          cause,
+        }),
+    }).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning(
+          `Failed to reset connected account tags: ${error.message}`
+        )
+      )
+    );
+  }
+);
+
+export const upsertConnectedAccount = Effect.fn("upsertConnectedAccount")(
   function* (input: {
     organizationId: string;
     platform: SocialConnectPlatform;
@@ -390,28 +451,6 @@ const upsertConnectedAccount = Effect.fn("upsertConnectedAccount")(
     });
   }
 );
-
-const tagProviderAccount = Effect.fn("tagProviderAccount")(function* (
-  clientPlatform: SocialConnectPlatform,
-  accountId: string,
-  organizationId: string
-) {
-  yield* Effect.tryPromise({
-    try: () =>
-      getSocialConnectClient(clientPlatform).socialAccounts.update(accountId, {
-        external_id: organizationId,
-      }),
-    catch: (cause) =>
-      new SocialConnectRequestError({
-        message: "Failed to tag connected account",
-        cause,
-      }),
-  }).pipe(
-    Effect.catch((error) =>
-      Effect.logWarning(`Failed to tag connected account: ${error.message}`)
-    )
-  );
-});
 
 export const disconnectProviderAccount = Effect.fn("disconnectProviderAccount")(
   function* (accountId: string, platform: SocialConnectPlatform) {

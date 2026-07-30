@@ -5,7 +5,6 @@ import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { Button } from "@/components/button";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
-import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
 import type { PostSocialIntentButtonProps } from "@/types/content/post-social";
 import {
@@ -20,13 +19,17 @@ export function PostSocialIntentButton({
   className,
 }: PostSocialIntentButtonProps) {
   const label = SOCIAL_PLATFORM_LABELS[platform];
-  const brandColor =
-    platform === "twitter" ? TWITTER_BRAND_COLOR : LINKEDIN_BRAND_PRIMARY;
-  const BrandIcon = platform === "twitter" ? XTwitter : Linkedin;
+  const isTwitter = platform === "twitter";
+  const BrandIcon = isTwitter ? XTwitter : Linkedin;
 
   return (
     <Button
-      className={cn("text-white hover:opacity-90", className)}
+      className={cn(
+        isTwitter
+          ? "bg-foreground text-background hover:bg-foreground/90"
+          : "text-white hover:opacity-90",
+        className
+      )}
       nativeButton={false}
       render={
         platform === "twitter" ? (
@@ -51,7 +54,9 @@ export function PostSocialIntentButton({
         )
       }
       size="sm"
-      style={{ backgroundColor: brandColor }}
+      style={
+        isTwitter ? undefined : { backgroundColor: LINKEDIN_BRAND_PRIMARY }
+      }
     />
   );
 }

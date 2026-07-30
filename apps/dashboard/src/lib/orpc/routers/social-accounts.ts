@@ -9,11 +9,17 @@ import {
   beginSocialConnect,
   disconnectProviderAccount,
 } from "@/lib/social-connect/connect";
+import {
+  completeLinkedInSelection,
+  getLinkedInSelection,
+} from "@/lib/social-connect/linkedin-selection";
 import { publishSocialPost } from "@/lib/social-connect/publish";
 import { refreshConnectedAccounts } from "@/lib/social-connect/refresh";
 import {
   beginConnectInputSchema,
   disconnectSocialAccountInputSchema,
+  linkedinSelectionCompleteInputSchema,
+  linkedinSelectionGetInputSchema,
   publishSocialPostInputSchema,
   refreshSocialAccountsInputSchema,
   socialAccountsOrganizationInputSchema,
@@ -133,6 +139,56 @@ export const socialAccountsRouter = {
         postUrl: result.postUrl,
         username: result.username,
       };
+    }),
+  linkedinSelectionGet: authorizedProcedure
+    .input(linkedinSelectionGetInputSchema)
+    .handler(async ({ context, input }) => {
+      const stash = await runSocialConnect(getLinkedInSelection(input.token), {
+        logLabel: "Failed to load LinkedIn selection",
+      });
+
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: stash.organizationId,
+        user: context.user,
+      });
+
+      if (stash.userId !== context.user.id) {
+        throw notFound("Connection attempt not found");
+      }
+
+      return {
+        accounts: stash.accounts,
+        organizationId: stash.organizationId,
+        callbackPath: stash.callbackPath,
+      };
+    }),
+  linkedinSelectionComplete: authorizedProcedure
+    .input(linkedinSelectionCompleteInputSchema)
+    .handler(async ({ context, input }) => {
+      const stash = await runSocialConnect(getLinkedInSelection(input.token), {
+        logLabel: "Failed to load LinkedIn selection",
+      });
+
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: stash.organizationId,
+        user: context.user,
+      });
+
+      if (stash.userId !== context.user.id) {
+        throw notFound("Connection attempt not found");
+      }
+
+      const result = await runSocialConnect(
+        completeLinkedInSelection({
+          token: input.token,
+          accountIds: input.accountIds,
+        }),
+        { logLabel: "Failed to complete LinkedIn selection" }
+      );
+
+      return { callbackPath: result.callbackPath };
     }),
   beginConnect: authorizedProcedure
     .input(beginConnectInputSchema)

@@ -13,6 +13,7 @@ export interface PostSocialButtonProps {
   organizationId: string;
   content: string;
   className?: string;
+  onContentChange?: (value: string) => void;
   onPublished?: (published: PublishedSocialPost) => void;
 }
 

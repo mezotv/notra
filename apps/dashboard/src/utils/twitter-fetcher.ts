@@ -92,7 +92,7 @@ export const fetchTwitterUserWithPinnedTweet = Effect.fn(
 export const fetchTwitterVerification = Effect.fn("fetchTwitterVerification")(
   function* (username: string) {
     const params = new URLSearchParams({
-      "user.fields": "verified,verified_type",
+      "user.fields": "verified,verified_type,profile_image_url",
     });
 
     const response = yield* Effect.tryPromise({
@@ -127,6 +127,9 @@ export const fetchTwitterVerification = Effect.fn("fetchTwitterVerification")(
     const verifiedType = json.data.verified_type ?? "none";
     const verification: TwitterVerification = {
       name: json.data.name ?? null,
+      profileImageUrl: json.data.profile_image_url
+        ? normalizeTwitterProfileImageUrl(json.data.profile_image_url)
+        : null,
       verified: json.data.verified === true || verifiedType !== "none",
       verifiedType,
     };

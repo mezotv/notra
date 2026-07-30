@@ -300,6 +300,15 @@ export function TwitterPreview({
                 <PostSocialButton
                   className="max-w-full"
                   content={draftMarkdown}
+                  onContentChange={
+                    isFinished
+                      ? undefined
+                      : (value) =>
+                          dispatch({
+                            type: "draftMarkdownChanged",
+                            draftMarkdown: value,
+                          })
+                  }
                   onPublished={onPublished}
                   organizationId={organizationId ?? ""}
                   platform="twitter"

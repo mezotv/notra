@@ -59,3 +59,12 @@ export const socialConnectCallbackQuerySchema = z.object({
   accountIds: z.array(z.string().min(1).max(128)).max(20).default([]),
   error: z.string().optional(),
 });
+
+export const linkedinSelectionGetInputSchema = z.object({
+  token: z.string().min(1),
+});
+
+export const linkedinSelectionCompleteInputSchema = z.object({
+  token: z.string().min(1),
+  accountIds: z.array(z.string().min(1)).min(1).max(20),
+});

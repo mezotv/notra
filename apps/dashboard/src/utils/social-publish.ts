@@ -95,3 +95,10 @@ export function buildReferenceInput(
     applicableTo: ["linkedin" as const],
   };
 }
+
+export function isReferenceLimitError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.toLowerCase().includes("reference limit")
+  );
+}

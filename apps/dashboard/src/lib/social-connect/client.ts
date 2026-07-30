@@ -53,6 +53,57 @@ export function fromProviderPlatform(
   return null;
 }
 
+export async function clearProviderAccountExternalId(
+  platform: SocialConnectPlatform,
+  accountId: string
+): Promise<void> {
+  const apiKey = getApiKey(platform);
+  if (!apiKey) {
+    throw new Error("Social account linking is not configured");
+  }
+  const response = await fetch(
+    `https://api.postforme.dev/v1/social-accounts/${encodeURIComponent(accountId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ external_id: null }),
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to reset the connected account tag");
+  }
+}
+
+export function getLinkedInConnectionType(
+  metadata: unknown
+): "personal" | "page" {
+  if (
+    typeof metadata === "object" &&
+    metadata !== null &&
+    "connection_type" in metadata &&
+    metadata.connection_type === "page"
+  ) {
+    return "page";
+  }
+  return "personal";
+}
+
+export function getLinkedInProfileUrl(metadata: unknown): string | null {
+  if (
+    typeof metadata === "object" &&
+    metadata !== null &&
+    "profile_url" in metadata &&
+    typeof metadata.profile_url === "string" &&
+    metadata.profile_url
+  ) {
+    return metadata.profile_url;
+  }
+  return null;
+}
+
 export function hasProviderPremium(metadata: unknown): boolean {
   return (
     typeof metadata === "object" &&

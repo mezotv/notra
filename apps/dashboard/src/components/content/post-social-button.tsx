@@ -13,7 +13,7 @@ import {
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { Loader2Icon } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/button";
@@ -25,7 +25,6 @@ import { TwitterPost } from "@/components/twitter-post";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { CONFETTI_COLORS } from "@/constants/post-social";
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
-import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useCreateReferenceForVoice } from "@/lib/hooks/use-brand-references";
 import { usePublishSocialPost } from "@/lib/hooks/use-connected-accounts";
@@ -36,6 +35,7 @@ import { linkedInAuthorFromAccount } from "@/utils/linkedin";
 import {
   buildReferenceInput,
   getPublishErrorInfo,
+  isReferenceLimitError,
 } from "@/utils/social-publish";
 import {
   getTwitterCharLimit,
@@ -48,9 +48,11 @@ export function PostSocialButton({
   organizationId,
   content,
   className,
+  onContentChange,
   onPublished,
 }: PostSocialButtonProps) {
   const params = useParams<{ slug?: string }>();
+  const router = useRouter();
   const { accounts, selectedAccount, selectAccount } = useSelectedSocialAccount(
     organizationId,
     platform
@@ -61,37 +63,45 @@ export function PostSocialButton({
   const createReference = useCreateReferenceForVoice(organizationId);
   const [referencedVoiceIds, setReferencedVoiceIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(content);
+  const [localDraft, setLocalDraft] = useState(content);
+  const [publishedContent, setPublishedContent] = useState<string | null>(null);
+  const draft = onContentChange ? content : localDraft;
+  const handleDraftChange = onContentChange ?? setLocalDraft;
 
   const label = SOCIAL_PLATFORM_LABELS[platform];
-  const brandColor =
-    platform === "twitter" ? TWITTER_BRAND_COLOR : LINKEDIN_BRAND_PRIMARY;
-  const BrandIcon = platform === "twitter" ? XTwitter : Linkedin;
+  const isTwitter = platform === "twitter";
+  const BrandIcon = isTwitter ? XTwitter : Linkedin;
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (nextOpen) {
-      setDraft(content);
+      setLocalDraft(content);
       return;
     }
     publishMutation.reset();
     setReferencedVoiceIds([]);
-    setDraft(content);
+    setPublishedContent(null);
+    setLocalDraft(content);
   };
 
   const handlePublish = () => {
     if (!(selectedAccount && draft.trim()) || isOverCharLimit) {
       return;
     }
+    const contentToPublish = draft;
+    setPublishedContent(contentToPublish);
     publishMutation.mutate(
-      { accountId: selectedAccount.id, content: draft },
+      { accountId: selectedAccount.id, content: contentToPublish },
       {
+        onError: () => {
+          setPublishedContent(null);
+        },
         onSuccess: (result) => {
           onPublished?.({
             platform,
             postUrl: result.postUrl,
             username: result.username,
-            content: draft,
+            content: contentToPublish,
           });
         },
       }
@@ -99,6 +109,8 @@ export function PostSocialButton({
   };
 
   const published = publishMutation.isSuccess ? publishMutation.data : null;
+  const isLocked = publishMutation.isPending || published !== null;
+  const displayContent = isLocked ? (publishedContent ?? draft) : draft;
 
   const handleAddReference = (voiceId: string, voiceName: string) => {
     if (!(published && selectedAccount)) {
@@ -109,7 +121,7 @@ export function PostSocialButton({
         voiceId,
         data: buildReferenceInput(
           platform,
-          draft,
+          displayContent,
           published.postUrl,
           published.platformPostId,
           published.username,
@@ -121,8 +133,22 @@ export function PostSocialButton({
           setReferencedVoiceIds((ids) => [...ids, voiceId]);
           toast.success(`Added as reference to ${voiceName}`);
         },
-        onError: () => {
-          toast.error("Failed to add reference");
+        onError: (error) => {
+          const message =
+            error instanceof Error && error.message
+              ? error.message
+              : "Failed to add reference";
+          if (isReferenceLimitError(error) && params.slug) {
+            const billingPath = `/${params.slug}/settings/billing`;
+            toast.error(message, {
+              action: {
+                label: "Upgrade",
+                onClick: () => router.push(billingPath),
+              },
+            });
+            return;
+          }
+          toast.error(message);
         },
       }
     );
@@ -155,7 +181,7 @@ export function PostSocialButton({
     );
   }
 
-  const accountSelector = published
+  const accountSelector = isLocked
     ? undefined
     : { accounts, onSelect: selectAccount };
 
@@ -164,10 +190,14 @@ export function PostSocialButton({
       <ResponsiveDialogTrigger
         className={cn(
           buttonVariants({ size: "sm" }),
-          "text-white hover:opacity-90",
+          isTwitter
+            ? "bg-foreground text-background hover:bg-foreground/90"
+            : "text-white hover:opacity-90",
           className
         )}
-        style={{ backgroundColor: brandColor }}
+        style={
+          isTwitter ? undefined : { backgroundColor: LINKEDIN_BRAND_PRIMARY }
+        }
       >
         <BrandIcon className="size-4" />
         Post to {label}
@@ -197,25 +227,28 @@ export function PostSocialButton({
             slug={params.slug}
           />
         )}
-        {platform === "twitter" ? (
-          <TwitterPost
-            accountSelector={accountSelector}
-            author={twitterAuthorFromAccount(selectedAccount)}
-            content={draft}
-            onContentChange={published ? undefined : setDraft}
-            timestamp="Just now"
-          />
-        ) : (
-          <LinkedInPost
-            accountSelector={accountSelector}
-            author={linkedInAuthorFromAccount(selectedAccount)}
-            content={draft}
-            defaultExpanded
-            onContentChange={published ? undefined : setDraft}
-            timestamp="Just now"
-            truncate={false}
-          />
-        )}
+        <div className="max-h-[55svh] overflow-y-auto p-0.5">
+          {platform === "twitter" ? (
+            <TwitterPost
+              accountSelector={accountSelector}
+              author={twitterAuthorFromAccount(selectedAccount)}
+              className="h-auto"
+              content={displayContent}
+              onContentChange={isLocked ? undefined : handleDraftChange}
+              timestamp="Just now"
+            />
+          ) : (
+            <LinkedInPost
+              accountSelector={accountSelector}
+              author={linkedInAuthorFromAccount(selectedAccount)}
+              content={displayContent}
+              defaultExpanded
+              onContentChange={isLocked ? undefined : handleDraftChange}
+              timestamp="Just now"
+              truncate={false}
+            />
+          )}
+        </div>
         {!published && charLimit !== null && isOverCharLimit && (
           <p className="text-amber-600 text-sm dark:text-amber-500">
             This post is {overCharCount.toLocaleString()}{" "}

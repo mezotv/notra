@@ -1024,6 +1024,7 @@ export default function PageClient({
               {content.contentType === "linkedin_post" && (
                 <PostSocialButton
                   content={currentMarkdown}
+                  onContentChange={setEditedMarkdown}
                   organizationId={organizationId}
                   platform="linkedin"
                 />
@@ -1031,6 +1032,7 @@ export default function PageClient({
               {content.contentType === "twitter_post" && (
                 <PostSocialButton
                   content={currentMarkdown}
+                  onContentChange={setEditedMarkdown}
                   organizationId={organizationId}
                   platform="twitter"
                 />

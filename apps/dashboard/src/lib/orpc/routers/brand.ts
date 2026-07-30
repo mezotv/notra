@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { getWorkflowClient } from "@notra/ai/qstash/client";
 import {
@@ -978,7 +981,7 @@ export const brandRouter = {
         const applicableTo: ApplicablePlatform[] = input.applicableTo ??
           typeDefaults[input.type] ?? ["all"];
 
-        if (autumn) {
+        if (autumn && !allowUnmeteredAiInDevelopment) {
           let data: { allowed?: boolean } | null = null;
 
           try {

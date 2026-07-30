@@ -89,7 +89,7 @@ export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
 
       const username = match.username ?? row.username;
       const rawProfileImageUrl = match.profile_photo_url ?? row.profileImageUrl;
-      const profileImageUrl =
+      let profileImageUrl =
         rawProfileImageUrl && row.provider === "twitter"
           ? normalizeTwitterProfileImageUrl(rawProfileImageUrl)
           : rawProfileImageUrl;
@@ -101,9 +101,11 @@ export const refreshConnectedAccounts = Effect.fn("refreshConnectedAccounts")(
           Effect.catch(() => Effect.succeed(null))
         );
         displayName = verification?.name ?? displayName;
+        profileImageUrl = verification?.profileImageUrl ?? profileImageUrl;
         verifiedType =
           verification?.verifiedType ??
-          (hasProviderPremium(match.metadata) ? "blue" : verifiedType);
+          verifiedType ??
+          (hasProviderPremium(match.metadata) ? "blue" : null);
       }
       const verified = verifiedType !== null && verifiedType !== "none";
 

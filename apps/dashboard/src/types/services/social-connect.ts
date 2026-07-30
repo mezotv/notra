@@ -16,6 +16,22 @@ export interface CompleteSocialConnectParams {
 export interface CompleteSocialConnectResult {
   callbackPath: string;
   platform: SocialConnectPlatform;
+  selectionToken?: string;
+}
+
+export interface LinkedInSelectionAccount {
+  providerAccountId: string;
+  username: string;
+  profileImageUrl: string | null;
+  connectionType: "personal" | "page";
+  profileUrl: string | null;
+}
+
+export interface LinkedInSelectionStash {
+  organizationId: string;
+  userId: string;
+  callbackPath: string;
+  accounts: LinkedInSelectionAccount[];
 }
 
 export interface RefreshedAccountStatus {

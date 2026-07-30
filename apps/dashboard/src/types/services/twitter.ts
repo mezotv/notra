@@ -40,6 +40,7 @@ export interface TwitterVerificationResponse {
   data?: {
     id: string;
     name?: string;
+    profile_image_url?: string;
     verified?: boolean;
     verified_type?: TwitterVerifiedType;
   };
@@ -47,6 +48,7 @@ export interface TwitterVerificationResponse {
 
 export interface TwitterVerification {
   name: string | null;
+  profileImageUrl: string | null;
   verified: boolean;
   verifiedType: TwitterVerifiedType;
 }
