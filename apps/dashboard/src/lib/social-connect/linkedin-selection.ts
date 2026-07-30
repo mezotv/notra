@@ -75,8 +75,9 @@ export const completeLinkedInSelection = Effect.fn("completeLinkedInSelection")(
 
     const stash = yield* getLinkedInSelection(params.token);
 
+    const chosenIds = new Set(params.accountIds);
     const chosen = stash.accounts.filter((account) =>
-      params.accountIds.includes(account.providerAccountId)
+      chosenIds.has(account.providerAccountId)
     );
 
     if (chosen.length === 0) {
