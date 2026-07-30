@@ -414,6 +414,13 @@
       "when": 1785281381365,
       "tag": "0058_same_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1785441254484,
+      "tag": "0059_romantic_joystick",
+      "breakpoints": true
     }
   ]
 }
