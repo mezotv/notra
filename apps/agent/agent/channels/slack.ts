@@ -5,6 +5,7 @@ import { createNotraSlackAuth } from "../lib/utils/slack-auth";
 import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
 import { createSlackAgentCredentials } from "../lib/utils/slack-credentials";
 import { handleSlackInputRequested } from "../lib/utils/slack-input-request";
+import { parseSlackDashboardRelay } from "../lib/utils/slack-relay";
 import { getNotraSlackState } from "../lib/utils/slack-state";
 import { isPostToXRejection } from "../lib/utils/slack-tool-results";
 import { firstNonEmptyLine } from "../lib/utils/text";
@@ -43,6 +44,22 @@ const onSlackThreadReply: NonNullable<SlackChannelConfig["onMessage"]> = async (
   }
 
   return onSlackMessage(ctx, message);
+};
+
+const onSlackEvent: NonNullable<SlackChannelConfig["onEvent"]> = async (
+  ctx,
+  event
+) => {
+  const relay = parseSlackDashboardRelay(ctx.envelope, event);
+  if (!relay) {
+    return;
+  }
+
+  await ctx.receive({
+    message: relay.message,
+    target: { channelId: relay.channelId, threadTs: relay.threadTs },
+    auth: relay.auth,
+  });
 };
 
 export default slackChannel({
@@ -134,6 +151,7 @@ export default slackChannel({
   },
   onAppMention: onSlackMessage,
   onDirectMessage: onSlackMessage,
+  onEvent: onSlackEvent,
   onMessage: onSlackThreadReply,
   threadContext: { since: "last-agent-reply" },
 });

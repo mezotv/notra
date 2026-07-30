@@ -4,6 +4,7 @@ import {
   generateChatId,
   renameChatSession,
 } from "@notra/ai/chat/history";
+import { publishChatMirrorMessage } from "@notra/ai/chat/mirror";
 import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
 import type {
@@ -13,6 +14,7 @@ import type {
 } from "eve/channels/slack";
 import type { HookContext } from "eve/hooks";
 import { SlackChatMirrorError } from "../schemas/slack";
+import type { MirrorUiMessage } from "../types/slack";
 import { isPublicSlackChannel } from "./slack-public-channel";
 
 function getSlackExternalChannelId(
@@ -83,6 +85,29 @@ function mirrorStep<T>(
   });
 }
 
+export function appendAndPublishMirrorMessage(
+  organizationId: string,
+  chatId: string,
+  message: MirrorUiMessage
+): Effect.Effect<boolean, SlackChatMirrorError> {
+  return Effect.gen(function* () {
+    const appended = yield* mirrorStep("append-mirror-message", () =>
+      appendChatMessageIfMissing(organizationId, chatId, message)
+    );
+    if (!appended) {
+      return false;
+    }
+    yield* mirrorStep("publish-mirror-message", () =>
+      publishChatMirrorMessage(organizationId, chatId, message)
+    ).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("[agent] Slack mirror publish failed", error)
+      )
+    );
+    return true;
+  });
+}
+
 function mirrorSlackInboundMessage(
   ctx: SlackInboundMessageContext,
   message: SlackMessage,
@@ -106,12 +131,10 @@ function mirrorSlackInboundMessage(
 
     if (!claim.created) {
       if (inboundMessage) {
-        yield* mirrorStep("append-inbound-message", () =>
-          appendChatMessageIfMissing(
-            organizationId,
-            claim.chatId,
-            inboundMessage
-          )
+        yield* appendAndPublishMirrorMessage(
+          organizationId,
+          claim.chatId,
+          inboundMessage
         );
       }
       return claim.chatId;
@@ -135,12 +158,10 @@ function mirrorSlackInboundMessage(
     }
 
     for (const mirroredMessage of mirroredMessages) {
-      yield* mirrorStep("append-thread-message", () =>
-        appendChatMessageIfMissing(
-          organizationId,
-          claim.chatId,
-          mirroredMessage
-        )
+      yield* appendAndPublishMirrorMessage(
+        organizationId,
+        claim.chatId,
+        mirroredMessage
       );
     }
     yield* mirrorStep("rename-chat-session", () =>

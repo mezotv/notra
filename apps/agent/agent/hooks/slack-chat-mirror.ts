@@ -1,9 +1,11 @@
-import { appendChatMessageIfMissing } from "@notra/ai/chat/history";
 import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
 import { defineHook } from "eve/hooks";
 import { SlackChatMirrorError } from "../lib/schemas/slack";
-import { resolveSlackMirrorChatId } from "../lib/utils/slack-chat-mirror";
+import {
+  appendAndPublishMirrorMessage,
+  resolveSlackMirrorChatId,
+} from "../lib/utils/slack-chat-mirror";
 
 export default defineHook({
   events: {
@@ -28,18 +30,10 @@ export default defineHook({
             return;
           }
 
-          yield* Effect.tryPromise({
-            try: () =>
-              appendChatMessageIfMissing(organizationId, chatId, {
-                id: `eve:${ctx.session.id}:${event.data.turnId}:${event.data.stepIndex}`,
-                role: "assistant",
-                parts: [{ type: "text", text: messageText }],
-              }),
-            catch: (cause) =>
-              new SlackChatMirrorError({
-                cause,
-                operation: "append-assistant-message",
-              }),
+          yield* appendAndPublishMirrorMessage(organizationId, chatId, {
+            id: `eve:${ctx.session.id}:${event.data.turnId}:${event.data.stepIndex}`,
+            role: "assistant",
+            parts: [{ type: "text", text: messageText }],
           });
         }).pipe(
           Effect.catch((error) =>

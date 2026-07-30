@@ -39,6 +39,17 @@ export const externalChannelIdSchema = z
     { message: "id is required for discord and slack sources" }
   );
 
+export const relayChatMessageSchema = z.object({
+  text: z.string().trim().min(1).max(4000),
+});
+
+export const slackRelayMetadataSchema = z.object({
+  chat_id: z.string().min(1),
+  organization_id: z.string().min(1),
+  user_name: z.string().min(1).max(200),
+  text: z.string().min(1).max(4000),
+});
+
 export const chatMessageMetadataSchema = z.object({
   chatId: z.string().min(1).optional(),
   model: chatModelSchema.optional(),

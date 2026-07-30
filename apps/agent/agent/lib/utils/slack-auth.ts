@@ -4,7 +4,7 @@ import {
   type SlackMessage,
 } from "eve/channels/slack";
 
-function isAllowedSlackChannel(channelId: string): boolean {
+export function isAllowedSlackChannel(channelId: string): boolean {
   const configuredChannelIds =
     process.env.SLACK_AGENT_ALLOWED_CHANNEL_IDS?.split(",")
       .map((value) => value.trim())

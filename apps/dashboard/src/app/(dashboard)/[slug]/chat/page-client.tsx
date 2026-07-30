@@ -58,6 +58,7 @@ import {
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
+import { SlackMirrorComposer } from "@/components/ai/slack-mirror-composer";
 import { BrailleLoader } from "@/components/braille-loader";
 import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
@@ -79,6 +80,7 @@ import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
+import { useSlackMirrorStream } from "@/lib/hooks/use-slack-mirror-stream";
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
@@ -137,7 +139,7 @@ const emptySubscribe = () => () => {
 function SlackMirrorNotice() {
   return (
     <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-center text-muted-foreground text-sm">
-      Mirrored from Slack. Reply in the Slack thread to continue.
+      Mirrored from a Slack thread.
     </div>
   );
 }
@@ -683,13 +685,30 @@ function StandaloneChatPageClient({
       };
     },
     enabled: Boolean(initialChatId) && Boolean(organizationId),
-    refetchInterval: (query) =>
-      query.state.data?.externalChannelId?.source === "slack" ? 3000 : false,
     staleTime: 1000 * 60 * 5,
   });
 
   const isSlackMirrored =
     chatHistoryData?.externalChannelId?.source === "slack";
+
+  const appendMirroredMessage = useCallback(
+    (message: ChatUIMessage | null) => {
+      if (!message) {
+        return;
+      }
+      setMessages((prev) =>
+        prev.some((item) => item.id === message.id) ? prev : [...prev, message]
+      );
+    },
+    [setMessages]
+  );
+
+  useSlackMirrorStream(
+    organizationId,
+    initialChatId ?? null,
+    isSlackMirrored,
+    appendMirroredMessage
+  );
 
   useLayoutEffect(() => {
     if (!chatHistoryData) {
@@ -2163,7 +2182,15 @@ function StandaloneChatPageClient({
           {isSlackMirrored ? (
             <div className="z-10 bg-background px-4 pb-4">
               <div className="mx-auto w-full max-w-2xl">
-                <SlackMirrorNotice />
+                {initialChatId ? (
+                  <SlackMirrorComposer
+                    chatId={initialChatId}
+                    onSent={appendMirroredMessage}
+                    organizationId={organizationId}
+                  />
+                ) : (
+                  <SlackMirrorNotice />
+                )}
               </div>
             </div>
           ) : (
