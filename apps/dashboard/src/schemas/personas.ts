@@ -44,7 +44,7 @@ export const personaCustomInstructionsSchema = z
   .trim()
   .max(PERSONA_CUSTOM_INSTRUCTIONS_MAX_LENGTH);
 
-const personaAvatarUrlSchema = z.url({ protocol: /^https?$/ }).max(2048);
+const personaAvatarUrlSchema = z.url({ protocol: /^https$/ }).max(2048);
 
 export const createPersonaSchema = z.object({
   name: personaNameSchema,

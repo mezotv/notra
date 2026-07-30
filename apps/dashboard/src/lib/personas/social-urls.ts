@@ -20,9 +20,21 @@ const PROFILE_URL_BUILDERS: Record<
       : `https://${username}`,
 };
 
+function sanitizeProfileUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return null;
+    }
+    return parsed.href;
+  } catch {
+    return null;
+  }
+}
+
 export function getPersonaSocialProfileUrl(
   platform: PersonaSocialPlatform,
   username: string
-): string {
-  return PROFILE_URL_BUILDERS[platform](username);
+): string | null {
+  return sanitizeProfileUrl(PROFILE_URL_BUILDERS[platform](username));
 }
