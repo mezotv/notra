@@ -9,7 +9,7 @@ import {
   setContentGenerationJobStatus,
   updateContentGenerationJob,
 } from "@notra/content-generation/jobs";
-import { postCollections, posts } from "@notra/db/schema";
+import { postApprovalRequests, postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
@@ -50,10 +50,7 @@ import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
-import {
-  assertApiPublishAllowed,
-  cancelPendingApiApprovalRequests,
-} from "../utils/publishing";
+import { assertApiPublishAllowed } from "../utils/publishing";
 import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
 import { getRedis } from "../utils/redis";
 
@@ -588,25 +585,45 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     updatedAt: Date;
   }> = [];
 
+  const isStatusChange =
+    body.status !== undefined && body.status !== existingPost.status;
+
   try {
-    updatedRows = await db
-      .update(posts)
-      .set(updateData)
-      .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
-      .returning({
-        id: posts.id,
-        title: posts.title,
-        slug: posts.slug,
-        content: posts.content,
-        htmlUrl: posts.htmlUrl,
-        markdown: posts.markdown,
-        recommendations: posts.recommendations,
-        contentType: posts.contentType,
-        sourceMetadata: posts.sourceMetadata,
-        status: posts.status,
-        createdAt: posts.createdAt,
-        updatedAt: posts.updatedAt,
-      });
+    updatedRows = await db.transaction(async (tx) => {
+      const rows = await tx
+        .update(posts)
+        .set(updateData)
+        .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
+        .returning({
+          id: posts.id,
+          title: posts.title,
+          slug: posts.slug,
+          content: posts.content,
+          htmlUrl: posts.htmlUrl,
+          markdown: posts.markdown,
+          recommendations: posts.recommendations,
+          contentType: posts.contentType,
+          sourceMetadata: posts.sourceMetadata,
+          status: posts.status,
+          createdAt: posts.createdAt,
+          updatedAt: posts.updatedAt,
+        });
+
+      if (rows.length > 0 && isStatusChange) {
+        await tx
+          .update(postApprovalRequests)
+          .set({ status: "canceled", resolvedAt: new Date() })
+          .where(
+            and(
+              eq(postApprovalRequests.postId, postId),
+              eq(postApprovalRequests.organizationId, orgId),
+              eq(postApprovalRequests.status, "pending")
+            )
+          );
+      }
+
+      return rows;
+    });
   } catch (error) {
     if (
       isPgUniqueViolation(error) &&
@@ -622,26 +639,6 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
 
   if (!updatedPost) {
     return c.json({ error: "Post not found" }, 404);
-  }
-
-  if (body.status !== undefined && body.status !== existingPost.status) {
-    await Effect.runPromise(
-      cancelPendingApiApprovalRequests({
-        db,
-        organizationId: orgId,
-        postId,
-      }).pipe(
-        Effect.match({
-          onFailure: (error) => {
-            console.error(
-              "[Posts] Failed to cancel pending approval requests:",
-              { postId, organizationId: orgId, error }
-            );
-          },
-          onSuccess: () => undefined,
-        })
-      )
-    );
   }
 
   return c.json({ post: serializePost(updatedPost), organization }, 200);
