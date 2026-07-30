@@ -1,4 +1,4 @@
-import type { OrganizationScope } from "@notra/db/types/roles";
+import type { OrganizationScope } from "@notra/db/types/access-groups";
 import type {
   AuthenticatedUser,
   OrganizationContext,

@@ -30,10 +30,10 @@ export function ReviewStepsChain({ steps }: ReviewStepsChainProps) {
             icon={step.isComplete ? CheckmarkCircle02Icon : Clock01Icon}
           />
           <span className="font-medium">
-            {step.name ?? step.reviewerRoleName}
+            {step.name ?? step.reviewerAccessGroupName}
           </span>
           <span className="opacity-70">
-            {step.name ? `${step.reviewerRoleName} · ` : ""}
+            {step.name ? `${step.reviewerAccessGroupName} · ` : ""}
             {step.approvals}/{step.requiredApprovals}
           </span>
         </li>

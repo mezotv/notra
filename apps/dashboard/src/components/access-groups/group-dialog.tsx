@@ -1,6 +1,6 @@
 "use client";
 
-import type { OrganizationScope } from "@notra/db/types/roles";
+import type { OrganizationScope } from "@notra/db/types/access-groups";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -16,31 +16,38 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { useCreateRole, useUpdateRole } from "@/lib/hooks/use-roles";
+import {
+  useCreateAccessGroup,
+  useUpdateAccessGroup,
+} from "@/lib/hooks/use-access-groups";
 import { errorMessageOr } from "@/lib/utils";
-import type { RoleDialogProps } from "@/types/settings/roles";
-import { RoleScopePicker } from "./scope-picker";
+import type { AccessGroupDialogProps } from "@/types/settings/access-groups";
+import { AccessGroupScopePicker } from "./scope-picker";
 
-export function RoleDialog({
+export function AccessGroupDialog({
   open,
   onOpenChange,
   organizationId,
   scopeGroups,
-  role,
-}: RoleDialogProps) {
-  const [name, setName] = useState(role?.name ?? "");
-  const [description, setDescription] = useState(role?.description ?? "");
-  const [scopes, setScopes] = useState<OrganizationScope[]>(role?.scopes ?? []);
+  accessGroup,
+}: AccessGroupDialogProps) {
+  const [name, setName] = useState(accessGroup?.name ?? "");
+  const [description, setDescription] = useState(
+    accessGroup?.description ?? ""
+  );
+  const [scopes, setScopes] = useState<OrganizationScope[]>(
+    accessGroup?.scopes ?? []
+  );
 
-  const createRole = useCreateRole(organizationId);
-  const updateRole = useUpdateRole(organizationId);
-  const isPending = createRole.isPending || updateRole.isPending;
+  const createAccessGroup = useCreateAccessGroup(organizationId);
+  const updateAccessGroup = useUpdateAccessGroup(organizationId);
+  const isPending = createAccessGroup.isPending || updateAccessGroup.isPending;
 
   const trimmedName = name.trim();
   const trimmedDescription = description.trim();
   const canSubmit =
     !!organizationId && trimmedName.length > 0 && scopes.length > 0;
-  const submitLabel = role ? "Save changes" : "Create role";
+  const submitLabel = accessGroup ? "Save changes" : "Create access group";
 
   const handleSubmit = () => {
     if (!canSubmit) {
@@ -49,13 +56,13 @@ export function RoleDialog({
     }
 
     const onError = (error: Error) => {
-      toast.error(errorMessageOr(error.message, "Failed to save role"));
+      toast.error(errorMessageOr(error.message, "Failed to save access group"));
     };
 
-    if (role) {
-      updateRole.mutate(
+    if (accessGroup) {
+      updateAccessGroup.mutate(
         {
-          roleId: role.id,
+          accessGroupId: accessGroup.id,
           name: trimmedName,
           description: trimmedDescription === "" ? null : trimmedDescription,
           scopes,
@@ -71,7 +78,7 @@ export function RoleDialog({
       return;
     }
 
-    createRole.mutate(
+    createAccessGroup.mutate(
       {
         name: trimmedName,
         description: trimmedDescription === "" ? undefined : trimmedDescription,
@@ -99,20 +106,20 @@ export function RoleDialog({
       <ResponsiveDialogContent className="sm:max-w-lg">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>
-            {role ? "Edit role" : "Create role"}
+            {accessGroup ? "Edit access group" : "Create access group"}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            Roles bundle permissions you can assign to members of this
-            organization.
+            Access groups bundle permissions you can assign to members of this
+            workspace.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="role-name">Name</Label>
+            <Label htmlFor="access-group-name">Name</Label>
             <Input
               disabled={isPending}
-              id="role-name"
+              id="access-group-name"
               onChange={(event) => setName(event.target.value)}
               placeholder="Content reviewer"
               value={name}
@@ -120,12 +127,12 @@ export function RoleDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role-description">Description</Label>
+            <Label htmlFor="access-group-description">Description</Label>
             <Textarea
               disabled={isPending}
-              id="role-description"
+              id="access-group-description"
               onChange={(event) => setDescription(event.target.value)}
-              placeholder="What this role is allowed to do"
+              placeholder="What this access group is allowed to do"
               rows={2}
               value={description}
             />
@@ -139,7 +146,7 @@ export function RoleDialog({
               </span>
             </div>
             <div className="max-h-[18rem] overflow-y-auto">
-              <RoleScopePicker
+              <AccessGroupScopePicker
                 disabled={isPending}
                 groups={scopeGroups}
                 onValueChange={setScopes}

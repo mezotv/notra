@@ -1,8 +1,8 @@
 import type {
   OrganizationScope,
   ScopeGroup,
-  SystemRoleDefinition,
-} from "../types/roles";
+  SystemAccessGroupDefinition,
+} from "../types/access-groups";
 
 export const ORGANIZATION_SCOPES = [
   "posts:create",
@@ -130,7 +130,7 @@ export const SCOPE_GROUPS: ScopeGroup[] = [
   },
 ];
 
-export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDefinition[] = [
+export const SYSTEM_ACCESS_GROUPS: SystemAccessGroupDefinition[] = [
   {
     key: "admin",
     name: "Admin",

@@ -1,12 +1,12 @@
 "use client";
 
-import type { OrganizationScope } from "@notra/db/types/roles";
+import type { OrganizationScope } from "@notra/db/types/access-groups";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardOrpc } from "../orpc/query";
 
 export function useMemberPermissions(organizationId: string) {
   const query = useQuery(
-    dashboardOrpc.roles.me.queryOptions({
+    dashboardOrpc.accessGroups.me.queryOptions({
       input: { organizationId },
       enabled: !!organizationId,
     })
@@ -21,7 +21,7 @@ export function useMemberPermissions(organizationId: string) {
     isLoading: query.isLoading,
     scopes: scopes ?? [],
     memberRole: query.data?.memberRole ?? null,
-    roles: query.data?.roles ?? [],
+    accessGroups: query.data?.accessGroups ?? [],
     hasScope,
   };
 }

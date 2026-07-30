@@ -8,10 +8,10 @@ function createStepKey(): string {
   return `step-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function createStepDraft(reviewerRoleId = ""): WorkflowStepDraft {
+export function createStepDraft(reviewerAccessGroupId = ""): WorkflowStepDraft {
   return {
     key: createStepKey(),
-    reviewerRoleId,
+    reviewerAccessGroupId,
     requiredApprovals: MIN_REQUIRED_APPROVALS,
     name: "",
   };
@@ -26,7 +26,7 @@ export function toStepDrafts(
 
   return workflow.steps.map((step) => ({
     key: step.id,
-    reviewerRoleId: step.reviewerRole.id,
+    reviewerAccessGroupId: step.reviewerAccessGroup.id,
     requiredApprovals: step.requiredApprovals,
     name: step.name ?? "",
   }));
@@ -72,7 +72,7 @@ export function formatRequiredApprovals(count: number): string {
 
 export function toStepPayload(steps: WorkflowStepDraft[]) {
   return steps.map((step) => ({
-    reviewerRoleId: step.reviewerRoleId,
+    reviewerAccessGroupId: step.reviewerAccessGroupId,
     requiredApprovals: clampRequiredApprovals(step.requiredApprovals),
     name: step.name.trim() === "" ? null : step.name.trim(),
   }));

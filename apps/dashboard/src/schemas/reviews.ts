@@ -31,7 +31,7 @@ export const reviewsInboxInputSchema = z.object({
 });
 
 const workflowStepInputSchema = z.object({
-  reviewerRoleId: z.string().min(1, "Reviewer role is required"),
+  reviewerAccessGroupId: z.string().min(1, "Reviewer access group is required"),
   requiredApprovals: z.number().int().min(1).max(10),
   name: z
     .string()
@@ -65,7 +65,7 @@ export const createWorkflowInputSchema = z.object({
   organizationId: organizationIdSchema,
   name: workflowNameSchema,
   description: workflowDescriptionSchema.optional(),
-  appliesToRoleId: z.string().min(1).nullable().optional(),
+  appliesToAccessGroupId: z.string().min(1).nullable().optional(),
   isDefault: z.boolean().optional(),
   steps: z.array(workflowStepInputSchema).min(1).max(10),
 });
@@ -73,7 +73,7 @@ export const createWorkflowInputSchema = z.object({
 export const updateWorkflowInputSchema = workflowInputSchema.extend({
   name: workflowNameSchema.optional(),
   description: workflowDescriptionSchema.nullable().optional(),
-  appliesToRoleId: z.string().min(1).nullable().optional(),
+  appliesToAccessGroupId: z.string().min(1).nullable().optional(),
   isDefault: z.boolean().optional(),
   steps: z.array(workflowStepInputSchema).min(1).max(10).optional(),
 });

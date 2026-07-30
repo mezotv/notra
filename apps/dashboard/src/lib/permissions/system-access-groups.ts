@@ -1,15 +1,15 @@
-import { SYSTEM_ROLE_DEFINITIONS } from "@notra/db/constants/permissions";
+import { SYSTEM_ACCESS_GROUPS } from "@notra/db/constants/permissions";
 import { db } from "@notra/db/drizzle";
-import { organizationRoles } from "@notra/db/schema";
+import { accessGroups } from "@notra/db/schema";
 import { nanoid } from "nanoid";
 import { retryTransientDbError } from "@/lib/db/retry";
 
-export async function ensureSystemRoles(organizationId: string) {
+export async function ensureSystemAccessGroups(organizationId: string) {
   await retryTransientDbError(() =>
     db
-      .insert(organizationRoles)
+      .insert(accessGroups)
       .values(
-        SYSTEM_ROLE_DEFINITIONS.map((definition) => ({
+        SYSTEM_ACCESS_GROUPS.map((definition) => ({
           id: nanoid(),
           organizationId,
           name: definition.name,

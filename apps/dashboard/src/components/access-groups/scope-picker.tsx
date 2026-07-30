@@ -1,14 +1,14 @@
 "use client";
 
-import { toggleScope } from "@/lib/roles/scopes";
-import type { RoleScopePickerProps } from "@/types/settings/roles";
+import { toggleScope } from "@/lib/access-groups/scopes";
+import type { AccessGroupScopePickerProps } from "@/types/settings/access-groups";
 
-export function RoleScopePicker({
+export function AccessGroupScopePicker({
   groups,
   value,
   onValueChange,
   disabled,
-}: RoleScopePickerProps) {
+}: AccessGroupScopePickerProps) {
   const selected = new Set(value);
 
   return (

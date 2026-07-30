@@ -41,7 +41,7 @@ import {
   sendVerificationEmailAction,
   sendWelcomeEmailAction,
 } from "@/lib/email/actions";
-import { ensureSystemRoles } from "@/lib/permissions/system-roles";
+import { ensureSystemAccessGroups } from "@/lib/permissions/system-access-groups";
 import { organizationSlugSchema } from "@/schemas/organization";
 
 async function enforceTeamMembersLimit(organizationId?: string | null) {
@@ -274,12 +274,15 @@ export const auth = betterAuth({
           }
 
           try {
-            await ensureSystemRoles(organization.id);
+            await ensureSystemAccessGroups(organization.id);
           } catch (error) {
-            console.error("[Roles] Failed to seed system roles for new org:", {
-              organizationId: organization.id,
-              error,
-            });
+            console.error(
+              "[AccessGroups] Failed to seed system access groups for new org:",
+              {
+                organizationId: organization.id,
+                error,
+              }
+            );
           }
 
           if (!autumn) {

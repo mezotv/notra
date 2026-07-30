@@ -1,3 +1,4 @@
+import { accessGroupsRouter } from "./routers/access-groups";
 import { apiKeysRouter } from "./routers/api-keys";
 import { attachmentsRouter } from "./routers/attachments";
 import { automationRouter } from "./routers/automation";
@@ -10,7 +11,6 @@ import { logsRouter } from "./routers/logs";
 import { notificationsRouter } from "./routers/notifications";
 import { onboardingRouter } from "./routers/onboarding";
 import { reviewsRouter } from "./routers/reviews";
-import { rolesRouter } from "./routers/roles";
 import { searchRouter } from "./routers/search";
 import { skillsRouter } from "./routers/skills";
 import { socialAccountsRouter } from "./routers/social-accounts";
@@ -18,6 +18,7 @@ import { uploadRouter } from "./routers/upload";
 import { userRouter } from "./routers/user";
 
 export const dashboardRouter = {
+  accessGroups: accessGroupsRouter,
   apiKeys: apiKeysRouter,
   attachments: attachmentsRouter,
   automation: automationRouter,
@@ -30,7 +31,6 @@ export const dashboardRouter = {
   notifications: notificationsRouter,
   onboarding: onboardingRouter,
   reviews: reviewsRouter,
-  roles: rolesRouter,
   search: searchRouter,
   skills: skillsRouter,
   socialAccounts: socialAccountsRouter,

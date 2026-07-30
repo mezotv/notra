@@ -14,7 +14,7 @@ export interface ScopeGroup {
   scopes: ScopeDefinition[];
 }
 
-export interface SystemRoleDefinition {
+export interface SystemAccessGroupDefinition {
   key: string;
   name: string;
   description: string;
@@ -23,8 +23,8 @@ export interface SystemRoleDefinition {
 
 export interface ApprovalWorkflowStepSnapshot {
   stepOrder: number;
-  reviewerRoleId: string;
-  reviewerRoleName: string;
+  reviewerAccessGroupId: string;
+  reviewerAccessGroupName: string;
   requiredApprovals: number;
   name: string | null;
 }

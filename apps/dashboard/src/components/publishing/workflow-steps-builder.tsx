@@ -34,7 +34,7 @@ import type {
 
 export function WorkflowStepsBuilder({
   steps,
-  roles,
+  accessGroups,
   disabled,
   onStepsChange,
 }: WorkflowStepsBuilderProps) {
@@ -93,23 +93,25 @@ export function WorkflowStepsBuilder({
 
           <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
             <div className="space-y-2">
-              <Label htmlFor={`${step.key}-reviewer`}>Reviewer role</Label>
+              <Label htmlFor={`${step.key}-reviewer`}>
+                Reviewer access group
+              </Label>
               <Select
                 disabled={disabled}
                 onValueChange={(value) => {
                   if (typeof value === "string") {
-                    updateStep(index, { reviewerRoleId: value });
+                    updateStep(index, { reviewerAccessGroupId: value });
                   }
                 }}
-                value={step.reviewerRoleId}
+                value={step.reviewerAccessGroupId}
               >
                 <SelectTrigger className="w-full" id={`${step.key}-reviewer`}>
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder="Select an access group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
+                  {accessGroups.map((accessGroup) => (
+                    <SelectItem key={accessGroup.id} value={accessGroup.id}>
+                      {accessGroup.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

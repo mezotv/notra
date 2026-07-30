@@ -9,12 +9,12 @@ import {
 import type {
   ApprovalWorkflowStepSnapshot,
   OrganizationScope,
-} from "@notra/db/types/roles";
+} from "@notra/db/types/access-groups";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { nanoid } from "nanoid";
 import { retryTransientDbError } from "@/lib/db/retry";
-import { resolveMemberRoleIds } from "@/lib/permissions/resolve-scopes";
+import { resolveMemberAccessGroupIds } from "@/lib/permissions/resolve-scopes";
 import {
   PublishBlockedError,
   ReviewPermissionError,
@@ -36,10 +36,10 @@ const tryDb = <T>(run: () => Promise<T>) =>
 export const findApplicableWorkflow = Effect.fn("findApplicableWorkflow")(
   function* ({
     organizationId,
-    authorRoleIds,
+    authorAccessGroupIds,
   }: {
     organizationId: string;
-    authorRoleIds: string[];
+    authorAccessGroupIds: string[];
   }) {
     const workflows = yield* tryDb(() =>
       db.query.approvalWorkflows.findMany({
@@ -50,7 +50,7 @@ export const findApplicableWorkflow = Effect.fn("findApplicableWorkflow")(
               ascending(steps.stepOrder),
             ],
             with: {
-              reviewerRole: {
+              reviewerAccessGroup: {
                 columns: {
                   name: true,
                 },
@@ -62,16 +62,16 @@ export const findApplicableWorkflow = Effect.fn("findApplicableWorkflow")(
       })
     );
 
-    const authorRoleIdSet = new Set(authorRoleIds);
+    const authorAccessGroupIdSet = new Set(authorAccessGroupIds);
     const withSteps = workflows.filter((workflow) => workflow.steps.length > 0);
-    const roleMatch = withSteps.find(
+    const groupMatch = withSteps.find(
       (workflow) =>
-        workflow.appliesToRoleId &&
-        authorRoleIdSet.has(workflow.appliesToRoleId)
+        workflow.appliesToAccessGroupId &&
+        authorAccessGroupIdSet.has(workflow.appliesToAccessGroupId)
     );
 
     return (
-      roleMatch ?? withSteps.find((workflow) => workflow.isDefault) ?? null
+      groupMatch ?? withSteps.find((workflow) => workflow.isDefault) ?? null
     );
   }
 );
@@ -81,8 +81,8 @@ const snapshotSteps = (
 ): ApprovalWorkflowStepSnapshot[] =>
   workflow.steps.map((step) => ({
     stepOrder: step.stepOrder,
-    reviewerRoleId: step.reviewerRoleId,
-    reviewerRoleName: step.reviewerRole.name,
+    reviewerAccessGroupId: step.reviewerAccessGroupId,
+    reviewerAccessGroupName: step.reviewerAccessGroup.name,
     requiredApprovals: step.requiredApprovals,
     name: step.name,
   }));
@@ -125,11 +125,13 @@ export const submitPostForReview = Effect.fn("submitPostForReview")(function* ({
     );
   }
 
-  const authorRoleIds = yield* resolveMemberRoleIds({ memberId }).pipe(
+  const authorAccessGroupIds = yield* resolveMemberAccessGroupIds({
+    memberId,
+  }).pipe(
     Effect.mapError(
       (cause) =>
         new ReviewPersistenceError({
-          message: "Failed to resolve author roles",
+          message: "Failed to resolve author access groups",
           cause,
         })
     )
@@ -137,7 +139,7 @@ export const submitPostForReview = Effect.fn("submitPostForReview")(function* ({
 
   const workflow = yield* findApplicableWorkflow({
     organizationId,
-    authorRoleIds,
+    authorAccessGroupIds,
   });
 
   if (!workflow) {
@@ -274,13 +276,13 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
     );
   }
 
-  const reviewerRoleIds = yield* resolveMemberRoleIds({
+  const reviewerAccessGroupIds = yield* resolveMemberAccessGroupIds({
     memberId: reviewerMemberId,
   }).pipe(
     Effect.mapError(
       (cause) =>
         new ReviewPersistenceError({
-          message: "Failed to resolve reviewer roles",
+          message: "Failed to resolve reviewer access groups",
           cause,
         })
     )
@@ -289,11 +291,14 @@ export const reviewPost = Effect.fn("reviewPost")(function* ({
   const isWorkspaceAdmin =
     reviewerMemberRole === "owner" || reviewerMemberRole === "admin";
   if (
-    !(isWorkspaceAdmin || reviewerRoleIds.includes(currentStep.reviewerRoleId))
+    !(
+      isWorkspaceAdmin ||
+      reviewerAccessGroupIds.includes(currentStep.reviewerAccessGroupId)
+    )
   ) {
     return yield* Effect.fail(
       new ReviewPermissionError({
-        message: `This step requires a review from the ${currentStep.reviewerRoleName} role`,
+        message: `This step requires a review from the ${currentStep.reviewerAccessGroupName} access group`,
       })
     );
   }
@@ -463,8 +468,8 @@ export const assertPublishAllowed = Effect.fn("assertPublishAllowed")(
       return;
     }
 
-    const authorRoleIds = post.createdBy
-      ? yield* getAuthorRoleIds({
+    const authorAccessGroupIds = post.createdBy
+      ? yield* getAuthorAccessGroupIds({
           organizationId,
           authorUserId: post.createdBy,
         })
@@ -472,7 +477,7 @@ export const assertPublishAllowed = Effect.fn("assertPublishAllowed")(
 
     const workflow = yield* findApplicableWorkflow({
       organizationId,
-      authorRoleIds,
+      authorAccessGroupIds,
     });
 
     if (workflow) {
@@ -485,36 +490,40 @@ export const assertPublishAllowed = Effect.fn("assertPublishAllowed")(
   }
 );
 
-export const getAuthorRoleIds = Effect.fn("getAuthorRoleIds")(function* ({
-  organizationId,
-  authorUserId,
-}: {
-  organizationId: string;
-  authorUserId: string;
-}) {
-  const authorMembership = yield* tryDb(() =>
-    db.query.members.findFirst({
-      where: and(
-        eq(members.userId, authorUserId),
-        eq(members.organizationId, organizationId)
-      ),
-      columns: {
-        id: true,
-      },
-    })
-  );
+export const getAuthorAccessGroupIds = Effect.fn("getAuthorAccessGroupIds")(
+  function* ({
+    organizationId,
+    authorUserId,
+  }: {
+    organizationId: string;
+    authorUserId: string;
+  }) {
+    const authorMembership = yield* tryDb(() =>
+      db.query.members.findFirst({
+        where: and(
+          eq(members.userId, authorUserId),
+          eq(members.organizationId, organizationId)
+        ),
+        columns: {
+          id: true,
+        },
+      })
+    );
 
-  if (!authorMembership) {
-    return [];
+    if (!authorMembership) {
+      return [];
+    }
+
+    return yield* resolveMemberAccessGroupIds({
+      memberId: authorMembership.id,
+    }).pipe(
+      Effect.mapError(
+        (cause) =>
+          new ReviewPersistenceError({
+            message: "Failed to resolve author access groups",
+            cause,
+          })
+      )
+    );
   }
-
-  return yield* resolveMemberRoleIds({ memberId: authorMembership.id }).pipe(
-    Effect.mapError(
-      (cause) =>
-        new ReviewPersistenceError({
-          message: "Failed to resolve author roles",
-          cause,
-        })
-    )
-  );
-});
+);

@@ -1,5 +1,5 @@
 import type { IconSvgElement } from "@hugeicons/react";
-import type { OrganizationScope } from "@notra/db/types/roles";
+import type { OrganizationScope } from "@notra/db/types/access-groups";
 
 export type NavMainCategory = "none" | "workspace" | "automation" | "manage";
 

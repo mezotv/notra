@@ -26,7 +26,7 @@ export function WorkflowCard({
   onDelete,
 }: WorkflowCardProps) {
   const audience =
-    workflow.appliesToRole?.name ??
+    workflow.appliesToAccessGroup?.name ??
     (workflow.isDefault ? DEFAULT_WORKFLOW_AUDIENCE_LABEL : "Not assigned");
 
   return (
@@ -89,7 +89,7 @@ export function WorkflowCard({
                 {step.name ? `: ${step.name}` : ""}
               </p>
               <p className="text-muted-foreground text-xs">
-                {step.reviewerRole.name} ·{" "}
+                {step.reviewerAccessGroup.name} ·{" "}
                 {formatRequiredApprovals(step.requiredApprovals)}
               </p>
             </div>

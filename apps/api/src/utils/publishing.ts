@@ -1,7 +1,7 @@
 import type { createDb } from "@notra/db/drizzle";
 import {
+  accessGroupMembers,
   approvalWorkflows,
-  memberRoleAssignments,
   members,
 } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
@@ -30,46 +30,48 @@ const tryDb = <T>(run: () => Promise<T>) =>
       }),
   });
 
-const getAuthorRoleIds = Effect.fn("getAuthorRoleIds")(function* ({
-  db,
-  organizationId,
-  authorUserId,
-}: {
-  db: Database;
-  organizationId: string;
-  authorUserId: string | null;
-}) {
-  if (!authorUserId) {
-    return [] as string[];
+const getAuthorAccessGroupIds = Effect.fn("getAuthorAccessGroupIds")(
+  function* ({
+    db,
+    organizationId,
+    authorUserId,
+  }: {
+    db: Database;
+    organizationId: string;
+    authorUserId: string | null;
+  }) {
+    if (!authorUserId) {
+      return [] as string[];
+    }
+
+    const membership = yield* tryDb(() =>
+      db.query.members.findFirst({
+        where: and(
+          eq(members.userId, authorUserId),
+          eq(members.organizationId, organizationId)
+        ),
+        columns: {
+          id: true,
+        },
+      })
+    );
+
+    if (!membership) {
+      return [] as string[];
+    }
+
+    const memberships = yield* tryDb(() =>
+      db.query.accessGroupMembers.findMany({
+        where: eq(accessGroupMembers.memberId, membership.id),
+        columns: {
+          accessGroupId: true,
+        },
+      })
+    );
+
+    return memberships.map((groupMembership) => groupMembership.accessGroupId);
   }
-
-  const membership = yield* tryDb(() =>
-    db.query.members.findFirst({
-      where: and(
-        eq(members.userId, authorUserId),
-        eq(members.organizationId, organizationId)
-      ),
-      columns: {
-        id: true,
-      },
-    })
-  );
-
-  if (!membership) {
-    return [] as string[];
-  }
-
-  const assignments = yield* tryDb(() =>
-    db.query.memberRoleAssignments.findMany({
-      where: eq(memberRoleAssignments.memberId, membership.id),
-      columns: {
-        roleId: true,
-      },
-    })
-  );
-
-  return assignments.map((assignment) => assignment.roleId);
-});
+);
 
 export const assertApiPublishAllowed = Effect.fn("assertApiPublishAllowed")(
   function* ({
@@ -88,7 +90,7 @@ export const assertApiPublishAllowed = Effect.fn("assertApiPublishAllowed")(
       return;
     }
 
-    const authorRoleIds = yield* getAuthorRoleIds({
+    const authorAccessGroupIds = yield* getAuthorAccessGroupIds({
       db,
       organizationId,
       authorUserId: post.createdBy,
@@ -112,8 +114,8 @@ export const assertApiPublishAllowed = Effect.fn("assertApiPublishAllowed")(
     const applicable =
       withSteps.find(
         (workflow) =>
-          workflow.appliesToRoleId &&
-          authorRoleIds.includes(workflow.appliesToRoleId)
+          workflow.appliesToAccessGroupId &&
+          authorAccessGroupIds.includes(workflow.appliesToAccessGroupId)
       ) ?? withSteps.find((workflow) => workflow.isDefault);
 
     if (applicable) {

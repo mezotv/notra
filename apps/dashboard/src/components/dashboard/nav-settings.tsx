@@ -48,8 +48,8 @@ const organizationItems: NavSettingsItem[] = [
     icon: UserGroupIcon,
   },
   {
-    label: "Roles",
-    url: "settings/roles",
+    label: "Access groups",
+    url: "settings/access-groups",
     icon: UserShield01Icon,
   },
   {

@@ -1,5 +1,8 @@
-import type { OrganizationScope, ScopeGroup } from "@notra/db/types/roles";
-import type { RoleScopeSummary } from "@/types/settings/roles";
+import type {
+  OrganizationScope,
+  ScopeGroup,
+} from "@notra/db/types/access-groups";
+import type { AccessGroupScopeSummary } from "@/types/settings/access-groups";
 import { MAX_VISIBLE_SCOPE_LABELS } from "./constants";
 
 export function buildScopeLabels(groups: ScopeGroup[]): Record<string, string> {
@@ -28,7 +31,7 @@ export function toggleScope(
 export function summarizeScopes(
   scopes: OrganizationScope[],
   labels: Record<string, string>
-): RoleScopeSummary {
+): AccessGroupScopeSummary {
   const visible = scopes
     .slice(0, MAX_VISIBLE_SCOPE_LABELS)
     .map((scope) => labels[scope] ?? scope);

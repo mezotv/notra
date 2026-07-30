@@ -1,22 +1,22 @@
 import { db } from "@notra/db/drizzle";
 import {
+  accessGroups,
   approvalWorkflowSteps,
   approvalWorkflows,
-  organizationRoles,
   postApprovalRequests,
   posts,
 } from "@notra/db/schema";
-import type { ApprovalWorkflowStepSnapshot } from "@notra/db/types/roles";
+import type { ApprovalWorkflowStepSnapshot } from "@notra/db/types/access-groups";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { Effect } from "effect";
 import { nanoid } from "nanoid";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { assertOrganizationScopes } from "@/lib/permissions/assert";
-import { resolveMemberRoleIds } from "@/lib/permissions/resolve-scopes";
+import { resolveMemberAccessGroupIds } from "@/lib/permissions/resolve-scopes";
 import { toReviewOrpcError } from "@/lib/reviews/map-errors";
 import {
   findApplicableWorkflow,
-  getAuthorRoleIds,
+  getAuthorAccessGroupIds,
   reviewPost,
   submitPostForReview,
 } from "@/lib/reviews/workflow";
@@ -42,9 +42,11 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
-async function resolveRoleIds(memberId: string) {
+async function resolveAccessGroupIds(memberId: string) {
   return await Effect.runPromise(
-    resolveMemberRoleIds({ memberId }).pipe(Effect.mapError(toReviewOrpcError))
+    resolveMemberAccessGroupIds({ memberId }).pipe(
+      Effect.mapError(toReviewOrpcError)
+    )
   );
 }
 
@@ -74,8 +76,8 @@ function serializeStepProgress(
     return {
       stepOrder: step.stepOrder,
       name: step.name,
-      reviewerRoleName: step.reviewerRoleName,
-      reviewerRoleId: step.reviewerRoleId,
+      reviewerAccessGroupName: step.reviewerAccessGroupName,
+      reviewerAccessGroupId: step.reviewerAccessGroupId,
       requiredApprovals: step.requiredApprovals,
       approvals,
       isCurrent:
@@ -85,35 +87,37 @@ function serializeStepProgress(
   });
 }
 
-async function assertWorkflowRolesBelongToOrganization(
+async function assertWorkflowGroupsBelongToOrganization(
   organizationId: string,
-  roleIds: string[]
+  accessGroupIds: string[]
 ) {
-  if (roleIds.length === 0) {
+  if (accessGroupIds.length === 0) {
     return;
   }
 
-  const roles = await db.query.organizationRoles.findMany({
+  const groups = await db.query.accessGroups.findMany({
     where: and(
-      eq(organizationRoles.organizationId, organizationId),
-      inArray(organizationRoles.id, roleIds)
+      eq(accessGroups.organizationId, organizationId),
+      inArray(accessGroups.id, accessGroupIds)
     ),
     columns: {
       id: true,
     },
   });
 
-  const found = new Set(roles.map((role) => role.id));
-  const missing = roleIds.filter((roleId) => !found.has(roleId));
+  const found = new Set(groups.map((group) => group.id));
+  const missing = accessGroupIds.filter((id) => !found.has(id));
   if (missing.length > 0) {
-    throw badRequest("One or more roles do not belong to this workspace");
+    throw badRequest(
+      "One or more access groups do not belong to this workspace"
+    );
   }
 }
 
 async function replaceWorkflowSteps(
   workflowId: string,
   steps: {
-    reviewerRoleId: string;
+    reviewerAccessGroupId: string;
     requiredApprovals: number;
     name?: string | null;
   }[]
@@ -128,7 +132,7 @@ async function replaceWorkflowSteps(
         id: nanoid(),
         workflowId,
         stepOrder: index + 1,
-        reviewerRoleId: step.reviewerRoleId,
+        reviewerAccessGroupId: step.reviewerAccessGroupId,
         requiredApprovals: step.requiredApprovals,
         name: step.name ?? null,
       }))
@@ -189,9 +193,9 @@ async function buildPublishability(
   const canPublishOverride = access.scopes.includes("posts:publish_override");
   const hasPublishScope = access.scopes.includes("posts:publish");
 
-  const authorRoleIds = await Effect.runPromise(
+  const authorAccessGroupIds = await Effect.runPromise(
     (post.createdBy
-      ? getAuthorRoleIds({
+      ? getAuthorAccessGroupIds({
           organizationId: access.organizationId,
           authorUserId: post.createdBy,
         })
@@ -202,7 +206,7 @@ async function buildPublishability(
   const authorWorkflow = await Effect.runPromise(
     findApplicableWorkflow({
       organizationId: access.organizationId,
-      authorRoleIds,
+      authorAccessGroupIds,
     }).pipe(Effect.mapError(toReviewOrpcError))
   );
 
@@ -295,36 +299,40 @@ export const reviewsRouter = {
         throw notFound("Content not found");
       }
 
-      const [myRoleIds, pendingRequest, latestResolvedRequest, publishability] =
-        await Promise.all([
-          resolveRoleIds(access.membership.id),
-          getPendingRequest(input.organizationId, input.contentId),
-          db.query.postApprovalRequests.findFirst({
-            where: and(
-              eq(postApprovalRequests.postId, input.contentId),
-              eq(postApprovalRequests.organizationId, input.organizationId),
-              ne(postApprovalRequests.status, "pending")
-            ),
-            orderBy: [desc(postApprovalRequests.createdAt)],
-            with: {
-              reviews: {
-                with: {
-                  reviewer: {
-                    columns: {
-                      name: true,
-                    },
+      const [
+        myAccessGroupIds,
+        pendingRequest,
+        latestResolvedRequest,
+        publishability,
+      ] = await Promise.all([
+        resolveAccessGroupIds(access.membership.id),
+        getPendingRequest(input.organizationId, input.contentId),
+        db.query.postApprovalRequests.findFirst({
+          where: and(
+            eq(postApprovalRequests.postId, input.contentId),
+            eq(postApprovalRequests.organizationId, input.organizationId),
+            ne(postApprovalRequests.status, "pending")
+          ),
+          orderBy: [desc(postApprovalRequests.createdAt)],
+          with: {
+            reviews: {
+              with: {
+                reviewer: {
+                  columns: {
+                    name: true,
                   },
                 },
               },
             },
-          }),
-          buildPublishability(access, post),
-        ]);
+          },
+        }),
+        buildPublishability(access, post),
+      ]);
 
       const myWorkflow = await Effect.runPromise(
         findApplicableWorkflow({
           organizationId: input.organizationId,
-          authorRoleIds: myRoleIds,
+          authorAccessGroupIds: myAccessGroupIds,
         }).pipe(Effect.mapError(toReviewOrpcError))
       );
 
@@ -380,7 +388,7 @@ export const reviewsRouter = {
           pendingRequest.requestedBy !== access.user.id &&
           !alreadyReviewedCurrentStep &&
           (isWorkspaceAdmin(access.membership.role) ||
-            myRoleIds.includes(currentStep.reviewerRoleId))
+            myAccessGroupIds.includes(currentStep.reviewerAccessGroupId))
       );
 
       return {
@@ -408,8 +416,8 @@ export const reviewsRouter = {
         scopes: ["posts:review"],
       });
 
-      const [myRoleIds, requests] = await Promise.all([
-        resolveRoleIds(access.membership.id),
+      const [myAccessGroupIds, requests] = await Promise.all([
+        resolveAccessGroupIds(access.membership.id),
         db.query.postApprovalRequests.findMany({
           where: and(
             eq(postApprovalRequests.organizationId, input.organizationId),
@@ -446,7 +454,7 @@ export const reviewsRouter = {
       ]);
 
       const admin = isWorkspaceAdmin(access.membership.role);
-      const myRoleIdSet = new Set(myRoleIds);
+      const myAccessGroupIdSet = new Set(myAccessGroupIds);
 
       const items = requests.flatMap((request) => {
         const currentStep = request.steps.find(
@@ -461,7 +469,9 @@ export const reviewsRouter = {
           return [];
         }
 
-        if (!(admin || myRoleIdSet.has(currentStep.reviewerRoleId))) {
+        if (
+          !(admin || myAccessGroupIdSet.has(currentStep.reviewerAccessGroupId))
+        ) {
           return [];
         }
 
@@ -492,7 +502,7 @@ export const reviewsRouter = {
             requestedAt: request.createdAt.toISOString(),
             stepOrder: currentStep.stepOrder,
             stepName: currentStep.name,
-            reviewerRoleName: currentStep.reviewerRoleName,
+            reviewerAccessGroupName: currentStep.reviewerAccessGroupName,
             approvals,
             requiredApprovals: currentStep.requiredApprovals,
             totalSteps: request.steps.length,
@@ -521,7 +531,7 @@ export const reviewsRouter = {
                 ascending(steps.stepOrder),
               ],
               with: {
-                reviewerRole: {
+                reviewerAccessGroup: {
                   columns: {
                     id: true,
                     name: true,
@@ -529,7 +539,7 @@ export const reviewsRouter = {
                 },
               },
             },
-            appliesToRole: {
+            appliesToAccessGroup: {
               columns: {
                 id: true,
                 name: true,
@@ -545,10 +555,10 @@ export const reviewsRouter = {
             name: workflow.name,
             description: workflow.description,
             isDefault: workflow.isDefault,
-            appliesToRole: workflow.appliesToRole
+            appliesToAccessGroup: workflow.appliesToAccessGroup
               ? {
-                  id: workflow.appliesToRole.id,
-                  name: workflow.appliesToRole.name,
+                  id: workflow.appliesToAccessGroup.id,
+                  name: workflow.appliesToAccessGroup.name,
                 }
               : null,
             steps: workflow.steps.map((step) => ({
@@ -556,9 +566,9 @@ export const reviewsRouter = {
               stepOrder: step.stepOrder,
               name: step.name,
               requiredApprovals: step.requiredApprovals,
-              reviewerRole: {
-                id: step.reviewerRole.id,
-                name: step.reviewerRole.name,
+              reviewerAccessGroup: {
+                id: step.reviewerAccessGroup.id,
+                name: step.reviewerAccessGroup.name,
               },
             })),
             createdAt: workflow.createdAt.toISOString(),
@@ -576,10 +586,12 @@ export const reviewsRouter = {
           scopes: ["publishing:manage"],
         });
 
-        await assertWorkflowRolesBelongToOrganization(input.organizationId, [
+        await assertWorkflowGroupsBelongToOrganization(input.organizationId, [
           ...new Set([
-            ...input.steps.map((step) => step.reviewerRoleId),
-            ...(input.appliesToRoleId ? [input.appliesToRoleId] : []),
+            ...input.steps.map((step) => step.reviewerAccessGroupId),
+            ...(input.appliesToAccessGroupId
+              ? [input.appliesToAccessGroupId]
+              : []),
           ]),
         ]);
 
@@ -604,7 +616,7 @@ export const reviewsRouter = {
               organizationId: input.organizationId,
               name: input.name,
               description: input.description ?? null,
-              appliesToRoleId: input.appliesToRoleId ?? null,
+              appliesToAccessGroupId: input.appliesToAccessGroupId ?? null,
               isDefault: input.isDefault ?? false,
             });
 
@@ -613,7 +625,7 @@ export const reviewsRouter = {
                 id: nanoid(),
                 workflowId,
                 stepOrder: index + 1,
-                reviewerRoleId: step.reviewerRoleId,
+                reviewerAccessGroupId: step.reviewerAccessGroupId,
                 requiredApprovals: step.requiredApprovals,
                 name: step.name ?? null,
               }))
@@ -621,7 +633,9 @@ export const reviewsRouter = {
           });
         } catch (error) {
           if (isUniqueViolation(error)) {
-            throw conflict("An approval workflow already applies to this role");
+            throw conflict(
+              "An approval workflow already applies to this access group"
+            );
           }
           throw error;
         }
@@ -653,10 +667,12 @@ export const reviewsRouter = {
           throw notFound("Workflow not found");
         }
 
-        await assertWorkflowRolesBelongToOrganization(input.organizationId, [
+        await assertWorkflowGroupsBelongToOrganization(input.organizationId, [
           ...new Set([
-            ...(input.steps?.map((step) => step.reviewerRoleId) ?? []),
-            ...(input.appliesToRoleId ? [input.appliesToRoleId] : []),
+            ...(input.steps?.map((step) => step.reviewerAccessGroupId) ?? []),
+            ...(input.appliesToAccessGroupId
+              ? [input.appliesToAccessGroupId]
+              : []),
           ]),
         ]);
 
@@ -672,8 +688,8 @@ export const reviewsRouter = {
               ...(input.description !== undefined
                 ? { description: input.description }
                 : {}),
-              ...(input.appliesToRoleId !== undefined
-                ? { appliesToRoleId: input.appliesToRoleId }
+              ...(input.appliesToAccessGroupId !== undefined
+                ? { appliesToAccessGroupId: input.appliesToAccessGroupId }
                 : {}),
               ...(input.isDefault !== undefined
                 ? { isDefault: input.isDefault }
@@ -686,7 +702,9 @@ export const reviewsRouter = {
           }
         } catch (error) {
           if (isUniqueViolation(error)) {
-            throw conflict("An approval workflow already applies to this role");
+            throw conflict(
+              "An approval workflow already applies to this access group"
+            );
           }
           throw error;
         }

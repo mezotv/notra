@@ -13,7 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { ApprovalWorkflowStepSnapshot } from "./types/roles";
+import type { ApprovalWorkflowStepSnapshot } from "./types/access-groups";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
@@ -1518,8 +1518,8 @@ export const skills = pgTable(
   ]
 );
 
-export const organizationRoles = pgTable(
-  "organization_roles",
+export const accessGroups = pgTable(
+  "access_groups",
   {
     id: text("id").primaryKey(),
     organizationId: text("organization_id")
@@ -1536,35 +1536,35 @@ export const organizationRoles = pgTable(
       .notNull(),
   },
   (table) => [
-    index("organization_roles_organizationId_idx").on(table.organizationId),
-    uniqueIndex("organization_roles_org_name_uidx").on(
+    index("access_groups_organizationId_idx").on(table.organizationId),
+    uniqueIndex("access_groups_org_name_uidx").on(
       table.organizationId,
       table.name
     ),
-    uniqueIndex("organization_roles_org_system_key_uidx")
+    uniqueIndex("access_groups_org_system_key_uidx")
       .on(table.organizationId, table.systemKey)
       .where(sql`${table.systemKey} IS NOT NULL`),
   ]
 );
 
-export const memberRoleAssignments = pgTable(
-  "member_role_assignments",
+export const accessGroupMembers = pgTable(
+  "access_group_members",
   {
     id: text("id").primaryKey(),
     memberId: text("member_id")
       .notNull()
       .references(() => members.id, { onDelete: "cascade" }),
-    roleId: text("role_id")
+    accessGroupId: text("access_group_id")
       .notNull()
-      .references(() => organizationRoles.id, { onDelete: "cascade" }),
+      .references(() => accessGroups.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    uniqueIndex("member_role_assignments_member_role_uidx").on(
+    uniqueIndex("access_group_members_member_group_uidx").on(
       table.memberId,
-      table.roleId
+      table.accessGroupId
     ),
-    index("member_role_assignments_roleId_idx").on(table.roleId),
+    index("access_group_members_groupId_idx").on(table.accessGroupId),
   ]
 );
 
@@ -1577,8 +1577,8 @@ export const approvalWorkflows = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     description: text("description"),
-    appliesToRoleId: text("applies_to_role_id").references(
-      () => organizationRoles.id,
+    appliesToAccessGroupId: text("applies_to_access_group_id").references(
+      () => accessGroups.id,
       { onDelete: "restrict" }
     ),
     isDefault: boolean("is_default").default(false).notNull(),
@@ -1590,9 +1590,9 @@ export const approvalWorkflows = pgTable(
   },
   (table) => [
     index("approval_workflows_organizationId_idx").on(table.organizationId),
-    uniqueIndex("approval_workflows_org_role_uidx")
-      .on(table.organizationId, table.appliesToRoleId)
-      .where(sql`${table.appliesToRoleId} IS NOT NULL`),
+    uniqueIndex("approval_workflows_org_group_uidx")
+      .on(table.organizationId, table.appliesToAccessGroupId)
+      .where(sql`${table.appliesToAccessGroupId} IS NOT NULL`),
     uniqueIndex("approval_workflows_org_default_uidx")
       .on(table.organizationId)
       .where(sql`${table.isDefault} = true`),
@@ -1607,9 +1607,9 @@ export const approvalWorkflowSteps = pgTable(
       .notNull()
       .references(() => approvalWorkflows.id, { onDelete: "cascade" }),
     stepOrder: integer("step_order").notNull(),
-    reviewerRoleId: text("reviewer_role_id")
+    reviewerAccessGroupId: text("reviewer_access_group_id")
       .notNull()
-      .references(() => organizationRoles.id, { onDelete: "restrict" }),
+      .references(() => accessGroups.id, { onDelete: "restrict" }),
     requiredApprovals: integer("required_approvals").default(1).notNull(),
     name: text("name"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1818,7 +1818,7 @@ export const organizationsRelations = relations(
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
-    roles: many(organizationRoles),
+    accessGroups: many(accessGroups),
     approvalWorkflows: many(approvalWorkflows),
   })
 );
@@ -1842,30 +1842,30 @@ export const membersRelations = relations(members, ({ one, many }) => ({
     fields: [members.userId],
     references: [users.id],
   }),
-  roleAssignments: many(memberRoleAssignments),
+  accessGroupMemberships: many(accessGroupMembers),
 }));
 
-export const organizationRolesRelations = relations(
-  organizationRoles,
+export const accessGroupsRelations = relations(
+  accessGroups,
   ({ one, many }) => ({
     organization: one(organizations, {
-      fields: [organizationRoles.organizationId],
+      fields: [accessGroups.organizationId],
       references: [organizations.id],
     }),
-    memberAssignments: many(memberRoleAssignments),
+    memberships: many(accessGroupMembers),
   })
 );
 
-export const memberRoleAssignmentsRelations = relations(
-  memberRoleAssignments,
+export const accessGroupMembersRelations = relations(
+  accessGroupMembers,
   ({ one }) => ({
     member: one(members, {
-      fields: [memberRoleAssignments.memberId],
+      fields: [accessGroupMembers.memberId],
       references: [members.id],
     }),
-    role: one(organizationRoles, {
-      fields: [memberRoleAssignments.roleId],
-      references: [organizationRoles.id],
+    accessGroup: one(accessGroups, {
+      fields: [accessGroupMembers.accessGroupId],
+      references: [accessGroups.id],
     }),
   })
 );
@@ -1877,9 +1877,9 @@ export const approvalWorkflowsRelations = relations(
       fields: [approvalWorkflows.organizationId],
       references: [organizations.id],
     }),
-    appliesToRole: one(organizationRoles, {
-      fields: [approvalWorkflows.appliesToRoleId],
-      references: [organizationRoles.id],
+    appliesToAccessGroup: one(accessGroups, {
+      fields: [approvalWorkflows.appliesToAccessGroupId],
+      references: [accessGroups.id],
     }),
     steps: many(approvalWorkflowSteps),
   })
@@ -1892,9 +1892,9 @@ export const approvalWorkflowStepsRelations = relations(
       fields: [approvalWorkflowSteps.workflowId],
       references: [approvalWorkflows.id],
     }),
-    reviewerRole: one(organizationRoles, {
-      fields: [approvalWorkflowSteps.reviewerRoleId],
-      references: [organizationRoles.id],
+    reviewerAccessGroup: one(accessGroups, {
+      fields: [approvalWorkflowSteps.reviewerAccessGroupId],
+      references: [accessGroups.id],
     }),
   })
 );

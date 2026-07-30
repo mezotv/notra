@@ -50,7 +50,7 @@ export default function PageClient({
         {!canReview && (
           <EmptyState
             className="p-8"
-            description="Ask a workspace admin for a role that can review posts."
+            description="Ask a workspace admin for an access group that can review posts."
             title="You do not have access to reviews"
           />
         )}

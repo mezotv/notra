@@ -1,9 +1,247 @@
 {
-  "id": "0ae23ef3-c16c-432d-9903-029b1aa005fd",
+  "id": "70ca085b-98cf-4a03-938d-0e6e07effdcd",
   "prevId": "ecfe054a-a7f9-4e0a-bb2e-ce7c53a7748b",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.access_group_members": {
+      "name": "access_group_members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "member_id": {
+          "name": "member_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_group_id": {
+          "name": "access_group_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "access_group_members_member_group_uidx": {
+          "name": "access_group_members_member_group_uidx",
+          "columns": [
+            {
+              "expression": "member_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "access_group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "access_group_members_groupId_idx": {
+          "name": "access_group_members_groupId_idx",
+          "columns": [
+            {
+              "expression": "access_group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "access_group_members_member_id_members_id_fk": {
+          "name": "access_group_members_member_id_members_id_fk",
+          "tableFrom": "access_group_members",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "access_group_members_access_group_id_access_groups_id_fk": {
+          "name": "access_group_members_access_group_id_access_groups_id_fk",
+          "tableFrom": "access_group_members",
+          "tableTo": "access_groups",
+          "columnsFrom": [
+            "access_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.access_groups": {
+      "name": "access_groups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "system_key": {
+          "name": "system_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "access_groups_organizationId_idx": {
+          "name": "access_groups_organizationId_idx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "access_groups_org_name_uidx": {
+          "name": "access_groups_org_name_uidx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "access_groups_org_system_key_uidx": {
+          "name": "access_groups_org_system_key_uidx",
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "system_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"access_groups\".\"system_key\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "access_groups_organization_id_organizations_id_fk": {
+          "name": "access_groups_organization_id_organizations_id_fk",
+          "tableFrom": "access_groups",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.accounts": {
       "name": "accounts",
       "schema": "",
@@ -316,8 +554,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "reviewer_role_id": {
-          "name": "reviewer_role_id",
+        "reviewer_access_group_id": {
+          "name": "reviewer_access_group_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -380,12 +618,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "approval_workflow_steps_reviewer_role_id_organization_roles_id_fk": {
-          "name": "approval_workflow_steps_reviewer_role_id_organization_roles_id_fk",
+        "approval_workflow_steps_reviewer_access_group_id_access_groups_id_fk": {
+          "name": "approval_workflow_steps_reviewer_access_group_id_access_groups_id_fk",
           "tableFrom": "approval_workflow_steps",
-          "tableTo": "organization_roles",
+          "tableTo": "access_groups",
           "columnsFrom": [
-            "reviewer_role_id"
+            "reviewer_access_group_id"
           ],
           "columnsTo": [
             "id"
@@ -428,8 +666,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "applies_to_role_id": {
-          "name": "applies_to_role_id",
+        "applies_to_access_group_id": {
+          "name": "applies_to_access_group_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -472,8 +710,8 @@
           "method": "btree",
           "with": {}
         },
-        "approval_workflows_org_role_uidx": {
-          "name": "approval_workflows_org_role_uidx",
+        "approval_workflows_org_group_uidx": {
+          "name": "approval_workflows_org_group_uidx",
           "columns": [
             {
               "expression": "organization_id",
@@ -482,14 +720,14 @@
               "nulls": "last"
             },
             {
-              "expression": "applies_to_role_id",
+              "expression": "applies_to_access_group_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": true,
-          "where": "\"approval_workflows\".\"applies_to_role_id\" IS NOT NULL",
+          "where": "\"approval_workflows\".\"applies_to_access_group_id\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -525,12 +763,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "approval_workflows_applies_to_role_id_organization_roles_id_fk": {
-          "name": "approval_workflows_applies_to_role_id_organization_roles_id_fk",
+        "approval_workflows_applies_to_access_group_id_access_groups_id_fk": {
+          "name": "approval_workflows_applies_to_access_group_id_access_groups_id_fk",
           "tableFrom": "approval_workflows",
-          "tableTo": "organization_roles",
+          "tableTo": "access_groups",
           "columnsFrom": [
-            "applies_to_role_id"
+            "applies_to_access_group_id"
           ],
           "columnsTo": [
             "id"
@@ -4997,108 +5235,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.member_role_assignments": {
-      "name": "member_role_assignments",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "member_id": {
-          "name": "member_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "role_id": {
-          "name": "role_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "member_role_assignments_member_role_uidx": {
-          "name": "member_role_assignments_member_role_uidx",
-          "columns": [
-            {
-              "expression": "member_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "role_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "member_role_assignments_roleId_idx": {
-          "name": "member_role_assignments_roleId_idx",
-          "columns": [
-            {
-              "expression": "role_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "member_role_assignments_member_id_members_id_fk": {
-          "name": "member_role_assignments_member_id_members_id_fk",
-          "tableFrom": "member_role_assignments",
-          "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "member_role_assignments_role_id_organization_roles_id_fk": {
-          "name": "member_role_assignments_role_id_organization_roles_id_fk",
-          "tableFrom": "member_role_assignments",
-          "tableTo": "organization_roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.members": {
       "name": "members",
       "schema": "",
@@ -6107,142 +6243,6 @@
         "organization_notification_settings_organization_id_organizations_id_fk": {
           "name": "organization_notification_settings_organization_id_organizations_id_fk",
           "tableFrom": "organization_notification_settings",
-          "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.organization_roles": {
-      "name": "organization_roles",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "scopes": {
-          "name": "scopes",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "system_key": {
-          "name": "system_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "organization_roles_organizationId_idx": {
-          "name": "organization_roles_organizationId_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "organization_roles_org_name_uidx": {
-          "name": "organization_roles_org_name_uidx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "name",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "organization_roles_org_system_key_uidx": {
-          "name": "organization_roles_org_system_key_uidx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "system_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"organization_roles\".\"system_key\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "organization_roles_organization_id_organizations_id_fk": {
-          "name": "organization_roles_organization_id_organizations_id_fk",
-          "tableFrom": "organization_roles",
           "tableTo": "organizations",
           "columnsFrom": [
             "organization_id"

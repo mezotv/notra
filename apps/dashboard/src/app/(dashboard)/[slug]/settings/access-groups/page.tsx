@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Loading from "./loading";
-import RolesPageClient from "./page-client";
+import AccessGroupsPageClient from "./page-client";
 
 export const metadata: Metadata = {
-  title: "Roles",
+  title: "Access groups",
 };
 
-export default function RolesSettingsPage() {
+export default function AccessGroupsSettingsPage() {
   return (
     <Suspense fallback={<Loading />}>
-      <RolesPageClient />
+      <AccessGroupsPageClient />
     </Suspense>
   );
 }

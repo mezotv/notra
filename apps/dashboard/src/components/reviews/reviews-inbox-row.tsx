@@ -57,7 +57,7 @@ export function ReviewsInboxRow({
           Step {item.stepOrder} of {item.totalSteps}
           {item.stepName ? `: ${item.stepName}` : ""}
         </span>
-        {item.reviewerRoleName}
+        {item.reviewerAccessGroupName}
         {" · "}
         {item.approvals}/{item.requiredApprovals} approved
       </TableCell>

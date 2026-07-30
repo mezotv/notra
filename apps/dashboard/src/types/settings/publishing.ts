@@ -1,4 +1,4 @@
-export interface ApprovalWorkflowRoleRef {
+export interface ApprovalWorkflowAccessGroupRef {
   id: string;
   name: string;
 }
@@ -8,7 +8,7 @@ export interface ApprovalWorkflowStepSummary {
   stepOrder: number;
   name: string | null;
   requiredApprovals: number;
-  reviewerRole: ApprovalWorkflowRoleRef;
+  reviewerAccessGroup: ApprovalWorkflowAccessGroupRef;
 }
 
 export interface ApprovalWorkflowSummary {
@@ -16,21 +16,21 @@ export interface ApprovalWorkflowSummary {
   name: string;
   description: string | null;
   isDefault: boolean;
-  appliesToRole: ApprovalWorkflowRoleRef | null;
+  appliesToAccessGroup: ApprovalWorkflowAccessGroupRef | null;
   steps: ApprovalWorkflowStepSummary[];
   createdAt: string;
 }
 
 export interface WorkflowStepDraft {
   key: string;
-  reviewerRoleId: string;
+  reviewerAccessGroupId: string;
   requiredApprovals: number;
   name: string;
 }
 
 export interface WorkflowStepsBuilderProps {
   steps: WorkflowStepDraft[];
-  roles: ApprovalWorkflowRoleRef[];
+  accessGroups: ApprovalWorkflowAccessGroupRef[];
   disabled?: boolean;
   onStepsChange: (steps: WorkflowStepDraft[]) => void;
 }
@@ -39,7 +39,7 @@ export interface WorkflowDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  roles: ApprovalWorkflowRoleRef[];
+  accessGroups: ApprovalWorkflowAccessGroupRef[];
   workflow: ApprovalWorkflowSummary | null;
 }
 

@@ -39,14 +39,14 @@ export function WorkflowDialog({
   open,
   onOpenChange,
   organizationId,
-  roles,
+  accessGroups,
   workflow,
 }: WorkflowDialogProps) {
   const [name, setName] = useState(workflow?.name ?? "");
   const [description, setDescription] = useState(workflow?.description ?? "");
   const [isDefault, setIsDefault] = useState(workflow?.isDefault ?? false);
-  const [appliesToRoleId, setAppliesToRoleId] = useState(
-    workflow?.appliesToRole?.id ?? ""
+  const [appliesToAccessGroupId, setAppliesToAccessGroupId] = useState(
+    workflow?.appliesToAccessGroup?.id ?? ""
   );
   const [steps, setSteps] = useState<WorkflowStepDraft[]>(() =>
     toStepDrafts(workflow)
@@ -59,7 +59,7 @@ export function WorkflowDialog({
   const trimmedName = name.trim();
   const trimmedDescription = description.trim();
   const hasCompleteSteps = steps.every(
-    (step) => step.reviewerRoleId.length > 0
+    (step) => step.reviewerAccessGroupId.length > 0
   );
   const canSubmit =
     !!organizationId &&
@@ -70,12 +70,16 @@ export function WorkflowDialog({
 
   const handleSubmit = () => {
     if (!canSubmit) {
-      toast.error("Add a name and pick a reviewer role for every step.");
+      toast.error(
+        "Add a name and pick a reviewer access group for every step."
+      );
       return;
     }
 
     const stepPayload = toStepPayload(steps);
-    const resolvedRoleId = isDefault ? null : appliesToRoleId || null;
+    const resolvedAccessGroupId = isDefault
+      ? null
+      : appliesToAccessGroupId || null;
 
     const onError = (error: Error) => {
       toast.error(errorMessageOr(error.message, "Failed to save workflow"));
@@ -87,7 +91,7 @@ export function WorkflowDialog({
           workflowId: workflow.id,
           name: trimmedName,
           description: trimmedDescription === "" ? null : trimmedDescription,
-          appliesToRoleId: resolvedRoleId,
+          appliesToAccessGroupId: resolvedAccessGroupId,
           isDefault,
           steps: stepPayload,
         },
@@ -106,7 +110,7 @@ export function WorkflowDialog({
       {
         name: trimmedName,
         description: trimmedDescription === "" ? undefined : trimmedDescription,
-        appliesToRoleId: resolvedRoleId,
+        appliesToAccessGroupId: resolvedAccessGroupId,
         isDefault,
         steps: stepPayload,
       },
@@ -184,24 +188,24 @@ export function WorkflowDialog({
                 disabled={isPending}
                 onValueChange={(value) => {
                   if (typeof value === "string") {
-                    setAppliesToRoleId(value);
+                    setAppliesToAccessGroupId(value);
                   }
                 }}
-                value={appliesToRoleId}
+                value={appliesToAccessGroupId}
               >
                 <SelectTrigger className="w-full" id="workflow-applies-to">
-                  <SelectValue placeholder="Select a role" />
+                  <SelectValue placeholder="Select an access group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
+                  {accessGroups.map((accessGroup) => (
+                    <SelectItem key={accessGroup.id} value={accessGroup.id}>
+                      {accessGroup.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Authors with this role follow the steps below.
+                Authors in this access group follow the steps below.
               </p>
             </div>
           )}
@@ -209,9 +213,9 @@ export function WorkflowDialog({
           <div className="space-y-2">
             <Label>Approval steps</Label>
             <WorkflowStepsBuilder
+              accessGroups={accessGroups}
               disabled={isPending}
               onStepsChange={setSteps}
-              roles={roles}
               steps={steps}
             />
           </div>

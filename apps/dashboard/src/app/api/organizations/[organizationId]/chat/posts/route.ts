@@ -13,7 +13,7 @@ import { marked } from "marked";
 import { nanoid } from "nanoid";
 import { after, NextResponse } from "next/server";
 import { withOrganizationScopes } from "@/lib/permissions/assert";
-import { resolveMemberRoleIds } from "@/lib/permissions/resolve-scopes";
+import { resolveMemberAccessGroupIds } from "@/lib/permissions/resolve-scopes";
 import { findApplicableWorkflow } from "@/lib/reviews/workflow";
 import { createChatPostSchema } from "@/schemas/content";
 import type { RouteContext } from "@/types/api/routes";
@@ -58,12 +58,12 @@ export async function POST(
 
       const workflowCheck = await Effect.runPromise(
         Effect.gen(function* () {
-          const roleIds = yield* resolveMemberRoleIds({
+          const accessGroupIds = yield* resolveMemberAccessGroupIds({
             memberId: membership.id,
           });
           return yield* findApplicableWorkflow({
             organizationId,
-            authorRoleIds: roleIds,
+            authorAccessGroupIds: accessGroupIds,
           });
         }).pipe(
           Effect.match({

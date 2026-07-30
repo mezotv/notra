@@ -1,5 +1,5 @@
 import { ORGANIZATION_SCOPES } from "../constants/permissions";
-import type { OrganizationScope } from "../types/roles";
+import type { OrganizationScope } from "../types/access-groups";
 
 const ORGANIZATION_SCOPE_SET: ReadonlySet<string> = new Set(
   ORGANIZATION_SCOPES

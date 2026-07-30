@@ -8,9 +8,9 @@ import { PageContainer } from "@/components/layout/container";
 import { DeleteWorkflowDialog } from "@/components/publishing/delete-workflow-dialog";
 import { WorkflowDialog } from "@/components/publishing/workflow-dialog";
 import { WorkflowList } from "@/components/publishing/workflow-list";
+import { useAccessGroups } from "@/lib/hooks/use-access-groups";
 import { useApprovalWorkflows } from "@/lib/hooks/use-approval-workflows";
 import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
-import { useRoles } from "@/lib/hooks/use-roles";
 import { useSlugOrganization } from "@/lib/hooks/use-slug-organization";
 import type { ApprovalWorkflowSummary } from "@/types/settings/publishing";
 import { PublishingSettingsSkeleton } from "./skeleton";
@@ -22,7 +22,7 @@ export default function PublishingPageClient() {
   const { hasScope } = useMemberPermissions(organizationId);
   const { data: workflowsData, isPending } =
     useApprovalWorkflows(organizationId);
-  const { data: rolesData } = useRoles(organizationId);
+  const { data: accessGroupsData } = useAccessGroups(organizationId);
 
   const [dialogWorkflow, setDialogWorkflow] =
     useState<ApprovalWorkflowSummary | null>(null);
@@ -33,10 +33,12 @@ export default function PublishingPageClient() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const canManage = hasScope("publishing:manage");
-  const roleOptions = (rolesData?.roles ?? []).map((role) => ({
-    id: role.id,
-    name: role.name,
-  }));
+  const accessGroupOptions = (accessGroupsData?.accessGroups ?? []).map(
+    (accessGroup) => ({
+      id: accessGroup.id,
+      name: accessGroup.name,
+    })
+  );
 
   const openDialog = (workflow: ApprovalWorkflowSummary | null) => {
     setDialogWorkflow(workflow);
@@ -90,11 +92,11 @@ export default function PublishingPageClient() {
       {canManage && organizationId && (
         <>
           <WorkflowDialog
+            accessGroups={accessGroupOptions}
             key={`${dialogWorkflow?.id ?? "create"}-${dialogNonce}`}
             onOpenChange={setIsDialogOpen}
             open={isDialogOpen}
             organizationId={organizationId}
-            roles={roleOptions}
             workflow={dialogWorkflow}
           />
           <DeleteWorkflowDialog

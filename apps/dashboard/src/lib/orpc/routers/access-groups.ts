@@ -1,26 +1,26 @@
 import { SCOPE_GROUPS } from "@notra/db/constants/permissions";
 import { db } from "@notra/db/drizzle";
 import {
+  accessGroupMembers,
+  accessGroups,
   approvalWorkflowSteps,
   approvalWorkflows,
-  memberRoleAssignments,
   members,
-  organizationRoles,
 } from "@notra/db/schema";
-import type { OrganizationScope } from "@notra/db/types/roles";
+import type { OrganizationScope } from "@notra/db/types/access-groups";
 import { filterOrganizationScopes } from "@notra/db/utils/permissions";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { assertOrganizationScopes } from "@/lib/permissions/assert";
-import { ensureSystemRoles } from "@/lib/permissions/system-roles";
+import { ensureSystemAccessGroups } from "@/lib/permissions/system-access-groups";
 import {
-  assignRoleInputSchema,
-  createRoleInputSchema,
-  roleInputSchema,
-  rolesListInputSchema,
-  updateRoleInputSchema,
-} from "@/schemas/roles";
+  accessGroupInputSchema,
+  accessGroupsListInputSchema,
+  assignAccessGroupInputSchema,
+  createAccessGroupInputSchema,
+  updateAccessGroupInputSchema,
+} from "@/schemas/access-groups";
 import { conflict, forbidden, notFound } from "../utils/errors";
 
 function isUniqueViolation(error: unknown): boolean {
@@ -34,10 +34,10 @@ function isUniqueViolation(error: unknown): boolean {
 
 function assertNoScopeEscalation(
   callerScopes: OrganizationScope[],
-  roleScopes: string[]
+  groupScopes: string[]
 ) {
   const held = new Set(callerScopes);
-  const escalated = filterOrganizationScopes(roleScopes).filter(
+  const escalated = filterOrganizationScopes(groupScopes).filter(
     (scope) => !held.has(scope)
   );
 
@@ -48,24 +48,24 @@ function assertNoScopeEscalation(
   }
 }
 
-async function findRole(organizationId: string, roleId: string) {
-  const role = await db.query.organizationRoles.findFirst({
+async function findAccessGroup(organizationId: string, accessGroupId: string) {
+  const accessGroup = await db.query.accessGroups.findFirst({
     where: and(
-      eq(organizationRoles.id, roleId),
-      eq(organizationRoles.organizationId, organizationId)
+      eq(accessGroups.id, accessGroupId),
+      eq(accessGroups.organizationId, organizationId)
     ),
   });
 
-  if (!role) {
-    throw notFound("Role not found");
+  if (!accessGroup) {
+    throw notFound("Access group not found");
   }
 
-  return role;
+  return accessGroup;
 }
 
-export const rolesRouter = {
+export const accessGroupsRouter = {
   list: authorizedProcedure
-    .input(rolesListInputSchema)
+    .input(accessGroupsListInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationScopes({
         headers: context.headers,
@@ -73,36 +73,36 @@ export const rolesRouter = {
         user: context.user,
       });
 
-      await ensureSystemRoles(input.organizationId);
+      await ensureSystemAccessGroups(input.organizationId);
 
-      const roles = await db.query.organizationRoles.findMany({
-        where: eq(organizationRoles.organizationId, input.organizationId),
+      const groups = await db.query.accessGroups.findMany({
+        where: eq(accessGroups.organizationId, input.organizationId),
         with: {
-          memberAssignments: {
+          memberships: {
             columns: {
               memberId: true,
             },
           },
         },
-        orderBy: [asc(organizationRoles.createdAt)],
+        orderBy: [asc(accessGroups.createdAt)],
       });
 
       return {
         scopeGroups: SCOPE_GROUPS,
-        roles: roles.map((role) => ({
-          id: role.id,
-          name: role.name,
-          description: role.description,
-          scopes: filterOrganizationScopes(role.scopes),
-          isSystem: role.systemKey !== null,
-          memberCount: role.memberAssignments.length,
-          createdAt: role.createdAt.toISOString(),
+        accessGroups: groups.map((group) => ({
+          id: group.id,
+          name: group.name,
+          description: group.description,
+          scopes: filterOrganizationScopes(group.scopes),
+          isSystem: group.systemKey !== null,
+          memberCount: group.memberships.length,
+          createdAt: group.createdAt.toISOString(),
         })),
       };
     }),
 
   me: authorizedProcedure
-    .input(rolesListInputSchema)
+    .input(accessGroupsListInputSchema)
     .handler(async ({ context, input }) => {
       const access = await assertOrganizationScopes({
         headers: context.headers,
@@ -110,10 +110,10 @@ export const rolesRouter = {
         user: context.user,
       });
 
-      const assignments = await db.query.memberRoleAssignments.findMany({
-        where: eq(memberRoleAssignments.memberId, access.membership.id),
+      const memberships = await db.query.accessGroupMembers.findMany({
+        where: eq(accessGroupMembers.memberId, access.membership.id),
         with: {
-          role: {
+          accessGroup: {
             columns: {
               id: true,
               name: true,
@@ -126,15 +126,15 @@ export const rolesRouter = {
         memberId: access.membership.id,
         memberRole: access.membership.role,
         scopes: access.scopes,
-        roles: assignments.map((assignment) => ({
-          id: assignment.role.id,
-          name: assignment.role.name,
+        accessGroups: memberships.map((membership) => ({
+          id: membership.accessGroup.id,
+          name: membership.accessGroup.name,
         })),
       };
     }),
 
   assignments: authorizedProcedure
-    .input(rolesListInputSchema)
+    .input(accessGroupsListInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationScopes({
         headers: context.headers,
@@ -154,10 +154,10 @@ export const rolesRouter = {
         return { assignments: [] };
       }
 
-      const assignments = await db.query.memberRoleAssignments.findMany({
-        where: inArray(memberRoleAssignments.memberId, memberIds),
+      const memberships = await db.query.accessGroupMembers.findMany({
+        where: inArray(accessGroupMembers.memberId, memberIds),
         with: {
-          role: {
+          accessGroup: {
             columns: {
               id: true,
               name: true,
@@ -167,16 +167,16 @@ export const rolesRouter = {
       });
 
       return {
-        assignments: assignments.map((assignment) => ({
-          memberId: assignment.memberId,
-          roleId: assignment.role.id,
-          roleName: assignment.role.name,
+        assignments: memberships.map((membership) => ({
+          memberId: membership.memberId,
+          accessGroupId: membership.accessGroup.id,
+          accessGroupName: membership.accessGroup.name,
         })),
       };
     }),
 
   create: authorizedProcedure
-    .input(createRoleInputSchema)
+    .input(createAccessGroupInputSchema)
     .handler(async ({ context, input }) => {
       const access = await assertOrganizationScopes({
         headers: context.headers,
@@ -190,7 +190,7 @@ export const rolesRouter = {
       const id = nanoid();
 
       try {
-        await db.insert(organizationRoles).values({
+        await db.insert(accessGroups).values({
           id,
           organizationId: input.organizationId,
           name: input.name,
@@ -200,7 +200,9 @@ export const rolesRouter = {
         });
       } catch (error) {
         if (isUniqueViolation(error)) {
-          throw conflict(`A role named "${input.name}" already exists`);
+          throw conflict(
+            `An access group named "${input.name}" already exists`
+          );
         }
         throw error;
       }
@@ -209,7 +211,7 @@ export const rolesRouter = {
     }),
 
   update: authorizedProcedure
-    .input(updateRoleInputSchema)
+    .input(updateAccessGroupInputSchema)
     .handler(async ({ context, input }) => {
       const access = await assertOrganizationScopes({
         headers: context.headers,
@@ -222,15 +224,18 @@ export const rolesRouter = {
         assertNoScopeEscalation(access.scopes, input.scopes);
       }
 
-      const role = await findRole(input.organizationId, input.roleId);
+      const accessGroup = await findAccessGroup(
+        input.organizationId,
+        input.accessGroupId
+      );
 
-      if (role.systemKey !== null) {
-        throw forbidden("System roles cannot be edited");
+      if (accessGroup.systemKey !== null) {
+        throw forbidden("System access groups cannot be edited");
       }
 
       try {
         await db
-          .update(organizationRoles)
+          .update(accessGroups)
           .set({
             ...(input.name !== undefined ? { name: input.name } : {}),
             ...(input.description !== undefined
@@ -238,10 +243,12 @@ export const rolesRouter = {
               : {}),
             ...(input.scopes !== undefined ? { scopes: input.scopes } : {}),
           })
-          .where(eq(organizationRoles.id, role.id));
+          .where(eq(accessGroups.id, accessGroup.id));
       } catch (error) {
         if (isUniqueViolation(error)) {
-          throw conflict(`A role named "${input.name}" already exists`);
+          throw conflict(
+            `An access group named "${input.name}" already exists`
+          );
         }
         throw error;
       }
@@ -250,7 +257,7 @@ export const rolesRouter = {
     }),
 
   delete: authorizedProcedure
-    .input(roleInputSchema)
+    .input(accessGroupInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationScopes({
         headers: context.headers,
@@ -259,16 +266,19 @@ export const rolesRouter = {
         scopes: ["roles:manage"],
       });
 
-      const role = await findRole(input.organizationId, input.roleId);
+      const accessGroup = await findAccessGroup(
+        input.organizationId,
+        input.accessGroupId
+      );
 
-      if (role.systemKey !== null) {
-        throw forbidden("System roles cannot be deleted");
+      if (accessGroup.systemKey !== null) {
+        throw forbidden("System access groups cannot be deleted");
       }
 
-      const workflowUsingRole = await db.query.approvalWorkflows.findFirst({
+      const workflowUsingGroup = await db.query.approvalWorkflows.findFirst({
         where: and(
           eq(approvalWorkflows.organizationId, input.organizationId),
-          eq(approvalWorkflows.appliesToRoleId, role.id)
+          eq(approvalWorkflows.appliesToAccessGroupId, accessGroup.id)
         ),
         columns: {
           id: true,
@@ -276,7 +286,7 @@ export const rolesRouter = {
         },
       });
 
-      const stepUsingRole = workflowUsingRole
+      const stepUsingGroup = workflowUsingGroup
         ? null
         : await db
             .select({
@@ -291,29 +301,27 @@ export const rolesRouter = {
             .where(
               and(
                 eq(approvalWorkflows.organizationId, input.organizationId),
-                eq(approvalWorkflowSteps.reviewerRoleId, role.id)
+                eq(approvalWorkflowSteps.reviewerAccessGroupId, accessGroup.id)
               )
             )
             .limit(1)
             .then((rows) => rows[0] ?? null);
 
       const blockingWorkflowName =
-        workflowUsingRole?.name ?? stepUsingRole?.workflowName;
+        workflowUsingGroup?.name ?? stepUsingGroup?.workflowName;
       if (blockingWorkflowName) {
         throw conflict(
-          `This role is used by the "${blockingWorkflowName}" approval workflow. Update the workflow first.`
+          `This access group is used by the "${blockingWorkflowName}" approval workflow. Update the workflow first.`
         );
       }
 
-      await db
-        .delete(organizationRoles)
-        .where(eq(organizationRoles.id, role.id));
+      await db.delete(accessGroups).where(eq(accessGroups.id, accessGroup.id));
 
       return { success: true as const };
     }),
 
   assign: authorizedProcedure
-    .input(assignRoleInputSchema)
+    .input(assignAccessGroupInputSchema)
     .handler(async ({ context, input }) => {
       const access = await assertOrganizationScopes({
         headers: context.headers,
@@ -336,16 +344,19 @@ export const rolesRouter = {
         throw notFound("Member not found");
       }
 
-      const role = await findRole(input.organizationId, input.roleId);
+      const accessGroup = await findAccessGroup(
+        input.organizationId,
+        input.accessGroupId
+      );
 
-      assertNoScopeEscalation(access.scopes, role.scopes);
+      assertNoScopeEscalation(access.scopes, accessGroup.scopes);
 
       await db
-        .insert(memberRoleAssignments)
+        .insert(accessGroupMembers)
         .values({
           id: nanoid(),
           memberId: input.memberId,
-          roleId: input.roleId,
+          accessGroupId: input.accessGroupId,
         })
         .onConflictDoNothing();
 
@@ -353,7 +364,7 @@ export const rolesRouter = {
     }),
 
   unassign: authorizedProcedure
-    .input(assignRoleInputSchema)
+    .input(assignAccessGroupInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationScopes({
         headers: context.headers,
@@ -377,11 +388,11 @@ export const rolesRouter = {
       }
 
       await db
-        .delete(memberRoleAssignments)
+        .delete(accessGroupMembers)
         .where(
           and(
-            eq(memberRoleAssignments.memberId, input.memberId),
-            eq(memberRoleAssignments.roleId, input.roleId)
+            eq(accessGroupMembers.memberId, input.memberId),
+            eq(accessGroupMembers.accessGroupId, input.accessGroupId)
           )
         );
 

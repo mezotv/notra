@@ -7,8 +7,8 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
+import { MemberAccessGroupsCell } from "./member-access-groups-cell";
 import { MemberActions } from "./member-actions";
-import { MemberRolesCell } from "./member-roles-cell";
 
 export interface Member {
   id: string;
@@ -65,12 +65,13 @@ export const columns = [
     cell: (info) => <RoleBadge role={info.getValue()} />,
   }),
   columnHelper.display({
-    id: "roles",
-    header: "Roles",
+    id: "accessGroups",
+    header: "Access groups",
     cell: (info) => (
-      <MemberRolesCell
+      <MemberAccessGroupsCell
         memberId={info.row.original.id}
         memberName={info.row.original.user.name}
+        memberRole={info.row.original.role}
       />
     ),
   }),

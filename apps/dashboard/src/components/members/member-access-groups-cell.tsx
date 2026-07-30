@@ -12,51 +12,55 @@ import {
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import {
-  useAssignRole,
-  useRoleAssignments,
-  useRoles,
-  useUnassignRole,
-} from "@/lib/hooks/use-roles";
+  useAccessGroupAssignments,
+  useAccessGroups,
+  useAssignAccessGroup,
+  useUnassignAccessGroup,
+} from "@/lib/hooks/use-access-groups";
+import { useMemberPermissions } from "@/lib/hooks/use-member-permissions";
 import { useSlugOrganization } from "@/lib/hooks/use-slug-organization";
 import { errorMessageOr } from "@/lib/utils";
-import type { MemberRolesCellProps } from "@/types/members/member-roles";
+import type { MemberAccessGroupsCellProps } from "@/types/members/member-access-groups";
 
-export function MemberRolesCell({
+export function MemberAccessGroupsCell({
   memberId,
   memberName,
-}: MemberRolesCellProps) {
+  memberRole,
+}: MemberAccessGroupsCellProps) {
   const organization = useSlugOrganization();
   const organizationId = organization?.id ?? "";
 
   const { hasScope } = useMemberPermissions(organizationId);
   const { data: assignmentsData, isPending } =
-    useRoleAssignments(organizationId);
-  const { data: rolesData } = useRoles(organizationId);
-  const assignRole = useAssignRole(organizationId);
-  const unassignRole = useUnassignRole(organizationId);
+    useAccessGroupAssignments(organizationId);
+  const { data: accessGroupsData } = useAccessGroups(organizationId);
+  const assignAccessGroup = useAssignAccessGroup(organizationId);
+  const unassignAccessGroup = useUnassignAccessGroup(organizationId);
 
   const assignments = (assignmentsData?.assignments ?? []).filter(
     (assignment) => assignment.memberId === memberId
   );
-  const assignedRoleIds = new Set(
-    assignments.map((assignment) => assignment.roleId)
+  const assignedAccessGroupIds = new Set(
+    assignments.map((assignment) => assignment.accessGroupId)
   );
   const canManage = hasScope("members:manage");
-  const isMutating = assignRole.isPending || unassignRole.isPending;
+  const isMutating =
+    assignAccessGroup.isPending || unassignAccessGroup.isPending;
 
-  const toggleRole = (roleId: string, checked: boolean) => {
-    const mutation = checked ? assignRole : unassignRole;
+  const toggleAccessGroup = (accessGroupId: string, checked: boolean) => {
+    const mutation = checked ? assignAccessGroup : unassignAccessGroup;
 
     mutation.mutate(
-      { memberId, roleId },
+      { memberId, accessGroupId },
       {
         onSuccess: () => {
-          toast.success(`Roles updated for ${memberName}`);
+          toast.success(`Access groups updated for ${memberName}`);
         },
         onError: (error) => {
-          toast.error(errorMessageOr(error.message, "Failed to update roles"));
+          toast.error(
+            errorMessageOr(error.message, "Failed to update access groups")
+          );
         },
       }
     );
@@ -69,15 +73,17 @@ export function MemberRolesCell({
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {assignments.length === 0 ? (
-        <span className="text-muted-foreground text-sm">No roles</span>
+        <span className="text-muted-foreground text-sm">
+          {memberRole === "owner" ? "Full access" : "No access groups"}
+        </span>
       ) : (
         assignments.map((assignment) => (
           <Badge
             className="font-normal"
-            key={assignment.roleId}
+            key={assignment.accessGroupId}
             variant="outline"
           >
-            {assignment.roleName}
+            {assignment.accessGroupName}
           </Badge>
         ))
       )}
@@ -91,19 +97,23 @@ export function MemberRolesCell({
                 disabled={isMutating}
                 variant="ghost"
               >
-                <span className="sr-only">Manage roles for {memberName}</span>
+                <span className="sr-only">
+                  Manage access groups for {memberName}
+                </span>
                 <HugeiconsIcon className="size-4" icon={UserShield01Icon} />
               </Button>
             }
           />
           <DropdownMenuContent align="end" className="w-52">
-            {(rolesData?.roles ?? []).map((role) => (
+            {(accessGroupsData?.accessGroups ?? []).map((accessGroup) => (
               <DropdownMenuCheckboxItem
-                checked={assignedRoleIds.has(role.id)}
-                key={role.id}
-                onCheckedChange={(checked) => toggleRole(role.id, checked)}
+                checked={assignedAccessGroupIds.has(accessGroup.id)}
+                key={accessGroup.id}
+                onCheckedChange={(checked) =>
+                  toggleAccessGroup(accessGroup.id, checked)
+                }
               >
-                {role.name}
+                {accessGroup.name}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

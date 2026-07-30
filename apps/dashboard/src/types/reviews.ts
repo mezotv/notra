@@ -67,12 +67,12 @@ export interface ReviewsInboxRowProps {
   organizationSlug: string;
 }
 
-export interface WorkflowStepWithRole {
+export interface WorkflowStepWithAccessGroup {
   stepOrder: number;
-  reviewerRoleId: string;
+  reviewerAccessGroupId: string;
   requiredApprovals: number;
   name: string | null;
-  reviewerRole: {
+  reviewerAccessGroup: {
     name: string;
   };
 }
@@ -80,7 +80,7 @@ export interface WorkflowStepWithRole {
 export interface WorkflowWithSteps {
   id: string;
   name: string;
-  appliesToRoleId: string | null;
+  appliesToAccessGroupId: string | null;
   isDefault: boolean;
-  steps: WorkflowStepWithRole[];
+  steps: WorkflowStepWithAccessGroup[];
 }

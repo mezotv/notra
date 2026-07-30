@@ -11,30 +11,32 @@ import {
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 import { toast } from "sonner";
-import { useDeleteRole } from "@/lib/hooks/use-roles";
+import { useDeleteAccessGroup } from "@/lib/hooks/use-access-groups";
 import { errorMessageOr } from "@/lib/utils";
-import type { DeleteRoleDialogProps } from "@/types/settings/roles";
+import type { DeleteAccessGroupDialogProps } from "@/types/settings/access-groups";
 
-export function DeleteRoleDialog({
+export function DeleteAccessGroupDialog({
   open,
   onOpenChange,
   organizationId,
-  role,
-}: DeleteRoleDialogProps) {
-  const deleteRole = useDeleteRole(organizationId);
+  accessGroup,
+}: DeleteAccessGroupDialogProps) {
+  const deleteAccessGroup = useDeleteAccessGroup(organizationId);
 
   const handleDelete = () => {
-    if (!role) {
+    if (!accessGroup) {
       return;
     }
 
-    deleteRole.mutate(role.id, {
+    deleteAccessGroup.mutate(accessGroup.id, {
       onSuccess: () => {
-        toast.success(`${role.name} has been deleted`);
+        toast.success(`${accessGroup.name} has been deleted`);
         onOpenChange(false);
       },
       onError: (error) => {
-        toast.error(errorMessageOr(error.message, "Failed to delete role"));
+        toast.error(
+          errorMessageOr(error.message, "Failed to delete access group")
+        );
       },
     });
   };
@@ -42,7 +44,7 @@ export function DeleteRoleDialog({
   return (
     <ResponsiveAlertDialog
       onOpenChange={(nextOpen) => {
-        if (!deleteRole.isPending) {
+        if (!deleteAccessGroup.isPending) {
           onOpenChange(nextOpen);
         }
       }}
@@ -51,23 +53,25 @@ export function DeleteRoleDialog({
       <ResponsiveAlertDialogContent>
         <ResponsiveAlertDialogHeader>
           <ResponsiveAlertDialogTitle>
-            Delete {role?.name}?
+            Delete {accessGroup?.name}?
           </ResponsiveAlertDialogTitle>
           <ResponsiveAlertDialogDescription>
-            Members with this role lose the permissions it grants. This cannot
-            be undone.
+            Members in this access group lose the permissions it grants. This
+            cannot be undone.
           </ResponsiveAlertDialogDescription>
         </ResponsiveAlertDialogHeader>
         <ResponsiveAlertDialogFooter>
-          <ResponsiveAlertDialogCancel disabled={deleteRole.isPending}>
+          <ResponsiveAlertDialogCancel disabled={deleteAccessGroup.isPending}>
             Cancel
           </ResponsiveAlertDialogCancel>
           <ResponsiveAlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            disabled={deleteRole.isPending}
+            disabled={deleteAccessGroup.isPending}
             onClick={handleDelete}
           >
-            {deleteRole.isPending ? "Deleting..." : "Delete role"}
+            {deleteAccessGroup.isPending
+              ? "Deleting..."
+              : "Delete access group"}
           </ResponsiveAlertDialogAction>
         </ResponsiveAlertDialogFooter>
       </ResponsiveAlertDialogContent>

@@ -2,17 +2,17 @@
 
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
-import type { RoleListProps } from "@/types/settings/roles";
-import { RoleRow } from "./role-row";
+import type { AccessGroupListProps } from "@/types/settings/access-groups";
+import { AccessGroupRow } from "./group-row";
 
-export function RoleList({
-  roles,
+export function AccessGroupList({
+  accessGroups,
   scopeLabels,
   canManage,
   isLoading,
   onEdit,
   onDelete,
-}: RoleListProps) {
+}: AccessGroupListProps) {
   const skeletonId = useId();
 
   if (isLoading) {
@@ -21,7 +21,7 @@ export function RoleList({
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             className="space-y-2 px-4 py-3"
-            key={`${skeletonId}-role-${index}`}
+            key={`${skeletonId}-access-group-${index}`}
           >
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-3 w-64" />
@@ -32,23 +32,23 @@ export function RoleList({
     );
   }
 
-  if (roles.length === 0) {
+  if (accessGroups.length === 0) {
     return (
       <div className="rounded-lg border border-border/80 border-b-border/40 bg-background px-4 py-10 text-center text-muted-foreground text-sm shadow-2xs">
-        No roles yet.
+        No access groups yet.
       </div>
     );
   }
 
   return (
     <div className="divide-y divide-border/60 overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-background shadow-2xs">
-      {roles.map((role) => (
-        <RoleRow
+      {accessGroups.map((accessGroup) => (
+        <AccessGroupRow
+          accessGroup={accessGroup}
           canManage={canManage}
-          key={role.id}
+          key={accessGroup.id}
           onDelete={onDelete}
           onEdit={onEdit}
-          role={role}
           scopeLabels={scopeLabels}
         />
       ))}
