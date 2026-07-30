@@ -50,7 +50,10 @@ import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { isConstraintViolation, isPgUniqueViolation } from "../utils/pg-errors";
-import { assertApiPublishAllowed } from "../utils/publishing";
+import {
+  assertApiPublishAllowed,
+  cancelPendingApiApprovalRequests,
+} from "../utils/publishing";
 import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
 import { getRedis } from "../utils/redis";
 
@@ -619,6 +622,26 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
 
   if (!updatedPost) {
     return c.json({ error: "Post not found" }, 404);
+  }
+
+  if (body.status !== undefined && body.status !== existingPost.status) {
+    await Effect.runPromise(
+      cancelPendingApiApprovalRequests({
+        db,
+        organizationId: orgId,
+        postId,
+      }).pipe(
+        Effect.match({
+          onFailure: (error) => {
+            console.error(
+              "[Posts] Failed to cancel pending approval requests:",
+              { postId, organizationId: orgId, error }
+            );
+          },
+          onSuccess: () => undefined,
+        })
+      )
+    );
   }
 
   return c.json({ post: serializePost(updatedPost), organization }, 200);

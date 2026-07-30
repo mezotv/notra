@@ -3,6 +3,7 @@ import {
   approvalWorkflows,
   memberRoleAssignments,
   members,
+  postApprovalRequests,
 } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
@@ -69,6 +70,31 @@ const getAuthorRoleIds = Effect.fn("getAuthorRoleIds")(function* ({
   );
 
   return assignments.map((assignment) => assignment.roleId);
+});
+
+export const cancelPendingApiApprovalRequests = Effect.fn(
+  "cancelPendingApiApprovalRequests"
+)(function* ({
+  db,
+  organizationId,
+  postId,
+}: {
+  db: Database;
+  organizationId: string;
+  postId: string;
+}) {
+  yield* tryDb(() =>
+    db
+      .update(postApprovalRequests)
+      .set({ status: "canceled", resolvedAt: new Date() })
+      .where(
+        and(
+          eq(postApprovalRequests.postId, postId),
+          eq(postApprovalRequests.organizationId, organizationId),
+          eq(postApprovalRequests.status, "pending")
+        )
+      )
+  );
 });
 
 export const assertApiPublishAllowed = Effect.fn("assertApiPublishAllowed")(

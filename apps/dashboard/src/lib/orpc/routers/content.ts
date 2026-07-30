@@ -637,14 +637,14 @@ export const contentRouter = {
         }
 
         if (existingPost.status !== "published") {
-          if (!access.scopes.includes("posts:edit")) {
+          const canWithdrawForOthers =
+            canUnpublish || access.scopes.includes("posts:review");
+
+          if (!(canWithdrawForOthers || access.scopes.includes("posts:edit"))) {
             throw forbidden(
               "You do not have permission to withdraw posts from review"
             );
           }
-
-          const canWithdrawForOthers =
-            canUnpublish || access.scopes.includes("posts:review");
 
           if (!canWithdrawForOthers) {
             const latestRequest = await db.query.postApprovalRequests.findFirst(
