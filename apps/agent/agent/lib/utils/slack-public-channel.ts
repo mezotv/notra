@@ -3,7 +3,10 @@ import type {
   SlackInboundMessageContext,
   SlackMessage,
 } from "eve/channels/slack";
-import { CHANNEL_VISIBILITY_TTL_MS } from "../constants/slack";
+import {
+  CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES,
+  CHANNEL_VISIBILITY_TTL_MS,
+} from "../constants/slack";
 import { SlackApiError } from "../schemas/slack";
 import type { ChannelVisibilityCacheEntry } from "../types/slack";
 
@@ -58,11 +61,26 @@ export function isPublicSlackChannel(
   return fetchChannelVisibility(ctx, message.channelId).pipe(
     Effect.tap((isPublic) =>
       Effect.sync(() => {
-        channelVisibilityCache.set(message.channelId, {
-          expiresAt: Date.now() + CHANNEL_VISIBILITY_TTL_MS,
-          isPublic,
-        });
+        cacheChannelVisibility(message.channelId, isPublic);
       })
     )
   );
+}
+
+function cacheChannelVisibility(channelId: string, isPublic: boolean) {
+  const now = Date.now();
+  if (channelVisibilityCache.size >= CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES) {
+    for (const [key, entry] of channelVisibilityCache) {
+      if (entry.expiresAt <= now) {
+        channelVisibilityCache.delete(key);
+      }
+    }
+  }
+  if (channelVisibilityCache.size >= CHANNEL_VISIBILITY_CACHE_MAX_ENTRIES) {
+    channelVisibilityCache.clear();
+  }
+  channelVisibilityCache.set(channelId, {
+    expiresAt: now + CHANNEL_VISIBILITY_TTL_MS,
+    isPublic,
+  });
 }

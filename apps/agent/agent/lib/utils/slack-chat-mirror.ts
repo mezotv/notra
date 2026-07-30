@@ -3,7 +3,6 @@ import {
   claimChatSessionForExternalChannel,
   generateChatId,
   renameChatSession,
-  replaceChatHistory,
 } from "@notra/ai/chat/history";
 import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
@@ -134,12 +133,15 @@ function mirrorSlackInboundMessage(
       mirroredMessages.push(inboundMessage);
     }
 
-    yield* mirrorStep("replace-chat-history", () =>
-      replaceChatHistory(organizationId, claim.chatId, mirroredMessages, {
-        source: "slack",
-        id: externalChannelId,
-      })
-    );
+    for (const mirroredMessage of mirroredMessages) {
+      yield* mirrorStep("append-thread-message", () =>
+        appendChatMessageIfMissing(
+          organizationId,
+          claim.chatId,
+          mirroredMessage
+        )
+      );
+    }
     yield* mirrorStep("rename-chat-session", () =>
       renameChatSession(
         organizationId,
