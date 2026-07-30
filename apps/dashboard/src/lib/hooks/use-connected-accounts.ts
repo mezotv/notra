@@ -84,7 +84,7 @@ export function usePublishSocialPost(
   });
 }
 
-export function useConnectSocialAccount(
+function useConnectSocialAccount(
   organizationId: string,
   platform: SocialConnectPlatform
 ) {
