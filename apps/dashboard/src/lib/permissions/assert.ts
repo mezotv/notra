@@ -27,6 +27,7 @@ export async function assertOrganizationScopes({
     resolveMemberScopes({
       memberId: access.membership.id,
       memberRole: access.membership.role,
+      organizationId: access.organizationId,
     }).pipe(
       Effect.match({
         onFailure: () => null,
