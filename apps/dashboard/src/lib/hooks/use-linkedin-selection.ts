@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinkedInSelectionAccount } from "@/types/services/social-connect";
 
@@ -19,11 +19,17 @@ export function useLinkedInSelection(token: string) {
 }
 
 export function useCompleteLinkedInSelection() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
       token: string;
       accountIds: string[];
     }): Promise<{ callbackPath: string }> =>
       dashboardOrpc.socialAccounts.linkedinSelectionComplete.call(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.socialAccounts.list.key(),
+      });
+    },
   });
 }

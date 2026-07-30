@@ -40,17 +40,26 @@ function LinkedInConnectContent() {
   const token = searchParams.get("token") ?? "";
   const { data, isLoading, isError, error } = useLinkedInSelection(token);
   const completeMutation = useCompleteLinkedInSelection();
-  const [deselectedIds, setDeselectedIds] = useState<string[]>([]);
-  const selectedIds = (data?.accounts ?? [])
-    .map((account) => account.providerAccountId)
-    .filter((id) => !deselectedIds.includes(id));
+  const [deselectedIds, setDeselectedIds] = useState<ReadonlySet<string>>(
+    new Set()
+  );
+  const selectedIds: string[] = [];
+  for (const account of data?.accounts ?? []) {
+    if (!deselectedIds.has(account.providerAccountId)) {
+      selectedIds.push(account.providerAccountId);
+    }
+  }
 
   const toggleAccount = (accountId: string) => {
-    setDeselectedIds((ids) =>
-      ids.includes(accountId)
-        ? ids.filter((id) => id !== accountId)
-        : [...ids, accountId]
-    );
+    setDeselectedIds((ids) => {
+      const next = new Set(ids);
+      if (next.has(accountId)) {
+        next.delete(accountId);
+      } else {
+        next.add(accountId);
+      }
+      return next;
+    });
   };
 
   const handleConnect = () => {
@@ -118,7 +127,7 @@ function LinkedInConnectContent() {
     <SelectionShell>
       <div className="space-y-3">
         {data.accounts.map((account) => {
-          const isSelected = selectedIds.includes(account.providerAccountId);
+          const isSelected = !deselectedIds.has(account.providerAccountId);
           const isPage = account.connectionType === "page";
           return (
             <button

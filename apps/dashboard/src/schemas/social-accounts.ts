@@ -68,3 +68,18 @@ export const linkedinSelectionCompleteInputSchema = z.object({
   token: z.string().min(1),
   accountIds: z.array(z.string().min(1)).min(1).max(20),
 });
+
+export const linkedInSelectionStashSchema = z.object({
+  organizationId: z.string().min(1),
+  userId: z.string().min(1),
+  callbackPath: z.string(),
+  accounts: z.array(
+    z.object({
+      providerAccountId: z.string().min(1),
+      username: z.string().min(1),
+      profileImageUrl: z.string().nullable(),
+      connectionType: z.enum(["personal", "page"]),
+      profileUrl: z.string().nullable(),
+    })
+  ),
+});

@@ -1,4 +1,8 @@
-import type { SocialConnectPlatform } from "@/schemas/social-accounts";
+import type * as z from "zod";
+import type {
+  linkedInSelectionStashSchema,
+  SocialConnectPlatform,
+} from "@/schemas/social-accounts";
 
 export interface BeginSocialConnectParams {
   organizationId: string;
@@ -19,20 +23,12 @@ export interface CompleteSocialConnectResult {
   selectionToken?: string;
 }
 
-export interface LinkedInSelectionAccount {
-  providerAccountId: string;
-  username: string;
-  profileImageUrl: string | null;
-  connectionType: "personal" | "page";
-  profileUrl: string | null;
-}
+export type LinkedInSelectionStash = z.infer<
+  typeof linkedInSelectionStashSchema
+>;
 
-export interface LinkedInSelectionStash {
-  organizationId: string;
-  userId: string;
-  callbackPath: string;
-  accounts: LinkedInSelectionAccount[];
-}
+export type LinkedInSelectionAccount =
+  LinkedInSelectionStash["accounts"][number];
 
 export interface RefreshedAccountStatus {
   username: string;

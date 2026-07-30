@@ -7,11 +7,16 @@ import { completeSocialConnect } from "@/lib/social-connect/connect";
 import { socialConnectCallbackQuerySchema } from "@/schemas/social-accounts";
 
 function readAccountIds(searchParams: URLSearchParams): string[] {
-  const values = searchParams.getAll("accountIds");
-  return values
-    .flatMap((value) => value.split(","))
-    .map((value) => value.trim())
-    .filter(Boolean);
+  const accountIds: string[] = [];
+  for (const value of searchParams.getAll("accountIds")) {
+    for (const part of value.split(",")) {
+      const trimmed = part.trim();
+      if (trimmed) {
+        accountIds.push(trimmed);
+      }
+    }
+  }
+  return accountIds;
 }
 
 export async function GET(request: NextRequest) {

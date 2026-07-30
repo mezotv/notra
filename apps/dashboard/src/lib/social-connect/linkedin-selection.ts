@@ -8,21 +8,29 @@ import {
   SocialConnectConfigError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
-import type { LinkedInSelectionStash } from "@/types/services/social-connect";
+import { linkedInSelectionStashSchema } from "@/schemas/social-accounts";
 
 const parseStash = Effect.fn("parseStash")(function* (raw: unknown) {
-  const stash = yield* Effect.try({
-    try: (): LinkedInSelectionStash =>
-      typeof raw === "string"
-        ? JSON.parse(raw)
-        : JSON.parse(JSON.stringify(raw)),
+  const stashJson = yield* Effect.try({
+    try: (): unknown => (typeof raw === "string" ? JSON.parse(raw) : raw),
     catch: (cause) =>
       new SocialConnectRequestError({
         message: "The connection attempt was invalid. Please try again.",
         cause,
       }),
   });
-  return stash;
+
+  const parsed = linkedInSelectionStashSchema.safeParse(stashJson);
+  if (!parsed.success) {
+    return yield* Effect.fail(
+      new SocialConnectRequestError({
+        message: "The connection attempt was invalid. Please try again.",
+        cause: null,
+      })
+    );
+  }
+
+  return parsed.data;
 });
 
 export const getLinkedInSelection = Effect.fn("getLinkedInSelection")(

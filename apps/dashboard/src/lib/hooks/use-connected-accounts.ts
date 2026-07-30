@@ -62,6 +62,7 @@ export function usePublishSocialPost(
   organizationId: string,
   platform: SocialConnectPlatform
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { accountId: string; content: string }) =>
       dashboardOrpc.socialAccounts.publish.call({
@@ -70,6 +71,11 @@ export function usePublishSocialPost(
         content: input.content,
       }),
     onSuccess: (result) => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.socialAccounts.list.queryKey({
+          input: { organizationId },
+        }),
+      });
       toast.success(
         `🎉 Posted to ${SOCIAL_PLATFORM_LABELS[platform]} as @${result.username}`
       );
@@ -88,12 +94,20 @@ function useConnectSocialAccount(
   organizationId: string,
   platform: SocialConnectPlatform
 ) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (callbackPath: string): Promise<{ url: string }> => {
       return dashboardOrpc.socialAccounts.beginConnect.call({
         organizationId,
         platform,
         callbackPath,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.socialAccounts.list.queryKey({
+          input: { organizationId },
+        }),
       });
     },
   });
