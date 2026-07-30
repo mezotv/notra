@@ -593,7 +593,13 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
       const rows = await tx
         .update(posts)
         .set(updateData)
-        .where(and(eq(posts.id, postId), eq(posts.organizationId, orgId)))
+        .where(
+          and(
+            eq(posts.id, postId),
+            eq(posts.organizationId, orgId),
+            ...(isStatusChange ? [eq(posts.status, existingPost.status)] : [])
+          )
+        )
         .returning({
           id: posts.id,
           title: posts.title,
@@ -638,6 +644,12 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
   const [updatedPost] = updatedRows;
 
   if (!updatedPost) {
+    if (isStatusChange) {
+      return c.json(
+        { error: "The post status just changed. Refresh and try again." },
+        409
+      );
+    }
     return c.json({ error: "Post not found" }, 404);
   }
 
