@@ -680,7 +680,10 @@ export const contentRouter = {
             .where(
               and(
                 eq(posts.id, input.contentId),
-                eq(posts.organizationId, input.organizationId)
+                eq(posts.organizationId, input.organizationId),
+                ...(isStatusChange
+                  ? [eq(posts.status, existingPost.status)]
+                  : [])
               )
             )
             .returning({
@@ -717,6 +720,11 @@ export const contentRouter = {
         });
 
         if (!updatedPost) {
+          if (isStatusChange) {
+            throw conflict(
+              "The post status just changed. Refresh and try again."
+            );
+          }
           throw internalServerError("Failed to update content");
         }
 
